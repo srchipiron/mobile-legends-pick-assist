@@ -8,6 +8,21 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 1.35.0
+
+- En la fase de baneos la app te enseña el siguiente baneo probable para
+  tocarlo en vez de escribirlo. Bajo los diez huecos hay ocho fichas con
+  los héroes más baneados de tu rango que aún no están marcados, con su
+  tasa de ban; al tocar una, se banea y entra el siguiente. El selector
+  enseña la misma lista, con diez. Es la tasa de ban de la API por rango,
+  que es por partida: los ocho primeros pasan del 50%. Se midió si la
+  co-ocurrencia entre baneos (con las partidas profesionales) añadía algo
+  y no se aplica: los profesionales banean otra cosa que Gloria.
+- En el móvil los diez baneos van en dos filas de cinco. En una sola fila
+  cada hueco quedaba en 28 px, la × se salía del hueco y pisaba al vecino, y
+  la pantalla se movía de lado 8 px. Y con los diez marcados ya no se ofrece
+  un undécimo.
+
 ## 1.34.0
 
 - La app aconseja también qué pueden coger tus compañeros. Con algún enemigo

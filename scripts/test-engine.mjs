@@ -1456,6 +1456,22 @@ test('un 422 se reintenta con menos parámetros en vez de perderlo todo', async 
   }
 });
 
+test('el siguiente baneo probable es el más baneado del rango que aún no está marcado', async () => {
+  const { proximosBaneos } = await import('../src/engine/baneos.js');
+  const { indexByName } = await import('../src/engine/score.js');
+  const heroes = ['A', 'B', 'C', 'D', 'X Borg'].map((n) => ({ name: n, tags: [] }));
+  const stats = indexByName({ A: { banRate: 0.8 }, B: { banRate: 0.6 }, C: { banRate: 0.1 }, D: { winRate: 0.5 }, 'X.Borg': { banRate: 0.7 } });
+  const meta = { stats };
+  const nombres = (l) => l.map((x) => x.hero.name).join(',');
+  // Ordenado por tasa de ban, con la clave normalizada (X Borg / X.Borg) y sin el héroe sin tasa.
+  eq(nombres(proximosBaneos(heroes, { meta, n: 10 })), 'A,X Borg,B,C', 'no ordena por tasa de ban');
+  // Al marcar el primero, entra el siguiente: eso es lo que evita escribir.
+  eq(nombres(proximosBaneos(heroes, { meta, bans: [heroes[0]], n: 2 })), 'X Borg,B', 'no refresca al marcar el primero');
+  // Lo cogido por cualquier lado no se propone.
+  eq(nombres(proximosBaneos(heroes, { meta, enemies: [heroes[4]], allies: [heroes[1]], n: 10 })), 'A,C', 'propone a un héroe ya cogido');
+  ok(proximosBaneos(heroes, { meta: {}, n: 10 }).length === 0, 'inventa tasas sin estadísticas');
+});
+
 test('el consejo para los compañeros cubre las líneas abiertas y responde al equipo enemigo', async () => {
   const { aconsejarEquipo } = await import('../src/engine/equipo.js');
   const { indiceDeLineas, frecuenciaDeRoles } = await import('../src/engine/rival-de-linea.js');

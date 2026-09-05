@@ -10,7 +10,8 @@ import { estimarVictoria } from './engine/estimacion.js';
 import { sanear } from './engine/perfil.js';
 import { analizarComposicion } from './engine/composicion.js';
 import { aconsejarEquipo } from './engine/equipo.js';
-import { Side, HeroSheet, Pick, Legend, MasteryEditor, RankPicker, BanSuggestions, Footer, SelfTest, RegistroPartida, SelectorDeLinea, Analisis, AvisoLegal, Perfil, HistorialPartidas, Build, Estimacion, Composicion, Imagen, Equipo } from './components/ui.jsx';
+import { proximosBaneos } from './engine/baneos.js';
+import { Side, HeroSheet, Pick, Legend, MasteryEditor, RankPicker, BanSuggestions, Footer, SelfTest, RegistroPartida, SelectorDeLinea, Analisis, AvisoLegal, Perfil, HistorialPartidas, Build, Estimacion, Composicion, Imagen, Equipo, ProximosBaneos } from './components/ui.jsx';
 
 // OJO: estas claves siguen diciendo 'roam-picker' aunque la app se llame ya
 // Mobile Legends Pick Assist. NO se renombran: el almacenamiento del navegador
@@ -313,6 +314,13 @@ export default function App() {
     [catalog, allHeroes, allies, enemies, bans, metaCtx],
   );
 
+  // Los siguientes baneos probables: lo más baneado en tu rango sin lo ya
+  // marcado. Se toca en vez de escribir; al marcar uno, entra el siguiente.
+  const proximos = useMemo(
+    () => (catalog && metaCtx.stats ? proximosBaneos(allHeroes, { bans, enemies, allies, meta: metaCtx, n: 10 }) : []),
+    [catalog, allHeroes, bans, enemies, allies, metaCtx],
+  );
+
   const lanzarTest = async () => {
     try {
       // Qué versión hay PUBLICADA, sin pasar por la caché. El service worker
@@ -420,7 +428,7 @@ export default function App() {
       multi={sheet === 'ban'}
       seleccionados={sheet === 'ban' ? new Set(banNames) : null}
       max={10}
-      sugeridos={sheet === 'ban' ? banIdeas.map((b) => b.hero) : []}
+      sugeridos={sheet === 'ban' ? proximos.map((b) => b.hero) : []}
       orden={sheet === 'ban' ? 'ban' : 'pick'}
       t={t}
     />
@@ -451,11 +459,15 @@ export default function App() {
           <p className="fase-pista">{t('fase.baneosPista')}</p>
           <Side t={t} title={t('app.baneados')} kind="bans" picks={bans} max={10}
                 onAdd={() => setSheet('ban')} onRemove={remove(setBanNames)} />
+          <ProximosBaneos t={t} items={bans.length < 10 ? proximos.slice(0, 8) : []}
+                          onBan={(h) => setBanNames((p) => (p.length < 10 && !p.includes(h.name) ? [...p, h.name] : p))} />
           <button className="reset" onClick={() => setSheet('ban')}>{t('fase.buscarBaneo')}</button>
           <button className="reset primario" onClick={() => setFase('picks')}>
             {bans.length ? t('fase.aPicks') : t('fase.sinBaneosAPicks')}
           </button>
-          <BanSuggestions t={t} items={banIdeas} onBan={(h) => setBanNames((p) => [...p, h.name])} />
+          {/* Con los diez marcados no hay más que banear: el undécimo no existe. */}
+          <BanSuggestions t={t} items={bans.length < 10 ? banIdeas : []}
+                          onBan={(h) => setBanNames((p) => (p.length < 10 && !p.includes(h.name) ? [...p, h.name] : p))} />
         </aside>
         <Footer
           t={t}

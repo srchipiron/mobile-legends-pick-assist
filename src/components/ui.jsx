@@ -174,7 +174,7 @@ export function HeroSheet({
       {multi && !q && sugeridos.length > 0 && (
         <div className="sheet-sugeridos">
           <span className="side-label">{t('sheet.sugeridos')}</span>
-          {sugeridos.filter((h) => !taken.has(h.name)).slice(0, 6).map((h) => (
+          {sugeridos.filter((h) => !taken.has(h.name)).slice(0, 10).map((h) => (
             <button key={h.name} className={`chip ${marcado(h) ? 'elegido' : ''}`} onClick={() => elegir(h)}>
               <Imagen src={`./heroes/${h.id}.jpg`} alt={h.name} className="grid-cara" tam={22} />
               {h.name}
@@ -300,6 +300,28 @@ export function RankPicker({ ranks, value, onChange, t = tPorDefecto }) {
 }
 
 /** A quién banear, con el motivo cuando lo hay. */
+/**
+ * Los siguientes baneos probables (engine/baneos.js): chips con la tasa de
+ * ban, para tocar en vez de escribir. Se refresca solo al marcar uno.
+ */
+export function ProximosBaneos({ items, onBan, t = tPorDefecto }) {
+  if (!items?.length) return null;
+  return (
+    <section className="proximos">
+      <div className="side-label"><span>{t('baneos.siguientes')}</span><span>{t('baneos.segun')}</span></div>
+      <div className="equipo-chips">
+        {items.map(({ hero, banRate }) => (
+          <button key={hero.name} className="chip" onClick={() => onBan(hero)} aria-label={t('app.marcarBaneo', { nombre: hero.name })}>
+            <Imagen src={`./heroes/${hero.id}.jpg`} alt="" className="grid-cara" tam={22} />
+            {hero.name}
+            <span className="chip-pct">{Math.round(banRate * 100)}%</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function BanSuggestions({ items, onBan, t = tPorDefecto }) {
   if (!items.length) return null;
   return (

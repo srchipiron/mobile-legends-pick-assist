@@ -337,6 +337,13 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   el selector de baneos es multi-toque (`multi` en `HeroSheet`), con los
   sugeridos arriba y ordenado por tasa de ban. Si añades otro selector con
   varios toques seguidos, reutiliza ese modo en vez de cerrar y reabrir.
+- **Diez baneos en una fila de 336 px** — con `flex: 1 1 0` cada hueco
+  quedaba en 28 px: la cara (22) más la × (27, con margen negativo) no
+  caben, la × se salía del hueco, pisaba al vecino y el décimo sacaba 8 px
+  por el borde de la página. Las comprobaciones de anchura se hacían con
+  dos baneos, no con diez. Desde 1.35.0 `.side.bans .slot` lleva base 56 px
+  (dos filas de cinco) y las pruebas en navegador llenan los diez. Cuando
+  midas un desborde, llena el contenedor hasta el máximo que admite.
 - **Los baneos escondidos en «Baneos y ajustes»** — con el draft corriendo
   costaba encontrar el botón que separa baneos de picks. Desde 1.33.0 el
   draft va en dos fases (`fase` dentro de `roam-picker:draft`, `baneos` |
@@ -424,6 +431,27 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   ingestas escriben a un temporal (`--out`), `scripts/comparar-ingesta.mjs`
   compara con lo guardado y solo se copia encima si no empeora. Hay una prueba
   que falla si alguien vuelve a apuntar la ingesta directa a `public/data`.
+
+## El siguiente baneo probable
+
+Desde 1.35.0, `src/engine/baneos.js`: en la fase de baneos, los más baneados
+del rango que aún no están marcados, para tocar en vez de escribir. Es la
+`banRate` de la API sin más, y está medido por qué no hay más:
+
+- `banRate` es por partida (los 133 suman 8,85 con diez baneos por partida):
+  ordenar por ella es ordenar por la probabilidad de caer baneado. Los ocho
+  primeros de Gloria pasan del 50% (Hirara 80%, Belerick 65%, Eudora 65%...).
+- La co-ocurrencia entre baneos SÍ añade algo en las 527 partidas pro con los
+  diez baneos: dados cinco, acertar los otros cinco con diez candidatos sube
+  del 57% al 62% en la misma época (del 42% al 58% mezclando épocas, que es
+  deriva del meta, no asociación). Pero los profesionales banean OTRA COSA:
+  el top 10 de `banRate` de Gloria cubre solo el 26,5% de sus baneos (top 20,
+  el 37%). Llevar la co-ocurrencia pro a un draft de Gloria sería medir en
+  una población y aplicar en otra. `scripts` no lo lleva: la medida está en
+  el scratch de la sesión y se resume aquí.
+- Lo que sí serviría son los baneos de las partidas de Javi: apuntarlos con
+  cada partida (`apuntar` no guarda `bans` hoy) daría con el tiempo la
+  co-ocurrencia de SU rango. Es un cambio de persistencia: se propone.
 
 ## El consejo para los compañeros
 
