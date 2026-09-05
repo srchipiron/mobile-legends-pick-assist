@@ -425,6 +425,20 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   compara con lo guardado y solo se copia encima si no empeora. Hay una prueba
   que falla si alguien vuelve a apuntar la ingesta directa a `public/data`.
 
+## El consejo para los compañeros
+
+Desde 1.34.0, `src/engine/equipo.js`. Con algún enemigo a la vista, para cada
+línea que tu equipo aún no cubre (`lineasOcupadas` con tus aliados, el mismo
+reparto que con los enemigos) se ejecuta `rankRoamers` sobre el pool de esa
+línea, con tu nº1 como aliado ya elegido, sin maestría (el componente queda
+plano al normalizar) y con el rival de ESA línea a peso doble. No hay pesos
+nuevos ni constantes nuevas: es el motor de tu pick apuntando a otra línea.
+Nunca aconseja tu línea, ni a nadie cogido o baneado. Va plegado bajo la
+estimación para no empujar tu primera recomendación fuera de pantalla, y
+tocar una opción la mete en tu equipo. Prueba con datos reales: cuatro líneas
+sin aliados, la jungla se cierra con Fanny aliada, el baneado no sale, el
+consejo cambia entre tres asesinos y tres magos (verificado por mutación).
+
 ## Simular lo que falta por salir
 
 Desde 1.27.0, `src/engine/robustez.js`. Con el draft a medias se simulan

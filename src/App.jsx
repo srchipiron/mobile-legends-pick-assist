@@ -9,7 +9,8 @@ import { simularFinales } from './engine/robustez.js';
 import { estimarVictoria } from './engine/estimacion.js';
 import { sanear } from './engine/perfil.js';
 import { analizarComposicion } from './engine/composicion.js';
-import { Side, HeroSheet, Pick, Legend, MasteryEditor, RankPicker, BanSuggestions, Footer, SelfTest, RegistroPartida, SelectorDeLinea, Analisis, AvisoLegal, Perfil, HistorialPartidas, Build, Estimacion, Composicion, Imagen } from './components/ui.jsx';
+import { aconsejarEquipo } from './engine/equipo.js';
+import { Side, HeroSheet, Pick, Legend, MasteryEditor, RankPicker, BanSuggestions, Footer, SelfTest, RegistroPartida, SelectorDeLinea, Analisis, AvisoLegal, Perfil, HistorialPartidas, Build, Estimacion, Composicion, Imagen, Equipo } from './components/ui.jsx';
 
 // OJO: estas claves siguen diciendo 'roam-picker' aunque la app se llame ya
 // Mobile Legends Pick Assist. NO se renombran: el almacenamiento del navegador
@@ -285,6 +286,16 @@ export default function App() {
       ? estimarVictoria({ allies, yo: ranked[0].hero, enemies, meta: metaCtx, mastery: maestriaUsada })
       : null),
     [ranked, allies, enemies, metaCtx, maestriaUsada],
+  );
+
+  // Qué pueden coger tus compañeros en las líneas abiertas, contigo dentro
+  // (tu nº1). Solo con algún enemigo a la vista: sin rival no es un consejo
+  // contra nadie, es el meta por línea, y eso no ayuda a decidir.
+  const consejos = useMemo(
+    () => (ranked[0] && enemies.length
+      ? aconsejarEquipo({ allHeroes, lineas, frecuencias, miLinea: linea, yo: ranked[0].hero, enemies, allies, bans, meta: metaCtx })
+      : []),
+    [ranked, allHeroes, lineas, frecuencias, linea, enemies, allies, bans, metaCtx],
   );
 
   const analisis = useMemo(
@@ -573,6 +584,12 @@ export default function App() {
             la primera pantalla. */}
         <Analisis frases={analisis} t={t} />
         <Estimacion est={estimacion} yo={ranked[0]?.hero} t={t} />
+        <Equipo
+          consejos={consejos}
+          yo={ranked[0]?.hero}
+          onElegir={(h) => setAllyNames((p) => (p.length < 4 && !p.includes(h.name) ? [...p, h.name] : p))}
+          t={t}
+        />
 
         {ranked.slice(0, 8).map((r, i) => (
           <Pick

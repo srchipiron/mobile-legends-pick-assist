@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 1.34.0
+
+- La app aconseja también qué pueden coger tus compañeros. Con algún enemigo
+  a la vista, bajo la estimación aparece «Para tus compañeros», plegado:
+  para cada línea que tu equipo aún no cubre, tres opciones contra ese
+  equipo, con su rival de línea y el porqué de la primera. Es el mismo motor
+  que decide tu pick, contigo ya dentro (tu nº1) y sin maestría, porque no
+  sabemos con qué es bueno cada compañero. Toca una opción cuando un
+  compañero la coja y entra en tu equipo.
+
 ## 1.33.0
 
 - El draft va en dos fases, sin mezclar: primero los baneos, después los

@@ -1149,6 +1149,53 @@ export function Estimacion({ est, yo, t = tPorDefecto }) {
 }
 
 /**
+ * Qué pueden coger tus compañeros en las líneas que quedan abiertas (ver
+ * engine/equipo.js). Plegado por defecto: tu pick es lo primero y esto no
+ * puede empujarlo fuera de la primera pantalla del móvil. Cada opción se
+ * toca para meterla en tu equipo cuando un compañero la coja.
+ */
+export function Equipo({ consejos, yo, onElegir, t = tPorDefecto }) {
+  if (!consejos?.length || !yo) return null;
+  return (
+    <details className="equipo">
+      <summary>
+        <span>{t('equipo.titulo')}</span>
+        <span className="estimacion-vistos">{t('equipo.lineas', { n: consejos.length })}</span>
+      </summary>
+      <p className="equipo-pista">{t('equipo.con', { yo: yo.name })}</p>
+      {consejos.map((c) => {
+        const mejor = c.sugerencias[0];
+        const motivo = mejor?.reasons?.[0];
+        return (
+          <div className="equipo-linea" key={c.linea}>
+            <span className="equipo-nombre">
+              {t(`linea.${c.linea}`)}
+              {c.rival ? <span className="inferred">{t('equipo.contra', { rival: c.rival })}</span> : null}
+            </span>
+            <div className="equipo-chips">
+              {c.sugerencias.map((s, i) => (
+                <button
+                  key={s.hero.name}
+                  className={`chip ${i === 0 ? 'mejor' : ''}`}
+                  onClick={() => onElegir?.(s.hero)}
+                  aria-label={t('equipo.anadir', { nombre: s.hero.name })}
+                  title={t('equipo.anadir', { nombre: s.hero.name })}
+                >
+                  <Imagen src={`./heroes/${s.hero.id}.jpg`} alt="" className="grid-cara" tam={22} />
+                  {s.hero.name}
+                </button>
+              ))}
+            </div>
+            {motivo && <p className="equipo-motivo">{mejor.hero.name}: {t(motivo.clave, motivo.params)}</p>}
+          </div>
+        );
+      })}
+      <p className="build-nota">{t('equipo.nota')}</p>
+    </details>
+  );
+}
+
+/**
  * Qué tiene cada equipo: de qué pega y si hay primera línea, control e
  * inicio. Lo que se mira antes que nada en un draft, en una tira.
  */

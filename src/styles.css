@@ -343,6 +343,29 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   border: 1px solid var(--ban); opacity: 0.7;
 }
 .bans-resumen .fase-cambiar { margin-left: auto; color: var(--gold); }
+
+/* ---------- consejos para los compañeros, línea a línea ---------- */
+
+.equipo {
+  border: 1px solid var(--line); border-radius: var(--r); background: var(--panel);
+  padding: 8px 12px; margin-bottom: 10px;
+}
+.equipo > summary {
+  list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.14em; font-size: 11px; color: var(--muted);
+  padding: 4px 0;
+}
+.equipo > summary::-webkit-details-marker { display: none; }
+.equipo[open] > summary { color: var(--text); }
+.equipo-pista { color: var(--muted); font-size: 12px; margin: 4px 0 8px; line-height: 1.4; }
+.equipo-linea { margin-top: 10px; }
+.equipo-nombre {
+  display: block; font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.12em;
+  font-size: 11px; color: var(--muted);
+}
+.equipo-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.chip.mejor { border-color: var(--gold); color: var(--gold); }
+.equipo-motivo { font-size: 12px; color: var(--muted); margin: 4px 0 0; line-height: 1.4; }
 .ban-row {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 7px 0; font-size: 13px;

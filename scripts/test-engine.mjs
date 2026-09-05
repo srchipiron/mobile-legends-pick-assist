@@ -1456,6 +1456,62 @@ test('un 422 se reintenta con menos parámetros en vez de perderlo todo', async 
   }
 });
 
+test('el consejo para los compañeros cubre las líneas abiertas y responde al equipo enemigo', async () => {
+  const { aconsejarEquipo } = await import('../src/engine/equipo.js');
+  const { indiceDeLineas, frecuenciaDeRoles } = await import('../src/engine/rival-de-linea.js');
+  const { poolDeLinea, LINEAS, indexByName } = await import('../src/engine/score.js');
+  const meta = JSON.parse(readFileSync(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8'));
+  if (!(meta.heroes ?? []).length || !meta.counters) return;
+  const todos = mergeCatalog(cat.heroes, meta.heroes);
+  const idx = indiceDeLineas(meta.heroes);
+  const fr = frecuenciaDeRoles(meta.heroes);
+  const M = { stats: indexByName(meta.stats), counters: indexByName(meta.counters, 2), synergies: indexByName(meta.synergies, 2), patchAvgWinRate: meta.patchAvgWinRate };
+  const pools = Object.fromEntries(LINEAS.map((l) => [l, poolDeLinea(todos, idx, l)]));
+  if (LINEAS.some((l) => pools[l].length < 10)) return;
+  const H = (n) => todos.find((h) => h.name === n);
+  const base = { allHeroes: todos, lineas: idx, frecuencias: fr, miLinea: 'roam', yo: H('Khufra'), meta: M };
+
+  // 1. Cuatro líneas abiertas sin aliados; nunca la mía.
+  const solo = aconsejarEquipo({ ...base, enemies: [H('Layla')] });
+  eq(solo.length, 4, `líneas aconsejadas: ${solo.map((c) => c.linea)}`);
+  ok(!solo.some((c) => c.linea === 'roam'), 'aconseja para mi propia línea');
+  for (const c of solo) {
+    ok(c.sugerencias.length === 3, `${c.linea}: ${c.sugerencias.length} sugerencias en vez de 3`);
+    for (const s of c.sugerencias) {
+      ok(pools[c.linea].some((h) => h.name === s.hero.name), `${s.hero.name} no juega ${c.linea} y se aconseja ahí`);
+      ok(s.hero.name !== 'Khufra' && s.hero.name !== 'Layla', `aconseja a alguien ya cogido: ${s.hero.name}`);
+    }
+  }
+  // Layla es tiradora: el rival de la línea de oro es ella, y ahí no se aconseja a nadie contra nadie más.
+  const oro = solo.find((c) => c.linea === 'gold');
+  eq(oro?.rival, 'Layla', `rival de oro: ${oro?.rival}`);
+
+  // 2. Un aliado que ya cubre una línea la cierra: Fanny ocupa la jungla.
+  const conJungla = aconsejarEquipo({ ...base, enemies: [H('Layla')], allies: [H('Fanny')] });
+  ok(!conJungla.some((c) => c.linea === 'jungle'), 'sigue aconsejando jungla con Fanny en el equipo');
+  ok(!conJungla.flatMap((c) => c.sugerencias).some((s) => s.hero.name === 'Fanny'), 'aconseja al aliado que ya está');
+  // Y un baneado no sale por ninguna línea.
+  const baneado = conJungla.flatMap((c) => c.sugerencias)[0]?.hero;
+  const sinEl = aconsejarEquipo({ ...base, enemies: [H('Layla')], allies: [H('Fanny')], bans: [baneado] });
+  ok(!sinEl.flatMap((c) => c.sugerencias).some((s) => s.hero.name === baneado.name), `aconseja al baneado ${baneado.name}`);
+
+  // 3. Con cuatro aliados no queda línea que aconsejar.
+  const lleno = aconsejarEquipo({ ...base, enemies: [H('Layla')], allies: [H('Fanny'), H('Layla'), H('Pharsa'), H('Chou')].filter(Boolean) });
+  ok(lleno.length <= 1, `con el equipo lleno sigue aconsejando ${lleno.length} líneas`);
+
+  // 4. Responde al equipo enemigo: contra tres asesinos móviles y contra tres
+  //    magos estáticos el nº1 de alguna línea cambia. Si no, no es un consejo
+  //    contra nadie: es el meta por línea.
+  const contraA = aconsejarEquipo({ ...base, enemies: ['Fanny', 'Ling', 'Lancelot'].map(H).filter(Boolean) });
+  const contraB = aconsejarEquipo({ ...base, enemies: ['Pharsa', 'Layla', 'Eudora'].map(H).filter(Boolean) });
+  const tops = (cs) => cs.map((c) => `${c.linea}:${c.sugerencias[0]?.hero.name}`).join(' ');
+  ok(tops(contraA) !== tops(contraB), `mismo consejo contra asesinos que contra magos: ${tops(contraA)}`);
+
+  // 5. Sin línea propia o sin héroes, nada (y sin reventar).
+  eq(aconsejarEquipo({ ...base, miLinea: null, enemies: [H('Layla')] }).length, 0, 'aconseja sin saber mi línea');
+  eq(aconsejarEquipo({ allHeroes: [], miLinea: 'roam' }).length, 0, 'aconseja sin héroes');
+});
+
 test('la ingesta entera recorre todos los endpoints contra una API simulada', async () => {
   // La prueba de arriba corre con la API caída, así que fetchEquipo,
   // fetchBuilds, fetchFichas y fetchRelations devuelven antes de ejecutarse:
