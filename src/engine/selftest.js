@@ -524,6 +524,12 @@ export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, maste
   // ---------- partidas apuntadas ----------
   seccion('TUS PARTIDAS');
   const reg = resumen(partidas, mastery);
+  if (!env.sinDatosPersonales) {
+    // Desde 1.36.0 las partidas guardan sus baneos: es lo que alimenta el
+    // «siguiente baneo probable» con la co-ocurrencia de TU rango.
+    const conBaneos = (partidas ?? []).filter((p) => Array.isArray(p.bans) && p.bans.length).length;
+    lineas.push(`Partidas con baneos apuntados: ${conBaneos} de ${(partidas ?? []).length} (co-ocurrencia de baneos de tu rango)`);
+  }
   // ¿La probabilidad estimada se parece a lo que pasa? Solo con partidas que
   // llevaran la estimación delante. Mientras no haya 20 es una línea; con 20 o
   // más y peor que una moneda, es un aviso: el modelo no sirve para ti.

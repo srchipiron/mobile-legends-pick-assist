@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 1.36.0
+
+- Cada partida que apuntas guarda los baneos que había en el draft, y el
+  «siguiente baneo probable» aprende de ellos: con baneos ya marcados, sube
+  lo que en tus partidas ha caído junto a ellos. Sin historial manda la tasa
+  de ban de tu rango, como antes, y el ajuste es continuo: una partida suelta
+  mueve poco. El diagnóstico dice cuántas partidas llevan baneos apuntados.
+  Los baneos viajan dentro del código del perfil al cambiar de dispositivo.
+
 ## 1.35.0
 
 - En la fase de baneos la app te enseña el siguiente baneo probable para

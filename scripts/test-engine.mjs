@@ -1470,6 +1470,33 @@ test('el siguiente baneo probable es el más baneado del rango que aún no está
   // Lo cogido por cualquier lado no se propone.
   eq(nombres(proximosBaneos(heroes, { meta, enemies: [heroes[4]], allies: [heroes[1]], n: 10 })), 'A,C', 'propone a un héroe ya cogido');
   ok(proximosBaneos(heroes, { meta: {}, n: 10 }).length === 0, 'inventa tasas sin estadísticas');
+
+  // Con tu historial: lo que en tus partidas cayó junto a lo ya marcado sube.
+  // C se banea poco en el rango (10%) pero en tus partidas SIEMPRE cae con A;
+  // con A marcada, C pasa por delante de B (60%). Sin marcar nada, o sin
+  // historial, manda la tasa de ban. Y el suavizado es continuo: una sola
+  // partida mueve poco, no salta.
+  const { coocurrenciaDeBaneos } = await import('../src/engine/baneos.js');
+  const partida = (bans, t) => ({ t, pick: 'A', gane: true, bans });
+  const muchas = coocurrenciaDeBaneos(Array.from({ length: 12 }, (_, i) => partida(['A', 'C'], i + 1)));
+  eq(muchas.N, 12, 'no cuenta las partidas con baneos');
+  eq(nombres(proximosBaneos(heroes, { meta, bans: [heroes[0]], historial: muchas, n: 3 })), 'C,X Borg,B', 'el historial no sube lo que cae junto a lo marcado');
+  eq(nombres(proximosBaneos(heroes, { meta, historial: muchas, n: 3 })), 'A,X Borg,B', 'sin nada marcado el historial cambia el orden');
+  eq(nombres(proximosBaneos(heroes, { meta, bans: [heroes[0]], historial: coocurrenciaDeBaneos([]), n: 3 })), 'X Borg,B,C', 'sin historial no manda la tasa de ban');
+  const una = coocurrenciaDeBaneos([partida(['A', 'C'], 1)]);
+  const conUna = proximosBaneos(heroes, { meta, bans: [heroes[0]], historial: una, n: 3 });
+  ok(conUna[0].hero.name === 'X Borg' && conUna.find((x) => x.hero.name === 'C').factor > 1, `una sola partida ya empuja pero no salta: ${JSON.stringify(conUna.map((x) => [x.hero.name, x.factor.toFixed(2)]))}`);
+  // Basura en bans: no cuenta ni revienta.
+  eq(coocurrenciaDeBaneos([{ bans: 'A' }, { bans: [1, null] }, { bans: ['A'] }]).N, 1, 'cuenta partidas con baneos rotos');
+
+  // Y las partidas guardan sus baneos, saneados; sin baneos no llevan el campo.
+  const { apuntar } = await import('../src/engine/registro.js');
+  const { sanear } = await import('../src/engine/perfil.js');
+  const con = apuntar([], { pick: 'A', gane: true, bans: ['Fanny', 7, '', 'Ling'], t: 5 })[0];
+  eq((con.bans ?? []).join(','), 'Fanny,Ling', `apuntar no guarda los baneos limpios: ${JSON.stringify(con)}`);
+  ok(!('bans' in apuntar([], { pick: 'A', gane: true, t: 6 })[0]), 'una partida sin baneos lleva el campo');
+  const saneadas = sanear({ partidas: [{ pick: 'A', t: 1, bans: ['Fanny', 3] }, { pick: 'B', t: 2, bans: 'Fanny' }] }).partidas;
+  eq(JSON.stringify(saneadas.map((p) => p.bans ?? null)), '[["Fanny"],null]', `sanear no limpia los baneos: ${JSON.stringify(saneadas)}`);
 });
 
 test('el consejo para los compañeros cubre las líneas abiertas y responde al equipo enemigo', async () => {

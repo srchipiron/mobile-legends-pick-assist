@@ -142,7 +142,11 @@ export function sanear(perfil) {
   }
   const partidas = (Array.isArray(perfil.partidas) ? perfil.partidas : [])
     .filter((p) => p && typeof p === 'object' && typeof p.pick === 'string' && typeof p.t === 'number')
-    .map((p) => ({ ...p, recomendados: Array.isArray(p.recomendados) ? p.recomendados : [] }));
+    .map((p) => {
+      const { bans, ...resto } = p;
+      const limpios = Array.isArray(bans) ? bans.filter((b) => typeof b === 'string' && b).slice(0, 10) : [];
+      return { ...resto, recomendados: Array.isArray(p.recomendados) ? p.recomendados : [], ...(limpios.length ? { bans: limpios } : {}) };
+    });
   return { ...perfil, mastery, partidas };
 }
 

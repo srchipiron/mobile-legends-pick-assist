@@ -449,9 +449,16 @@ del rango que aún no están marcados, para tocar en vez de escribir. Es la
   el 37%). Llevar la co-ocurrencia pro a un draft de Gloria sería medir en
   una población y aplicar en otra. `scripts` no lo lleva: la medida está en
   el scratch de la sesión y se resume aquí.
-- Lo que sí serviría son los baneos de las partidas de Javi: apuntarlos con
-  cada partida (`apuntar` no guarda `bans` hoy) daría con el tiempo la
-  co-ocurrencia de SU rango. Es un cambio de persistencia: se propone.
+- Desde 1.36.0 cada partida apuntada guarda `bans` (nombres, hasta diez;
+  `sanear` los limpia y quita el campo si queda vacío) y la co-ocurrencia se
+  mide en SU historial (`coocurrenciaDeBaneos`): dados los baneos marcados,
+  cada candidato se multiplica por la media geométrica de P(x|g)/P(x), con
+  P(x|g) = (n_xg + K·p_x)/(n_g + K) y `K_COOCURRENCIA = 2`. K se eligió en
+  el corpus pro simulando un historial de M partidas y prediciendo el resto
+  (acierto del top 10 sobre los cinco que faltan dados cinco): K=2 gana con
+  M=20 (56,9 → 58,7%), M=100 (56,8 → 62,2%) y M=200 (53,9 → 58,0%); K≥10 va
+  perdiendo lo ganado. Sin historial el factor es 1 y no hay escalón. Los
+  baneos van dentro del perfil exportado (son parte de `partidas`).
 
 ## El consejo para los compañeros
 

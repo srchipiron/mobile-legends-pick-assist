@@ -39,6 +39,11 @@ export function apuntar(partidas, entrada, tope = 500) {
     // Partida vieja, metida a mano del historial del juego. Cuenta para la
     // maestría y NO cuenta para comprobar si la app acierta: ver `esPrevia`.
     ...(entrada.previa ? { previa: true } : {}),
+    // Los baneos que había en el draft. Es lo único que permite medir la
+    // co-ocurrencia de baneos en TU rango (engine/baneos.js): la de las
+    // partidas profesionales no vale, porque allí se banea otra cosa.
+    ...(Array.isArray(entrada.bans) && entrada.bans.some((b) => typeof b === 'string' && b)
+      ? { bans: entrada.bans.filter((b) => typeof b === 'string' && b).slice(0, 10) } : {}),
   };
   if (!limpia.pick) return partidas;
   return [limpia, ...(partidas ?? [])].sort((a, b) => (b.t ?? 0) - (a.t ?? 0)).slice(0, tope);

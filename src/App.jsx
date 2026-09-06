@@ -10,7 +10,7 @@ import { estimarVictoria } from './engine/estimacion.js';
 import { sanear } from './engine/perfil.js';
 import { analizarComposicion } from './engine/composicion.js';
 import { aconsejarEquipo } from './engine/equipo.js';
-import { proximosBaneos } from './engine/baneos.js';
+import { proximosBaneos, coocurrenciaDeBaneos } from './engine/baneos.js';
 import { Side, HeroSheet, Pick, Legend, MasteryEditor, RankPicker, BanSuggestions, Footer, SelfTest, RegistroPartida, SelectorDeLinea, Analisis, AvisoLegal, Perfil, HistorialPartidas, Build, Estimacion, Composicion, Imagen, Equipo, ProximosBaneos } from './components/ui.jsx';
 
 // OJO: estas claves siguen diciendo 'roam-picker' aunque la app se llame ya
@@ -316,9 +316,11 @@ export default function App() {
 
   // Los siguientes baneos probables: lo más baneado en tu rango sin lo ya
   // marcado. Se toca en vez de escribir; al marcar uno, entra el siguiente.
+  // Con tu historial: lo que en tus partidas cayó junto a lo ya marcado.
+  const coocurrencia = useMemo(() => coocurrenciaDeBaneos(partidas), [partidas]);
   const proximos = useMemo(
-    () => (catalog && metaCtx.stats ? proximosBaneos(allHeroes, { bans, enemies, allies, meta: metaCtx, n: 10 }) : []),
-    [catalog, allHeroes, bans, enemies, allies, metaCtx],
+    () => (catalog && metaCtx.stats ? proximosBaneos(allHeroes, { bans, enemies, allies, meta: metaCtx, historial: coocurrencia, n: 10 }) : []),
+    [catalog, allHeroes, bans, enemies, allies, metaCtx, coocurrencia],
   );
 
   const lanzarTest = async () => {
@@ -396,6 +398,8 @@ export default function App() {
       pick, gane, rango: activeRank,
       recomendados: ranked.slice(0, 3).map((r) => r.hero.name),
       ...(est ? { estimacion: est.p } : {}),
+      // Los baneos del draft: de aquí sale la co-ocurrencia de TU rango.
+      bans: banNames,
     });
     setPartidas(siguiente);
     save(PARTIDAS_KEY, siguiente);
