@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 1.36.1
+
+- En «Para tus compañeros» los motivos salen con su signo, ✓ y ✗, como en
+  las tarjetas, y con lo bueno delante. Antes se cogía el primer motivo sin
+  mirar el signo y salía «X.Borg: pierde contra Selena» como si esa fuera la
+  razón para cogerlo: el nº1 de una línea puede perder un cruce y seguir
+  siendo el mejor total del pool contra los cinco.
+
 ## 1.36.0
 
 - Cada partida que apuntas guarda los baneos que había en el draft, y el

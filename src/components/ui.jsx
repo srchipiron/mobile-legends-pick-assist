@@ -1187,7 +1187,11 @@ export function Equipo({ consejos, yo, onElegir, t = tPorDefecto }) {
       <p className="equipo-pista">{t('equipo.con', { yo: yo.name })}</p>
       {consejos.map((c) => {
         const mejor = c.sugerencias[0];
-        const motivo = mejor?.reasons?.[0];
+        // Los motivos con su signo, como en las tarjetas, y lo bueno delante:
+        // coger «el primero» sin mirar el signo enseñaba «X.Borg: pierde
+        // contra Selena» como si ESA fuera la razón para cogerlo. Un nº1
+        // puede perder un cruce y seguir siendo el mejor total del pool.
+        const motivos = [...(mejor?.reasons ?? [])].sort((a, b) => (b.good ? 1 : 0) - (a.good ? 1 : 0)).slice(0, 3);
         return (
           <div className="equipo-linea" key={c.linea}>
             <span className="equipo-nombre">
@@ -1208,7 +1212,16 @@ export function Equipo({ consejos, yo, onElegir, t = tPorDefecto }) {
                 </button>
               ))}
             </div>
-            {motivo && <p className="equipo-motivo">{mejor.hero.name}: {t(motivo.clave, motivo.params)}</p>}
+            {motivos.length > 0 && (
+              <div className="equipo-motivo">
+                <span>{mejor.hero.name}</span>
+                <ul className="reasons">
+                  {motivos.map((r) => (
+                    <li key={`${r.clave}|${r.params?.e ?? r.params?.a ?? ''}`} className={r.good ? '' : 'bad'}>{t(r.clave, r.params)}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         );
       })}
