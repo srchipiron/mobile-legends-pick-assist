@@ -27,10 +27,21 @@ const ES = {
   'fase.volverBaneos': 'Cambiar',
   'fase.baneosResumen': 'Baneos {n}/{max}',
   'baneos.siguientes': 'Siguiente baneo probable',
+  'estimacion.resumen': 'Con {yo} · {n} de 10 a la vista · es un modelo, no una promesa',
+  'estimacion.corto': 'Prob. de ganar',
+  'analisis.huecoSinTapar': 'Con {yo} el equipo sigue sin {lista}.',
+  'leyenda.pro': 'Pro: picks y baneos en torneos (Liquipedia)',
+  'pie.sinCounters': 'Sin counters.',
+  'pie.rutaCounters': 'Ruta: {ruta}.',
+  'pie.noEncontrada': 'no encontrada',
+  'pie.intentos': 'Intentos: {id} por id, {nombre} por nombre, {ok} con datos.',
+  'pie.respuesta': 'Respuesta:',
+  'pie.sinDiagnostico': 'La ingesta no dejó diagnóstico: reejecútala.',
+  'pie.rutasApi': 'Rutas de héroes en la API:',
   'baneos.segun': 'por tasa de ban en tu rango',
   'app.marcarBaneo': 'Banear a {nombre}',
   'equipo.titulo': 'Para tus compañeros',
-  'equipo.lineas': '{n} líneas abiertas',
+  'equipo.lineas': '{n} {n|línea abierta|líneas abiertas}',
   'equipo.con': 'Qué pueden coger los demás contra este equipo, si tú vas con {yo}. Toca uno cuando un compañero lo coja.',
   'equipo.contra': 'contra {rival}',
   'equipo.anadir': 'Añadir {nombre} a tu equipo',
@@ -96,7 +107,7 @@ const ES = {
   'perfil.copiado': 'Copiado',
   'perfil.pegaAqui': 'Pega aquí un código',
   'perfil.importar': 'Traer esos datos',
-  'perfil.contiene': '{heroes} héroes de maestría · {partidas} partidas',
+  'perfil.contiene': '{heroes} {heroes|héroe|héroes} de maestría · {partidas} {partidas|partida|partidas}',
   'perfil.fundido': 'Listo: maestría {ma} → {md}, partidas {pa} → {pd}. No se ha borrado nada de lo que ya había.',
   'perfil.errorVacio': 'Pega un código primero.',
   'perfil.errorFormato': 'Ese código no tiene la forma de un código de perfil.',
@@ -109,9 +120,9 @@ const ES = {
   'hist.vacio': 'Todavía no has apuntado ninguna partida.',
   'hist.gane': 'Gané',
   'hist.perdi': 'Perdí',
-  'hist.seguida': 'siguiendo la app',
+  'hist.seguida': 'con la app',
   'hist.libre': 'por libre',
-  'hist.previa': 'de tu historial',
+  'hist.previa': 'historial',
   'hist.quitar': 'Quitar esta partida',
   'hist.cambiar': 'Cambiar el resultado',
   'hist.anadir': 'Añadir partidas de tu historial del juego',
@@ -131,7 +142,7 @@ const ES = {
   'veredicto.noSeVe': 'El margen se come la diferencia: todavía no se distingue de una racha. Faltan unas {faltan} partidas más siguiendo la app.',
   'veredicto.mejor': 'La diferencia ya no cabe en el azar: con este héroe y este criterio, te va mejor siguiendo la app.',
   'veredicto.peor': 'La diferencia ya no cabe en el azar, y va en tu contra: te está yendo peor siguiendo la app que por tu cuenta.',
-  'veredicto.pocas': 'Con {n} partidas apuntadas todavía no hay nada que comparar. Apunta unas cuantas más siguiendo la app.',
+  'veredicto.pocas': 'Con {n} {n|partida apuntada|partidas apuntadas} todavía no hay nada que comparar. Apunta unas cuantas más siguiendo la app.',
   'veredicto.sinReferencia': 'Rellena «Tu maestría» con tus partidas del juego: sin eso no hay winrate tuyo con el que comparar.',
   'veredicto.trampa': 'Ojo con lo que significa: tú eliges cuándo hacer caso, así que esto no es un experimento controlado. Es la mejor señal que se puede sacar sin pedirte que ignores la app a propósito, pero no es una prueba.',
 
@@ -208,9 +219,9 @@ const ES = {
   'analisis.tuWinrateMejor': 'Tu héroe está {dif} puntos por encima de {rival} este parche.',
   'analisis.suWinrateMejor': '{rival} está {dif} puntos por encima este parche. No le regales el carril.',
   'analisis.cuidadoCon': 'Cuidado con {e}: es tu peor cruce del draft ({pct}%).',
-  'analisis.pickCiego': 'Les faltan {n} picks y {yo} es de los castigables. Si puedes, espera.',
+  'analisis.pickCiego': 'Les {n|falta|faltan} {n} {n|pick|picks} y {yo} es de los castigables. Si puedes, espera.',
   'analisis.pickRobusto': 'Con lo que falta por salir, {yo} sigue siendo el nº1 en el {pct}% de los finales plausibles: pick seguro.',
-  'analisis.pickFragil': '{yo} solo sigue siendo el nº1 en el {pct}% de los finales plausibles: depende de lo que saquen en {faltan} líneas. Si puedes, espera.',
+  'analisis.pickFragil': '{yo} solo sigue siendo el nº1 en el {pct}% de los finales plausibles: depende de lo que saquen en {faltan} {faltan|línea|líneas}. Si puedes, espera.',
   'analisis.pickClaro': '{yo} le saca {puntos} puntos al siguiente. Pick claro.',
   'analisis.empatadoCon': 'Empatado con {otros}. Coge el que mejor lleves.',
   'analisis.equipoLeFalta': 'A tu equipo le falta {lista}, y {yo} tampoco lo trae.',
@@ -230,7 +241,7 @@ const ES = {
   'estimacion.aviso': 'Es un modelo sobre winrates públicos, no una promesa: cada partida que apuntes lo contrasta con lo que pasó.',
   'estimacion.calibrada': 'En tus {n} partidas con estimación: previsto {prev}%, ganadas {real}%.',
   'estimacion.brier': 'Error del modelo {brier} (una moneda: 0.250). Con ≥50% ganaste el {altas}% de {nAltas}; con menos, el {bajas}% de {nBajas}.',
-  'estimacion.faltanCalibrar': 'Faltan {n} partidas apuntadas para saber si la estimación se parece a lo que pasa.',
+  'estimacion.faltanCalibrar': '{n|Falta|Faltan} {n} {n|partida apuntada|partidas apuntadas} para saber si la estimación se parece a lo que pasa.',
   'comp.tu': 'Tu equipo',
   'comp.ellos': 'Ellos',
   'comp.fisico': 'físico',
@@ -248,6 +259,12 @@ const ES = {
   'rol.mage': 'mago',
   'rol.marksman': 'tirador',
   'rol.support': 'support',
+  'rolPlural.tank': 'tanques',
+  'rolPlural.fighter': 'luchadores',
+  'rolPlural.assassin': 'asesinos',
+  'rolPlural.mage': 'magos',
+  'rolPlural.marksman': 'tiradores',
+  'rolPlural.support': 'supports',
   'analisis.todoFisico': 'Tu equipo pega todo físico: con una armadura os apagan a los cinco. {yo} mete daño mágico.',
   'analisis.todoMagico': 'Tu equipo pega todo mágico: con resistencia mágica os apagan a los cinco. {yo} mete daño físico.',
   'analisis.faltaMagico': 'Tu equipo pega todo físico y {yo} también. Les basta con comprar armadura.',
@@ -269,8 +286,8 @@ const ES = {
   'build.sinBuild': 'Todavía no hay builds de este héroe en esta línea.',
   'build.ajusteMagica': 'De los {n} enemigos con dato, el {pct}% pega mágico y esta build no lleva defensa mágica. Plantéate {objetos}.',
   'build.ajusteFisica': 'De los {n} enemigos con dato, el {pct}% pega físico y esta build no lleva defensa física. Plantéate {objetos}.',
-  'build.ajusteCuracion': '{n} enemigos se curan ({quien}) y esta build no corta la curación. Plantéate {objetos}.',
-  'build.ajusteControl': '{n} enemigos tienen control duro ({quien}) y esta build no lo acorta. Plantéate {objetos}.',
+  'build.ajusteCuracion': '{n} {n|enemigo se cura|enemigos se curan} ({quien}) y esta build no corta la curación. Plantéate {objetos}.',
+  'build.ajusteControl': '{n} {n|enemigo tiene|enemigos tienen} control duro ({quien}) y esta build no lo acorta. Plantéate {objetos}.',
   'build.ajusteTitulo': 'Contra este draft',
   'build.ajusteAviso': 'Esto no sale de medir builds contra este draft (ese dato no existe): sale de qué trae el equipo enemigo y de lo que dice cada objeto que hace.',
   'build.objetosEnIngles': 'Los objetos van en inglés, como en los datos del juego.',
@@ -317,10 +334,27 @@ const EN = {
   'fase.volverBaneos': 'Change',
   'fase.baneosResumen': 'Bans {n}/{max}',
   'baneos.siguientes': 'Next likely ban',
+  'estimacion.resumen': 'With {yo} · {n} of 10 in sight · a model, not a promise',
+  'estimacion.corto': 'Win chance',
+  'analisis.huecoSinTapar': 'With {yo} the team still lacks {lista}.',
+  'leyenda.pro': 'Pro: picks and bans in tournaments (Liquipedia)',
+  'pie.sinCounters': 'No counters.',
+  'pie.rutaCounters': 'Route: {ruta}.',
+  'pie.noEncontrada': 'not found',
+  'pie.intentos': 'Attempts: {id} by id, {nombre} by name, {ok} with data.',
+  'pie.respuesta': 'Response:',
+  'pie.sinDiagnostico': 'The ingest left no diagnostics: rerun it.',
+  'pie.rutasApi': 'Hero routes in the API:',
+  'rolPlural.tank': 'tanks',
+  'rolPlural.fighter': 'fighters',
+  'rolPlural.assassin': 'assassins',
+  'rolPlural.mage': 'mages',
+  'rolPlural.marksman': 'marksmen',
+  'rolPlural.support': 'supports',
   'baneos.segun': 'by ban rate in your rank',
   'app.marcarBaneo': 'Ban {nombre}',
   'equipo.titulo': 'For your teammates',
-  'equipo.lineas': '{n} open lanes',
+  'equipo.lineas': '{n} open {n|lane|lanes}',
   'equipo.con': 'What the others can pick against this team, if you go {yo}. Tap one when a teammate takes it.',
   'equipo.contra': 'vs {rival}',
   'equipo.anadir': 'Add {nombre} to your team',
@@ -385,7 +419,7 @@ const EN = {
   'perfil.copiado': 'Copied',
   'perfil.pegaAqui': 'Paste a code here',
   'perfil.importar': 'Bring that data in',
-  'perfil.contiene': '{heroes} mastery heroes · {partidas} matches',
+  'perfil.contiene': '{heroes} mastery {heroes|hero|heroes} · {partidas} {partidas|match|matches}',
   'perfil.fundido': 'Done: mastery {ma} → {md}, matches {pa} → {pd}. Nothing you already had was deleted.',
   'perfil.errorVacio': 'Paste a code first.',
   'perfil.errorFormato': 'That does not look like a profile code.',
@@ -397,9 +431,9 @@ const EN = {
   'hist.vacio': 'You have not logged any match yet.',
   'hist.gane': 'Won',
   'hist.perdi': 'Lost',
-  'hist.seguida': 'followed the app',
+  'hist.seguida': 'with the app',
   'hist.libre': 'on your own',
-  'hist.previa': 'from your history',
+  'hist.previa': 'history',
   'hist.quitar': 'Remove this match',
   'hist.cambiar': 'Flip the result',
   'hist.anadir': 'Add matches from your in-game history',
@@ -416,7 +450,7 @@ const EN = {
   'veredicto.noSeVe': 'The margin swallows the difference: still not distinguishable from a streak. About {faltan} more matches following the app are needed.',
   'veredicto.mejor': 'The difference no longer fits in chance: on this evidence, you do better following the app.',
   'veredicto.peor': 'The difference no longer fits in chance, and it goes against you: you are doing worse following the app than on your own.',
-  'veredicto.pocas': 'With {n} logged matches there is nothing to compare yet. Log a few more following the app.',
+  'veredicto.pocas': 'With {n} logged {n|match|matches} there is nothing to compare yet. Log a few more following the app.',
   'veredicto.sinReferencia': 'Fill in “Your mastery” with your in-game matches: without it there is no win rate of yours to compare against.',
   'veredicto.trampa': 'Mind what this means: you choose when to follow the app, so this is not a controlled experiment. It is the best signal available without asking you to ignore the app on purpose, but it is not proof.',
 
@@ -487,9 +521,9 @@ const EN = {
   'analisis.tuWinrateMejor': 'Your hero is {dif} points above {rival} this patch.',
   'analisis.suWinrateMejor': '{rival} is {dif} points above you this patch. Do not hand over the lane.',
   'analisis.cuidadoCon': 'Watch out for {e}: your worst matchup in this draft ({pct}%).',
-  'analisis.pickCiego': 'They still have {n} picks and {yo} is punishable. Wait if you can.',
+  'analisis.pickCiego': 'They still have {n} {n|pick|picks} and {yo} is punishable. Wait if you can.',
   'analisis.pickRobusto': 'Given what is still to come, {yo} stays #1 in {pct}% of plausible draft endings: safe pick.',
-  'analisis.pickFragil': '{yo} stays #1 in only {pct}% of plausible endings: it depends on what they pick in {faltan} lanes. Wait if you can.',
+  'analisis.pickFragil': '{yo} stays #1 in only {pct}% of plausible endings: it depends on what they pick in {faltan} {faltan|lane|lanes}. Wait if you can.',
   'analisis.pickClaro': '{yo} is {puntos} points clear of the next one. Easy pick.',
   'analisis.empatadoCon': 'Tied with {otros}. Take the one you play best.',
   'analisis.equipoLeFalta': 'Your team lacks {lista}, and {yo} does not bring it either.',
@@ -509,7 +543,7 @@ const EN = {
   'estimacion.aviso': 'A model over public win rates, not a promise: every match you log checks it against what happened.',
   'estimacion.calibrada': 'Over your {n} logged matches with an estimate: predicted {prev}%, won {real}%.',
   'estimacion.brier': 'Model error {brier} (a coin: 0.250). At ≥50% you won {altas}% of {nAltas}; below it, {bajas}% of {nBajas}.',
-  'estimacion.faltanCalibrar': '{n} more logged matches to tell whether the estimate matches reality.',
+  'estimacion.faltanCalibrar': '{n} more logged {n|match|matches} to tell whether the estimate matches reality.',
   'comp.tu': 'Your team',
   'comp.ellos': 'Them',
   'comp.fisico': 'physical',
@@ -545,8 +579,8 @@ const EN = {
   'build.sinBuild': 'No builds for this hero in this lane yet.',
   'build.ajusteMagica': 'Of the {n} enemies with data, {pct}% deal magic damage and this build has no magic defence. Consider {objetos}.',
   'build.ajusteFisica': 'Of the {n} enemies with data, {pct}% deal physical damage and this build has no physical defence. Consider {objetos}.',
-  'build.ajusteCuracion': '{n} enemies heal ({quien}) and this build does not cut healing. Consider {objetos}.',
-  'build.ajusteControl': '{n} enemies have hard CC ({quien}) and this build does not shorten it. Consider {objetos}.',
+  'build.ajusteCuracion': '{n} {n|enemy heals|enemies heal} ({quien}) and this build does not cut healing. Consider {objetos}.',
+  'build.ajusteControl': '{n} {n|enemy has|enemies have} hard CC ({quien}) and this build does not shorten it. Consider {objetos}.',
   'build.ajusteTitulo': 'Against this draft',
   'build.ajusteAviso': 'This does not come from measuring builds against this draft (no such data exists): it comes from what the enemy team brings and what each item says it does.',
   'build.objetosEnIngles': 'Item names stay in English, like the game data.',
@@ -595,16 +629,24 @@ export function idiomaPorDefecto() {
  */
 export function crearT(idioma) {
   const dic = TEXTOS[idioma] ?? EN;
+  const y = idioma === 'es' ? ' y ' : ' and ';
   const t = (clave, params) => {
     const plantilla = dic[clave] ?? TEXTOS.es[clave] ?? clave;
     if (!params) return plantilla;
-    return plantilla.replace(/\{(\w+)\}/g, (_, k) => {
-      const v = params[k];
-      // Una lista de CLAVES se traduce elemento a elemento: así el motor puede
-      // decir «te falta primera línea y control» sin saber en qué idioma.
-      if (Array.isArray(v)) return v.map((x) => (typeof x === 'string' && (dic[x] ?? TEXTOS.es[x]) ? t(x) : x)).join(', ');
-      return v ?? `{${k}}`;
-    });
+    return plantilla
+      // Plural: «{n|línea|líneas}» elige por el valor de `n`. Antes salía
+      // «1 líneas abiertas» y «Les faltan 1 picks».
+      .replace(/\{(\w+)\|([^|}]*)\|([^}]*)\}/g, (_, k, uno, varios) => (Number(params[k]) === 1 ? uno : varios))
+      .replace(/\{(\w+)\}/g, (_, k) => {
+        const v = params[k];
+        // Una lista de CLAVES se traduce elemento a elemento: así el motor puede
+        // decir «te falta primera línea y control» sin saber en qué idioma.
+        if (Array.isArray(v)) {
+          const partes = v.map((x) => (typeof x === 'string' && (dic[x] ?? TEXTOS.es[x]) ? t(x) : x));
+          return partes.length > 1 ? `${partes.slice(0, -1).join(', ')}${y}${partes.at(-1)}` : (partes[0] ?? '');
+        }
+        return v ?? `{${k}}`;
+      });
   };
   return t;
 }

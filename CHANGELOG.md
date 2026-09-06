@@ -8,6 +8,37 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 1.38.0
+
+- Tu recomendación nº1 vuelve a caber en la primera pantalla del móvil. La
+  probabilidad estimada ocupa la mitad (cifra, barra y una línea con el
+  aviso; el desglose, plegado) y el consejo para los compañeros va después
+  de tu nº1, no antes. Medido en 390×844: la tarjeta pasa de asomar 156 px
+  a verse entera en todas las fases del draft.
+- El botón atrás de Android y la tecla Escape cierran cualquier hoja
+  (selector, maestría, partidas, perfil, diagnóstico, novedades, objetos,
+  línea). Instalada como app, atrás con una hoja abierta salía de la app en
+  mitad del draft.
+- En la fase de baneos los chips no se desplazan al tocar: el tocado se
+  queda en su sitio, tachado, y el candidato nuevo entra por el final. Un
+  segundo toque en el tachado lo quita. Antes el siguiente ocupaba justo el
+  hueco del tocado y un doble toque baneaba a dos.
+- Buscando un héroe, Intro elige el que EMPIEZA por lo escrito («la» daba
+  Angela; ahora Lancelot, Layla o Lapu-Lapu según lo jugados que estén).
+- Las caras vuelven cuando los datos llegan después del catálogo (antes una
+  imagen fallida no se reintentaba en toda la sesión), la fila de maestría
+  no salta de sitio al escribir, el Veredicto se desplaza con la lista de
+  partidas, y con «Ajustes» abierto en un móvil pequeño la lista de
+  recomendaciones ya no desaparece.
+- Una actualización de la app espera a que cierres la hoja que tengas
+  abierta (antes recargaba con la maestría a medias de teclear) y no
+  recarga en la primera instalación.
+- Plurales bien en los dos idiomas («1 línea abierta», «falta 1 partida»),
+  listas con «y», la frase del hueco sin tapar con texto propio, el idioma
+  se puede cambiar desde la pantalla de elegir línea, el detalle del pie y
+  la pantalla de fallo de arranque en los dos idiomas, la leyenda explica
+  qué es «Pro», y botones de 40 px donde se toca con la partida delante.
+
 ## 1.37.0
 
 - La vigilancia comprueba qué versión sirve de verdad la web publicada. Tras

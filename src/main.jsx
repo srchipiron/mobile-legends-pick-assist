@@ -20,9 +20,12 @@ class ErrorBoundary extends Component {
 
   render() {
     if (!this.state.error) return this.props.children;
+    // Sin i18n a mano: si el fallo está en el propio arranque, lo único fiable
+    // es el idioma del móvil.
+    const es = (navigator.language ?? 'es').toLowerCase().startsWith('es');
     return (
       <div className="crash">
-        <h1>La app ha fallado al arrancar</h1>
+        <h1>{es ? 'La app ha fallado al arrancar' : 'The app failed to start'}</h1>
         <p>{String(this.state.error?.message ?? this.state.error)}</p>
         <pre>{this.state.error?.stack?.split('\n').slice(0, 4).join('\n')}</pre>
         <button
@@ -32,7 +35,7 @@ class ErrorBoundary extends Component {
             location.reload();
           }}
         >
-          Empezar de cero
+          {es ? 'Empezar de cero' : 'Start over'}
         </button>
       </div>
     );

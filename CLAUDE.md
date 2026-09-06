@@ -420,6 +420,27 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   por mutación). Desde 1.32.4 la prueba recorre `t('…')`, `t(\`prefijo.${…}\`)`
   y `clave: '…'` en la interfaz y el motor. Un guardarraíl se comprueba
   rompiendo lo que vigila, no leyendo su nombre.
+- **La tarjeta nº1 fuera de la primera pantalla** — cada bloque nuevo encima
+  de las tarjetas (análisis, estimación de 141-152 px, consejo para los
+  compañeros, composición) fue empujando el nº1: medido en 390×844 asomaba
+  156 px, y en 360×640 estaba fuera en todas las fases. Desde 1.38.0 la
+  estimación es compacta (80 px) y el consejo va DESPUÉS del nº1. Hay un
+  script en el scratch (`primera-pantalla.mjs`) para medirlo; cada vez que
+  se añada algo encima de las tarjetas, medir la posición del nº1 en
+  360×640, 390×844 y 430×932 antes de subirlo.
+- **Una hoja que el botón atrás no cerraba** — instalada como app, atrás con
+  una hoja abierta salía de la app en mitad del draft: no había entrada de
+  historial que retirar. `useCerrarConAtras` (ui.jsx) mete una al abrir y
+  la retira al cerrar por botón. Toda hoja nueva la usa.
+- **`Imagen` que no se reintentaba** — `roto` se quedaba a true para siempre
+  aunque cambiara `src` (el meta llega después del catálogo y el héroe gana
+  su id), y pedía `./heroes/undefined.jpg` en el primer render. Un estado
+  derivado de una prop se resetea cuando cambia la prop.
+- **Los chips del siguiente baneo desplazándose** — al tocar uno, el
+  siguiente candidato ocupaba justo su hueco y un doble toque baneaba a dos.
+  Lo que se toca a contrarreloj no se mueve de sitio.
+- **Plurales fijos** — «1 líneas abiertas», «Les faltan 1 picks». `crearT`
+  entiende `{n|singular|plural}`; úsalo en toda frase con una cantidad.
 - **La vigilancia sin saber qué versión sirve Pages** — `diagnostico.mjs`
   pasaba `version: 'vigilancia'` y nunca pedía `version.json`: la columna
   `version` del historial decía «vigilancia» en todas las filas, y un

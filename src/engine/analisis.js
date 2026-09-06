@@ -176,7 +176,7 @@ export function analizarDraft({
     else if (faltan.length) salida.push({ tono: 'ojo', clave: 'analisis.equipoLeFalta', params: { yo: hero.name, lista: faltan } });
     const doble = composicion.mio.dobles.find((d) => d.rol === hero.role);
     if (doble) {
-      salida.push({ tono: 'ojo', clave: 'analisis.rolDoble', params: { yo: hero.name, n: doble.n, rol: [`rol.${doble.rol}`], pp: Math.abs(doble.pp).toFixed(1) } });
+      salida.push({ tono: 'ojo', clave: 'analisis.rolDoble', params: { yo: hero.name, n: doble.n, rol: [`rolPlural.${doble.rol}`], pp: Math.abs(doble.pp).toFixed(1) } });
     }
   }
   if (composicion && enemies.length >= 4) {
@@ -210,7 +210,10 @@ export function analizarDraft({
     // Mismo criterio de «cubierto» que el motor y la composición: encadenar
     // control vale como control duro, un escudo vale como peel.
     const falta = caros.find((n) => !(SATISFIES[n.tag] ?? [n.tag]).some((tg) => cubierto.has(tg)));
-    if (falta) salida.push({ tono: 'duda', clave: falta.why });
+    // Con frase propia: empujar `falta.why` (el texto de motivo de tarjeta,
+    // «no hay primera línea») salía en crudo, en minúscula y repetía el chip
+    // de la composición.
+    if (falta) salida.push({ tono: 'duda', clave: 'analisis.huecoSinTapar', params: { yo: hero.name, lista: [`comp.${falta.tag}`] } });
   }
 
   return salida.slice(0, 3);

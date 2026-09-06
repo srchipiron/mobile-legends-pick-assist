@@ -1,5 +1,5 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { rankRoamers, mergeCatalog, suggestBans, indexByName, coverage, empatados, normName, poolDeLinea, LINEAS } from './engine/score.js';
+import { Fragment, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { rankRoamers, mergeCatalog, suggestBans, indexByName, coverage, empatados, normName, poolDeLinea, LINEAS, lookup } from './engine/score.js';
 import { runSelfTest, leerEntorno } from './engine/selftest.js';
 import { apuntar, olvidar, corregir, maestriaEfectiva } from './engine/registro.js';
 import { analizarDraft } from './engine/analisis.js';
@@ -132,22 +132,39 @@ export default function App() {
     // Una sola vez: sin el pestillo, un navegador que reinstale el worker
     // podría dejar la página recargándose en bucle.
     let yaRecargado = false;
-    const alCambiar = () => {
+    // En la PRIMERA visita el worker toma el control de una página que ya es
+    // la nueva: recargar ahí era una recarga en frío para nada, y podía
+    // cortar la elección de línea del primer arranque.
+    let habiaControlador = !!navigator.serviceWorker.controller;
+    // Y con una hoja abierta (maestría a medias de teclear, un código de
+    // perfil pegado) no se recarga: se espera a que se cierre. Medido: una
+    // actualización con «Tu maestría» abierta perdía lo escrito.
+    let pendiente = false;
+    const hojaAbierta = () => !!document.querySelector('[role="dialog"]');
+    const recargar = () => {
       if (yaRecargado) return;
+      if (hojaAbierta()) { pendiente = true; return; }
       yaRecargado = true;
       window.location.reload();
+    };
+    const alCambiar = () => {
+      if (!habiaControlador) { habiaControlador = true; return; }
+      recargar();
     };
     navigator.serviceWorker.addEventListener('controllerchange', alCambiar);
 
     const preguntar = () => {
       if (document.visibilityState !== 'visible') return;
+      if (pendiente) { recargar(); return; }
       navigator.serviceWorker.getRegistration().then((r) => r?.update()).catch(() => {});
     };
     preguntar();
     document.addEventListener('visibilitychange', preguntar);
     const cadaHora = setInterval(preguntar, 60 * 60 * 1000);
+    const siPendiente = setInterval(() => { if (pendiente) recargar(); }, 15 * 1000);
 
     return () => {
+      clearInterval(siPendiente);
       navigator.serviceWorker.removeEventListener('controllerchange', alCambiar);
       document.removeEventListener('visibilitychange', preguntar);
       clearInterval(cadaHora);
@@ -443,7 +460,7 @@ export default function App() {
   if (!linea) {
     return (
       <div className="app">
-        <SelectorDeLinea lineas={LINEAS} valor={null} onElegir={setLinea} t={t} />
+        <SelectorDeLinea lineas={LINEAS} valor={null} onElegir={setLinea} t={t} idioma={idioma} onIdioma={setIdioma} idiomas={IDIOMAS} />
         <AvisoLegal t={t} idioma={idioma} onIdioma={setIdioma} idiomas={IDIOMAS} />
       </div>
     );
@@ -463,8 +480,10 @@ export default function App() {
           <p className="fase-pista">{t('fase.baneosPista')}</p>
           <Side t={t} title={t('app.baneados')} kind="bans" picks={bans} max={10}
                 onAdd={() => setSheet('ban')} onRemove={remove(setBanNames)} />
-          <ProximosBaneos t={t} items={bans.length < 10 ? proximos.slice(0, 8) : []}
-                          onBan={(h) => setBanNames((p) => (p.length < 10 && !p.includes(h.name) ? [...p, h.name] : p))} />
+          <ProximosBaneos t={t} items={proximos} bans={bans} visibles={bans.length < 10 ? 8 : 0}
+                          tasaDe={(n) => lookup(metaCtx.stats, n)?.banRate ?? null}
+                          onBan={(h) => setBanNames((p) => (p.length < 10 && !p.includes(h.name) ? [...p, h.name] : p))}
+                          onQuitar={remove(setBanNames)} />
           <button className="reset" onClick={() => setSheet('ban')}>{t('fase.buscarBaneo')}</button>
           <button className="reset primario" onClick={() => setFase('picks')}>
             {bans.length ? t('fase.aPicks') : t('fase.sinBaneosAPicks')}
@@ -600,23 +619,29 @@ export default function App() {
             la primera pantalla. */}
         <Analisis frases={analisis} t={t} />
         <Estimacion est={estimacion} yo={ranked[0]?.hero} t={t} />
-        <Equipo
-          consejos={consejos}
-          yo={ranked[0]?.hero}
-          onElegir={(h) => setAllyNames((p) => (p.length < 4 && !p.includes(h.name) ? [...p, h.name] : p))}
-          t={t}
-        />
 
+        {/* TU pick primero; el consejo para los demás va después de él.
+            Medido: encima empujaba la tarjeta nº1 fuera de la primera
+            pantalla en un móvil de 390×844. */}
         {ranked.slice(0, 8).map((r, i) => (
-          <Pick
-            key={r.hero.name}
-            result={r}
-            index={i}
-            t={t}
-            stat={metaCtx.stats?.[normName(r.hero.name)]}
-            pro={pro?.heroes?.[r.hero.name] ?? null}
-            onBuild={meta?.builds ? setVerBuild : null}
-          />
+          <Fragment key={r.hero.name}>
+            <Pick
+              result={r}
+              index={i}
+              t={t}
+              stat={metaCtx.stats?.[normName(r.hero.name)]}
+              pro={pro?.heroes?.[r.hero.name] ?? null}
+              onBuild={meta?.builds ? setVerBuild : null}
+            />
+            {i === 0 && (
+              <Equipo
+                consejos={consejos}
+                yo={r.hero}
+                onElegir={(h) => setAllyNames((p) => (p.length < 4 && !p.includes(h.name) ? [...p, h.name] : p))}
+                t={t}
+              />
+            )}
+          </Fragment>
         ))}
 
         <Legend t={t} />
