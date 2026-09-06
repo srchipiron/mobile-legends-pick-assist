@@ -101,12 +101,20 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const cache = arg('--detalles', null);
   // La base sale de lo que la ingesta descubrio, no de una URL escrita aqui.
   const baseDescubierta = String(meta.diagnostics?.base ?? '').replace(/^[A-Z]+ /, '') || 'https://arena-hv.fastapicloud.dev';
+  // Desde 1.37.0 la ingesta guarda la speciality de los 133 en roam-meta.json:
+  // 133 peticiones menos, y ninguna ruta escrita a mano que caduque. La
+  // descarga queda solo para un fichero de antes de esa versión.
+  const minimo = Math.floor((meta.heroes ?? []).length / 2);
+  const delMeta = Object.fromEntries((meta.heroes ?? [])
+    .filter((h) => Array.isArray(h?.speciality) && h.speciality.length)
+    .map((h) => [h.name, h.speciality]));
   const det = cache
     ? JSON.parse(readFileSync(cache, 'utf8'))
-    : await descargarDetalles(meta.heroes ?? [], arg('--base', baseDescubierta));
+    : Object.keys(delMeta).length >= minimo
+      ? delMeta
+      : await descargarDetalles(meta.heroes ?? [], arg('--base', baseDescubierta));
   // Con la API caida `det` sale vacio y la tabla, vacia: mantenimiento.yml
   // proponia un pull request borrando SPECIALITY_TAGS entera.
-  const minimo = Math.floor((meta.heroes ?? []).length / 2);
   if (Object.keys(det).length < minimo) {
     console.error(`Solo ${Object.keys(det).length} héroes con speciality (mínimo ${minimo}): la API no responde, no se deriva nada.`);
     process.exit(1);

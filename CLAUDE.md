@@ -420,6 +420,29 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   por mutación). Desde 1.32.4 la prueba recorre `t('…')`, `t(\`prefijo.${…}\`)`
   y `clave: '…'` en la interfaz y el motor. Un guardarraíl se comprueba
   rompiendo lo que vigila, no leyendo su nombre.
+- **La vigilancia sin saber qué versión sirve Pages** — `diagnostico.mjs`
+  pasaba `version: 'vigilancia'` y nunca pedía `version.json`: la columna
+  `version` del historial decía «vigilancia» en todas las filas, y un
+  despliegue «completado» que Pages no llegaba a servir era invisible al
+  bot. Desde 1.37.0 lo pide sin caché y lo compara con `package.json`: FALLO
+  tras un despliegue (`GITHUB_EVENT_NAME=workflow_run`), aviso en las
+  programadas. Lo que el botón del móvil ya comprobaba, el bot no.
+- **La vigilancia disparada por despliegues cancelados o fallidos** — con
+  `cancel-in-progress` en el despliegue, cada push en ráfaga «completaba» un
+  despliegue cancelado, la vigilancia miraba la versión anterior (sana) y
+  cerraba la incidencia abierta; y eran ~20 corridas al día, que llenaban
+  la ventana de 40 filas del historial con repeticiones. Filtro
+  `conclusion == 'success'`, como ya tenía `deploy.yml`.
+- **El comparador de la ingesta como trinquete hacia abajo** — cada corrida se
+  aceptaba si no bajaba del 90% de la ANTERIOR ACEPTADA, y esa pasaba a ser
+  la referencia. Los recuentos de tamaño conocido se comparan también con el
+  máximo del historial de salud (`FIJAS` en `comparar-ingesta.mjs`).
+- **Guardas por texto, no por forma** — `run: echo "antes: node
+  scripts/comparar-ingesta.mjs"` pasaba la prueba del guardarraíl, `h > 7200`
+  pasaba la del tope de antigüedad, quitar `check-css` de `npm test` pasaba
+  todo, y `check-order.mjs` solo veía `const` (un `let` usado antes es el
+  mismo TDZ). Si una prueba busca una cadena, pregúntate si la cadena en un
+  comentario o en un echo también la pasaría.
 - **Una corrida degradada commiteada por el bot de datos** — `update-data.yml`
   ejecutaba la ingesta encima de `public/data` y commiteaba lo que saliera. Salió
   una corrida con los 133 héroes SIN `lanes` y SIN `role`, y con counters de 34
@@ -897,6 +920,8 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
 - **`candidatos` ausente en el `ctx` de la simulación** (`robustez.js`): el
   riesgo de contrapick solo entra en la nota con `cegera > 0`, y los finales
   simulados tienen los cinco enemigos, así que da igual que no llegue.
+- **`cache: npm` en `setup-node`** (quitada en 1.37.0): redundante con la
+  caché de `node_modules` y restauraba `~/.npm` en cada corrida para nada.
 - **`medir-rival.mjs || true` en `pro.yml`**: solo escribe al log y su
   resultado no entra en ningún fichero, así que un fallo suyo no deja nada a
   medias; el caso de `medir-pro` era distinto porque su salida SÍ entra en

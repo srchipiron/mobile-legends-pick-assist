@@ -378,8 +378,15 @@ async function main() {
   await mkdir(dirname(outPartidas), { recursive: true });
   await writeFile(outPartidas, todas.map((p) => JSON.stringify(p)).join('\n') + (todas.length ? '\n' : ''));
 
+  // La fecha solo avanza si hay partidas nuevas: si no, pro.json cambiaba
+  // cada lunes solo por la fecha y disparaba un despliegue sin nada nuevo.
+  // Mismo criterio que la ingesta de meta desde 1.31.1.
+  let generatedAt = new Date().toISOString();
+  if (todas.length === previas.length) {
+    try { generatedAt = JSON.parse(await readFile(resolve(ROOT, 'public/data/pro.json'), 'utf8')).generatedAt ?? generatedAt; } catch { /* primera corrida */ }
+  }
   const resumen = {
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     ...resumirPro(todas, heroes, { desde: ventana }),
     total: todas.length,
     peticiones: cliente.hechas,

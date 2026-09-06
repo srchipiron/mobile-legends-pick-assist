@@ -8,6 +8,34 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 1.37.0
+
+- La vigilancia comprueba qué versión sirve de verdad la web publicada. Tras
+  cada despliegue pide `version.json` sin caché y, si no es la que se acaba
+  de subir, abre incidencia; en las corridas programadas lo deja en aviso.
+  Antes el historial de salud decía «vigilancia» como versión en todas las
+  filas y un despliegue que no llegaba a publicarse era invisible.
+- La vigilancia solo corre tras despliegues que han publicado, no tras los
+  cancelados o fallidos (que miraban la versión anterior, sana, y cerraban
+  la incidencia abierta), y cada corrida escribe su fila del historial una
+  sola vez, sin volver a ejecutar el diagnóstico.
+- El filtro de la ingesta compara los recuentos de tamaño conocido (héroes,
+  líneas, roles, daño, cruces, parejas) también con el máximo visto en el
+  historial de salud: comparar solo con la corrida anterior era un trinquete
+  hacia abajo, diez corridas perdiendo un 9% cada una habrían dejado los
+  cruces en el 39% sin que saltara nada.
+- Todos los trabajos de GitHub llevan tope de tiempo; el despliegue ejecuta
+  `npm test` en vez de su propia lista de pruebas; las guardas de los
+  workflows exigen que la comparación sea un comando y que el tope de
+  antigüedad no pase de 72 h; `check-order` vigila también `let`. Cada
+  guarda nueva se rompió a propósito antes de fiarse de ella.
+- La ingesta guarda la «speciality» de Moonton de los 133 héroes y las
+  tablas de deducción se regeneran de ahí, sin 133 peticiones ni una ruta
+  escrita a mano; las imágenes de una corrida descartada ya no llegan a la
+  web; las partidas profesionales solo cambian de fecha si hay partidas
+  nuevas; el bot de datos no se solapa consigo mismo; el diagnóstico usa las
+  mismas escalas que el motor; README al día con las dos fases del draft.
+
 ## 1.36.1
 
 - En «Para tus compañeros» los motivos salen con su signo, ✓ y ✗, como en

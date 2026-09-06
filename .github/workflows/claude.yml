@@ -33,6 +33,8 @@ concurrency:
 
 jobs:
   claude:
+    # Tope del job: 40 turnos de agente no pueden ocupar el runner seis horas.
+    timeout-minutes: 60
     # Solo el dueño del repositorio. Sin esto, en un repositorio público
     # cualquiera podría escribir "@claude" y gastar la clave de Javi.
     if: |
@@ -60,7 +62,6 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: '20'
-          cache: npm
       # node_modules ENTERO, por hash del lockfile. La cache de npm de
       # setup-node solo guarda las descargas: medido, npm ci seguia en 3,7-4,7
       # minutos con ella (despliegue 99, vigilancia 77). Con node_modules
@@ -84,11 +85,11 @@ jobs:
           branch_prefix: claude/
           # Nada de red ni de comandos sueltos: leer, escribir y las
           # comprobaciones del proyecto. WebFetch queda fuera a propósito.
+          # En UNA linea: con el escalar plegado cada salto metia un espacio
+          # tras la coma ("Grep, Bash(npm test)") y la herramienta podia quedar
+          # sin reconocer, o sea npm test denegado en modo sin cabeza.
           claude_args: >-
-            --allowedTools "Read,Edit,Write,Glob,Grep,
-            Bash(npm test),Bash(npm run build),Bash(npm ci),
-            Bash(node scripts/diagnostico.mjs*),Bash(node scripts/test-engine.mjs),
-            Bash(git diff*),Bash(git log*),Bash(git status*)"
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(npm test),Bash(npm run build),Bash(npm ci),Bash(node scripts/diagnostico.mjs*),Bash(node scripts/test-engine.mjs),Bash(git diff*),Bash(git log*),Bash(git status*)"
             --max-turns 40
           prompt: |
             Trabajas en la app de Javi para elegir roamer en Mobile Legends.

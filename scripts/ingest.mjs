@@ -1030,13 +1030,12 @@ async function main() {
   }
 
   // La ficha de los 133: el tipo de dano hace falta para todos, y la
-  // speciality viene en la misma respuesta. Solo se guarda la speciality de
-  // los que no tienen tags escritos a mano, que son los unicos que la usan.
+  // speciality viene en la misma respuesta y se guarda para todos (el motor
+  // solo la usa en los que no tienen tags a mano; derivar-tags.mjs, en todos).
   //
   // Lo anterior se conserva heroe a heroe: el tipo de dano no cambia de un dia
   // para otro, asi que perder la peticion de un heroe no puede costarnos el
   // dato que ya teniamos.
-  const enCatalogo = new Set(heroes.heroes.map((h) => h.name));
   const danoPrevio = Object.fromEntries(
     (previous?.heroes ?? []).filter((h) => h?.damage).map((h) => [h.name, h.damage]),
   );
@@ -1054,7 +1053,10 @@ async function main() {
     const fichas = await fetchFichas(heroList);
     for (const h of heroList) {
       const f = fichas[h.name];
-      if (f?.speciality && !enCatalogo.has(h.name)) h.speciality = f.speciality;
+      // Para TODOS, no solo para los que no están en el catálogo: son 133
+      // listas cortas (5 KB) y con ellas derivar-tags.mjs no vuelve a pedir
+      // 133 fichas por una ruta escrita a mano.
+      if (f?.speciality) h.speciality = f.speciality;
       if (f?.damage) h.damage = f.damage;
       if (f?.retrato) h.retrato = f.retrato;
     }

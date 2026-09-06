@@ -1841,6 +1841,21 @@ test('una corrida de ingesta degradada no llega a los datos guardados', async ()
 
   ok(comparar(buena, buena).peores.length === 0, 'marca como peor una corrida identica');
 
+  // Trinquete hacia abajo: comparar solo con la ANTERIOR aceptada dejaba que
+  // diez corridas perdiendo un 9% cada una bajaran los cruces al 39% sin que
+  // saltara nada. Los recuentos de tamano conocido se comparan tambien con el
+  // maximo visto en el historial de salud; objetos y builds, no (varian por
+  // diseno). Y una linea rota del historial no tira la lectura.
+  const { maximosDelHistorial } = await import('./comparar-ingesta.mjs');
+  const historial = ['{"cruces":90,"heroes":10,"objetos":999}', 'esto no es json', '{"cruces":50}'].join('\n');
+  const maximos = maximosDelHistorial(historial);
+  eq(maximos.cruces, 90, `maximo de cruces del historial: ${JSON.stringify(maximos)}`);
+  ok(!('objetos' in maximos), 'los objetos no entran en los maximos fijos');
+  const menguada = { ...buena, counters: Object.fromEntries(Object.entries(buena.counters).map(([h, f]) => [h, Object.fromEntries(Object.entries(f).slice(0, 5))])) };
+  ok(comparar(menguada, menguada).peores.length === 0, 'sin historial, una corrida igual a la guardada se rechaza');
+  ok(comparar(menguada, menguada, maximos).peores.some((p) => p.clave === 'cruces' && p.antes === 90), 'no detecta que la corrida esta muy por debajo del maximo del historial');
+  ok(comparar(buena, buena, { objetos: 999 }).peores.length === 0, 'los objetos se comparan contra el historial y no deberian');
+
   const sinLineas = { ...buena, heroes: buena.heroes.map((h) => ({ ...h, lanes: [] })) };
   ok(comparar(sinLineas, buena).peores.some((p) => p.clave === 'conLinea'),
     'no detecta que la corrida nueva se ha quedado sin lineas');
@@ -1887,14 +1902,17 @@ test('los workflows que publican datos pasan por el guardarrail', async () => {
     for (const l of ingesta) {
       ok(l.includes('--out'), `${f}: la ingesta escribe directa sobre los datos buenos`);
     }
-    ok(yml.includes('scripts/comparar-ingesta.mjs'), `${f}: no compara la corrida con la guardada`);
+    // Que la comparación sea un COMANDO, no una mención: `run: echo "antes:
+    // node scripts/comparar-ingesta.mjs"` pasaba (probado por mutación).
+    ok(/^\s*(?:run:|&&)\s*node scripts\/comparar-ingesta\.mjs/m.test(yml), `${f}: no ejecuta la comparación de la corrida con la guardada`);
   }
 
   // El despliegue puede seguir adelante con los datos del repositorio si la API
   // esta caida -si no, un UPSTREAM_REQUEST_FAILED impide publicar cualquier
   // cambio de codigo-, pero NO puede publicar datos rancios sin darse cuenta.
   const deploy = readFileSync(resolve(ROOT, '.github/workflows/deploy.yml'), 'utf8');
-  ok(/h > \d+\)/.test(deploy), 'deploy.yml ya no comprueba la antiguedad de los datos');
+  const tope = deploy.match(/h > (\d+)\)/);
+  ok(tope && Number(tope[1]) <= 72, `deploy.yml ya no comprueba la antiguedad de los datos, o el tope (${tope?.[1]}) deja publicar datos de mas de tres dias`);
   ok(/cruces < \d+/.test(deploy), 'deploy.yml ya no comprueba que haya matriz de counters');
 
   // El despliegue NO vuelve a descargar si el repositorio tiene datos
@@ -1952,11 +1970,35 @@ test('los workflows que publican datos pasan por el guardarrail', async () => {
       `${f}: timeout de ${m[1]} min; lo normal son 9-10 y hace falta margen sin dejar que se cuelgue`);
   }
 
+  // Cada JOB lleva tope de tiempo: los pasos con red ya lo tenian, pero npm
+  // test (levanta un servidor), la compilacion o Pages podian colgar el runner
+  // seis horas; en la vigilancia, con concurrencia sin cancelar, eso encolaba
+  // todas las siguientes y el cron se perdia en silencio.
+  for (const f of readdirSync(resolve(ROOT, '.github/workflows')).filter((x) => x.endsWith('.yml'))) {
+    const yml = readFileSync(resolve(ROOT, `.github/workflows/${f}`), 'utf8');
+    const jobs = yml.split(/^jobs:\n/m)[1] ?? '';
+    const cabeceras = [...jobs.matchAll(/^  ([A-Za-z_-]+):\n([\s\S]*?)(?=^  [A-Za-z_-]+:\n|(?![\s\S]))/gm)];
+    ok(cabeceras.length, `${f}: no encuentro ningun job`);
+    for (const [, nombre, cuerpo] of cabeceras) {
+      const antesDePasos = cuerpo.split(/^    steps:/m)[0];
+      ok(/^    timeout-minutes:\s*\d+/m.test(antesDePasos), `${f}: el job ${nombre} no tiene timeout-minutes (puede ocupar el runner seis horas)`);
+    }
+  }
+
+  // Y «las pruebas» son UNA definicion: la de package.json. Quitar una de las
+  // cuatro comprobaciones de `npm test` pasaba (probado por mutacion) y el
+  // despliegue las llamaba a mano, asi que habia dos listas.
+  const pkg = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8'));
+  for (const script of ['check-order.mjs', 'check-css.mjs', 'check-version.mjs', 'test-engine.mjs']) {
+    ok((pkg.scripts?.test ?? '').includes(`scripts/${script}`), `npm test ya no ejecuta ${script}`);
+  }
+  const deployYml = readFileSync(resolve(ROOT, '.github/workflows/deploy.yml'), 'utf8');
+  ok(/^\s*run: npm test\s*$/m.test(deployYml), 'deploy.yml no ejecuta npm test: tiene su propia lista de pruebas');
+
   // node_modules va en cache por hash del lockfile en TODOS los workflows
   // que instalan: medido, npm ci costaba 3,7-4,7 minutos por corrida con la
   // cache de npm de setup-node (que solo guarda descargas). Y npm ci BORRA
   // node_modules antes de instalar: sin la condicion, la cache no sirve.
-  const { readdirSync } = await import('node:fs');
   const conNpmCi = readdirSync(resolve(ROOT, '.github/workflows')).filter((f) => /npm ci/.test(readFileSync(resolve(ROOT, `.github/workflows/${f}`), 'utf8')));
   ok(conNpmCi.length >= 5, `solo ${conNpmCi.length} workflows instalan: la lista de esta prueba se ha quedado corta`);
   for (const f of conNpmCi) {

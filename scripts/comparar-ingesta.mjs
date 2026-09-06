@@ -17,8 +17,10 @@
  */
 
 import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Lo que la app necesita, contado. Nada de porcentajes. */
 export function medir(datos) {
@@ -63,13 +65,38 @@ export function medir(datos) {
  */
 export const MARGEN = 0.9;
 
-export function comparar(nueva, guardada) {
+/**
+ * Recuentos con tamaño conocido (133 héroes, 133×132 cruces...). Para estos
+ * la referencia no es solo la corrida guardada sino el MÁXIMO que se ha
+ * visto en el historial de salud: comparar solo con la anterior aceptada era
+ * un trinquete hacia abajo, diez corridas perdiendo un 9% cada una dejaban
+ * los cruces en el 39% sin que saltara nada. Objetos y builds quedan fuera:
+ * varían por diseño (Moonton retira objetos, las builds cambian con el meta).
+ */
+export const FIJAS = ['heroes', 'conLinea', 'conRol', 'conDano', 'cruces', 'sinergias'];
+
+/** Máximo de cada recuento fijo en las filas de historial/salud.jsonl (líneas rotas, fuera). */
+export function maximosDelHistorial(texto) {
+  const maximos = {};
+  for (const linea of String(texto ?? '').split('\n')) {
+    if (!linea.trim()) continue;
+    let fila;
+    try { fila = JSON.parse(linea); } catch { continue; }
+    for (const clave of FIJAS) {
+      if (typeof fila?.[clave] === 'number' && fila[clave] > (maximos[clave] ?? 0)) maximos[clave] = fila[clave];
+    }
+  }
+  return maximos;
+}
+
+export function comparar(nueva, guardada, maximos = {}) {
   const a = medir(nueva);
   const b = medir(guardada);
   const peores = [];
   for (const clave of Object.keys(b)) {
-    if (b[clave] > 0 && a[clave] < b[clave] * MARGEN) {
-      peores.push({ clave, antes: b[clave], ahora: a[clave] });
+    const referencia = FIJAS.includes(clave) ? Math.max(b[clave], maximos?.[clave] ?? 0) : b[clave];
+    if (referencia > 0 && a[clave] < referencia * MARGEN) {
+      peores.push({ clave, antes: referencia, ahora: a[clave] });
     }
   }
   return { nueva: a, guardada: b, peores };
@@ -100,8 +127,13 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     process.exit(0);
   }
 
-  const { nueva: a, guardada: b, peores } = comparar(nueva, guardada);
+  // El máximo visto en el historial de salud, si está a mano (los tres
+  // workflows corren con el repositorio entero).
+  let maximos = {};
+  try { maximos = maximosDelHistorial(await readFile(resolve(ROOT, 'historial/salud.jsonl'), 'utf8')); } catch { /* sin historial */ }
+  const { nueva: a, guardada: b, peores } = comparar(nueva, guardada, maximos);
   const linea = (m) => Object.entries(m).map(([k, v]) => `${k}=${v}`).join('  ');
+  if (Object.keys(maximos).length) console.log(`máximos del historial: ${linea(maximos)}`);
   console.log(`guardada: ${linea(b)}`);
   console.log(`nueva:    ${linea(a)}`);
 

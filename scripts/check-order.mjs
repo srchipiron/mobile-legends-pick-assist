@@ -30,7 +30,9 @@ for (const file of files) {
     // las anidadas viven en su propio ámbito y no aplican.
     const declared = new Map();
     for (let i = start; i < end; i++) {
-      const m = lines[i].match(/^ {2}const\s+([A-Za-z_$][\w$]*)\s*=/);
+      // `let` también: un `let x = useMemo(...)` usado antes es el mismo TDZ y la
+      // misma pantalla en negro (probado por mutación: solo se miraba `const`).
+      const m = lines[i].match(/^ {2}(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=/);
       if (m && !declared.has(m[1])) declared.set(m[1], i);
     }
 

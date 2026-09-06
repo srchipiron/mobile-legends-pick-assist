@@ -19,6 +19,9 @@ concurrency:
 
 jobs:
   build:
+    # Tope del JOB entero: los pasos con red ya lo tenían, pero las pruebas,
+    # la compilación o la subida podían colgar el runner seis horas.
+    timeout-minutes: 30
     # Un bot que descarto su corrida (comparar-ingesta en rojo) tambien
     # "completa": sin esto se desplegaba igual, y si los datos del repo ya
     # pasaban de 24 h, con veinte minutos de ingesta para nada.
@@ -29,7 +32,6 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '20'
-          cache: npm
       # node_modules ENTERO, por hash del lockfile. La cache de npm de
       # setup-node solo guarda las descargas: medido, npm ci seguia en 3,7-4,7
       # minutos con ella (despliegue 99, vigilancia 77). Con node_modules
@@ -88,7 +90,9 @@ jobs:
         # repositorio. Lo normal medido son 9-10 minutos; 20 deja margen doble.
         # Un timeout cuenta como fallo, y el paso de abajo hace lo de siempre.
         timeout-minutes: 20
-        run: node scripts/ingest.mjs --rank glory --days 7 --out /tmp/nueva.json
+        # Las imagenes tambien a temporales: una corrida descartada dejaba sus
+        # iconos y retratos en public/ y salian en dist/ sin haber pasado el filtro.
+        run: node scripts/ingest.mjs --rank glory --days 7 --out /tmp/nueva.json --iconos /tmp/objetos --retratos /tmp/heroes
 
       - name: Elegir con qué datos se publica
         # Tres casos:
@@ -108,6 +112,9 @@ jobs:
           elif [ "${{ steps.ingesta.outcome }}" = "success" ] \
              && node scripts/comparar-ingesta.mjs /tmp/nueva.json public/data/roam-meta.json; then
             cp /tmp/nueva.json public/data/roam-meta.json
+            mkdir -p public/objetos public/heroes
+            [ -d /tmp/objetos ] && cp -n /tmp/objetos/*.png public/objetos/ 2>/dev/null || true
+            [ -d /tmp/heroes ] && cp -n /tmp/heroes/*.jpg public/heroes/ 2>/dev/null || true
             echo "Se publica con la corrida nueva."
           else
             echo "::warning::La ingesta ha fallado o resuelve menos; se publica con los datos del repositorio."
@@ -126,17 +133,12 @@ jobs:
           if (!(d.heroCount ?? 0)) { console.error('Sin estadisticas'); process.exit(1); }
           if (cruces < 1000) { console.error('Sin matriz de counters'); process.exit(1); }"
 
-      - name: Comprobar que la versión está documentada
-        run: node scripts/check-version.mjs
-
-      - name: Comprobar orden de declaraciones
-        run: node scripts/check-order.mjs src/App.jsx src/components/ui.jsx
-
-      - name: Comprobar estilos
-        run: node scripts/check-css.mjs
-
-      - name: Pruebas del motor
-        run: node scripts/test-engine.mjs
+      # UNA definicion de «las pruebas»: la de package.json. Antes el
+      # despliegue llamaba a las cuatro a mano y npm test (PR y vigilancia)
+      # podia perder una sin que nadie lo notara. Hay prueba de que npm test
+      # sigue siendo las cuatro.
+      - name: Pruebas (npm test)
+        run: npm test
 
       - name: Compilar
         env:
@@ -150,6 +152,7 @@ jobs:
 
   deploy:
     needs: build
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     environment:
       name: github-pages

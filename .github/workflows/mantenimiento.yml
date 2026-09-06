@@ -15,13 +15,15 @@ permissions:
 
 jobs:
   mantener:
+    # Tope del JOB entero: los pasos con red ya lo tenían, pero las pruebas,
+    # la compilación o Pages podían colgar el runner seis horas.
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: '20'
-          cache: npm
       # node_modules ENTERO, por hash del lockfile. La cache de npm de
       # setup-node solo guarda las descargas: medido, npm ci seguia en 3,7-4,7
       # minutos con ella (despliegue 99, vigilancia 77). Con node_modules
@@ -98,8 +100,8 @@ jobs:
         # medias el paso podia durar 44 minutos.
         timeout-minutes: 15
         run: |
-          node scripts/derivar-tags.mjs > /tmp/tablas.txt 2>/dev/null || {
-            echo "no se pudieron derivar (¿API caída?); no es un fallo"; exit 0; }
+          node scripts/derivar-tags.mjs > /tmp/tablas.txt || {
+            echo "::warning::no se pudieron derivar las tablas (mira el log de arriba); no es un fallo del código"; exit 0; }
           node - <<'JS'
           const fs = require('fs');
           const nuevas = fs.readFileSync('/tmp/tablas.txt', 'utf8');

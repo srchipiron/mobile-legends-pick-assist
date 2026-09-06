@@ -8,8 +8,17 @@ on:
 permissions:
   contents: write
 
+# Una ingesta cada vez: un workflow_dispatch solapado con el cron acababa en
+# dos commits de roam-meta.json y un rebase con conflicto (corrida perdida).
+concurrency:
+  group: datos
+  cancel-in-progress: false
+
 jobs:
   ingest:
+    # Tope del JOB entero: los pasos con red ya lo tenían, pero las pruebas,
+    # la compilación o Pages podían colgar el runner seis horas.
+    timeout-minutes: 40
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -53,5 +62,7 @@ jobs:
           # La vigilancia commitea su fila de salud varias veces al dia y la
           # ingesta tarda diez minutos: sin rebase, el push se rechaza y la
           # corrida se pierde en silencio.
-          git pull --rebase --autostash origin main
-          git push
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push && break
+            sleep 5
+          done

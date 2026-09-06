@@ -24,7 +24,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { appendFile, mkdir } from 'node:fs/promises';
 import { runSelfTest } from '../src/engine/selftest.js';
-import { mergeCatalog, indexByName, poolDeLinea, LINEAS, matchup, sinergia, densidadCounters } from '../src/engine/score.js';
+import { mergeCatalog, indexByName, poolDeLinea, LINEAS, matchup, sinergia, densidadCounters, ESCALA_CRUCE, ESCALA_PAREJA } from '../src/engine/score.js';
 import { indiceDeLineas } from '../src/engine/rival-de-linea.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -55,6 +55,21 @@ const catalog = await traer('heroes.json');
 const meta = await traer('roam-meta.json');
 // Las partidas profesionales son un extra: sin fichero, la sección lo dice.
 const pro = await traer('pro.json').catch(() => null);
+
+// Qué versión hay PUBLICADA de verdad. El botón del móvil ya lo comprueba
+// (version.json, sin caché); el bot no lo hacía: la columna `version` del
+// historial decía «vigilancia» en todas las filas, y un despliegue que
+// «completa» sin que Pages llegue a servirlo, o un service worker viejo, era
+// invisible. Tras un despliegue es un FALLO; en las corridas programadas, un
+// aviso (puede haber un despliegue en marcha).
+const versionRepo = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8')).version;
+let publicada = null;
+if (!LOCAL) {
+  try {
+    const res = await fetch(`${BASE}/version.json?t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(30000) });
+    if (res.ok) publicada = await res.json();
+  } catch { /* sin version.json: se dice abajo */ }
+}
 
 const allHeroes = mergeCatalog(catalog.heroes, meta.heroes);
 const indiceLineas = indiceDeLineas(meta.heroes);
@@ -93,7 +108,7 @@ for (const linea of LINEAS) {
     partidas: [],
     linea,
     env: {
-      version: 'vigilancia', buildTime: null, rango,
+      version: versionRepo, buildTime: null, rango,
       width: 412, height: 915, standalone: false, storage: true,
       sw: 'sin navegador', sinDatosPersonales: true,
     },
@@ -115,6 +130,18 @@ for (let i = 1; i < partes.length; i++) {
   }
 }
 console.log('');
+if (!LOCAL) {
+  const trasDespliegue = process.env.GITHUB_EVENT_NAME === 'workflow_run';
+  if (!publicada?.version) {
+    console.log('[AVISO] No se ha podido leer version.json de lo publicado: no sé qué versión sirve Pages');
+  } else if (publicada.version !== versionRepo) {
+    const texto = `Pages sirve la ${publicada.version} y el repositorio va por la ${versionRepo}`;
+    if (trasDespliegue) { console.log(`[FALLO] ${texto}: el despliegue ha terminado y lo publicado no es lo subido`); fallosTotales += 1; }
+    else console.log(`[AVISO] ${texto}: hay un despliegue pendiente o fallido`);
+  } else {
+    console.log(`[OK] Pages sirve la ${publicada.version}, la misma que el repositorio`);
+  }
+}
 console.log(`Fuente: ${LOCAL ? 'public/data (local)' : BASE}`);
 
 // ---------- historial ----------
@@ -164,7 +191,9 @@ if (rutaHistorial) {
   const fila = {
     fecha: new Date().toISOString(),
     fuente: LOCAL ? 'local' : BASE,
-    version: partes[0]?.texto.match(/Versión: ([^\n·]+)/)?.[1]?.trim() ?? null,
+    // La versión que SIRVE Pages, no la del repositorio: es lo que se vigila.
+    version: publicada?.version ?? null,
+    versionRepo,
     fallos: fallosTotales,
     avisos: partes.reduce((n, p) => n + p.avisos, 0),
     datosDe: meta.generatedAt ?? null,
@@ -179,8 +208,11 @@ if (rutaHistorial) {
       poolDeLinea(allHeroes, indiceDeLineas(meta.heroes ?? []), 'roam'),
       metaCtx.counters, allHeroes,
     ).cobertura.toFixed(4)),
-    recorteCounters: recorte((a, b) => matchup(metaCtx.counters, a, b), 0.44, 0.12),
-    recorteSinergias: recorte((a, b) => sinergia(metaCtx.synergies, a, b), 0.42, 0.16),
+    // Las MISMAS escalas que el motor: una copia a mano aquí (0.44/0.12 y
+    // 0.42/0.16) mediría otra cosa con el mismo nombre si el motor se
+    // recalibra, y la tendencia no se enteraría.
+    recorteCounters: recorte((a, b) => matchup(metaCtx.counters, a, b), ESCALA_CRUCE.base, ESCALA_CRUCE.rango),
+    recorteSinergias: recorte((a, b) => sinergia(metaCtx.synergies, a, b), ESCALA_PAREJA.base, ESCALA_PAREJA.rango),
     ruido,
     objetos: Object.keys(meta.equipment ?? {}).length,
     // Las builds, no los heroes con builds: perder dos de las tres de cada

@@ -10,6 +10,9 @@ permissions:
 
 jobs:
   pro:
+    # Tope del JOB entero: los pasos con red ya lo tenían, pero las pruebas,
+    # la compilación o Pages podían colgar el runner seis horas.
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -57,5 +60,7 @@ jobs:
           git diff --staged --quiet || git commit -m "datos: partidas profesionales $(date -u +%Y-%m-%d)"
           # Otro bot (o un push de código) puede haber movido main mientras
           # se leía Liquipedia: la primera corrida se perdió por eso.
-          git pull --rebase origin main
-          git push
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push && break
+            sleep 5
+          done

@@ -7,7 +7,7 @@ datos de partidas reales de tu rango. En español e inglés.
 Proyecto de aficionado, sin relación con Moonton. Mobile Legends: Bang Bang y sus
 héroes son marcas de sus propietarios. Tus datos no salen de tu móvil: no hay
 cuentas, ni servidor, ni seguimiento.
-PWA: se instala en la tablet desde el navegador y funciona sin conexión con los últimos datos descargados.
+PWA: se instala en el móvil desde el navegador y funciona sin conexión con los últimos datos descargados.
 
 ## Arrancar
 
@@ -27,7 +27,7 @@ npm run build       # -> dist/
 ```
 
 Sube `dist/` a GitHub Pages, Netlify o Vercel. En GitHub Pages la ruta base la pone el despliegue con la
-variable `BASE_PATH` (ver `deploy.yml` y `vite.config.js`). Desde el navegador de la tablet: menú → "Añadir a pantalla de inicio".
+variable `BASE_PATH` (ver `deploy.yml` y `vite.config.js`). Desde el navegador del móvil: menú → "Añadir a pantalla de inicio".
 
 Si quieres un APK, ver [APK.md](APK.md): se genera desde el móvil con PWABuilder, sin tocar el código.
 
@@ -40,8 +40,9 @@ así que en el draft nunca esperas a la red.
 
 La ingesta también descarga la **lista completa de héroes** con su rol, así que el catálogo escrito a
 mano nunca deja a nadie fuera: un héroe que exista en el juego y no esté en `heroes.json` entra igual,
-con los tags por defecto de su rol (`ROLE_DEFAULTS` en `src/engine/rules.js`). El workflow avisa de
-cuáles son. Escribirle sus tags propios lo hace mejor, pero es opcional, no un requisito.
+con tags deducidos de su rol y de la «speciality» de Moonton (`tagsDeducidos` en `src/engine/score.js`),
+descontados como deducidos. El workflow avisa de cuáles son. Escribirle sus tags propios lo hace
+mejor, pero es opcional, no un requisito.
 
 ## Fuente de datos
 
@@ -154,13 +155,16 @@ balanza, no gana partidas.
 
 ## Baneos
 
-En "Baneos y ajustes" hay una lista de a quién conviene banear: mezcla lo fuerte que está el héroe,
-cuánto lo banea el resto de la gente y lo mal que le va a los aliados que ya has elegido. Un toque en
-"Banear" lo saca del pool y recalcula.
+El draft va en dos fases. La primera son los baneos, solos en pantalla: diez huecos, el selector
+multi-toque, y el **siguiente baneo probable** en fichas para tocar en vez de escribir (los más
+baneados de tu rango que aún no están marcados; con tus partidas apuntadas, también lo que suele caer
+junto a lo ya marcado). Debajo, a quién conviene banear por tu equipo: lo fuerte que está el héroe,
+cuánto lo banea la gente y lo mal que le va a los aliados que ya has elegido. Un toque en «Ir a los
+picks» pasa a la segunda fase, con la tira de baneos arriba para volver.
 
 ## Lo que esto no hace
 
-- **El winrate global no es tu winrate.** Elige tu rango en "Baneos y ajustes": la ingesta descarga
+- **El winrate global no es tu winrate.** Elige tu rango en "Ajustes": la ingesta descarga
   Epic, Legend, Mythic y Glory, y el meta cambia bastante entre ellos.
 - **Los counters pesan un 40%, no más.** Están medidos como índices de cruce ya centrados, sin ruido de
   muestreo apreciable, pero un cruce no decide una partida: la fuerza general del héroe y las parejas
@@ -170,7 +174,7 @@ cuánto lo banea el resto de la gente y lo mal que le va a los aliados que ya ha
 
 ## Diagnóstico desde el móvil
 
-Botón **Diagnóstico** en "Baneos y ajustes". Ejecuta las comprobaciones contra
+Botón **Diagnóstico** en "Ajustes". Ejecuta las comprobaciones contra
 los datos que la app tiene cargados en ese momento y deja un texto para copiar
 o compartir: entorno, frescura de los datos, cobertura de winrates y counters,
 nombres que no casan, sensatez táctica del motor y si tu maestría se aplica.
