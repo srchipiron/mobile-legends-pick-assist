@@ -430,6 +430,25 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   por mutación). Desde 1.32.4 la prueba recorre `t('…')`, `t(\`prefijo.${…}\`)`
   y `clave: '…'` en la interfaz y el motor. Un guardarraíl se comprueba
   rompiendo lo que vigila, no leyendo su nombre.
+- **La referencia del Veredicto con las partidas comparadas dentro** —
+  `resumen` recibía `maestriaEfectiva(mastery, partidas)`, que lleva las
+  partidas jugadas CON la app: para un héroe sin maestría a mano la base
+  eran esas mismas partidas, la diferencia salía 0,000 y «faltan Infinity».
+  Desde 1.40.0 la referencia es la maestría manual más las partidas previas
+  (`esPrevia`), y `runSelfTest` recibe `maestriaManual` aparte de la
+  efectiva. Una comparación no puede llevar dentro lo que compara.
+- **El recorte de `metaScore` empatando a las colas** — `clamp01` a ±6 puntos
+  dejaba a 9 de 133 héroes en 0 o en 1 (Marcel 59,1 = Masha 57,7 = 1.000):
+  el nº1 cambiaba en 42 de 300 drafts de roam, justo en el 1,9σ superior.
+  La reescala min-max del ranking ya acota; un recorte antes de reescalar es
+  información destruida.
+- **«Peor que una moneda» sin margen** — comparar el Brier a secas con 0.25
+  avisaba en el 34% de los casos con un modelo perfectamente calibrado y 20
+  partidas (Brier esperado 0.24, error típico 0.05). Toda comparación de un
+  estadístico lleva su error típico o es una moneda.
+- **`sanear` fiándose de `>` con texto** — `"500" > 0` es true: la maestría
+  guardaba el texto, `tuNivel` daba 0,0000037 y la referencia «050050»
+  partidas. Coacciona con `Number` y exige `Number.isFinite`.
 - **La reescala min-max comiéndose el encogimiento de la maestría** — cada
   componente se normaliza al rango 0..1 dentro del pool, y min-max es
   invariante a escala: toda la calibración de `masteryScore` (k≈156, medido)

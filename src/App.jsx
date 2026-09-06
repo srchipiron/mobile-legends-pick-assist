@@ -359,7 +359,7 @@ export default function App() {
       } catch { /* sin red: la sección de historial lo dice */ }
 
       setTest(runSelfTest({
-        catalog, meta, metaCtx, allHeroes, roamPool, mastery: maestriaUsada, partidas,
+        catalog, meta, metaCtx, allHeroes, roamPool, mastery: maestriaUsada, maestriaManual: mastery, partidas,
         linea,
         // El draft que tienes delante, con nombres: es lo que hace falta para
         // reproducir una partida, y la captura ya no lo dice desde que los
@@ -685,7 +685,7 @@ export default function App() {
       {verHistorial && (
         <HistorialPartidas
           partidas={partidas}
-          maestria={maestriaUsada}
+          maestria={mastery}
           pool={roamPool}
           onOlvidar={(t2) => guardarPartidas(olvidar(partidas, t2))}
           onCorregir={(t2, gane) => guardarPartidas(corregir(partidas, t2, gane))}

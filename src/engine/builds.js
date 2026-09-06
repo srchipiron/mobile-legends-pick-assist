@@ -313,10 +313,17 @@ export function ajusteDefensivo(build, equipment, enemies, linea = null) {
   // A partir de aqui `lado` ya es un campo de OBJETO ('magica'/'fisica'), no
   // del perfil de dano. Ver el aviso de `amenazaEnemiga`.
   const objetos = objetosDe(equipment, build);
-  const yaLoLleva = objetos.some((o) => (o[lado] ?? 0) > 0);
+  const alternativas = mejoresDefensas(equipment, lado, linea);
+  if (!alternativas.length) return null;
+  // «Ya lleva defensa» tiene que ser defensa COMPARABLE a la que se propondría:
+  // con `> 0`, los 15 de armadura de Immortality o los 18 de unas botas
+  // callaban el aviso contra tres físicos (9 de 431 builds, medido). Umbral:
+  // la mitad de lo que da el mejor objeto propuesto.
+  const umbral = (alternativas[0][lado] ?? 0) / 2;
+  const yaLoLleva = objetos.some((o) => (o[lado] ?? 0) >= umbral);
   if (yaLoLleva) return null;
 
-  return { lado, cuotaMagica: amenaza.cuotaMagica, conDato: amenaza.conDato, alternativas: mejoresDefensas(equipment, lado, linea) };
+  return { lado, cuotaMagica: amenaza.cuotaMagica, conDato: amenaza.conDato, alternativas };
 }
 
 /**

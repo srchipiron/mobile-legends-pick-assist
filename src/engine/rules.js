@@ -10,7 +10,7 @@
 /**
  * Reglas de counter: "si el enemigo tiene el tag X, un roamer con el tag Y gana valor".
  * weight va de 0 a 1 y se multiplica por el peso global de counter.
- * El texto de `why` es el que ve el usuario, asi que va en su idioma y en plano.
+ * `why` es una CLAVE de i18n (src/i18n.js), no un texto: la interfaz lo traduce.
  */
 export const COUNTER_RULES = [
   {
@@ -96,7 +96,7 @@ export const COUNTER_RULES = [
 
 /**
  * Necesidades de composicion. Si tu equipo no cubre un tag, el roamer que lo
- * aporte sube. Si ya lo cubre de sobra, aporta menos (rendimiento decreciente).
+ * aporte sube. Si ya lo cubre, no aporta nada (compScore da cero, no «menos»).
  */
 export const TEAM_NEEDS = [
   { tag: 'engage', weight: 1.0, why: 'necesidad.engage' },
@@ -196,12 +196,14 @@ export const DANGER_RULES = [
 
 /**
  * Pesos por defecto de cada componente del score final.
- * Suman 1. Ajustables desde la app (pantalla de Ajustes).
+ * Suman 1. Ningún caller pasa `weights` hoy: se cambian aquí, midiendo antes.
  */
 /**
  * Pesos por defecto. Salen de un barrido sobre 200 drafts aleatorios, midiendo
- * tres cosas: que contra asesinos móviles gane un anti-dash, que contra héroes
- * de curación gane un antiheal, y que ningún roamer acapare las recomendaciones.
+ * tres cosas: que la recomendación cambie con el equipo enemigo, que contra
+ * héroes de curación gane un antiheal, y que ningún roamer acapare las
+ * recomendaciones (la de «contra asesinos gana un anti-dash» se retiró en 1.5.0:
+ * con la matriz completa no se sostiene, ver CLAUDE.md).
  * No son intuición: cambiarlos a ojo suele empeorar alguna de las tres.
  */
 export const DEFAULT_WEIGHTS = {

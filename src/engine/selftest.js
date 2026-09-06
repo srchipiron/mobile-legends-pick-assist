@@ -33,7 +33,7 @@ const OK = 'OK  ';
 const MAL = 'FALLO';
 const AVISO = 'AVISO';
 
-export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, mastery, partidas = [], linea = 'roam', env = {}, draft = null, historial = null, pro = null }) {
+export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, mastery, maestriaManual = null, partidas = [], linea = 'roam', env = {}, draft = null, historial = null, pro = null }) {
   const lineas = [];
   let fallos = 0;
   let avisos = 0;
@@ -409,8 +409,15 @@ export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, maste
       // fichero sin ella y el bloque de arriba simplemente no sale. Con
       // partidas de sobra (medir-pro mide a partir de 30), esa ausencia es
       // un fallo del bot, no una falta de datos.
-      check((pro.partidas ?? 0) < MINIMO_PARA_MEDIR_PRO, 'Sin medición del motor contra las partidas pro (aún hay pocas)',
-        `pro.json trae ${pro.partidas} partidas y NINGUNA medición del motor: medir-pro.mjs falló en pro.yml y el bot commiteó igual`);
+      // Solo si el bot no MIDIÓ: medir-pro escribe siempre el resumen, también
+      // con menos de 30 usables (partidas con algún slug sin mapear se
+      // descartan), y eso no es un fallo del bot.
+      if (m && (m.usables ?? 0) < MINIMO_PARA_MEDIR_PRO) {
+        lineas.push(`Medición del motor pendiente: ${m.usables ?? 0} partidas usables de ${pro.partidas} (mínimo ${MINIMO_PARA_MEDIR_PRO})`);
+      } else {
+        check((pro.partidas ?? 0) < MINIMO_PARA_MEDIR_PRO, 'Sin medición del motor contra las partidas pro (aún hay pocas)',
+          `pro.json trae ${pro.partidas} partidas y NINGUNA medición del motor: medir-pro.mjs falló en pro.yml y el bot commiteó igual`);
+      }
     }
     // Un slug que no se reconoce descarta partidas en silencio: que se vea.
     const sinMapear = Object.entries(pro.sinMapear ?? {});
@@ -512,9 +519,15 @@ export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, maste
   }
 
   if (conMaestria) {
-    const [clave] = Object.keys(mastery);
+    // Todo nombre guardado tiene que casar con el catálogo. Antes solo se
+    // miraba la PRIMERA clave y, si no casaba, no se decía nada: el mensaje
+    // «los nombres no casan» solo podía salir cuando casaban.
+    const sinCasar = Object.keys(mastery).filter((k) => !allHeroes.some((x) => normName(x.name) === normName(k)));
+    check(!sinCasar.length, 'Todos los nombres de tu maestría casan con el catálogo',
+      `Nombres de tu maestría que no casan con ningún héroe: ${sinCasar.slice(0, 6).join(', ')}`);
+    const clave = Object.keys(mastery).find((k) => !sinCasar.includes(k));
     // Las claves de la maestría van normalizadas: se busca el héroe por ahí.
-    const h = allHeroes.find((x) => normName(x.name) === normName(clave));
+    const h = clave ? allHeroes.find((x) => normName(x.name) === normName(clave)) : null;
     const nombre = h?.name ?? clave;
     if (h) {
       const sin = rankRoamers(roamPool, { meta: metaCtx }).findIndex((r) => r.hero.name === nombre);
@@ -529,7 +542,9 @@ export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, maste
 
   // ---------- partidas apuntadas ----------
   seccion('TUS PARTIDAS');
-  const reg = resumen(partidas, mastery);
+  // La referencia del Veredicto sale de la maestría MANUAL (más las partidas
+  // previas), nunca de la efectiva: esa lleva dentro las partidas comparadas.
+  const reg = resumen(partidas, maestriaManual ?? mastery);
   if (!env.sinDatosPersonales) {
     // Desde 1.36.0 las partidas guardan sus baneos: es lo que alimenta el
     // «siguiente baneo probable» con la co-ocurrencia de TU rango.
@@ -546,8 +561,10 @@ export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, maste
       lineas.push(`Estimación vs realidad: ${cal.n} partidas · previsto ${pct(cal.prevista)} · ganadas ${pct(cal.real)} · Brier ${cal.brier.toFixed(3)} (moneda 0.250)`);
       lineas.push(`  con ≥50% ganadas ${pct(cal.altas.real)} de ${cal.altas.n} · con <50% ganadas ${pct(cal.bajas.real)} de ${cal.bajas.n}`);
       if (cal.concluyente) {
-        check(cal.brier < cal.brierMoneda, 'La estimación acierta más que una moneda en tus partidas',
-          `La estimación acierta MENOS que una moneda en tus ${cal.n} partidas (Brier ${cal.brier.toFixed(3)}): no te fíes del porcentaje`, true);
+        // Con margen: sin él, el modelo perfecto disparaba el aviso un tercio
+        // de las veces con 20 partidas (Brier esperado 0.24 ± 0.05).
+        check(!cal.peorQueMoneda, `La estimación no acierta menos que una moneda en tus partidas (Brier ${cal.brier.toFixed(3)} ± ${(1.96 * cal.brierSE).toFixed(3)})`,
+          `La estimación acierta MENOS que una moneda en tus ${cal.n} partidas (Brier ${cal.brier.toFixed(3)} ± ${(1.96 * cal.brierSE).toFixed(3)}): no te fíes del porcentaje`, true);
       } else {
         lineas.push(`  faltan ${cal.faltan} partidas con estimación para juzgarla`);
       }
@@ -579,7 +596,7 @@ export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, maste
         + `${signo}${(c.dif * 100).toFixed(1)} puntos ± ${(c.margen * 100).toFixed(1)}`);
       lineas.push(c.seVe
         ? 'Esa diferencia ya se distingue del azar'
-        : `Aún no se distingue del azar: harían falta ~${c.faltan} partidas más siguiendo la app`);
+        : `Aún no se distingue del azar: harían falta ${c.faltan == null ? 'sin cifra (diferencia nula)' : `~${c.faltan}`} partidas más siguiendo la app`);
     } else if (reg.siguiendo < 5 && !reg.referencia) {
       lineas.push('Sin maestría apuntada no hay contra qué comparar: rellena "Tu maestría"');
     }

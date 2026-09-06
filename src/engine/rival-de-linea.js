@@ -1,4 +1,4 @@
-import { normName } from './score.js';
+import { normName, LINEAS } from './score.js';
 
 /**
  * Quién es el rival de TU línea en el equipo enemigo.
@@ -20,12 +20,24 @@ import { normName } from './score.js';
  * Con qué frecuencia cada rol juega cada línea, contado del listado de la API.
  * Devuelve { linea: { rol: 0..1 } }.
  */
+/**
+ * Las líneas de un héroe tal como las da la API, en minúsculas: un array, o
+ * `lane` como cadena («jungle,exp»). UNA lectura para las dos funciones de
+ * abajo: antes cada una leía a su manera y, con `Jungle` o con `lane` en
+ * cadena, la frecuencia salía vacía y la deducción del rival perdía el
+ * término de rol sin ninguna señal.
+ */
+export function lanesDe(h) {
+  if (Array.isArray(h?.lanes)) return h.lanes.map((l) => String(l).toLowerCase().trim()).filter(Boolean);
+  return String(h?.lane ?? '').toLowerCase().split(/[,/|]/).map((l) => l.trim()).filter(Boolean);
+}
+
 export function frecuenciaDeRoles(apiHeroes = []) {
   const cuenta = {};
   for (const h of apiHeroes) {
     const rol = String(h?.role ?? '').toLowerCase();
     if (!rol) continue;
-    for (const l of h?.lanes ?? []) {
+    for (const l of lanesDe(h)) {
       ((cuenta[l] ??= {})[rol] ??= 0);
       cuenta[l][rol]++;
     }
@@ -111,8 +123,6 @@ export function probabilidadDeLinea(hero, info, linea, frecuencias = {}) {
  */
 const MARGEN_PARA_HABLAR = 0.20;
 
-/** Las cinco líneas. Copia local para no importar en círculo desde score.js. */
-const LINEAS = ['roam', 'jungle', 'mid', 'gold', 'exp'];
 
 function permutaciones(arr) {
   if (arr.length <= 1) return [arr];
@@ -222,10 +232,7 @@ export function indiceDeLineas(apiHeroes = []) {
   const mapa = new Map();
   for (const h of apiHeroes) {
     if (!h?.name) continue;
-    const lanes = Array.isArray(h.lanes)
-      ? h.lanes.map((l) => String(l).toLowerCase())
-      : String(h.lane ?? '').toLowerCase().split(/[,/|]/).map((l) => l.trim()).filter(Boolean);
-    mapa.set(normName(h.name), { role: String(h.role ?? '').toLowerCase(), lanes });
+    mapa.set(normName(h.name), { role: String(h.role ?? '').toLowerCase(), lanes: lanesDe(h) });
   }
   return mapa;
 }

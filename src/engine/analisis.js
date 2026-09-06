@@ -1,10 +1,10 @@
-import { normName, matchup, perfilDeDano, tapaElHueco, CRUCE_MALO, esPickCiego, SATISFIES } from './score.js';
+import { normName, matchup, perfilDeDano, tapaElHueco, CRUCE_MALO, esPickCiego, SATISFIES, lookup } from './score.js';
 import { CUOTA_ROBUSTA } from './robustez.js';
 import { HUECOS_QUE_SE_DICEN } from './composicion.js';
 import { TEAM_NEEDS } from './rules.js';
 
 /**
- * Cuatro frases sobre el draft que tienes delante.
+ * Hasta tres frases sobre el draft que tienes delante.
  *
  * No es un resumen de lo que ya se ve en las tarjetas: es lo que NO se ve.
  * Si tu matchup de carril lo ganas o lo pierdes, quién te va a hacer daño de
@@ -28,8 +28,6 @@ import { TEAM_NEEDS } from './rules.js';
  * cruce importante y no lo dijo en el análisis, solo como etiqueta pequeña.
  */
 const MATCHUP_CLARO = 0.5 - CRUCE_MALO;
-
-const lookup = (map, name) => (map ? map[normName(name)] ?? map[name] : undefined);
 
 /**
  * ¿La simulación se hizo con ESTE draft? En la app va diferida y el ranking
@@ -204,7 +202,10 @@ export function analizarDraft({
   //    informa de nada. Es el mismo error que ya costó filtrar los motivos que
   //    le salían a todo el pool.
   //    Solo con el equipo casi completo, y solo si falta algo de lo caro.
-  if (allies.length >= 3) {
+  // Solo SIN composición: con ella, el bloque 3b ya dice «os falta X» o «X
+  // lo tapo yo» sobre los mismos tres huecos, y las dos frases salían juntas
+  // en el 15% de los drafts (medido: 227 de 1.500), desplazando a las demás.
+  if (allies.length >= 3 && !composicion) {
     const cubierto = new Set([...allies, hero].flatMap((h) => h.tags ?? []));
     const caros = [...TEAM_NEEDS].sort((a, b) => b.weight - a.weight).slice(0, 3);
     // Mismo criterio de «cubierto» que el motor y la composición: encadenar

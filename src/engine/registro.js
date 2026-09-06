@@ -72,12 +72,21 @@ export function calibracion(partidas = []) {
   const ganada = (p) => (p.gane ? 1 : 0);
   const altas = con.filter((p) => p.estimacion >= 0.5);
   const bajas = con.filter((p) => p.estimacion < 0.5);
+  const brier = media(con, (p) => (p.estimacion - ganada(p)) ** 2);
+  // Error típico del Brier: con 20 partidas es ≈0.05, y un modelo bien
+  // calibrado (p entre 35 y 65%) tiene un Brier esperado de ≈0.24: comparar
+  // el valor a secas con 0.25 avisaba «peor que una moneda» en un tercio de
+  // los casos con el modelo perfecto (simulado, 4.000 repeticiones). Se
+  // avisa solo cuando el Brier supera 0.25 por más de 1,96 errores típicos.
+  const brierSE = n > 1 ? Math.sqrt(con.reduce((acc, p) => acc + ((p.estimacion - ganada(p)) ** 2 - brier) ** 2, 0) / (n - 1) / n) : 0;
   return {
     n,
     prevista: media(con, (p) => p.estimacion),
     real: media(con, ganada),
-    brier: media(con, (p) => (p.estimacion - ganada(p)) ** 2),
+    brier,
+    brierSE,
     brierMoneda: 0.25,
+    peorQueMoneda: n >= MINIMO_PARA_CALIBRAR && brier - 1.96 * brierSE > 0.25,
     altas: { n: altas.length, real: altas.length ? media(altas, ganada) : null },
     bajas: { n: bajas.length, real: bajas.length ? media(bajas, ganada) : null },
     concluyente: n >= MINIMO_PARA_CALIBRAR,
@@ -197,7 +206,12 @@ export function resumen(partidas = [], maestria = {}) {
   const wr = (lista) => (lista.length ? lista.filter((p) => p.gane).length / lista.length : null);
 
   const wrSiguiendo = wr(con);
-  const referencia = winrateDeReferencia(maestria);
+  // La referencia es tu maestría escrita a mano más las partidas PREVIAS
+  // (las del historial del juego), nunca las que se están comparando: con
+  // `maestriaEfectiva(mastery, partidas)` entera, las partidas jugadas con la
+  // app estaban dentro de la base y la diferencia salía 0,000 para cualquier
+  // héroe sin maestría a mano, con «faltan Infinity» de propina.
+  const referencia = winrateDeReferencia(maestriaEfectiva(maestria, partidas.filter(esPrevia)));
 
   let contraReferencia = null;
   if (wrSiguiendo != null && referencia && con.length >= 5) {
@@ -216,7 +230,10 @@ export function resumen(partidas = [], maestria = {}) {
       // de miles de partidas, así que su error propio es despreciable al lado.
       margen: 1.96 * se,
       seVe: se > 0 && Math.abs(dif) > 1.96 * se,
-      faltan: Math.max(0, partidasNecesarias(wrSiguiendo, referencia.winRate) - con.length),
+      // `null` cuando la diferencia es exactamente cero: la potencia de una
+      // diferencia nula es infinita y salía «Faltan unas Infinity partidas».
+      faltan: Number.isFinite(partidasNecesarias(wrSiguiendo, referencia.winRate))
+        ? Math.max(0, partidasNecesarias(wrSiguiendo, referencia.winRate) - con.length) : null,
     };
   }
 
@@ -244,15 +261,21 @@ export function resumen(partidas = [], maestria = {}) {
  * a ese héroe, que es el 15% de la recomendación.
  */
 export function maestriaDesdeRegistro(partidas = []) {
+  // Por nombre NORMALIZADO: «X.Borg» y «X Borg» son el mismo héroe y se
+  // sumaban por separado, y luego `maestriaEfectiva` se quedaba con la mitad.
   const cuenta = new Map();
   for (const p of partidas) {
-    const c = cuenta.get(p.pick) ?? { games: 0, wins: 0 };
+    const k = normName(p.pick);
+    if (!k) continue;
+    // Se agrupa por la clave normalizada y se etiqueta con la primera grafía
+    // vista: quien lea esto por nombre crudo sigue encontrándolo.
+    const c = cuenta.get(k) ?? { name: p.pick, games: 0, wins: 0 };
     c.games++;
     if (p.gane) c.wins++;
-    cuenta.set(p.pick, c);
+    cuenta.set(k, c);
   }
   return Object.fromEntries(
-    [...cuenta.entries()].map(([name, c]) => [name, { games: c.games, winRate: c.wins / c.games }]),
+    [...cuenta.values()].map((c) => [c.name, { games: c.games, winRate: c.wins / c.games }]),
   );
 }
 

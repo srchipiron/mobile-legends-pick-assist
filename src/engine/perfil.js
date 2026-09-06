@@ -135,17 +135,34 @@ export function sanear(perfil) {
   const m = perfil.mastery;
   if (m && typeof m === 'object' && !Array.isArray(m)) {
     for (const [nombre, v] of Object.entries(m)) {
-      if (v && typeof v === 'object' && v.games > 0 && typeof v.winRate === 'number' && v.winRate >= 0 && v.winRate <= 1) {
-        mastery[nombre] = { games: v.games, winRate: v.winRate };
+      // `games` NUMÉRICO y finito: `"500" > 0` es true, y con el texto dentro
+      // `tuNivel` salía 0,0000037 y la referencia del Veredicto «050050»
+      // partidas (concatenación). `Infinity` también pasaba.
+      const games = Number(v?.games);
+      if (v && typeof v === 'object' && Number.isFinite(games) && games > 0 && typeof v.winRate === 'number' && v.winRate >= 0 && v.winRate <= 1) {
+        mastery[nombre] = { games, winRate: v.winRate };
       }
     }
   }
+  // Cada campo de una partida, coaccionado o descartado: `apuntar` sanea al
+  // apuntar, pero un código importado no pasa por `apuntar`, y llegaban
+  // `t: NaN` (dos partidas fundidas en una), `estimacion: 7` (Brier 36),
+  // `gane: 'no'` (contaba como victoria) y `pick: ''`.
   const partidas = (Array.isArray(perfil.partidas) ? perfil.partidas : [])
-    .filter((p) => p && typeof p === 'object' && typeof p.pick === 'string' && typeof p.t === 'number')
+    .filter((p) => p && typeof p === 'object' && typeof p.pick === 'string' && p.pick.trim() && Number.isFinite(p.t))
     .map((p) => {
-      const { bans, ...resto } = p;
-      const limpios = Array.isArray(bans) ? bans.filter((b) => typeof b === 'string' && b).slice(0, 10) : [];
-      return { ...resto, recomendados: Array.isArray(p.recomendados) ? p.recomendados : [], ...(limpios.length ? { bans: limpios } : {}) };
+      // Se corrige EN SITIO para no reordenar las claves de una partida
+      // válida: lo guardado en el móvil tiene que salir de aquí idéntico.
+      const limpia = { ...p };
+      limpia.pick = p.pick.trim();
+      // Solo un booleano cuenta: `gane: 'no'` con `!!` era una victoria.
+      limpia.gane = p.gane === true;
+      limpia.recomendados = Array.isArray(p.recomendados) ? p.recomendados.filter((r) => typeof r === 'string') : [];
+      if (p.previa !== true) delete limpia.previa;
+      if (!(typeof p.estimacion === 'number' && p.estimacion > 0 && p.estimacion < 1)) delete limpia.estimacion;
+      const limpios = Array.isArray(p.bans) ? p.bans.filter((b) => typeof b === 'string' && b).slice(0, 10) : [];
+      if (limpios.length) limpia.bans = limpios; else delete limpia.bans;
+      return limpia;
     });
   return { ...perfil, mastery, partidas };
 }

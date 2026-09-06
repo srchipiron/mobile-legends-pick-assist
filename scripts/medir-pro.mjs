@@ -114,7 +114,16 @@ async function main() {
   const { usables, sinMapear } = cargarPartidas(recientes, heroes);
   console.log(`Partidas desde ${desde}: ${recientes.length} · usables ${usables.length} · datos del ${meta.generatedAt?.slice(0, 10)}`);
   if (Object.keys(sinMapear).length) console.log(`Sin mapear: ${Object.entries(sinMapear).map(([s, n]) => `${s} (${n})`).join(', ')}`);
-  if (usables.length < 30) { console.log('Menos de 30 partidas: no hay nada que medir todavía.'); return; }
+  if (usables.length < 30) {
+    console.log('Menos de 30 partidas usables: no hay nada que medir todavía.');
+    // El resumen se escribe igual: el diagnóstico distingue «el bot no midió»
+    // (FALLO) de «aún hay pocas usables» (una línea) por este fichero.
+    if (json) {
+      const { writeFile } = await import('node:fs/promises');
+      await writeFile(json, JSON.stringify({ desde, partidas: recientes.length, usables: usables.length, datosDe: meta.generatedAt ?? null, terminos: {} }));
+    }
+    return;
+  }
 
   const indiceLineas = indiceDeLineas(meta.heroes ?? []);
   const est = (p) => estimarVictoria({ allies: p.equipos[0].slice(1), yo: p.equipos[0][0], enemies: p.equipos[1], meta: M, lineas: indiceLineas });

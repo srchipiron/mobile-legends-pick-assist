@@ -1458,11 +1458,14 @@ test('un 422 se reintenta con menos parámetros en vez de perderlo todo', async 
     }
     return res.end(JSON.stringify({ code: 0, data: { records: [{ data: { main_heroid: 93 } }] } }));
   });
-  await new Promise((r) => srv.listen(8815, r));
+  // Puerto libre: con el 8815 fijo, dos suites a la vez (o una que murió sin
+  // cerrar) daban EADDRINUSE y tumbaban la corrida entera.
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+  const puerto422 = srv.address().port;
 
   try {
     const ruta = {
-      template: 'http://127.0.0.1:8815/api/heroes/{hero_identifier}/counters',
+      template: `http://127.0.0.1:${puerto422}/api/heroes/{hero_identifier}/counters`,
       method: 'GET', params: ['rank', 'days'],
     };
     const { data } = await callRoute(ruta, { rank: 'glory', days: 7 }, 'Atlas');
@@ -1514,6 +1517,167 @@ test('el siguiente baneo probable es el más baneado del rango que aún no está
   ok(!('bans' in apuntar([], { pick: 'A', gane: true, t: 6 })[0]), 'una partida sin baneos lleva el campo');
   const saneadas = sanear({ partidas: [{ pick: 'A', t: 1, bans: ['Fanny', 3] }, { pick: 'B', t: 2, bans: 'Fanny' }] }).partidas;
   eq(JSON.stringify(saneadas.map((p) => p.bans ?? null)), '[["Fanny"],null]', `sanear no limpia los baneos: ${JSON.stringify(saneadas)}`);
+});
+
+test('revisión línea a línea del motor: recorte, duplicados, tags deducidos, nombres, líneas, techo de reglas, defensa', async () => {
+  const { metaScore, synergyScore, suggestBans, mergeCatalog, indexByName, SUB_MAX, PRECISION_DEDUCIDA } = await import('../src/engine/score.js');
+  const { COUNTER_RULES } = await import('../src/engine/rules.js');
+  const { frecuenciaDeRoles, indiceDeLineas, lanesDe } = await import('../src/engine/rival-de-linea.js');
+  const { analizarDraft } = await import('../src/engine/analisis.js');
+  const { ajusteDefensivo } = await import('../src/engine/builds.js');
+
+  // 1. metaScore sin recorte: dos héroes con winrate distinto nunca empatan.
+  //    Con clamp01 a ±6 puntos, 9 de 133 héroes de glory empataban en 0 o en 1
+  //    y eso cambiaba el nº1 en 42 de 300 drafts de roam.
+  const meta = JSON.parse(readFileSync(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8'));
+  const glory = meta.statsByRank?.glory ?? meta.stats;
+  if (glory && Object.keys(glory).length > 50) {
+    const avg = meta.avgByRank?.glory ?? meta.patchAvgWinRate;
+    const filas = Object.values(glory).filter((x) => typeof x.winRate === 'number').map((x) => [x.winRate, metaScore(x, avg).value]).sort((a, b) => a[0] - b[0]);
+    let empates = 0;
+    for (let i = 1; i < filas.length; i++) if (filas[i][0] !== filas[i - 1][0] && filas[i][1] === filas[i - 1][1]) empates++;
+    eq(empates, 0, `metaScore empata a ${empates} pares de héroes con winrate distinto (recorte)`);
+  }
+
+  // 2. Con composición, el hueco sin tapar se dice UNA vez, no en dos frases.
+  const tanque = { name: 'T', role: 'tank', tags: ['tanky', 'cc_hard'], damage: { fisico: 2, magico: 0 } };
+  const sinInicio = (n) => ({ name: n, role: 'mage', tags: ['burst'], damage: { fisico: 0, magico: 3 } });
+  const aliados = [sinInicio('A'), sinInicio('B'), sinInicio('C')];
+  const composicion = { mio: { huecos: ['engage'], dobles: [] }, tapa: [], suyo: {}, sinMi: {} };
+  const frases = analizarDraft({ ranked: [{ hero: tanque, score: 0.7 }], enemies: [{ name: 'E', tags: [] }], allies: aliados, meta: { counters: {} }, composicion });
+  const sobreEngage = frases.filter((f) => JSON.stringify(f.params?.lista ?? []).includes('comp.engage'));
+  eq(sobreEngage.length, 1, `el hueco de inicio se dice ${sobreEngage.length} veces: ${JSON.stringify(frases)}`);
+
+  // 3. PRECISION_DEDUCIDA en las tres ramas que leen tags sin dato: sinergia
+  //    por tags, tabla de peligro de los baneos, y el enemigo deducido en las
+  //    reglas de counter.
+  const peel = { name: 'P', tags: ['peel', 'engage', 'sustain'] };
+  const fragil = { name: 'F', tags: ['immobile', 'hypercarry', 'dive'], role: 'marksman' };
+  const conTags = synergyScore(peel, [fragil], undefined).value;
+  const deducido = synergyScore({ ...peel, inferred: true }, [fragil], undefined).value;
+  ok(conTags > 0.5 && deducido < conTags, `la sinergia por tags no descuenta al héroe deducido: ${conTags} vs ${deducido}`);
+  const stats = indexByName({ P: { winRate: 0.5, pickRate: 0.01, banRate: 0.1 }, F: { winRate: 0.5, pickRate: 0.01, banRate: 0.1 }, D: { winRate: 0.5, pickRate: 0.01, banRate: 0.1 } });
+  const dive = { name: 'D', tags: ['dive', 'burst', 'dash'] };
+  // Mismo winrate y tasa de ban: la única diferencia de score es el peligro por etiquetas.
+  const peligro = (h) => suggestBans([h], { allies: [fragil], meta: { stats, counters: {}, patchAvgWinRate: 0.5 } })[0]?.score ?? 0;
+  ok(peligro(dive) > peligro({ ...dive, inferred: true }), 'la tabla de peligro no descuenta al héroe deducido');
+
+  // 4. mergeCatalog decide «ya está en el catálogo» por nombre normalizado.
+  const fundido = mergeCatalog([{ name: 'X Borg', role: 'fighter', tags: ['sustain'] }], [{ name: 'X.Borg', id: 1, role: 'fighter' }]);
+  eq(fundido.length, 1, `X Borg / X.Borg son dos héroes: ${fundido.map((h) => h.name)}`);
+  eq(fundido[0].id, 1, 'el id de la API no llega al héroe del catálogo con otra grafía');
+
+  // 5. Las dos lecturas de líneas son la misma: mayúsculas y `lane` en cadena.
+  eq(frecuenciaDeRoles([{ role: 'mage', lane: 'Mid,Exp' }]).mid?.mage, 1, 'frecuenciaDeRoles no lee `lane` en cadena ni mayúsculas');
+  eq(indiceDeLineas([{ name: 'Z', role: 'Mage', lanes: ['Mid'] }]).get('z')?.lanes.join(), 'mid', 'indiceDeLineas no pasa a minúsculas');
+  eq(lanesDe({ lanes: [' Gold '] }).join(), 'gold', 'lanesDe no recorta');
+
+  // 6. El techo de las reglas sale de las reglas.
+  const pesos = COUNTER_RULES.map((r) => r.weight).sort((a, b) => b - a);
+  eq(SUB_MAX, pesos[0] + pesos[1] / 2, `SUB_MAX (${SUB_MAX}) no es la mayor regla más media de la segunda`);
+
+  // 7. Quince de armadura no son «ya lleva defensa» contra tres físicos.
+  const fis = (n) => ({ name: n, damage: { fisico: 6, magico: 0 } });
+  const equipment = { 1: { nombre: 'Blade Armor', fisica: 80 }, 2: { nombre: 'Immortality', fisica: 15 }, 3: { nombre: 'Hunter Strike' } };
+  const conImmortality = ajusteDefensivo({ objetos: [2, 3] }, equipment, [fis('A'), fis('B'), fis('C'), fis('D'), fis('E')]);
+  ok(conImmortality && conImmortality.lado === 'fisica', 'Immortality (15) calla el aviso de defensa física');
+  eq(ajusteDefensivo({ objetos: [1, 3] }, equipment, [fis('A'), fis('B'), fis('C'), fis('D'), fis('E')]), null, 'con Blade Armor sigue avisando');
+  void PRECISION_DEDUCIDA;
+});
+
+test('revisión línea a línea del registro y el perfil: referencia, potencia, nombres, saneado, Brier, prior', async () => {
+  const { apuntar, resumen, calibracion, maestriaDesdeRegistro, maestriaEfectiva } = await import('../src/engine/registro.js');
+  const { sanear, fundirPerfil } = await import('../src/engine/perfil.js');
+  const { priorDeMaestria, tuNivel } = await import('../src/engine/score.js');
+  const { runSelfTest } = await import('../src/engine/selftest.js');
+  const { generador } = await import('../src/engine/robustez.js');
+
+  // 1. La referencia del Veredicto NO lleva dentro las partidas comparadas.
+  //    Sin maestría a mano, 40 partidas con la app daban dif 0,000 y «faltan
+  //    Infinity»: la base era esas mismas 40 partidas.
+  let conApp = [];
+  for (let i = 0; i < 40; i++) conApp = apuntar(conApp, { pick: 'B', gane: i % 4 !== 0, recomendados: ['B'], t: 1000 + i });
+  ok(resumen(conApp, {}).contraReferencia == null, 'sin maestría a mano se inventa una referencia con las partidas comparadas');
+  const conManual = resumen(conApp, { A: { games: 500, winRate: 0.6 } });
+  eq(conManual.contraReferencia?.partidasBase, 500, `la referencia lleva dentro las partidas comparadas: ${JSON.stringify(conManual.contraReferencia)}`);
+  ok(Math.abs(conManual.contraReferencia.dif - 0.15) < 1e-9, `dif ${conManual.contraReferencia.dif} (esperado 0.15)`);
+  // Las previas SÍ entran en la referencia.
+  const conPrevias = resumen([...conApp, ...Array.from({ length: 100 }, (_, i) => ({ t: 5000 + i, pick: 'C', gane: i % 2 === 0, previa: true, recomendados: [] }))], {});
+  eq(conPrevias.contraReferencia?.partidasBase, 100, 'las partidas previas no hacen de referencia');
+
+  // 2. Diferencia exactamente nula: faltan null, nunca Infinity.
+  let empate = [];
+  for (let i = 0; i < 20; i++) empate = apuntar(empate, { pick: 'B', gane: i % 2 === 0, recomendados: ['B'], t: 2000 + i });
+  const r0 = resumen(empate, { A: { games: 500, winRate: 0.5 } }).contraReferencia;
+  ok(r0 && r0.faltan === null, `con diferencia nula faltan debería ser null: ${r0?.faltan}`);
+
+  // 3. La maestría del registro suma las dos grafías del mismo héroe.
+  const grafias = [...Array.from({ length: 30 }, (_, i) => ({ t: i, pick: 'X.Borg', gane: true })), ...Array.from({ length: 30 }, (_, i) => ({ t: 100 + i, pick: 'X Borg', gane: false }))];
+  const porRegistro = Object.entries(maestriaDesdeRegistro(grafias)).find(([n]) => normName(n) === 'xborg')?.[1];
+  eq(porRegistro?.games, 60, `X.Borg y X Borg se cuentan aparte: ${JSON.stringify(maestriaDesdeRegistro(grafias))}`);
+  eq(maestriaEfectiva({}, grafias).xborg?.games, 60, 'maestriaEfectiva se queda con la mitad de las partidas');
+
+  // 4. sanear: cada campo roto, coaccionado o fuera.
+  const sucio = sanear({
+    mastery: { Diggie: { games: '500', winRate: 0.6 }, Franco: { games: Infinity, winRate: 0.5 }, Tigreal: { games: 50, winRate: 0.5 } },
+    partidas: [
+      { t: NaN, pick: 'A', gane: true }, { t: NaN, pick: 'B', gane: true },
+      { t: 1, pick: 'C', gane: 'no', estimacion: 7, previa: 'x', recomendados: ['C', 3] },
+      { t: 2, pick: '  ', gane: true }, { t: 3, pick: 'D', gane: true, estimacion: 0.6, previa: true },
+    ],
+  });
+  eq(sucio.mastery.Diggie?.games, 500, 'games como texto no se convierte');
+  ok(!('Franco' in sucio.mastery), 'games Infinity pasa');
+  ok(Number.isFinite(tuNivel(sucio.mastery)) && tuNivel(sucio.mastery) > 0 && tuNivel(sucio.mastery) < 1, `tuNivel con maestría saneada: ${tuNivel(sucio.mastery)}`);
+  eq(sucio.partidas.length, 2, `partidas con t NaN o pick vacío sobreviven: ${JSON.stringify(sucio.partidas)}`);
+  const c = sucio.partidas.find((p) => p.pick === 'C');
+  ok(c && c.gane === false && !('estimacion' in c) && !('previa' in c) && c.recomendados.join() === 'C', `campos de C no saneados: ${JSON.stringify(c)}`);
+  const d = sucio.partidas.find((p) => p.pick === 'D');
+  ok(d && d.previa === true && d.estimacion === 0.6, `campos válidos de D perdidos: ${JSON.stringify(d)}`);
+  eq(fundirPerfil({ partidas: [] }, { partidas: [{ t: NaN, pick: 'A', gane: true }, { t: NaN, pick: 'B', gane: true }] }).partidas.length, 0, 'dos partidas con t NaN se funden en una en vez de descartarse');
+
+  // 5. El aviso «peor que una moneda» lleva margen: con un modelo calibrado
+  //    (p uniforme en 35-65%, resultado Bernoulli(p)) y 20 partidas no puede
+  //    saltar más del 10% de las veces; antes saltaba en un tercio.
+  const rnd = generador(99);
+  let avisos = 0; const REPS = 1500;
+  for (let k = 0; k < REPS; k++) {
+    const ps = Array.from({ length: 20 }, (_, i) => { const p = 0.35 + rnd() * 0.30; return { t: i, pick: 'A', gane: rnd() < p, estimacion: p }; });
+    if (calibracion(ps).peorQueMoneda) avisos++;
+  }
+  ok(avisos / REPS <= 0.10, `el aviso de Brier salta con el modelo perfecto el ${(avisos / REPS * 100).toFixed(1)}% de las veces`);
+  const basura = Array.from({ length: 20 }, (_, i) => ({ t: i, pick: 'A', gane: i % 2 === 0, estimacion: i % 2 === 0 ? 0.1 : 0.9 }));
+  ok(calibracion(basura).peorQueMoneda === true, 'un modelo al revés no dispara el aviso');
+
+  // 6. El diagnóstico dice qué nombres de maestría no casan (antes solo miraba
+  //    la primera clave y, si no casaba, callaba).
+  const env = { version: 'test', rango: 'mythic', width: 412, height: 915, storage: true };
+  const statsT = Object.fromEntries(all.map((x) => [x.name, { winRate: 0.5, pickRate: 0.01 }]));
+  const meta = { generatedAt: new Date().toISOString(), ranks: ['mythic'], days: 7, heroCount: 133, stats: statsT, statsByRank: { mythic: statsT }, diagnostics: {} };
+  const baseDiag = { catalog: cat, allHeroes: all, roamPool: pool, env, meta, metaCtx: { stats: indexByName(statsT), counters: undefined, patchAvgWinRate: 0.5 } };
+  const conZzzz = runSelfTest({ ...baseDiag, mastery: { Zzzz: { games: 500, winRate: 0.6 }, Khufra: { games: 10, winRate: 0.5 } } });
+  ok(/no casan.*Zzzz/.test(conZzzz.texto), 'no dice que Zzzz no casa con el catálogo');
+
+  // 7. Con ≥30 partidas pro pero <30 usables, no es un fallo del bot.
+  const heroesPro = Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`H${i}`, { picks: 3 }]));
+  const pocasUsables = runSelfTest({ ...baseDiag, mastery: {}, pro: { generatedAt: new Date().toISOString(), torneos: 3, sinMapear: {}, heroes: heroesPro, partidas: 40, medicion: { usables: 20, terminos: {} } } });
+  ok(!/\[FALLO\].*medici/.test(pocasUsables.texto), 'FALLO falso con 20 usables de 40 partidas');
+
+  // 8. priorDeMaestria recupera k = 0.25/σ² (Bessel): 12 héroes × 300 partidas, σ 0.04.
+  const ks = [];
+  for (let rep = 0; rep < 120; rep++) {
+    const mastery = {};
+    for (let h = 0; h < 12; h++) {
+      const u1 = rnd() || 1e-9; const u2 = rnd();
+      const wrReal = 0.5 + 0.04 * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      let wins = 0; for (let g = 0; g < 300; g++) if (rnd() < wrReal) wins++;
+      mastery[`H${h}`] = { games: 300, winRate: wins / 300 };
+    }
+    ks.push(priorDeMaestria(mastery));
+  }
+  ks.sort((a, b) => a - b);
+  const medianaK = ks[Math.floor(ks.length / 2)];
+  ok(Math.abs(medianaK - 156) / 156 <= 0.12, `k mediano ${medianaK.toFixed(0)}, esperado 156 ± 12%`);
 });
 
 test('el consejo para los compañeros cubre las líneas abiertas y responde al equipo enemigo', async () => {

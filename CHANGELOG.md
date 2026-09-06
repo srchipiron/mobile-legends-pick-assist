@@ -8,6 +8,33 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 1.40.0
+
+- El Veredicto de tus partidas ya puede moverse. La referencia («tu winrate
+  de siempre») llevaba dentro las mismas partidas que se comparaban contra
+  ella, así que para cualquier héroe sin maestría escrita a mano la
+  diferencia salía siempre +0,0 y «faltan unas Infinity partidas». Ahora la
+  referencia es tu maestría a mano más las partidas de tu historial, nunca
+  las jugadas con la app.
+- El winrate público ya no empata a los héroes de las colas: con el recorte
+  a ±6 puntos, Marcel al 59,1% valía lo mismo que Masha al 57,7%, y eso
+  cambiaba el nº1 en el 14% de los drafts de roam.
+- El análisis no repite la misma frase dos veces («os falta inicio» y «no
+  tapas inicio» salían juntas en el 15% de los drafts) y así deja sitio a
+  las que sí aportan.
+- El aviso «la estimación acierta menos que una moneda» lleva margen: sin
+  él saltaba un tercio de las veces con un modelo perfecto y 20 partidas.
+- Un código de perfil malformado ya no envenena nada: partidas con fecha
+  inválida, estimación fuera de rango o resultado no booleano se descartan o
+  se corrigen, y una maestría con «500» como texto vale 500. Las dos grafías
+  de un héroe («X.Borg» y «X Borg») suman en la maestría del registro.
+- El diagnóstico dice qué nombres de tu maestría no casan con el catálogo
+  (antes solo miraba el primero) y no abre incidencia cuando las partidas
+  profesionales aún no dan 30 usables. Los héroes recién salidos (sin
+  cruces) quedan descontados también en la sinergia por etiquetas y en la
+  tabla de peligro de los baneos; el aviso de defensa no se calla por los 15
+  de armadura de Immortality.
+
 ## 1.39.0
 
 - Tu maestría pesa según la evidencia que hay detrás. Cinco partidas al 90%

@@ -37,8 +37,17 @@ export function esPickCiego(riesgo, enemigosVistos) {
   return riesgo != null && riesgo > RIESGO_AVISO && cegera > 0.4;
 }
 
-/** Ventaja máxima que un roamer puede acumular contra un enemigo: 1.4 + 0.9/2. */
-const SUB_MAX = 1.85;
+/**
+ * Ventaja máxima que un roamer puede acumular contra un enemigo por reglas:
+ * la más fuerte más media de la segunda, DERIVADA de COUNTER_RULES. Estaba
+ * escrita a mano (1.85, «1.4 + 0.9/2») y ninguna regla pesa 1.4: el techo
+ * real era 0.878 en vez de 1.0, así que un cruce sin dato pesaba menos que
+ * uno con dato en el mismo draft. Si cambia una regla, esto cambia solo.
+ */
+export const SUB_MAX = (() => {
+  const w = COUNTER_RULES.map((r) => r.weight).sort((a, b) => b - a);
+  return (w[0] ?? 1) + (w[1] ?? 0) / 2;
+})();
 
 /**
  * Desde qué cruce merece la pena decir "ganas" o "pierdes" este enfrentamiento.
@@ -165,7 +174,7 @@ export function sinergia(synergyMatrix, a, b) {
  * Usa un shrink bayesiano simple (media a priori = winrate medio del parche).
  */
 export function metaScore(stat, patchAvgWinRate = 0.5) {
-  if (!stat || stat.winRate == null) return { value: 0.5, confident: false };
+  if (!stat || stat.winRate == null) return { value: 0.5 };
 
   // SIN encogimiento por muestra. Había uno (prior 400 sobre n = pickRate ×
   // 40000, ambos inventados) que conservaba solo el 18% del desvío de un
@@ -177,12 +186,15 @@ export function metaScore(stat, patchAvgWinRate = 0.5) {
   // 1,000 para el más raro y para el más jugado: no hay nada que encoger.
   // Cambiaba el nº1 en 89 de 300 drafts de roam. Si cambias de fuente de
   // datos, vuelve a medir el ruido entre corridas antes de reponer un prior.
-  const n = stat.matches ?? (stat.pickRate != null ? stat.pickRate * 40000 : 1500);
   const shrunk = stat.winRate;
 
-  // Centrado en la media del parche: ±6 puntos cubre casi todo el reparto.
-  const value = clamp01((shrunk - (patchAvgWinRate - 0.06)) / 0.12);
-  return { value, confident: n >= 200, shrunkWinRate: shrunk };
+  // Centrado en la media del parche, SIN recorte: con `clamp01` a ±6 puntos,
+  // los 9 héroes de las colas empataban (Marcel 59,1 = Masha 57,7 = 1.000) y
+  // eso cambiaba el nº1 en 42 de 300 drafts de roam, justo en el 1,9σ
+  // superior donde se decide. La reescala min-max del ranking ya acota 0..1;
+  // quien necesite 0..1 aquí (suggestBans) recorta él.
+  const value = (shrunk - (patchAvgWinRate - 0.06)) / 0.12;
+  return { value, shrunkWinRate: shrunk };
 }
 
 /**
@@ -229,7 +241,9 @@ function ventajaPorTags(roamHero, enemy, reasons) {
   // acertamos el 67%. Se encoge hacia el empate, igual que un matchup con poca
   // muestra. Sin esto, un héroe nuevo con seis tags adivinados disparaba más
   // reglas que nadie y salía nº1 en el 69% de los drafts.
-  const fiable = roamHero.inferred ? PRECISION_DEDUCIDA : 1;
+  // Y lo mismo si los deducidos son los del ENEMIGO: una regla que lee dos
+  // etiquetas adivinadas no es más cierta que una que lee una.
+  const fiable = (roamHero.inferred ? PRECISION_DEDUCIDA : 1) * (enemy.inferred ? PRECISION_DEDUCIDA : 1);
   const positivas = [];
   let penalizacion = 0;
 
@@ -352,6 +366,9 @@ export function synergyScore(roamHero, allies, synergyMatrix) {
       if (pair >= PAREJA_DESTACABLE) reasons.push({ clave: 'regla.combinaCon', params: { a: ally.name }, good: true, w: 0.7 });
       continue;
     }
+    // Sin dato del par (héroe recién salido): reglas por tags, descontadas
+    // si los tags están deducidos, como en el resto del motor.
+    const fiable = (roamHero.inferred ? PRECISION_DEDUCIDA : 1) * (ally.inferred ? PRECISION_DEDUCIDA : 1);
     let sub = 0;
     if (hayQueProtegerlo(ally) && ally.tags.includes('immobile') && roamHero.tags.includes('peel')) {
       sub += 0.8;
@@ -365,7 +382,7 @@ export function synergyScore(roamHero, allies, synergyMatrix) {
       sub += 0.5;
       reasons.push({ clave: 'regla.mantieneVivo', params: { a: ally.name }, good: true, w: 0.5 });
     }
-    total += clamp01(0.5 + sub * 0.20);
+    total += clamp01(0.5 + sub * 0.20 * fiable);
   }
 
   return { value: total / allies.length, reasons: dedupe(reasons) };
@@ -545,7 +562,10 @@ export function priorDeMaestria(mastery = {}, nivel) {
   const nEf = suyos.reduce((s, m) => s + m.w, 0);
   let sigmaMedida = SIGMA_POR_DEFECTO;
   if (nEf > 0) {
-    const observada = suyos.reduce((s, m) => s + m.w * (m.winRate - base) ** 2, 0) / nEf;
+    // Con corrección de Bessel (nEf/(nEf−1)): la varianza alrededor de la
+    // media de la MISMA muestra queda corta y k salía ~15% alto (simulado:
+    // mediana 179 frente a los 156 de 0.25/σ²).
+    const observada = suyos.reduce((s, m) => s + m.w * (m.winRate - base) ** 2, 0) / nEf * (nEf > 1 ? nEf / (nEf - 1) : 1);
     // Lo que explica el propio muestreo. Lo que sobra es variación de verdad.
     const porMuestreo = suyos.reduce((s, m) => s + m.w * 0.25 / m.games, 0) / nEf;
     const real = observada - porMuestreo;
@@ -718,9 +738,14 @@ export function rankRoamers(pool, ctx) {
   const weights = ctx.weights ?? DEFAULT_WEIGHTS;
   const claves = Object.keys(weights);
 
+  // Tu nivel y tu prior de maestría, UNA vez por ranking: nadie los pasaba y
+  // scoreHero los recalculaba por héroe (37 × 60 finales simulados por toque).
+  const nivel = ctx.nivel ?? tuNivel(ctx.mastery ?? {});
+  const priorMaestria = ctx.priorMaestria ?? priorDeMaestria(ctx.mastery ?? {}, nivel);
+  const ctxHeroe = { ...ctx, nivel, priorMaestria };
   const resultados = pool
     .filter((h) => !taken.has(normName(h.name)))
-    .map((h) => scoreHero(h, ctx));
+    .map((h) => scoreHero(h, ctxHeroe));
 
   if (!resultados.length) return resultados;
 
@@ -736,8 +761,8 @@ export function rankRoamers(pool, ctx) {
   for (const k of claves) {
     const valores = resultados.map((r) => r.parts[k]?.value ?? 0.5);
     // La maestría NO se reescala: su valor ya viene en una escala fija y
-    // centrada en tu nivel (0.5 = como tú, 1 = diez puntos por encima, ya
-    // encogido por partidas). Min-max es invariante a escala y se comía todo
+    // centrada en tu nivel (0.5 = como tú, 1 = dos desviaciones por encima
+    // con la σ medida de tus datos, ya encogido por partidas). Min-max es invariante a escala y se comía todo
     // el encogimiento: 5 partidas al 90% y 1.000 al 70% daban la misma
     // contribución (0.150, el peso entero) y el mismo ranking; apuntar UNA
     // partida (de la 9 a la 10) cambiaba el nº1 en el 44% de los drafts.
@@ -822,8 +847,11 @@ export function mergeCatalog(catalogHeroes, apiHeroes = []) {
       ...(api?.id != null ? { id: api.id } : {}),
     }];
   }));
+  // «Ya está en el catálogo» por nombre NORMALIZADO: con la clave cruda, el
+  // día que la API escriba «X.Borg» y el catálogo «X Borg» habría dos héroes.
+  const enCatalogo = new Set(catalogHeroes.map((h) => normName(h.name)));
   for (const api of apiHeroes) {
-    if (byName.has(api.name)) continue;
+    if (enCatalogo.has(normName(api.name))) continue;
     const role = (api.role ?? '').toLowerCase();
     byName.set(api.name, {
       name: api.name,
@@ -953,7 +981,8 @@ export function suggestBans(allHeroes, ctx) {
     .filter((h) => !taken.has(normName(h.name)) && lookup(meta.stats, h.name))
     .map((hero) => {
       const stat = lookup(meta.stats, hero.name);
-      const power = metaScore(stat, meta.patchAvgWinRate ?? 0.5).value;
+      // Acotado aquí: metaScore ya no recorta (ver arriba) y esta suma quiere 0..1.
+      const power = clamp01(metaScore(stat, meta.patchAvgWinRate ?? 0.5).value);
       const consensus = stat.banRate ?? 0;
 
       // Cuánto castiga a los aliados que ya has elegido: con el CRUCE REAL de
@@ -977,11 +1006,14 @@ export function suggestBans(allHeroes, ctx) {
           }
           continue;
         }
+        // Sin dato del cruce (héroe recién salido): la tabla por etiquetas,
+        // descontada si las etiquetas están deducidas, en un lado o en los dos.
+        const fiable = (hero.inferred ? PRECISION_DEDUCIDA : 1) * (ally.inferred ? PRECISION_DEDUCIDA : 1);
         for (const rule of DANGER_RULES) {
           if (!ally.tags.includes(rule.allyTag) || !hero.tags.includes(rule.enemyTag)) continue;
           if (rule.soloSiFragil && !hayQueProtegerlo(ally)) continue;
-          positivas.push(rule.weight);
-          reasons.push({ clave: rule.why, params: { a: ally.name }, good: false, w: rule.weight });
+          positivas.push(rule.weight * fiable);
+          reasons.push({ clave: rule.why, params: { a: ally.name }, good: false, w: rule.weight * fiable });
         }
       }
       // La amenaza más fuerte y media la segunda, como en el resto del motor.
@@ -1032,9 +1064,9 @@ export function riesgoContrapick(roamHero, counterMatrix, candidatos) {
  * Densidad de la matriz de counters: cuántos rivales cubre cada roamer de media.
  *
  * "34/34 con counters" solo dice que cada roamer tiene FILA, no que tenga dato
- * contra los cinco enemigos de tu partida. La API devuelve los matchups más
- * relevantes, no los 133. Donde no hay dato entran mis reglas por tags, así que
- * este número es lo que de verdad mide cuánto se apoya la app en partidas.
+ * contra los cinco enemigos de tu partida. Hoy la matriz está al 100% (132
+ * rivales por héroe); esto sigue midiendo cuánto se apoya la app en partidas
+ * para el día que un héroe nuevo salga sin cruces y entren las reglas por tags.
  */
 export function densidadCounters(pool, counters, candidatos) {
   if (!counters) return { media: 0, cobertura: 0 };

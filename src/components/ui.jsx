@@ -762,7 +762,7 @@ export function Veredicto({ partidas, maestria, t = tPorDefecto }) {
               <p className={`frase ${c.seVe ? (c.dif > 0 ? 'bien' : 'ojo') : 'duda'}`}>
                 {c.seVe
                   ? t(c.dif > 0 ? 'veredicto.mejor' : 'veredicto.peor')
-                  : t('veredicto.noSeVe', { faltan: c.faltan })}
+                  : (c.faltan == null ? t('veredicto.noSeVeSinCifra') : t('veredicto.noSeVe', { faltan: c.faltan }))}
               </p>
             </>
           )}
@@ -787,7 +787,7 @@ export function Calibracion({ partidas, t = tPorDefecto }) {
     <div className="calibracion">
       <p className="veredicto-cifra">{t('estimacion.calibrada', { n: c.n, prev: pct(c.prevista), real: pct(c.real) })}</p>
       {c.concluyente ? (
-        <p className={`frase ${c.brier < c.brierMoneda ? 'bien' : 'ojo'}`}>
+        <p className={`frase ${c.peorQueMoneda ? 'ojo' : 'bien'}`}>
           {t('estimacion.brier', {
             brier: c.brier.toFixed(3), altas: pct(c.altas.real), nAltas: c.altas.n, bajas: pct(c.bajas.real), nBajas: c.bajas.n,
           })}
