@@ -164,15 +164,15 @@ function combinaciones(arr, k) {
  * es lo que permite simular finales de draft plausibles en vez de finales al
  * azar. Sin enemigos, ninguna está ocupada.
  */
-export function lineasOcupadas(enemies, heroInfo = new Map(), frecuencias = {}) {
-  if (!enemies?.length) return [];
+export function lineasOcupadas(enemies, heroInfo = new Map(), frecuencias = {}, candidatas = LINEAS) {
+  if (!enemies?.length || !candidatas.length) return [];
   const P = enemies.map((h) => {
     const info = heroInfo.get(normName(h.name));
-    return Object.fromEntries(LINEAS.map((l) => [l, probabilidadDeLinea(h, info, l, frecuencias)]));
+    return Object.fromEntries(candidatas.map((l) => [l, probabilidadDeLinea(h, info, l, frecuencias)]));
   });
-  const n = Math.min(enemies.length, LINEAS.length);
+  const n = Math.min(enemies.length, candidatas.length);
   let mejor = null;
-  for (const lineas of combinaciones(LINEAS, n)) {
+  for (const lineas of combinaciones(candidatas, n)) {
     for (const perm of permutaciones(lineas)) {
       const total = perm.reduce((acc, l, i) => acc + P[i][l], 0);
       if (!mejor || total > mejor.total) mejor = { total, perm };

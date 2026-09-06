@@ -1163,14 +1163,29 @@ async function main() {
     console.warn(`  · retratos: fallo (${err.message}); la lista saldra sin caras`);
   }
 
-  let relations = { counters: previous?.counters ?? {}, synergies: previous?.synergies ?? {} };
+  // Héroe a héroe, como el tipo de daño: la matriz nueva se FUNDE con la
+  // guardada, no la sustituye entera. Sustituirla dejaba que una corrida a
+  // medias (la ruta de counters caída para 13 héroes, que el comparador
+  // admite) borrara filas que ya se tenían, y un héroe sin fila pierde
+  // además su riesgo de contrapick.
+  let relations = { counters: { ...(previous?.counters ?? {}) }, synergies: { ...(previous?.synergies ?? {}) } };
+  let relacionesFrescas = 0;
   try {
     const fresh = await fetchRelations(nombresPedir, stats, heroList);
-    if (Object.keys(fresh.counters).length) relations = fresh;
-    console.log(`  · relaciones de ${Object.keys(relations.counters).length} roamers`);
+    for (const [nombre, fila] of Object.entries(fresh.counters)) {
+      if (!Object.keys(fila ?? {}).length) continue;
+      relations.counters[nombre] = fila;
+      if (Object.keys(fresh.synergies[nombre] ?? {}).length) relations.synergies[nombre] = fresh.synergies[nombre];
+      relacionesFrescas += 1;
+    }
+    console.log(`  · relaciones: ${relacionesFrescas} héroes nuevos de ${nombresPedir.length} · ${Object.keys(relations.counters).length} con fila`);
   } catch (err) {
     console.warn(`  · relaciones: fallo (${err.message}); conservo las anteriores`);
   }
+  // Frescas si se han descargado casi todas: con menos, lo que hay es la
+  // matriz de otro día y la fecha no puede decir «hoy».
+  diagnostics.frescosRecursos = { relaciones: relacionesFrescas, pedidas: nombresPedir.length };
+  const matrizNueva = nombresPedir.length ? relacionesFrescas / nombresPedir.length >= 0.9 : false;
 
   const avgOf = (byName) => {
     const r = Object.values(byName).map((s) => s.winRate).filter((n) => n != null);
@@ -1187,13 +1202,16 @@ async function main() {
   const seen = new Set([...Object.keys(stats), ...heroList.map((h) => h.name)]);
   const newHeroes = [...seen].filter((n) => !known.has(n));
 
-  // Sin estadísticas nuevas del rango pedido, la fecha es la de los datos que
-  // se conservan, no la de hoy. Sin datos previos, no hay fecha.
+  // Sin estadísticas nuevas del rango pedido O sin la matriz nueva, la fecha
+  // es la de los datos que se conservan, no la de hoy. Antes solo miraba
+  // las estadísticas: con la ruta de counters caída salía «hoy» con la
+  // matriz de hace semanas, pasaba el comparador (mismos recuentos) y la
+  // puerta de 72 h del despliegue. Sin datos previos, no hay fecha.
   const estadisticasNuevas = frescos.includes(RANK);
   diagnostics.frescos = frescos;
-  diagnostics.conservado = !estadisticasNuevas;
+  diagnostics.conservado = !(estadisticasNuevas && matrizNueva);
   const out = {
-    generatedAt: estadisticasNuevas ? new Date().toISOString() : (previous?.generatedAt ?? null),
+    generatedAt: estadisticasNuevas && matrizNueva ? new Date().toISOString() : (previous?.generatedAt ?? null),
     rank: RANK,
     ranks: Object.keys(statsByRank),
     days: DAYS,
@@ -1221,6 +1239,7 @@ async function main() {
       schema: diagnostics.schema ?? null,
       routes: diagnostics.routes ?? null,
       frescos: diagnostics.frescos ?? [],
+      frescosRecursos: diagnostics.frescosRecursos ?? null,
       conservado: diagnostics.conservado ?? false,
       relations: diagnostics.relations ?? null,
       speciality: diagnostics.speciality ?? null,

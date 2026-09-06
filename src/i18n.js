@@ -318,6 +318,7 @@ const ES = {
   'pro.lineaSinPct': 'Pro: {picks} picks · {bans} bans',
   'donar.texto': 'Invítame a un café',
   'rango.todos': 'Todos',
+  'rango.crucesDe': 'Los cruces, las parejas y las builds son siempre de {rango}; solo cambian los winrates.',
 };
 
 const EN = {
@@ -609,6 +610,7 @@ const EN = {
   'pro.lineaSinPct': 'Pro: {picks} picks · {bans} bans',
   'donar.texto': 'Buy me a coffee',
   'rango.todos': 'All',
+  'rango.crucesDe': 'Matchups, pairs and builds are always from {rango}; only the winrates change.',
 };
 
 const TEXTOS = { es: ES, en: EN };

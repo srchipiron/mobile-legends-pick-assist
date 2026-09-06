@@ -45,20 +45,39 @@ const valido = (p) => typeof p === 'number' && p > 0.02 && p < 0.98;
 
 const mediasDeSinergia = new WeakMap();
 
-/** Media de la matriz de parejas, calculada una vez por matriz. */
-export function mediaDeSinergia(synergies) {
+/**
+ * El centro de las parejas: la media de las que pueden ir JUNTAS en un
+ * equipo, ponderada por lo que se juegan. La media de toda la matriz mezcla
+ * las parejas de la misma línea (dos tiradores, dos junglas: las malas, media
+ * 0,486) con las reales (líneas distintas, 0,500), y centrar ahí metía +4,5
+ * puntos por equipo de cinco: en 5v5 se cancelaba, pero a medias (1 tuyo
+ * frente a 5 suyos: 47%; 5 frente a 1: 53%) favorecía al equipo que llevaba
+ * MÁS héroes en pantalla, que no es información. Sin `lineas` (fixtures,
+ * scripts viejos) se cae a la media de toda la matriz.
+ */
+export function mediaDeSinergia(synergies, lineas = null, stats = null) {
   if (!synergies || typeof synergies !== 'object') return 0.5;
   const cache = mediasDeSinergia.get(synergies);
-  if (cache != null) return cache;
+  if (cache && cache.lineas === lineas && cache.stats === stats) return cache.media;
+  const lanesDe = (n) => lineas?.get?.(n)?.lanes ?? null;
+  const pesoDe = (n) => stats?.[n]?.pickRate ?? 1;
   let suma = 0;
   let n = 0;
-  for (const fila of Object.values(synergies)) {
-    for (const v of Object.values(fila ?? {})) {
-      if (valido(v)) { suma += v; n += 1; }
+  for (const [a, fila] of Object.entries(synergies)) {
+    const la = lineas ? lanesDe(normName(a)) : null;
+    for (const [b, v] of Object.entries(fila ?? {})) {
+      if (!valido(v)) continue;
+      if (lineas) {
+        const lb = lanesDe(normName(b));
+        // Comparten línea: no van juntas en un equipo real.
+        if (la && lb && la.some((l) => lb.includes(l))) continue;
+      }
+      const w = stats ? pesoDe(normName(a)) * pesoDe(normName(b)) : 1;
+      suma += v * w; n += w;
     }
   }
   const media = n ? suma / n : 0.5;
-  mediasDeSinergia.set(synergies, media);
+  mediasDeSinergia.set(synergies, { lineas, stats, media });
   return media;
 }
 
@@ -78,10 +97,11 @@ function terminoDeParejas(equipo, synergies, centro) {
  * @param yo       tu héroe (el candidato), o null
  * @param enemies  los suyos
  * @param meta     { stats, counters, synergies } ya indexados
+ * @param lineas   índice de líneas (indiceDeLineas): centra las parejas en las que pueden ir juntas
  * @param mastery  tu maestría, para el término "tú"
  * @returns { p, logOdds, terminos: { heroes, cruces, parejas, tu }, puntos: {...}, vistos, completo } o null
  */
-export function estimarVictoria({ allies = [], yo = null, enemies = [], meta = {}, mastery = null, nivel, prior } = {}) {
+export function estimarVictoria({ allies = [], yo = null, enemies = [], meta = {}, mastery = null, nivel, prior, lineas = null } = {}) {
   const mios = yo ? [yo, ...allies.filter((h) => h.name !== yo.name)] : [...allies];
   if (!mios.length && !enemies.length) return null;
   const stats = meta.stats ?? {};
@@ -118,7 +138,7 @@ export function estimarVictoria({ allies = [], yo = null, enemies = [], meta = {
   }
 
   // Parejas: las tuyas suman, las suyas restan.
-  const centro = mediaDeSinergia(meta.synergies);
+  const centro = mediaDeSinergia(meta.synergies, lineas, meta.stats ?? null);
   const parejas = terminoDeParejas(mios, meta.synergies, centro) - terminoDeParejas(enemies, meta.synergies, centro);
 
   const terminos = { heroes, cruces, parejas, tu };

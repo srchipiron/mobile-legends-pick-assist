@@ -34,6 +34,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mergeCatalog, indexByName, normName } from '../src/engine/score.js';
+import { indiceDeLineas } from '../src/engine/rival-de-linea.js';
 import { estimarVictoria } from '../src/engine/estimacion.js';
 import { resolverHeroe } from './ingesta-pro.mjs';
 
@@ -115,7 +116,8 @@ async function main() {
   if (Object.keys(sinMapear).length) console.log(`Sin mapear: ${Object.entries(sinMapear).map(([s, n]) => `${s} (${n})`).join(', ')}`);
   if (usables.length < 30) { console.log('Menos de 30 partidas: no hay nada que medir todavía.'); return; }
 
-  const est = (p) => estimarVictoria({ allies: p.equipos[0].slice(1), yo: p.equipos[0][0], enemies: p.equipos[1], meta: M });
+  const indiceLineas = indiceDeLineas(meta.heroes ?? []);
+  const est = (p) => estimarVictoria({ allies: p.equipos[0].slice(1), yo: p.equipos[0][0], enemies: p.equipos[1], meta: M, lineas: indiceLineas });
   const filas = usables.map((p) => ({ e: est(p), y: p.ganador === 1 ? 1 : 0 }));
   const resumen = { desde, partidas: recientes.length, usables: usables.length, datosDe: meta.generatedAt ?? null, terminos: {} };
   const linea = (clave, nombre, f) => {

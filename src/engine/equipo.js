@@ -26,8 +26,13 @@ export function aconsejarEquipo({
   enemies = [], allies = [], bans = [], meta = {}, n = 3,
 } = {}) {
   if (!allHeroes.length || !miLinea) return [];
-  const ocupadas = new Set(lineasOcupadas(allies, lineas, frecuencias));
-  const abiertas = LINEAS.filter((l) => l !== miLinea && !ocupadas.has(l));
+  // Los aliados se reparten entre las líneas que NO son la tuya: repartirlos
+  // entre las cinco ponía a un aliado flexible (Lukas, jungla/exp) en tu
+  // línea y dejaba la suya «abierta». Medido: jugando exp se aconsejaba una
+  // línea ya cubierta en 132 de 400 drafts; así, en 23.
+  const otras = LINEAS.filter((l) => l !== miLinea);
+  const ocupadas = new Set(lineasOcupadas(allies, lineas, frecuencias, otras));
+  const abiertas = otras.filter((l) => !ocupadas.has(l));
   const equipo = yo ? [...allies.filter((h) => h.name !== yo.name), yo] : [...allies];
   const cogidos = new Set([...enemies, ...equipo, ...bans].map((h) => normName(h.name)));
   const candidatos = allHeroes.filter((h) => !cogidos.has(normName(h.name)));

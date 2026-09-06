@@ -318,16 +318,24 @@ export function Pick({ result, index, stat, pro = null, onBuild, t = tPorDefecto
 const RANK_LABELS = { all: 'Todos', epic: 'Epic', legend: 'Legend', mythic: 'Mythic', honor: 'Honor', glory: 'Glory' };
 
 /** Selector del rango del que salen los winrates. El meta de Glory no es el de Epic. */
-export function RankPicker({ ranks, value, onChange, t = tPorDefecto }) {
+export function RankPicker({ ranks, value, onChange, cruces = null, t = tPorDefecto }) {
   if (!ranks?.length) return null;
   return (
-    <div className="rank-picker">
-      {ranks.map((r) => (
-        <button key={r} aria-pressed={r === value} onClick={() => onChange(r)}>
-          {r === 'all' ? t('rango.todos') : (RANK_LABELS[r] ?? r)}
-        </button>
-      ))}
-    </div>
+    <>
+      <div className="rank-picker">
+        {ranks.map((r) => (
+          <button key={r} aria-pressed={r === value} onClick={() => onChange(r)}>
+            {r === 'all' ? t('rango.todos') : (RANK_LABELS[r] ?? r)}
+          </button>
+        ))}
+      </div>
+      {/* Los cruces, las parejas y las builds son siempre del rango de la
+          ingesta: con otro rango elegido se mezclan dos poblaciones, y hay
+          que decirlo donde se elige. */}
+      {cruces && value && value !== cruces && (
+        <p className="build-nota">{t('rango.crucesDe', { rango: RANK_LABELS[cruces] ?? cruces })}</p>
+      )}
+    </>
   );
 }
 

@@ -72,16 +72,28 @@ test('los nombres se normalizan pese a puntuación y variantes', () => {
   for (const [a, b] of pares) ok(normName(a) === normName(b), `${a} ≠ ${b}`);
 });
 
-test('el winrate se encoge según la muestra', () => {
-  const mucha = metaScore({ winRate: 0.54, matches: 9000 }, 0.50).value;
-  const poca = metaScore({ winRate: 0.58, matches: 30 }, 0.50).value;
-  ok(mucha > poca, '30 partidas al 58% no pueden valer más que 9000 al 54%');
-});
-
-test('sin número de partidas, el pickrate hace de muestra', () => {
+test('el winrate NO se encoge por una muestra inventada', () => {
+  // Medido el ruido real entre 14 corridas consecutivas de la ingesta: la
+  // desviación del winrate de un héroe entre corridas es 0,0002-0,0003 en
+  // todos los cuartiles de pickrate, frente a 0,0316 entre héroes. El
+  // encogimiento que había (prior 400 sobre pickRate × 40000) conservaba el
+  // 18% del desvío de un héroe raro: Masha 57,7% se trataba como 50,5%.
+  const raro = metaScore({ winRate: 0.577, pickRate: 0.0015 }, 0.497);
+  ok(Math.abs(raro.shrunkWinRate - 0.577) < 0.002, `un héroe raro pierde su desvío: ${raro.shrunkWinRate}`);
   const alto = metaScore({ winRate: 0.54, pickRate: 0.03 }, 0.497).value;
   const bajo = metaScore({ winRate: 0.54, pickRate: 0.002 }, 0.497).value;
-  ok(alto > bajo, 'el pickrate no está diferenciando la confianza');
+  ok(Math.abs(alto - bajo) < 0.01, 'el mismo winrate vale distinto según el pickrate sin que el ruido lo justifique');
+  ok(metaScore({ winRate: 0.56, pickRate: 0.002 }, 0.497).value > metaScore({ winRate: 0.54, pickRate: 0.03 }, 0.497).value,
+    'un 56% raro no vale más que un 54% popular');
+  // Sobre los datos reales: el orden del componente es el del winrate.
+  const stats = Object.values(JSON.parse(readFileSync(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8')).stats ?? {});
+  if (stats.length > 50) {
+    const rango = (a) => { const idx = a.map((v, i) => [v, i]).sort((x, y) => x[0] - y[0]); const r = []; idx.forEach(([, i], k) => { r[i] = k; }); return r; };
+    const rw = rango(stats.map((s) => s.winRate)); const rm = rango(stats.map((s) => metaScore(s, 0.5).value));
+    const n = rw.length; const d2 = rw.reduce((acc, v, i) => acc + (v - rm[i]) ** 2, 0);
+    const spearman = 1 - 6 * d2 / (n * (n * n - 1));
+    ok(spearman > 0.99, `metaScore no ordena como el winrate (Spearman ${spearman.toFixed(3)})`);
+  }
 });
 
 test('el dato real de la API puede contradecir a las reglas por tags', () => {
@@ -278,6 +290,11 @@ test('el diagnostico detecta datos imposibles y caidas frente a su propio histor
   ok(avisosDe({ ...meta, rank: 'glory', diagnostics: { conservado: true, frescos: [] } }, null).some((l) => /NO descargó/.test(l)), 'no avisa de una corrida que conservó lo anterior');
   ok(!avisosDe({ ...meta, diagnostics: { conservado: false, frescos: ['glory'] } }, null).some((l) => /NO descargó/.test(l)), 'avisa con estadísticas nuevas');
   ok(!avisosDe({ ...meta, diagnostics: {} }, null).some((l) => /NO descargó/.test(l)), 'avisa con un fichero antiguo sin la marca');
+
+  // Estadísticas de un rango y cruces de otro: se dice. Los cruces, las
+  // parejas y las builds son siempre del rango de la ingesta.
+  ok(runSelfTest({ ...base, meta: { ...meta, rank: 'glory' }, env: { ...env, rango: 'epic' } }).texto.includes('dos poblaciones'), 'no avisa de que las estadísticas y los cruces son de rangos distintos');
+  ok(!runSelfTest({ ...base, meta: { ...meta, rank: 'glory' }, env: { ...env, rango: 'glory' } }).texto.includes('dos poblaciones'), 'avisa con el mismo rango');
 
   // Datos sanos: ninguno de los avisos nuevos.
   const limpio = avisosDe(meta, null);
@@ -1538,6 +1555,16 @@ test('el consejo para los compañeros cubre las líneas abiertas y responde al e
   const sinEl = aconsejarEquipo({ ...base, enemies: [H('Layla')], allies: [H('Fanny')], bans: [baneado] });
   ok(!sinEl.flatMap((c) => c.sugerencias).some((s) => s.hero.name === baneado.name), `aconseja al baneado ${baneado.name}`);
 
+  // 2b. Un aliado flexible NO se pone en mi línea: jugando exp con Lukas
+  //     (jungla/exp) de aliado, Lukas va a la jungla y la jungla se cierra.
+  //     Medido: repartir entre las cinco aconsejaba una línea ya cubierta en
+  //     132 de 400 drafts; excluyendo la mía, 23.
+  const lukas = H('Lukas');
+  if (lukas) {
+    const exp = aconsejarEquipo({ ...base, miLinea: 'exp', yo: H('Chou'), enemies: [H('Layla')], allies: [lukas] });
+    ok(!exp.some((c) => c.linea === 'jungle'), `con Lukas aliado jugando exp sigue aconsejando jungla: ${exp.map((c) => c.linea)}`);
+  }
+
   // 3. Con cuatro aliados no queda línea que aconsejar.
   const lleno = aconsejarEquipo({ ...base, enemies: [H('Layla')], allies: [H('Fanny'), H('Layla'), H('Pharsa'), H('Chou')].filter(Boolean) });
   ok(lleno.length <= 1, `con el equipo lleno sigue aconsejando ${lleno.length} líneas`);
@@ -1553,6 +1580,70 @@ test('el consejo para los compañeros cubre las líneas abiertas y responde al e
   // 5. Sin línea propia o sin héroes, nada (y sin reventar).
   eq(aconsejarEquipo({ ...base, miLinea: null, enemies: [H('Layla')] }).length, 0, 'aconseja sin saber mi línea');
   eq(aconsejarEquipo({ allHeroes: [], miLinea: 'roam' }).length, 0, 'aconseja sin héroes');
+});
+
+test('la maestría pesa según la evidencia y no salta al apuntar una partida', async () => {
+  const { rankRoamers, indexByName, poolDeLinea, normalizarComponente, priorDeMaestria } = await import('../src/engine/score.js');
+  const { indiceDeLineas } = await import('../src/engine/rival-de-linea.js');
+  const { generador } = await import('../src/engine/robustez.js');
+  const meta = JSON.parse(readFileSync(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8'));
+  if (!(meta.heroes ?? []).length || !meta.counters) return;
+  const todos = mergeCatalog(cat.heroes, meta.heroes);
+  const M = { stats: indexByName(meta.stats), counters: indexByName(meta.counters, 2), synergies: indexByName(meta.synergies, 2), patchAvgWinRate: meta.patchAvgWinRate };
+  const pool = poolDeLinea(todos, indiceDeLineas(meta.heroes), 'roam');
+  if (pool.length < 10) return;
+  // Min-max se comía el encogimiento: 5 partidas al 90% y 1.000 al 70% daban
+  // la misma contribución (0.150, el peso entero) y apuntar UNA partida (de
+  // la 9 a la 10) cambiaba el nº1 en el 44% de los drafts.
+  const objetivo = pool[3];
+  const fuera = todos.filter((h) => !pool.includes(h)).slice(0, 5);
+  const fondo = Object.fromEntries(fuera.map((h) => [h.name, { games: 60, winRate: 0.52 }]));
+  const rnd = generador(11);
+  const drafts = [];
+  for (let i = 0; i < 200; i++) { const e = []; while (e.length < 3) { const h = todos[Math.floor(rnd() * todos.length)]; if (!e.includes(h) && h !== objetivo) e.push(h); } drafts.push(e); }
+  const con = (games, wr) => drafts.map((e) => rankRoamers(pool, { enemies: e, meta: M, mastery: { ...fondo, [objetivo.name]: { games, winRate: wr } }, candidatos: todos }));
+  const contrib = (r) => r.reduce((s, x) => s + x.find((y) => y.hero.name === objetivo.name).contributions.mastery, 0) / r.length;
+  const r5 = con(5, 0.9); const r12 = con(12, 0.6); const r300 = con(300, 0.65);
+  ok(contrib(r5) < 0.12, `5 partidas al 90% se llevan casi el peso entero: ${contrib(r5).toFixed(3)}`);
+  ok(contrib(r12) < contrib(r300), `12 partidas al 60% (${contrib(r12).toFixed(3)}) valen más que 300 al 65% (${contrib(r300).toFixed(3)})`);
+  const r9 = con(9, 0.6); const r10 = con(10, 0.6);
+  const salta = r9.filter((x, i) => x[0].hero.name !== r10[i][0].hero.name).length;
+  ok(salta <= 10, `apuntar una partida (de la 9 a la 10) cambia el nº1 en ${salta} de 200 drafts`);
+  // La normalización es una rampa, no un corte: alrededor de la señal mínima
+  // el resultado se mueve poco.
+  const a = normalizarComponente([0.5, 0.5, 0.519]); const b = normalizarComponente([0.5, 0.5, 0.521]);
+  ok(Math.abs(a[2] - b[2]) < 0.1, `salto en la señal mínima: ${a[2].toFixed(3)} → ${b[2].toFixed(3)}`);
+  // Y el prior de la maestría tampoco salta cuando el quinto héroe llega a 30 partidas.
+  const base = { A: { games: 80, winRate: 0.55 }, B: { games: 60, winRate: 0.5 }, C: { games: 40, winRate: 0.48 }, D: { games: 35, winRate: 0.53 } };
+  const k29 = priorDeMaestria({ ...base, E: { games: 29, winRate: 0.6 } }); const k30 = priorDeMaestria({ ...base, E: { games: 30, winRate: 0.6 } });
+  ok(Math.abs(k30 - k29) / k29 < 0.05, `el prior salta de ${k29.toFixed(0)} a ${k30.toFixed(0)} con una partida`);
+});
+
+test('la estimación no favorece al equipo que lleva más héroes en pantalla', async () => {
+  const { estimarVictoria, mediaDeSinergia } = await import('../src/engine/estimacion.js');
+  const { indexByName, poolDeLinea, LINEAS } = await import('../src/engine/score.js');
+  const { indiceDeLineas } = await import('../src/engine/rival-de-linea.js');
+  const { generador } = await import('../src/engine/robustez.js');
+  const meta = JSON.parse(readFileSync(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8'));
+  if (!(meta.heroes ?? []).length || !meta.synergies) return;
+  const todos = mergeCatalog(cat.heroes, meta.heroes); const idx = indiceDeLineas(meta.heroes);
+  const M = { stats: indexByName(meta.stats), counters: indexByName(meta.counters, 2), synergies: indexByName(meta.synergies, 2) };
+  const pools = Object.fromEntries(LINEAS.map((l) => [l, poolDeLinea(todos, idx, l)]));
+  if (LINEAS.some((l) => pools[l].length < 10)) return;
+  // El centro de las parejas es el de las que pueden ir JUNTAS (líneas
+  // distintas), ponderado por pick. Con la media de toda la matriz, un
+  // equipo real de cinco sumaba +4 puntos y a medias el número favorecía al
+  // que llevaba más héroes: 1 contra 5 daba 46%, 5 contra 1, 53% (medido).
+  ok(mediaDeSinergia(M.synergies, idx, M.stats) > mediaDeSinergia(M.synergies), 'el centro de líneas distintas no queda por encima del global');
+  const rnd = generador(5);
+  const muestra = (pool, excl) => { const c = pool.filter((h) => !excl.includes(h)); const w = c.map((h) => M.stats[normName(h.name)]?.pickRate ?? 0.001); let x = rnd() * w.reduce((p, q) => p + q, 0); for (let i = 0; i < c.length; i++) { x -= w[i]; if (x <= 0) return c[i]; } return c.at(-1); };
+  const equipo = (n, excl) => { const e = []; for (const l of LINEAS.slice(0, n)) e.push(muestra(pools[l], [...excl, ...e])); return e; };
+  for (const [mios, suyos] of [[1, 5], [5, 1]]) {
+    let sp = 0;
+    for (let i = 0; i < 300; i++) { const A = equipo(mios, []); const B = equipo(suyos, A); sp += estimarVictoria({ allies: A.slice(1), yo: A[0], enemies: B, meta: M, lineas: idx }).p; }
+    const media = sp / 300 * 100;
+    ok(Math.abs(media - 50) <= 2.5, `${mios} contra ${suyos}: la estimación media es ${media.toFixed(1)}% (sesgo por número de héroes)`);
+  }
 });
 
 test('la ingesta entera recorre todos los endpoints contra una API simulada', async () => {
@@ -1594,6 +1685,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     '/api/heroes/{hero_id}/builds': parametros('lane', 'rank', 'size', 'index'),
   } };
   const golpes = {};
+  let fallaCounters = false;
   const srv = createServer((req, res) => {
     const u = new URL(req.url, 'http://x');
     const ruta = u.pathname;
@@ -1623,6 +1715,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
         skill: { skilllist: [{ skilldesc: 'Deals <font color="x">Magic Damage</font> to enemies' }] },
       } } } });
     }
+    if (/^\/api\/(academy\/)?heroes\/[^/]+\/counters$/.test(ruta) && fallaCounters) { res.statusCode = 500; return res.end('{}'); }
     if (/^\/api\/heroes\/[^/]+\/counters$/.test(ruta)) { marca('counters'); return json(pares(2)); }
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta)) { marca('academy'); return json(pares(4)); }
     if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta)) { marca('compat'); return json(pares(3)); }
@@ -1705,6 +1798,33 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     for (const [k, v] of Object.entries({ speciality: d.diagnostics.speciality?.errores, builds: d.diagnostics.builds?.errores, relations: d.diagnostics.relations?.errores })) {
       ok(!(v ?? []).length, `errores de ${k} contra la API simulada: ${JSON.stringify(v)}`);
     }
+
+    // Segunda corrida con la ruta de counters CAÍDA: estadísticas frescas
+    // pero matriz de otro día. Antes salía con la fecha de hoy, pasaba el
+    // comparador (mismos recuentos) y la puerta de 72 h del despliegue.
+    fallaCounters = true;
+    const out2 = resolve(dir, 'sin-counters.json');
+    const r2 = await new Promise((listo) => {
+      const hijo = spawn('node', [
+        resolve(ROOT, 'scripts/ingest.mjs'), '--base', `http://127.0.0.1:${puerto}/api`,
+        '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', out2,
+        '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
+      ], { timeout: 120000 });
+      let stdout = ''; let stderr = '';
+      hijo.stdout.on('data', (b) => { stdout += b; });
+      hijo.stderr.on('data', (b) => { stderr += b; });
+      hijo.on('close', (status) => listo({ status, stdout, stderr }));
+    });
+    eq(r2.status, 0, `la ingesta sin counters no acaba bien: ${(r2.stdout + r2.stderr).slice(-400)}`);
+    const guardada = JSON.parse(readFileSync(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8'));
+    const d2 = JSON.parse(readFileSync(out2, 'utf8'));
+    eq(d2.generatedAt, guardada.generatedAt, 'con la matriz conservada la corrida se fecha como si fuera nueva');
+    eq(d2.diagnostics.conservado, true, 'no dice que conserva la matriz');
+    eq(d2.diagnostics.frescosRecursos?.relaciones, 0, `cuenta relaciones frescas sin haberlas descargado: ${JSON.stringify(d2.diagnostics.frescosRecursos)}`);
+    const atlasAntes = JSON.stringify(guardada.counters?.Atlas ?? null);
+    ok(atlasAntes !== 'null' && JSON.stringify(d2.counters?.Atlas) === atlasAntes, 'la fila de Atlas no se conserva héroe a héroe');
+    const { comparar: comparar2 } = await import('./comparar-ingesta.mjs');
+    ok(comparar2(d2, guardada).peores.some((p) => p.clave === 'relacionesFrescas'), 'el comparador acepta una corrida que no ha descargado la matriz');
   } finally {
     srv.close();
   }

@@ -301,9 +301,9 @@ export default function App() {
   // Cuánto hay de ganar con tu nº1 y estos diez (ver estimacion.js).
   const estimacion = useMemo(
     () => (ranked[0] && (allies.length || enemies.length)
-      ? estimarVictoria({ allies, yo: ranked[0].hero, enemies, meta: metaCtx, mastery: maestriaUsada })
+      ? estimarVictoria({ allies, yo: ranked[0].hero, enemies, meta: metaCtx, mastery: maestriaUsada, lineas })
       : null),
-    [ranked, allies, enemies, metaCtx, maestriaUsada],
+    [ranked, allies, enemies, metaCtx, maestriaUsada, lineas],
   );
 
   // Qué pueden coger tus compañeros en las líneas abiertas, contigo dentro
@@ -368,7 +368,7 @@ export default function App() {
           enemies, allies, bans, rival: enemyRoamEfectivo, marcado: !!enemyRoam, ranked, analisis, robustez, composicion,
           estimaciones: ranked.slice(0, 3).map((r) => ({
             yo: r.hero.name,
-            ...estimarVictoria({ allies, yo: r.hero, enemies, meta: metaCtx, mastery: maestriaUsada }),
+            ...estimarVictoria({ allies, yo: r.hero, enemies, meta: metaCtx, mastery: maestriaUsada, lineas }),
           })),
         },
         historial,
@@ -410,7 +410,7 @@ export default function App() {
     // La estimación que había delante para ESE héroe, no para el nº1: es lo
     // que luego se compara con el resultado (ver `calibracion`).
     const heroe = resolve([pick])[0];
-    const est = heroe ? estimarVictoria({ allies, yo: heroe, enemies, meta: metaCtx, mastery: maestriaUsada }) : null;
+    const est = heroe ? estimarVictoria({ allies, yo: heroe, enemies, meta: metaCtx, mastery: maestriaUsada, lineas }) : null;
     const siguiente = apuntar(partidas, {
       pick, gane, rango: activeRank,
       recomendados: ranked.slice(0, 3).map((r) => r.hero.name),
@@ -546,7 +546,7 @@ export default function App() {
 
           <div className="side" >
             <div className="side-label"><span>{t('app.rango')}</span></div>
-            <RankPicker t={t} ranks={meta?.ranks} value={activeRank} onChange={setRank} />
+            <RankPicker t={t} ranks={meta?.ranks} value={activeRank} onChange={setRank} cruces={meta?.rank} />
           </div>
 
           {/* Lo que se toca UNA VEZ vive aquí dentro. Fuera se quedan los dos

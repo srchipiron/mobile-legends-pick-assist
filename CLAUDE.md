@@ -124,6 +124,16 @@ ninguna constante.
   0,445 como si es 0,543, y la correlación dentro de cada fila con el winrate
   del rival es −0,003. Son índices de cruce ya centrados, así que `counter` NO
   duplica lo que mide `meta`.
+- **El winrate tampoco.** Medido entre 14 corridas consecutivas de la
+  ingesta (agosto-septiembre de 2026, ventana de 7 días): la desviación del
+  winrate de un héroe entre corridas es 0,0002-0,0003 en TODOS los cuartiles
+  de pickrate, frente a 0,0316 de dispersión entre héroes. Por eso desde
+  1.39.0 `metaScore` no encoge nada: el prior 400 sobre `pickRate × 40000`
+  eran dos números inventados que conservaban el 18% del desvío de un héroe
+  raro (Masha 57,7% valía como 50,5%) y cambiaban el nº1 en el 30% de los
+  drafts. Si cambias de fuente, mide el ruido entre corridas antes de
+  reponer un prior (`ruido-wr.mjs` en el scratch de la sesión lo hacía con
+  `git show` de las corridas anteriores).
 - **Los cruces no son estimaciones ruidosas.** Dos comprobaciones: (1) si el
   ruido fuera de muestreo, el cuartil menos jugado tendría sus cruces 2,65 veces
   más dispersos que el más jugado, y lo que se mide es 1,16; (2) dos corridas de
@@ -420,6 +430,42 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   por mutación). Desde 1.32.4 la prueba recorre `t('…')`, `t(\`prefijo.${…}\`)`
   y `clave: '…'` en la interfaz y el motor. Un guardarraíl se comprueba
   rompiendo lo que vigila, no leyendo su nombre.
+- **La reescala min-max comiéndose el encogimiento de la maestría** — cada
+  componente se normaliza al rango 0..1 dentro del pool, y min-max es
+  invariante a escala: toda la calibración de `masteryScore` (k≈156, medido)
+  decidía el ORDEN entre héroes con maestría pero no cuánto pesaba frente al
+  resto. Medido: 5 partidas al 90% y 1.000 al 70% daban la misma
+  contribución (0.150, el peso entero) y apuntar UNA partida (de la 9 a la
+  10, cruzando `SENAL_MINIMA`) cambiaba el nº1 en el 44% de los drafts.
+  Desde 1.39.0 la maestría NO pasa por la normalización (su escala ya es
+  fija: 0.5 tu nivel, 1 dos desviaciones por encima con la σ medida de tus
+  datos) y la señal mínima es una rampa, no un corte. Si un componente
+  lleva una escala calibrada, no lo reescales.
+- **El centro de las parejas en la media de toda la matriz** — mezclaba las
+  parejas de la misma línea (las malas, 0,486) con las que pueden ir juntas
+  (0,500). En 5v5 se cancelaba y la prueba solo miraba 5v5; a medias
+  favorecía al equipo con más héroes en pantalla (1 contra 5: 46%; 5 contra
+  1: 53%, medido con equipos de uno por línea). Hoy `mediaDeSinergia` recibe
+  `lineas` y `stats` y centra en las parejas de líneas distintas ponderadas
+  por pick. Toda prueba de un modelo a medias tiene que probar A MEDIAS.
+- **Los aliados repartidos entre las cinco líneas, incluida la mía** —
+  `aconsejarEquipo` ponía a un aliado flexible (Lukas, jungla/exp) en MI
+  línea y aconsejaba la suya como abierta: 132 de 400 drafts jugando exp.
+  `lineasOcupadas` acepta las líneas candidatas y se reparte sin la mía.
+- **La matriz de ayer con la fecha de hoy, otra vez** — la honestidad de
+  `generatedAt` solo miraba las estadísticas: con la ruta de counters caída
+  la matriz de hace semanas salía fechada hoy, pasaba el comparador (mismos
+  recuentos) y la puerta de 72 h. Y la matriz nueva sustituía a la guardada
+  ENTERA en vez de fundirse héroe a héroe, así que una corrida a medias
+  borraba filas. Hoy `frescosRecursos`, fusión por héroe y
+  `relacionesFrescas` en el comparador. Cada recurso que se conserva tiene
+  que dejar marca en la fecha.
+- **`medir-rival.mjs` con la frecuencia de líneas vacía** — le pasaba el
+  catálogo fundido (sin `lanes`) a `frecuenciaDeRoles`, así que el reparto
+  «igual que la app» no lo era. Con la frecuencia de la app: bR 0,24 ± 1,15,
+  bO 0,77 ± 0,73, razón 0,32 (259 partidas de 120 días); ganar ≥3 cruces de
+  línea sí acompaña a ganar (62% frente a 53%), pero la razón sigue sin
+  distinguirse de 1 ni de 2. La conclusión aguanta; las cifras de antes, no.
 - **La tarjeta nº1 fuera de la primera pantalla** — cada bloque nuevo encima
   de las tarjetas (análisis, estimación de 141-152 px, consejo para los
   compañeros, composición) fue empujando el nº1: medido en 390×844 asomaba
@@ -600,6 +646,10 @@ aquí: pidiéndole datos, no leyendo su README.
   factor y se documenta aquí. Y ojo con lo contrario: con 164 partidas de
   un año antes salía lo opuesto (cruces con señal, héroes sin ella), así
   que la época de la muestra decide, no el tamaño.
+- **OJO (1.39.0)**: las cifras del punto siguiente salían de una frecuencia
+  de líneas VACÍA (ver «Errores ya cometidos»). Con la de la app: bR 0,24 ±
+  1,15, bO 0,77 ± 0,73, razón 0,32; log-verosimilitud igual con k=1, 2 y 3.
+  Sigue sin apoyar el ×2 y sigue sin poder descartarlo.
 - **El peso doble del rival de línea, medido y NO apoyado** (1.31.2,
   `scripts/medir-rival.mjs`): con las líneas repartidas como en la app,
   `gana ~ a + bR·R + bO·O` (R = los cinco cruces de línea, O = los otros
@@ -941,6 +991,12 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
 - **`candidatos` ausente en el `ctx` de la simulación** (`robustez.js`): el
   riesgo de contrapick solo entra en la nota con `cegera > 0`, y los finales
   simulados tienen los cinco enemigos, así que da igual que no llegue.
+- **El encogimiento del cruce por presencia del rival con UN enemigo**
+  (`PICKRATE_FIABLE` en `counterScore`): con un solo enemigo es un factor
+  igual para todo el pool y la normalización lo borra (medido: cambiar la
+  constante mueve el nº1 en 0/300 drafts con 1 enemigo, 37/300 con 2, 54/300
+  con 5). Solo existe como REPARTO entre enemigos; no lo calibres pensando
+  en el caso de uno.
 - **`cache: npm` en `setup-node`** (quitada en 1.37.0): redundante con la
   caché de `node_modules` y restauraba `~/.npm` en cada corrida para nada.
 - **`medir-rival.mjs || true` en `pro.yml`**: solo escribe al log y su

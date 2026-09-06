@@ -145,6 +145,12 @@ export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, maste
     lineas.push(`Generado: ${gen.toLocaleString('es-ES')} (hace ${Math.round(horas)} h)`);
     check(horas < 36, 'Datos frescos', `Datos de hace ${Math.round(horas)} h: la actualización automática puede estar rota`, true);
     lineas.push(`Rangos: ${meta.ranks?.join(', ') || 'ninguno'} · activo: ${env.rango ?? '?'}`);
+    // Las estadísticas cambian con el rango elegido; los cruces, las parejas
+    // y las builds son SIEMPRE del rango de la ingesta. Con otro rango se
+    // mezclan dos poblaciones, y eso hay que saberlo.
+    if (env.rango && meta.rank && env.rango !== meta.rank) {
+      check(false, '', `Estadísticas de ${env.rango} pero cruces, parejas y builds de ${meta.rank}: dos poblaciones mezcladas`, true);
+    }
   if (meta.coberturaPorLinea) {
     lineas.push('Cobertura por línea: ' + Object.entries(meta.coberturaPorLinea)
       .map(([l, c]) => `${l} ${c.conCounters}/${c.total}`).join(' · '));

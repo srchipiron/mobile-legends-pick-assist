@@ -8,6 +8,33 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 1.39.0
+
+- Tu maestría pesa según la evidencia que hay detrás. Cinco partidas al 90%
+  y mil al 70% daban la misma contribución (el peso entero) y apuntar una
+  partida más cambiaba el nº1 en el 44% de los drafts: la reescala del
+  ranking se comía el encogimiento. Ahora la maestría entra con su escala
+  propia, centrada en tu nivel y medida en tu propia dispersión: con pocas
+  partidas casi no mueve, con cientos mueve de verdad.
+- El winrate público ya no se encoge por una muestra inventada. Se midió el
+  ruido real entre catorce corridas de datos: es de dos milésimas frente a
+  tres puntos de diferencia entre héroes. Un héroe raro al 57,7% se trataba
+  como un 50,5%; ahora vale lo que dice. Cambia el nº1 en el 30% de los
+  drafts de roam.
+- La probabilidad estimada ya no favorece al equipo que lleva más héroes en
+  pantalla: las parejas se centran en las que pueden ir juntas (líneas
+  distintas). Medido con equipos reales, 1 contra 5 daba 46% y 5 contra 1,
+  53%; ahora 51% y 49%.
+- El consejo para los compañeros ya no pone a un aliado flexible en tu
+  línea ni aconseja una línea que ese aliado ya cubre (pasaba en 132 de 400
+  drafts jugando exp; ahora en 23).
+- La ingesta funde la matriz de cruces héroe a héroe con la guardada y solo
+  fecha la corrida como nueva si la matriz también se descargó; el
+  comparador rechaza una corrida que la conservó. Antes, con la ruta de
+  counters caída, salían los cruces de hace semanas con la fecha de hoy.
+- El prior de la maestría ya no salta cuando un héroe llega a 30 partidas,
+  y los ajustes avisan cuando eliges un rango distinto del de los cruces.
+
 ## 1.38.0
 
 - Tu recomendación nº1 vuelve a caber en la primera pantalla del móvil. La

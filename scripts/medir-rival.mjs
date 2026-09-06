@@ -135,7 +135,10 @@ async function main() {
   const cat = JSON.parse(await readFile(resolve(ROOT, 'public/data/heroes.json'), 'utf8'));
   const meta = JSON.parse(await readFile(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8'));
   const heroes = mergeCatalog(cat.heroes, meta.heroes ?? []);
-  const info = indiceDeLineas(meta.heroes ?? []); const frec = frecuenciaDeRoles(heroes);
+  // La frecuencia sale de meta.heroes (con `lanes`), como en la app: con el
+  // catálogo fundido salía vacía y el reparto de líneas no era el de la app.
+  const info = indiceDeLineas(meta.heroes ?? []); const frec = frecuenciaDeRoles(meta.heroes ?? []);
+  if (Object.keys(frec).length < LINEAS.length) throw new Error(`frecuencia de líneas incompleta: ${Object.keys(frec).join(',')}`);
   const M = { counters: indexByName(meta.counters, 2) };
   const indice = new Map(heroes.map((h) => [normName(h.name), h]));
   const usables = [];

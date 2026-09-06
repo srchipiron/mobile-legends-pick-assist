@@ -44,6 +44,11 @@ export function medir(datos) {
     rangoFresco: datos?.diagnostics?.frescos
       ? (datos.diagnostics.frescos.includes(datos.rank) ? 1 : 0)
       : (datos?.rank && datos?.statsByRank?.[datos.rank] ? 1 : 0),
+    // Y que la MATRIZ se haya descargado en esa corrida, no conservado: los
+    // ficheros de antes de esta marca cuentan como frescos.
+    relacionesFrescas: datos?.diagnostics?.frescosRecursos
+      ? (datos.diagnostics.frescosRecursos.pedidas && datos.diagnostics.frescosRecursos.relaciones / datos.diagnostics.frescosRecursos.pedidas >= 0.9 ? 1 : 0)
+      : 1,
     counters: Object.keys(datos?.counters ?? {}).length,
     // Los PARES, no solo cuantos heroes tienen fila. Una corrida puede traer
     // los 133 con fila y cinco cruces cada uno en vez de 132: son los mismos

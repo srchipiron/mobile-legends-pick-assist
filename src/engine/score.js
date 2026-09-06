@@ -167,13 +167,18 @@ export function sinergia(synergyMatrix, a, b) {
 export function metaScore(stat, patchAvgWinRate = 0.5) {
   if (!stat || stat.winRate == null) return { value: 0.5, confident: false };
 
-  // Muestra: partidas reales si la API las da. Muchas no las dan, y entonces
-  // n=0 encogía TODOS los winrates a la media y el componente meta valía lo
-  // mismo para todo el mundo. El pickrate sirve de proxy: un héroe con 3% de
-  // presencia tiene mucha más muestra que uno con 0,2%.
+  // SIN encogimiento por muestra. Había uno (prior 400 sobre n = pickRate ×
+  // 40000, ambos inventados) que conservaba solo el 18% del desvío de un
+  // héroe raro y el 74% de uno popular: Masha 57,7% se trataba como 50,5%.
+  // Medido el ruido REAL entre 14 corridas consecutivas de la ingesta
+  // (agosto-septiembre de 2026): la desviación del winrate de un héroe entre
+  // corridas es 0,0002-0,0003 en TODOS los cuartiles de pickrate, frente a
+  // 0,0316 de dispersión entre héroes. El peso que ese ruido justifica es
+  // 1,000 para el más raro y para el más jugado: no hay nada que encoger.
+  // Cambiaba el nº1 en 89 de 300 drafts de roam. Si cambias de fuente de
+  // datos, vuelve a medir el ruido entre corridas antes de reponer un prior.
   const n = stat.matches ?? (stat.pickRate != null ? stat.pickRate * 40000 : 1500);
-  const prior = 400;
-  const shrunk = (stat.winRate * n + patchAvgWinRate * prior) / (n + prior);
+  const shrunk = stat.winRate;
 
   // Centrado en la media del parche: ±6 puntos cubre casi todo el reparto.
   const value = clamp01((shrunk - (patchAvgWinRate - 0.06)) / 0.12);
@@ -524,21 +529,29 @@ const SIGMA_MINIMA = 0.02;
 const SIGMA_MAXIMA = 0.08;
 /** Con menos de esto no se puede medir la dispersión: se usa ±4 puntos. */
 const HEROES_PARA_MEDIR_DISPERSION = 5;
+/** Partidas a partir de las cuales un héroe cuenta «entero» para medir tu dispersión (peso games/(games+30)). */
+const PARTIDAS_PARA_CONTAR = 30;
 const SIGMA_POR_DEFECTO = 0.04;
 
 export function priorDeMaestria(mastery = {}, nivel) {
   const base = nivel ?? tuNivel(mastery);
-  const suyos = Object.values(mastery ?? {}).filter((m) => m?.games >= 30 && m.winRate != null);
-
-  let sigma = SIGMA_POR_DEFECTO;
-  if (suyos.length >= HEROES_PARA_MEDIR_DISPERSION) {
-    const n = suyos.length;
-    const observada = suyos.reduce((s, m) => s + (m.winRate - base) ** 2, 0) / n;
+  // Sin umbral duro: antes contaban solo los héroes con ≥ 30 partidas y solo
+  // a partir de 5 de ellos, y el quinto que pasaba de 29 a 30 movía k de 156
+  // a 354 de golpe. Ahora cada héroe pesa games/(games+30) y la sigma medida
+  // se funde con la de por defecto según cuántos héroes efectivos hay.
+  const suyos = Object.values(mastery ?? {})
+    .filter((m) => m?.games > 0 && m.winRate != null)
+    .map((m) => ({ ...m, w: m.games / (m.games + PARTIDAS_PARA_CONTAR) }));
+  const nEf = suyos.reduce((s, m) => s + m.w, 0);
+  let sigmaMedida = SIGMA_POR_DEFECTO;
+  if (nEf > 0) {
+    const observada = suyos.reduce((s, m) => s + m.w * (m.winRate - base) ** 2, 0) / nEf;
     // Lo que explica el propio muestreo. Lo que sobra es variación de verdad.
-    const porMuestreo = suyos.reduce((s, m) => s + 0.25 / m.games, 0) / n;
+    const porMuestreo = suyos.reduce((s, m) => s + m.w * 0.25 / m.games, 0) / nEf;
     const real = observada - porMuestreo;
-    if (real > 0) sigma = Math.sqrt(real);
+    sigmaMedida = real > 0 ? Math.sqrt(real) : SIGMA_MINIMA;
   }
+  let sigma = (SIGMA_POR_DEFECTO * HEROES_PARA_MEDIR_DISPERSION + sigmaMedida * nEf) / (HEROES_PARA_MEDIR_DISPERSION + nEf);
   sigma = Math.max(SIGMA_MINIMA, Math.min(SIGMA_MAXIMA, sigma));
   return 0.25 / (sigma * sigma);
 }
@@ -551,8 +564,13 @@ export function masteryScore(roamHero, mastery, nivel, prior) {
   const base = nivel ?? tuNivel(mastery);
   const k = prior ?? priorDeMaestria(mastery, base);
   const shrunk = (m.winRate * m.games + base * k) / (m.games + k);
-  // Mismo ancho de siempre (±10 puntos), pero alrededor de tu nivel.
-  const value = clamp01((shrunk - (base - 0.10)) / 0.20);
+  // Escala DERIVADA de tu dispersión, no fija: 1 es dos desviaciones por
+  // encima de tu nivel (con la σ que `priorDeMaestria` mide de tus datos,
+  // ±4 puntos → ±8), 0 dos por debajo, 0.5 como tú. Este valor ya no pasa
+  // por la normalización min-max del ranking, así que su escala ES la
+  // contribución: con ±10 fijos, 1.000 partidas al 70% no llegaban al tope.
+  const sigma = Math.sqrt(0.25 / k);
+  const value = clamp01((shrunk - base) / (4 * sigma) + 0.5);
   // El motivo se mide contra TU nivel, igual que la nota, y no contra un 55%
   // fijo. Con el umbral absoluto, a un jugador que gana el 53,4% de sus
   // partidas un héroe al 55% le salía como "lo llevas bien" siendo casi su
@@ -571,7 +589,6 @@ export function masteryScore(roamHero, mastery, nivel, prior) {
   // dentro el tamano de muestra, asi que no hace falta ningun corte de partidas.
   // Lo que se ENSENA sigue siendo el bruto con su n: "60% en 20" es lo que
   // paso, y el lector ya ve que son veinte.
-  const sigma = Math.sqrt(0.25 / k);
   const reasons = [];
   if (shrunk >= base + sigma) {
     reasons.push({ clave: 'regla.maestriaBuena', params: { pct: Math.round(m.winRate * 100), n: m.games }, good: true, w: 1.4 });
@@ -676,11 +693,16 @@ const SENAL_MINIMA = 0.02;
  * Si un componente casi no varía (draft vacío, sin counters, sin maestría) se
  * deja plano en 0.5: no tiene información y no debe inventarse diferencias.
  */
-function normalizarComponente(valores) {
+export function normalizarComponente(valores) {
   const min = Math.min(...valores);
   const max = Math.max(...valores);
-  if (max - min < SENAL_MINIMA) return valores.map(() => 0.5);
-  return valores.map((v) => (v - min) / (max - min));
+  const rango = max - min;
+  if (!(rango > 0)) return valores.map(() => 0.5);
+  // Rampa continua en vez de corte: con `rango < SENAL_MINIMA → plano`, la
+  // partida que cruzaba el umbral pasaba de «sin señal» a «peso entero» de
+  // golpe. Por debajo de la señal mínima se encoge hacia 0.5 en proporción.
+  const factor = Math.min(1, rango / SENAL_MINIMA);
+  return valores.map((v) => 0.5 + ((v - min) / rango - 0.5) * factor);
 }
 
 /** Ordena todo el pool de roam para el estado actual del draft. */
@@ -712,7 +734,14 @@ export function rankRoamers(pool, ctx) {
   }
   const normalizados = {};
   for (const k of claves) {
-    normalizados[k] = normalizarComponente(resultados.map((r) => r.parts[k]?.value ?? 0.5));
+    const valores = resultados.map((r) => r.parts[k]?.value ?? 0.5);
+    // La maestría NO se reescala: su valor ya viene en una escala fija y
+    // centrada en tu nivel (0.5 = como tú, 1 = diez puntos por encima, ya
+    // encogido por partidas). Min-max es invariante a escala y se comía todo
+    // el encogimiento: 5 partidas al 90% y 1.000 al 70% daban la misma
+    // contribución (0.150, el peso entero) y el mismo ranking; apuntar UNA
+    // partida (de la 9 a la 10) cambiaba el nº1 en el 44% de los drafts.
+    normalizados[k] = k === 'mastery' ? valores : normalizarComponente(valores);
   }
 
   // Con el equipo enemigo a medias, un pick muy castigable es una apuesta: se
