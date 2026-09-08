@@ -106,7 +106,10 @@ const campo = (bloque, clave) => {
 export function fechaISO(texto) {
   if (!texto) return null;
   const limpio = texto.replace(/\{\{.*?\}\}/g, '').trim();
-  const t = Date.parse(limpio.split(' - ')[0]);
+  // En UTC: `Date.parse('August 22, 2025')` es medianoche LOCAL, y desde
+  // Termux (Madrid) salía el 21: la misma partida tenía dos claves según
+  // dónde se leyera, y el filtro de días corría un día.
+  const t = Date.parse(`${limpio.split(' - ')[0]} UTC`);
   return Number.isNaN(t) ? null : new Date(t).toISOString().slice(0, 10);
 }
 
@@ -131,7 +134,14 @@ export function parsearPartidas(wikitext, torneo = null) {
       continue;
     }
     if (!trozo.startsWith('{{Map')) continue;
-    const fin = trozo.indexOf('}}');
+    // Cierre con BALANCE de llaves: cortar en el primer `}}` truncaba el
+    // bloque cuando llevaba una plantilla anidada antes de los picks
+    // (`|vod={{x}}`) y la partida se descartaba sin contarse.
+    let nivel = 0; let fin = -1;
+    for (let k = 0; k < trozo.length - 1; k++) {
+      if (trozo[k] === '{' && trozo[k + 1] === '{') { nivel++; k++; continue; }
+      if (trozo[k] === '}' && trozo[k + 1] === '}') { nivel--; k++; if (nivel === 0) { fin = k - 1; break; } }
+    }
     const bloque = fin > 0 ? trozo.slice(0, fin) : trozo;
     const t1 = [1, 2, 3, 4, 5].map((i) => campo(bloque, `t1h${i}`)).filter(Boolean);
     const t2 = [1, 2, 3, 4, 5].map((i) => campo(bloque, `t2h${i}`)).filter(Boolean);
@@ -247,6 +257,9 @@ export function crearCliente({ pausa = PAUSA_MS, maxPeticiones = 200, fetchImpl 
         hechas += 1;
         const res = await fetchImpl(url, {
           headers: { 'User-Agent': USER_AGENT, 'Accept-Encoding': 'gzip', Accept: 'application/json' },
+          // Con tope: «se guarda lo leído en vez de tirarlo» solo vale para
+          // errores; un cuelgue llegaba al timeout-minutes con el fichero sin escribir.
+          signal: AbortSignal.timeout(30000),
         });
         if (res.status === 429 || res.status === 503) {
           if (intento >= RETROCESO_MS.length) throw new Error(`Liquipedia sigue limitando tras ${intento} esperas`);
@@ -277,12 +290,15 @@ export async function torneosDe(cliente, categoria, limite = 60) {
 }
 
 /** Wikitext de varias páginas por petición (de 20 en 20: las de 50 pesan). */
-export async function wikitextDe(cliente, titulos) {
+export async function wikitextDe(cliente, titulos, errores = null) {
   const salida = {};
   for (let i = 0; i < titulos.length; i += 20) {
     const d = await cliente.consultar({
       action: 'query', prop: 'revisions', rvprop: 'content', rvslots: 'main', titles: titulos.slice(i, i + 20).join('|'),
     });
+    // MediaWiki corta la respuesta si el lote pesa y lo dice con `continue`:
+    // sin mirarlo, las páginas que faltaban se perdían como «ya las tenía».
+    if (d?.continue) errores?.push(`lote ${i / 20 + 1} de wikitext truncado por la API (continue): ${Object.keys(d.continue).join(',')}`);
     for (const pg of Object.values(d.query?.pages ?? {})) {
       const w = pg.revisions?.[0]?.slots?.main?.['*'] ?? pg.revisions?.[0]?.['*'];
       if (w) salida[pg.title] = w;
@@ -317,7 +333,8 @@ async function main() {
   const out = opt('--out', resolve(ROOT, 'public/data/pro.json'));
   const outPartidas = opt('--out-partidas', resolve(ROOT, 'historial/pro-partidas.jsonl'));
   const desde = opt('--desde', new Date(Date.now() - 400 * 86400e3).toISOString().slice(0, 10));
-  const ventana = opt('--ventana', new Date(Date.now() - 120 * 86400e3).toISOString().slice(0, 10));
+  const VENTANA_DIAS = Number(opt('--ventana-dias', 120)) || 120;
+  const ventana = opt('--ventana', new Date(Date.now() - VENTANA_DIAS * 86400e3).toISOString().slice(0, 10));
   const maxPeticiones = Number(opt('--max-peticiones', 150));
   const pausa = Number(opt('--pausa', PAUSA_MS));
   const maxTorneos = Number(opt('--max-torneos', 25));
@@ -341,7 +358,7 @@ async function main() {
     const portadasAPedir = sinSubpaginas([...titulos]);
     log(`${titulos.size} torneos recientes en las categorías (${portadasAPedir.length} sin subpáginas)`);
     // Primero las portadas, en lotes: la infobox dice si el torneo es reciente.
-    const portadas = await wikitextDe(cliente, portadasAPedir);
+    const portadas = await wikitextDe(cliente, portadasAPedir, errores);
     const recientes = Object.entries(portadas)
       .map(([t, w]) => ({ titulo: t, ...fechasDe(w) }))
       .filter((t) => t.edate && t.edate >= desde)
@@ -353,7 +370,7 @@ async function main() {
     for (const t of recientes) {
       try {
         const paginas = [t.titulo, ...(await subpaginasDe(cliente, t.titulo))];
-        const textos = await wikitextDe(cliente, paginas);
+        const textos = await wikitextDe(cliente, paginas, errores);
         let nuevas = 0;
         for (const [pagina, w] of Object.entries(textos)) {
           for (const p of parsearPartidas(w, t.titulo)) {
@@ -385,11 +402,16 @@ async function main() {
   if (todas.length === previas.length) {
     try { generatedAt = JSON.parse(await readFile(resolve(ROOT, 'public/data/pro.json'), 'utf8')).generatedAt ?? generatedAt; } catch { /* primera corrida */ }
   }
+  // `desde` sale de la última partida guardada, no de hoy: con `Date.now()`
+  // el fichero cambiaba a diario aunque no hubiera nada nuevo, y cada lunes
+  // había commit y despliegue de nada. Las peticiones van al log.
+  const ultimaFecha = todas.map((p) => p.fecha).filter(Boolean).sort().at(-1);
+  const desdeEstable = ultimaFecha ? new Date(Date.parse(`${ultimaFecha}T00:00:00Z`) - VENTANA_DIAS * 86400e3).toISOString().slice(0, 10) : ventana;
   const resumen = {
     generatedAt,
-    ...resumirPro(todas, heroes, { desde: ventana }),
+    ...resumirPro(todas, heroes, { desde: desdeEstable }),
     total: todas.length,
-    peticiones: cliente.hechas,
+    ventanaDias: VENTANA_DIAS,
     errores,
   };
   await mkdir(dirname(out), { recursive: true });

@@ -4,12 +4,17 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const css = readFileSync(resolve(ROOT, 'src/styles.css'),'utf8');
+// La ruta se puede pasar por argumento: así la prueba puede darle un CSS
+// roto a propósito y comprobar que este script se entera.
+const css = readFileSync(process.argv[2] ? resolve(process.argv[2]) : resolve(ROOT, 'src/styles.css'), 'utf8');
 const fallos = [];
 
 // 1) nada esencial oculto en movil
 for (const sel of ['.slot .x', '.pie', '.reset', '.hero-grid']) {
-  const re = new RegExp(`\\${sel.replace(/\./g,'\\.')}[^{]*\\{[^}]*display:\\s*none`);
+  // Sin la barra inicial que había: `\\${sel}` producía «barra literal + un
+  // carácter cualquiera», que no casa con nada, y la comprobación que nació
+  // de la × oculta en móvil llevaba muerta desde que se escribió.
+  const re = new RegExp(`${sel.replace(/\./g, '\\.')}[^{]*\\{[^}]*display:\\s*none`);
   if (re.test(css)) fallos.push(`${sel} se oculta en algún sitio`);
 }
 // 2) toda variable var(--x) usada debe estar declarada

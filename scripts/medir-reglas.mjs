@@ -8,7 +8,6 @@
  * contra los enemigos que tienen otro. Aquí se mide.
  *
  *   node scripts/medir-reglas.mjs           resumen por regla
- *   node scripts/medir-reglas.mjs --tags    además, qué tags habría que tocar
  *
  * MÉTODO. Para cada héroe se comparan sus cruces contra los enemigos CON el tag
  * enemigo y contra los demás, con una t de Welch (dos grupos, varianzas
@@ -85,8 +84,7 @@ function comparar(heroe, conTag, sinTag) {
   return { dif, se, t: dif / se, n: a.length };
 }
 
-const propios = new Set(catalogo.map((h) => h.name));
-const conTags = catalogo.filter((h) => propios.has(h.name));
+const conTags = catalogo.filter((h) => (h.tags ?? []).length);
 
 const informe = [];
 for (const regla of COUNTER_RULES) {

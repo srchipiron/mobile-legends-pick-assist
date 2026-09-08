@@ -30,6 +30,9 @@ export function medir(datos) {
     conLinea: heroes.filter((h) => Array.isArray(h?.lanes) && h.lanes.length).length,
     conRol: heroes.filter((h) => h?.role).length,
     conDano: heroes.filter((h) => h?.damage).length,
+    // La speciality de Moonton, desde 1.37.0 para los 133: sin contarla, una
+    // corrida con la ficha caída la perdía sin que el comparador lo viera.
+    conSpeciality: heroes.filter((h) => Array.isArray(h?.speciality) && h.speciality.length).length,
     stats: Object.keys(datos?.stats ?? {}).length,
     // Los RANGOS resueltos, y si el pedido esta entre ellos: con el de glory
     // caido, `stats` se rellenaba con epic bajo la etiqueta glory y este
@@ -78,7 +81,7 @@ export const MARGEN = 0.9;
  * los cruces en el 39% sin que saltara nada. Objetos y builds quedan fuera:
  * varían por diseño (Moonton retira objetos, las builds cambian con el meta).
  */
-export const FIJAS = ['heroes', 'conLinea', 'conRol', 'conDano', 'cruces', 'sinergias'];
+export const FIJAS = ['heroes', 'conLinea', 'conRol', 'conDano', 'conSpeciality', 'cruces', 'sinergias'];
 
 /** Máximo de cada recuento fijo en las filas de historial/salud.jsonl (líneas rotas, fuera). */
 export function maximosDelHistorial(texto) {
@@ -107,11 +110,16 @@ export function comparar(nueva, guardada, maximos = {}) {
   return { nueva: a, guardada: b, peores };
 }
 
+// Solo «no existe» se acepta (primera corrida). Un JSON ilegible o una
+// errata en la ruta del workflow desactivaban el guardarraíl entero en
+// silencio: «no hay corrida anterior: se acepta».
 const leer = async (ruta) => {
   try {
     return JSON.parse(await readFile(ruta, 'utf8'));
-  } catch {
-    return null;
+  } catch (e) {
+    if (e?.code === 'ENOENT') return null;
+    console.error(`No se ha podido leer ${ruta}: ${e.message}`);
+    process.exit(2);
   }
 };
 

@@ -32,8 +32,16 @@ for (const file of files) {
     for (let i = start; i < end; i++) {
       // `let` también: un `let x = useMemo(...)` usado antes es el mismo TDZ y la
       // misma pantalla en negro (probado por mutación: solo se miraba `const`).
-      const m = lines[i].match(/^ {2}(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=/);
-      if (m && !declared.has(m[1])) declared.set(m[1], i);
+      // Y las desestructuradas (`const [a, setA] = useState()`, `const { x } =
+      // props`), que son la mitad de las de App.jsx y justo las de React:
+      // solo se miraba `const nombre =` (probado por mutación).
+      const m = lines[i].match(/^ {2}(?:const|let)\s+(\[[^\]]*\]|\{[^}]*\}|[A-Za-z_$][\w$]*)\s*=/);
+      if (!m) continue;
+      const nombres = m[1].startsWith('[') || m[1].startsWith('{')
+        // En `{ a: b }` el local es b; en `{ a = 1 }` es a; en `[x, , y]` son x e y.
+        ? [...m[1].replace(/=\s*[^,}\]]+/g, '').matchAll(/([A-Za-z_$][\w$]*)(?!\s*:)/g)].map((x) => x[1])
+        : [m[1]];
+      for (const nombre of nombres) if (!declared.has(nombre)) declared.set(nombre, i);
     }
 
     for (const [name, declLine] of declared) {

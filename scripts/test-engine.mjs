@@ -1680,6 +1680,96 @@ test('revisión línea a línea del registro y el perfil: referencia, potencia, 
   ok(Math.abs(medianaK - 156) / 156 <= 0.12, `k mediano ${medianaK.toFixed(0)}, esperado 156 ± 12%`);
 });
 
+test('revisión línea a línea de scripts y workflows: guardas que no vigilaban, bucles verdes en rojo, fechas, tiempos', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const { mkdtempSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const dir = mkdtempSync(resolve(tmpdir(), 'guardas-'));
+  const corre = (script, args, opts = {}) => spawnSync('node', [resolve(ROOT, `scripts/${script}`), ...args], { encoding: 'utf8', ...opts });
+
+  // 1. check-css: la regla «nada esencial oculto» llevaba muerta desde que se
+  //    escribió (la regex no casaba con nada). Con un CSS roto tiene que fallar.
+  const cssRoto = resolve(dir, 'roto.css');
+  writeFileSync(cssRoto, readFileSync(resolve(ROOT, 'src/styles.css'), 'utf8').replace('.slot .x {', '.slot .x { display: none; '));
+  const rCss = corre('check-css.mjs', [cssRoto]);
+  ok(rCss.status !== 0 && /se oculta/.test(rCss.stdout + rCss.stderr), `check-css no ve la × oculta: ${(rCss.stdout + rCss.stderr).slice(0, 200)}`);
+  eq(corre('check-css.mjs', []).status, 0, 'check-css falla con el CSS real');
+
+  // 2. check-order: las desestructuradas (useState) también cuentan.
+  const jsxRoto = resolve(dir, 'roto.jsx');
+  writeFileSync(jsxRoto, `export default function App() {\n  const total = enemies.length + foo;\n  const [enemies, setEnemies] = useState([]);\n  const { foo } = props;\n  return total;\n}\n`);
+  ok(corre('check-order.mjs', [jsxRoto]).status !== 0, 'check-order no ve un useState desestructurado usado antes');
+  const jsxBien = resolve(dir, 'bien.jsx');
+  writeFileSync(jsxBien, `export default function App() {\n  const [enemies, setEnemies] = useState([]);\n  const { foo = 1 } = props;\n  const total = enemies.length + foo;\n  return total;\n}\n`);
+  eq(corre('check-order.mjs', [jsxBien]).status, 0, 'check-order falla con un orden correcto');
+
+  // 3. Los bucles de rebase+push salen en rojo si fallan los tres intentos.
+  for (const f of ['update-data.yml', 'pro.yml', 'vigilancia.yml']) {
+    const yml = readFileSync(resolve(ROOT, `.github/workflows/${f}`), 'utf8');
+    ok(/subido=1/.test(yml) && /\[ "\$subido" = 1 \] \|\| \{[^}]*exit 1/.test(yml), `${f}: el bucle de push acaba en verde aunque fallen los tres intentos`);
+  }
+
+  // 4. comparar-ingesta: una guardada ILEGIBLE no se acepta (solo la que no existe).
+  const nueva = resolve(ROOT, 'public/data/roam-meta.json');
+  const ilegible = resolve(dir, 'guardada.json');
+  writeFileSync(ilegible, '{esto no es json');
+  ok(corre('comparar-ingesta.mjs', [nueva, ilegible]).status !== 0, 'comparar-ingesta acepta la corrida con la guardada ilegible');
+  eq(corre('comparar-ingesta.mjs', [nueva, resolve(dir, 'no-existe.json')]).status, 0, 'comparar-ingesta rechaza la primera corrida (sin guardada)');
+  for (const f of ['update-data.yml', 'deploy.yml']) {
+    const yml = readFileSync(resolve(ROOT, `.github/workflows/${f}`), 'utf8');
+    ok(/comparar-ingesta\.mjs \/tmp\/nueva\.json public\/data\/roam-meta\.json/.test(yml), `${f}: la comparación no apunta a public/data/roam-meta.json`);
+  }
+
+  // 5. fechaISO en UTC: desde un móvil en otra zona horaria salía un día menos.
+  const tz = spawnSync('node', ['--input-type=module', '-e', "import('./scripts/ingesta-pro.mjs').then((m) => console.log(m.fechaISO('August 22, 2025 - 15:15{{abbr/ICT}}')))"], { cwd: ROOT, encoding: 'utf8', env: { ...process.env, TZ: 'Pacific/Kiritimati' } });
+  eq(tz.stdout.trim(), '2025-08-22', `fechaISO depende de la zona horaria: ${tz.stdout.trim()} ${tz.stderr.slice(0, 100)}`);
+
+  // 6. {{Map}} con una plantilla anidada antes de los picks no se pierde.
+  const { parsearPartidas, wikitextDe } = await import('./ingesta-pro.mjs');
+  const wt = '{{Match|date=August 22, 2025 - 15:15{{abbr/ICT}}|opponent1={{TeamOpponent|A}}|opponent2={{TeamOpponent|B}}}}{{Map|vod={{x}}|t1h1=a|t1h2=b|t1h3=c|t1h4=d|t1h5=e|t2h1=f|t2h2=g|t2h3=h|t2h4=i|t2h5=j|winner=1}}';
+  eq(parsearPartidas(wt, 'T').length, 1, 'una plantilla anidada antes de los picks descarta la partida');
+
+  // 7. wikitextDe avisa si la API trunca el lote (continue).
+  const errores = [];
+  const cliente = { consultar: async () => ({ continue: { rvcontinue: '1' }, query: { pages: { 1: { title: 'X', revisions: [{ slots: { main: { '*': 'texto' } } }] } } } }) };
+  await wikitextDe(cliente, ['X'], errores);
+  ok(errores.some((e) => /continue/.test(e)), 'un lote truncado por la API no deja rastro');
+
+  // 8. Toda descarga lleva tope de tiempo.
+  for (const f of ['ingest.mjs', 'ingesta-pro.mjs']) {
+    const src = readFileSync(resolve(ROOT, `scripts/${f}`), 'utf8');
+    const llamadas = [...src.matchAll(/\b(fetch|fetchImpl)\(([\s\S]{0,400}?)\)\s*;/g)];
+    ok(llamadas.length >= 1, `${f}: no encuentro llamadas a fetch`);
+    for (const l of llamadas) ok(/signal\s*:/.test(l[2]) || /signal\b/.test(l[2]), `${f}: fetch sin tope de tiempo: ${l[0].slice(0, 80)}`);
+  }
+
+  // 9. parseArgs no se traga el siguiente flag como valor.
+  const { parseArgs } = await import('./ingest.mjs');
+  const a = parseArgs(['--out', '--iconos', '/tmp/x', '--days', '7']);
+  ok(a.out === true && a.iconos === '/tmp/x' && a.days === '7', `parseArgs: ${JSON.stringify(a)}`);
+
+  // 10. El diagnóstico no lleva la URL vieja del repositorio escrita a mano.
+  const diag = readFileSync(resolve(ROOT, 'scripts/diagnostico.mjs'), 'utf8');
+  ok(!/mlbb-roam-picker'/.test(diag) && /NOMBRE_PAQUETE/.test(diag), 'diagnostico.mjs sigue con la URL del repositorio renombrado');
+
+  // 11. El rival de línea pesa el DOBLE de verdad (una mutación a 1,5 pasaba
+  //     la suite entera): con el mismo cruce, marcarlo como rival dobla su
+  //     peso frente a otro enemigo idéntico.
+  const { counterScore, indexByName } = await import('../src/engine/score.js');
+  const yo = { name: 'Yo', tags: [] }; const e1 = { name: 'E1', tags: [] }; const e2 = { name: 'E2', tags: [] };
+  // E2 en el empate exacto (nota 0.5): así el factor de confianza por pickrate,
+  // común a las tres llamadas, se cancela en las razones. Con pesos 2 y 1 el
+  // desvío sobre 0.5 es 2/3·d con E1 de rival, 1/3·d con E2, 1/2·d sin rival:
+  // razones 4/3 y 2/3. Con peso 1,5 saldrían 1,2 y 0,8.
+  const M = indexByName({ Yo: { E1: 0.56, E2: 0.50 } }, 2);
+  const stats = indexByName({ E1: { pickRate: 0.02 }, E2: { pickRate: 0.02 } });
+  const desvio = (rival) => counterScore(yo, [e1, e2], M, rival, stats).value - 0.5;
+  const sin = desvio(null);
+  ok(sin > 0.01, `sin rival el desvío tendría que ser positivo: ${sin}`);
+  ok(Math.abs(desvio('E1') / sin - 4 / 3) < 1e-6 && Math.abs(desvio('E2') / sin - 2 / 3) < 1e-6,
+    `el rival de línea no pesa exactamente el doble: razones ${(desvio('E1') / sin).toFixed(4)} y ${(desvio('E2') / sin).toFixed(4)} (esperadas 1.3333 y 0.6667)`);
+});
+
 test('el consejo para los compañeros cubre las líneas abiertas y responde al equipo enemigo', async () => {
   const { aconsejarEquipo } = await import('../src/engine/equipo.js');
   const { indiceDeLineas, frecuenciaDeRoles } = await import('../src/engine/rival-de-linea.js');
@@ -1850,6 +1940,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   } };
   const golpes = {};
   let fallaCounters = false;
+  let fallaDetail = false;
+  let academyVacia = false;
+  let fallosCountersPendientes = 0;
   const srv = createServer((req, res) => {
     const u = new URL(req.url, 'http://x');
     const ruta = u.pathname;
@@ -1872,6 +1965,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       } } } })) } });
     }
     if ((m = ruta.match(/^\/api\/heroes\/([^/]+)\/$/))) {
+      if (fallaDetail) { res.statusCode = 500; return res.end('{}'); }
       marca('detail');
       const h = heroes.find((x) => String(x.id) === m[1]) ?? heroes[0];
       return json({ code: 0, data: { hero: { data: {
@@ -1880,8 +1974,11 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       } } } });
     }
     if (/^\/api\/(academy\/)?heroes\/[^/]+\/counters$/.test(ruta) && fallaCounters) { res.statusCode = 500; return res.end('{}'); }
-    if (/^\/api\/heroes\/[^/]+\/counters$/.test(ruta)) { marca('counters'); return json(pares(2)); }
-    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta)) { marca('academy'); return json(pares(4)); }
+    if (/^\/api\/heroes\/[^/]+\/counters$/.test(ruta)) {
+      if (fallosCountersPendientes > 0) { fallosCountersPendientes -= 1; res.statusCode = 500; return res.end('{}'); }
+      marca('counters'); return json(pares(2));
+    }
+    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta)) { marca('academy'); return json(academyVacia ? { data: { sub_hero: [] } } : pares(4)); }
     if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta)) { marca('compat'); return json(pares(3)); }
     if (ruta === '/api/equipment/expanded') {
       marca('equipo');
@@ -1989,6 +2086,33 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     ok(atlasAntes !== 'null' && JSON.stringify(d2.counters?.Atlas) === atlasAntes, 'la fila de Atlas no se conserva héroe a héroe');
     const { comparar: comparar2 } = await import('./comparar-ingesta.mjs');
     ok(comparar2(d2, guardada).peores.some((p) => p.clave === 'relacionesFrescas'), 'el comparador acepta una corrida que no ha descargado la matriz');
+
+    // Tercera corrida: la ficha de los héroes caída (speciality se conserva
+    // de la corrida anterior, que se pasa con --previo), la ruta principal
+    // de counters falla UNA vez al sondear y la alternativa trae CERO pares:
+    // antes 0 > -1 cambiaba la ruta por la vacía y la matriz entera salía
+    // conservada.
+    fallaCounters = false; fallaDetail = true; academyVacia = true; fallosCountersPendientes = 1;
+    const out3 = resolve(dir, 'ficha-caida.json');
+    const r3 = await new Promise((listo) => {
+      const hijo = spawn('node', [
+        resolve(ROOT, 'scripts/ingest.mjs'), '--base', `http://127.0.0.1:${puerto}/api`,
+        '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', out3, '--previo', out,
+        '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
+      ], { timeout: 120000 });
+      let stdout = ''; let stderr = '';
+      hijo.stdout.on('data', (b) => { stdout += b; });
+      hijo.stderr.on('data', (b) => { stderr += b; });
+      hijo.on('close', (status) => listo({ status, stdout, stderr }));
+    });
+    eq(r3.status, 0, `la tercera corrida no acaba bien: ${(r3.stdout + r3.stderr).slice(-400)}`);
+    const d3 = JSON.parse(readFileSync(out3, 'utf8'));
+    const atlas3 = d3.heroes.find((h) => h.name === 'Atlas');
+    ok(atlas3?.speciality?.includes('Guard'), `con la ficha caída la speciality no se conserva: ${JSON.stringify(atlas3?.speciality)}`);
+    ok(/^2 pares /.test(d3.diagnostics.rutasMedidas?.counter ?? '') && !/academy/.test(d3.diagnostics.rutasMedidas?.counter ?? ''),
+      `un fallo suelto al sondear cambió la ruta de counters por una vacía: ${d3.diagnostics.rutasMedidas?.counter}`);
+    eq(d3.counters.Atlas?.Khufra, 0.5123, 'la matriz no se descargó por la ruta buena tras el fallo suelto');
+    eq(d3.diagnostics.frescosRecursos?.relaciones > 100, true, `relaciones frescas: ${JSON.stringify(d3.diagnostics.frescosRecursos)}`);
   } finally {
     srv.close();
   }

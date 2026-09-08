@@ -24,35 +24,46 @@ import {
 // Duplicar el criterio aqui ya costo un fallo: la app metia a Marcel (support
 // segun la API) y la ingesta no le pedia counters, porque miraba solo el
 // catalogo escrito a mano.
-import { mergeCatalog } from '../src/engine/score.js';
+import { mergeCatalog, normName } from '../src/engine/score.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const args = Object.fromEntries(
-  process.argv.slice(2).reduce((acc, cur, i, arr) => {
-    if (cur.startsWith('--')) acc.push([cur.slice(2), arr[i + 1]]);
+// `--out --iconos /tmp/x` daba `{ out: '--iconos' }`: un valor que empieza
+// por `--` no es un valor.
+export function parseArgs(argv) {
+  return Object.fromEntries(argv.reduce((acc, cur, i, arr) => {
+    if (cur.startsWith('--')) {
+      const v = arr[i + 1];
+      acc.push([cur.slice(2), v != null && !String(v).startsWith('--') ? v : true]);
+    }
     return acc;
-  }, []),
-);
+  }, []));
+}
+const args = parseArgs(process.argv.slice(2));
 
 // --out escribe en otro sitio. Lo usa la prueba que ejecuta esta ingesta de
 // verdad: sin ello sobrescribia public/data con una corrida contra una base
 // inalcanzable, y como las pruebas corren antes de compilar, ese diagnostico
 // degradado era el que se publicaba.
-const OUT = resolve(ROOT, args.out ?? 'public/data/roam-meta.json');
+const OUT = resolve(ROOT, typeof args.out === 'string' ? args.out : 'public/data/roam-meta.json');
 const HEROES = resolve(ROOT, 'public/data/heroes.json');
 
 // Donde se guardan los iconos de los objetos. Mismo motivo que --out: la prueba
 // que ejecuta la ingesta de verdad le pasa un temporal, para no ensuciar el
 // repositorio ni dejarlo a medias si la corrida sale mal.
-const ICONOS = resolve(ROOT, args.iconos ?? 'public/objetos');
-const RETRATOS = resolve(ROOT, args.retratos ?? 'public/heroes');
+const ICONOS = resolve(ROOT, typeof args.iconos === 'string' ? args.iconos : 'public/objetos');
+const RETRATOS = resolve(ROOT, typeof args.retratos === 'string' ? args.retratos : 'public/heroes');
+// `--previo`: de dónde leer «lo anterior». Solo para pruebas (ver abajo).
+const PREVIO = typeof args.previo === 'string' ? resolve(ROOT, args.previo) : null;
 
 // Gloria Mitica por defecto: es el rango del usuario y donde el draft se juega
 // en serio, asi que sus counters son los mas informativos.
-const RANK = args.rank ?? 'glory';
-const DAYS = Number(args.days ?? 7);
-const RANKS = (args.ranks ?? 'epic,legend,mythic,glory').split(',').map((r) => r.trim());
+const RANK = typeof args.rank === 'string' ? args.rank : 'glory';
+const DAYS = Number.isFinite(Number(args.days)) && Number(args.days) > 0 ? Number(args.days) : 7;
+const RANKS = (typeof args.ranks === 'string' ? args.ranks : 'epic,legend,mythic,glory').split(',').map((r) => r.trim()).filter(Boolean);
+// El rango pedido se descarga siempre: fuera de la lista, `estadisticasNuevas`
+// era falso para siempre y la fecha del fichero no avanzaba jamás.
+if (!RANKS.includes(RANK)) RANKS.push(RANK);
 
 /**
  * Bases conocidas, de la más actual a la más antigua.
@@ -617,7 +628,9 @@ async function bajarImagenes(urlPorClave, dir, ext, clave) {
   for (const [id, url] of Object.entries(urlPorClave)) {
     if (!url || existentes.has(`${id}${ext}`)) continue;
     try {
-      const res = await fetch(url, { headers: { 'User-Agent': UA } });
+      // Con tope: un CDN que no responde colgaba el paso hasta el
+      // timeout-minutes y se perdía la corrida entera con nueve minutos hechos.
+      const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(TIMEOUT_MS) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const buf = Buffer.from(await res.arrayBuffer());
       if (!esImagen(buf)) throw new Error('no es una imagen');
@@ -854,10 +867,16 @@ async function elegirRutaConMasDatos(clave, heroeDePrueba) {
   };
 
   let mejor = { ruta, pares: await medir(ruta) };
+  // Un 5xx suelto en la ruta principal daba -1, y cualquier alternativa con
+  // CERO pares «ganaba» (0 > -1): las 266 peticiones siguientes iban a una
+  // ruta vacía y la matriz entera salía conservada. Se reintenta una vez y
+  // solo se cambia por una ruta que traiga MÁS pares, no por una que no
+  // traiga nada.
+  if (mejor.pares < 0) { await sleep(500); mejor.pares = await medir(ruta); }
   for (const alt of ruta.alternativas) {
     const pares = await medir(alt);
     await sleep(200);
-    if (pares > mejor.pares) mejor = { ruta: alt, pares };
+    if (pares > Math.max(mejor.pares, 0)) mejor = { ruta: alt, pares };
   }
 
   (diagnostics.rutasMedidas ??= {})[clave] = `${mejor.pares} pares · ${mejor.ruta.template}`;
@@ -926,7 +945,9 @@ async function fetchRelations(roamNames, stats, heroList) {
   // ninguna, la API acepta también el nombre como identificador, así que se usa
   // eso antes que rendirse: antes bastaba con que faltara el id para que TODOS
   // los counters se quedaran vacíos sin decir nada.
-  const norm = (n) => String(n ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  // La MISMA normalización que el motor (ya se importa): había dos copias
+  // distintas en este fichero, sin NFD ni «&→and».
+  const norm = normName;
   const idPorNombre = new Map();
   const idToName = new Map();
   for (const [n, st] of Object.entries(stats)) {
@@ -1011,7 +1032,7 @@ async function main() {
   // "conservo lo anterior" de cada endpoint conservaba la nada, y un fallo
   // suelto de la API tiraba la corrida entera en vez de degradarla.
   let previous = null;
-  for (const ruta of [resolve(ROOT, 'public/data/roam-meta.json'), OUT]) {
+  for (const ruta of [...(PREVIO ? [PREVIO] : []), resolve(ROOT, 'public/data/roam-meta.json'), OUT]) {
     try {
       previous = JSON.parse(await readFile(ruta, 'utf8'));
       break;
@@ -1042,9 +1063,16 @@ async function main() {
   const retratoPrevio = Object.fromEntries(
     (previous?.heroes ?? []).filter((h) => h?.retrato).map((h) => [h.name, h.retrato]),
   );
+  // Y la speciality: con la ficha caída, derivar-tags.mjs volvía a la
+  // descarga a ciegas por una ruta escrita a mano, justo lo que 1.37.0 quiso
+  // evitar.
+  const specialityPrevia = Object.fromEntries(
+    (previous?.heroes ?? []).filter((h) => Array.isArray(h?.speciality) && h.speciality.length).map((h) => [h.name, h.speciality]),
+  );
   for (const h of heroList) {
     if (danoPrevio[h.name]) h.damage = danoPrevio[h.name];
     if (retratoPrevio[h.name]) h.retrato = retratoPrevio[h.name];
+    if (specialityPrevia[h.name]) h.speciality = specialityPrevia[h.name];
   }
 
   diagnostics.speciality = { pedidos: heroList.length, ok: 0, errores: [] };
@@ -1193,10 +1221,8 @@ async function main() {
   };
 
   // Misma normalización que usa la app, para que el aviso coincida con la realidad.
-  const norm = (n) => String(n ?? '').toLowerCase().normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '').replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
-  const statKeys = new Set(Object.keys(stats).map(norm));
-  const sinDatos = roamNames.filter((n) => !statKeys.has(norm(n)));
+  const statKeys = new Set(Object.keys(stats).map(normName));
+  const sinDatos = roamNames.filter((n) => !statKeys.has(normName(n)));
 
   const known = new Set(heroes.heroes.map((h) => h.name));
   const seen = new Set([...Object.keys(stats), ...heroList.map((h) => h.name)]);
@@ -1248,7 +1274,11 @@ async function main() {
       builds: diagnostics.builds ?? null,
       rangos: diagnostics.rangos ?? null,
       ok: [...new Set(diagnostics.ok)].slice(0, 6),
-      failed: Object.keys(statsByRank).length ? [] : [...new Set(diagnostics.failed)].slice(0, 12),
+      // Lo que falló, si NO se descargó nada: antes se vaciaba en cuanto había
+      // datos previos (statsByRank lleva dentro el `previous`), o sea casi
+      // siempre, y con la API caída el móvil veía `failed: []`.
+      failed: frescos.length ? [] : [...new Set(diagnostics.failed)].slice(0, 12),
+      imagenes: diagnostics.imagenes ?? null,
     },
     stats,
     statsByRank,

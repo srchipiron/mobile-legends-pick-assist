@@ -84,12 +84,14 @@ jobs:
           base_branch: main
           branch_prefix: claude/
           # Nada de red ni de comandos sueltos: leer, escribir y las
-          # comprobaciones del proyecto. WebFetch queda fuera a propósito.
+          # comprobaciones del proyecto. WebFetch queda fuera a propósito, y el
+          # diagnóstico solo contra public/data (--local): con una --url
+          # cualquiera sería una salida a la red.
           # En UNA linea: con el escalar plegado cada salto metia un espacio
           # tras la coma ("Grep, Bash(npm test)") y la herramienta podia quedar
           # sin reconocer, o sea npm test denegado en modo sin cabeza.
           claude_args: >-
-            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(npm test),Bash(npm run build),Bash(npm ci),Bash(node scripts/diagnostico.mjs*),Bash(node scripts/test-engine.mjs),Bash(git diff*),Bash(git log*),Bash(git status*)"
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(npm test),Bash(npm run build),Bash(npm ci),Bash(node scripts/diagnostico.mjs --local*),Bash(node scripts/test-engine.mjs),Bash(git diff*),Bash(git log*),Bash(git status*)"
             --max-turns 40
           prompt: |
             Trabajas en la app de Javi para elegir roamer en Mobile Legends.

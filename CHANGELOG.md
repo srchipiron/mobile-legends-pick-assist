@@ -8,6 +8,29 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 1.40.1
+
+- Cinco guardas que no vigilaban, arregladas y comprobadas rompiéndolas: la
+  regla «nada esencial oculto en móvil» llevaba muerta desde que se
+  escribió (su expresión no casaba con nada); el control de orden no veía
+  las declaraciones desestructuradas, que son las de React; los bots
+  acababan en verde aunque el push fallara tres veces; el filtro de la
+  ingesta aceptaba la corrida si el fichero guardado era ilegible; y el
+  peso doble del rival de línea se podía cambiar sin que ninguna prueba se
+  enterara.
+- La ingesta no cambia a una ruta de cruces vacía por un fallo suelto al
+  sondear (antes «0 pares» ganaba a «error»), conserva la speciality de la
+  corrida anterior si la ficha falla, cuenta con tope de tiempo cada
+  descarga de imagen y cada consulta a Liquipedia, y no se traga un flag
+  como valor de otro (`--out --iconos`).
+- Las partidas profesionales se fechan en UTC (desde un móvil en otra zona
+  salía un día menos y la misma partida entraba dos veces), una plantilla
+  anidada ya no descarta la partida, un lote truncado por la API deja
+  rastro, y `pro.json` no cambia cada día por la fecha de la ventana.
+- `npm run diagnostico` desde el móvil apunta a la web actual (llevaba la
+  URL del repositorio antiguo) y el detalle de la ingesta guarda los fallos
+  de descarga aunque haya datos previos.
+
 ## 1.40.0
 
 - El Veredicto de tus partidas ya puede moverse. La referencia («tu winrate

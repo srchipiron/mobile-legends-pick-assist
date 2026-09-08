@@ -35,9 +35,12 @@ const arg = (k, def) => {
 // En GitHub Actions, GITHUB_REPOSITORY viene como "duenno/repo", que es
 // justo lo que hace falta para armar la URL de Pages. Asi el renombrado del
 // repositorio no obliga a tocar este fichero.
+// Sin GITHUB_REPOSITORY (Termux), el nombre del paquete: el repositorio se
+// renombró y la URL escrita aquí daba 404 en la primera línea.
+const NOMBRE_PAQUETE = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8')).name;
 const DEL_ENTORNO = process.env.GITHUB_REPOSITORY
   ? `https://${process.env.GITHUB_REPOSITORY.split('/')[0]}.github.io/${process.env.GITHUB_REPOSITORY.split('/')[1]}`
-  : 'https://srchipiron.github.io/mlbb-roam-picker';
+  : `https://srchipiron.github.io/${NOMBRE_PAQUETE}`;
 const BASE = arg('--url', DEL_ENTORNO);
 const LOCAL = process.argv.includes('--local');
 

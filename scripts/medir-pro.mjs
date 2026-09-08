@@ -138,9 +138,12 @@ async function main() {
   linea('heroes', 'solo héroes', (e) => e.terminos.heroes);
   linea('cruces', 'solo cruces', (e) => e.terminos.cruces);
   linea('parejas', 'solo parejas', (e) => e.terminos.parejas);
-  const azul = usables.filter((p) => (p.lado1 === 'blue') === (p.ganador === 1)).length;
-  resumen.azul = azul / usables.length;
-  console.log(`Gana el lado azul: ${(azul / usables.length * 100).toFixed(1)}% (n=${usables.length})`);
+  // Solo las partidas con lado conocido: un `lado1` vacío contaba como «el
+  // otro es azul».
+  const conLado = usables.filter((p) => p.lado1 === 'blue' || p.lado1 === 'red');
+  const azul = conLado.filter((p) => (p.lado1 === 'blue') === (p.ganador === 1)).length;
+  resumen.azul = conLado.length ? azul / conLado.length : null;
+  console.log(`Gana el lado azul: ${conLado.length ? (azul / conLado.length * 100).toFixed(1) : '—'}% (n=${conLado.length})`);
   if (json) {
     const { writeFile } = await import('node:fs/promises');
     await writeFile(json, JSON.stringify(resumen));

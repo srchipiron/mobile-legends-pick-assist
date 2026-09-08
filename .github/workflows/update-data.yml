@@ -16,8 +16,8 @@ concurrency:
 
 jobs:
   ingest:
-    # Tope del JOB entero: los pasos con red ya lo tenían, pero las pruebas,
-    # la compilación o Pages podían colgar el runner seis horas.
+    # Tope del JOB entero: los pasos con red ya lo tenían, pero un git que
+    # espera o un script colgado podían ocupar el runner seis horas.
     timeout-minutes: 40
     runs-on: ubuntu-latest
     steps:
@@ -62,7 +62,12 @@ jobs:
           # La vigilancia commitea su fila de salud varias veces al dia y la
           # ingesta tarda diez minutos: sin rebase, el push se rechaza y la
           # corrida se pierde en silencio.
+          # Si fallan los tres intentos el paso sale EN ROJO: antes el ultimo
+          # mandato del bucle era `sleep` y el estado era 0, o sea la corrida
+          # perdida en silencio que este bucle venia a evitar.
+          subido=0
           for i in 1 2 3; do
-            git pull --rebase --autostash origin main && git push && break
+            git pull --rebase --autostash origin main && git push && { subido=1; break; }
             sleep 5
           done
+          [ "$subido" = 1 ] || { echo "::error::push rechazado tres veces"; exit 1; }

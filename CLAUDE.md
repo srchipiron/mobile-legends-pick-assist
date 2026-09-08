@@ -430,6 +430,26 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   por mutación). Desde 1.32.4 la prueba recorre `t('…')`, `t(\`prefijo.${…}\`)`
   y `clave: '…'` en la interfaz y el motor. Un guardarraíl se comprueba
   rompiendo lo que vigila, no leyendo su nombre.
+- **Un guardarraíl con la expresión muerta** — `check-css.mjs` buscaba
+  `\\.slot` (barra literal + un carácter) y la comprobación de la × oculta,
+  que nació de un fallo real, no casaba con nada desde que se escribió. Y
+  `check-order.mjs` no veía `const [x] =` ni `const { x } =`, que son la
+  mitad de las declaraciones de App.jsx. Desde 1.40.1 los dos scripts
+  aceptan una ruta por argumento y hay pruebas que les dan un fichero roto.
+- **El bucle de rebase+push en verde** — el último mandato del `for` era
+  `sleep`, así que tres pushes rechazados salían con estado 0: la corrida
+  perdida en silencio que el bucle venía a evitar, y encima el despliegue
+  se disparaba «con éxito» sobre los datos viejos. Un bucle de reintentos
+  acaba con una comprobación de que alguno lo consiguió.
+- **`0 > -1`: una ruta vacía ganando a un error** — `elegirRutaConMasDatos`
+  medía `-1` cuando la ruta principal fallaba y cualquier alternativa con
+  cero pares la sustituía: las 266 peticiones iban a una ruta vacía. Un
+  error no es un cero; se reintenta y solo se cambia por una ruta que
+  traiga MÁS.
+- **`Date.parse` de una fecha sin hora es medianoche LOCAL** — `fechaISO`
+  daba un día menos en cualquier zona al oeste de UTC, y la clave de la
+  partida lleva la fecha: dos claves para la misma partida según dónde se
+  ejecutara. Las fechas de datos se parsean en UTC, siempre.
 - **La referencia del Veredicto con las partidas comparadas dentro** —
   `resumen` recibía `maestriaEfectiva(mastery, partidas)`, que lleva las
   partidas jugadas CON la app: para un héroe sin maestría a mano la base
