@@ -11,9 +11,9 @@ correcciones.
 ## 1.41.1
 
 - La línea «Pro» de las tarjetas cuenta más partidas profesionales: 90 del
-  corpus (el 6%, 21 de ellas en la ventana actual) tenían diez abreviaturas de Liquipedia que se veían en las
-  de Liquipedia («bene», «yu», «teriz», «paqui», «minsi»…) que no se
-  reconocían y descartaban la partida entera. Cada una es prefijo de un solo
+  corpus (el 6%, 21 de ellas en la ventana actual) llevaban alguna de diez
+  abreviaturas de Liquipedia («bene», «yu», «teriz», «paqui», «minsi»…) que
+  no se reconocían y descartaban la partida entera. Cada una es prefijo de un solo
   héroe del catálogo, y hay una prueba que lo exige para todo alias: si
   Moonton saca un héroe que la vuelva ambigua, la prueba lo dirá.
 - Un hueco vacío del draft («none» en Liquipedia) ya no sale como «nombre
