@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 1.41.1
+
+- La línea «Pro» de las tarjetas cuenta más partidas profesionales: 90 del
+  corpus (el 6%, 21 de ellas en la ventana actual) tenían diez abreviaturas de Liquipedia que se veían en las
+  de Liquipedia («bene», «yu», «teriz», «paqui», «minsi»…) que no se
+  reconocían y descartaban la partida entera. Cada una es prefijo de un solo
+  héroe del catálogo, y hay una prueba que lo exige para todo alias: si
+  Moonton saca un héroe que la vuelva ambigua, la prueba lo dirá.
+- Un hueco vacío del draft («none» en Liquipedia) ya no sale como «nombre
+  sin reconocer» en el diagnóstico.
+
 ## 1.41.0
 
 - Los baneos sugeridos DENTRO del selector ya no se mueven al tocar uno: el

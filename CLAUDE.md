@@ -677,7 +677,11 @@ aquí: pidiéndole datos, no leyendo su README.
   `luo yi`). `ALIAS` en el script solo lleva lo visto en wikitext real, y un
   slug sin mapear descarta la partida y aparece en `pro.json` y en el
   diagnóstico. Un alias adivinado mete al héroe de al lado: peor que perder
-  la partida.
+  la partida. Desde 1.41.1 el criterio está en una prueba: todo alias que
+  sea prefijo de algún nombre del catálogo tiene que serlo de UNO solo
+  («ha» casa con cinco y no vale; «yu» solo con Yu Zhong). Y «none» es un
+  hueco del draft, no un nombre (`SIN_PICK`). Cuando el diagnóstico avise
+  de slugs nuevos, se comprueban contra el catálogo, no de memoria.
 - **Lo medido con 164 partidas de MPL ID S16 (agosto–octubre 2025, un año
   antes que los datos)**: modelo completo AUC 0.54, pendiente 0.29 ± 0.31;
   solo cruces AUC 0.56, pendiente 1.05 ± 0.67; solo héroes 0.09 ± 0.40; lado

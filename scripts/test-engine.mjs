@@ -665,6 +665,23 @@ test('la ingesta profesional lee los drafts de Liquipedia y reconoce a los heroe
   eq(sinMapear.length, 0, `slugs sin reconocer: ${sinMapear.join(', ')}`);
   eq(resolverHeroe('yss', indice)?.name, 'Yi Sun-shin', 'yss deberia ser Yi Sun-shin');
   eq(resolverHeroe('lance', indice)?.name, 'Lancelot', 'lance deberia ser Lancelot');
+  // Los abreviados del corpus real (1.41.1). Y cada alias que es un prefijo
+  // tiene que serlo de UN solo héroe del catálogo: si Moonton saca un
+  // «Yuki», «yu» deja de ser inequívoco y esta prueba lo dirá.
+  eq(resolverHeroe('bene', indice)?.name, 'Benedetta', 'bene deberia ser Benedetta');
+  eq(resolverHeroe('yu', indice)?.name, 'Yu Zhong', 'yu deberia ser Yu Zhong');
+  eq(resolverHeroe('sele', indice)?.name, 'Selena', 'sele deberia ser Selena');
+  for (const [slug, nombre] of Object.entries(ALIAS)) {
+    const s = normName(slug);
+    const candidatos = all.filter((h) => normName(h.name).startsWith(s));
+    if (candidatos.length && candidatos.some((h) => normName(h.name) === normName(nombre))) {
+      eq(candidatos.length, 1, `el alias ${slug} es prefijo de ${candidatos.length} héroes: ${candidatos.map((h) => h.name).join(', ')}`);
+    }
+  }
+  // Un hueco sin héroe («none») no es un nombre sin reconocer.
+  const conHueco = resumirPro([{ torneo: 'x', fecha: '2026-01-01', picks: [['none', 'layla', 'fanny', 'hylos', 'chou'], ['tigreal', 'zilong', 'eudora', 'miya', 'saber']], bans: [['NONE'], []], ganador: 1 }], all);
+  eq(Object.keys(conHueco.sinMapear).length, 0, `«none» se cuenta como slug sin mapear: ${JSON.stringify(conHueco.sinMapear)}`);
+  eq(Object.values(conHueco.heroes).reduce((a, h) => a + h.picks, 0), 9, 'el hueco no cuenta como pick');
 
   // El resumen cuenta picks, victorias y baneos por heroe, y respeta la ventana.
   const r = resumirPro(ps, all);

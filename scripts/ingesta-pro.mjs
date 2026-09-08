@@ -92,7 +92,28 @@ export const ALIAS = {
   khu: 'Khufra',
   fred: 'Fredrinn',
   bal: 'Balmond',
+  // Vistos en el corpus de 1.532 partidas (1.41.1): descartaban 90, el 6%.
+  // Cada uno es prefijo de UN solo nombre del catálogo de 133 (comprobado
+  // con el catálogo delante, no de memoria): «yu» solo casa con Yu Zhong,
+  // «bea» solo con Beatrix, «sele» solo con Selena.
+  bene: 'Benedetta',
+  yu: 'Yu Zhong',
+  bea: 'Beatrix',
+  mino: 'Minotaur',
+  teriz: 'Terizla',
+  paqui: 'Paquito',
+  minsi: 'Minsitthar',
+  fara: 'Faramis',
+  sele: 'Selena',
+  luo: 'Luo Yi',
 };
+
+/**
+ * Lo que Liquipedia escribe cuando un hueco del draft no tiene héroe (una
+ * partida a medias o mal rellenada): no es un nombre sin reconocer, es un
+ * hueco. No se cuenta como slug sin mapear ni como pick.
+ */
+export const SIN_PICK = new Set(['none', '']);
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -216,6 +237,7 @@ export function resumirPro(partidas, heroes, { desde = null } = {}) {
     }
     for (const lado of [0, 1]) {
       for (const slug of p.picks[lado]) {
+        if (SIN_PICK.has(slug.toLowerCase())) continue;
         const h = resolverHeroe(slug, indice);
         if (!h) { sinMapear[slug] = (sinMapear[slug] ?? 0) + 1; continue; }
         const c = cuenta(h.name);
@@ -223,6 +245,7 @@ export function resumirPro(partidas, heroes, { desde = null } = {}) {
         if (p.ganador === lado + 1) c.ganadas += 1;
       }
       for (const slug of p.bans[lado]) {
+        if (SIN_PICK.has(slug.toLowerCase())) continue;
         const h = resolverHeroe(slug, indice);
         if (!h) { sinMapear[slug] = (sinMapear[slug] ?? 0) + 1; continue; }
         cuenta(h.name).bans += 1;
