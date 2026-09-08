@@ -11,7 +11,7 @@ import { sanear } from './engine/perfil.js';
 import { analizarComposicion } from './engine/composicion.js';
 import { aconsejarEquipo } from './engine/equipo.js';
 import { proximosBaneos, coocurrenciaDeBaneos } from './engine/baneos.js';
-import { Side, HeroSheet, Pick, Legend, MasteryEditor, RankPicker, BanSuggestions, Footer, SelfTest, RegistroPartida, SelectorDeLinea, Analisis, AvisoLegal, Perfil, HistorialPartidas, Build, Estimacion, Composicion, Imagen, Equipo, ProximosBaneos } from './components/ui.jsx';
+import { Side, HeroSheet, Pick, Legend, MasteryEditor, RankPicker, BanSuggestions, Footer, SelfTest, RegistroPartida, SelectorDeLinea, Analisis, AvisoLegal, Perfil, HistorialPartidas, Build, Estimacion, Composicion, Imagen, Equipo, ProximosBaneos, HORAS_DATOS_VIEJOS } from './components/ui.jsx';
 
 // OJO: estas claves siguen diciendo 'roam-picker' aunque la app se llame ya
 // Mobile Legends Pick Assist. NO se renombran: el almacenamiento del navegador
@@ -210,6 +210,20 @@ export default function App() {
   const allies = useMemo(() => resolve(allyNames), [resolve, allyNames]);
   const bans = useMemo(() => resolve(banNames), [resolve, banNames]);
 
+  // Un nombre guardado que ya no resuelve (la API renombró al héroe, o un
+  // draft de antes de un cambio de catálogo) era invisible, inamovible,
+  // contaba como cogido y dejaba un hueco de más. Se limpia al tener el
+  // catálogo; el rival marcado, si ya no está entre los enemigos, también.
+  useEffect(() => {
+    if (!catalog || !metaListo) return;
+    const conocidos = new Set(allHeroes.map((h) => h.name));
+    const limpia = (setter) => setter((prev) => (prev.every((n) => conocidos.has(n)) ? prev : prev.filter((n) => conocidos.has(n))));
+    limpia(setEnemyNames); limpia(setAllyNames); limpia(setBanNames);
+  }, [catalog, metaListo, allHeroes]);
+  useEffect(() => {
+    if (enemyRoam && !enemyNames.includes(enemyRoam)) setEnemyRoam(null);
+  }, [enemyRoam, enemyNames]);
+
   const taken = useMemo(
     () => new Set([...enemyNames, ...allyNames, ...banNames]),
     [enemyNames, allyNames, banNames],
@@ -264,14 +278,11 @@ export default function App() {
 
   const empate = useMemo(() => empatados(ranked), [ranked]);
 
-  // Dos o tres frases sobre lo que NO se ve en las tarjetas: si ganas tu cruce,
-  // quién te va a doler y si estás eligiendo a ciegas.
-  // ¿Aguanta el nº1 lo que falta por salir? Solo con draft a medias. Son 60
-  // rankings más por cambio de draft: unos milisegundos.
-  // La simulación son 60 rankings enteros (20-100 ms en un portátil, más en
-  // el móvil). Con los valores DIFERIDOS, React pinta primero el ranking con
-  // el pick nuevo y la frase de «aguanta» llega en el render siguiente, en
-  // vez de bloquear el toque.
+  // ¿Aguanta el nº1 lo que falta por salir? Solo con draft a medias. La
+  // simulación son 60 rankings enteros (20-100 ms en un portátil, más en el
+  // móvil). Con los valores DIFERIDOS, React pinta primero el ranking con el
+  // pick nuevo y la frase de «aguanta» llega en el render siguiente, en vez
+  // de bloquear el toque.
   const enemigosDiferidos = useDeferredValue(enemies);
   const aliadosDiferidos = useDeferredValue(allies);
   const baneosDiferidos = useDeferredValue(bans);
@@ -316,6 +327,8 @@ export default function App() {
     [ranked, allHeroes, lineas, frecuencias, linea, enemies, allies, bans, metaCtx],
   );
 
+  // Dos o tres frases sobre lo que NO se ve en las tarjetas: si ganas tu
+  // cruce, quién te va a doler y si estás eligiendo a ciegas.
   const analisis = useMemo(
     () => analizarDraft({
       ranked, enemies, allies, meta: metaCtx,
@@ -339,6 +352,10 @@ export default function App() {
     () => (catalog && metaCtx.stats ? proximosBaneos(allHeroes, { bans, enemies, allies, meta: metaCtx, historial: coocurrencia, n: 10 }) : []),
     [catalog, allHeroes, bans, enemies, allies, metaCtx, coocurrencia],
   );
+
+  // Memoizado: la hoja del perfil comprime el código en un efecto sobre
+  // `datos`, y un objeto nuevo en cada render de App lo regeneraba cada vez.
+  const datosPerfil = useMemo(() => ({ mastery, partidas, rango: activeRank, linea, idioma }), [mastery, partidas, activeRank, linea, idioma]);
 
   const lanzarTest = async () => {
     try {
@@ -384,14 +401,18 @@ export default function App() {
     }
   };
 
+  // Añadir con tope y sin repetir, en un solo sitio: el selector no tenía
+  // tope (con un nombre fantasma se guardaban seis enemigos) y las tres
+  // lambdas de los chips lo escribían cada una a su manera.
+  const anadirA = (setter, max) => (hero) => setter((prev) => (prev.length < max && !prev.includes(hero.name) ? [...prev, hero.name] : prev));
   const addTo = (hero) => {
     if (sheet === 'ban') {
       // Baneos: se marca y se desmarca sin cerrar. Se cierra con «Listo».
-      setBanNames((prev) => (prev.includes(hero.name) ? prev.filter((n) => n !== hero.name) : [...prev, hero.name]));
+      setBanNames((prev) => (prev.includes(hero.name) ? prev.filter((n) => n !== hero.name) : (prev.length < 10 ? [...prev, hero.name] : prev)));
       return;
     }
-    const setter = { enemy: setEnemyNames, ally: setAllyNames }[sheet];
-    setter?.((prev) => [...prev, hero.name]);
+    if (sheet === 'enemy') anadirA(setEnemyNames, 5)(hero);
+    if (sheet === 'ally') anadirA(setAllyNames, 4)(hero);
     setSheet(null);
   };
 
@@ -482,15 +503,20 @@ export default function App() {
                 onAdd={() => setSheet('ban')} onRemove={remove(setBanNames)} />
           <ProximosBaneos t={t} items={proximos} bans={bans} visibles={bans.length < 10 ? 8 : 0}
                           tasaDe={(n) => lookup(metaCtx.stats, n)?.banRate ?? null}
-                          onBan={(h) => setBanNames((p) => (p.length < 10 && !p.includes(h.name) ? [...p, h.name] : p))}
+                          onBan={anadirA(setBanNames, 10)}
                           onQuitar={remove(setBanNames)} />
           <button className="reset" onClick={() => setSheet('ban')}>{t('fase.buscarBaneo')}</button>
           <button className="reset primario" onClick={() => setFase('picks')}>
             {bans.length ? t('fase.aPicks') : t('fase.sinBaneosAPicks')}
           </button>
           {/* Con los diez marcados no hay más que banear: el undécimo no existe. */}
-          <BanSuggestions t={t} items={bans.length < 10 ? banIdeas : []}
-                          onBan={(h) => setBanNames((p) => (p.length < 10 && !p.includes(h.name) ? [...p, h.name] : p))} />
+          <BanSuggestions t={t} items={bans.length < 10 ? banIdeas : []} onBan={anadirA(setBanNames, 10)} />
+          {/* Sin winrates (API caída en el primer arranque) la fase quedaba
+              con huecos «+» y un selector alfabético sin explicación. */}
+          {metaListo && (!metaCtx.stats || !Object.keys(metaCtx.stats).length) ? (
+            <div className="notice">{t('app.sinWinrates')}</div>
+          ) : null}
+          <AvisoLegal t={t} idioma={idioma} onIdioma={setIdioma} idiomas={IDIOMAS} />
         </aside>
         <Footer
           t={t}
@@ -511,8 +537,8 @@ export default function App() {
         <div className="brand">
           {/* La línea que juegas, no «Roam»: desde 1.0.0 hay cinco y el
               título se había quedado en la primera. */}
-          <h1>{linea ? t(`linea.${linea}`) : 'Pick Assist'}</h1>
-          <span className={`freshness ${ageHours > 36 ? 'stale' : ''}`}>
+          <h1>{t(`linea.${linea}`)}</h1>
+          <span className={`freshness ${ageHours > HORAS_DATOS_VIEJOS ? 'stale' : ''}`}>
             {ageHours != null ? `${Math.round(ageHours)}h` : t('app.sinDatosMeta')}
           </span>
         </div>
@@ -637,7 +663,7 @@ export default function App() {
               <Equipo
                 consejos={consejos}
                 yo={r.hero}
-                onElegir={(h) => setAllyNames((p) => (p.length < 4 && !p.includes(h.name) ? [...p, h.name] : p))}
+                onElegir={anadirA(setAllyNames, 4)}
                 t={t}
               />
             )}
@@ -691,8 +717,6 @@ export default function App() {
           onCorregir={(t2, gane) => guardarPartidas(corregir(partidas, t2, gane))}
           onAnadir={(hero, gane) => guardarPartidas(apuntar(partidas, {
             pick: hero, gane, previa: true, rango: activeRank,
-            // Fecha propia para que dos seguidas no colisionen en la clave.
-            t: Date.now(),
           }))}
           onClose={() => setVerHistorial(false)}
           t={t}
@@ -701,7 +725,7 @@ export default function App() {
 
       {verPerfil && (
         <Perfil
-          datos={{ mastery, partidas, rango: activeRank, linea, idioma }}
+          datos={datosPerfil}
           onImportar={traerPerfil}
           onClose={() => setVerPerfil(false)}
           t={t}

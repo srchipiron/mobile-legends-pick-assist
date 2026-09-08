@@ -524,6 +524,20 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
 - **Los chips del siguiente baneo desplazándose** — al tocar uno, el
   siguiente candidato ocupaba justo su hueco y un doble toque baneaba a dos.
   Lo que se toca a contrarreloj no se mueve de sitio.
+- **Un nombre guardado que ya no resuelve** — el draft guarda nombres, y un
+  héroe renombrado por la API (o un catálogo cambiado) dejaba un nombre que
+  no pintaba ficha, no se podía quitar, contaba como cogido y dejaba un hueco
+  de más; el selector, sin tope, admitía seis enemigos. Desde 1.41.0 `App`
+  limpia los nombres desconocidos al llegar el catálogo, desmarca el rival si
+  ya no está entre los enemigos y `anadirA(setter, max)` es el ÚNICO sitio
+  que añade al draft. Un estado guardado por nombre se valida contra el
+  catálogo al cargar, no se confía.
+- **Los chips sugeridos de la hoja, con el orden de fuera pero sin su
+  estabilidad** — la tira de fuera se hizo estable en 1.38.0 y la de DENTRO
+  del selector de baneos se quedó desplazándose. `useOrdenEstable` (ui.jsx)
+  es el mismo hook para las dos; si aparece otra tira que se toca a
+  contrarreloj, usa ese hook. Arreglar un comportamiento en un sitio pide
+  buscar sus gemelos.
 - **Plurales fijos** — «1 líneas abiertas», «Les faltan 1 picks». `crearT`
   entiende `{n|singular|plural}`; úsalo en toda frase con una cantidad.
 - **La vigilancia sin saber qué versión sirve Pages** — `diagnostico.mjs`
@@ -1042,6 +1056,16 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   resultado no entra en ningún fichero, así que un fallo suyo no deja nada a
   medias; el caso de `medir-pro` era distinto porque su salida SÍ entra en
   `pro.json` (arreglado en 1.32.2 con una comprobación en el diagnóstico).
+
+- **`useOrdenEstable` y el foco de las hojas, comprobados por mutación en el
+  navegador** (1.41.0): quitar la limpieza de nombres, el desmarcado del
+  rival, el orden estable de la hoja o la devolución del foco hace fallar
+  `ui-tanda-e2e.mjs` (scratch de la sesión). El tope de `anadirA` en el
+  selector de enemigos NO tiene prueba que lo vea: con la limpieza de
+  nombres no queda camino en la interfaz para abrir el selector con los
+  cinco huecos llenos, así que es defensa en profundidad. No están en
+  `npm test` porque Playwright no está en las dependencias; si algún día
+  entra, esa suite es la primera que va dentro.
 
 ## Lo que queda pendiente
 

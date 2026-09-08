@@ -8,6 +8,26 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 1.41.0
+
+- Los baneos sugeridos DENTRO del selector ya no se mueven al tocar uno: el
+  tocado se queda marcado en su sitio y el siguiente entra por el final, como
+  los de fuera. Antes desaparecía y el siguiente ocupaba su hueco, y un doble
+  toque baneaba a dos. Con los diez marcados, el resto se apaga.
+- Un nombre guardado que ya no existe (un héroe renombrado por la API, un
+  draft de antes de un cambio de catálogo) se quita solo del draft en cuanto
+  llega el catálogo. Antes era invisible, no se podía quitar, contaba como
+  cogido y dejaba un hueco de más; y el selector no tenía tope, así que se
+  podían guardar seis enemigos.
+- Las hojas (selector, maestría, partidas, diagnóstico, perfil…) reciben el
+  foco al abrirse y lo devuelven al botón que las abrió al cerrar, y el pie se
+  abre también con Enter o espacio. Con teclado o lector de pantalla el foco
+  se quedaba detrás del overlay.
+- «DM»/«DF» en las builds, el «% WR» de las tarjetas y el 50,0 de ejemplo de
+  la maestría pasan por el idioma elegido; en inglés salen «MD»/«PD» y
+  «50.0». La cabecera dice siempre tu línea (ya no puede salir «Pick Assist»)
+  y el umbral de «datos viejos» (36 h) está en un solo sitio.
+
 ## 1.40.1
 
 - Cinco guardas que no vigilaban, arregladas y comprobadas rompiéndolas: la

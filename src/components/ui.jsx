@@ -67,23 +67,60 @@ export function Imagen({ src, alt, className, tam }) {
 export function useCerrarConAtras(onClose) {
   const ref = useRef(onClose);
   ref.current = onClose;
+  // El contenedor de la hoja, para mover el foco dentro al abrir y
+  // devolverlo al cerrar: con lector de pantalla o teclado el foco se
+  // quedaba detrás del overlay y al cerrar se perdía la posición.
+  const hoja = useRef(null);
   useEffect(() => {
     if (!ref.current) return undefined;
     const marca = { hoja: Date.now() + Math.random() };
+    const anterior = document.activeElement;
     let porHistoria = false;
     try { window.history.pushState(marca, ''); } catch { /* sin historial */ }
     const alVolver = () => { porHistoria = true; ref.current?.(); };
     const esc = (e) => { if (e.key === 'Escape') { e.preventDefault(); ref.current?.(); } };
     window.addEventListener('popstate', alVolver);
     window.addEventListener('keydown', esc);
+    // Tras el render: si la hoja ya ha enfocado algo suyo (el buscador), se respeta.
+    const enfocar = setTimeout(() => {
+      const el = hoja.current;
+      if (el && !el.contains(document.activeElement)) el.focus({ preventScroll: true });
+    }, 0);
     return () => {
+      clearTimeout(enfocar);
       window.removeEventListener('popstate', alVolver);
       window.removeEventListener('keydown', esc);
       // Cerrada por botón: se retira la entrada que metimos, para que atrás
       // no «vuelva» a una hoja que ya no está.
       if (!porHistoria && window.history.state?.hoja === marca.hoja) window.history.back();
+      if (anterior && typeof anterior.focus === 'function' && document.contains(anterior)) anterior.focus({ preventScroll: true });
     };
   }, []);
+  return hoja;
+}
+
+/**
+ * Orden estable para una tira de chips que se tocan a contrarreloj: el tocado
+ * se queda en su sitio (marcado) y el candidato nuevo entra por el final.
+ * `items` son nombres en el orden que propone el motor; `marcados`, los ya
+ * elegidos. Devuelve la lista a pintar, con hasta `visibles` sin marcar.
+ */
+export function useOrdenEstable(items, marcados, visibles) {
+  const [orden, setOrden] = useState([]);
+  useEffect(() => {
+    setOrden((prev) => {
+      const vivos = prev.filter((n) => marcados.has(n) || items.includes(n));
+      const nuevos = items.filter((n) => !vivos.includes(n));
+      const salida = []; let libres = 0;
+      for (const n of [...vivos, ...nuevos]) {
+        if (marcados.has(n)) { salida.push(n); continue; }
+        if (libres >= visibles) continue;
+        salida.push(n); libres += 1;
+      }
+      return salida;
+    });
+  }, [items, marcados, visibles]);
+  return orden;
 }
 
 /** Fila de huecos de un bando. Tocar un hueco abre el selector. */
@@ -146,7 +183,7 @@ export function HeroSheet({
   // nueva en cada render de App) el efecto se repetía con cada baneo y el
   // teclado del móvil volvía a salir encima de la rejilla en cada toque.
   useEffect(() => { inputRef.current?.focus(); }, []);
-  useCerrarConAtras(onClose);
+  const hoja = useCerrarConAtras(onClose);
 
   const list = useMemo(() => {
     const key = (s) => s.toLowerCase().normalize('NFD')
@@ -173,6 +210,11 @@ export function HeroSheet({
 
   const marcado = (h) => !!seleccionados?.has(h.name);
   const lleno = multi && seleccionados && seleccionados.size >= max;
+  const nombresSugeridos = useMemo(() => sugeridos.filter((h) => !taken.has(h.name)).map((h) => h.name), [sugeridos, taken]);
+  const marcadosSet = useMemo(() => new Set(seleccionados ?? []), [seleccionados]);
+  const ordenSugeridos = useOrdenEstable(nombresSugeridos, marcadosSet, 10);
+  const porNombre = useMemo(() => new Map(heroes.map((h) => [h.name, h])), [heroes]);
+  const chipsSugeridos = ordenSugeridos.map((n) => porNombre.get(n)).filter(Boolean);
   const elegir = (h) => {
     if (taken.has(h.name)) return;
     if (multi && lleno && !marcado(h)) return;
@@ -188,7 +230,7 @@ export function HeroSheet({
   };
 
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label={t('app.elegirHeroe')}>
+    <div ref={hoja} tabIndex={-1} className="sheet" role="dialog" aria-modal="true" aria-label={t('app.elegirHeroe')}>
       <div className="sheet-head">
         <input
           ref={inputRef}
@@ -203,11 +245,20 @@ export function HeroSheet({
       {multi && seleccionados && (
         <p className="sheet-cuenta">{t('sheet.baneados', { n: seleccionados.size, max })}</p>
       )}
-      {multi && !q && sugeridos.length > 0 && (
+      {multi && !q && chipsSugeridos.length > 0 && (
         <div className="sheet-sugeridos">
           <span className="side-label">{t('sheet.sugeridos')}</span>
-          {sugeridos.filter((h) => !taken.has(h.name)).slice(0, 10).map((h) => (
-            <button key={h.name} className={`chip ${marcado(h) ? 'elegido' : ''}`} onClick={() => elegir(h)}>
+          {/* Orden estable, como fuera de la hoja: el tocado se queda tachado
+              en su sitio y el siguiente entra por el final. Antes desaparecía
+              y el siguiente ocupaba su hueco: dos toques seguidos, dos baneos. */}
+          {chipsSugeridos.map((h) => (
+            <button
+              key={h.name}
+              className={`chip ${marcado(h) ? 'elegido' : ''}`}
+              aria-pressed={marcado(h)}
+              disabled={lleno && !marcado(h)}
+              onClick={() => elegir(h)}
+            >
               <Imagen src={`./heroes/${h.id}.jpg`} alt={h.name} className="grid-cara" tam={22} />
               {h.name}
             </button>
@@ -289,7 +340,7 @@ export function Pick({ result, index, stat, pro = null, onBuild, t = tPorDefecto
       <div>
         <div className="pick-score">{Math.round(result.score * 100)}</div>
         <span className="pick-wr">
-          {stat?.winRate != null ? `${(stat.winRate * 100).toFixed(1)}% WR` : t('app.sinDatos')}
+          {stat?.winRate != null ? t('pick.wr', { pct: (stat.winRate * 100).toFixed(1) }) : t('app.sinDatos')}
         </span>
         {/* Lo que hacen los profesionales con él en los últimos torneos: es
             DATO (Liquipedia), no opinión, y se lee distinto que el winrate de
@@ -315,7 +366,10 @@ export function Pick({ result, index, stat, pro = null, onBuild, t = tPorDefecto
   );
 }
 
-const RANK_LABELS = { all: 'Todos', epic: 'Epic', legend: 'Legend', mythic: 'Mythic', honor: 'Honor', glory: 'Glory' };
+/** A partir de cuántas horas los datos se enseñan como «viejos» (pie y cabecera). */
+export const HORAS_DATOS_VIEJOS = 36;
+
+const RANK_LABELS = { epic: 'Epic', legend: 'Legend', mythic: 'Mythic', honor: 'Honor', glory: 'Glory' };
 
 /** Selector del rango del que salen los winrates. El meta de Glory no es el de Epic. */
 export function RankPicker({ ranks, value, onChange, cruces = null, t = tPorDefecto }) {
@@ -339,7 +393,6 @@ export function RankPicker({ ranks, value, onChange, cruces = null, t = tPorDefe
   );
 }
 
-/** A quién banear, con el motivo cuando lo hay. */
 /**
  * Los siguientes baneos probables (engine/baneos.js): chips con la tasa de
  * ban, para tocar en vez de escribir. Se refresca solo al marcar uno.
@@ -350,23 +403,8 @@ export function ProximosBaneos({ items, bans = [], tasaDe = () => null, onBan, o
   // hueco del tocado, y con diez baneos en medio minuto un doble toque
   // baneaba al siguiente sin querer. Segundo toque en el tachado: lo quita.
   const marcados = useMemo(() => new Set(bans.map((h) => h.name)), [bans]);
-  const [orden, setOrden] = useState([]);
-  useEffect(() => {
-    setOrden((prev) => {
-      const candidatos = items.map((x) => x.hero.name);
-      const vivos = prev.filter((n) => marcados.has(n) || candidatos.includes(n));
-      const nuevos = candidatos.filter((n) => !vivos.includes(n));
-      const todos = [...vivos, ...nuevos];
-      // Hasta `visibles` sin marcar; los marcados no cuentan, se quedan.
-      const salida = []; let libres = 0;
-      for (const n of todos) {
-        if (marcados.has(n)) { salida.push(n); continue; }
-        if (libres >= visibles) continue;
-        salida.push(n); libres += 1;
-      }
-      return salida;
-    });
-  }, [items, marcados, visibles]);
+  const candidatos = useMemo(() => items.map((x) => x.hero.name), [items]);
+  const orden = useOrdenEstable(candidatos, marcados, visibles);
   const porNombre = useMemo(() => new Map([...items.map((x) => [x.hero.name, x.hero]), ...bans.map((h) => [h.name, h])]), [items, bans]);
   const fila = orden.filter((n) => porNombre.has(n));
   if (!fila.length) return null;
@@ -397,6 +435,7 @@ export function ProximosBaneos({ items, bans = [], tasaDe = () => null, onBan, o
   );
 }
 
+/** A quién banear por tu equipo, con el motivo cuando lo hay. */
 export function BanSuggestions({ items, onBan, t = tPorDefecto }) {
   if (!items.length) return null;
   return (
@@ -411,7 +450,7 @@ export function BanSuggestions({ items, onBan, t = tPorDefecto }) {
           <span className="rate">
             {b.stat.banRate != null ? t('ban.tasa', { pct: Math.round(b.stat.banRate * 100) }) : ''}
           </span>
-          <button onClick={() => onBan(b.hero)}>{t('ban.banear')}</button>
+          <button onClick={() => onBan(b.hero)} aria-label={t('app.marcarBaneo', { nombre: b.hero.name })}>{t('ban.banear')}</button>
         </div>
       ))}
     </section>
@@ -446,7 +485,7 @@ export function parseDecimal(raw) {
  * La conversión a fracción se hace solo al guardar.
  */
 export function MasteryEditor({ pool, mastery, onChange, onClose, t = tPorDefecto }) {
-  useCerrarConAtras(onClose);
+  const hoja = useCerrarConAtras(onClose);
   const [draft, setDraft] = useState(() =>
     Object.fromEntries(
       Object.entries(mastery).map(([name, m]) => [
@@ -492,7 +531,7 @@ export function MasteryEditor({ pool, mastery, onChange, onClose, t = tPorDefect
   };
 
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label={t('app.maestria')}>
+    <div ref={hoja} tabIndex={-1} className="sheet" role="dialog" aria-modal="true" aria-label={t('app.maestria')}>
       <div className="sheet-head">
         <strong style={{ flex: 1, alignSelf: 'center' }}>{t('app.maestria')}</strong>
         <button className="close" onClick={onClose}>{t('app.cancelar')}</button>
@@ -515,7 +554,7 @@ export function MasteryEditor({ pool, mastery, onChange, onClose, t = tPorDefect
               onChange={(e) => set(h.name, 'games', e.target.value)}
             />
             <input
-              type="text" inputMode="decimal" placeholder="50,0"
+              type="text" inputMode="decimal" placeholder={t('maestria.placeholderWr')}
               className={invalid(draft[h.name]?.wr, 100) ? 'bad' : ''}
               value={draft[h.name]?.wr ?? ''}
               onChange={(e) => set(h.name, 'wr', e.target.value)}
@@ -528,21 +567,16 @@ export function MasteryEditor({ pool, mastery, onChange, onClose, t = tPorDefect
 }
 
 /**
- * Pie fijo abajo a la derecha: versión de la app y cuándo se descargaron los
- * datos. La hora es la LOCAL del móvil, convertida desde la marca UTC que deja
- * la ingesta, para que se lea de un vistazo sin hacer cuentas.
- */
-/**
  * Las novedades, al tocar la versión del pie. Resumidas: la primera frase
  * de cada cambio, y «ver todo» para el porqué. Vienen del CHANGELOG.md en
  * la compilación, así que no hace falta red.
  */
 export function Changelog({ entradas, actual, onClose, t = tPorDefecto }) {
-  useCerrarConAtras(onClose);
+  const hoja = useCerrarConAtras(onClose);
   const [enteras, setEnteras] = useState(() => new Set());
   const alternar = (v) => setEnteras((prev) => { const n = new Set(prev); if (n.has(v)) n.delete(v); else n.add(v); return n; });
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label={t('changelog.titulo')} onClick={(e) => e.stopPropagation()}>
+    <div ref={hoja} tabIndex={-1} className="sheet" role="dialog" aria-modal="true" aria-label={t('changelog.titulo')} onClick={(e) => e.stopPropagation()}>
       <div className="sheet-head">
         <strong style={{ flex: 1, alignSelf: 'center' }}>{t('changelog.titulo')}</strong>
         <button className="close" onClick={onClose}>{t('app.cerrar')}</button>
@@ -569,6 +603,11 @@ export function Changelog({ entradas, actual, onClose, t = tPorDefecto }) {
   );
 }
 
+/**
+ * Pie fijo abajo a la derecha: versión de la app y cuándo se descargaron los
+ * datos. La hora es la LOCAL del móvil, convertida desde la marca UTC que deja
+ * la ingesta, para que se lea de un vistazo sin hacer cuentas.
+ */
 export function Footer({ meta, generado, ageHours, rango, cov, t = tPorDefecto }) {
   const [abierto, setAbierto] = useState(false);
   const [novedades, setNovedades] = useState(false);
@@ -579,10 +618,18 @@ export function Footer({ meta, generado, ageHours, rango, cov, t = tPorDefecto }
       })
     : null;
 
-  const viejo = ageHours != null && ageHours > 36;
+  const viejo = ageHours != null && ageHours > HORAS_DATOS_VIEJOS;
+  const alternar = () => setAbierto((v) => !v);
 
   return (
-    <footer className={`pie ${viejo ? 'stale' : ''}`} onClick={() => setAbierto((v) => !v)}>
+    <footer
+      className={`pie ${viejo ? 'stale' : ''}`}
+      role="button"
+      tabIndex={0}
+      aria-expanded={abierto}
+      onClick={alternar}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alternar(); } }}
+    >
       {abierto && meta && (
         <div className="pie-detalle">
           <div>{t('pie.datosApi', { fecha: fecha ?? t('pie.nunca') })}</div>
@@ -639,7 +686,7 @@ export function Footer({ meta, generado, ageHours, rango, cov, t = tPorDefecto }
 
 /** Pantalla de diagnóstico: ejecuta las comprobaciones y deja el texto listo para copiar. */
 export function SelfTest({ resultado, onClose, t = tPorDefecto }) {
-  useCerrarConAtras(onClose);
+  const hoja = useCerrarConAtras(onClose);
   const [copiado, setCopiado] = useState(false);
 
   const copiar = async () => {
@@ -680,7 +727,7 @@ export function SelfTest({ resultado, onClose, t = tPorDefecto }) {
   };
 
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label={t('app.diagnostico')}>
+    <div ref={hoja} tabIndex={-1} className="sheet" role="dialog" aria-modal="true" aria-label={t('app.diagnostico')}>
       <div className="sheet-head">
         {/* El mismo titular que el texto, para que la cabecera y lo que copias
             digan lo mismo. Antes ponía "Todo correcto · 1 avisos". */}
@@ -800,7 +847,7 @@ export function Calibracion({ partidas, t = tPorDefecto }) {
 }
 
 export function HistorialPartidas({ partidas, pool, maestria = {}, onOlvidar, onCorregir, onAnadir, onClose, t = tPorDefecto }) {
-  useCerrarConAtras(onClose);
+  const hoja = useCerrarConAtras(onClose);
   const [anadiendo, setAnadiendo] = useState(false);
   const [heroe, setHeroe] = useState(null);
   const [aviso, setAviso] = useState(null);
@@ -815,7 +862,7 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, onOlvidar, on
   };
 
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label={t('hist.titulo')}>
+    <div ref={hoja} tabIndex={-1} className="sheet" role="dialog" aria-modal="true" aria-label={t('hist.titulo')}>
       <div className="sheet-head">
         <strong style={{ flex: 1, alignSelf: 'center' }}>{t('hist.titulo')}</strong>
         <button className="close" onClick={onClose}>{t('app.cerrar')}</button>
@@ -869,9 +916,9 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, onOlvidar, on
             <span className="partida-tipo">
               {esPrevia(p) ? t('hist.previa') : (siguioConsejo(p) ? t('hist.seguida') : t('hist.libre'))}
             </span>
-            <button className="x" title={t('hist.cambiar')} aria-label={t('hist.cambiar')}
+            <button className="x" title={t('hist.cambiar')} aria-label={`${t('hist.cambiar')} · ${p.pick}`}
               onClick={() => onCorregir(p.t, !p.gane)}>⇄</button>
-            <button className="x" title={t('hist.quitar')} aria-label={t('hist.quitar')}
+            <button className="x" title={t('hist.quitar')} aria-label={`${t('hist.quitar')} · ${p.pick}`}
               onClick={() => onOlvidar(p.t)}>×</button>
           </div>
         ))}
@@ -889,7 +936,7 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, onOlvidar, on
  * las copias divergen, y un "pegar y reemplazar" te borraría medio historial.
  */
 export function Perfil({ datos, onImportar, onClose, t = tPorDefecto }) {
-  useCerrarConAtras(onClose);
+  const hoja = useCerrarConAtras(onClose);
   const [codigo, setCodigo] = useState('');
   const [pegado, setPegado] = useState('');
   const [copiado, setCopiado] = useState(false);
@@ -930,7 +977,7 @@ export function Perfil({ datos, onImportar, onClose, t = tPorDefecto }) {
   };
 
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label={t('perfil.titulo')}>
+    <div ref={hoja} tabIndex={-1} className="sheet" role="dialog" aria-modal="true" aria-label={t('perfil.titulo')}>
       <div className="sheet-head">
         <strong style={{ flex: 1, alignSelf: 'center' }}>{t('perfil.titulo')}</strong>
         <button className="close" onClick={onClose}>{t('app.cerrar')}</button>
@@ -972,7 +1019,7 @@ export function Perfil({ datos, onImportar, onClose, t = tPorDefecto }) {
  * que hace falta para saber si la app sirve de algo.
  */
 export function RegistroPartida({ pool, recomendados, onGuardar, onClose, t = tPorDefecto }) {
-  useCerrarConAtras(onClose);
+  const hoja = useCerrarConAtras(onClose);
   const [pick, setPick] = useState(recomendados[0] ?? null);
 
   const orden = useMemo(() => {
@@ -982,7 +1029,7 @@ export function RegistroPartida({ pool, recomendados, onGuardar, onClose, t = tP
   }, [pool, recomendados]);
 
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label={t('app.apuntarPartida')}>
+    <div ref={hoja} tabIndex={-1} className="sheet" role="dialog" aria-modal="true" aria-label={t('app.apuntarPartida')}>
       <div className="sheet-head">
         <strong style={{ flex: 1, alignSelf: 'center' }}>{t('registro.conQuien')}</strong>
         <button className="close" onClick={onClose}>{t('app.cancelar')}</button>
@@ -1019,9 +1066,9 @@ export function RegistroPartida({ pool, recomendados, onGuardar, onClose, t = tP
  * estética, es el dato que decide entre 21 y 40 héroes distintos.
  */
 export function SelectorDeLinea({ lineas, valor, onElegir, onClose, idioma, onIdioma, idiomas = [], t = tPorDefecto }) {
-  useCerrarConAtras(onClose);
+  const hoja = useCerrarConAtras(onClose);
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label={t('app.elegirLinea')}>
+    <div ref={hoja} tabIndex={-1} className="sheet" role="dialog" aria-modal="true" aria-label={t('app.elegirLinea')}>
       <div className="sheet-head">
         <strong style={{ flex: 1, alignSelf: 'center' }}>{t('linea.pregunta')}</strong>
         {/* El idioma, dentro: en el primer arranque esta hoja tapa el pie
@@ -1041,6 +1088,7 @@ export function SelectorDeLinea({ lineas, valor, onElegir, onClose, idioma, onId
           <button
             key={l}
             className={`linea ${valor === l ? 'elegida' : ''}`}
+            aria-pressed={valor === l}
             onClick={() => onElegir(l)}
           >
             <span className="linea-nombre">{t(`linea.${l}`)}</span>
@@ -1089,7 +1137,7 @@ function Icono({ id, nombre }) {
  *    una regla evidente del juego. Va con su aviso.
  */
 export function Build({ hero, linea, builds, equipment, enemies, onClose, t = tPorDefecto }) {
-  useCerrarConAtras(onClose);
+  const hoja = useCerrarConAtras(onClose);
   const lista = useMemo(() => buildsDe(builds, hero, linea), [builds, hero, linea]);
   const principal = lista[0] ?? null;
   const ajustes = useMemo(
@@ -1099,7 +1147,7 @@ export function Build({ hero, linea, builds, equipment, enemies, onClose, t = tP
   const pct = (n) => (n * 100).toFixed(1);
 
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label={t('build.titulo')}>
+    <div ref={hoja} tabIndex={-1} className="sheet" role="dialog" aria-modal="true" aria-label={t('build.titulo')}>
       <div className="sheet-head">
         <strong style={{ flex: 1, alignSelf: 'center' }}>
           {hero?.name} · {t('build.deLinea', { linea: t(`linea.${linea}`) })}
@@ -1121,9 +1169,9 @@ export function Build({ hero, linea, builds, equipment, enemies, onClose, t = tP
                     <span className="obj-nombre">{o.nombre}</span>
                     {(o.magica || o.fisica) && (
                       <span className="obj-def">
-                        {o.magica ? `+${o.magica} MD` : ''}
+                        {o.magica ? `+${o.magica} ${t('build.defMagica')}` : ''}
                         {o.magica && o.fisica ? ' · ' : ''}
-                        {o.fisica ? `+${o.fisica} PD` : ''}
+                        {o.fisica ? `+${o.fisica} ${t('build.defFisica')}` : ''}
                       </span>
                     )}
                   </li>
@@ -1257,7 +1305,7 @@ export function Estimacion({ est, yo, t = tPorDefecto }) {
       <div className="estimacion-fila">
         {/* Corto: el título entero (30 caracteres) no cabe junto a la cifra y
             la barra en 360 px y desbordaba 2 px. El largo va en aria-label. */}
-        <span className="side-label" aria-label={t('estimacion.titulo')}>{t('estimacion.corto')}</span>
+        <span className="side-label"><abbr title={t('estimacion.titulo')}>{t('estimacion.corto')}</abbr></span>
         <strong className="estimacion-cifra">{pct}%</strong>
         <div className="estimacion-barra" role="img" aria-label={`${pct}%`}>
           <i style={{ width: `${pct}%` }} />

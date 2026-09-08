@@ -681,8 +681,6 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 }
 .estimacion.alta { border-color: var(--c-comp); }
 .estimacion.baja { border-color: var(--enemy); }
-.estimacion-cabecera { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.estimacion-cabecera .side-label { margin: 0; }
 .estimacion-vistos { font-size: 11px; color: var(--muted); font-family: var(--font-num); }
 .estimacion-fila { display: flex; align-items: center; gap: 12px; margin: 6px 0 4px; }
 .estimacion-cifra { font-family: var(--font-num); font-size: 28px; line-height: 1; min-width: 64px; }
@@ -705,6 +703,9 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .estimacion-mas > summary::-webkit-details-marker { display: none; }
 .estimacion-mas[open] > summary { color: var(--text); }
 .legend-nota { color: var(--muted); }
+.estimacion abbr { text-decoration: none; }
+/* El foco va a la hoja al abrirse (teclado y lector): sin anillo visible. */
+.sheet:focus { outline: none; }
 
 /* ---------- composición de cada equipo ---------- */
 .comp { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
