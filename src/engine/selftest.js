@@ -365,8 +365,10 @@ export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, maste
     const m = pro.medicion;
     if (m?.terminos?.modelo) {
       const t = m.terminos;
-      const f = (r) => `AUC ${r.auc?.toFixed(2)} · pendiente ${r.pendiente?.toFixed(2)} ± ${r.errorPendiente?.toFixed(2)}`;
-      lineas.push(`Estimación contra ${m.usables} partidas pro desde ${m.desde}: acierto ${Math.round(t.modelo.acierto * 100)}% · ${f(t.modelo)}`);
+      // Tolerante a un término que falte: el diagnóstico entero no puede
+      // caerse por una medición a medias.
+      const f = (r) => (r ? `AUC ${r.auc?.toFixed(2)} · pendiente ${r.pendiente?.toFixed(2)} ± ${r.errorPendiente?.toFixed(2)}` : '—');
+      lineas.push(`Estimación contra ${m.usables} partidas pro desde ${m.desde}: acierto ${Math.round((t.modelo?.acierto ?? 0) * 100)}% · ${f(t.modelo)}`);
       lineas.push(`  héroes ${f(t.heroes)} · cruces ${f(t.cruces)} · parejas ${f(t.parejas)} · lado azul ${Math.round((m.azul ?? 0.5) * 100)}%`);
       // Con muestra, el modelo tiene que distinguir algo: AUC por debajo de
       // 0.5 es que ordena al revés, y eso sí sería un fallo del motor.

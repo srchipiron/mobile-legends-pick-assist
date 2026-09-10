@@ -345,11 +345,13 @@ test('el diagnostico detecta datos imposibles y caidas frente a su propio histor
   // avisa; con una medida de otro modelo (sin `escala`, o distinta), no.
   const { ESCALA } = await import('../src/engine/modelo.js');
   const avisoEscala = (m) => runSelfTest({ ...base, meta, pro: { ...proBase, partidas: 400, medicion: m } }).texto.split('\n').filter((l) => /^\[AVISO\].*escala ya no encaja/.test(l)).length;
-  const lejos = { usables: 400, desde: '2026-05-01', terminos: { modelo: { pendiente: 0.4, errorPendiente: 0.1 } } };
+  const lejos = { ...medicion, usables: 400, terminos: { ...medicion.terminos, modelo: { ...medicion.terminos.modelo, pendiente: 0.4, errorPendiente: 0.1 } } };
   eq(avisoEscala({ ...lejos, escala: ESCALA }), 1, 'no avisa de una pendiente lejos de 1 medida con esta escala');
   eq(avisoEscala(lejos), 0, 'avisa con una medida del modelo anterior (sin escala)');
   eq(avisoEscala({ ...lejos, escala: ESCALA + 1 }), 0, 'avisa con una medida hecha con otra escala');
-  eq(avisoEscala({ ...lejos, escala: ESCALA, terminos: { modelo: { pendiente: 0.95, errorPendiente: 0.1 } } }), 0, 'avisa con la pendiente en 1');
+  eq(avisoEscala({ ...lejos, escala: ESCALA, terminos: { ...lejos.terminos, modelo: { ...lejos.terminos.modelo, pendiente: 0.95 } } }), 0, 'avisa con la pendiente en 1');
+  // Y una medición a medias (sin un término) no tumba el diagnóstico entero.
+  ok(runSelfTest({ ...base, meta, pro: { ...proBase, partidas: 400, medicion: { ...lejos, escala: ESCALA, terminos: { modelo: lejos.terminos.modelo } } } }).texto.includes('Estimación contra'), 'una medición sin todos los términos revienta el diagnóstico');
 });
 
 test('perfiles y registro: fundir por instante, sanear lo que llega y maestria por nombre normalizado', async () => {
