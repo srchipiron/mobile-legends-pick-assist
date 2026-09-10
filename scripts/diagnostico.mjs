@@ -24,7 +24,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { appendFile, mkdir } from 'node:fs/promises';
 import { runSelfTest } from '../src/engine/selftest.js';
-import { mergeCatalog, indexByName, poolDeLinea, LINEAS, densidadCounters } from '../src/engine/score.js';
+import { mergeCatalog, indexByName, poolDeLinea, LINEAS, densidadCounters, matchup } from '../src/engine/score.js';
 import { indiceDeLineas } from '../src/engine/rival-de-linea.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');

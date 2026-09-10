@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 2.0.2
+
+- La vigilancia automática volvía a funcionar: se caía al final por un
+  import que se quitó en 2.0.0 (`matchup` en `diagnostico.mjs`), y abría una
+  incidencia con la app publicada en perfecto estado. Ahora `npm test`
+  ejecuta el diagnóstico entero contra los datos del repositorio y mira su
+  código de salida.
+
 ## 2.0.1
 
 - El diagnóstico ya no avisa de que «la escala no encaja» con una medición

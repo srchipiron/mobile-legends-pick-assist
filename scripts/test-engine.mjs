@@ -2207,6 +2207,25 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   }
 });
 
+test('la vigilancia arranca de verdad contra los datos del repositorio', async () => {
+  // Un `matchup is not defined` en diagnostico.mjs pasó `npm test`, la
+  // compilación y el despliegue: el script se ejecutaba solo en el bot, y
+  // reventó DESPUÉS de imprimir «[OK] Pages sirve la 2.0.0», con lo que
+  // leyendo su salida a medias parecía sano. Se ejecuta entero, y se mira el
+  // código de salida, no la salida.
+  // Con `--historial`: la fila de salud es lo que reventaba, y solo se
+  // calcula cuando se pide (el bot siempre la pide).
+  const { spawnSync } = await import('node:child_process');
+  const { tmpdir } = await import('node:os');
+  const { mkdtempSync, existsSync } = await import('node:fs');
+  const dir = mkdtempSync(resolve(tmpdir(), 'salud-'));
+  const salud = resolve(dir, 'salud.jsonl');
+  const r = spawnSync(process.execPath, [resolve(ROOT, 'scripts/diagnostico.mjs'), '--local', '--historial', salud], { encoding: 'utf8', timeout: 240000 });
+  eq(r.status, 0, `diagnostico.mjs --local sale con ${r.status}: ${(r.stderr || '').split('\n').slice(0, 6).join(' | ')}`);
+  ok(/Fuente: public\/data/.test(r.stdout + r.stderr), 'el diagnóstico local no llega al final');
+  ok(existsSync(salud) && /"cruces":\d+/.test(readFileSync(salud, 'utf8')), 'no deja la fila de salud con sus cifras');
+});
+
 test('la ingesta arranca sin errores de programación', async () => {
   // Comprobar solo la sintaxis no basta: un `ROUTES is not defined` pasaba
   // node --check y reventaba en la primera línea, dejando los datos congelados

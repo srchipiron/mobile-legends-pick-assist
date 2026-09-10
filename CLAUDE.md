@@ -565,6 +565,14 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   todo, y `check-order.mjs` solo veía `const` (un `let` usado antes es el
   mismo TDZ). Si una prueba busca una cadena, pregúntate si la cadena en un
   comentario o en un echo también la pasaría.
+- **`matchup is not defined` en `diagnostico.mjs`, después del último OK**
+  (2.0.0) — al recortar un import se quitó una función que seguía usándose
+  más abajo; `npm test` no ejecutaba el script, y en local se leyó la
+  salida filtrada por `grep`, que enseñaba «[OK] Pages sirve la 2.0.0» y
+  no el `ReferenceError` de tres líneas después. Abrió la incidencia #7.
+  Hoy hay una prueba que ejecuta `diagnostico.mjs --local` entero y mira el
+  CÓDIGO DE SALIDA. Cuando compruebes un script, mira `$?`, no la salida; y
+  `npm test | tail` devuelve el código de `tail` (ya pasó con `tee`).
 - **Cinco componentes con pesos a mano que nunca se midieron contra un
   resultado** — meta 0.22, counter 0.40, sinergia 0.15, composición 0.08,
   maestría 0.15, cada uno reescalado min-max dentro del pool. Se calibraron
