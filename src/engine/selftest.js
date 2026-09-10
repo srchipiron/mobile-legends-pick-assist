@@ -1,9 +1,7 @@
-import {
-  rankRoamers, metaScore, masteryScore, coverage, normName, densidadCounters, matchup, sinergia,
-  ESCALA_CRUCE, ESCALA_PAREJA, lookup,
-} from './score.js';
+import { masteryScore, coverage, normName, densidadCounters, matchup, lookup } from './score.js';
+import { rankRoamers } from './ranking.js';
+import { ESCALA, ESCALA_SE, AJUSTE, terminoHeroe } from './modelo.js';
 import { CUOTA_ROBUSTA } from './robustez.js';
-import { DEFAULT_WEIGHTS } from './rules.js';
 import { resumen, MINIMO_PARA_CONCLUIR, calibracion } from './registro.js';
 import { coberturaBuilds } from './builds.js';
 
@@ -86,26 +84,28 @@ export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, maste
     for (const [i, r] of (draft.ranked ?? []).slice(0, 3).entries()) {
       const motivos = (r.reasons ?? []).map((m) => m.clave.replace(/^regla\.|^necesidad\./, '')
         + (m.params?.e ? `:${m.params.e}` : m.params?.a ? `:${m.params.a}` : '')).join(' ');
-      lineas.push(`  ${i + 1}. ${r.hero.name} ${Math.round(r.score * 100)}${motivos ? ` · ${motivos}` : ''}`);
+      lineas.push(`  ${i + 1}. ${r.hero.name} ${Math.round((r.p ?? r.score) * 100)}%${motivos ? ` · ${motivos}` : ''}`);
     }
     for (const f of draft.analisis ?? []) lineas.push(`  > ${f.clave.replace(/^analisis\./, '')} ${JSON.stringify(f.params ?? {})}`);
 
-    // Por qué gana el nº1: qué componente lo separa del nº2, y por cuánto. Es
-    // lo que hace falta para discutir una recomendación en vez de creérsela.
+    // Por qué gana el nº1: qué término lo separa del nº2, y por cuánto (en
+    // puntos de probabilidad). Es lo que hace falta para discutir una
+    // recomendación en vez de creérsela.
     const [a, b] = draft.ranked ?? [];
-    if (a?.contributions && b?.contributions) {
-      const dif = Object.entries(a.contributions).map(([k, v]) => [k, v - (b.contributions[k] ?? 0)])
+    if (a?.puntos && b?.puntos) {
+      const dif = Object.entries(a.puntos).map(([k, v]) => [k, v - (b.puntos[k] ?? 0)])
         .sort((x, y) => Math.abs(y[1]) - Math.abs(x[1]));
-      const margen = ((a.score - b.score) * 100).toFixed(1);
-      lineas.push(`Por qué ${a.hero.name} y no ${b.hero.name}: ${margen} puntos de margen · lo decide ${dif[0][0]} (${(dif[0][1] * 100 >= 0 ? '+' : '')}${(dif[0][1] * 100).toFixed(1)})`
-        + (dif[1] ? `, luego ${dif[1][0]} (${(dif[1][1] * 100 >= 0 ? '+' : '')}${(dif[1][1] * 100).toFixed(1)})` : ''));
+      const margen = ((a.p - b.p) * 100).toFixed(1);
+      const con = (d) => `${d[0]} (${d[1] >= 0 ? '+' : ''}${d[1]})`;
+      lineas.push(`Por qué ${a.hero.name} y no ${b.hero.name}: ${margen} puntos de margen · lo decide ${con(dif[0])}`
+        + (dif[1] ? `, luego ${con(dif[1])}` : ''));
     }
     // La probabilidad estimada con cada uno de los tres, y de dónde sale
     // (ver estimacion.js). Es lo que permite discutir el número, no solo verlo.
     const signo = (v) => (v > 0 ? `+${v}` : `${v}`);
     for (const e of draft.estimaciones ?? []) {
       if (e?.p == null) continue;
-      lineas.push(`Estimación con ${e.yo}: ${Math.round(e.p * 100)}% · héroes ${signo(e.puntos.heroes)} · cruces ${signo(e.puntos.cruces)} · parejas ${signo(e.puntos.parejas)} · tú ${signo(e.puntos.tu)} (${e.vistos}/10 a la vista)`);
+      lineas.push(`Estimación con ${e.yo}: ${Math.round(e.p * 100)}% · héroes ${signo(e.puntos.heroes)} · cruces ${signo(e.puntos.cruces)} · parejas ${signo(e.puntos.parejas)} · tú ${signo(e.puntos.tu)} · por ver ${signo(e.puntos.porVer ?? 0)} (${e.vistos}/10 a la vista)`);
     }
     // Y la composición de cada lado: de qué pega y qué le falta.
     const comp = (c) => (c?.n ? `${c.n} héroes · físico ${c.dano.fisico} · mágico ${c.dano.magico} · mixto ${c.dano.mixto}`
@@ -282,39 +282,10 @@ export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, maste
     const med = (a) => a.reduce((x, y) => x + y, 0) / a.length;
     const desv = (a) => Math.sqrt(a.reduce((s, x) => s + (x - med(a)) ** 2, 0) / (a.length - 1));
 
-    // 1. Que las transformaciones no aplasten datos contra el tope. Un clamp
-    //    se come informacion en silencio: dos cruces distintos salen iguales.
-    const recorte = (leer, lo, ancho) => {
-      let n = 0; let fuera = 0;
-      for (const a of nombres) {
-        for (const b of nombres) {
-          if (a === b) continue;
-          const v = leer(a, b);
-          if (v == null) continue;
-          n++;
-          const x = (v - lo) / ancho;
-          if (x <= 0 || x >= 1) fuera++;
-        }
-      }
-      return n ? fuera / n : 0;
-    };
-    const rc = recorte((a, b) => matchup(metaCtx.counters, a, b), ESCALA_CRUCE.base, ESCALA_CRUCE.rango);
-    check(rc < 0.02,
-      `Escala de counters bien ajustada (se recorta el ${(rc * 100).toFixed(1)}%)`,
-      `Los counters se recortan contra el tope en el ${(rc * 100).toFixed(1)}% de los cruces: se pierde informacion`,
-      true);
-    if (metaCtx.synergies) {
-      const rs = recorte((a, b) => sinergia(metaCtx.synergies, a, b), ESCALA_PAREJA.base, ESCALA_PAREJA.rango);
-      check(rs < 0.02,
-        `Escala de sinergias bien ajustada (se recorta el ${(rs * 100).toFixed(1)}%)`,
-        `Las sinergias se recortan contra el tope en el ${(rs * 100).toFixed(1)}% de las parejas`,
-        true);
-    }
-
-    // 2. Que el ruido siga sin crecer con lo poco jugado que sea el heroe. Es
-    //    lo que sostiene PICKRATE_FIABLE: si la fuente pasa a dar estimaciones
-    //    temblorosas para los heroes raros, la constante se queda mal calibrada
-    //    y hay que volver a medirla.
+    // 1. Que el ruido siga sin crecer con lo poco jugado que sea el heroe. Es
+    //    lo que sostiene que el cruce no se encoja por muestra: si la fuente
+    //    pasa a dar estimaciones temblorosas para los heroes raros, habria
+    //    que volver a medirlo.
     const filas = [];
     for (const n of nombres) {
       const pr = meta.stats[n]?.pickRate;
@@ -474,7 +445,7 @@ export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, maste
     };
     const conCounter = rankRoamers(roamPool, { enemies: enemigos, meta: metaCtx, mastery })
       .filter((r) => cruce(r.hero) != null)
-      .sort((a, b) => b.parts.counter.value - a.parts.counter.value);
+      .sort((a, b) => b.terminos.cruces - a.terminos.cruces);
     if (conCounter.length >= 4) {
       const mejor = cruce(conCounter[0].hero);
       const peor = cruce(conCounter[conCounter.length - 1].hero);
@@ -485,11 +456,10 @@ export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, maste
   }
 
   // Que el winrate esté influyendo de verdad y no todo valga 0.50.
-  const valoresMeta = roamPool.map((h) => metaScore(metaCtx.stats?.[normName(h.name)],
-    metaCtx.patchAvgWinRate).value);
+  const valoresMeta = roamPool.map((h) => terminoHeroe(h, metaCtx.stats, metaCtx.patchAvgWinRate).valor);
   const rango = Math.max(...valoresMeta) - Math.min(...valoresMeta);
   check(rango > 0.05,
-    `Winrate influye (dispersión ${rango.toFixed(2)})`,
+    `Winrate influye (dispersión ${rango.toFixed(2)} log-odds)`,
     `Winrate NO influye: todos los héroes puntúan igual (dispersión ${rango.toFixed(2)})`);
 
   // Riesgo de contrapick: solo se puede calcular con la matriz de counters.
@@ -602,42 +572,43 @@ export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, maste
     }
   }
 
-  // ---------- autonomía ----------
-  seccion('AUTONOMÍA');
-  // Cuánto de la recomendación sale de partidas reales y cuánto de reglas
-  // escritas a mano. Las reglas envejecen cuando cambia el juego; los datos no.
+  // ---------- el modelo ----------
+  seccion('MODELO');
+  // Cuánto de la recomendación sale de partidas reales y cuánto de tus
+  // partidas, medido en un draft de ejemplo: el rango de cada término del
+  // modelo dentro del pool, en puntos de probabilidad.
   const muestra = rankRoamers(roamPool, {
     enemies: ['Fanny', 'Esmeralda', 'Melissa'].map(H).filter(Boolean),
     allies: ['Cecilion', 'Granger'].map(H).filter(Boolean),
     meta: metaCtx,
     mastery,
   });
-
   if (muestra.length) {
-    const infl = {};
-    for (const k of ['meta', 'counter', 'synergy', 'comp', 'mastery']) {
-      const v = muestra.map((x) => x.contributions[k] ?? 0);
-      infl[k] = Math.max(...v) - Math.min(...v);
-    }
-    const total = Object.values(infl).reduce((a, b) => a + b, 0) || 1;
-    const datos = ((infl.meta + infl.counter + infl.synergy) / total) * 100;
-    const reglas = (infl.comp / total) * 100;
-    const tuyo = (infl.mastery / total) * 100;
-
-    lineas.push(`Partidas reales: ${datos.toFixed(0)}% · reglas escritas a mano: ${reglas.toFixed(0)}% · tus partidas: ${tuyo.toFixed(0)}%`);
-    check(datos >= 60,
+    const rango = (k) => { const v = muestra.map((x) => x.puntos?.[k] ?? 0); return Math.max(...v) - Math.min(...v); };
+    const datos = rango('heroes') + rango('cruces') + rango('parejas') + rango('porVer');
+    const tuyo = rango('tu');
+    const total = datos + tuyo || 1;
+    lineas.push(`Partidas reales: ${((datos / total) * 100).toFixed(0)}% · tus partidas: ${((tuyo / total) * 100).toFixed(0)}% (rango en puntos: héroes ${rango('heroes')}, cruces ${rango('cruces')}, parejas ${rango('parejas')}, tú ${rango('tu')})`);
+    check(datos / total >= 0.6,
       'La recomendación se apoya sobre todo en datos',
-      `Solo el ${datos.toFixed(0)}% viene de datos: el resto son reglas que envejecen`);
-
-    const primeros = new Set(muestra.slice(0, 3).map((x) => x.hero.name));
-    lineas.push(`Ejemplo (vs Fanny/Esmeralda/Melissa): ${[...primeros].join(', ')}`);
+      `Solo el ${((datos / total) * 100).toFixed(0)}% viene de datos`);
+    const sinDato = muestra.filter((x) => !x.dato).length;
+    check(sinDato === 0, 'Todos los candidatos tienen dato de winrate', `${sinDato} candidatos sin winrate: mandan las reglas por etiqueta`, true);
+    lineas.push(`Ejemplo (vs Fanny/Esmeralda/Melissa): ${muestra.slice(0, 3).map((x) => `${x.hero.name} ${Math.round(x.p * 100)}%`).join(', ')}`);
   }
-
-  // ---------- pesos ----------
-  seccion('PESOS');
-  const suma = Object.values(DEFAULT_WEIGHTS).reduce((a, b) => a + b, 0);
-  check(Math.abs(suma - 1) < 0.001, `Suman 1.00`, `Suman ${suma.toFixed(3)}, deberían sumar 1`);
-  lineas.push(Object.entries(DEFAULT_WEIGHTS).map(([k, v]) => `${k} ${v}`).join(' · '));
+  // La escala del modelo y con qué se midió. Cuando el bot mide la
+  // pendiente de la estimación contra las partidas pro (medir-pro.mjs), con
+  // la escala ya aplicada debería salir 1: si se aleja más de dos errores
+  // típicos, el modelo ha dejado de parecerse a lo que pasa.
+  lineas.push(`Escala ${ESCALA} ± ${ESCALA_SE} (ajustada con ${AJUSTE.partidas} partidas pro desde ${AJUSTE.desde}, datos del ${AJUSTE.datosDe})`);
+  const pend = pro?.medicion?.terminos?.modelo;
+  if (pend?.pendiente != null && pend.errorPendiente != null && (pro.medicion.usables ?? 0) >= 300) {
+    const lejos = Math.abs(pend.pendiente - 1) > 2 * pend.errorPendiente;
+    check(!lejos,
+      `La escala sigue valiendo: pendiente ${pend.pendiente.toFixed(2)} ± ${pend.errorPendiente.toFixed(2)} sobre ${pro.medicion.usables} partidas`,
+      `La escala ya no encaja: pendiente ${pend.pendiente.toFixed(2)} ± ${pend.errorPendiente.toFixed(2)} (debería ser 1): vuelve a medir con scripts/ajustar-modelo.mjs`,
+      true);
+  }
 
   // ---------- resumen ----------
   const cabecera = [

@@ -51,8 +51,6 @@ const VIGILADOS = [
   ['sinergias', 'sinergias', 100, (v) => v],
   ['cobertura', 'cobertura de counters', 0.01, (v) => `${(v * 100).toFixed(1)}%`],
   ['ruido', 'ruido de los héroes raros', 0.1, (v) => `${v}x`],
-  ['recorteCounters', 'recorte de counters', 0.01, (v) => `${(v * 100).toFixed(1)}%`],
-  ['recorteSinergias', 'recorte de sinergias', 0.01, (v) => `${(v * 100).toFixed(1)}%`],
   ['conDano', 'héroes con tipo de daño', 1, (v) => v],
   ['conLinea', 'héroes con línea', 1, (v) => v],
 ];

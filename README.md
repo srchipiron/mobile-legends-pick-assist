@@ -78,80 +78,69 @@ El objetivo es que la app siga siendo correcta dentro de un año, cuando haya
 héroes nuevos y reequilibrados. Para eso, cuanto menos criterio humano fijo
 lleve dentro, mejor: las reglas escritas a mano envejecen, los datos no.
 
-| Componente | Peso | Origen |
+Desde 2.0 no hay pesos: la nota de cada pick es la **probabilidad de ganar el
+draft que resulta**, y sale de un único modelo aditivo en log-odds cuya escala
+está medida contra 902 partidas profesionales con resultado (Liquipedia), con
+validación cruzada (`scripts/ajustar-modelo.mjs`).
+
+| Término | Qué es | Origen |
 |---|---|---|
-| Counter | 40% | winrate real de cada pareja, de partidas ranked |
-| Meta | 22% | winrate global del héroe en tu rango |
-| Sinergia | 15% | winrate real junto a cada aliado |
-| Tu maestría | 15% | tus propias partidas |
-| Composición | 8% | reglas escritas a mano (lo único que envejece) |
+| Héroes | winrate público de los tuyos menos los suyos | partidas ranked de tu rango |
+| Cruces | cada uno de los tuyos contra cada uno de los suyos | matriz de counters (17.556 cruces) |
+| Parejas | cómo rinden juntos los tuyos, menos los suyos | matriz de sinergias |
+| Tú | tu winrate con el héroe, en lugar del público | tus partidas |
+| Por ver | lo que cabe esperar contra lo que falta por salir | pickrate por línea |
 
-Los pesos dan el 92% a datos reales y el 8% a reglas escritas a mano. Medido en
-un draft de verdad sale prácticamente igual desde 1.5.0, porque la matriz de
-counters cubre el 100% de los cruces (17.556) y las reglas por tags solo entran
-con un héroe tan nuevo que la API no publica ni un cruce suyo. El botón
-**Diagnóstico** lo mide en vivo, así que fíate de él y no de esta tabla: si ese
-porcentaje baja, los datos han dejado de llegar y las reglas están tapando el
-hueco.
-
-La confianza en cada matchup **también la decide el dato**: se encoge hacia el
-empate según lo jugado que esté el rival, porque contra un héroe raro un 57% es
-ruido y no una ventaja. Antes había una mezcla fija de 65/35 entre dato y reglas
-que era criterio mío y no se ajustaba a nada.
+Lo medido: los tres términos de datos pesan lo mismo dentro del error (un
+coeficiente libre por término no mejora la validación cruzada), la escala es
+0,44 ± 0,12 (con coeficiente 1 el modelo exageraba: error peor que una moneda),
+el cruce contra tu rival de línea NO vale más que los otros, y los huecos de
+composición por etiqueta valen 0,00 ± 0,07: se dicen, no se puntúan. El botón
+**Diagnóstico** enseña la escala y avisa si el bot mide otra cosa.
 
 ## Cómo puntúa
 
-Cinco componentes, con los pesos de la tabla de arriba (`DEFAULT_WEIGHTS` en `src/engine/rules.js`).
+Cada tarjeta enseña la probabilidad y, en puntos, cuánto aporta cada término
+(`src/engine/modelo.js`; el ranking en `src/engine/ranking.js`).
 
-Tres decisiones que conviene entender antes de tocar los pesos:
+Tres decisiones que conviene entender antes de tocar nada:
 
-**El winrate se encoge hacia la media.** Un héroe con 58% y 40 partidas no vale lo que uno con 54% y
-9.000. `metaScore` aplica un shrink bayesiano con un prior de 400 partidas equivalentes. Súbelo si
-quieres ser más conservador.
+**El winrate no se encoge.** Medido el ruido entre corridas de la ingesta (0,0003 frente a 0,03 de
+dispersión entre héroes), no hay nada que encoger; tampoco el cruce por lo raro que sea el rival.
 
 **Los counters usan el dato real si existe, y reglas por tags si no.** Las reglas están en
-`COUNTER_RULES` y son legibles: "si el enemigo tiene dashes, un roamer con anti-mobility sube". Esto
-es lo que hace que la app siga siendo útil con un héroe recién salido del que no hay estadísticas.
+`COUNTER_RULES` y son legibles: "si el enemigo tiene dashes, un roamer con anti-mobility sube". Solo
+entran con un héroe recién salido del que no hay ni un cruce, a la misma equivalencia que en 1.x.
 
-**La composición pesa poco con el draft vacío.** Con cero aliados elegidos no sabemos nada, así que
-el score se acerca a neutro. Sin esa corrección la app siempre recomendaría al mismo generalista.
+**Lo que falta por salir cuenta como esperanza, no como castigo.** Para cada línea enemiga abierta se
+suma el cruce esperado contra lo que se juega ahí, ponderado por pickrate. El aviso de «arriesgado
+como pick ciego» sigue como aviso.
 
 Tu maestría se edita desde el botón **Tu maestría**: partidas y winrate de cada roamer, tal como
 salen en tu perfil del juego. El winrate va en porcentaje (`50,6` o `50.6`, las dos formas valen) y
 la conversión a fracción se hace al guardar. Los héroes que ya tienen datos suben arriba de la lista.
 Se guarda en `localStorage` y no sale del móvil.
 
-## Roamer enemigo
+## Rival de línea
 
-Es con quien más vas a chocar, así que su matchup pesa el doble. La app lo
-deduce sola de las líneas en las que se juega cada héroe (dato de la API), lo
-marca con un círculo punteado y puedes corregirlo tocando otro.
+La app deduce sola quién va a tu línea en el equipo enemigo (de las líneas en
+las que se juega cada héroe, dato de la API), lo marca con un círculo punteado
+y puedes corregirlo tocando otro. Se usa en el análisis («ganas tu cruce contra
+X») y para el consejo a los compañeros; desde 2.0 no pesa doble, porque medido
+en las partidas pro el cruce de línea no vale más que los otros veinte.
 
 **Se calla cuando hay duda.** Con dos tanques o dos supports enfrente podría ser
-cualquiera, y equivocarse es peor que no decir nada: duplicaría el peso del
-matchup equivocado. Exige un margen mínimo sobre el segundo candidato.
+cualquiera, y equivocarse es peor que no decir nada. Exige un margen mínimo
+sobre el segundo candidato.
 
-## Riesgo de contrapick
+## Pick a ciegas
 
-Como roam sueles elegir pronto, sin ver el equipo enemigo entero. Ahí no interesa
-el mejor pick sobre el papel, sino el que menos te pueden castigar después.
-
-Con la matriz de counters, cada roamer tiene un riesgo 0..1 medido por el
-percentil 10 de sus matchups (el mal día típico, no el mínimo absoluto, que sería
-un dato suelto con poca muestra). Ese riesgo descuenta puntos **en proporción a
-cuántos enemigos faltan por ver**: pesa entero en el primer pick y desaparece
-cuando ya están los cinco. Los muy castigables se marcan como "arriesgado como
-pick ciego".
-
-La idea viene de las herramientas de draft de League of Legends, que llevan más
-recorrido en esto. De ahí salen también dos confirmaciones útiles: el shrinkage
-bayesiano sobre los matchups y priorizar tu propio pool, que ya hacíamos.
-
-Y una advertencia que conviene tener presente: en el paper de Kim et al.
-(Universidad de Washington), los modelos entrenados para predecir el resultado a
-partir de las composiciones no pasaron del 53% de acierto. Los personajes están
-demasiado equilibrados como para que el draft decida solo. Esto inclina la
-balanza, no gana partidas.
+Como roam sueles elegir pronto, sin ver el equipo enemigo entero. Cada roamer
+tiene un riesgo 0..1 medido por el percentil 10 de sus matchups (el mal día
+típico); los muy castigables se marcan como "arriesgado como pick ciego". Es un
+aviso: el orden de pick de Liquipedia no lleva señal de contrapick medible, así
+que no hay castigo inventado. Lo que sí entra en la nota es la esperanza del
+cruce contra lo que se juega en cada línea abierta.
 
 ## Baneos
 
@@ -159,16 +148,17 @@ El draft va en dos fases. La primera son los baneos, solos en pantalla: diez hue
 multi-toque, y el **siguiente baneo probable** en fichas para tocar en vez de escribir (los más
 baneados de tu rango que aún no están marcados; con tus partidas apuntadas, también lo que suele caer
 junto a lo ya marcado). Debajo, a quién conviene banear por tu equipo: lo fuerte que está el héroe,
-cuánto lo banea la gente y lo mal que le va a los aliados que ya has elegido. Un toque en «Ir a los
+ordenado por lo que te quita: la probabilidad que pierdes si sale ese héroe (su fuerza y sus cruces
+contra tus aliados ya elegidos), por lo que sale cuando no está baneado. Un toque en «Ir a los
 picks» pasa a la segunda fase, con la tira de baneos arriba para volver.
 
 ## Lo que esto no hace
 
 - **El winrate global no es tu winrate.** Elige tu rango en "Ajustes": la ingesta descarga
   Epic, Legend, Mythic y Glory, y el meta cambia bastante entre ellos.
-- **Los counters pesan un 40%, no más.** Están medidos como índices de cruce ya centrados, sin ruido de
-  muestreo apreciable, pero un cruce no decide una partida: la fuerza general del héroe y las parejas
-  también cuentan.
+- **Un cruce no decide una partida.** Están medidos como índices de cruce ya centrados, sin ruido de
+  muestreo apreciable, pero pesan lo mismo que la fuerza general del héroe: en 902 partidas pro el
+  modelo entero acierta el 55% y ordena bien el 57% de los pares (AUC). El draft inclina, no gana.
 - **No lee la pantalla del juego.** Los picks enemigos los metes tú a mano. En 30 segundos de draft
   da tiempo a tres o cuatro toques, no a más: por eso la rejilla tiene botones grandes y buscador.
 
@@ -203,8 +193,11 @@ lógica no llega a publicarse: te quedas con la versión anterior funcionando.
 
 ```
 scripts/ingest.mjs        descarga y normaliza el meta
-src/engine/rules.js       reglas de counter, necesidades de equipo, pesos
-src/engine/score.js       el motor: cinco componentes -> un número y su desglose
+src/engine/modelo.js      EL modelo: los términos y la escala medida
+src/engine/ranking.js     el ranking, los baneos y el margen de empate
+src/engine/rules.js       reglas de counter y necesidades de equipo (solo sin dato)
+src/engine/score.js       utilidades: nombres, matrices, catálogo, maestría, pools
+scripts/ajustar-modelo.mjs  qué coeficiente sale para cada término, con validación cruzada
 src/components/ui.jsx     selector de héroes, slots, tarjeta, pie de versión
 scripts/test-engine.mjs   pruebas del motor
 scripts/check-order.mjs   uso antes de declarar

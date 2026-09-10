@@ -30,6 +30,14 @@ import { TEAM_NEEDS } from './rules.js';
 const MATCHUP_CLARO = 0.5 - CRUCE_MALO;
 
 /**
+ * Desde cuántos puntos de probabilidad el nº1 «le saca» al nº2 y se dice
+ * «pick claro». Decisión de frecuencia, como el margen de empate: 2 puntos
+ * es el p85 de la distancia nº1–nº2 medida en 300 drafts de roam con el
+ * modelo de 2.0 (1,94), así que se dice en uno de cada siete drafts.
+ */
+const BRECHA_CLARA = 2;
+
+/**
  * ¿La simulación se hizo con ESTE draft? En la app va diferida y el ranking
  * no, así que durante un render la cuota es la del draft anterior y el nº1 el
  * de este: la cuota de un héroe que la simulación no vio es 0 y salía
@@ -185,9 +193,9 @@ export function analizarDraft({
   // 4. Cuánto le saca al siguiente. Esto SIEMPRE se puede decir y es lo que
   //    de verdad decide si merece la pena pensárselo o coger y tirar.
   const segundo = ranked.find((r) => r.hero.name !== hero.name);
-  if (segundo) {
-    const brecha = Math.round((top.score - segundo.score) * 100);
-    if (brecha >= 8) {
+  if (segundo && top.p != null && segundo.p != null) {
+    const brecha = Math.round((top.p - segundo.p) * 100);
+    if (brecha >= BRECHA_CLARA) {
       salida.push({ tono: 'bien', clave: 'analisis.pickClaro', params: { yo: hero.name, puntos: brecha } });
     } else if (empate.length > 1 && empate.some((x) => x.hero.name === hero.name)) {
       const otros = empate.map((x) => x.hero.name).filter((n) => n !== hero.name);

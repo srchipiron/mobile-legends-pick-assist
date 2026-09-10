@@ -1,12 +1,4 @@
-import {
-  ROLE_DEFAULTS,
-  SPECIALITY_TAGS,
-  ROLE_VETO,
-  COUNTER_RULES,
-  DANGER_RULES,
-  TEAM_NEEDS,
-  DEFAULT_WEIGHTS,
-} from './rules.js';
+import { ROLE_DEFAULTS, SPECIALITY_TAGS, ROLE_VETO, TEAM_NEEDS } from './rules.js';
 
 const clamp01 = (n) => Math.max(0, Math.min(1, n));
 
@@ -15,14 +7,6 @@ const clamp01 = (n) => Math.max(0, Math.min(1, n));
  * escritos a mano. Sale de scripts/derivar-tags.mjs, no de una intuición.
  */
 export const PRECISION_DEDUCIDA = 0.67;
-
-/**
- * Escalas con las que un cruce y una pareja se convierten en nota. Medidas
- * (p10/p90 de cada matriz) y COMPARTIDAS con el diagnóstico: antes estaban
- * copiadas allí y un cambio aquí dejaba al vigilante mirando la escala vieja.
- */
-export const ESCALA_CRUCE = { base: 0.44, rango: 0.12 };
-export const ESCALA_PAREJA = { base: 0.42, rango: 0.16 };
 
 /** Riesgo de contrapick a partir del cual un pick es «castigable a ciegas». */
 export const RIESGO_AVISO = 0.6;
@@ -36,18 +20,6 @@ export function esPickCiego(riesgo, enemigosVistos) {
   const cegera = Math.max(0, 5 - enemigosVistos) / 5;
   return riesgo != null && riesgo > RIESGO_AVISO && cegera > 0.4;
 }
-
-/**
- * Ventaja máxima que un roamer puede acumular contra un enemigo por reglas:
- * la más fuerte más media de la segunda, DERIVADA de COUNTER_RULES. Estaba
- * escrita a mano (1.85, «1.4 + 0.9/2») y ninguna regla pesa 1.4: el techo
- * real era 0.878 en vez de 1.0, así que un cruce sin dato pesaba menos que
- * uno con dato en el mismo draft. Si cambia una regla, esto cambia solo.
- */
-export const SUB_MAX = (() => {
-  const w = COUNTER_RULES.map((r) => r.weight).sort((a, b) => b - a);
-  return (w[0] ?? 1) + (w[1] ?? 0) / 2;
-})();
 
 /**
  * Desde qué cruce merece la pena decir "ganas" o "pierdes" este enfrentamiento.
@@ -78,16 +50,6 @@ export const CRUCE_MALO = 0.4846;
  * algo contra una distribución, busca sus gemelas antes de darlo por hecho.
  */
 export const PAREJA_DESTACABLE = 0.51;
-
-/**
- * Lo que vale tapar el lado de daño que le falta al equipo, en la misma escala
- * que TEAM_NEEDS (engage 1.0, cc_hard 0.9, peel 0.8).
- *
- * Por debajo de engage y del control duro a propósito: que os falte magia
- * duele en late, pero no entrar a una pelea duele ya. Medido en drafts
- * simulados antes de subirlo.
- */
-const PESO_DANO = 0.7;
 
 /**
  * Clave normalizada de un nombre de héroe. La API y el catálogo escriben lo
@@ -169,165 +131,6 @@ export function sinergia(synergyMatrix, a, b) {
 }
 
 /**
- * Winrate crudo -> 0..1, encogido hacia 0.5 segun el tamaño de muestra.
- * Un heroe con 52% y 300 partidas vale mas que uno con 58% y 12 partidas.
- * Usa un shrink bayesiano simple (media a priori = winrate medio del parche).
- */
-export function metaScore(stat, patchAvgWinRate = 0.5) {
-  if (!stat || stat.winRate == null) return { value: 0.5 };
-
-  // SIN encogimiento por muestra. Había uno (prior 400 sobre n = pickRate ×
-  // 40000, ambos inventados) que conservaba solo el 18% del desvío de un
-  // héroe raro y el 74% de uno popular: Masha 57,7% se trataba como 50,5%.
-  // Medido el ruido REAL entre 14 corridas consecutivas de la ingesta
-  // (agosto-septiembre de 2026): la desviación del winrate de un héroe entre
-  // corridas es 0,0002-0,0003 en TODOS los cuartiles de pickrate, frente a
-  // 0,0316 de dispersión entre héroes. El peso que ese ruido justifica es
-  // 1,000 para el más raro y para el más jugado: no hay nada que encoger.
-  // Cambiaba el nº1 en 89 de 300 drafts de roam. Si cambias de fuente de
-  // datos, vuelve a medir el ruido entre corridas antes de reponer un prior.
-  const shrunk = stat.winRate;
-
-  // Centrado en la media del parche, SIN recorte: con `clamp01` a ±6 puntos,
-  // los 9 héroes de las colas empataban (Marcel 59,1 = Masha 57,7 = 1.000) y
-  // eso cambiaba el nº1 en 42 de 300 drafts de roam, justo en el 1,9σ
-  // superior donde se decide. La reescala min-max del ranking ya acota 0..1;
-  // quien necesite 0..1 aquí (suggestBans) recorta él.
-  const value = (shrunk - (patchAvgWinRate - 0.06)) / 0.12;
-  return { value, shrunkWinRate: shrunk };
-}
-
-/**
- * Counter. Primero intenta el dato real de la API (winrate del heroe A contra B).
- * Si no existe para ese par, cae a las reglas por tags.
- */
-/**
- * Presencia del rival a partir de la cual su cruce se cree entero.
- *
- * La idea es sana: contra un héroe que casi nadie juega hay menos partidas
- * detrás y el número se mueve más. Lo que estaba mal era CUÁNTO. La constante
- * valía 0.004 y salía de suponer que el dato venía de unos pocos miles de
- * partidas; nunca se comprobó.
- *
- * Comprobado ahora, con la matriz completa y de dos formas:
- *
- *  1. Si el ruido fuera de muestreo, el cuartil MENOS jugado debería tener sus
- *     cruces 2.65 veces más dispersos que el más jugado (va con 1/raíz de n).
- *     Medido: 1.16 veces. O sea que casi toda la dispersión de un héroe entre
- *     sus rivales es REAL -a unos les gana y a otros no-, no ruido.
- *  2. Dos corridas de la ingesta separadas nueve minutos dan los mismos cruces
- *     con una diferencia mediana de 0.00003. No son estimaciones temblorosas.
- *
- * Con 0.004, un héroe del cuartil raro veía su cruce encogido al 0.35 y uno
- * popular al 0.79: los castigaba el DOBLE de lo que el dato justifica. La
- * constante de aquí sale de resolver que esa razón sea justo el 1.16 medido,
- * en vez de un número inventado. Deja al héroe mediano en 0.94 y solo encoge
- * de verdad a los rarísimos.
- *
- * Si cambias de fuente de datos, vuelve a medir las dos cosas antes de tocarla.
- */
-const PICKRATE_FIABLE = 4.1e-4;
-
-/** Confianza en el matchup cuando no se sabe cuánto se juega al rival. */
-const CONFIANZA_SIN_MUESTRA = 0.7;
-
-/**
- * Ventaja de un roamer contra un enemigo según las reglas por tags, en 0..1.
- * Cuenta la ventaja más fuerte y media la segunda: sumarlas todas premiaba al
- * héroe con más etiquetas en el catálogo, no al que mejor le va de verdad.
- */
-function ventajaPorTags(roamHero, enemy, reasons) {
-  // Si los tags del roamer están deducidos, lo que salga de ellos vale menos:
-  // acertamos el 67%. Se encoge hacia el empate, igual que un matchup con poca
-  // muestra. Sin esto, un héroe nuevo con seis tags adivinados disparaba más
-  // reglas que nadie y salía nº1 en el 69% de los drafts.
-  // Y lo mismo si los deducidos son los del ENEMIGO: una regla que lee dos
-  // etiquetas adivinadas no es más cierta que una que lee una.
-  const fiable = (roamHero.inferred ? PRECISION_DEDUCIDA : 1) * (enemy.inferred ? PRECISION_DEDUCIDA : 1);
-  const positivas = [];
-  let penalizacion = 0;
-
-  for (const rule of COUNTER_RULES) {
-    if (!enemy.tags.includes(rule.enemyTag) || !roamHero.tags.includes(rule.roamTag)) continue;
-    reasons?.push({
-      clave: rule.why,
-      params: { e: enemy.name },
-      good: rule.weight > 0,
-      w: Math.abs(rule.weight),
-      kind: `${rule.enemyTag}>${rule.roamTag}`,
-    });
-    if (rule.weight > 0) positivas.push(rule.weight);
-    else penalizacion += rule.weight; // las desventajas sí suman: son avisos
-  }
-
-  positivas.sort((a, b) => b - a);
-  const sub = (positivas[0] ?? 0) + (positivas[1] ?? 0) * 0.5 + penalizacion;
-  // Escalado, no recortado: con un multiplicador fijo media plantilla marcaba
-  // 1.00 y dejaba de distinguir a quien corta dashes de quien solo hace peel.
-  return 0.5 + clamp01(sub / SUB_MAX) * 0.5 * fiable;
-}
-
-/**
- * Matchup contra los picks enemigos.
- *
- * Cuando hay winrate real de la pareja se MEZCLA con las reglas por tags en vez
- * de sustituirlas. El dato real es mejor, pero sale de pocas partidas y es
- * ruidoso: dejándole todo el peso, contra tres asesinos de dash podía dejar de
- * recomendarse un anti-dash, que es justo lo que la app debe acertar.
- */
-export function counterScore(roamHero, enemies, counterMatrix, enemyRoamName = null, stats = null) {
-  if (!enemies.length) return { value: 0.5, reasons: [] };
-
-  const reasons = [];
-  let total = 0;
-  let pesoTotal = 0;
-
-  for (const enemy of enemies) {
-    // El roamer rival es con quien más vas a chocar: su matchup pesa el doble.
-    const peso = enemyRoamName && normName(enemy.name) === normName(enemyRoamName) ? 2 : 1;
-    pesoTotal += peso;
-
-    // Los motivos por tag se recogen aparte para poder CONTRASTARLOS con el
-    // dato antes de enseñarlos. Medir las once reglas por héroe dice que la
-    // etiqueta casi nunca predice el efecto que afirma: de los nueve héroes
-    // con `anti_mobility` solo Phoveus estorba de verdad a los móviles, y de
-    // los veinticinco con `engage` ninguno gana significativamente a los
-    // inmóviles. Enseñar "bloquea los dashes de X" cuando el cruce real dice
-    // que pierdes es explicar mal una decisión que se tomó bien.
-    const porTag = [];
-    const porTags = ventajaPorTags(roamHero, enemy, porTag);
-    const pair = matchup(counterMatrix, roamHero.name, enemy.name);
-
-    if (pair == null) {
-      // Sin dato del cruce, la regla es lo único que hay y para eso está.
-      reasons.push(...porTag);
-      total += porTags * peso;
-      continue;
-    }
-    // Con dato: la regla explica el PORQUÉ y el cruce dice si es verdad. Solo
-    // se enseña la que va en el mismo sentido que el dato.
-    reasons.push(...porTag.filter((r) => (r.good ? pair >= 0.5 : pair <= 0.5)));
-
-    // pair = winrate de roamHero contra enemy (0..1). 0.50 es neutro.
-    // Se encoge hacia el empate según lo jugado que esté el rival: con poca
-    // muestra, un 57% de matchup es ruido y no una ventaja.
-    // Sin pickrate no se puede medir la muestra, pero descartar el dato por eso
-    // sería peor: se confía de forma moderada en vez de tirarlo.
-    const pr = lookup(stats, enemy.name)?.pickRate;
-    const confianza = pr > 0 ? pr / (pr + PICKRATE_FIABLE) : CONFIANZA_SIN_MUESTRA;
-    const encogido = 0.5 + (pair - 0.5) * confianza;
-
-    const porDato = clamp01((encogido - ESCALA_CRUCE.base) / ESCALA_CRUCE.rango);
-    total += porDato * peso;
-
-    if (pair >= CRUCE_DESTACABLE) reasons.push({ clave: 'regla.ganaMatchup', params: { e: enemy.name }, good: true, w: 1.2 });
-    if (pair <= CRUCE_MALO) reasons.push({ clave: 'regla.pierdeMatchup', params: { e: enemy.name }, good: false, w: 1.3 });
-  }
-
-  return { value: total / pesoTotal, reasons: dedupe(reasons) };
-}
-
-/**
  * ¿Es un aliado de los que hay que proteger?
  *
  * Un tanque también lleva el tag `immobile`, así que sin este filtro la app
@@ -343,51 +146,6 @@ export const hayQueProtegerlo = (hero) =>
   ['hypercarry', 'poke', 'burst'].some((t) => hero?.tags?.includes(t))
   && !hero?.tags?.includes('tanky');
 
-/** Sinergia con aliados ya elegidos. Mismo patron: dato real, si no, tags. */
-export function synergyScore(roamHero, allies, synergyMatrix) {
-  if (!allies.length) return { value: 0.5, reasons: [] };
-  const reasons = [];
-  let total = 0;
-
-  for (const ally of allies) {
-    const pair = sinergia(synergyMatrix, roamHero.name, ally.name);
-    if (pair != null) {
-      // Centrado en el empate y con medio ancho de 0.08. Estaba en (0.46, 0.10),
-      // que aplastaba a CERO el 5,3% de las parejas: la peor sinergia del juego
-      // (Chip con Lolita, 0.20) y una mala del montón (0.45) valían lo mismo.
-      // Con este rango se recorta el 1,1%, que son los cuatro extremos de
-      // verdad, y es la misma holgura que ya tienen los counters.
-      //
-      // NO se encoge por presencia, y eso es una decisión medida, no un olvido:
-      // la dispersión de las sinergias de un héroe raro es solo 1.05 veces la
-      // de uno popular (en los counters, 1.16), así que aquí no hay ni ese poco
-      // ruido que corregir.
-      total += clamp01((pair - ESCALA_PAREJA.base) / ESCALA_PAREJA.rango);
-      if (pair >= PAREJA_DESTACABLE) reasons.push({ clave: 'regla.combinaCon', params: { a: ally.name }, good: true, w: 0.7 });
-      continue;
-    }
-    // Sin dato del par (héroe recién salido): reglas por tags, descontadas
-    // si los tags están deducidos, como en el resto del motor.
-    const fiable = (roamHero.inferred ? PRECISION_DEDUCIDA : 1) * (ally.inferred ? PRECISION_DEDUCIDA : 1);
-    let sub = 0;
-    if (hayQueProtegerlo(ally) && ally.tags.includes('immobile') && roamHero.tags.includes('peel')) {
-      sub += 0.8;
-      reasons.push({ clave: 'regla.protege', params: { a: ally.name }, good: true, w: 0.8 });
-    }
-    if (ally.tags.includes('dive') && roamHero.tags.includes('engage')) {
-      sub += 0.6;
-      reasons.push({ clave: 'regla.abrePelea', params: { a: ally.name }, good: true, w: 0.6 });
-    }
-    if (ally.tags.includes('hypercarry') && roamHero.tags.includes('sustain')) {
-      sub += 0.5;
-      reasons.push({ clave: 'regla.mantieneVivo', params: { a: ally.name }, good: true, w: 0.5 });
-    }
-    total += clamp01(0.5 + sub * 0.20 * fiable);
-  }
-
-  return { value: total / allies.length, reasons: dedupe(reasons) };
-}
-
 /** Tags que cubren la misma necesidad: encadenar CC vale como control duro. */
 export const SATISFIES = {
   cc_hard: ['cc_hard', 'cc_chain'],
@@ -399,83 +157,6 @@ export const SATISFIES = {
 };
 
 const has = (hero, need) => (SATISFIES[need] ?? [need]).some((t) => hero.tags.includes(t));
-
-/**
- * Huecos de composicion que rellena este roamer.
- *
- * Cuenta solo los DOS huecos más importantes que tapa, más medio punto por un
- * tercero. Sumar todos premiaba al héroe con más tags escritos en el catálogo:
- * Carmilla cubre cinco necesidades sobre el papel y salía primera en el 94% de
- * los drafts. Un roamer no arregla cinco agujeros él solo, así que la ventaja
- * por acumular etiquetas se corta aquí.
- *
- * Con pocos aliados elegidos, además, el resultado se acerca a neutro: sin eso,
- * un draft vacío premia al generalista y ya está.
- */
-export function compScore(roamHero, allies) {
-  const covered = new Set(allies.flatMap((a) => a.tags));
-  const cubiertos = [];
-
-  for (const need of TEAM_NEEDS) {
-    if (!has(roamHero, need.tag)) continue;
-    // Si un aliado ya lo cubre, no cuenta NADA. Antes daba un 35% y eso convertía
-    // la composición en una nota fija de "lo completo que es el héroe", que apenas
-    // cambiaba con el draft y duplicaba lo que ya mide el winrate.
-    if ((SATISFIES[need.tag] ?? [need.tag]).some((t) => covered.has(t))) continue;
-    cubiertos.push({ ...need, valor: need.weight });
-  }
-
-  // El lado de daño que le falta al equipo. No es un tag: sale de los textos
-  // de Moonton, así que no lo encoge PRECISION_DEDUCIDA -aunque los tags del
-  // héroe estén deducidos, su tipo de daño es un dato, no una suposición-.
-  // Por eso entra aquí y se descuenta aparte, más abajo.
-  const { falta } = perfilDeDano(allies);
-  if (tapaElHueco(roamHero, falta)) {
-    cubiertos.push({ tag: 'dano', valor: PESO_DANO, weight: PESO_DANO, why: `necesidad.dano_${falta}`, medido: true });
-  }
-
-  cubiertos.sort((a, b) => b.valor - a.valor);
-  const contados = cubiertos.slice(0, 3);
-  // El tercer hueco vale la mitad: tener tres cosas está bien, pero el draft lo
-  // decide sobre todo lo que más falta.
-  const aporte = contados.map((n, i) => n.valor * (i < 2 ? 1 : 0.5));
-
-  // Techo: los dos huecos más valiosos del juego, más medio del tercero.
-  const techo = [...TEAM_NEEDS].sort((a, b) => b.weight - a.weight)
-    .slice(0, 3).reduce((acc, n, i) => acc + n.weight * (i < 2 ? 1 : 0.5), 0);
-
-  const suma = (f) => aporte.reduce((acc, v, i) => acc + (f(contados[i]) ? v : 0), 0);
-  const porTags = clamp01(suma((n) => !n.medido) / techo);
-  const bonoMedido = suma((n) => n.medido) / techo;
-
-  // OJO: para ORDENAR, esto no hace nada. `normalizarComponente` reescala el
-  // componente dentro del pool, y un factor igual para todos los héroes se va
-  // entero en esa reescala. Medido: el rango de la contribución de comp es
-  // 0.0800 con uno, dos o tres aliados elegidos, o sea el peso completo.
-  // Sirve para quien llame a `compScore` suelto (el diagnóstico), no para el
-  // ranking. Se deja porque el valor devuelto sí debe ser honesto; si algún día
-  // hay que encoger de verdad la composición con pocos aliados, el único sitio
-  // donde eso se nota es el PESO, no aquí.
-  const confidence = Math.min(1, allies.length / 3);
-  // Un héroe cuyos tags están DEDUCIDOS no puede reclamar el techo de
-  // composición como uno etiquetado a mano: la deducción acierta el 67% de los
-  // tags, y comp es justo el componente que premia acumular etiquetas. Sin
-  // esto, un héroe nuevo con seis tags adivinados salía nº1 en el 69% de los
-  // drafts, que es el sesgo que ya costó una corrección con Carmilla.
-  //
-  // El hueco de daño NO se encoge: no sale de tags deducidos sino de los
-  // textos de habilidad de Moonton, que dicen literalmente de qué pega cada
-  // héroe. Encogerlo sería descontar dos veces.
-  const fiabilidad = roamHero.inferred ? PRECISION_DEDUCIDA : 1;
-  const desvio = (porTags - 0.5) * fiabilidad + bonoMedido;
-
-  return {
-    value: clamp01(0.5 + desvio * (0.35 + 0.65 * confidence)),
-    reasons: allies.length
-      ? contados.map((n) => ({ clave: n.why, good: true, w: n.weight }))
-      : [],
-  };
-}
 
 /**
  * Cuánto pesa el 50% mientras no tengas partidas suficientes, en partidas
@@ -620,52 +301,6 @@ export function masteryScore(roamHero, mastery, nivel, prior) {
 }
 
 /**
- * Score final de un roamer para un estado de draft concreto.
- * Devuelve el desglose completo para poder pintar la barra del "por qué".
- */
-export function scoreHero(roamHero, ctx) {
-  const { enemies = [], allies = [], meta = {}, mastery = {}, weights = DEFAULT_WEIGHTS } = ctx;
-
-  const parts = {
-    meta: metaScore(lookup(meta.stats, roamHero.name), meta.patchAvgWinRate ?? 0.5),
-    counter: counterScore(roamHero, enemies, meta.counters, ctx.enemyRoam, meta.stats),
-    synergy: synergyScore(roamHero, allies, meta.synergies),
-    comp: compScore(roamHero, allies),
-    mastery: masteryScore(roamHero, mastery, ctx.nivel, ctx.priorMaestria),
-  };
-
-  const total = Object.entries(weights).reduce(
-    (acc, [key, w]) => acc + (parts[key]?.value ?? 0.5) * w,
-    0,
-  );
-
-  // Ordena los motivos por relevancia y evita repetir tres veces al mismo enemigo:
-  // en 30 segundos de draft solo se leen dos o tres etiquetas.
-  const reasons = spread(
-    dedupe([
-      ...parts.mastery.reasons,
-      ...parts.counter.reasons,
-      ...parts.comp.reasons,
-      ...parts.synergy.reasons,
-    ]).sort((a, b) => (b.w ?? 0) - (a.w ?? 0)),
-  );
-
-  return {
-    hero: roamHero,
-    score: total,
-    parts,
-    contributions: Object.fromEntries(
-      Object.entries(weights).map(([k, w]) => [k, (parts[k]?.value ?? 0.5) * w]),
-    ),
-    // TODOS los motivos: los tres que se enseñan se eligen en rankRoamers
-    // DESPUÉS de quitar los comunes al pool. Cortando aquí, el 12% de las
-    // tarjetas se quedaba con menos de tres teniendo un cuarto válido.
-    reasons,
-    banned: false,
-  };
-}
-
-/**
  * Lo lejos del empate que llega el décimo peor cruce del héroe MÁS castigable.
  *
  * Sale del reparto real, no de una intuición: con la matriz completa el p10 de
@@ -681,152 +316,6 @@ export function scoreHero(roamHero, ctx) {
  * nunca, sin que nada fallara.
  */
 const PEOR_CRUCE_REAL = 0.035;
-
-/**
- * Cuánto puede descontar como máximo el riesgo de contrapick.
- *
- * Esto es lo que hace distinto elegir pronto o tarde, y es lo único que lo
- * hace: los enemigos que faltan por elegir no son desconocidos cualesquiera,
- * te eligen A TI en contra. Eligiendo primero interesa un héroe difícil de
- * castigar; eligiendo último, ir a por el counter y ya está -y ahí `cegera` es
- * 0, así que este descuento no existe-.
- *
- * De 0.10 a 0.20 en 1.4.0, medido en 1200 drafts con un solo enemigo en
- * pantalla: el riesgo medio del nº1 baja de 0.477 a 0.380, y la concentración
- * no se mueve (el líder sale en el 10.3% contra el 10.4%, 85 héroes distintos
- * contra 83). Subirlo a 0.30 ya no mejora: 0.391.
- */
-const RIESGO_MAX = 0.20;
-
-/** Umbral por debajo del cual se considera que un componente no aporta señal. */
-const SENAL_MINIMA = 0.02;
-
-/**
- * Reescala un componente al rango 0..1 dentro del pool.
- *
- * Sin esto los pesos no significaban lo que decían: con datos reales el winrate
- * se repartía por un rango de 0.55 y la composición por 0.19, así que meta
- * decidía el triple de lo que marcaba su peso y el draft apenas movía la
- * recomendación. Medido en la app: influencia real meta 0.121 frente a comp
- * 0.028, teniendo pesos 0.22 y 0.15.
- *
- * Si un componente casi no varía (draft vacío, sin counters, sin maestría) se
- * deja plano en 0.5: no tiene información y no debe inventarse diferencias.
- */
-export function normalizarComponente(valores) {
-  const min = Math.min(...valores);
-  const max = Math.max(...valores);
-  const rango = max - min;
-  if (!(rango > 0)) return valores.map(() => 0.5);
-  // Rampa continua en vez de corte: con `rango < SENAL_MINIMA → plano`, la
-  // partida que cruzaba el umbral pasaba de «sin señal» a «peso entero» de
-  // golpe. Por debajo de la señal mínima se encoge hacia 0.5 en proporción.
-  const factor = Math.min(1, rango / SENAL_MINIMA);
-  return valores.map((v) => 0.5 + ((v - min) / rango - 0.5) * factor);
-}
-
-/** Ordena todo el pool de roam para el estado actual del draft. */
-export function rankRoamers(pool, ctx) {
-  // Normalizado: un pick guardado con otra grafía seguiría apareciendo como
-  // recomendación disponible aunque ya esté cogido.
-  const taken = new Set([
-    ...(ctx.enemies ?? []),
-    ...(ctx.allies ?? []),
-    ...(ctx.bans ?? []),
-  ].map((h) => normName(h.name)));
-
-  const weights = ctx.weights ?? DEFAULT_WEIGHTS;
-  const claves = Object.keys(weights);
-
-  // Tu nivel y tu prior de maestría, UNA vez por ranking: nadie los pasaba y
-  // scoreHero los recalculaba por héroe (37 × 60 finales simulados por toque).
-  const nivel = ctx.nivel ?? tuNivel(ctx.mastery ?? {});
-  const priorMaestria = ctx.priorMaestria ?? priorDeMaestria(ctx.mastery ?? {}, nivel);
-  const ctxHeroe = { ...ctx, nivel, priorMaestria };
-  const resultados = pool
-    .filter((h) => !taken.has(normName(h.name)))
-    .map((h) => scoreHero(h, ctxHeroe));
-
-  if (!resultados.length) return resultados;
-
-  // Cada componente se reescala dentro del pool ANTES de aplicar su peso, para
-  // que un peso de 0.36 sea de verdad el 36% de la decisión.
-  // Sin ningún aliado no hay hueco que tapar: la composición premiaba solo
-  // ACUMULAR etiquetas (el sesgo de Marcel, otra vez) con el peso entero y
-  // sin motivo en la tarjeta. Se deja plana hasta que haya alguien.
-  if (!(ctx.allies?.length)) {
-    for (const r of resultados) if (r.parts.comp) r.parts.comp = { ...r.parts.comp, value: 0.5 };
-  }
-  const normalizados = {};
-  for (const k of claves) {
-    const valores = resultados.map((r) => r.parts[k]?.value ?? 0.5);
-    // La maestría NO se reescala: su valor ya viene en una escala fija y
-    // centrada en tu nivel (0.5 = como tú, 1 = dos desviaciones por encima
-    // con la σ medida de tus datos, ya encogido por partidas). Min-max es invariante a escala y se comía todo
-    // el encogimiento: 5 partidas al 90% y 1.000 al 70% daban la misma
-    // contribución (0.150, el peso entero) y el mismo ranking; apuntar UNA
-    // partida (de la 9 a la 10) cambiaba el nº1 en el 44% de los drafts.
-    normalizados[k] = k === 'mastery' ? valores : normalizarComponente(valores);
-  }
-
-  // Con el equipo enemigo a medias, un pick muy castigable es una apuesta: se
-  // marca para que lo sepas, y se penaliza en proporción a lo que falta por ver.
-  const porVer = Math.max(0, 5 - (ctx.enemies?.length ?? 0));
-  const cegera = porVer / 5;
-
-  // Un motivo que le sale a casi todo el pool no informa de nada: "no hay
-  // primera línea" es cierto para los 34 roamers a la vez, porque la primera
-  // línea la pones TÚ. Ocupaba las tres etiquetas de cada tarjeta y tapaba lo
-  // que de verdad distingue a un pick de otro.
-  const frecuencia = new Map();
-  for (const r of resultados) {
-    for (const razon of new Set(r.reasons.map(idRazon))) {
-      frecuencia.set(razon, (frecuencia.get(razon) ?? 0) + 1);
-    }
-  }
-  const comunes = new Set(
-    [...frecuencia.entries()]
-      .filter(([, n]) => n > resultados.length * 0.6)
-      .map(([texto]) => texto),
-  );
-
-  resultados.forEach((r, i) => {
-    const propios = r.reasons.filter((x) => !comunes.has(idRazon(x)));
-    // Si al quitar los comunes no queda nada, mejor decir eso que mentir.
-    r.reasons = propios.slice(0, 3);
-    r.contributions = Object.fromEntries(claves.map((k) => [k, normalizados[k][i] * weights[k]]));
-    r.score = claves.reduce((acc, k) => acc + r.contributions[k], 0);
-
-    r.riesgo = riesgoContrapick(r.hero, ctx.meta?.counters, ctx.candidatos ?? []);
-    if (r.riesgo != null && cegera > 0) {
-      r.score -= r.riesgo * cegera * RIESGO_MAX;
-      if (esPickCiego(r.riesgo, ctx.enemies?.length ?? 0)) {
-        r.reasons = [{ clave: 'regla.arriesgadoCiego', good: false, w: 1.5 }, ...r.reasons].slice(0, 3);
-      }
-    }
-  });
-
-  return resultados.sort((a, b) =>
-    // Empate exacto: primero lo que mejor lleves, luego el winrate, y por
-    // último el nombre. Sin esto el orden dependía del orden del catálogo.
-    b.score - a.score ||
-    b.parts.mastery.value - a.parts.mastery.value ||
-    b.parts.meta.value - a.parts.meta.value ||
-    a.hero.name.localeCompare(b.hero.name));
-}
-
-/** Un motivo por tipo de razón: repetir "bloquea los dashes de X" tres veces no informa. */
-function spread(reasons) {
-  const mentioned = new Set();
-  const out = [];
-  for (const r of reasons) {
-    const key = r.kind ?? idRazon(r);
-    if (mentioned.has(key)) continue;
-    mentioned.add(key);
-    out.push(r);
-  }
-  return out;
-}
 
 /**
  * Completa el catalogo con los heroes que solo conoce la API.
@@ -966,73 +455,6 @@ export function poolDeLinea(heroes, indiceLineas, linea) {
 }
 
 /**
- * A quién banear. No es "el héroe con más winrate": es el que más te duele a ti,
- * así que pesa el banrate global (lo que la gente ya considera peligroso) junto
- * con lo mal que le va a tu composición ya elegida.
- */
-export function suggestBans(allHeroes, ctx) {
-  const { allies = [], enemies = [], bans = [], meta = {} } = ctx;
-  // Normalizado, igual que en rankRoamers y por la misma razón: un pick
-  // guardado con otra grafía seguía apareciendo como ban recomendado aunque ya
-  // estuviera en la pantalla.
-  const taken = new Set([...allies, ...enemies, ...bans].map((h) => normName(h.name)));
-
-  return allHeroes
-    .filter((h) => !taken.has(normName(h.name)) && lookup(meta.stats, h.name))
-    .map((hero) => {
-      const stat = lookup(meta.stats, hero.name);
-      // Acotado aquí: metaScore ya no recorta (ver arriba) y esta suma quiere 0..1.
-      const power = clamp01(metaScore(stat, meta.patchAvgWinRate ?? 0.5).value);
-      const consensus = stat.banRate ?? 0;
-
-      // Cuánto castiga a los aliados que ya has elegido: con el CRUCE REAL de
-      // este héroe contra cada aliado cuando hay dato (la matriz está al 100%),
-      // y con la tabla de peligro por etiquetas solo cuando no lo hay, que es
-      // un héroe recién salido. Antes mandaba la tabla siempre, teniendo el
-      // dato delante: misma deuda que ya se pagó en counterScore.
-      const positivas = [];
-      const reasons = [];
-      for (const ally of allies) {
-        const cruce = matchup(meta.counters, hero.name, ally.name);
-        if (cruce != null) {
-          // Continuo desde el empate: 0 a 50%, 1 a +6 puntos (el techo de la
-          // escala de counter). Sin escalón en 0.5: un 50,1% no es un peligro.
-          const ventaja = clamp01((cruce - 0.5) / (ESCALA_CRUCE.base + ESCALA_CRUCE.rango - 0.5));
-          if (ventaja <= 0) continue;
-          positivas.push(ventaja);
-          // El motivo solo si el cruce es de los que destacan (p90), como en las tarjetas.
-          if (cruce >= CRUCE_DESTACABLE) {
-            reasons.push({ clave: 'peligro.ganaCruce', params: { a: ally.name, pct: Math.round(cruce * 100) }, good: false, w: ventaja });
-          }
-          continue;
-        }
-        // Sin dato del cruce (héroe recién salido): la tabla por etiquetas,
-        // descontada si las etiquetas están deducidas, en un lado o en los dos.
-        const fiable = (hero.inferred ? PRECISION_DEDUCIDA : 1) * (ally.inferred ? PRECISION_DEDUCIDA : 1);
-        for (const rule of DANGER_RULES) {
-          if (!ally.tags.includes(rule.allyTag) || !hero.tags.includes(rule.enemyTag)) continue;
-          if (rule.soloSiFragil && !hayQueProtegerlo(ally)) continue;
-          positivas.push(rule.weight * fiable);
-          reasons.push({ clave: rule.why, params: { a: ally.name }, good: false, w: rule.weight * fiable });
-        }
-      }
-      // La amenaza más fuerte y media la segunda, como en el resto del motor.
-      positivas.sort((a, b) => b - a);
-      const danger = (positivas[0] ?? 0) + (positivas[1] ?? 0) * 0.5;
-      const dangerNorm = Math.min(1, danger / 1.5);
-
-      return {
-        hero,
-        stat,
-        score: power * 0.40 + consensus * 0.35 + dangerNorm * 0.25,
-        reasons: dedupe(reasons).sort((a, b) => b.w - a.w).slice(0, 1),
-      };
-    })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5);
-}
-
-/**
  * Riesgo de contrapick: cuánto puede hundirse este roamer si el enemigo aún no
  * ha elegido y luego te saca su peor matchup.
  *
@@ -1097,16 +519,6 @@ export function coverage(pool, stats, counters) {
 }
 
 /**
- * Agrupa los primeros puestos que están dentro del margen de ruido.
- * Fingir que el nº1 es mejor que el nº2 cuando les separan 3 milésimas es
- * precisión falsa: si están empatados, hay que decirlo.
- */
-export function empatados(ranked, margen = 0.015) {
-  if (!ranked.length) return [];
-  return ranked.filter((r) => ranked[0].score - r.score <= margen).slice(0, 4);
-}
-
-/**
  * Identidad de un motivo. Antes era su texto; ahora los motivos viajan como
  * clave más parámetros, así que la identidad se arma con las dos cosas. Sin
  * esto, dos motivos distintos sobre enemigos distintos se tomarían por el
@@ -1116,12 +528,3 @@ export function idRazon(r) {
   return `${r.clave}|${r.params?.e ?? r.params?.a ?? ''}`;
 }
 
-function dedupe(reasons) {
-  const seen = new Set();
-  return reasons.filter((r) => {
-    const id = idRazon(r);
-    if (seen.has(id)) return false;
-    seen.add(id);
-    return true;
-  });
-}

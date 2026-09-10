@@ -21,6 +21,9 @@
  *    señal; por encima de 1 el modelo se queda corto; por debajo, exagera.
  *    Va con su error típico: con 164 partidas el ± es 0.3, y no se puede
  *    concluir NADA sobre la escala. Se quiere miles.
+ *    Desde 2.0 el modelo YA lleva la escala medida (0.44, modelo.js), así
+ *    que aquí debería salir ~1: si se aleja más de dos errores típicos, el
+ *    diagnóstico avisa y toca volver a ajustar (scripts/ajustar-modelo.mjs).
  *
  * LO QUE YA SE VIO (MPL ID S16, 164 partidas de un año antes que los datos):
  * el modelo completo en el azar (AUC 0.54, pendiente 0.29 ± 0.31), los

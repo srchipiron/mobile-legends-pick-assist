@@ -8,6 +8,36 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 2.0.0
+
+- La app ordena los picks por la probabilidad de ganar el draft que resulta,
+  y esa probabilidad sale de un único modelo medido contra 902 partidas
+  profesionales con resultado (validación cruzada). Cada tarjeta enseña esa
+  probabilidad y de dónde sale, en puntos por término: héroes, cruces,
+  parejas, tú y lo que falta por ver. Antes había cinco componentes
+  reescalados dentro del pool y sumados con pesos escritos a mano
+  (0.22/0.40/0.15/0.08/0.15) que nunca se midieron contra un resultado; el
+  nº1 cambia respecto a 1.x en el 44% de los drafts de roam.
+- La probabilidad ya no exagera: la estimación de 1.28–1.41 daba un error
+  (Brier) de 0.2510, peor que una moneda; con la escala medida (0.44 ± 0.12)
+  baja a 0.2435 fuera de muestra. El bloque aparte de «probabilidad de ganar»
+  desaparece: es la cifra de cada tarjeta.
+- El rival de línea ya no pesa doble (medido en las partidas pro: el cruce de
+  línea no vale más que los otros veinte) y los huecos de composición por
+  etiqueta ya no puntúan (0,00 ± 0,07 por hueco): se siguen diciendo, no se
+  suman. Sin castigo por «pick castigable a ciegas»: lo que falta por salir
+  entra como la esperanza del cruce contra lo que se juega en cada línea
+  abierta, ponderado por pickrate, y el aviso sigue como aviso.
+- Los baneos sugeridos se ordenan por lo que te quitan: la probabilidad que
+  pierdes si sale ese héroe, por lo que sale cuando no está baneado. Cada
+  fila dice cuántos puntos te quita.
+- Tu maestría sigue sustituyendo al winrate público del héroe, ahora también
+  sin datos de la API (referencia 50%), y las reglas por etiqueta solo entran
+  con un héroe sin cruces, a la misma equivalencia que en 1.x.
+- Nuevo `scripts/ajustar-modelo.mjs`: mide qué coeficiente sale para cada
+  término sobre las partidas pro, con validación cruzada; el bot de los
+  lunes lo escribe al log y el diagnóstico avisa si la escala deja de encajar.
+
 ## 1.41.1
 
 - La línea «Pro» de las tarjetas cuenta más partidas profesionales: 90 del

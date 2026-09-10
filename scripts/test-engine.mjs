@@ -8,10 +8,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  metaScore, counterScore, compScore, masteryScore, rankRoamers,
-  suggestBans, mergeCatalog, indexByName, normName, coverage, empatados,
+  masteryScore, mergeCatalog, indexByName, normName, coverage,
   riesgoContrapick, densidadCounters, tagsDeducidos, idRazon, matchup,
 } from '../src/engine/score.js';
+import { rankRoamers, suggestBans, empatados, motivosDe, MARGEN_EMPATE } from '../src/engine/ranking.js';
+import { terminoHeroe, terminoCruce, terminoPareja, evaluarDraft, ESCALA, ESCALA_SE, logit as logitM } from '../src/engine/modelo.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const cat = JSON.parse(readFileSync(resolve(ROOT, 'public/data/heroes.json'), 'utf8'));
@@ -78,30 +79,28 @@ test('el winrate NO se encoge por una muestra inventada', () => {
   // todos los cuartiles de pickrate, frente a 0,0316 entre héroes. El
   // encogimiento que había (prior 400 sobre pickRate × 40000) conservaba el
   // 18% del desvío de un héroe raro: Masha 57,7% se trataba como 50,5%.
-  const raro = metaScore({ winRate: 0.577, pickRate: 0.0015 }, 0.497);
-  ok(Math.abs(raro.shrunkWinRate - 0.577) < 0.002, `un héroe raro pierde su desvío: ${raro.shrunkWinRate}`);
-  const alto = metaScore({ winRate: 0.54, pickRate: 0.03 }, 0.497).value;
-  const bajo = metaScore({ winRate: 0.54, pickRate: 0.002 }, 0.497).value;
-  ok(Math.abs(alto - bajo) < 0.01, 'el mismo winrate vale distinto según el pickrate sin que el ruido lo justifique');
-  ok(metaScore({ winRate: 0.56, pickRate: 0.002 }, 0.497).value > metaScore({ winRate: 0.54, pickRate: 0.03 }, 0.497).value,
-    'un 56% raro no vale más que un 54% popular');
+  const T = (stat) => terminoHeroe({ name: 'X' }, indexByName({ X: stat }), 0.497).valor;
+  const raro = T({ winRate: 0.577, pickRate: 0.0015 });
+  ok(Math.abs(raro - (logitM(0.577) - logitM(0.497))) < 1e-9, `un héroe raro pierde su desvío: ${raro}`);
+  ok(Math.abs(T({ winRate: 0.54, pickRate: 0.03 }) - T({ winRate: 0.54, pickRate: 0.002 })) < 1e-9, 'el mismo winrate vale distinto según el pickrate sin que el ruido lo justifique');
+  ok(T({ winRate: 0.56, pickRate: 0.002 }) > T({ winRate: 0.54, pickRate: 0.03 }), 'un 56% raro no vale más que un 54% popular');
   // Sobre los datos reales: el orden del componente es el del winrate.
   const stats = Object.values(JSON.parse(readFileSync(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8')).stats ?? {});
   if (stats.length > 50) {
     const rango = (a) => { const idx = a.map((v, i) => [v, i]).sort((x, y) => x[0] - y[0]); const r = []; idx.forEach(([, i], k) => { r[i] = k; }); return r; };
-    const rw = rango(stats.map((s) => s.winRate)); const rm = rango(stats.map((s) => metaScore(s, 0.5).value));
+    const rw = rango(stats.map((s) => s.winRate)); const rm = rango(stats.map((s) => terminoHeroe({ name: 'X' }, { x: s }, 0.5).valor));
     const n = rw.length; const d2 = rw.reduce((acc, v, i) => acc + (v - rm[i]) ** 2, 0);
     const spearman = 1 - 6 * d2 / (n * (n * n - 1));
-    ok(spearman > 0.99, `metaScore no ordena como el winrate (Spearman ${spearman.toFixed(3)})`);
+    ok(spearman > 0.99, `el término de héroe no ordena como el winrate (Spearman ${spearman.toFixed(3)})`);
   }
 });
 
 test('el dato real de la API puede contradecir a las reglas por tags', () => {
   // Por tags, Belerick contraataca a Fanny (peel + anti_dive). Si las partidas
   // reales dicen que pierde el matchup, debe mandar el dato, no mi regla.
-  const malo = counterScore(h('Belerick'), [h('Fanny')], indexByName({ Belerick: { Fanny: 0.44 } }, 2)).value;
-  const porTags = counterScore(h('Belerick'), [h('Fanny')], undefined).value;
-  const bueno = counterScore(h('Belerick'), [h('Fanny')], indexByName({ Belerick: { Fanny: 0.58 } }, 2)).value;
+  const malo = terminoCruce(h('Belerick'), h('Fanny'), indexByName({ Belerick: { Fanny: 0.44 } }, 2)).valor;
+  const porTags = terminoCruce(h('Belerick'), h('Fanny'), undefined).valor;
+  const bueno = terminoCruce(h('Belerick'), h('Fanny'), indexByName({ Belerick: { Fanny: 0.58 } }, 2)).valor;
   ok(malo < porTags, 'un matchup perdido no baja la puntuación');
   ok(bueno > malo, 'el dato real no ordena los matchups');
 });
@@ -154,7 +153,8 @@ test('se deduce el rival de TU línea, y se calla si hay duda', async () => {
 test('la robustez del pick: determinista, suma uno y predice si aguanta', async () => {
   const { simularFinales, CUOTA_ROBUSTA } = await import('../src/engine/robustez.js');
   const { indiceDeLineas, frecuenciaDeRoles, lineasOcupadas } = await import('../src/engine/rival-de-linea.js');
-  const { poolDeLinea, LINEAS, rankRoamers, indexByName } = await import('../src/engine/score.js');
+  const { poolDeLinea, LINEAS, indexByName } = await import('../src/engine/score.js');
+  const { rankRoamers } = await import('../src/engine/ranking.js');
   const meta = JSON.parse(readFileSync(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8'));
   if (!(meta.heroes ?? []).length || !meta.counters) return;
   const todos = mergeCatalog(cat.heroes, meta.heroes);
@@ -197,23 +197,24 @@ test('la robustez del pick: determinista, suma uno y predice si aguanta', async 
   const baneada = simularFinales({ ...args, ctx: { ...args.ctx, bans: soloMid } });
   ok(JSON.stringify(recortada.cuota) === JSON.stringify(baneada.cuota), 'un baneado puede salir por una linea abierta');
 
-  // 2c. Si tu linea esta abierta, el que sale por ella en ese final es tu
-  //     rival y su cruce pesa doble, como en el ranking real. Fixture: contra
-  //     el enemigo visto V gana B; contra el rival E que falta gana A. A peso
-  //     uno manda B (0.5075 frente a 0.505); a peso dos, A (0.513 frente a
-  //     0.502). Medido en drafts reales: con el rival dentro, "pick seguro"
-  //     acierta mas (roam con 3 vistos 55%->62%, exp con 2 vistos 61%->68%).
+  // 2c. Cada final se puntua COMPLETO: el termino «por ver» del modelo se
+  //     apaga aunque el ctx traiga lineas abiertas (son las del draft real,
+  //     no las del final simulado). Sin esto, la esperanza contra lo que
+  //     QUEDA en la linea (F, que casi nunca sale) se sumaria encima del
+  //     cruce real contra el que SI salio (E). Fixture: por la roam abierta
+  //     sale E (pickrate 50 veces el de F); A gana a E y pierde con F; B al
+  //     reves y menos. Con E dentro gana A; con la esperanza colada (F),
+  //     ganaria B.
   const H = (name, lanes) => ({ name, role: 'tank', lanes, tags: [] });
-  const A = H('A', ['roam']); const B = H('B', ['roam']); const E = H('E', ['roam']); const V = H('V', ['mid']);
-  const st = indexByName(Object.fromEntries(['A', 'B', 'E', 'V'].map((n) => [n, { winRate: 0.5, pickRate: 0.01, banRate: 0 }])));
+  const A = H('A', ['roam']); const B = H('B', ['roam']); const E = H('E', ['roam']); const F = H('F', ['roam']); const V = H('V', ['mid']);
+  const st = indexByName({ A: { winRate: 0.5, pickRate: 0.01 }, B: { winRate: 0.5, pickRate: 0.01 }, V: { winRate: 0.5, pickRate: 0.01 }, E: { winRate: 0.5, pickRate: 0.05 }, F: { winRate: 0.5, pickRate: 0.001 } });
   const fixtureArgs = {
-    pool: [A, B], enemies: [V], lineasAbiertas: ['roam'], poolsPorLinea: { roam: [E] }, n: 4,
-    ctx: { meta: { stats: st, counters: indexByName({ A: { V: 0.48, E: 0.53 }, B: { V: 0.525, E: 0.49 } }, 2), synergies: {} }, mastery: {} },
+    pool: [A, B], enemies: [V], lineasAbiertas: ['roam'], poolsPorLinea: { roam: [E, F] }, n: 8,
+    ctx: { meta: { stats: st, counters: indexByName({ A: { V: 0.48, E: 0.56, F: 0.40 }, B: { V: 0.52, E: 0.49, F: 0.52 } }, 2), synergies: {} }, mastery: {} },
   };
-  eq(simularFinales({ ...fixtureArgs, linea: 'roam' }).lider, 'A', 'el que sale por tu linea no cuenta como rival');
-  eq(simularFinales({ ...fixtureArgs, linea: null }).lider, 'B', 'el fixture del rival no discrimina: sin rival deberia ganar B');
-  //     Con el rival ya marcado, el simulado por tu linea no lo sustituye.
-  eq(simularFinales({ ...fixtureArgs, linea: 'roam', ctx: { ...fixtureArgs.ctx, enemyRoam: 'V' } }).lider, 'B', 'un rival marcado a mano se pierde en la simulacion');
+  eq(simularFinales(fixtureArgs).lider, 'A', 'con E en el final deberia ganar A');
+  const conAbiertasEnCtx = simularFinales({ ...fixtureArgs, ctx: { ...fixtureArgs.ctx, lineasAbiertas: ['roam'], poolsPorLinea: { roam: [E, F] } } });
+  eq(conAbiertasEnCtx.lider, 'A', 'las lineas abiertas del ctx se cuelan en el final simulado: gana B por la esperanza contra F');
 
   // 3. Lo que importa: la cuota PREDICE si el nº1 aguanta hasta el final. Medido
   //    con 3 enemigos vistos: si la cuota >= 0.5 aguanta el 59%, si no el 27%.
@@ -320,12 +321,12 @@ test('el diagnostico detecta datos imposibles y caidas frente a su propio histor
   // lo separa del nº2, con su signo) y si el pick aguanta lo que falta por
   // salir. Sin eso, una recomendacion solo se puede creer, no discutir.
   const ranked = [
-    { hero: { name: 'A' }, score: 0.70, contributions: { meta: 0.10, counter: 0.30, synergy: 0.10, comp: 0.05, mastery: 0.15 } },
-    { hero: { name: 'B' }, score: 0.62, contributions: { meta: 0.12, counter: 0.18, synergy: 0.11, comp: 0.05, mastery: 0.16 } },
+    { hero: { name: 'A' }, p: 0.60, score: 0.60, puntos: { heroes: 2, cruces: 5, parejas: 1, tu: 0, porVer: 0 } },
+    { hero: { name: 'B' }, p: 0.52, score: 0.52, puntos: { heroes: 3, cruces: 0, parejas: 1, tu: 0, porVer: 0 } },
   ];
   const robustez = { cuota: { A: 0.7, B: 0.3 }, lider: 'A', cuotaLider: 0.7, n: 10, lineasAbiertas: ['mid', 'gold'] };
   const conDraft = runSelfTest({ ...base, meta, draft: { picks: [{ name: 'A' }], enemies: [{ name: 'B' }], ranked, analisis: [], robustez } }).texto;
-  ok(/Por qué A y no B: 8\.0 puntos de margen · lo decide counter \(\+12\.0\)/.test(conDraft), `no explica por que gana el nº1: ${conDraft.split('\n').find((l) => l.startsWith('Por qué'))}`);
+  ok(/Por qué A y no B: 8\.0 puntos de margen · lo decide cruces \(\+5\), luego heroes \(-1\)/.test(conDraft), `no explica por que gana el nº1: ${conDraft.split('\n').find((l) => l.startsWith('Por qué'))}`);
   ok(/Líneas enemigas abiertas: mid, gold · en 10 finales plausibles, nº1: A 70%/.test(conDraft), 'no dice si el pick aguanta lo que falta');
   ok(/A aguanta el 70%: pick seguro/.test(conDraft), 'no califica el pick por su cuota');
 
@@ -382,7 +383,7 @@ test('perfiles y registro: fundir por instante, sanear lo que llega y maestria p
 });
 
 test('los motivos se filtran antes de cortar a tres, y el pick a ciegas es un solo criterio', async () => {
-  const { rankRoamers, esPickCiego, indexByName, scoreHero, idRazon } = await import('../src/engine/score.js');
+  const { esPickCiego, indexByName, idRazon } = await import('../src/engine/score.js');
   eq(esPickCiego(0.7, 2), true, 'riesgo alto con dos vistos deberia ser a ciegas');
   eq(esPickCiego(0.7, 4), false, 'con cuatro vistos ya no es a ciegas');
   eq(esPickCiego(0.5, 1), false, 'riesgo bajo no es a ciegas');
@@ -402,11 +403,11 @@ test('los motivos se filtran antes de cortar a tres, y el pick a ciegas es un so
     const ctx = { enemies, allies, meta: M, mastery: {} };
     const ranked = rankRoamers(poolReal, ctx);
     // Los comunes, recalculados igual que el motor, sobre la lista COMPLETA.
-    const completas = poolReal.filter((h) => !u.has(h.name)).map((h) => scoreHero(h, ctx).reasons);
+    const completas = poolReal.filter((h) => !u.has(h.name)).map((h) => motivosDe(h, ctx));
     const frec = new Map(); for (const rs of completas) for (const k of new Set(rs.map(idRazon))) frec.set(k, (frec.get(k) ?? 0) + 1);
     const comunes = new Set([...frec].filter(([, n]) => n > completas.length * 0.6).map(([k]) => k));
     for (const r of ranked) {
-      const disponibles = scoreHero(r.hero, ctx).reasons.filter((x) => !comunes.has(idRazon(x))).length;
+      const disponibles = motivosDe(r.hero, ctx).filter((x) => !comunes.has(idRazon(x))).length;
       const sinCiego = r.reasons.filter((x) => x.clave !== 'regla.arriesgadoCiego').length;
       tarjetas += 1;
       if (sinCiego < Math.min(3, disponibles) && !r.reasons.some((x) => x.clave === 'regla.arriesgadoCiego')) cortas += 1;
@@ -530,7 +531,9 @@ test('la estimacion de victoria: neutra sin datos, simetrica, y cae donde se mid
   ps.sort((a, b) => a - b);
   const q = (f) => ps[Math.floor(ps.length * f)];
   ok(Math.abs(q(0.5) - 0.5) < 0.06, `la mediana en drafts al azar deberia ser 50%, es ${q(0.5)}`);
-  ok(q(0.05) > 0.2 && q(0.05) < 0.42 && q(0.95) > 0.58 && q(0.95) < 0.8, `p05/p95 fuera de lo medido: ${q(0.05)} / ${q(0.95)}`);
+  // Con la escala medida (0.44) la dispersion de drafts al azar es 40/60
+  // (p05/p95), no 30/70: aquello era el modelo sin calibrar.
+  ok(q(0.05) > 0.33 && q(0.05) < 0.47 && q(0.95) > 0.53 && q(0.95) < 0.67, `p05/p95 fuera de lo medido: ${q(0.05)} / ${q(0.95)}`);
 });
 
 test('la composicion dice que le falta al equipo y que tapa el candidato', async () => {
@@ -850,6 +853,45 @@ test('los dos idiomas están completos y las reglas usan claves de verdad', asyn
   ok(IDIOMAS.includes(idiomaPorDefecto()), 'el idioma por defecto no es uno de los soportados');
 });
 
+test('el modelo: la nota es la probabilidad de ganar, sube con el cruce, y la escala es la medida en las partidas pro', async () => {
+  const { indiceDeLineas, frecuenciaDeRoles } = await import('../src/engine/rival-de-linea.js');
+  const { poolDeLinea, LINEAS } = await import('../src/engine/score.js');
+  // 1. Ordenado por probabilidad, y la probabilidad es la del draft con el
+  //    candidato dentro (el mismo numero que enseña la estimacion).
+  const meta = JSON.parse(readFileSync(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8'));
+  if (!(meta.heroes ?? []).length || !meta.counters) return;
+  const todos = mergeCatalog(cat.heroes, meta.heroes); const idx = indiceDeLineas(meta.heroes); const fr = frecuenciaDeRoles(meta.heroes);
+  const M = { stats: indexByName(meta.stats), counters: indexByName(meta.counters, 2), synergies: indexByName(meta.synergies, 2), patchAvgWinRate: meta.patchAvgWinRate };
+  const pools = Object.fromEntries(LINEAS.map((l) => [l, poolDeLinea(todos, idx, l)]));
+  const enemies = [pools.mid[0], pools.gold[1], pools.exp[2]]; const allies = [pools.jungle[3]];
+  const ranked = rankRoamers(pools.roam, { enemies, allies, meta: M, lineas: idx });
+  ok(ranked.every((r, i) => i === 0 || ranked[i - 1].p >= r.p), 'no esta ordenado por probabilidad');
+  const directo = evaluarDraft({ yo: ranked[0].hero, allies, enemies, meta: M, lineas: idx });
+  ok(Math.abs(directo.p - ranked[0].p) < 1e-12, 'la nota del ranking no es la estimacion del draft con el candidato');
+  ok(ranked[0].p > 0.3 && ranked[0].p < 0.7 && ranked[0].score === ranked[0].p, 'la probabilidad no esta donde toca');
+  // 2. Monotona en el dato: subir un cruce del candidato sube su probabilidad
+  //    exactamente en 0.44 veces la diferencia de logits.
+  const yo = ranked[5].hero; const e = enemies[0];
+  const conCruce = (v) => evaluarDraft({ yo, allies, enemies, meta: { ...M, counters: indexByName({ ...meta.counters, [yo.name]: { ...(meta.counters[yo.name] ?? {}), [e.name]: v } }, 2) }, lineas: idx }).logOdds;
+  ok(Math.abs((conCruce(0.56) - conCruce(0.50)) - ESCALA * logitM(0.56)) < 1e-9, 'la nota no sube con el cruce lo que dice la escala');
+  // 3. La escala es la medida: sobre el corpus pro (si esta), la pendiente
+  //    de la regresion logistica de «gano» sobre H+C+S coincide con ESCALA
+  //    dentro de 2,5 errores tipicos. Es una prueba sobre datos reales, asi
+  //    que lleva su margen medido (SE 0.10-0.12 con 900-1.500 partidas).
+  const { cargar, terminosDe, validar } = await import('./ajustar-modelo.mjs');
+  const { usables, ctx } = await cargar(120);
+  if (usables.length < 300) return;
+  const filas = usables.map((p) => terminosDe(p, ctx));
+  const r = validar(filas, (f) => [f.H + f.C + f.S]);
+  const b = r.ajuste.b[1]; const se = r.ajuste.se[1];
+  ok(Math.abs(b - ESCALA) < 2.5 * Math.max(se, ESCALA_SE), `la escala medida hoy (${b.toFixed(2)} ± ${se.toFixed(2)}) no es la del modelo (${ESCALA}): vuelve a ajustar y documentalo`);
+  //    Y el modelo escalado predice mejor fuera de muestra que el de 1.x sin
+  //    escala: es la razon de existir de la escala.
+  const fijo = validar(filas, (f) => [f.H, f.C, f.S], { fijo: [1, 1, 1] });
+  ok(r.cv.logL > fijo.cv.logL, `el modelo escalado no mejora al de coeficientes 1: ${r.cv.logL.toFixed(1)} vs ${fijo.cv.logL.toFixed(1)}`);
+  void fr;
+});
+
 test('el análisis dice lo que no se ve, y se calla cuando no sabe', async () => {
   const { analizarDraft } = await import('../src/engine/analisis.js');
 
@@ -925,17 +967,24 @@ test('el pool sale de la línea que juegas, no de una lista escrita a mano', asy
     'sin datos, gold debería quedarse vacía en vez de inventarse un pool');
 });
 
-test('el roamer enemigo marcado pesa el doble', () => {
-  const m = indexByName({ Khufra: { Fanny: 0.58, Layla: 0.42 } }, 2);
-  const neutro = counterScore(h('Khufra'), [h('Fanny'), h('Layla')], m).value;
-  const marcado = counterScore(h('Khufra'), [h('Fanny'), h('Layla')], m, 'Fanny').value;
-  ok(marcado > neutro, 'marcar al enemigo bueno no sube el score');
-});
-
-test('la composición no premia huecos que un aliado ya cubre', () => {
-  const solo = compScore(h('Tigreal'), [h('Layla')]).value;
-  const conOtroTanque = compScore(h('Tigreal'), [h('Layla'), h('Atlas')]).value;
-  ok(conOtroTanque < solo, 'con otro iniciador ya en el equipo debería bajar');
+test('ningún cruce pesa doble: el rival marcado no cambia el ranking, y los huecos por etiqueta no puntúan', () => {
+  // Medido en 902 partidas pro (ajustar-modelo.mjs): el cruce de línea no
+  // vale más que los otros veinte (−0.56 ± 0.62 frente a 0.78 ± 0.32) y los
+  // huecos de composición por etiqueta valen 0.00 ± 0.07. Ni lo uno ni lo
+  // otro entra en la nota; el rival sigue en el análisis y los huecos en la
+  // composición, como información.
+  const m = indexByName({ Khufra: { Fanny: 0.58, Layla: 0.42 }, Tigreal: { Fanny: 0.5, Layla: 0.5 } }, 2);
+  const ctx = { enemies: [h('Fanny'), h('Layla')], meta: { counters: m } };
+  const neutro = rankRoamers(pool, ctx);
+  const marcado = rankRoamers(pool, { ...ctx, enemyRoam: 'Fanny' });
+  ok(neutro.every((r, i) => r.hero.name === marcado[i].hero.name && r.logOdds === marcado[i].logOdds), 'marcar al rival cambia la nota');
+  // Con el mismo winrate y sin matrices, un tanque con cinco etiquetas y uno
+  // con una valen lo mismo cuando el equipo ya tiene iniciador: no hay
+  // término de composición.
+  const solo = evaluarDraft({ yo: h('Tigreal'), allies: [h('Layla')], meta: {} }).logOdds;
+  const conOtroTanque = evaluarDraft({ yo: h('Tigreal'), allies: [h('Layla'), h('Atlas')], meta: {} }).logOdds;
+  ok(Number.isFinite(solo) && Number.isFinite(conOtroTanque), 'sin datos la nota no es un numero');
+  ok(!('comp' in evaluarDraft({ yo: h('Tigreal'), allies: [h('Layla')], meta: {} }).terminos), 'sigue habiendo un término de composición');
 });
 
 test('la maestría personal sube el puesto de un héroe', () => {
@@ -1017,7 +1066,7 @@ test('la recomendación responde al equipo enemigo', () => {
     const v = enemigos.map((e) => matchup(counters, nombre, e.name)).filter((x) => x != null);
     return v.reduce((a, b) => a + b, 0) / v.length;
   };
-  const porCounter = [...unos].sort((a, b) => b.parts.counter.value - a.parts.counter.value);
+  const porCounter = [...unos].sort((a, b) => b.terminos.cruces - a.terminos.cruces);
   ok(cruceMedio(porCounter[0].hero.name) > cruceMedio(porCounter[porCounter.length - 1].hero.name),
     'el componente de counter no ordena el pool como el dato real de los cruces');
 });
@@ -1136,8 +1185,8 @@ test('un winrate afortunado no convierte a nadie en respuesta única', () => {
 });
 
 test('los baneos señalan la amenaza real contra tu equipo', () => {
-  const stats = Object.fromEntries(all.map((x) => [x.name, { winRate: 0.50, banRate: 0.04, matches: 5000 }]));
-  stats.Fanny = { winRate: 0.53, banRate: 0.60, matches: 9000 };
+  const stats = Object.fromEntries(all.map((x) => [x.name, { winRate: 0.50, banRate: 0.04, pickRate: 0.02, matches: 5000 }]));
+  stats.Fanny = { winRate: 0.53, banRate: 0.60, pickRate: 0.02, matches: 9000 };
   const r = suggestBans(all, { allies: [h('Melissa')], meta: { stats: indexByName(stats), patchAvgWinRate: 0.50 } });
   ok(r[0].hero.name === 'Fanny', `esperaba Fanny la primera, salió ${r[0].hero.name}`);
 });
@@ -1147,19 +1196,25 @@ test('los baneos miden el peligro con el cruce real, y con la tabla solo sin dat
   const H = (name, tags = []) => ({ name, role: 'assassin', tags, lanes: ['jungle'] });
   const aliado = { name: 'Al', role: 'marksman', tags: ['immobile', 'hypercarry'], lanes: ['gold'] };
   const X = H('X'); const Y = H('Y'); const Z = H('Z', ['dive', 'burst']);
-  const stats = indexByName(Object.fromEntries(['X', 'Y', 'Z', 'Al'].map((n) => [n, { winRate: 0.5, banRate: 0.1 }])));
+  const stats = indexByName(Object.fromEntries(['X', 'Y', 'Z', 'Al'].map((n) => [n, { winRate: 0.5, banRate: 0.1, pickRate: 0.02 }])));
   // Con dato: X gana el cruce a tu aliado (56%), Y lo pierde (44%), Z (con las
-  // etiquetas de la tabla) va al 50%. Manda el dato: X primero, Z sin peligro.
+  // etiquetas de la tabla) va al 50%. Manda el dato: X primero; Y y Z no
+  // quitan nada, asi que ni salen.
   const counters = indexByName({ X: { Al: 0.56 }, Y: { Al: 0.44 }, Z: { Al: 0.5 } }, 2);
   const conDato = suggestBans([X, Y, Z], { allies: [aliado], meta: { stats, counters, patchAvgWinRate: 0.5 } });
-  eq(conDato[0].hero.name, 'X', `con dato deberia mandar el cruce: ${conDato.map((b) => b.hero.name)}`);
-  ok(conDato[0].score > conDato[1].score, 'X no puntua por encima');
-  eq(conDato.find((b) => b.hero.name === 'Z').score, conDato.find((b) => b.hero.name === 'Y').score, 'con cruce al 50% la tabla por etiquetas no deberia sumar nada');
+  eq(conDato[0]?.hero.name, 'X', `con dato deberia mandar el cruce: ${conDato.map((b) => b.hero.name)}`);
+  ok(!conDato.some((b) => b.hero.name === 'Z'), 'con cruce al 50% la tabla por etiquetas no deberia sumar nada');
+  ok(!conDato.some((b) => b.hero.name === 'Y'), 'un heroe que pierde el cruce no es un peligro');
   ok(conDato[0].reasons[0]?.clave === 'peligro.ganaCruce' && conDato[0].reasons[0].params.pct === 56, `motivo de X: ${JSON.stringify(conDato[0].reasons)}`);
   ok(0.56 >= CRUCE_DESTACABLE, 'el fixture tiene que superar el umbral de motivo');
-  // Sin escalon: un 50,1% no es peligro.
+  // Sin escalon: un 50,1% quita casi nada.
   const rozando = suggestBans([X, Y], { allies: [aliado], meta: { stats, counters: indexByName({ X: { Al: 0.501 }, Y: { Al: 0.5 } }, 2), patchAvgWinRate: 0.5 } });
-  ok(Math.abs(rozando[0].score - rozando[1].score) < 0.005, `un 50,1% deberia valer casi lo mismo que un 50%: ${rozando.map((b) => b.score)}`);
+  ok(!rozando.length || rozando[0].puntos === 0, `un 50,1% deberia valer casi lo mismo que un 50%: ${rozando.map((b) => b.score)}`);
+  // Y la perdida esperada cuenta CUANTO sale: el mismo cruce con el doble de
+  // pickrate es el doble de peligro, y un banrate alto no lo esconde.
+  const dos = suggestBans([X, Y], { allies: [aliado], meta: { stats: indexByName({ X: { winRate: 0.5, banRate: 0.1, pickRate: 0.02 }, Y: { winRate: 0.5, banRate: 0.55, pickRate: 0.02 }, Al: { winRate: 0.5 } }), counters: indexByName({ X: { Al: 0.56 }, Y: { Al: 0.56 } }, 2), patchAvgWinRate: 0.5 } });
+  eq(dos[0].hero.name, 'Y', 'con el mismo cruce, el mas baneado (que sale mas cuando esta libre) deberia ir primero');
+  ok(Math.abs(dos[0].score / dos[1].score - 2) < 1e-6, `la perdida esperada no escala con la disponibilidad: ${dos.map((b) => b.score)}`);
   // Sin dato (heroe recien salido): la tabla por etiquetas sigue mandando.
   const sinDato = suggestBans([X, Z], { allies: [aliado], meta: { stats, counters: {}, patchAvgWinRate: 0.5 } });
   eq(sinDato[0].hero.name, 'Z', 'sin cruce, la tabla de peligro deberia poner primero al que salta encima');
@@ -1172,7 +1227,7 @@ test('la cobertura detecta héroes sin datos', () => {
 });
 
 test('los empates técnicos se agrupan', () => {
-  const e = empatados([{ score: 0.60 }, { score: 0.595 }, { score: 0.50 }]);
+  const e = empatados([{ p: 0.60 }, { p: 0.60 - MARGEN_EMPATE / 2 }, { p: 0.50 }]);
   ok(e.length === 2, `esperaba 2 empatados, hubo ${e.length}`);
 });
 
@@ -1355,15 +1410,15 @@ test('lo que sale de tags deducidos pesa menos que lo escrito a mano', () => {
   const enemigo = h('Fanny');
 
   // 1) reglas por tags (counter), sin matriz: todo el valor sale de los tags
-  const cMano = counterScore(aMano, [enemigo], null).value;
-  const cDed = counterScore(deducido, [enemigo], null).value;
+  const cMano = terminoCruce(aMano, enemigo, null).valor;
+  const cDed = terminoCruce(deducido, enemigo, null).valor;
   ok(cDed < cMano, `el counter por tags no se descuenta: ${cDed} vs ${cMano}`);
 
-  // 2) composicion
-  const aliados = [h('Granger'), h('Cecilion'), h('Ling')].filter(Boolean);
-  const pMano = compScore(aMano, aliados).value;
-  const pDed = compScore(deducido, aliados).value;
-  ok(pDed < pMano, `la composición no se descuenta: ${pDed} vs ${pMano}`);
+  // 2) parejas por tags, sin matriz
+  const fragil = { name: 'F', tags: ['immobile', 'hypercarry', 'dive'], role: 'marksman' };
+  const pMano = terminoPareja(aMano, fragil, undefined, 0.5).valor;
+  const pDed = terminoPareja(deducido, fragil, undefined, 0.5).valor;
+  ok(pMano > 0 && pDed < pMano, `la pareja por tags no se descuenta: ${pDed} vs ${pMano}`);
 
   // 3) y el efecto neto: baja en el ranking
   const pool = [...cat.heroes.filter((x) => x.roam), deducido];
@@ -1392,27 +1447,35 @@ test('un héroe nuevo de la API entra con los tags de su rol', () => {
   ok(nuevo?.roam && nuevo.tags.length, 'no hereda tags de tanque ni entra al pool de roam');
 });
 
-test('un pick volátil se penaliza a ciegas pero no con el draft completo', () => {
-  // Idea tomada de las herramientas de draft de LoL: como roam eliges pronto, y
-  // el mejor pick sobre el papel no es el mejor si te lo pueden castigar luego.
+test('lo que falta por salir cuenta como esperanza del cruce, ponderada por lo que se juega', () => {
+  // Los enemigos que faltan no son desconocidos: van a salir por las líneas
+  // abiertas y se sabe qué se juega ahí. Chou pierde contra lo POPULAR de la
+  // mid y gana contra lo raro; en la media a secas queda igual que los
+  // demás, en la esperanza por pickrate, por debajo.
+  const otros = all.filter((x) => !x.roam);
   const counters = {};
   for (const rh of pool) {
     counters[rh.name] = {};
-    const volatil = rh.name === 'Chou';
-    for (const e of all) counters[rh.name][e.name] = volatil
-      ? (all.indexOf(e) % 5 === 0 ? 0.40 : 0.56)   // muchos matchups pésimos
-      : 0.50;
+    for (const e of otros) counters[rh.name][e.name] = rh.name === 'Chou' ? (otros.indexOf(e) % 2 === 0 ? 0.40 : 0.56) : 0.50;
   }
-  const meta = { counters: indexByName(counters, 2), patchAvgWinRate: 0.5 };
+  const stats = indexByName(Object.fromEntries(all.map((x, i) => [x.name, { winRate: 0.5, pickRate: !x.roam && otros.indexOf(x) % 2 === 0 ? 0.05 : 0.005 }])));
+  const meta = { counters: indexByName(counters, 2), stats, patchAvgWinRate: 0.5 };
   const puesto = (r) => r.findIndex((x) => x.hero.name === 'Chou');
+  // Un enemigo visto contra el que Chou GANA (indice impar): sin lineas
+  // abiertas es el nº1; con la mid abierta y lo popular en contra, baja.
+  const enemigo = otros.find((e, i) => i % 2 === 1);
 
-  const ciego = puesto(rankRoamers(pool, { meta, candidatos: all }));
-  const completo = puesto(rankRoamers(pool, {
-    enemies: ['Fanny', 'Ling', 'Melissa', 'Xavier', 'Esmeralda'].map(h),
-    meta,
-    candidatos: all,
-  }));
-  ok(completo < ciego, `volátil: puesto ${ciego} a ciegas y ${completo} con todo visto`);
+  const sinAbiertas = rankRoamers(pool, { enemies: [enemigo], meta, candidatos: all });
+  eq(puesto(sinAbiertas), 0, `el fixture no vale: Chou deberia ser nº1 sin lineas abiertas y esta el ${puesto(sinAbiertas) + 1}`);
+  const conAbiertas = rankRoamers(pool, { enemies: [enemigo], meta, candidatos: all, lineasAbiertas: ['mid'], poolsPorLinea: { mid: otros } });
+  const chou = conAbiertas.find((x) => x.hero.name === 'Chou');
+  ok(chou.terminos.porVer < -0.05, `la esperanza contra la mid abierta deberia ser negativa para Chou: ${chou.terminos.porVer}`);
+  ok(puesto(conAbiertas) > puesto(sinAbiertas), `con la mid abierta Chou deberia bajar: ${puesto(sinAbiertas)} → ${puesto(conAbiertas)}`);
+  ok(sinAbiertas.find((x) => x.hero.name === 'Chou').terminos.porVer === 0, 'sin lineas abiertas no hay esperanza que sumar');
+  // Y el que sale por la línea no cuenta dos veces: al completar el draft
+  // desaparece el término y se queda solo el cruce real.
+  const completo = rankRoamers(pool, { enemies: [enemigo, otros[0]], meta, candidatos: all, lineasAbiertas: [], poolsPorLinea: { mid: otros } });
+  ok(completo.every((x) => x.terminos.porVer === 0), 'con el draft cerrado sigue sumando esperanza');
 });
 
 test('los motivos que le salen a todo el pool no se muestran', () => {
@@ -1537,7 +1600,8 @@ test('el siguiente baneo probable es el más baneado del rango que aún no está
 });
 
 test('revisión línea a línea del motor: recorte, duplicados, tags deducidos, nombres, líneas, techo de reglas, defensa', async () => {
-  const { metaScore, synergyScore, suggestBans, mergeCatalog, indexByName, SUB_MAX, PRECISION_DEDUCIDA } = await import('../src/engine/score.js');
+  const { mergeCatalog, indexByName, PRECISION_DEDUCIDA } = await import('../src/engine/score.js');
+  const { SUB_MAX } = await import('../src/engine/modelo.js');
   const { COUNTER_RULES } = await import('../src/engine/rules.js');
   const { frecuenciaDeRoles, indiceDeLineas, lanesDe } = await import('../src/engine/rival-de-linea.js');
   const { analizarDraft } = await import('../src/engine/analisis.js');
@@ -1550,10 +1614,10 @@ test('revisión línea a línea del motor: recorte, duplicados, tags deducidos, 
   const glory = meta.statsByRank?.glory ?? meta.stats;
   if (glory && Object.keys(glory).length > 50) {
     const avg = meta.avgByRank?.glory ?? meta.patchAvgWinRate;
-    const filas = Object.values(glory).filter((x) => typeof x.winRate === 'number').map((x) => [x.winRate, metaScore(x, avg).value]).sort((a, b) => a[0] - b[0]);
+    const filas = Object.values(glory).filter((x) => typeof x.winRate === 'number').map((x) => [x.winRate, terminoHeroe({ name: 'X' }, { x }, avg).valor]).sort((a, b) => a[0] - b[0]);
     let empates = 0;
     for (let i = 1; i < filas.length; i++) if (filas[i][0] !== filas[i - 1][0] && filas[i][1] === filas[i - 1][1]) empates++;
-    eq(empates, 0, `metaScore empata a ${empates} pares de héroes con winrate distinto (recorte)`);
+    eq(empates, 0, `el término de héroe empata a ${empates} pares de héroes con winrate distinto (recorte)`);
   }
 
   // 2. Con composición, el hueco sin tapar se dice UNA vez, no en dos frases.
@@ -1561,7 +1625,7 @@ test('revisión línea a línea del motor: recorte, duplicados, tags deducidos, 
   const sinInicio = (n) => ({ name: n, role: 'mage', tags: ['burst'], damage: { fisico: 0, magico: 3 } });
   const aliados = [sinInicio('A'), sinInicio('B'), sinInicio('C')];
   const composicion = { mio: { huecos: ['engage'], dobles: [] }, tapa: [], suyo: {}, sinMi: {} };
-  const frases = analizarDraft({ ranked: [{ hero: tanque, score: 0.7 }], enemies: [{ name: 'E', tags: [] }], allies: aliados, meta: { counters: {} }, composicion });
+  const frases = analizarDraft({ ranked: [{ hero: tanque, score: 0.7, p: 0.7 }], enemies: [{ name: 'E', tags: [] }], allies: aliados, meta: { counters: {} }, composicion });
   const sobreEngage = frases.filter((f) => JSON.stringify(f.params?.lista ?? []).includes('comp.engage'));
   eq(sobreEngage.length, 1, `el hueco de inicio se dice ${sobreEngage.length} veces: ${JSON.stringify(frases)}`);
 
@@ -1570,9 +1634,9 @@ test('revisión línea a línea del motor: recorte, duplicados, tags deducidos, 
   //    reglas de counter.
   const peel = { name: 'P', tags: ['peel', 'engage', 'sustain'] };
   const fragil = { name: 'F', tags: ['immobile', 'hypercarry', 'dive'], role: 'marksman' };
-  const conTags = synergyScore(peel, [fragil], undefined).value;
-  const deducido = synergyScore({ ...peel, inferred: true }, [fragil], undefined).value;
-  ok(conTags > 0.5 && deducido < conTags, `la sinergia por tags no descuenta al héroe deducido: ${conTags} vs ${deducido}`);
+  const conTags = terminoPareja(peel, fragil, undefined, 0.5).valor;
+  const deducido = terminoPareja({ ...peel, inferred: true }, fragil, undefined, 0.5).valor;
+  ok(conTags > 0 && deducido < conTags, `la sinergia por tags no descuenta al héroe deducido: ${conTags} vs ${deducido}`);
   const stats = indexByName({ P: { winRate: 0.5, pickRate: 0.01, banRate: 0.1 }, F: { winRate: 0.5, pickRate: 0.01, banRate: 0.1 }, D: { winRate: 0.5, pickRate: 0.01, banRate: 0.1 } });
   const dive = { name: 'D', tags: ['dive', 'burst', 'dash'] };
   // Mismo winrate y tasa de ban: la única diferencia de score es el peligro por etiquetas.
@@ -1772,19 +1836,15 @@ test('revisión línea a línea de scripts y workflows: guardas que no vigilaban
   // 11. El rival de línea pesa el DOBLE de verdad (una mutación a 1,5 pasaba
   //     la suite entera): con el mismo cruce, marcarlo como rival dobla su
   //     peso frente a otro enemigo idéntico.
-  const { counterScore, indexByName } = await import('../src/engine/score.js');
+  const { indexByName } = await import('../src/engine/score.js');
   const yo = { name: 'Yo', tags: [] }; const e1 = { name: 'E1', tags: [] }; const e2 = { name: 'E2', tags: [] };
-  // E2 en el empate exacto (nota 0.5): así el factor de confianza por pickrate,
-  // común a las tres llamadas, se cancela en las razones. Con pesos 2 y 1 el
-  // desvío sobre 0.5 es 2/3·d con E1 de rival, 1/3·d con E2, 1/2·d sin rival:
-  // razones 4/3 y 2/3. Con peso 1,5 saldrían 1,2 y 0,8.
+  // Desde 2.0 el cruce de línea NO pesa doble (medido: −0.56 ± 0.62 frente a
+  // 0.78 ± 0.32 los otros): el término de cruces es la suma sin más, y
+  // ningún «rival» lo cambia.
   const M = indexByName({ Yo: { E1: 0.56, E2: 0.50 } }, 2);
-  const stats = indexByName({ E1: { pickRate: 0.02 }, E2: { pickRate: 0.02 } });
-  const desvio = (rival) => counterScore(yo, [e1, e2], M, rival, stats).value - 0.5;
-  const sin = desvio(null);
-  ok(sin > 0.01, `sin rival el desvío tendría que ser positivo: ${sin}`);
-  ok(Math.abs(desvio('E1') / sin - 4 / 3) < 1e-6 && Math.abs(desvio('E2') / sin - 2 / 3) < 1e-6,
-    `el rival de línea no pesa exactamente el doble: razones ${(desvio('E1') / sin).toFixed(4)} y ${(desvio('E2') / sin).toFixed(4)} (esperadas 1.3333 y 0.6667)`);
+  const cruces = (extra) => evaluarDraft({ yo, enemies: [e1, e2], meta: { counters: M }, ...extra }).terminos.cruces;
+  ok(Math.abs(cruces({}) - logitM(0.56)) < 1e-9, `el término de cruces no es la suma de logits: ${cruces({})}`);
+  eq(cruces({ enemyRoam: 'E1' }), cruces({}), 'el rival marcado sigue pesando distinto');
 });
 
 test('el consejo para los compañeros cubre las líneas abiertas y responde al equipo enemigo', async () => {
@@ -1854,7 +1914,7 @@ test('el consejo para los compañeros cubre las líneas abiertas y responde al e
 });
 
 test('la maestría pesa según la evidencia y no salta al apuntar una partida', async () => {
-  const { rankRoamers, indexByName, poolDeLinea, normalizarComponente, priorDeMaestria } = await import('../src/engine/score.js');
+  const { indexByName, poolDeLinea, priorDeMaestria } = await import('../src/engine/score.js');
   const { indiceDeLineas } = await import('../src/engine/rival-de-linea.js');
   const { generador } = await import('../src/engine/robustez.js');
   const meta = JSON.parse(readFileSync(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8'));
@@ -1873,17 +1933,18 @@ test('la maestría pesa según la evidencia y no salta al apuntar una partida', 
   const drafts = [];
   for (let i = 0; i < 200; i++) { const e = []; while (e.length < 3) { const h = todos[Math.floor(rnd() * todos.length)]; if (!e.includes(h) && h !== objetivo) e.push(h); } drafts.push(e); }
   const con = (games, wr) => drafts.map((e) => rankRoamers(pool, { enemies: e, meta: M, mastery: { ...fondo, [objetivo.name]: { games, winRate: wr } }, candidatos: todos }));
-  const contrib = (r) => r.reduce((s, x) => s + x.find((y) => y.hero.name === objetivo.name).contributions.mastery, 0) / r.length;
+  // En puntos de probabilidad (la escala del ranking): sin reescala, lo que
+  // vale la maestría ES lo que mueve.
+  const contrib = (r) => r.reduce((s, x) => s + ESCALA * x.find((y) => y.hero.name === objetivo.name).terminos.tu * 25, 0) / r.length;
   const r5 = con(5, 0.9); const r12 = con(12, 0.6); const r300 = con(300, 0.65);
-  ok(contrib(r5) < 0.12, `5 partidas al 90% se llevan casi el peso entero: ${contrib(r5).toFixed(3)}`);
+  // Con el prior medido (k≈70 con este perfil) cinco victorias de cinco
+  // valen ~1,4 puntos; 300 partidas al 65%, ~4,7. Lo que se vigila es la
+  // proporcion: la evidencia debil no puede acercarse a la fuerte.
+  ok(contrib(r5) < 2 && contrib(r5) < contrib(r300) / 2, `5 partidas al 90% mueven ${contrib(r5).toFixed(2)} puntos (300 al 65%: ${contrib(r300).toFixed(2)})`);
   ok(contrib(r12) < contrib(r300), `12 partidas al 60% (${contrib(r12).toFixed(3)}) valen más que 300 al 65% (${contrib(r300).toFixed(3)})`);
   const r9 = con(9, 0.6); const r10 = con(10, 0.6);
   const salta = r9.filter((x, i) => x[0].hero.name !== r10[i][0].hero.name).length;
   ok(salta <= 10, `apuntar una partida (de la 9 a la 10) cambia el nº1 en ${salta} de 200 drafts`);
-  // La normalización es una rampa, no un corte: alrededor de la señal mínima
-  // el resultado se mueve poco.
-  const a = normalizarComponente([0.5, 0.5, 0.519]); const b = normalizarComponente([0.5, 0.5, 0.521]);
-  ok(Math.abs(a[2] - b[2]) < 0.1, `salto en la señal mínima: ${a[2].toFixed(3)} → ${b[2].toFixed(3)}`);
   // Y el prior de la maestría tampoco salta cuando el quinto héroe llega a 30 partidas.
   const base = { A: { games: 80, winRate: 0.55 }, B: { games: 60, winRate: 0.5 }, C: { games: 40, winRate: 0.48 }, D: { games: 35, winRate: 0.53 } };
   const k29 = priorDeMaestria({ ...base, E: { games: 29, winRate: 0.6 } }); const k30 = priorDeMaestria({ ...base, E: { games: 30, winRate: 0.6 } });
@@ -2475,38 +2536,31 @@ test('el tipo de dano sale del texto de Moonton, no del rol', async () => {
   ok(!tapaElHueco(mag('m'), null), 'tapa un hueco que no existe');
 });
 
-test('tapar el hueco de dano sube la nota de composicion, y no lo encoge la deduccion', async () => {
-  const { compScore } = await import('../src/engine/score.js');
+test('el hueco de dano se dice, y no lo encoge la deduccion; pero no puntua', async () => {
+  const { perfilDeDano, tapaElHueco } = await import('../src/engine/score.js');
+  const { analizarDraft } = await import('../src/engine/analisis.js');
 
   const fis = (n) => ({ name: n, tags: ['tanky'], damage: { fisico: 3, magico: 0 } });
   const aliados = [fis('a1'), fis('a2'), fis('a3')];
-
   const base = { name: 'Yo', tags: ['engage'], damage: { fisico: 3, magico: 0 } };
   const tapa = { ...base, damage: { fisico: 0, magico: 3 } };
-  ok(compScore(tapa, aliados).value > compScore(base, aliados).value,
-    'meter el dano que falta no vale mas que repetir el que sobra');
 
-  // Con el equipo ya equilibrado no hay hueco, asi que los dos valen igual.
+  // El hueco sale del texto del juego (perfilDeDano) y el heroe deducido lo
+  // tapa igual: el tipo de dano es un dato, no una etiqueta adivinada.
+  eq(perfilDeDano(aliados).falta, 'magico', 'no ve que al equipo le falta magia');
+  ok(tapaElHueco(tapa, 'magico') && tapaElHueco({ ...tapa, inferred: true }, 'magico') && !tapaElHueco(base, 'magico'), 'tapaElHueco se equivoca');
   const mixtos = [fis('a1'), { name: 'a2', tags: ['tanky'], damage: { fisico: 0, magico: 3 } }];
-  eq(compScore(tapa, mixtos).value, compScore(base, mixtos).value,
-    'premia el tipo de dano cuando al equipo no le falta ninguno');
+  eq(perfilDeDano(mixtos).falta, null, 've un hueco donde el equipo esta equilibrado');
 
-  // El descuento por tags deducidos NO puede comerse el hueco de dano: el tipo
-  // de dano esta medido en el texto del juego, no deducido de una etiqueta.
-  const ded = { ...tapa, inferred: true };
-  const dedSinTapar = { ...base, inferred: true };
-  const ganancia = compScore(tapa, aliados).value - compScore(base, aliados).value;
-  const gananciaDed = compScore(ded, aliados).value - compScore(dedSinTapar, aliados).value;
-  ok(Math.abs(ganancia - gananciaDed) < 1e-9,
-    'encoge el hueco de dano por deduccion, descontando dos veces');
+  // Se dice en el analisis: tapa → razon; no tapa → aviso.
+  const frases = (yo) => analizarDraft({ ranked: [{ hero: yo, score: 0.6, p: 0.6 }], enemies: [{ name: 'E', tags: [] }], allies: aliados, meta: { counters: {} } }).map((f) => f.clave);
+  ok(frases(tapa).includes('analisis.todoFisico'), `no dice que el pick tapa el hueco: ${frases(tapa)}`);
+  ok(frases(base).includes('analisis.faltaMagico'), `no avisa del hueco sin tapar: ${frases(base)}`);
 
-  // Y lo que SI viene de tags se sigue encogiendo hacia el empate. Hace falta
-  // un heroe que puntue POR ENCIMA de 0.5 en tags: encoger es acercarse a 0.5,
-  // asi que a uno flojo la deduccion le SUBE la nota, no se la baja.
-  const completo = { name: 'Completo', tags: ['engage', 'cc_hard'], damage: { fisico: 3, magico: 0 } };
-  ok(compScore(completo, aliados).value > 0.5, 'el heroe de la comprobacion no puntua por encima del empate');
-  ok(compScore({ ...completo, inferred: true }, aliados).value < compScore(completo, aliados).value,
-    'ya no encoge lo que viene de tags deducidos');
+  // Pero NO puntua: 0 de 902 equipos pro tienen el hueco, asi que no se puede
+  // medir, y un termino que no se puede medir no entra en la nota.
+  eq(evaluarDraft({ yo: tapa, allies: aliados, meta: {} }).logOdds, evaluarDraft({ yo: base, allies: aliados, meta: {} }).logOdds,
+    'el hueco de dano cambia la nota sin dato que lo respalde');
 });
 
 test('se puede buscar un heroe por su nombre en espanol', async () => {
@@ -2545,10 +2599,11 @@ test('se puede buscar un heroe por su nombre en espanol', async () => {
   }
 });
 
-test('eligiendo pronto recomienda heroes menos castigables que eligiendo ultimo', () => {
-  // Lo que hace distinto elegir primero no es saber menos del rival: los
-  // enemigos que faltan te eligen A TI en contra. Asi que con la pantalla casi
-  // vacia el nº1 tiene que ser mas dificil de castigar que con el draft hecho.
+test('eligiendo pronto, el nº1 espera bien lo que se juega en las lineas abiertas', () => {
+  // Lo que hace distinto elegir primero: los enemigos que faltan van a salir
+  // por las lineas abiertas, y de cada una se sabe que se juega. El nº1 con
+  // esas lineas abiertas tiene que cruzar mejor contra lo que se espera de
+  // ellas que el nº1 elegido sin mirarlas.
   const porNombre = (nombre) => {
     let x = 2166136261 ^ 31;
     for (const ch of nombre) x = Math.imul(x ^ ch.charCodeAt(0), 16777619);
@@ -2567,52 +2622,47 @@ test('eligiendo pronto recomienda heroes menos castigables que eligiendo ultimo'
       .map((b) => [b.name, 0.5 + (porNombre(a.name + b.name) - 0.5) * amplitud(a.name)]))])), 2);
   const meta = { stats, counters, patchAvgWinRate: 0.497 };
 
-  // Se compara el MISMO draft con y sin el descuento, no un draft pronto
-  // contra otro tarde: con enemigos distintos cambia el nº1 de todas formas y
-  // la comprobacion pasaba aunque se quitara el descuento entero. Sin
-  // `candidatos` no hay riesgo que calcular, asi que ese es el "sin".
-  const riesgoDelPrimero = (enemigos, conDescuento) => {
-    const ctx = { enemies: enemigos.map(h), meta, ...(conDescuento ? { candidatos: pool } : {}) };
-    return riesgoContrapick(rankRoamers(pool, ctx)[0].hero, counters, pool);
-  };
+  // Se compara el MISMO draft con y sin las lineas abiertas: con enemigos
+  // distintos cambiaria el nº1 de todas formas.
+  const otros = all.filter((x) => !x.roam);
+  const conPick = indexByName(Object.fromEntries(all.map((x) => [x.name, { ...stats[normName(x.name)], pickRate: 0.005 + porNombre(`pr:${x.name}`) * 0.05 }])));
+  const abiertas = { lineasAbiertas: ['mid', 'gold'], poolsPorLinea: { mid: otros.slice(0, 40), gold: otros.slice(40, 80) } };
+  const esperado = (hero) => evaluarDraft({ yo: hero, enemies: [h('Fanny')], meta: { ...meta, stats: conPick }, ...abiertas }).terminos.porVer;
+  const sinMirar = rankRoamers(pool, { enemies: [h('Fanny')], meta: { ...meta, stats: conPick } })[0].hero;
+  const mirando = rankRoamers(pool, { enemies: [h('Fanny')], meta: { ...meta, stats: conPick }, ...abiertas })[0].hero;
+  ok(esperado(mirando) >= esperado(sinMirar), `mirando las lineas abiertas el nº1 espera peor cruce: ${esperado(mirando).toFixed(3)} vs ${esperado(sinMirar).toFixed(3)}`);
+  const todos = rankRoamers(pool, { enemies: [h('Fanny')], meta: { ...meta, stats: conPick }, ...abiertas });
+  ok(todos.some((x) => x.terminos.porVer !== 0), 'la esperanza contra las lineas abiertas es cero para todo el pool: no se esta calculando');
 
-  const conDescuento = riesgoDelPrimero(['Fanny'], true);
-  const sinDescuento = riesgoDelPrimero(['Fanny'], false);
-  ok(conDescuento != null && sinDescuento != null, 'no hay riesgo que medir: la comprobacion no vale');
-  ok(conDescuento < sinDescuento,
-    `con un solo enemigo deberia recomendar algo menos castigable: ${conDescuento?.toFixed(3)} vs ${sinDescuento?.toFixed(3)}`);
-
-  // Y con el draft completo el descuento NO puede existir: ya no te puede
-  // contrapickear nadie, asi que ahi manda el counter y nada mas.
+  // Y con el draft completo no queda nada por ver.
   const completo = ['Fanny', 'Ling', 'Lancelot', 'Gusion', 'Hayabusa'].map(h);
-  const conRiesgo = rankRoamers(pool, { enemies: completo, meta, candidatos: pool });
-  const sinCandidatos = rankRoamers(pool, { enemies: completo, meta });
-  eq(conRiesgo[0].hero.name, sinCandidatos[0].hero.name,
-    'con los cinco enemigos elegidos el riesgo de contrapick todavia cambia el orden');
+  const cerrado = rankRoamers(pool, { enemies: completo, meta: { ...meta, stats: conPick }, lineasAbiertas: [], poolsPorLinea: abiertas.poolsPorLinea });
+  ok(cerrado.every((x) => x.terminos.porVer === 0), 'con los cinco enemigos elegidos sigue esperando algo');
 });
 
 test('la sinergia se lee en los dos sentidos, como los counters', async () => {
-  const { sinergia, synergyScore, indexByName } = await import('../src/engine/score.js');
+  const { sinergia, indexByName } = await import('../src/engine/score.js');
 
   // Llevar a A con B es lo mismo que llevar a B con A, asi que el dato vale
   // igual por los dos lados. NO se le da la vuelta: eso es cosa de los
   // counters, donde A gana lo que B pierde.
-  const m = indexByName({ Tigreal: { Layla: 0.56 } }, 2);
+  const m = indexByName({ Tigreal: { Layla: 0.56, Franco: 0.44 } }, 2);
   eq(sinergia(m, 'Tigreal', 'Layla'), 0.56);
   eq(sinergia(m, 'Layla', 'Tigreal'), 0.56, 'no encuentra el dato por el otro lado');
   eq(sinergia(m, 'Layla', 'Franco'), undefined, 'se inventa una sinergia que no existe');
 
-  // Y que synergyScore lo aproveche de verdad: sin esto el dato existia y no
-  // lo miraba nadie, que es como se perdia el 37% de los cruces.
+  // Y que el termino de parejas lo aproveche de verdad: sin esto el dato
+  // existia y no lo miraba nadie, que es como se perdia el 37% de los cruces.
   const yo = { name: 'Layla', tags: [] };
   const aliado = { name: 'Tigreal', tags: [] };
-  const conDato = synergyScore(yo, [aliado], m).value;
-  const sinDato = synergyScore(yo, [aliado], indexByName({}, 2)).value;
+  const conDato = terminoPareja(yo, aliado, m, 0.5).valor;
+  const sinDato = terminoPareja(yo, aliado, indexByName({}, 2), 0.5).valor;
   ok(conDato > sinDato, 'no usa el dato de sinergia cuando solo esta apuntado del otro lado');
 });
 
 test('un heroe ya elegido no se propone como ban aunque se escriba distinto', async () => {
-  const { suggestBans, indexByName } = await import('../src/engine/score.js');
+  const { indexByName } = await import('../src/engine/score.js');
+  const { suggestBans } = await import('../src/engine/ranking.js');
 
   // Mismo fallo que ya se arreglo en rankRoamers: comparar nombres crudos. La
   // API y el catalogo escriben "X.Borg" y "X Borg", asi que un pick guardado
@@ -2688,7 +2738,8 @@ test('el JSON de datos se guarda compacto y se vuelve a leer entero', async () =
 });
 
 test('no propone banear a quien salta encima de tu TANQUE', async () => {
-  const { suggestBans, hayQueProtegerlo, indexByName } = await import('../src/engine/score.js');
+  const { hayQueProtegerlo, indexByName } = await import('../src/engine/score.js');
+  const { suggestBans } = await import('../src/engine/ranking.js');
 
   // Un tanque tambien lleva el tag `immobile`. Sin filtrar, la app decia
   // "banealo porque salta encima de tu Tigreal", que es al reves de como se
@@ -2704,13 +2755,13 @@ test('no propone banear a quien salta encima de tu TANQUE', async () => {
 
   const conTanque = suggestBans([asesino, otro], { meta, allies: [{ name: 'Tigreal', tags: ['immobile', 'tanky'] }] });
   const razonesTanque = conTanque.find((b) => b.hero.name === 'Asesino')?.reasons ?? [];
-  eq(razonesTanque.length, 0, 'avisa de que le van a saltar encima al tanque, que es lo que el tanque quiere');
+  ok(!razonesTanque.some((r) => r.clave === 'peligro.saltaEncima'), 'avisa de que le van a saltar encima al tanque, que es lo que el tanque quiere');
 
   // Y con un tirador de verdad SI tiene que avisar: si no, la comprobacion
   // pasaria por haber apagado la regla entera.
   const conCarry = suggestBans([asesino, otro], { meta, allies: [{ name: 'Layla', tags: ['immobile', 'hypercarry'] }] });
   const razonesCarry = conCarry.find((b) => b.hero.name === 'Asesino')?.reasons ?? [];
-  ok(razonesCarry.length > 0, 'ya no avisa de que le van a saltar encima al tirador');
+  ok(razonesCarry.some((r) => r.clave === 'peligro.saltaEncima'), 'ya no avisa de que le van a saltar encima al tirador');
 });
 
 test('si no sale nadie, el buscador prueba con las letras en orden', async () => {
@@ -3269,7 +3320,7 @@ test('los retratos que la app va a pedir existen de verdad', async () => {
 });
 
 test('los motivos que se ensenan estan respaldados por el dato', async () => {
-  const { counterScore, indexByName, CRUCE_DESTACABLE, CRUCE_MALO } = await import('../src/engine/score.js');
+  const { indexByName, CRUCE_DESTACABLE, CRUCE_MALO } = await import('../src/engine/score.js');
 
   // Medir las once reglas por heroe dice que la etiqueta casi nunca predice el
   // efecto que afirma: de los nueve heroes con `anti_mobility` solo Phoveus
@@ -3279,19 +3330,19 @@ test('los motivos que se ensenan estan respaldados por el dato', async () => {
   const enemigo = { name: 'Fanny', tags: ['mobile', 'dash', 'assassin'] };
 
   // 1. El cruce dice que PIERDES: el motivo por tag no se ensena.
-  const pierde = counterScore(yo, [enemigo], indexByName({ Khufra: { Fanny: 0.44 } }, 2));
-  ok(!pierde.reasons.some((r) => r.good), `ensena una ventaja perdiendo el cruce: ${JSON.stringify(pierde.reasons)}`);
+  const pierde = terminoCruce(yo, enemigo, indexByName({ Khufra: { Fanny: 0.44 } }, 2));
+  ok(!pierde.razones.some((r) => r.good), `ensena una ventaja perdiendo el cruce: ${JSON.stringify(pierde.razones)}`);
 
   // 2. El cruce lo respalda: se ensena, y con el dato al lado.
-  const gana = counterScore(yo, [enemigo], indexByName({ Khufra: { Fanny: 0.56 } }, 2));
-  ok(gana.reasons.some((r) => r.good && r.clave.startsWith('regla.') && r.clave !== 'regla.ganaMatchup'),
+  const gana = terminoCruce(yo, enemigo, indexByName({ Khufra: { Fanny: 0.56 } }, 2));
+  ok(gana.razones.some((r) => r.good && r.clave.startsWith('regla.') && r.clave !== 'regla.ganaMatchup'),
     'con el cruce a favor deberia explicar POR QUE, no solo el numero');
-  ok(gana.reasons.some((r) => r.clave === 'regla.ganaMatchup'), 'no dice que gana el cruce');
+  ok(gana.razones.some((r) => r.clave === 'regla.ganaMatchup'), 'no dice que gana el cruce');
 
   // 3. SIN dato del cruce la regla es lo unico que hay, y para eso esta: no se
   //    puede exigir que el dato la respalde porque no existe.
-  const sinDato = counterScore(yo, [enemigo], indexByName({}, 2));
-  ok(sinDato.reasons.some((r) => r.good), 'un heroe recien salido se queda sin ningun motivo');
+  const sinDato = terminoCruce(yo, enemigo, indexByName({}, 2));
+  ok(sinDato.razones.some((r) => r.good), 'un heroe recien salido se queda sin ningun motivo');
 });
 
 test('el analisis avisa del peor cruce del draft cuando el dato lo dice', async () => {
@@ -3436,7 +3487,7 @@ test('ningun 0.53 escrito a mano suelto en el motor', async () => {
   // analisis del draft y sinergias- y las tres es el percentil 99 de su
   // distribucion, o sea "casi nunca". Es la clase de constante que se copia de
   // un sitio a otro sin volver a medirla.
-  const motor = ['src/engine/score.js', 'src/engine/analisis.js']
+  const motor = ['src/engine/score.js', 'src/engine/analisis.js', 'src/engine/modelo.js', 'src/engine/ranking.js']
     .map((f) => readFileSync(resolve(ROOT, f), 'utf8'))
     .join('\n')
     .replace(/\/\*[\s\S]*?\*\//g, '')          // sin comentarios de bloque

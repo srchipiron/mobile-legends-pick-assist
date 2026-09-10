@@ -24,7 +24,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { appendFile, mkdir } from 'node:fs/promises';
 import { runSelfTest } from '../src/engine/selftest.js';
-import { mergeCatalog, indexByName, poolDeLinea, LINEAS, matchup, sinergia, densidadCounters, ESCALA_CRUCE, ESCALA_PAREJA } from '../src/engine/score.js';
+import { mergeCatalog, indexByName, poolDeLinea, LINEAS, densidadCounters } from '../src/engine/score.js';
 import { indiceDeLineas } from '../src/engine/rival-de-linea.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -155,20 +155,6 @@ if (rutaHistorial) {
   const desv = (a) => Math.sqrt(a.reduce((s, x) => s + (x - media(a)) ** 2, 0) / (a.length - 1));
 
   const nombres = Object.keys(meta.stats ?? {});
-  const recorte = (leer, lo, ancho) => {
-    let n = 0; let fuera = 0;
-    for (const a of nombres) {
-      for (const b of nombres) {
-        if (a === b) continue;
-        const v = leer(a, b);
-        if (v == null) continue;
-        n++;
-        const x = (v - lo) / ancho;
-        if (x <= 0 || x >= 1) fuera++;
-      }
-    }
-    return n ? Number((fuera / n).toFixed(4)) : null;
-  };
 
   // La misma medida de ruido que vigila el diagnóstico, guardada para poder
   // ver la tendencia: una subida lenta no la caza un umbral, la caza una serie.
@@ -211,11 +197,6 @@ if (rutaHistorial) {
       poolDeLinea(allHeroes, indiceDeLineas(meta.heroes ?? []), 'roam'),
       metaCtx.counters, allHeroes,
     ).cobertura.toFixed(4)),
-    // Las MISMAS escalas que el motor: una copia a mano aquí (0.44/0.12 y
-    // 0.42/0.16) mediría otra cosa con el mismo nombre si el motor se
-    // recalibra, y la tendencia no se enteraría.
-    recorteCounters: recorte((a, b) => matchup(metaCtx.counters, a, b), ESCALA_CRUCE.base, ESCALA_CRUCE.rango),
-    recorteSinergias: recorte((a, b) => sinergia(metaCtx.synergies, a, b), ESCALA_PAREJA.base, ESCALA_PAREJA.rango),
     ruido,
     objetos: Object.keys(meta.equipment ?? {}).length,
     // Las builds, no los heroes con builds: perder dos de las tres de cada

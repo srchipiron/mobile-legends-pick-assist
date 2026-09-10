@@ -11,13 +11,33 @@ import { resumen as resumenDeCambio } from '../../scripts/changelog.mjs';
 // el suyo; esto solo evita que un olvido deje la pantalla en blanco.
 const tPorDefecto = crearT('es');
 
-const PART_COLORS = {
-  meta: 'var(--c-meta)',
-  counter: 'var(--c-counter)',
-  synergy: 'var(--c-synergy)',
-  comp: 'var(--c-comp)',
-  mastery: 'var(--c-mastery)',
+/** Los términos del modelo (engine/modelo.js), con su color. */
+const TERM_COLORS = {
+  heroes: 'var(--c-meta)',
+  cruces: 'var(--c-counter)',
+  parejas: 'var(--c-synergy)',
+  porVer: 'var(--c-comp)',
+  tu: 'var(--c-mastery)',
 };
+const signo = (v) => (v > 0 ? `+${v}` : `${v}`);
+
+/**
+ * El desglose de una nota en puntos de probabilidad por término. Los que
+ * valen cero no se pintan (tú sin maestría, por ver con el draft cerrado).
+ */
+export function Desglose({ puntos, t = tPorDefecto, className = 'desglose' }) {
+  if (!puntos) return null;
+  const partes = Object.keys(TERM_COLORS).filter((k) => puntos[k] != null && (puntos[k] !== 0 || k === 'heroes' || k === 'cruces'));
+  return (
+    <div className={className}>
+      {partes.map((k) => (
+        <span key={k} style={{ color: TERM_COLORS[k] }} title={t(`termino.${k}Largo`)}>
+          {t(`termino.${k}`)} <b>{signo(puntos[k])}</b>
+        </span>
+      ))}
+    </div>
+  );
+}
 
 /**
  * Una imagen servida desde NUESTRO sitio, con hueco reservado.
@@ -286,9 +306,12 @@ export function HeroSheet({
   );
 }
 
-/** Tarjeta de recomendación con la barra de desglose del score. */
+/**
+ * Tarjeta de recomendación: la probabilidad de ganar el draft con ese pick y
+ * de dónde sale, en puntos, término a término.
+ */
 export function Pick({ result, index, stat, pro = null, onBuild, t = tPorDefecto }) {
-  const total = Object.values(result.contributions).reduce((a, b) => a + b, 0) || 1;
+  const pct = Math.round((result.p ?? result.score) * 100);
   return (
     <article className={`pick ${index === 0 ? 'top' : ''}`}>
       <div className="rank">{index + 1}</div>
@@ -306,19 +329,10 @@ export function Pick({ result, index, stat, pro = null, onBuild, t = tPorDefecto
             </span>
           )}
         </h3>
-        {/* De dónde sale la nota. El `title` la hace legible sin leyenda: en
-            pantalla ancha ocupaba mil píxeles siendo lo único que no se podía
-            leer. */}
-        <div
-          className="why-bar"
-          title={Object.entries(result.contributions)
-            .map(([k, v]) => `${t(`parte.${k}`)} ${Math.round((v / total) * 100)}%`)
-            .join(' · ')}
-        >
-          {Object.entries(result.contributions).map(([key, v]) => (
-            <span key={key} style={{ width: `${(v / total) * 100}%`, background: PART_COLORS[key] }} />
-          ))}
-        </div>
+        {/* De dónde sale la probabilidad: puntos por término, con signo. Antes
+            era una barra de proporciones que no decía cuánto ni en qué
+            sentido. */}
+        <Desglose puntos={result.puntos} t={t} />
         <ul className="reasons">
           {result.reasons.length ? (
             result.reasons.map((r) => (
@@ -338,7 +352,7 @@ export function Pick({ result, index, stat, pro = null, onBuild, t = tPorDefecto
         </ul>
       </div>
       <div>
-        <div className="pick-score">{Math.round(result.score * 100)}</div>
+        <div className="pick-score" title={t('pick.probTitulo')} aria-label={t('pick.probTitulo')}>{pct}%</div>
         <span className="pick-wr">
           {stat?.winRate != null ? t('pick.wr', { pct: (stat.winRate * 100).toFixed(1) }) : t('app.sinDatos')}
         </span>
@@ -448,6 +462,8 @@ export function BanSuggestions({ items, onBan, t = tPorDefecto }) {
             {b.reasons[0] && <span className="inferred">{t(b.reasons[0].clave, b.reasons[0].params)}</span>}
           </span>
           <span className="rate">
+            {b.puntos > 0 ? t('ban.quita', { n: b.puntos }) : ''}
+            {b.puntos > 0 && b.stat.banRate != null ? ' · ' : ''}
             {b.stat.banRate != null ? t('ban.tasa', { pct: Math.round(b.stat.banRate * 100) }) : ''}
           </span>
           <button onClick={() => onBan(b.hero)} aria-label={t('app.marcarBaneo', { nombre: b.hero.name })}>{t('ban.banear')}</button>
@@ -460,8 +476,9 @@ export function BanSuggestions({ items, onBan, t = tPorDefecto }) {
 export function Legend({ t = tPorDefecto }) {
   return (
     <div className="legend">
-      {Object.keys(PART_COLORS).map((k) => (
-        <span key={k}><i style={{ background: PART_COLORS[k] }} />{t(`parte.${k}`)}</span>
+      <span className="legend-nota">{t('leyenda.prob')}</span>
+      {Object.keys(TERM_COLORS).map((k) => (
+        <span key={k}><i style={{ background: TERM_COLORS[k] }} />{t(`termino.${k}Largo`)}</span>
       ))}
       {/* Lo que antes solo vivía en un `title`, que en táctil no existe. */}
       <span className="legend-nota">{t('leyenda.pro')}</span>
@@ -1286,41 +1303,6 @@ export function AvisoLegal({ t = tPorDefecto, idioma, onIdioma, idiomas = ['es',
 }
 
 /**
- * La probabilidad estimada de ganar con tu nº1, y de dónde sale. Va con su
- * aviso porque es un modelo (ver estimacion.js), no un dato: lo que la hace
- * creíble o no son las partidas que apuntes, y eso se enseña en el Veredicto.
- */
-export function Estimacion({ est, yo, t = tPorDefecto }) {
-  if (!est || !yo) return null;
-  const pct = Math.round(est.p * 100);
-  const signo = (v) => (v > 0 ? `+${v}` : `${v}`);
-  const partes = ['heroes', 'cruces', 'parejas', 'tu']
-    .filter((k) => k !== 'tu' || est.puntos.tu !== 0)
-    .map((k) => `${t(`estimacion.${k}`)} ${signo(est.puntos[k])}`);
-  // Compacta: cifra, barra y una línea con el aviso. El desglose va plegado.
-  // Medido: con 141-152 px de estimación la tarjeta nº1 no cabía en la
-  // primera pantalla de un móvil de 390×844 en ninguna fase del draft.
-  return (
-    <section className={`estimacion ${pct >= 55 ? 'alta' : pct <= 45 ? 'baja' : ''}`}>
-      <div className="estimacion-fila">
-        {/* Corto: el título entero (30 caracteres) no cabe junto a la cifra y
-            la barra en 360 px y desbordaba 2 px. El largo va en aria-label. */}
-        <span className="side-label"><abbr title={t('estimacion.titulo')}>{t('estimacion.corto')}</abbr></span>
-        <strong className="estimacion-cifra">{pct}%</strong>
-        <div className="estimacion-barra" role="img" aria-label={`${pct}%`}>
-          <i style={{ width: `${pct}%` }} />
-        </div>
-      </div>
-      <details className="estimacion-mas">
-        <summary>{t('estimacion.resumen', { yo: yo.name, n: est.vistos })}</summary>
-        <p className="estimacion-desglose">{partes.join(' · ')}</p>
-        <p className="build-nota">{t('estimacion.aviso')}</p>
-      </details>
-    </section>
-  );
-}
-
-/**
  * Qué pueden coger tus compañeros en las líneas que quedan abiertas (ver
  * engine/equipo.js). Plegado por defecto: tu pick es lo primero y esto no
  * puede empujarlo fuera de la primera pantalla del móvil. Cada opción se
@@ -1332,7 +1314,7 @@ export function Equipo({ consejos, yo, onElegir, t = tPorDefecto }) {
     <details className="equipo">
       <summary>
         <span>{t('equipo.titulo')}</span>
-        <span className="estimacion-vistos">{t('equipo.lineas', { n: consejos.length })}</span>
+        <span className="equipo-vistos">{t('equipo.lineas', { n: consejos.length })}</span>
       </summary>
       <p className="equipo-pista">{t('equipo.con', { yo: yo.name })}</p>
       {consejos.map((c) => {
@@ -1359,6 +1341,7 @@ export function Equipo({ consejos, yo, onElegir, t = tPorDefecto }) {
                 >
                   <Imagen src={`./heroes/${s.hero.id}.jpg`} alt="" className="grid-cara" tam={22} />
                   {s.hero.name}
+                  {s.p != null && <span className="chip-pct">{Math.round(s.p * 100)}%</span>}
                 </button>
               ))}
             </div>

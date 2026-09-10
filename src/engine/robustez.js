@@ -1,4 +1,5 @@
-import { rankRoamers, normName, LINEAS } from './score.js';
+import { normName, LINEAS } from './score.js';
+import { rankRoamers } from './ranking.js';
 
 /**
  * ¿Aguanta este pick lo que falta por salir?
@@ -21,10 +22,10 @@ import { rankRoamers, normName, LINEAS } from './score.js';
  * Dos cosas que hacen falta para que el final simulado se parezca al real:
  * los BANEADOS no salen por ninguna línea ni son candidatos tuyos (la app ya
  * los quita del ranking; sin quitarlos aquí la simulación votaba a un héroe
- * que no se enseña y llamaba "frágil" al nº1 de verdad), y si tu línea está
- * abierta, el que sale por ella en ese final es tu RIVAL y su cruce pesa
- * doble. Medido: con el rival dentro, "pick seguro" acierta más (roam con tres
- * vistos 55%→62%, exp con dos vistos 61%→68%) a cambio de decirlo menos.
+ * que no se enseña y llamaba "frágil" al nº1 de verdad), y el final se
+ * puntúa COMPLETO: el término «por ver» del modelo (modelo.js) se apaga,
+ * porque en ese final ya no falta nadie. (Hasta 1.x el que salía por tu
+ * línea pesaba doble; en 2.0 ningún cruce pesa doble, medido.)
  *
  * Lo que NO se hace con esto: cambiar el ranking. Medido, usar la simulación
  * para ordenar solo ayuda con un enemigo visto (+4-6 puntos) y no aporta nada
@@ -32,9 +33,8 @@ import { rankRoamers, normName, LINEAS } from './score.js';
  * entre el primer y el segundo enemigo. Se enseña como información: "es un
  * pick seguro" o "depende de lo que saquen".
  *
- * Se cuenta por VOTOS de nº1 y no por media de puntuaciones: la nota se
- * reescala dentro de cada draft, y promediar escalas distintas es justo el
- * fallo que ya se comió un encogimiento entero.
+ * Se cuenta por VOTOS de nº1 y no por media de probabilidades: lo que se
+ * quiere saber es si SIGUE siendo el mejor, no cuánto gana de media.
  */
 
 /** Desde qué cuota el pick se llama "seguro". Es donde la medición separa. */
@@ -83,7 +83,7 @@ function muestrear(pool, excluidos, pickRateDe, rnd) {
  * @param lineasAbiertas  líneas enemigas por las que aún falta alguien
  * @param poolsPorLinea   { linea: [héroes] } de dónde salen los que faltan
  * @param ctx             lo mismo que recibe rankRoamers (meta, mastery, bans, enemyRoam...)
- * @param linea           tu línea: si está abierta, el que salga por ella es tu rival
+ * @param linea           tu línea (se acepta por compatibilidad; ya no cambia el resultado)
  * @returns { cuota: { nombre: 0..1 }, lider, cuotaLider, n, lineasAbiertas, enemigos, aliados } o null
  */
 export function simularFinales({
@@ -104,18 +104,16 @@ export function simularFinales({
   for (let k = 0; k < n; k++) {
     const excluidos = new Set(fijos);
     const completo = [...enemies];
-    let rival = ctx.enemyRoam ?? null;
     for (const l of abiertas) {
       const h = muestrear(poolsPorLinea[l], excluidos, pickRateDe, rnd);
       if (!h) continue;
       excluidos.add(h.name);
       completo.push(h);
-      // Si tu rival aún no se ve, en este final es el que sale por tu línea:
-      // su cruce pesa doble en el ranking real, y sin esto la simulación lo
-      // contaba como a uno más.
-      if (!rival && l === linea) rival = h.name;
     }
-    const top = rankRoamers(pool, { ...ctx, enemies: completo, allies, enemyRoam: rival })[0];
+    // El final está completo: no queda nada «por ver», así que el término
+    // de esperanza del modelo no entra (sin esto contaría dos veces a los
+    // que acaba de sacar).
+    const top = rankRoamers(pool, { ...ctx, enemies: completo, allies, lineasAbiertas: [] })[0];
     if (top) votos[top.hero.name] = (votos[top.hero.name] ?? 0) + 1;
   }
 

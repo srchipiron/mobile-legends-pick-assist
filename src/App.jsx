@@ -1,5 +1,6 @@
 import { Fragment, useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { rankRoamers, mergeCatalog, suggestBans, indexByName, coverage, empatados, normName, poolDeLinea, LINEAS, lookup } from './engine/score.js';
+import { mergeCatalog, indexByName, coverage, normName, poolDeLinea, LINEAS, lookup } from './engine/score.js';
+import { rankRoamers, suggestBans, empatados } from './engine/ranking.js';
 import { runSelfTest, leerEntorno } from './engine/selftest.js';
 import { apuntar, olvidar, corregir, maestriaEfectiva } from './engine/registro.js';
 import { analizarDraft } from './engine/analisis.js';
@@ -11,7 +12,7 @@ import { sanear } from './engine/perfil.js';
 import { analizarComposicion } from './engine/composicion.js';
 import { aconsejarEquipo } from './engine/equipo.js';
 import { proximosBaneos, coocurrenciaDeBaneos } from './engine/baneos.js';
-import { Side, HeroSheet, Pick, Legend, MasteryEditor, RankPicker, BanSuggestions, Footer, SelfTest, RegistroPartida, SelectorDeLinea, Analisis, AvisoLegal, Perfil, HistorialPartidas, Build, Estimacion, Composicion, Imagen, Equipo, ProximosBaneos, HORAS_DATOS_VIEJOS } from './components/ui.jsx';
+import { Side, HeroSheet, Pick, Legend, MasteryEditor, RankPicker, BanSuggestions, Footer, SelfTest, RegistroPartida, SelectorDeLinea, Analisis, AvisoLegal, Perfil, HistorialPartidas, Build, Composicion, Imagen, Equipo, ProximosBaneos, HORAS_DATOS_VIEJOS } from './components/ui.jsx';
 
 // OJO: estas claves siguen diciendo 'roam-picker' aunque la app se llame ya
 // Mobile Legends Pick Assist. NO se renombran: el almacenamiento del navegador
@@ -256,24 +257,38 @@ export default function App() {
     [roamPool, metaCtx],
   );
 
-  // El rival de TU línea, deducido de las líneas que juega cada héroe. Es con
-  // quien más vas a chocar, así que su matchup pesa el doble. Lo que marques a
-  // mano manda siempre: esto solo rellena el hueco cuando no has tocado nada.
+  // El rival de TU línea, deducido de las líneas que juega cada héroe. Se
+  // enseña en el análisis («ganas tu cruce contra X»); desde 2.0 no pesa
+  // doble en el ranking, porque medido en las partidas pro no vale más que
+  // los otros cruces. Lo que marques a mano manda sobre lo deducido.
   const roamAuto = useMemo(
     () => detectarRivalDeLinea(enemies, lineas, linea, frecuencias),
     [enemies, lineas, linea, frecuencias],
   );
   const enemyRoamEfectivo = enemyRoam ?? roamAuto;
 
+  // Por qué líneas enemigas falta alguien: por ahí va el término «por ver»
+  // del modelo (lo que cabe esperar del cruce contra lo que se juega en esa
+  // línea) y por ahí se simulan los finales plausibles.
+  const poolsPorLinea = useMemo(
+    () => Object.fromEntries(LINEAS.map((l) => [l, poolDeLinea(allHeroes, lineas, l)])),
+    [allHeroes, lineas],
+  );
+  const lineasAbiertas = useMemo(() => {
+    if (!enemies.length || enemies.length >= 5) return [];
+    const ocupadas = new Set(lineasOcupadas(enemies, lineas, frecuencias));
+    return LINEAS.filter((l) => !ocupadas.has(l));
+  }, [enemies, lineas, frecuencias]);
+
   const ranked = useMemo(
     () => (catalog
       ? rankRoamers(roamPool, {
-        enemies, allies, bans, mastery: maestriaUsada, meta: metaCtx, enemyRoam: enemyRoamEfectivo,
-        // Héroes que el enemigo aún podría elegir: base del riesgo de contrapick.
+        enemies, allies, bans, mastery: maestriaUsada, meta: metaCtx, lineas, lineasAbiertas, poolsPorLinea,
+        // Héroes que el enemigo aún podría elegir: base del aviso de pick a ciegas.
         candidatos: allHeroes.filter((h) => !taken.has(h.name)),
       })
       : []),
-    [catalog, roamPool, allHeroes, taken, metaCtx, enemies, allies, bans, maestriaUsada, enemyRoamEfectivo],
+    [catalog, roamPool, allHeroes, taken, metaCtx, enemies, allies, bans, maestriaUsada, lineas, lineasAbiertas, poolsPorLinea],
   );
 
   const empate = useMemo(() => empatados(ranked), [ranked]);
@@ -286,10 +301,6 @@ export default function App() {
   const enemigosDiferidos = useDeferredValue(enemies);
   const aliadosDiferidos = useDeferredValue(allies);
   const baneosDiferidos = useDeferredValue(bans);
-  const poolsPorLinea = useMemo(
-    () => Object.fromEntries(LINEAS.map((l) => [l, poolDeLinea(allHeroes, lineas, l)])),
-    [allHeroes, lineas],
-  );
   const robustez = useMemo(() => {
     const en = enemigosDiferidos;
     if (!en.length || en.length >= 5 || !roamPool.length) return null;
@@ -297,9 +308,9 @@ export default function App() {
     const abiertas = LINEAS.filter((l) => !ocupadas.has(l));
     return simularFinales({
       pool: roamPool, enemies: en, allies: aliadosDiferidos, lineasAbiertas: abiertas, poolsPorLinea,
-      ctx: { meta: metaCtx, mastery: maestriaUsada, bans: baneosDiferidos, enemyRoam: enemyRoamEfectivo }, linea,
+      ctx: { meta: metaCtx, mastery: maestriaUsada, bans: baneosDiferidos, lineas }, linea,
     });
-  }, [enemigosDiferidos, aliadosDiferidos, baneosDiferidos, roamPool, poolsPorLinea, lineas, frecuencias, metaCtx, maestriaUsada, enemyRoamEfectivo, linea]);
+  }, [enemigosDiferidos, aliadosDiferidos, baneosDiferidos, roamPool, poolsPorLinea, lineas, frecuencias, metaCtx, maestriaUsada, linea]);
 
   // Qué tiene y qué le falta a cada equipo, contigo dentro (tu nº1).
   const composicion = useMemo(
@@ -309,22 +320,14 @@ export default function App() {
     [allies, enemies, ranked],
   );
 
-  // Cuánto hay de ganar con tu nº1 y estos diez (ver estimacion.js).
-  const estimacion = useMemo(
-    () => (ranked[0] && (allies.length || enemies.length)
-      ? estimarVictoria({ allies, yo: ranked[0].hero, enemies, meta: metaCtx, mastery: maestriaUsada, lineas })
-      : null),
-    [ranked, allies, enemies, metaCtx, maestriaUsada, lineas],
-  );
-
   // Qué pueden coger tus compañeros en las líneas abiertas, contigo dentro
   // (tu nº1). Solo con algún enemigo a la vista: sin rival no es un consejo
   // contra nadie, es el meta por línea, y eso no ayuda a decidir.
   const consejos = useMemo(
     () => (ranked[0] && enemies.length
-      ? aconsejarEquipo({ allHeroes, lineas, frecuencias, miLinea: linea, yo: ranked[0].hero, enemies, allies, bans, meta: metaCtx })
+      ? aconsejarEquipo({ allHeroes, lineas, frecuencias, miLinea: linea, yo: ranked[0].hero, enemies, allies, bans, meta: metaCtx, lineasAbiertas, poolsPorLinea })
       : []),
-    [ranked, allHeroes, lineas, frecuencias, linea, enemies, allies, bans, metaCtx],
+    [ranked, allHeroes, lineas, frecuencias, linea, enemies, allies, bans, metaCtx, lineasAbiertas, poolsPorLinea],
   );
 
   // Dos o tres frases sobre lo que NO se ve en las tarjetas: si ganas tu
@@ -383,10 +386,7 @@ export default function App() {
         // huecos ensenan caras.
         draft: {
           enemies, allies, bans, rival: enemyRoamEfectivo, marcado: !!enemyRoam, ranked, analisis, robustez, composicion,
-          estimaciones: ranked.slice(0, 3).map((r) => ({
-            yo: r.hero.name,
-            ...estimarVictoria({ allies, yo: r.hero, enemies, meta: metaCtx, mastery: maestriaUsada, lineas }),
-          })),
+          estimaciones: ranked.slice(0, 3).map((r) => ({ yo: r.hero.name, p: r.p, puntos: r.puntos, terminos: r.terminos, vistos: allies.length + enemies.length + 1 })),
         },
         historial,
         pro,
@@ -431,7 +431,9 @@ export default function App() {
     // La estimación que había delante para ESE héroe, no para el nº1: es lo
     // que luego se compara con el resultado (ver `calibracion`).
     const heroe = resolve([pick])[0];
-    const est = heroe ? estimarVictoria({ allies, yo: heroe, enemies, meta: metaCtx, mastery: maestriaUsada, lineas }) : null;
+    const est = heroe
+      ? (ranked.find((r) => r.hero === heroe) ?? estimarVictoria({ allies, yo: heroe, enemies, meta: metaCtx, mastery: maestriaUsada, lineas, lineasAbiertas, poolsPorLinea, bans }))
+      : null;
     const siguiente = apuntar(partidas, {
       pick, gane, rango: activeRank,
       recomendados: ranked.slice(0, 3).map((r) => r.hero.name),
@@ -644,7 +646,13 @@ export default function App() {
             con otras palabras, y el bloque empujaba la recomendacion fuera de
             la primera pantalla. */}
         <Analisis frases={analisis} t={t} />
-        <Estimacion est={estimacion} yo={ranked[0]?.hero} t={t} />
+        {/* La probabilidad de ganar va DENTRO de cada tarjeta (es la nota):
+            el bloque aparte de 1.28–1.41 repetía el número del nº1 y sus
+            80 px empujaban la tarjeta fuera de la primera pantalla. Aquí solo
+            queda el contexto: cuántos se ven, y que es un modelo. */}
+        {ranked[0] && (allies.length || enemies.length) ? (
+          <p className="estimacion-nota">{t('estimacion.resumen', { yo: ranked[0].hero.name, n: allies.length + enemies.length + 1 })}</p>
+        ) : null}
 
         {/* TU pick primero; el consejo para los demás va después de él.
             Medido: encima empujaba la tarjeta nº1 fuera de la primera

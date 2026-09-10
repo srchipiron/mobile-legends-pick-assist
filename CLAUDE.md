@@ -71,10 +71,12 @@ entre dos `@media`, y `png` en la precarga. Si añades un guardarraíl, rómpelo
 antes de fiarte de él; si tocas la forma de las respuestas que simula la
 prueba, cámbiala a la vez que la real.
 
-**No ajustes los pesos por una partida.** Los winrates se mueven entre el 48% y
-el 55%; una derrota no dice nada. Si hay que tocar el motor, mídelo antes con
-drafts simulados (hay utilidades en las pruebas) y comprueba concentración y
-sensatez táctica, no solo que "parezca mejor".
+**No ajustes el modelo por una partida.** Los winrates se mueven entre el 48% y
+el 55%; una derrota no dice nada. Desde 2.0 no hay pesos: hay UN modelo
+(`src/engine/modelo.js`) cuya escala está medida contra partidas con resultado
+(`scripts/ajustar-modelo.mjs`, validación cruzada). Si hay que tocar el motor,
+mídelo ahí primero: un término nuevo entra si mejora la verosimilitud fuera de
+muestra, y si no, no entra aunque «parezca mejor». Ver «El modelo».
 
 **Prefiere el dato a la regla escrita a mano.** Desde 1.5.0 la matriz de
 counters está COMPLETA (17.556 cruces, el 100%), así que las reglas de
@@ -128,19 +130,19 @@ ninguna constante.
   ingesta (agosto-septiembre de 2026, ventana de 7 días): la desviación del
   winrate de un héroe entre corridas es 0,0002-0,0003 en TODOS los cuartiles
   de pickrate, frente a 0,0316 de dispersión entre héroes. Por eso desde
-  1.39.0 `metaScore` no encoge nada: el prior 400 sobre `pickRate × 40000`
-  eran dos números inventados que conservaban el 18% del desvío de un héroe
-  raro (Masha 57,7% valía como 50,5%) y cambiaban el nº1 en el 30% de los
-  drafts. Si cambias de fuente, mide el ruido entre corridas antes de
+  1.39.0 el término de héroe no encoge nada: el prior 400 sobre `pickRate ×
+  40000` eran dos números inventados que conservaban el 18% del desvío de un
+  héroe raro (Masha 57,7% valía como 50,5%) y cambiaban el nº1 en el 30% de
+  los drafts. Si cambias de fuente, mide el ruido entre corridas antes de
   reponer un prior (`ruido-wr.mjs` en el scratch de la sesión lo hacía con
   `git show` de las corridas anteriores).
 - **Los cruces no son estimaciones ruidosas.** Dos comprobaciones: (1) si el
   ruido fuera de muestreo, el cuartil menos jugado tendría sus cruces 2,65 veces
   más dispersos que el más jugado, y lo que se mide es 1,16; (2) dos corridas de
   la ingesta separadas nueve minutos dan los mismos cruces con una diferencia
-  mediana de 0,00003. Por eso `PICKRATE_FIABLE` bajó de 0,004 a 0,00041: el
-  valor viejo encogía a los héroes raros diez veces más de lo que el dato
-  justifica. El diagnóstico vigila las dos cosas y avisa si cambian.
+  mediana de 0,00003. Por eso en 1.x `PICKRATE_FIABLE` bajó de 0,004 a
+  0,00041 y desde 2.0 el cruce no se encoge por muestra en absoluto: el dato
+  no lo pide. El diagnóstico vigila las dos cosas y avisa si cambian.
 
 Dos constantes que se midieron y se dejaron como estaban, para no volver a
 medirlas: el umbral de «tu héroe está N puntos por encima» (`>= 0.02` en
@@ -563,6 +565,17 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   todo, y `check-order.mjs` solo veía `const` (un `let` usado antes es el
   mismo TDZ). Si una prueba busca una cadena, pregúntate si la cadena en un
   comentario o en un echo también la pasaría.
+- **Cinco componentes con pesos a mano que nunca se midieron contra un
+  resultado** — meta 0.22, counter 0.40, sinergia 0.15, composición 0.08,
+  maestría 0.15, cada uno reescalado min-max dentro del pool. Se calibraron
+  con drafts simulados (concentración, «responde al enemigo»), nunca con
+  partidas ganadas o perdidas. Medido en 2.0 contra 902 partidas pro: los
+  términos de datos pesan igual, la composición nada, y el rival de línea
+  nada más que los otros. Y la estimación de 1.28–1.41 sumaba los mismos
+  términos sin escala: Brier 0.2510, peor que una moneda. Toda constante
+  del motor que se pueda medir contra un resultado se mide contra un
+  resultado; la concentración y la sensatez táctica son comprobaciones,
+  no calibración.
 - **Una corrida degradada commiteada por el bot de datos** — `update-data.yml`
   ejecutaba la ingesta encima de `public/data` y commiteaba lo que saliera. Salió
   una corrida con los 133 héroes SIN `lanes` y SIN `role`, y con counters de 34
@@ -574,6 +587,75 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   ingestas escriben a un temporal (`--out`), `scripts/comparar-ingesta.mjs`
   compara con lo guardado y solo se copia encima si no empeora. Hay una prueba
   que falla si alguien vuelve a apuntar la ingesta directa a `public/data`.
+
+## El modelo (2.0)
+
+`src/engine/modelo.js` y `src/engine/ranking.js`. La nota de un pick ES la
+probabilidad de ganar el draft que resulta con él: un modelo aditivo en
+log-odds con cinco términos (héroes, cruces, parejas, tú, por ver), todos
+centrados, sumados con coeficiente 1 y multiplicados por UNA escala medida
+(`ESCALA = 0.44 ± 0.12`). No hay reescala min-max dentro del pool ni pesos por
+componente. Todo lo de abajo está medido con `scripts/ajustar-modelo.mjs`
+(regresión logística sobre 902 partidas pro de 120 días con resultado, 10
+pliegues de validación cruzada; 1.528 partidas de 400 días dan lo mismo) y
+se repite en cada corrida de `pro.yml` al log. NO vuelvas a suponer:
+
+- **Los tres términos de datos pesan lo mismo.** Coeficientes libres: H 0.50
+  ± 0.16, C 0.49 ± 0.29, S 0.11 ± 0.36; la validación cruzada no mejora con
+  ellos (logL/n −0.6810 frente a −0.6801 con una sola escala). Iguales y
+  una escala. Si un día el bot mide otra cosa con ± pequeño, se cambia AQUÍ
+  y se documenta.
+- **La escala es 0,44, no 1.** Con coeficiente 1 (la estimación de 1.28 a
+  1.41) el Brier fuera de muestra era 0.2510, peor que una moneda; con 0.44,
+  0.2435. `medir-pro.mjs` mide la pendiente del modelo YA escalado y debería
+  salir 1 (hoy 1.00 ± 0.28); el diagnóstico avisa si se aleja más de dos
+  errores típicos.
+- **El cruce de línea no pesa más** (R −0.56 ± 0.62 frente a O 0.78 ± 0.32
+  al partir C; con 400 días 0.07 ± 0.48 frente a 0.83 ± 0.24). El ×2 de 1.x
+  desapareció de todo: ranking, consejo a compañeros y simulación. El rival
+  se sigue deduciendo para el análisis.
+- **Los huecos de composición por etiqueta no predicen** (0.00 ± 0.07 por
+  hueco, σ del término 0.96). TEAM_NEEDS se dice (composicion.js), no puntúa.
+  El hueco de daño no se puede medir: 0 de 902 equipos pro lo tienen. Se
+  dice igual, como consejo.
+- **El orden de pick de Liquipedia no lleva contrapick medible**: el cruce
+  medio del héroe elegido después contra el elegido antes es 0.000 (n=19.072
+  pares). Así que no hay castigo adversarial; lo que falta por salir entra
+  como ESPERANZA del cruce contra lo que se juega en cada línea abierta
+  (`esperanzaCruces`, ponderado por pickrate). El aviso de «arriesgado como
+  pick ciego» sigue como aviso (`riesgoContrapick`, `esPickCiego`), no
+  puntúa.
+- **El lado azul** vale 0.07 ± 0.07 (120 días) y 0.02 ± 0.05 (400): nada
+  que la app pueda usar, y no sabe el lado.
+- **La AUC es 0.56–0.57.** Es lo que consiguen los predictores de draft en
+  MOBA: el draft inclina, no gana. Cualquier cosa que prometa más está mal.
+- **Las parejas solas no se distinguen** (sin S la validación es igual).
+  Se dejan con la misma escala porque el dato es real (dos magos −4pp) y
+  no empeora; si algún día estorban, se mide, no se supone.
+- **La maestría sustituye al término de héroe** (como en la estimación de
+  1.28): tu winrate encogido hacia lo que cabe esperar de ti con ese héroe,
+  también sin winrate público (referencia 50%). Escalada por la misma
+  ESCALA que todo. Sus motivos se miden contra lo esperado ± σ.
+- **Las reglas por etiqueta** solo entran sin dato (cruce o pareja nula) y a
+  la equivalencia de 1.x: la regla más fuerte vale un cruce del 56%
+  (`CRUCE_POR_REGLA_MAXIMA`); las de peligro en los baneos, igual.
+- **Márgenes en probabilidad**, decisiones de frecuencia medidas en 300
+  drafts de roam: empate `MARGEN_EMPATE = 0.004` (p25 de la distancia
+  nº1–nº2, se dice en uno de cada cuatro), «pick claro» `BRECHA_CLARA = 2`
+  puntos (p85). La distancia nº1–nº2 mediana es 0,9 puntos: en la mitad de
+  los drafts el modelo NO distingue al nº1 del nº2, y eso es verdad.
+- **Cambia el nº1 respecto a 1.x en el 44% de los drafts** (168 de 300
+  iguales; el nº1 viejo queda entre los tres nuevos en el 84%). Es la
+  consecuencia de medir en vez de pesar a mano.
+- **Los baneos sugeridos** son pérdida esperada: (pickrate cuando no está
+  baneado, `pickRate/(1−banRate)`) × (su término de héroe + sus cruces contra
+  tus aliados). Sin pesos.
+
+Para volver a ajustar: `node scripts/ajustar-modelo.mjs` (y `--dias 400`),
+mirar `logL/n` fuera de muestra, y cambiar `ESCALA`/`AJUSTE` en modelo.js
+solo si la diferencia sale del error. La prueba «el modelo: la nota es la
+probabilidad…» falla si la escala medida hoy se aleja más de 2,5 SE de la
+del código.
 
 ## El siguiente baneo probable
 
@@ -608,9 +690,10 @@ del rango que aún no están marcados, para tocar en vez de escribir. Es la
 Desde 1.34.0, `src/engine/equipo.js`. Con algún enemigo a la vista, para cada
 línea que tu equipo aún no cubre (`lineasOcupadas` con tus aliados, el mismo
 reparto que con los enemigos) se ejecuta `rankRoamers` sobre el pool de esa
-línea, con tu nº1 como aliado ya elegido, sin maestría (el componente queda
-plano al normalizar) y con el rival de ESA línea a peso doble. No hay pesos
-nuevos ni constantes nuevas: es el motor de tu pick apuntando a otra línea.
+línea, con tu nº1 como aliado ya elegido, sin maestría (el término «tú» es
+cero) y con las mismas líneas enemigas abiertas. El rival de ESA línea se
+enseña junto al consejo; desde 2.0 no pesa doble. No hay pesos nuevos ni
+constantes nuevas: es el motor de tu pick apuntando a otra línea.
 Nunca aconseja tu línea, ni a nadie cogido o baneado. Va plegado bajo la
 estimación para no empujar tu primera recomendación fuera de pantalla, y
 tocar una opción la mete en tu equipo. Prueba con datos reales: cuatro líneas
@@ -628,14 +711,17 @@ a suponer:
 - **La cuota predice**: en roam con 2 enemigos vistos, cuota ≥ 0.5 → el nº1
   aguanta el 71% del draft completo; < 0.5 → 28%. Con 3: 62/26. Con 4: 71/31.
   Con 1 visto casi nada es robusto (14 de 200). `CUOTA_ROBUSTA = 0.5` es donde
-  separa. Medido con el rival de línea contando doble, como en la app.
+  separa. Medido en 1.x con el rival doble; con el modelo de 2.0 la prueba
+  de que predice (diferencia de tasas ≥ 0,12 sobre 150 drafts) sigue en
+  verde.
 - **El final simulado tiene que parecerse al real** (1.27.1): los baneados no
   salen por ninguna línea ni son candidatos (la primera versión votaba a un
   héroe baneado que la app no enseñaba, y llamaba «frágil» al nº1 real con
-  una cuota falsa), y el que sale por TU línea es tu rival, con su cruce a
-  peso doble. Con el rival dentro «pick seguro» acierta más (roam, 3 vistos:
-  55%→62%) y se dice menos. Si `rankRoamers` gana otra entrada de contexto que
-  cambie el ranking, pásala también a la simulación.
+  una cuota falsa), y cada final se puntúa COMPLETO: `lineasAbiertas: []`
+  al llamar a `rankRoamers`, o el término «por ver» contaría dos veces a
+  los que la simulación acaba de sacar (hay prueba). Si `rankRoamers` gana
+  otra entrada de contexto que cambie el ranking, pásala también a la
+  simulación.
 - **No se usa para ordenar.** Medido con 120 simulaciones y dos semillas:
   ordenar por la simulación solo mejora con un enemigo visto (+4–6 puntos de
   acierto del nº1) y con dos o tres no aporta nada; cambiar de mecanismo en una
@@ -715,14 +801,10 @@ aquí: pidiéndole datos, no leyendo su README.
   no añade nada medible (razón 0.08 donde el motor supone 2; la hipótesis
   bR = 2·bO queda a 1,9 σ). La verosimilitud con el rival a peso 1 es mejor
   que a peso 2 (diferencia 1,3, no concluyente). Ganar tres o más cruces de
-  línea no hace ganar la partida (55,6% frente a 58,6%). Y en los 275 de la
-  misma época, lo mismo (bR 0.10 ± 1.16). NO se ha tocado `counterScore`
-  porque: (1) son partidas profesionales de cinco coordinados, donde la
-  línea se rota más que en solo queue; (2) solo en 78 de 275 las diez
-  líneas están claras; (3) con ± 0.8 no se distingue 0 de 1. Lo que sí dice
-  ya: el ×2 no está respaldado y probablemente mete ruido. Cuando el bot
-  pase de ~2.000 partidas (± ≈ 0.4) y bR siga en cero, se baja a peso 1 y
-  se documenta aquí. La medida corre en cada corrida de `pro.yml` (solo al
+  línea no hace ganar la partida (55,6% frente a 58,6%). **En 2.0 se quitó
+  el ×2** con la medida de `ajustar-modelo.mjs` sobre 902 partidas (R −0.56
+  ± 0.62 frente a O 0.78 ± 0.32): ningún cruce pesa distinto. La medida de
+  `medir-rival.mjs` sigue corriendo en cada corrida de `pro.yml` (solo al
   log).
 - Es incremental y monótona: funde por `claveDe` y `pro.yml` rechaza una
   corrida con menos partidas que las guardadas. `claveDe` es el CONTENIDO
@@ -749,14 +831,14 @@ volver a suponer:
   el CLAUDE.md diga que esa es la media: metía +0.6 log-odds a favor del
   primer equipo y la mediana de drafts al azar salía al 64%. Se centran en
   0.5. Hay una prueba de que la mediana en 200 drafts al azar queda en 50±6.
-- **La escala no está calibrada** y no hay con qué: no existen resultados de
-  partidas. Con drafts completos al azar da entre el 30% y el 70% (p05/p95),
-  con el término de héroes pesando el doble que el de cruces. Por eso se
-  enseña con su aviso y por eso cada partida apuntada guarda `estimacion`:
-  `calibracion()` en registro.js compara previsto con ocurrido (Brier contra
-  0.25, y winrate real con ≥50% frente a <50%). Cuando haya 20 partidas,
-  ESO es lo que dice si el número vale; si el Brier sale por encima de
-  0.25, el diagnóstico avisa. No toques la escala a ojo: espera al dato.
+- **La escala está medida en las partidas pro** (2.0): 0.44 ± 0.12 (ver «El
+  modelo»). Con drafts completos al azar da entre el 40% y el 60% (p05/p95);
+  antes, sin escala, entre el 30% y el 70%, y eso era exagerar. Lo que sigue
+  sin saberse es si en la cola de Javi vale lo mismo que en pro: por eso
+  cada partida apuntada guarda `estimacion` y `calibracion()` en registro.js
+  compara previsto con ocurrido (Brier contra 0.25 con su error típico, y
+  winrate real con ≥50% frente a <50%). Cuando haya partidas de sobra, ESO
+  es lo que dice si el número vale para él.
 - **Tu maestría sustituye al término de tu héroe, no se suma encima.** Tu
   winrate con él se encoge (mismo prior que la maestría) hacia lo que cabe
   esperar de ti con ese héroe: su winrate público más tu ventaja sobre el
@@ -1014,11 +1096,14 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   el cruce está en la matriz, pero no hay resultado con el que medir si
   mejora los baneos, y sin medida es una regla nueva. Se reabre si hay
   forma de medirlo (partidas apuntadas con baneos, por ejemplo).
-- **El peso doble del rival de línea**: medido y no apoyado (ver «Las
-  partidas profesionales»); se espera a ~2.000 partidas.
-- **La escala de la probabilidad estimada**: pendiente 0,72 ± 0,22 con 275
-  partidas pro; se calibra cuando el ± baje de 0,1, y con las partidas de
-  Javi como muestra preferente.
+- **El peso doble del rival de línea**: quitado en 2.0 (ver «El modelo»).
+- **La escala de la probabilidad estimada**: medida en 2.0 (0,44 ± 0,12 con
+  902 partidas, validación cruzada). Las partidas de Javi la contrastan.
+- **Un coeficiente por término, el lado azul, los huecos por etiqueta, el
+  hueco de daño, el contrapick por orden de pick** (2.0): medidos en
+  `ajustar-modelo.mjs` y ninguno mejora la validación cruzada ni sale del
+  error (ver «El modelo»). Se reabren con más partidas o con una fuente de
+  partidas de solo queue.
 - **Las reglas negativas por etiqueta en héroes sin cruces** (`clamp01`
   deja la nota en 0.5 y enseña el motivo): solo afecta a héroes sin dato
   del cruce, hoy ninguno. Se reabre con el próximo héroe nuevo.
@@ -1048,12 +1133,11 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
 - **`candidatos` ausente en el `ctx` de la simulación** (`robustez.js`): el
   riesgo de contrapick solo entra en la nota con `cegera > 0`, y los finales
   simulados tienen los cinco enemigos, así que da igual que no llegue.
-- **El encogimiento del cruce por presencia del rival con UN enemigo**
-  (`PICKRATE_FIABLE` en `counterScore`): con un solo enemigo es un factor
-  igual para todo el pool y la normalización lo borra (medido: cambiar la
-  constante mueve el nº1 en 0/300 drafts con 1 enemigo, 37/300 con 2, 54/300
-  con 5). Solo existe como REPARTO entre enemigos; no lo calibres pensando
-  en el caso de uno.
+- **El encogimiento del cruce por presencia del rival** (`PICKRATE_FIABLE`,
+  1.x): quitado en 2.0, el cruce entra sin encoger porque el dato no lo
+  pide (ver «Qué son los datos»). Queda como aviso de forma: en 1.x con un
+  solo enemigo era un factor igual para todo el pool y la normalización lo
+  borraba; sin normalización, un factor global SÍ mueve la probabilidad.
 - **`cache: npm` en `setup-node`** (quitada en 1.37.0): redundante con la
   caché de `node_modules` y restauraba `~/.npm` en cada corrida para nada.
 - **`medir-rival.mjs || true` en `pro.yml`**: solo escribe al log y su
@@ -1109,7 +1193,7 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   histórico (`winrateDeReferencia`, ponderado por partidas), que sí se llena
   jugando. Las partidas que faltan salen del tamaño del efecto observado, no de
   un umbral escrito a mano. Hasta que una de las dos se distinga del azar, NO
-  toques los pesos.
+  toques la escala del modelo por sus partidas: la escala viene de las pro.
 - El tipo de daño de cada héroe (`damage`, en `roam-meta.json`) se cuenta en los
   textos de habilidad de Moonton, no se deduce del rol: el rol se equivoca con
   Gusion, Hylos, Natan y Kimmy. Por eso NO lo encoge `PRECISION_DEDUCIDA`: es un

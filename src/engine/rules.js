@@ -174,13 +174,17 @@ export const ROLE_VETO = {
  * Es una tabla propia porque la de counters describe lo contrario: lo que un
  * roamer le hace a un enemigo. Reutilizarla al revés daba avisos sin sentido.
  */
+
 /**
+ * Qué hace peligroso a un héroe enemigo contra TU equipo ya elegido, SIN
+ * dato del cruce (héroe recién salido). Con la matriz al 100% no decide
+ * nunca; con dato manda el cruce (ranking.js, suggestBans).
+ *
  * `soloSiFragil`: la regla solo vale si el aliado es de los que hay que
- * proteger. Un tanque tambien lleva el tag `immobile`, asi que sin esto la app
- * proponia banear a un asesino "porque salta encima de tu Tigreal", que es al
- * reves de como se juega: el tanque QUIERE que le salten encima. Es el mismo
- * fallo que ya se corrigio en el peel de synergyScore y que aqui sobrevivio.
- * Medido: el 12,1% de los disparos de esta tabla protegian a un tanque.
+ * proteger. Un tanque también lleva el tag `immobile`, así que sin esto la
+ * app proponía banear a un asesino «porque salta encima de tu Tigreal», que
+ * es al revés de cómo se juega. Medido: el 12,1% de los disparos de esta
+ * tabla protegían a un tanque.
  */
 export const DANGER_RULES = [
   { allyTag: 'immobile', enemyTag: 'dive', weight: 1.0, why: 'peligro.saltaEncima', soloSiFragil: true },
@@ -192,26 +196,3 @@ export const DANGER_RULES = [
   { allyTag: 'poke', enemyTag: 'dive', weight: 0.6, why: 'peligro.noDejaPokear' },
   { allyTag: 'engage', enemyTag: 'zone', weight: 0.5, why: 'peligro.cortaInicios' },
 ];
-
-
-/**
- * Pesos por defecto de cada componente del score final.
- * Suman 1. Ningún caller pasa `weights` hoy: se cambian aquí, midiendo antes.
- */
-/**
- * Pesos por defecto. Salen de un barrido sobre 200 drafts aleatorios, midiendo
- * tres cosas: que la recomendación cambie con el equipo enemigo, que contra
- * héroes de curación gane un antiheal, y que ningún roamer acapare las
- * recomendaciones (la de «contra asesinos gana un anti-dash» se retiró en 1.5.0:
- * con la matriz completa no se sostiene, ver CLAUDE.md).
- * No son intuición: cambiarlos a ojo suele empeorar alguna de las tres.
- */
-export const DEFAULT_WEIGHTS = {
-  // Los tres primeros salen de datos reales; comp es lo único escrito a mano,
-  // y por eso pesa poco: es la parte que envejece cuando cambia el juego.
-  meta: 0.22,      // winrate global ajustado por muestra   [dato]
-  counter: 0.40,   // matchup contra los picks enemigos      [dato]
-  synergy: 0.15,   // sinergia con tus aliados               [dato]
-  comp: 0.08,      // huecos de composición que rellena      [mis reglas]
-  mastery: 0.15,   // tu propio historial con el héroe       [tus partidas]
-};

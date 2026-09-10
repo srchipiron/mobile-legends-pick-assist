@@ -1,4 +1,5 @@
-import { rankRoamers, poolDeLinea, normName, LINEAS } from './score.js';
+import { poolDeLinea, normName, LINEAS } from './score.js';
+import { rankRoamers } from './ranking.js';
 import { lineasOcupadas, detectarRivalDeLinea } from './rival-de-linea.js';
 
 /**
@@ -12,9 +13,11 @@ import { lineasOcupadas, detectarRivalDeLinea } from './rival-de-linea.js';
  *    composición se miran contigo dentro, que es lo que va a pasar.
  *  - Sin maestría: no sabemos con qué es bueno cada compañero. El componente
  *    queda neutro para todos y la normalización lo deja plano.
- *  - El rival de cada línea es el que la deducción de líneas pone en ESA
- *    línea, no en la tuya: un consejo para el oro pesa doble el cruce contra
- *    el tirador enemigo, igual que tu pick pesa el tuyo.
+ *  - El rival de cada línea (el que la deducción pone en ESA línea) se
+ *    enseña junto al consejo. Desde 2.0 no pesa doble: medido en las
+ *    partidas pro, el cruce de línea no vale más que los otros.
+ *  - Las líneas enemigas abiertas también cuentan para el compañero: el
+ *    término «por ver» del modelo es el mismo que en tu pick.
  *
  * Solo las líneas que tu equipo aún no cubre (`lineasOcupadas` con tus
  * aliados, el mismo reparto que se usa con los enemigos) y nunca la tuya.
@@ -24,6 +27,7 @@ import { lineasOcupadas, detectarRivalDeLinea } from './rival-de-linea.js';
 export function aconsejarEquipo({
   allHeroes = [], lineas, frecuencias = {}, miLinea = null, yo = null,
   enemies = [], allies = [], bans = [], meta = {}, n = 3,
+  lineasAbiertas = [], poolsPorLinea = {},
 } = {}) {
   if (!allHeroes.length || !miLinea) return [];
   // Los aliados se reparten entre las líneas que NO son la tuya: repartirlos
@@ -41,11 +45,11 @@ export function aconsejarEquipo({
     .map((linea) => {
       const pool = poolDeLinea(allHeroes, lineas, linea).filter((h) => !cogidos.has(normName(h.name)));
       const rival = detectarRivalDeLinea(enemies, lineas, linea, frecuencias);
-      const ranked = rankRoamers(pool, { enemies, allies: equipo, bans, meta, enemyRoam: rival, candidatos });
+      const ranked = rankRoamers(pool, { enemies, allies: equipo, bans, meta, lineas, lineasAbiertas, poolsPorLinea, candidatos });
       return {
         linea,
         rival,
-        sugerencias: ranked.slice(0, n).map((r) => ({ hero: r.hero, score: r.score, reasons: r.reasons })),
+        sugerencias: ranked.slice(0, n).map((r) => ({ hero: r.hero, score: r.score, p: r.p, puntos: r.puntos, reasons: r.reasons })),
       };
     })
     .filter((c) => c.sugerencias.length);
