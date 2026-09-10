@@ -39,6 +39,7 @@ import { fileURLToPath } from 'node:url';
 import { mergeCatalog, indexByName, normName } from '../src/engine/score.js';
 import { indiceDeLineas } from '../src/engine/rival-de-linea.js';
 import { estimarVictoria } from '../src/engine/estimacion.js';
+import { ESCALA } from '../src/engine/modelo.js';
 import { resolverHeroe } from './ingesta-pro.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -131,7 +132,11 @@ async function main() {
   const indiceLineas = indiceDeLineas(meta.heroes ?? []);
   const est = (p) => estimarVictoria({ allies: p.equipos[0].slice(1), yo: p.equipos[0][0], enemies: p.equipos[1], meta: M, lineas: indiceLineas });
   const filas = usables.map((p) => ({ e: est(p), y: p.ganador === 1 ? 1 : 0 }));
-  const resumen = { desde, partidas: recientes.length, usables: usables.length, datosDe: meta.generatedAt ?? null, terminos: {} };
+  // `escala`: con qué modelo se midió. El diagnóstico solo compara la
+  // pendiente con 1 si la medida se hizo con el modelo escalado; una medida
+  // del bot anterior a un cambio de escala daría un aviso falso hasta el
+  // lunes siguiente.
+  const resumen = { desde, partidas: recientes.length, usables: usables.length, datosDe: meta.generatedAt ?? null, escala: ESCALA, terminos: {} };
   const linea = (clave, nombre, f) => {
     const r = evaluar(filas.map((x) => ({ L: f(x.e), y: x.y })));
     resumen.terminos[clave] = { acierto: r.acierto, auc: r.auc, brier: r.brier, pendiente: r.pendiente, errorPendiente: r.errorPendiente };

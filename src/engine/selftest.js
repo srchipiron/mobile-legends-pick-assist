@@ -602,7 +602,9 @@ export function runSelfTest({ catalog, meta, metaCtx, allHeroes, roamPool, maste
   // típicos, el modelo ha dejado de parecerse a lo que pasa.
   lineas.push(`Escala ${ESCALA} ± ${ESCALA_SE} (ajustada con ${AJUSTE.partidas} partidas pro desde ${AJUSTE.desde}, datos del ${AJUSTE.datosDe})`);
   const pend = pro?.medicion?.terminos?.modelo;
-  if (pend?.pendiente != null && pend.errorPendiente != null && (pro.medicion.usables ?? 0) >= 300) {
+  // Solo si el bot midió con ESTA escala: una medida anterior a un cambio
+  // del modelo daría un aviso falso hasta que pro.yml vuelva a correr.
+  if (pend?.pendiente != null && pend.errorPendiente != null && (pro.medicion.usables ?? 0) >= 300 && pro.medicion.escala === ESCALA) {
     const lejos = Math.abs(pend.pendiente - 1) > 2 * pend.errorPendiente;
     check(!lejos,
       `La escala sigue valiendo: pendiente ${pend.pendiente.toFixed(2)} ± ${pend.errorPendiente.toFixed(2)} sobre ${pro.medicion.usables} partidas`,

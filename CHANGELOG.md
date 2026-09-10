@@ -8,6 +8,13 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 2.0.1
+
+- El diagnóstico ya no avisa de que «la escala no encaja» con una medición
+  hecha por el bot con el modelo anterior: la medición guarda con qué escala
+  se hizo y solo se compara si es la actual. Y la medición publicada se
+  rehízo con el modelo de 2.0 (pendiente 1,00 ± 0,28 sobre 902 partidas).
+
 ## 2.0.0
 
 - La app ordena los picks por la probabilidad de ganar el draft que resulta,

@@ -341,6 +341,15 @@ test('el diagnostico detecta datos imposibles y caidas frente a su propio histor
   ok(fallosPro({ ...proBase, partidas: 10 }).length === 0, 'exige medicion con diez partidas, que medir-pro no mide');
   const medicion = { usables: 100, desde: '2026-05-01', azul: 0.52, terminos: { modelo: { acierto: 0.57, auc: 0.6, pendiente: 0.7, errorPendiente: 0.2 }, heroes: {}, cruces: {}, parejas: {} } };
   ok(fallosPro({ ...proBase, partidas: 100, medicion }).length === 0, 'falla con la medicion presente');
+  // La escala: con la medida hecha con ESTA escala, una pendiente lejos de 1
+  // avisa; con una medida de otro modelo (sin `escala`, o distinta), no.
+  const { ESCALA } = await import('../src/engine/modelo.js');
+  const avisoEscala = (m) => runSelfTest({ ...base, meta, pro: { ...proBase, partidas: 400, medicion: m } }).texto.split('\n').filter((l) => /^\[AVISO\].*escala ya no encaja/.test(l)).length;
+  const lejos = { usables: 400, desde: '2026-05-01', terminos: { modelo: { pendiente: 0.4, errorPendiente: 0.1 } } };
+  eq(avisoEscala({ ...lejos, escala: ESCALA }), 1, 'no avisa de una pendiente lejos de 1 medida con esta escala');
+  eq(avisoEscala(lejos), 0, 'avisa con una medida del modelo anterior (sin escala)');
+  eq(avisoEscala({ ...lejos, escala: ESCALA + 1 }), 0, 'avisa con una medida hecha con otra escala');
+  eq(avisoEscala({ ...lejos, escala: ESCALA, terminos: { modelo: { pendiente: 0.95, errorPendiente: 0.1 } } }), 0, 'avisa con la pendiente en 1');
 });
 
 test('perfiles y registro: fundir por instante, sanear lo que llega y maestria por nombre normalizado', async () => {
