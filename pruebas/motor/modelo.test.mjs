@@ -204,4 +204,28 @@ test('la estimación no favorece al equipo que lleva más héroes en pantalla', 
   }
 });
 
+test('los motivos que se ensenan estan respaldados por el dato', () => {
+  // Medir las once reglas por heroe dice que la etiqueta casi nunca predice el
+  // efecto que afirma: de los nueve heroes con `anti_mobility` solo Phoveus
+  // estorba de verdad a los moviles. Ensenar "bloquea los dashes de X" cuando
+  // el cruce real dice que pierdes es explicar mal una decision correcta.
+  const yo = { name: 'Khufra', tags: ['anti_mobility', 'engage', 'cc_hard'], roam: true };
+  const enemigo = { name: 'Fanny', tags: ['mobile', 'dash', 'assassin'] };
+
+  // 1. El cruce dice que PIERDES: el motivo por tag no se ensena.
+  const pierde = terminoCruce(yo, enemigo, indexarPorNombre({ Khufra: { Fanny: 0.44 } }, 2));
+  ok(!pierde.motivos.some((r) => r.bueno), `ensena una ventaja perdiendo el cruce: ${JSON.stringify(pierde.motivos)}`);
+
+  // 2. El cruce lo respalda: se ensena, y con el dato al lado.
+  const gana = terminoCruce(yo, enemigo, indexarPorNombre({ Khufra: { Fanny: 0.56 } }, 2));
+  ok(gana.motivos.some((r) => r.bueno && r.clave.startsWith('regla.') && r.clave !== 'regla.ganaMatchup'),
+    'con el cruce a favor deberia explicar POR QUE, no solo el numero');
+  ok(gana.motivos.some((r) => r.clave === 'regla.ganaMatchup'), 'no dice que gana el cruce');
+
+  // 3. SIN dato del cruce la regla es lo unico que hay, y para eso esta: no se
+  //    puede exigir que el dato la respalde porque no existe.
+  const sinDato = terminoCruce(yo, enemigo, indexarPorNombre({}, 2));
+  ok(sinDato.motivos.some((r) => r.bueno), 'un heroe recien salido se queda sin ningun motivo');
+});
+
 await terminar('motor/modelo');

@@ -229,4 +229,43 @@ test('las partidas viejas personalizan pero NO ensucian la comparacion', () => {
   eq(olvidar(ps, 'no-existe').length, ps.length, 'quita algo cuando no deberia');
 });
 
+test('el veredicto no canta victoria antes de tiempo', () => {
+  // El caso real de Javi: 11 partidas siguiendo la app al 73% contra un 51,3%
+  // histórico. Son +21 puntos, que suena a demostracion y NO lo es: el margen
+  // es de ±29. Si esto se ensena como "la app te sube 21 puntos", la siguiente
+  // racha lo desmiente y con razon.
+  const maestria = { A: { games: 10535, winRate: 0.513 } };
+  const partidas = [
+    ...Array.from({ length: 8 }, (_, i) => ({ t: i, pick: 'A', recomendados: ['A'], gane: true })),
+    ...Array.from({ length: 3 }, (_, i) => ({ t: 100 + i, pick: 'A', recomendados: ['A'], gane: false })),
+  ];
+  const r = resumen(partidas, maestria);
+  ok(r.contraReferencia, 'no calcula la comparacion con 11 partidas');
+  ok(r.contraReferencia.dif > 0.15, 'la prueba no esta midiendo el caso que cree');
+  ok(!r.contraReferencia.seVe,
+    `da por buena una diferencia de ${(r.contraReferencia.dif * 100).toFixed(1)} puntos con margen de ${(r.contraReferencia.margen * 100).toFixed(1)}`);
+  ok(r.contraReferencia.faltan > 0, 'no dice cuantas partidas faltan');
+
+  // Y al reves: con muestra de sobra y una diferencia grande, SI se afirma.
+  // Si no, el veredicto seria un "no se sabe" perpetuo, que tampoco sirve.
+  const muchas = Array.from({ length: 400 }, (_, i) => ({
+    t: i, pick: 'A', recomendados: ['A'], gane: i % 100 < 70,
+  }));
+  const claro = resumen(muchas, maestria);
+  ok(claro.contraReferencia.seVe,
+    'con 400 partidas al 70% contra un 51% sigue diciendo que no se sabe');
+
+  // Una diferencia pequena con muestra grande tampoco se canta.
+  const rozando = Array.from({ length: 400 }, (_, i) => ({
+    t: i, pick: 'A', recomendados: ['A'], gane: i % 100 < 53,
+  }));
+  ok(!resumen(rozando, maestria).contraReferencia.seVe,
+    'canta victoria por dos puntos de diferencia');
+
+  // El margen SIEMPRE viaja con la diferencia: quien pinte esto no puede
+  // ensenar una sin la otra por descuido.
+  ok(Number.isFinite(r.contraReferencia.margen) && r.contraReferencia.margen > 0,
+    'la diferencia viene sin margen: el numero solo es publicidad');
+});
+
 await terminar('motor/registro');

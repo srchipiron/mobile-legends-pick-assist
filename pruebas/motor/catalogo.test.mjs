@@ -4,7 +4,7 @@
  * etiqueta documentada en su leyenda. Una etiqueta sin definir no dispara
  * ninguna regla y nadie se entera.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
 import { catalogo } from '../fixtures/catalogo.mjs';
 import { poolDeLinea, LINEAS, tagsDeducidos, fundirCatalogo, tipoDeDano, perfilDeDano, tapaElHueco } from '../../src/motor/catalogo.js';
 import { analizarDraft } from '../../src/motor/analisis.js';
@@ -159,6 +159,25 @@ test('el hueco de dano se dice, y no lo encoge la deduccion; pero no puntua', ()
   // medir, y un termino que no se puede medir no entra en la nota.
   eq(evaluarDraft({ yo: tapa, aliados, meta: {} }).logOdds, evaluarDraft({ yo: base, aliados, meta: {} }).logOdds,
     'el hueco de dano cambia la nota sin dato que lo respalde');
+});
+
+test('cada heroe lleva su id, tambien los de nombre raro', () => {
+  const meta = leerJson('public/data/roam-meta.json');
+  if (!(meta.heroes ?? []).length) return;
+  const todos = fundirCatalogo(catalogo.heroes, meta.heroes);
+
+  // El retrato se pide por id (./heroes/{id}.jpg). Sin id no hay cara, y como
+  // la imagen que falta se quita sola, no fallaria nada: solo desaparecerian
+  // las caras de unos cuantos heroes y nadie se enteraria. Justo el fallo que
+  // ya costo una version con los counters de X.Borg.
+  const sinId = todos.filter((x) => x.id == null).map((x) => x.name);
+  ok(!sinId.length, `heroes sin id: ${sinId.slice(0, 8).join(', ')}`);
+
+  // Y los que escriben distinto la API y el catalogo tienen que cuadrar.
+  for (const nombre of ['X.Borg', 'Yi Sun-shin', "Chang'e", 'Popol and Kupa']) {
+    const heroe = todos.find((x) => x.name === nombre);
+    if (heroe) ok(heroe.id != null, `${nombre} se ha quedado sin id: el nombre no cuadra entre API y catalogo`);
+  }
 });
 
 await terminar('motor/catalogo');

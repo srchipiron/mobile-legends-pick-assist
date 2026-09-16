@@ -3,9 +3,10 @@
  * el pick aguanta lo que falta por salir, que se calle con el draft completo
  * y que no cruce la simulación de OTRO draft con el ranking de este.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq, leerTexto, terminar } from '../arnes.mjs';
 import { nombreClave, indexarPorNombre } from '../../src/motor/nombres.js';
 import { analizarDraft } from '../../src/motor/analisis.js';
+import { CRUCE_MALO } from '../../src/motor/matrices.js';
 
 test('el analisis dice si el pick aguanta lo que falta, y se calla con el draft completo', () => {
   const yo = { name: 'Khufra', tags: [], roam: true };
@@ -88,6 +89,40 @@ test('revision linea a linea del motor: el hueco sin tapar se dice una vez, no e
   const frases = analizarDraft({ ranking: [{ heroe: tanque, p: 0.7 }], enemigos: [{ name: 'E', tags: [] }], aliados, meta: { counters: {} }, composicion });
   const sobreEngage = frases.filter((f) => JSON.stringify(f.params?.lista ?? []).includes('comp.engage'));
   eq(sobreEngage.length, 1, `el hueco de inicio se dice ${sobreEngage.length} veces: ${JSON.stringify(frases)}`);
+});
+
+test('el analisis avisa del peor cruce del draft cuando el dato lo dice', () => {
+  // Lo destapo una partida perdida: la app tenia el dato de que ese pick perdia
+  // un cruce importante y NO lo decia en el analisis, solo como etiqueta
+  // pequena en la tarjeta. El umbral exigia bajar de 0.47, que es el percentil
+  // 1,6% de los cruces reales: con un draft completo el analisis sacaba UNA
+  // frase.
+  const yo = { name: 'Minotaur', tags: ['tanky', 'engage', 'cc_hard'], roam: true };
+  const malo = { name: 'Ixia', tags: ['poke'] };
+  const neutro = { name: 'Vale', tags: ['burst'] };
+  const ranking = [{ heroe: yo, p: 0.7 }, { heroe: { name: 'Atlas', tags: [] }, p: 0.6 }];
+
+  // Un cruce en la cola mala (p10) tiene que avisar.
+  const avisa = analizarDraft({
+    ranking, enemigos: [malo, neutro], aliados: [], empate: [],
+    meta: { counters: indexarPorNombre({ Minotaur: { Ixia: CRUCE_MALO - 0.002, Vale: 0.505 } }, 2) },
+  });
+  ok(avisa.some((f) => f.clave === 'analisis.cuidadoCon' && f.params?.e === 'Ixia'),
+    `no avisa de un cruce en el 10% peor: ${JSON.stringify(avisa)}`);
+
+  // Y uno normal, no: si avisara de todo, dejaria de leerse.
+  const calla = analizarDraft({
+    ranking, enemigos: [neutro], aliados: [], empate: [],
+    meta: { counters: indexarPorNombre({ Minotaur: { Vale: 0.497 } }, 2) },
+  });
+  ok(!calla.some((f) => f.clave === 'analisis.cuidadoCon'),
+    'avisa de un cruce que esta dentro de lo normal');
+
+  // El umbral es el MISMO que usa el motor para las tarjetas: si se separan,
+  // la etiqueta y el analisis dicen cosas distintas del mismo cruce.
+  const analisis = leerTexto('src/motor/analisis.js');
+  ok(/CRUCE_MALO/.test(analisis),
+    'el analisis tiene su propio umbral: acabara diciendo algo distinto que la tarjeta');
 });
 
 await terminar('motor/analisis');
