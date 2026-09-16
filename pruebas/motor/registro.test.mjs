@@ -6,8 +6,9 @@
  * número.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { apuntar, calibracion, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
-import { maestriaDesdeRegistro } from '../../src/motor/maestria.js';
+import { apuntar, olvidar, corregir, calibracion, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
+import { maestriaDesdeRegistro, maestriaEfectiva, winrateDeReferencia } from '../../src/motor/maestria.js';
+import { nombreClave } from '../../src/motor/nombres.js';
 import { generador } from '../../src/motor/robustez.js';
 
 test('la calibracion compara lo previsto con lo que paso, y se guarda al apuntar', () => {
@@ -111,6 +112,121 @@ test('revision linea a linea del registro: el aviso «peor que una moneda» llev
   ok(avisos / REPS <= 0.10, `el aviso de Brier salta con el modelo perfecto el ${(avisos / REPS * 100).toFixed(1)}% de las veces`);
   const basura = Array.from({ length: 20 }, (_, i) => ({ t: i, pick: 'A', gane: i % 2 === 0, estimacion: i % 2 === 0 ? 0.1 : 0.9 }));
   ok(calibracion(basura).peorQueMoneda === true, 'un modelo al revés no dispara el aviso');
+});
+
+test('el registro sigue contando bien si la API cambia la grafia de un heroe', () => {
+  // Las partidas viven meses en el movil. Si la API pasa de "X.Borg" a
+  // "X Borg", una partida vieja no puede cambiar de bando: es el unico dato
+  // con el que se puede comprobar si la app acierta.
+  ok(siguioConsejo({ pick: 'X.Borg', recomendados: ['X Borg', 'Chou'] }),
+    'una grafia distinta convierte un acierto en "por libre"');
+  ok(siguioConsejo({ pick: 'Yi Sun-shin', recomendados: ['Yi Sun Shin'] }),
+    'no reconoce el mismo heroe escrito con espacios');
+  ok(!siguioConsejo({ pick: 'Chou', recomendados: ['Franco'] }), 'da por seguido un consejo que no se siguio');
+  ok(!siguioConsejo({ pick: '', recomendados: [''] }), 'cuenta una partida sin pick');
+
+  // Y que el resumen no concluya nada sin muestra en LAS DOS ramas.
+  const con = Array.from({ length: 40 }, () => ({ pick: 'A', recomendados: ['A'], gane: true }));
+  const sin = Array.from({ length: 3 }, () => ({ pick: 'B', recomendados: ['A'], gane: false }));
+  ok(!resumen([...con, ...sin]).concluyente, 'concluye con 40 partidas contra 3');
+});
+
+test('el registro compara contra tu winrate de siempre, no solo contra la otra rama', () => {
+  // La rama "por libre" no se llena jugando: para juntar 30 hay que ignorar la
+  // app 30 veces a proposito. La maestria son miles de partidas que ya existen.
+  const maestria = { Diggie: { games: 3821, winRate: 0.54 }, Franco: { games: 900, winRate: 0.51 } };
+  const ref = winrateDeReferencia(maestria);
+  eq(ref.partidas, 4721, 'no suma bien las partidas de la maestria');
+  ok(ref.winRate > 0.53 && ref.winRate < 0.54, `pondera mal por partidas: ${ref.winRate}`);
+  // Ponderado: el heroe de 3821 partidas manda sobre el de 900, no cuentan igual.
+  ok(Math.abs(ref.winRate - 0.54) < Math.abs(ref.winRate - 0.51), 'no pondera por partidas');
+
+  const jugadas = (n, ganadas) => Array.from({ length: n }, (_, i) => ({
+    pick: 'Diggie', recomendados: ['Diggie'], gane: i < ganadas,
+  }));
+
+  // Con poca muestra tiene que decir que NO se ve, por muy grande que parezca.
+  const poco = resumen(jugadas(11, 8), maestria);
+  ok(poco.contraReferencia, 'no compara contra la referencia teniendo maestria');
+  ok(!poco.contraReferencia.seVe, 'da por buena una diferencia de 11 partidas');
+  ok(poco.contraReferencia.faltan > 20, 'se cree que con cuatro partidas mas basta');
+
+  // Y con 11 partidas GANADAS TODAS, el error no puede salir cero. Con la
+  // formula de Wald -que usa lo observado- p(1-p) seria 0 y diria que se ve
+  // clarisimo con once partidas. Se usa la referencia, no lo observado.
+  const todasGanadas = resumen(jugadas(11, 11), maestria);
+  ok(todasGanadas.contraReferencia.margen > 0.15,
+    `con 11 partidas el margen no puede ser ${todasGanadas.contraReferencia.margen}`);
+
+  // La cuenta de partidas que faltan es la de UNA muestra contra una
+  // referencia conocida, no la de dos muestras: la referencia son miles de
+  // partidas y su error propio es despreciable. Con la formula equivocada
+  // pedia casi cuatro veces mas.
+  const esperado = Math.ceil(
+    ((1.96 * Math.sqrt(0.534 * 0.466) + 0.84 * Math.sqrt((8 / 11) * (3 / 11))) ** 2)
+    / ((8 / 11 - ref.winRate) ** 2),
+  ) - 11;
+  ok(Math.abs(poco.contraReferencia.faltan - esperado) <= 2,
+    `la cuenta de potencia no cuadra: dice ${poco.contraReferencia.faltan}, deberia rondar ${esperado}`);
+
+  // Con mucha muestra y una diferencia grande, tiene que verse.
+  const mucho = resumen(jugadas(400, 300), maestria);
+  ok(mucho.contraReferencia.seVe, 'no reconoce una diferencia clara con 400 partidas');
+  eq(mucho.contraReferencia.faltan, 0, 'sigue pidiendo partidas cuando ya se ve');
+
+  // Y si el winrate coincide con el de siempre, tampoco puede "verse" nada.
+  const igual = resumen(jugadas(200, 107), maestria);
+  ok(!igual.contraReferencia.seVe, 've una diferencia donde no la hay');
+
+  // Sin maestria no hay contra que comparar: mejor callarse que inventar base.
+  eq(resumen(jugadas(20, 15), {}).contraReferencia, null, 'se inventa una referencia sin maestria');
+  eq(winrateDeReferencia({}), null, 'devuelve una referencia de la nada');
+});
+
+test('las partidas viejas personalizan pero NO ensucian la comparacion', () => {
+  let ps = [];
+  for (let i = 0; i < 11; i++) ps = apuntar(ps, { pick: 'Diggie', recomendados: ['Diggie'], gane: i < 8 });
+  ps = apuntar(ps, { pick: 'Franco', recomendados: ['Diggie'], gane: true });
+  ps = apuntar(ps, { pick: 'Franco', recomendados: ['Diggie'], gane: false });
+
+  const antes = resumen(ps);
+  eq(antes.siguiendo, 11, 'no cuenta bien las seguidas');
+  eq(antes.porLibre, 2, 'no cuenta bien las de por libre');
+
+  // Cuarenta partidas del historial del juego. La trampa: no llevan
+  // `recomendados`, asi que sin marcarlas irian todas a "por libre" y la
+  // comparacion pasaria a medir el winrate de siempre en vez de la app.
+  for (let i = 0; i < 40; i++) {
+    ps = apuntar(ps, { pick: 'Atlas', gane: i < 21, previa: true, t: 1600000000000 + i });
+  }
+  const despues = resumen(ps);
+  eq(despues.total, 53, 'pierde partidas al meter las viejas');
+  eq(despues.previas, 40, 'no distingue las viejas');
+  eq(despues.siguiendo, antes.siguiendo, 'las viejas se han colado en las seguidas');
+  eq(despues.porLibre, antes.porLibre, 'las viejas se han colado en "por libre"');
+  ok(ps.filter(esPrevia).length === 40, 'no marca las viejas como previas');
+
+  // Y SI tienen que personalizar: para eso se meten.
+  // Las claves van normalizadas (ver maestriaEfectiva): se leen con nombreClave.
+  const mE = maestriaEfectiva({ Diggie: { games: 3821, winRate: 0.54 } }, ps);
+  const m = new Proxy(mE, { get: (o, k) => o[typeof k === 'string' ? nombreClave(k) : k] });
+  eq(m.Atlas.games, 40, 'las partidas viejas no llegan a la maestria');
+  ok(Math.abs(m.Atlas.winRate - 21 / 40) < 1e-9, 'calcula mal el winrate de las viejas');
+  // La escrita a mano gana si tiene mas partidas: no se suman, se elige.
+  eq(m.Diggie.games, 3821, 'el registro pisa la maestria escrita a mano, que tiene mucho mas');
+  eq(m.Franco.games, 2, 'un heroe que solo esta en el registro no llega a la maestria');
+
+  // Corregir y quitar, que es para lo que existe la pantalla.
+  const unaSeguida = ps.find((p) => !esPrevia(p) && p.pick === 'Diggie');
+  const corregidas = corregir(ps, unaSeguida.t, !unaSeguida.gane);
+  eq(corregidas.length, ps.length, 'corregir cambia el numero de partidas');
+  eq(corregidas.find((p) => p.t === unaSeguida.t).gane, !unaSeguida.gane, 'no cambia el resultado');
+  eq(resumen(corregidas).siguiendo, 11, 'corregir mueve una partida de rama');
+
+  const quitadas = olvidar(ps, unaSeguida.t);
+  eq(quitadas.length, ps.length - 1, 'no quita la partida');
+  ok(!quitadas.some((p) => p.t === unaSeguida.t), 'la partida quitada sigue ahi');
+  eq(olvidar(ps, 'no-existe').length, ps.length, 'quita algo cuando no deberia');
 });
 
 await terminar('motor/registro');

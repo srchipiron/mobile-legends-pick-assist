@@ -36,7 +36,7 @@ export function ConsejoEquipo({ consejos, yo, onElegir, t = tPorDefecto }) {
                   aria-label={t('equipo.anadir', { nombre: s.heroe.name })}
                   title={t('equipo.anadir', { nombre: s.heroe.name })}
                 >
-                  <Cara heroe={s.heroe} className="grid-cara" tam={22} />
+                  <Cara heroe={s.heroe} alt="" className="grid-cara" tam={22} />
                   {s.heroe.name}
                   {s.p != null && <span className="chip-pct">{Math.round(s.p * 100)}%</span>}
                 </button>

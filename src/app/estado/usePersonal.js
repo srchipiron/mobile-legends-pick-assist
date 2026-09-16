@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { CLAVES, leer, guardar } from './almacen.js';
 import { sanear } from '../../motor/perfil.js';
 import { apuntar, olvidar, corregir } from '../../motor/registro.js';
@@ -19,16 +19,22 @@ export function usePersonal() {
   const [partidas, setPartidas] = useState(() => sanear({ partidas: leer(CLAVES.partidas, []) }).partidas);
   const maestriaUsada = useMemo(() => maestriaEfectiva(maestria, partidas), [maestria, partidas]);
 
-  const guardarMaestria = useCallback((siguiente) => { setMaestria(siguiente); guardar(CLAVES.maestria, siguiente); }, []);
-  const guardarPartidas = useCallback((siguiente) => { setPartidas(siguiente); guardar(CLAVES.partidas, siguiente); }, []);
+  // La lista de partidas en una referencia, para poder apuntar sobre la última
+  // sin leer un cierre viejo Y sin guardar dentro de un updater de estado:
+  // React puede llamar a un updater más de una vez, y ahí dentro `guardar` es
+  // un efecto secundario. El único que la escribe es `guardarPartidas`.
+  const ultimas = useRef(partidas);
 
-  const apuntarPartida = useCallback((entrada) => setPartidas((prev) => {
-    const siguiente = apuntar(prev, entrada);
+  const guardarMaestria = useCallback((siguiente) => { setMaestria(siguiente); guardar(CLAVES.maestria, siguiente); }, []);
+  const guardarPartidas = useCallback((siguiente) => {
+    ultimas.current = siguiente;
+    setPartidas(siguiente);
     guardar(CLAVES.partidas, siguiente);
-    return siguiente;
-  }), []);
-  const olvidarPartida = useCallback((t) => setPartidas((prev) => { const s = olvidar(prev, t); guardar(CLAVES.partidas, s); return s; }), []);
-  const corregirPartida = useCallback((t, gane) => setPartidas((prev) => { const s = corregir(prev, t, gane); guardar(CLAVES.partidas, s); return s; }), []);
+  }, []);
+
+  const apuntarPartida = useCallback((entrada) => guardarPartidas(apuntar(ultimas.current, entrada)), [guardarPartidas]);
+  const olvidarPartida = useCallback((t) => guardarPartidas(olvidar(ultimas.current, t)), [guardarPartidas]);
+  const corregirPartida = useCallback((t, gane) => guardarPartidas(corregir(ultimas.current, t, gane)), [guardarPartidas]);
 
   /**
    * Trae los datos de otro dispositivo. Vienen ya FUNDIDOS con los de aquí

@@ -7,7 +7,7 @@
 import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
 import { catalogo, h } from '../fixtures/catalogo.mjs';
 import { buscar, nombreClave } from '../../src/motor/nombres.js';
-import { maestriaEfectiva, maestriaDesdeRegistro, notaDeMaestria, priorDeMaestria } from '../../src/motor/maestria.js';
+import { maestriaEfectiva, maestriaDesdeRegistro, notaDeMaestria, priorDeMaestria, tuNivel } from '../../src/motor/maestria.js';
 import { generador } from '../../src/motor/robustez.js';
 import { ordenarPicks } from '../../src/motor/ranking.js';
 import { ESCALA } from '../../src/motor/modelo.js';
@@ -100,6 +100,72 @@ test('la maestría pesa según la evidencia y no salta al apuntar una partida', 
   const base = { A: { games: 80, winRate: 0.55 }, B: { games: 60, winRate: 0.5 }, C: { games: 40, winRate: 0.48 }, D: { games: 35, winRate: 0.53 } };
   const k29 = priorDeMaestria({ ...base, E: { games: 29, winRate: 0.6 } }); const k30 = priorDeMaestria({ ...base, E: { games: 30, winRate: 0.6 } });
   ok(Math.abs(k30 - k29) / k29 < 0.05, `el prior salta de ${k29.toFixed(0)} a ${k30.toFixed(0)} con una partida`);
+});
+
+test('la maestria se mide contra TU nivel, no contra el 50%', () => {
+  // Javi gana el 53.4% de sus partidas. Un heroe jugado a esa media exacta no
+  // es mejor que uno que no ha tocado nunca: es EXACTAMENTE su nivel. Con la
+  // escala centrada en 0.50 puntuaba 0.64 contra 0.50, o sea que la app
+  // premiaba tener datos apuntados en vez de ser bueno con el heroe.
+  const suya = { A: { games: 3821, winRate: 0.54 }, B: { games: 900, winRate: 0.51 } };
+  const nivel = tuNivel(suya);
+  ok(Math.abs(nivel - 0.534) < 0.002, `su nivel deberia rondar el 53.4%, sale ${nivel}`);
+
+  const conNivel = (wr, games) => notaDeMaestria({ name: 'X' }, { ...suya, X: { games, winRate: wr } }).valor;
+  const sinDatos = notaDeMaestria({ name: 'Z' }, suya).valor;
+  eq(sinDatos, 0.5, 'un heroe sin datos tuyos deberia salir neutro');
+
+  ok(Math.abs(conNivel(nivel, 500) - 0.5) < 0.02,
+    `a tu media exacta deberia empatar con un heroe desconocido, sale ${conNivel(nivel, 500)}`);
+  ok(conNivel(0.50, 500) < 0.45, 'un heroe al 50% deberia salir POR DEBAJO para un jugador del 53.4%');
+  ok(conNivel(0.60, 500) > 0.7, 'un heroe muy por encima de tu nivel deberia destacar');
+
+  // Y con pocas partidas se encoge hacia TU nivel, no hacia el 50%. Cuanto se
+  // encoge NO es un numero suelto: el prior sale de 0.25/σ², con σ medida de la
+  // dispersion real entre tus heroes. Con el valor viejo (20) cinco partidas al
+  // 90% puntuaban 0.87, casi el tope.
+  ok(conNivel(0.90, 2) < 0.58, `dos partidas ganadas no pueden disparar la nota: ${conNivel(0.90, 2)}`);
+  ok(conNivel(0.90, 5) < 0.62, `cinco partidas al 90% no pueden disparar la nota: ${conNivel(0.90, 5)}`);
+  ok(conNivel(0.90, 400) > 0.9, 'con muchisimas partidas al 90% la nota SI tiene que subir');
+
+  // Con pocas partidas tu nivel se encoge hacia el 50%, y SIN acantilado. Antes
+  // habia un corte en 100 partidas: por debajo, 0.50; por encima, tu winrate
+  // entero. Medido, apuntar UNA partida mas (de 99 a 100) reordenaba el numero
+  // 1 en 54 de 200 drafts. Un jugador no cambia de nivel entre la 99 y la 100.
+  ok(Math.abs(tuNivel({ A: { games: 2, winRate: 1 } }) - 0.5) < 0.02,
+    `se cree un nivel sacado de dos partidas: ${tuNivel({ A: { games: 2, winRate: 1 } })}`);
+  eq(tuNivel({}), 0.5, 'se inventa un nivel sin datos');
+  ok(tuNivel({ A: { games: 4000, winRate: 0.60 } }) > 0.58,
+    'con miles de partidas deberia creerse tu nivel casi entero');
+
+  // Y que crezca de forma continua: ningun par de valores consecutivos puede
+  // dar un salto grande. Es lo que distingue un encogimiento de un corte.
+  let anterior = tuNivel({ A: { games: 1, winRate: 0.60 } });
+  let mayorSalto = 0;
+  for (let n = 2; n <= 400; n++) {
+    const ahora = tuNivel({ A: { games: n, winRate: 0.60 } });
+    mayorSalto = Math.max(mayorSalto, Math.abs(ahora - anterior));
+    anterior = ahora;
+  }
+  ok(mayorSalto < 0.002, `tu nivel da un salto de ${mayorSalto.toFixed(4)} entre dos partidas seguidas: sigue habiendo un corte`);
+});
+
+test('el encogimiento de la maestria sale de la dispersion medida', () => {
+  // k = 0.25 / σ², con σ = lo que de verdad varia tu winrate entre heroes.
+  // Un jugador MUY parejo (todos sus heroes casi igual) tiene que encogerse
+  // mas; uno con heroes muy dispares, menos.
+  const parejo = Object.fromEntries(Array.from({ length: 8 }, (_, i) => [
+    `H${i}`, { games: 800, winRate: 0.53 + (i % 2 ? 0.005 : -0.005) }]));
+  const dispar = Object.fromEntries(Array.from({ length: 8 }, (_, i) => [
+    `H${i}`, { games: 800, winRate: 0.53 + (i % 2 ? 0.07 : -0.07) }]));
+  ok(priorDeMaestria(parejo) > priorDeMaestria(dispar),
+    'un jugador parejo deberia encogerse MAS que uno con heroes muy dispares');
+
+  // Y con topes: sin datos suficientes no se puede medir nada, y un caso
+  // extremo no puede dar un prior absurdo.
+  const k = priorDeMaestria({ A: { games: 500, winRate: 0.9 } });
+  ok(k >= 0.25 / 0.08 ** 2 && k <= 0.25 / 0.02 ** 2, `prior fuera de los topes: ${k}`);
+  ok(Number.isFinite(priorDeMaestria({})), 'sin datos deberia dar un prior por defecto');
 });
 
 await terminar('motor/maestria');

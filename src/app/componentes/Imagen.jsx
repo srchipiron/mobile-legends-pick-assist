@@ -35,8 +35,12 @@ export function Imagen({ src, alt, className, tam }) {
   );
 }
 
-/** La cara de un héroe, por id (un id no cambia aunque Moonton reescriba el nombre). */
-export const Cara = ({ heroe, className, tam }) => <Imagen src={`./heroes/${heroe?.id}.jpg`} alt={heroe?.name} className={className} tam={tam} />;
+/**
+ * La cara de un héroe, por id (un id no cambia aunque Moonton reescriba el
+ * nombre). `alt` se pasa como `title`: en los chips, donde el nombre ya está
+ * escrito al lado, se pone a '' para no sacar un tooltip que no dice nada.
+ */
+export const Cara = ({ heroe, className, tam, alt = heroe?.name }) => <Imagen src={`./heroes/${heroe?.id}.jpg`} alt={alt} className={className} tam={tam} />;
 
 /** El icono de un objeto. */
 export const Icono = ({ id, nombre }) => <Imagen src={`./objetos/${id}.png`} alt={nombre} className="obj-icono" tam={28} />;

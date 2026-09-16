@@ -34,7 +34,7 @@ export function ProximosBaneos({ items, baneos = [], tasaDe = () => null, onBane
               onClick={() => (marcado ? onQuitar?.(heroe) : onBanear(heroe))}
               aria-label={marcado ? t('app.quitar', { nombre: n }) : t('app.marcarBaneo', { nombre: n })}
             >
-              <Cara heroe={heroe} className="grid-cara" tam={22} />
+              <Cara heroe={heroe} alt="" className="grid-cara" tam={22} />
               {n}
               {tasa != null && <span className="chip-pct">{Math.round(tasa * 100)}%</span>}
             </button>

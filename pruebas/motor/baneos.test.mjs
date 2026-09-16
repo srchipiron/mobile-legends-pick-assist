@@ -11,6 +11,7 @@ import { sugerirBaneos, proximosBaneos, coocurrenciaDeBaneos } from '../../src/m
 import { apuntar } from '../../src/motor/registro.js';
 import { sanear } from '../../src/motor/perfil.js';
 import { CRUCE_DESTACABLE } from '../../src/motor/matrices.js';
+import { hayQueProtegerlo } from '../../src/motor/catalogo.js';
 
 test('los baneos señalan la amenaza real contra tu equipo', () => {
   const stats = Object.fromEntries(heroes.map((x) => [x.name, { winRate: 0.50, banRate: 0.04, pickRate: 0.02, matches: 5000 }]));
@@ -96,6 +97,49 @@ test('revision linea a linea del motor: la tabla de peligro descuenta al heroe d
   // Mismo winrate y tasa de ban: la única diferencia de valor es el peligro por etiquetas.
   const peligro = (x) => sugerirBaneos([x], { aliados: [fragil], meta: { stats, counters: {}, mediaDelRango: 0.5 } })[0]?.valor ?? 0;
   ok(peligro(dive) > peligro({ ...dive, inferred: true }), 'la tabla de peligro no descuenta al héroe deducido');
+});
+
+test('un heroe ya elegido no se propone como ban aunque se escriba distinto', () => {
+  // Mismo fallo que ya se arreglo en el ranking: comparar nombres crudos. La
+  // API y el catalogo escriben "X.Borg" y "X Borg", asi que un pick guardado
+  // con otra grafia seguia saliendo como ban recomendado.
+  const lista = [
+    { name: 'X.Borg', tags: [], role: 'fighter' },
+    { name: 'Tigreal', tags: [], role: 'tank' },
+  ];
+  const stats = indexarPorNombre({ 'X.Borg': { winRate: 0.56, pickRate: 0.05, banRate: 0.4 },
+    Tigreal: { winRate: 0.51, pickRate: 0.04, banRate: 0.1 } });
+  const meta = { stats, mediaDelRango: 0.5 };
+
+  const sinNada = sugerirBaneos(lista, { meta }).map((b) => b.heroe.name);
+  ok(sinNada.includes('X.Borg'), 'la comprobacion no vale: X.Borg no salia como ban de todas formas');
+
+  const conPick = sugerirBaneos(lista, { meta, enemigos: [{ name: 'X Borg', tags: [] }] }).map((b) => b.heroe.name);
+  ok(!conPick.includes('X.Borg'), 'propone banear a un heroe que ya esta elegido, escrito con otra grafia');
+});
+
+test('no propone banear a quien salta encima de tu TANQUE', () => {
+  // Un tanque tambien lleva el tag `immobile`. Sin filtrar, la app decia
+  // "banealo porque salta encima de tu Tigreal", que es al reves de como se
+  // juega. Ya se corrigio en el peel de la sinergia y aqui habia sobrevivido.
+  ok(!hayQueProtegerlo({ tags: ['immobile', 'tanky', 'burst'] }), 'trata a un tanque como si hubiera que protegerlo');
+  ok(hayQueProtegerlo({ tags: ['immobile', 'hypercarry'] }), 'no protege a un tirador inmovil');
+
+  const asesino = { name: 'Asesino', tags: ['dive', 'burst'], role: 'assassin' };
+  const otro = { name: 'Otro', tags: [], role: 'mage' };
+  const stats = indexarPorNombre({ Asesino: { winRate: 0.52, pickRate: 0.03, banRate: 0.1 },
+    Otro: { winRate: 0.52, pickRate: 0.03, banRate: 0.1 } });
+  const meta = { stats, mediaDelRango: 0.5 };
+
+  const conTanque = sugerirBaneos([asesino, otro], { meta, aliados: [{ name: 'Tigreal', tags: ['immobile', 'tanky'] }] });
+  const razonesTanque = conTanque.find((b) => b.heroe.name === 'Asesino')?.motivos ?? [];
+  ok(!razonesTanque.some((r) => r.clave === 'peligro.saltaEncima'), 'avisa de que le van a saltar encima al tanque, que es lo que el tanque quiere');
+
+  // Y con un tirador de verdad SI tiene que avisar: si no, la comprobacion
+  // pasaria por haber apagado la regla entera.
+  const conCarry = sugerirBaneos([asesino, otro], { meta, aliados: [{ name: 'Layla', tags: ['immobile', 'hypercarry'] }] });
+  const razonesCarry = conCarry.find((b) => b.heroe.name === 'Asesino')?.motivos ?? [];
+  ok(razonesCarry.some((r) => r.clave === 'peligro.saltaEncima'), 'ya no avisa de que le van a saltar encima al tirador');
 });
 
 await terminar('motor/baneos');

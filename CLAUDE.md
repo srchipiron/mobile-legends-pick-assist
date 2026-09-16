@@ -685,6 +685,22 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   prueba la que estaba desfasada, no la app. Antes de arreglar nada por lo que
   diga una prueba vieja, córrela contra la versión anterior.
 
+- **Una prueba de navegador que comprobaba su propio sembrado** (3.0) — el
+  ayudante de las pruebas de interfaz metía el estado de partida con
+  `addInitScript`, que corre en CADA navegación: al recargar para comprobar
+  que algo PERSISTE, el sembrado volvía a escribirse encima y tapaba lo que
+  la app había guardado. La prueba nueva del perfil lo destapó fallando; las
+  que solo leen no se enteraban. Hoy se siembra una vez por contexto, con
+  pestillo. Mismo error de familia que las pruebas que medían el orden del
+  fichero en vez del motor: comprobar el andamio en lugar de la app.
+- **Guardar en el almacén DENTRO de un updater de `setState`** (3.0) — React
+  puede llamar a un updater más de una vez (evaluación ansiosa, modo
+  estricto, reproceso de la cola), así que ahí dentro no va ningún efecto.
+  Hoy `usePersonal` calcula fuera, con una referencia al último valor para no
+  leer un cierre viejo, y guarda una sola vez. Funcionaba por suerte:
+  `apuntar` genera el instante con `Date.now()` y dos llamadas habrían dado
+  dos partidas distintas.
+
 ## El modelo (2.0)
 
 `src/motor/modelo.js` y `src/motor/ranking.js`. La nota de un pick ES la

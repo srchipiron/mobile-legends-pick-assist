@@ -5,7 +5,7 @@
  */
 import { test, ok, eq, leerJson, terminar, porNombre } from '../arnes.mjs';
 import { catalogo, heroes, poolRoam, h, crearRnd } from '../fixtures/catalogo.mjs';
-import { idMotivo, indexarPorNombre } from '../../src/motor/nombres.js';
+import { idMotivo, indexarPorNombre, nombreClave } from '../../src/motor/nombres.js';
 import { esPickCiego, ordenarPicks, motivosDe, riesgoContrapick, empatados, MARGEN_EMPATE } from '../../src/motor/ranking.js';
 import { evaluarDraft, terminoCruce, terminoPareja } from '../../src/motor/modelo.js';
 import { cruce, densidadCounters } from '../../src/motor/matrices.js';
@@ -370,6 +370,42 @@ test('los motivos que le salen a todo el pool no se muestran', () => {
   }
   const ubicuos = [...cuenta.entries()].filter(([, n]) => n > res.length * 0.6);
   ok(!ubicuos.length, `motivos que le salen a casi todos: ${ubicuos.map(([t]) => t).join(', ')}`);
+});
+
+test('eligiendo pronto, el nº1 espera bien lo que se juega en las lineas abiertas', () => {
+  // Lo que hace distinto elegir primero: los enemigos que faltan van a salir
+  // por las lineas abiertas, y de cada una se sabe que se juega. El nº1 con
+  // esas lineas abiertas tiene que cruzar mejor contra lo que se espera de
+  // ellas que el nº1 elegido sin mirarlas.
+  const stats = indexarPorNombre(Object.fromEntries(
+    heroes.map((x) => [x.name, { winRate: 0.497 + (porNombre(x.name) - 0.5) * 0.05, matches: 5000 }])));
+  // Cada heroe con SU amplitud: unos tienen cruces planos (dificiles de
+  // castigar) y otros muy abiertos (castigables). Con la misma amplitud para
+  // todos, el riesgo sale saturado e igual para el pool entero y no hay nada
+  // que medir: la primera version de esta prueba fallaba por eso, no por el
+  // motor.
+  const amplitud = (n) => 0.03 + porNombre(`ancho:${n}`) * 0.17;
+  const counters = indexarPorNombre(Object.fromEntries(heroes.map((a) => [a.name,
+    Object.fromEntries(heroes.filter((b) => b.name !== a.name)
+      .map((b) => [b.name, 0.5 + (porNombre(a.name + b.name) - 0.5) * amplitud(a.name)]))])), 2);
+  const meta = { stats, counters, mediaDelRango: 0.497 };
+
+  // Se compara el MISMO draft con y sin las lineas abiertas: con enemigos
+  // distintos cambiaria el nº1 de todas formas.
+  const otros = heroes.filter((x) => !x.roam);
+  const conPick = indexarPorNombre(Object.fromEntries(heroes.map((x) => [x.name, { ...stats[nombreClave(x.name)], pickRate: 0.005 + porNombre(`pr:${x.name}`) * 0.05 }])));
+  const abiertas = { lineasAbiertas: ['mid', 'gold'], poolsPorLinea: { mid: otros.slice(0, 40), gold: otros.slice(40, 80) } };
+  const esperado = (heroe) => evaluarDraft({ yo: heroe, enemigos: [h('Fanny')], meta: { ...meta, stats: conPick }, ...abiertas }).terminos.porVer;
+  const sinMirar = ordenarPicks(poolRoam, { enemigos: [h('Fanny')], meta: { ...meta, stats: conPick } })[0].heroe;
+  const mirando = ordenarPicks(poolRoam, { enemigos: [h('Fanny')], meta: { ...meta, stats: conPick }, ...abiertas })[0].heroe;
+  ok(esperado(mirando) >= esperado(sinMirar), `mirando las lineas abiertas el nº1 espera peor cruce: ${esperado(mirando).toFixed(3)} vs ${esperado(sinMirar).toFixed(3)}`);
+  const todos = ordenarPicks(poolRoam, { enemigos: [h('Fanny')], meta: { ...meta, stats: conPick }, ...abiertas });
+  ok(todos.some((x) => x.terminos.porVer !== 0), 'la esperanza contra las lineas abiertas es cero para todo el pool: no se esta calculando');
+
+  // Y con el draft completo no queda nada por ver.
+  const completo = ['Fanny', 'Ling', 'Lancelot', 'Gusion', 'Hayabusa'].map(h);
+  const cerrado = ordenarPicks(poolRoam, { enemigos: completo, meta: { ...meta, stats: conPick }, lineasAbiertas: [], poolsPorLinea: abiertas.poolsPorLinea });
+  ok(cerrado.every((x) => x.terminos.porVer === 0), 'con los cinco enemigos elegidos sigue esperando algo');
 });
 
 await terminar('motor/ranking');

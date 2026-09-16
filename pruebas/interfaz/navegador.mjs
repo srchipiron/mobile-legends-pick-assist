@@ -65,7 +65,16 @@ export async function paginaCon(navegador, url, { viewport = { width: 390, heigh
   const pagina = await contexto.newPage();
   const errores = [];
   pagina.on('pageerror', (e) => errores.push(e.message));
+  // Se siembra UNA vez por contexto, no en cada navegación: `addInitScript`
+  // corre también al recargar, así que sin el pestillo una recarga devolvía
+  // los valores sembrados y tapaba lo que la app hubiera guardado. Una prueba
+  // que recargue para comprobar que algo persiste estaría comprobando el
+  // sembrado.
   await pagina.addInitScript((datos) => {
+    try {
+      if (sessionStorage.getItem('__sembrado')) return;
+      sessionStorage.setItem('__sembrado', '1');
+    } catch { /* sin sessionStorage: se siembra igual */ }
     for (const [clave, valor] of Object.entries(datos)) localStorage.setItem(clave, JSON.stringify(valor));
   }, almacen);
   await pagina.goto(url, { waitUntil: 'networkidle' });
@@ -90,6 +99,14 @@ export async function prueba(nombre, fn) {
 
 /** Ancho desplazable de la página: sin desborde horizontal tiene que ser el del viewport. */
 export const anchoDePagina = (pagina) => pagina.evaluate(() => document.scrollingElement.scrollWidth);
+
+/** Abre el desplegable de Ajustes si está cerrado (tocarlo estando abierto lo cierra). */
+export async function abrirAjustes(pagina) {
+  if (!(await pagina.locator('.more').evaluate((e) => e.open))) {
+    await pagina.locator('.more summary').click();
+    await pagina.waitForTimeout(200);
+  }
+}
 
 /** Elige un héroe en el selector abierto escribiendo su nombre y tocando el primero. */
 export async function elegirEnSelector(pagina, nombre) {

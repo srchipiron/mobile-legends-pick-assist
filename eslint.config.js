@@ -16,7 +16,7 @@ const node = {
   process: 'readonly', console: 'readonly', Buffer: 'readonly', URL: 'readonly', fetch: 'readonly', setTimeout: 'readonly',
   clearTimeout: 'readonly', AbortSignal: 'readonly', AbortController: 'readonly', TextDecoder: 'readonly', TextEncoder: 'readonly',
   structuredClone: 'readonly', Intl: 'readonly', URLSearchParams: 'readonly', setInterval: 'readonly', clearInterval: 'readonly', crypto: 'readonly', Response: 'readonly', Blob: 'readonly',
-  CompressionStream: 'readonly', DecompressionStream: 'readonly', localStorage: 'readonly', window: 'readonly',
+  CompressionStream: 'readonly', DecompressionStream: 'readonly', localStorage: 'readonly', sessionStorage: 'readonly', window: 'readonly',
   document: 'readonly', navigator: 'readonly', history: 'readonly', location: 'readonly', __dirname: 'readonly',
 };
 
