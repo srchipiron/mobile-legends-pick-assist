@@ -133,10 +133,11 @@ jobs:
           if (!(d.heroCount ?? 0)) { console.error('Sin estadisticas'); process.exit(1); }
           if (cruces < 1000) { console.error('Sin matriz de counters'); process.exit(1); }"
 
-      # UNA definicion de «las pruebas»: la de package.json. Antes el
-      # despliegue llamaba a las cuatro a mano y npm test (PR y vigilancia)
-      # podia perder una sin que nadie lo notara. Hay prueba de que npm test
-      # sigue siendo las cuatro.
+      # UNA definicion de «las pruebas»: la de package.json (guardarrailes
+      # de scripts/comprobar, ESLint y pruebas/). Antes el despliegue las
+      # llamaba a mano y npm test (PR y vigilancia) podia perder una sin que
+      # nadie lo notara. Las de navegador NO entran aqui: publicar no puede
+      # depender de tener un Chrome, y las corre pruebas-ui.yml.
       - name: Pruebas (npm test)
         run: npm test
 

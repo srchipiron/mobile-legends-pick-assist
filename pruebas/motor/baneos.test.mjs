@@ -86,4 +86,16 @@ test('el siguiente baneo probable es el más baneado del rango que aún no está
   eq(JSON.stringify(saneadas.map((p) => p.bans ?? null)), '[["Fanny"],null]', `sanear no limpia los baneos: ${JSON.stringify(saneadas)}`);
 });
 
+test('revision linea a linea del motor: la tabla de peligro descuenta al heroe deducido', () => {
+  // 3. PRECISION_DEDUCIDA en la tabla de peligro de los baneos: un héroe con
+  //    tags DEDUCIDOS dispara más reglas que nadie (el sesgo que ya costó una
+  //    versión con Marcel) y tiene que valer menos.
+  const fragil = { name: 'F', tags: ['immobile', 'hypercarry', 'dive'], role: 'marksman' };
+  const stats = indexarPorNombre({ P: { winRate: 0.5, pickRate: 0.01, banRate: 0.1 }, F: { winRate: 0.5, pickRate: 0.01, banRate: 0.1 }, D: { winRate: 0.5, pickRate: 0.01, banRate: 0.1 } });
+  const dive = { name: 'D', tags: ['dive', 'burst', 'dash'] };
+  // Mismo winrate y tasa de ban: la única diferencia de valor es el peligro por etiquetas.
+  const peligro = (x) => sugerirBaneos([x], { aliados: [fragil], meta: { stats, counters: {}, mediaDelRango: 0.5 } })[0]?.valor ?? 0;
+  ok(peligro(dive) > peligro({ ...dive, inferred: true }), 'la tabla de peligro no descuenta al héroe deducido');
+});
+
 await terminar('motor/baneos');

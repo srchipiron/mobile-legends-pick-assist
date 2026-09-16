@@ -8,6 +8,7 @@
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { apuntar, calibracion, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
 import { maestriaDesdeRegistro } from '../../src/motor/maestria.js';
+import { generador } from '../../src/motor/robustez.js';
 
 test('la calibracion compara lo previsto con lo que paso, y se guarda al apuntar', () => {
   // Al apuntar se guarda la estimacion redondeada; una invalida no se guarda.
@@ -75,6 +76,41 @@ test('el registro de partidas cuenta lo que hace falta para decidir', () => {
     { pick: 'Khufra', gane: true }, { pick: 'Khufra', gane: false }, { pick: 'Atlas', gane: true },
   ]);
   ok(m.Khufra.games === 2 && Math.abs(m.Khufra.winRate - 0.5) < 0.01, `maestría mal: ${JSON.stringify(m)}`);
+});
+
+test('revision linea a linea del registro: la referencia del Veredicto no lleva dentro las partidas comparadas', () => {
+  // 1. Sin maestría a mano, 40 partidas con la app daban dif 0,000 y «faltan
+  //    Infinity»: la base era esas mismas 40 partidas.
+  let conApp = [];
+  for (let i = 0; i < 40; i++) conApp = apuntar(conApp, { pick: 'B', gane: i % 4 !== 0, recomendados: ['B'], t: 1000 + i });
+  ok(resumen(conApp, {}).contraReferencia == null, 'sin maestría a mano se inventa una referencia con las partidas comparadas');
+  const conManual = resumen(conApp, { A: { games: 500, winRate: 0.6 } });
+  eq(conManual.contraReferencia?.partidasBase, 500, `la referencia lleva dentro las partidas comparadas: ${JSON.stringify(conManual.contraReferencia)}`);
+  ok(Math.abs(conManual.contraReferencia.dif - 0.15) < 1e-9, `dif ${conManual.contraReferencia.dif} (esperado 0.15)`);
+  // Las previas SÍ entran en la referencia.
+  const conPrevias = resumen([...conApp, ...Array.from({ length: 100 }, (_, i) => ({ t: 5000 + i, pick: 'C', gane: i % 2 === 0, previa: true, recomendados: [] }))], {});
+  eq(conPrevias.contraReferencia?.partidasBase, 100, 'las partidas previas no hacen de referencia');
+
+  // 2. Diferencia exactamente nula: faltan null, nunca Infinity.
+  let empate = [];
+  for (let i = 0; i < 20; i++) empate = apuntar(empate, { pick: 'B', gane: i % 2 === 0, recomendados: ['B'], t: 2000 + i });
+  const r0 = resumen(empate, { A: { games: 500, winRate: 0.5 } }).contraReferencia;
+  ok(r0 && r0.faltan === null, `con diferencia nula faltan debería ser null: ${r0?.faltan}`);
+});
+
+test('revision linea a linea del registro: el aviso «peor que una moneda» lleva margen', () => {
+  // 5. Con un modelo calibrado (p uniforme en 35-65%, resultado Bernoulli(p))
+  //    y 20 partidas no puede saltar más del 10% de las veces; antes, sin
+  //    margen, saltaba en un tercio.
+  const rnd = generador(99);
+  let avisos = 0; const REPS = 1500;
+  for (let k = 0; k < REPS; k++) {
+    const ps = Array.from({ length: 20 }, (_, i) => { const p = 0.35 + rnd() * 0.30; return { t: i, pick: 'A', gane: rnd() < p, estimacion: p }; });
+    if (calibracion(ps).peorQueMoneda) avisos++;
+  }
+  ok(avisos / REPS <= 0.10, `el aviso de Brier salta con el modelo perfecto el ${(avisos / REPS * 100).toFixed(1)}% de las veces`);
+  const basura = Array.from({ length: 20 }, (_, i) => ({ t: i, pick: 'A', gane: i % 2 === 0, estimacion: i % 2 === 0 ? 0.1 : 0.9 }));
+  ok(calibracion(basura).peorQueMoneda === true, 'un modelo al revés no dispara el aviso');
 });
 
 await terminar('motor/registro');

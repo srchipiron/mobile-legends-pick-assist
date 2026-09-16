@@ -7,7 +7,7 @@
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { fundirPerfil, sanear } from '../../src/motor/perfil.js';
 import { apuntar, olvidar, corregir, resumen } from '../../src/motor/registro.js';
-import { maestriaDesdeRegistro } from '../../src/motor/maestria.js';
+import { maestriaDesdeRegistro, tuNivel } from '../../src/motor/maestria.js';
 
 test('perfiles y registro: fundir por instante, sanear lo que llega y maestria por nombre normalizado', () => {
   // 1. Una partida corregida aqui y reimportada de un codigo viejo es UNA, y
@@ -48,6 +48,29 @@ test('sanear deja intactos los datos validos: lo guardado en el movil no se pier
   // Y con basura no revienta: devuelve vacio, no undefined.
   const roto = sanear({ mastery: null, partidas: 'no' });
   ok(Array.isArray(roto.partidas) && typeof roto.mastery === 'object', 'sanear no devuelve estructuras vacias con basura');
+});
+
+test('revision linea a linea del perfil: sanear coacciona o descarta cada campo roto', () => {
+  // 4. `"500" > 0` es true: la maestría guardaba el TEXTO, `tuNivel` daba
+  //    0,0000037 y la referencia «050050» partidas. Y llegaban partidas con
+  //    `t: NaN`, `estimacion: 7` o `gane: 'no'`.
+  const sucio = sanear({
+    mastery: { Diggie: { games: '500', winRate: 0.6 }, Franco: { games: Infinity, winRate: 0.5 }, Tigreal: { games: 50, winRate: 0.5 } },
+    partidas: [
+      { t: NaN, pick: 'A', gane: true }, { t: NaN, pick: 'B', gane: true },
+      { t: 1, pick: 'C', gane: 'no', estimacion: 7, previa: 'x', recomendados: ['C', 3] },
+      { t: 2, pick: '  ', gane: true }, { t: 3, pick: 'D', gane: true, estimacion: 0.6, previa: true },
+    ],
+  });
+  eq(sucio.mastery.Diggie?.games, 500, 'games como texto no se convierte');
+  ok(!('Franco' in sucio.mastery), 'games Infinity pasa');
+  ok(Number.isFinite(tuNivel(sucio.mastery)) && tuNivel(sucio.mastery) > 0 && tuNivel(sucio.mastery) < 1, `tuNivel con maestría saneada: ${tuNivel(sucio.mastery)}`);
+  eq(sucio.partidas.length, 2, `partidas con t NaN o pick vacío sobreviven: ${JSON.stringify(sucio.partidas)}`);
+  const c = sucio.partidas.find((p) => p.pick === 'C');
+  ok(c && c.gane === false && !('estimacion' in c) && !('previa' in c) && c.recomendados.join() === 'C', `campos de C no saneados: ${JSON.stringify(c)}`);
+  const d = sucio.partidas.find((p) => p.pick === 'D');
+  ok(d && d.previa === true && d.estimacion === 0.6, `campos válidos de D perdidos: ${JSON.stringify(d)}`);
+  eq(fundirPerfil({ partidas: [] }, { partidas: [{ t: NaN, pick: 'A', gane: true }, { t: NaN, pick: 'B', gane: true }] }).partidas.length, 0, 'dos partidas con t NaN se funden en una en vez de descartarse');
 });
 
 await terminar('motor/perfil');

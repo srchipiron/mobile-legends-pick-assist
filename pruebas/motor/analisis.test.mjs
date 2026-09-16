@@ -3,7 +3,7 @@
  * el pick aguanta lo que falta por salir, que se calle con el draft completo
  * y que no cruce la simulación de OTRO draft con el ranking de este.
  */
-import { test, ok, terminar } from '../arnes.mjs';
+import { test, ok, eq, terminar } from '../arnes.mjs';
 import { nombreClave, indexarPorNombre } from '../../src/motor/nombres.js';
 import { analizarDraft } from '../../src/motor/analisis.js';
 
@@ -75,6 +75,19 @@ test('el análisis dice lo que no se ve, y se calla cuando no sabe', () => {
 
   // 4. Nunca more de tres frases: en un draft se leen dos.
   ok(conPar.length <= 3, 'suelta demasiadas frases');
+});
+
+test('revision linea a linea del motor: el hueco sin tapar se dice una vez, no en dos frases', () => {
+  // 2. Con composición, el hueco sin tapar se dice UNA vez. El bloque de la
+  //    composición y el hueco caro «sin composición» hablaban de los mismos
+  //    huecos y salían juntos en el 15% de los drafts.
+  const tanque = { name: 'T', role: 'tank', tags: ['tanky', 'cc_hard'], damage: { fisico: 2, magico: 0 } };
+  const sinInicio = (n) => ({ name: n, role: 'mage', tags: ['burst'], damage: { fisico: 0, magico: 3 } });
+  const aliados = [sinInicio('A'), sinInicio('B'), sinInicio('C')];
+  const composicion = { mio: { huecos: ['engage'], dobles: [] }, tapa: [], suyo: {}, sinMi: {} };
+  const frases = analizarDraft({ ranking: [{ heroe: tanque, p: 0.7 }], enemigos: [{ name: 'E', tags: [] }], aliados, meta: { counters: {} }, composicion });
+  const sobreEngage = frases.filter((f) => JSON.stringify(f.params?.lista ?? []).includes('comp.engage'));
+  eq(sobreEngage.length, 1, `el hueco de inicio se dice ${sobreEngage.length} veces: ${JSON.stringify(frases)}`);
 });
 
 await terminar('motor/analisis');

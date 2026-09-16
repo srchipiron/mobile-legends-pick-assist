@@ -5,7 +5,7 @@
  */
 import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
 import { catalogo, h, crearRnd } from '../fixtures/catalogo.mjs';
-import { detectarRivalDeLinea, indiceDeLineas, frecuenciaDeRoles, asignarLineas } from '../../src/motor/lineas.js';
+import { detectarRivalDeLinea, indiceDeLineas, frecuenciaDeRoles, asignarLineas, lanesDe } from '../../src/motor/lineas.js';
 import { LINEAS } from '../../src/motor/catalogo.js';
 import { prepararDatos, rivalDeLinea } from '../../src/motor/draft.js';
 
@@ -140,6 +140,13 @@ test('el rival se deduce por eliminacion, y acierta lo que se midio', () => {
   ok(cuenta[5].mal <= 0.01, `draft completo: nombra al rival equivocado el ${(cuenta[5].mal * 100).toFixed(1)}%`);
   ok(cuenta[3].bien >= 0.80, `draft a medias: acierta solo el ${(cuenta[3].bien * 100).toFixed(1)}%`);
   ok(cuenta[3].mal <= 0.012, `draft a medias: nombra a un rival equivocado el ${(cuenta[3].mal * 100).toFixed(1)}%`);
+});
+
+test('revision linea a linea del motor: las dos lecturas de lineas son la misma', () => {
+  // 5. Las dos lecturas de líneas son la misma: mayúsculas y `lane` en cadena.
+  eq(frecuenciaDeRoles([{ role: 'mage', lane: 'Mid,Exp' }]).mid?.mage, 1, 'frecuenciaDeRoles no lee `lane` en cadena ni mayúsculas');
+  eq(indiceDeLineas([{ name: 'Z', role: 'Mage', lanes: ['Mid'] }]).get('z')?.lanes.join(), 'mid', 'indiceDeLineas no pasa a minúsculas');
+  eq(lanesDe({ lanes: [' Gold '] }).join(), 'gold', 'lanesDe no recorta');
 });
 
 await terminar('motor/lineas');

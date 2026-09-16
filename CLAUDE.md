@@ -6,7 +6,7 @@ roam, y desde 1.0.0 sirve para las cinco líneas. Javi está en **Gloria Mítica
 así que el rango por defecto de los datos es `glory`, no `mythic`.
 
 El pool de cada línea NO está escrito a mano: sale de `lanes`, que la API da
-para los 133 héroes. Si añades una línea nueva, va en `LINEAS` (score.js) y el
+para los 133 héroes. Si añades una línea nueva, va en `LINEAS` (motor/catalogo.js) y el
 resto sale solo.
 
 Las claves de `localStorage` siguen diciendo `roam-picker:` aunque la app ya no
@@ -576,7 +576,7 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   360×640, 390×844 y 430×932 antes de subirlo.
 - **Una hoja que el botón atrás no cerraba** — instalada como app, atrás con
   una hoja abierta salía de la app en mitad del draft: no había entrada de
-  historial que retirar. `useCerrarConAtras` (ui.jsx) mete una al abrir y
+  historial que retirar. `useCerrarConAtras` (app/componentes/Hoja.jsx) mete una al abrir y
   la retira al cerrar por botón. Toda hoja nueva la usa.
 - **`Imagen` que no se reintentaba** — `roto` se quedaba a true para siempre
   aunque cambiara `src` (el meta llega después del catálogo y el héroe gana
@@ -595,7 +595,7 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   catálogo al cargar, no se confía.
 - **Los chips sugeridos de la hoja, con el orden de fuera pero sin su
   estabilidad** — la tira de fuera se hizo estable en 1.38.0 y la de DENTRO
-  del selector de baneos se quedó desplazándose. `useOrdenEstable` (ui.jsx)
+  del selector de baneos se quedó desplazándose. `useOrdenEstable` (app/componentes/useOrdenEstable.js)
   es el mismo hook para las dos; si aparece otra tira que se toca a
   contrarreloj, usa ese hook. Arreglar un comportamiento en un sitio pide
   buscar sus gemelos.

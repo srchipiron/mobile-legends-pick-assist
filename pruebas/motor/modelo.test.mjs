@@ -6,7 +6,8 @@
 import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
 import { catalogo, h, crearRnd } from '../fixtures/catalogo.mjs';
 import { indexarPorNombre } from '../../src/motor/nombres.js';
-import { terminoHeroe, terminoCruce, evaluarDraft, logit, ESCALA } from '../../src/motor/modelo.js';
+import { terminoHeroe, terminoCruce, terminoPareja, evaluarDraft, logit, ESCALA, SUB_MAX } from '../../src/motor/modelo.js';
+import { COUNTER_RULES } from '../../src/motor/reglas.js';
 import { mediaDeSinergia } from '../../src/motor/matrices.js';
 import { LINEAS } from '../../src/motor/catalogo.js';
 import { prepararDatos, estimarCon, ordenar } from '../../src/motor/draft.js';
@@ -134,6 +135,50 @@ test('el modelo: la nota es la probabilidad de ganar, sube con el cruce, y la es
   //    muestra que el modelo de coeficientes 1) se comprueba con
   //    scripts/ajustar-modelo.mjs, que no es el motor: queda para la suite
   //    de scripts.
+});
+
+test('revision linea a linea del motor: el termino de heroe no recorta y el techo sale de las reglas', () => {
+  // 1. metaScore sin recorte: dos héroes con winrate distinto nunca empatan.
+  //    Con clamp01 a ±6 puntos, 9 de 133 héroes de glory empataban en 0 o en 1
+  //    y eso cambiaba el nº1 en 42 de 300 drafts de roam.
+  const meta = leerJson('public/data/roam-meta.json');
+  const glory = meta.statsByRank?.glory ?? meta.stats;
+  if (glory && Object.keys(glory).length > 50) {
+    const media = meta.avgByRank?.glory ?? meta.patchAvgWinRate;
+    const filas = Object.values(glory).filter((x) => typeof x.winRate === 'number')
+      .map((x) => [x.winRate, terminoHeroe({ name: 'X' }, { x }, media).valor]).sort((a, b) => a[0] - b[0]);
+    let empates = 0;
+    for (let i = 1; i < filas.length; i++) if (filas[i][0] !== filas[i - 1][0] && filas[i][1] === filas[i - 1][1]) empates++;
+    eq(empates, 0, `el término de héroe empata a ${empates} pares de héroes con winrate distinto (recorte)`);
+  }
+
+  // 6. El techo de las reglas sale de las reglas.
+  const pesos = COUNTER_RULES.map((r) => r.weight).sort((a, b) => b - a);
+  eq(SUB_MAX, pesos[0] + pesos[1] / 2, `SUB_MAX (${SUB_MAX}) no es la mayor regla más media de la segunda`);
+});
+
+test('revision linea a linea del motor: la pareja por tags descuenta al heroe deducido', () => {
+  // 3. PRECISION_DEDUCIDA en las ramas que leen tags sin dato. Aquí, la
+  //    pareja por etiquetas; la tabla de peligro de los baneos va en
+  //    baneos.test.mjs (mismo descuento, otro módulo).
+  const peel = { name: 'P', tags: ['peel', 'engage', 'sustain'] };
+  const fragil = { name: 'F', tags: ['immobile', 'hypercarry', 'dive'], role: 'marksman' };
+  const conTags = terminoPareja(peel, fragil, undefined, 0.5).valor;
+  const deducido = terminoPareja({ ...peel, inferred: true }, fragil, undefined, 0.5).valor;
+  ok(conTags > 0 && deducido < conTags, `la sinergia por tags no descuenta al héroe deducido: ${conTags} vs ${deducido}`);
+});
+
+test('el termino de cruces es la suma de logits y ningun cruce pesa doble', () => {
+  // El rival de línea pesaba el DOBLE en 1.x, y una mutación de ese ×2 a 1,5
+  // pasaba la suite entera. Desde 2.0 el cruce de línea NO pesa más (medido:
+  // R −0.56 ± 0.62 frente a O 0.78 ± 0.32 sobre 902 partidas pro): el término
+  // de cruces es la suma de logits sin más, y ninguna marca de «rival» lo
+  // cambia.
+  const yo = { name: 'Yo', tags: [] }; const e1 = { name: 'E1', tags: [] }; const e2 = { name: 'E2', tags: [] };
+  const M = indexarPorNombre({ Yo: { E1: 0.56, E2: 0.50 } }, 2);
+  const cruces = (extra) => evaluarDraft({ yo, enemigos: [e1, e2], meta: { counters: M }, ...extra }).terminos.cruces;
+  ok(Math.abs(cruces({}) - logit(0.56)) < 1e-9, `el término de cruces no es la suma de logits: ${cruces({})}`);
+  eq(cruces({ enemyRoam: 'E1' }), cruces({}), 'el rival marcado sigue pesando distinto');
 });
 
 await terminar('motor/modelo');

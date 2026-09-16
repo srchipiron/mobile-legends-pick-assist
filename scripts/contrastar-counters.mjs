@@ -90,7 +90,7 @@ const media = puestos.reduce((a, b) => a + b, 0) / puestos.length;
 const mediana = puestos[Math.floor(puestos.length / 2)];
 const enTop = (n) => puestos.filter((p) => p <= n).length / puestos.length;
 
-console.log(`\n${puestos.length} counters curados contrastados${fallos ? ` (${fallos} héroes fallaron)` : ''}`);
+console.log(`\n${puestos.length} counters curados contrastados${fallos ? ` · ${fallos} héroes fallaron` : ''}${sinDato ? ` · ${sinDato} sin lista curada con la que comparar` : ''}`);
 console.log(`  puesto medio en NUESTRO orden: ${media.toFixed(1)} de ~132 · mediana ${mediana}`);
 console.log(`  en nuestro top 10:  ${(enTop(10) * 100).toFixed(0)}%`);
 console.log(`  en nuestro top 20:  ${(enTop(20) * 100).toFixed(0)}%`);

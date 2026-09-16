@@ -6,7 +6,7 @@
  * porqué del nº1 y una medición pro que falta.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { catalogo, poolRoam } from '../fixtures/catalogo.mjs';
+import { catalogo, heroes, poolRoam } from '../fixtures/catalogo.mjs';
 import { prepararDatos } from '../../src/motor/draft.js';
 import { diagnosticar } from '../../src/motor/diagnostico/index.js';
 import { ESCALA } from '../../src/motor/modelo.js';
@@ -90,6 +90,25 @@ test('el diagnostico detecta datos imposibles y caidas frente a su propio histor
   eq(avisoEscala({ ...lejos, escala: ESCALA, terminos: { ...lejos.terminos, modelo: { ...lejos.terminos.modelo, pendiente: 0.95 } } }), 0, 'avisa con la pendiente en 1');
   // Y una medición a medias (sin un término) no tumba el diagnóstico entero.
   ok(informe(meta, { pro: { ...proBase, partidas: 400, medicion: { ...lejos, escala: ESCALA, terminos: { modelo: lejos.terminos.modelo } } } }).includes('Estimación contra'), 'una medición sin todos los términos revienta el diagnóstico');
+});
+
+test('revision linea a linea del diagnostico: nombres de maestria que no casan y medicion pro a medias', () => {
+  const entorno = { version: 'test', rango: 'mythic', width: 412, height: 915, storage: true };
+  const statsT = Object.fromEntries(heroes.map((x) => [x.name, { winRate: 0.5, pickRate: 0.01 }]));
+  const meta = { generatedAt: new Date().toISOString(), ranks: ['mythic'], days: 7, heroCount: 133, stats: statsT, statsByRank: { mythic: statsT }, diagnostics: {} };
+  const datos = prepararDatos({ catalogo: { heroes: catalogo.heroes }, meta, rango: 'mythic' });
+  const base = { datos, linea: 'roam', partidas: [], entorno };
+
+  // 6. El diagnóstico dice QUÉ nombres de maestría no casan con el catálogo:
+  //    antes solo miraba la primera clave y, si no casaba, callaba.
+  const conZzzz = diagnosticar({ ...base, maestria: { Zzzz: { games: 500, winRate: 0.6 }, Khufra: { games: 10, winRate: 0.5 } } });
+  ok(/no casan.*Zzzz/.test(conZzzz.texto), 'no dice que Zzzz no casa con el catálogo');
+
+  // 7. Con ≥30 partidas pro pero <30 USABLES no es un fallo del bot:
+  //    medir-pro escribe siempre el resumen, también con pocas usables.
+  const heroesPro = Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`H${i}`, { picks: 3 }]));
+  const pocasUsables = diagnosticar({ ...base, maestria: {}, pro: { generatedAt: new Date().toISOString(), torneos: 3, sinMapear: {}, heroes: heroesPro, partidas: 40, medicion: { usables: 20, terminos: {} } } });
+  ok(!/\[FALLO\].*medici/.test(pocasUsables.texto), 'FALLO falso con 20 usables de 40 partidas');
 });
 
 await terminar('motor/diagnostico');

@@ -4,7 +4,7 @@
  * etiqueta documentada en su leyenda. Una etiqueta sin definir no dispara
  * ninguna regla y nadie se entera.
  */
-import { test, ok, terminar } from '../arnes.mjs';
+import { test, ok, eq, terminar } from '../arnes.mjs';
 import { catalogo } from '../fixtures/catalogo.mjs';
 import { poolDeLinea, LINEAS, tagsDeducidos, fundirCatalogo } from '../../src/motor/catalogo.js';
 import { SPECIALITY_TAGS, ROLE_VETO, ROLE_DEFAULTS } from '../../src/motor/reglas.js';
@@ -91,6 +91,15 @@ test('un héroe nuevo de la API entra con los tags de su rol', () => {
   const fundido = fundirCatalogo(catalogo.heroes, [{ name: 'HeroeNuevo', role: 'tank' }]);
   const nuevo = fundido.find((x) => x.name === 'HeroeNuevo');
   ok(nuevo?.roam && nuevo.tags.length, 'no hereda tags de tanque ni entra al pool de roam');
+});
+
+test('revision linea a linea del motor: fundirCatalogo decide por nombre normalizado', () => {
+  // 4. «Ya está en el catálogo» se decide por clave normalizada: con la
+  //    cruda, «X.Borg» y «X Borg» serían dos héroes y el id de la API no
+  //    llegaría al del catálogo (los retratos van por id).
+  const fundido = fundirCatalogo([{ name: 'X Borg', role: 'fighter', tags: ['sustain'] }], [{ name: 'X.Borg', id: 1, role: 'fighter' }]);
+  eq(fundido.length, 1, `X Borg / X.Borg son dos héroes: ${fundido.map((x) => x.name)}`);
+  eq(fundido[0].id, 1, 'el id de la API no llega al héroe del catálogo con otra grafía');
 });
 
 await terminar('motor/catalogo');
