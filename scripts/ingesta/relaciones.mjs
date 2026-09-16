@@ -7,7 +7,7 @@
 import { DAYS, RANK, diagnostics, estado, sleep } from './contexto.mjs';
 import { callRoute } from './descarga.mjs';
 // La MISMA funcion que usa la app para normalizar los nombres.
-import { normName } from '../../src/engine/score.js';
+import { nombreClave as normName } from '../../src/motor/nombres.js';
 
 /**
  * Lectura de las respuestas de counters y compatibilidad.

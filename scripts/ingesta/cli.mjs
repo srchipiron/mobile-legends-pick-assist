@@ -24,7 +24,8 @@ import { serializar } from './salida.mjs';
 // Duplicar el criterio aqui ya costo un fallo: la app metia a Marcel (support
 // segun la API) y la ingesta no le pedia counters, porque miraba solo el
 // catalogo escrito a mano.
-import { mergeCatalog, normName } from '../../src/engine/score.js';
+import { nombreClave as normName } from '../../src/motor/nombres.js';
+import { fundirCatalogo as mergeCatalog } from '../../src/motor/catalogo.js';
 
 export { parseArgs } from './contexto.mjs';
 

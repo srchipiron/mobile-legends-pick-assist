@@ -1,5 +1,5 @@
 {
-  "_comment": "Catalogo ESTRUCTURAL escrito a mano: rol y tags. Los winrates los rellena scripts/ingest.mjs en roam-meta.json. Los heroes que la API conozca y no esten aqui se anaden solos con tags deducidos de su rol (ver roleDefaults en src/engine/rules.js).",
+  "_comment": "Catalogo ESTRUCTURAL escrito a mano: rol y tags. Los winrates los rellena scripts/ingest.mjs en roam-meta.json. Los heroes que la API conozca y no esten aqui se anaden solos con tags deducidos de su rol (ver ROLE_DEFAULTS en src/motor/reglas.js).",
   "schemaVersion": 2,
   "tagLegend": {
     "engage": "puede iniciar peleas a distancia",
