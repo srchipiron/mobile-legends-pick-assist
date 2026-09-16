@@ -105,7 +105,7 @@ jobs:
           node - <<'JS'
           const fs = require('fs');
           const nuevas = fs.readFileSync('/tmp/tablas.txt', 'utf8');
-          const rules = fs.readFileSync('src/engine/rules.js', 'utf8');
+          const rules = fs.readFileSync('src/motor/reglas.js', 'utf8');
           const bloque = (txt, nombre) =>
             txt.match(new RegExp(`export const ${nombre} = \\{[\\s\\S]*?\\n\\};`))?.[0] ?? '';
           let salida = rules;
@@ -115,7 +115,7 @@ jobs:
             const nuevo = bloque(nuevas, nombre);
             if (viejo && nuevo && viejo !== nuevo) { salida = salida.replace(viejo, nuevo); cambio = true; }
           }
-          if (cambio) fs.writeFileSync('src/engine/rules.js', salida);
+          if (cambio) fs.writeFileSync('src/motor/reglas.js', salida);
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `cambio=${cambio}\n`);
           JS
 
@@ -138,14 +138,14 @@ jobs:
           git config user.name  "meta-bot"
           git config user.email "meta-bot@users.noreply.github.com"
           git checkout -B "$RAMA"
-          git add src/engine/rules.js
+          git add src/motor/reglas.js
           git commit -m "regenerar SPECIALITY_TAGS y ROLE_VETO del catalogo"
           git push -f -u origin "$RAMA"
           if [ -z "$(gh pr list --head "$RAMA" --state open --json number --jq '.[].number')" ]; then
             gh pr create --head "$RAMA" --base main \
               --title "Tablas de deducción regeneradas del catálogo" \
               --body "\
-          \`scripts/derivar-tags.mjs\` produce tablas distintas a las de \`rules.js\`.
+          \`scripts/derivar-tags.mjs\` produce tablas distintas a las de \`reglas.js\`.
           Pasa cuando crece el catálogo o Moonton cambia sus etiquetas, que es
           exactamente cuando toca regenerarlas.
 

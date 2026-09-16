@@ -13,30 +13,33 @@
  *
  * Sale con código 1 si hay FALLOS. Los avisos no tumban nada: son avisos.
  *
- * Con `--historial` añade una línea con las cifras de esta corrida. Eso es lo
- * que convierte el diagnóstico en algo acumulativo: un informe suelto dice si
- * hoy está bien; cien informes dicen QUÉ SE ESTÁ MOVIENDO. La cobertura que
- * baja poco a poco, el ruido que sube, los datos que envejecen porque la
- * actualización lleva días fallando... nada de eso se ve en una foto.
+ * Con `--historial` añade una línea con las cifras de esta corrida. Un
+ * informe suelto dice si hoy está bien; cien informes dicen QUÉ SE ESTÁ
+ * MOVIENDO: la cobertura que baja poco a poco, el ruido que sube, los datos
+ * que envejecen porque la actualización lleva días fallando.
+ *
+ * Es el MISMO código que el botón del móvil (src/motor/diagnostico), sobre
+ * los mismos datos preparados (src/motor/draft.js): no hay un segundo montaje
+ * del contexto que pueda divergir del de la app.
  */
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { appendFile, mkdir } from 'node:fs/promises';
-import { runSelfTest } from '../src/engine/selftest.js';
-import { mergeCatalog, indexByName, poolDeLinea, LINEAS, densidadCounters, matchup } from '../src/engine/score.js';
-import { indiceDeLineas } from '../src/engine/rival-de-linea.js';
+import { diagnosticar, medirRuido, cifrasDe } from '../src/motor/diagnostico/index.js';
+import { prepararDatos } from '../src/motor/draft.js';
+import { LINEAS } from '../src/motor/catalogo.js';
+import { densidadCounters } from '../src/motor/matrices.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (k, def) => {
   const i = process.argv.indexOf(k);
   return i > -1 ? process.argv[i + 1] : def;
 };
-// En GitHub Actions, GITHUB_REPOSITORY viene como "duenno/repo", que es
-// justo lo que hace falta para armar la URL de Pages. Asi el renombrado del
-// repositorio no obliga a tocar este fichero.
-// Sin GITHUB_REPOSITORY (Termux), el nombre del paquete: el repositorio se
-// renombró y la URL escrita aquí daba 404 en la primera línea.
+// En GitHub Actions, GITHUB_REPOSITORY viene como "dueño/repo", que es justo
+// lo que hace falta para armar la URL de Pages: el renombrado del
+// repositorio no obliga a tocar este fichero. Sin GITHUB_REPOSITORY (Termux),
+// el nombre del paquete: la URL escrita aquí daba 404 tras el renombrado.
 const NOMBRE_PAQUETE = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8')).name;
 const DEL_ENTORNO = process.env.GITHUB_REPOSITORY
   ? `https://${process.env.GITHUB_REPOSITORY.split('/')[0]}.github.io/${process.env.GITHUB_REPOSITORY.split('/')[1]}`
@@ -46,24 +49,18 @@ const LOCAL = process.argv.includes('--local');
 
 async function traer(nombre) {
   if (LOCAL) return JSON.parse(readFileSync(resolve(ROOT, 'public/data', nombre), 'utf8'));
-  const res = await fetch(`${BASE}/data/${nombre}`, {
-    cache: 'no-store',
-    signal: AbortSignal.timeout(30000),
-  });
+  const res = await fetch(`${BASE}/data/${nombre}`, { cache: 'no-store', signal: AbortSignal.timeout(30000) });
   if (!res.ok) throw new Error(`${nombre}: HTTP ${res.status}`);
   return res.json();
 }
 
-const catalog = await traer('heroes.json');
+const catalogo = await traer('heroes.json');
 const meta = await traer('roam-meta.json');
 // Las partidas profesionales son un extra: sin fichero, la sección lo dice.
 const pro = await traer('pro.json').catch(() => null);
 
-// Qué versión hay PUBLICADA de verdad. El botón del móvil ya lo comprueba
-// (version.json, sin caché); el bot no lo hacía: la columna `version` del
-// historial decía «vigilancia» en todas las filas, y un despliegue que
-// «completa» sin que Pages llegue a servirlo, o un service worker viejo, era
-// invisible. Tras un despliegue es un FALLO; en las corridas programadas, un
+// Qué versión hay PUBLICADA de verdad (version.json, sin caché). Tras un
+// despliegue, que no coincida es un FALLO; en las corridas programadas, un
 // aviso (puede haber un despliegue en marcha).
 const versionRepo = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8')).version;
 let publicada = null;
@@ -74,44 +71,28 @@ if (!LOCAL) {
   } catch { /* sin version.json: se dice abajo */ }
 }
 
-const allHeroes = mergeCatalog(catalog.heroes, meta.heroes);
-const indiceLineas = indiceDeLineas(meta.heroes);
-const rango = meta.rank ?? 'glory';
-const metaCtx = {
-  stats: indexByName(meta.statsByRank?.[rango] ?? meta.stats),
-  counters: indexByName(meta.counters, 2),
-  synergies: indexByName(meta.synergies, 2),
-  patchAvgWinRate: meta.avgByRank?.[rango] ?? meta.patchAvgWinRate ?? 0.5,
-};
-
-// Se comprueban LAS CINCO líneas, no solo roam: desde que la app sirve para
-// todos los roles, que funcione en roam no dice nada de las otras cuatro.
-let fallosTotales = 0;
-const partes = [];
+const datos = prepararDatos({ catalogo, meta, rango: meta.rank ?? 'glory' });
 
 // Las corridas anteriores, para que el informe compare con su propio pasado
-// igual que hace la app en el movil.
+// igual que hace la app en el móvil.
 let historialPrevio = null;
 try {
   historialPrevio = readFileSync(resolve(ROOT, 'historial/salud.jsonl'), 'utf8')
     .split('\n').filter(Boolean).slice(-40).map((l) => JSON.parse(l));
-} catch { /* sin historial: la seccion lo dice */ }
+} catch { /* sin historial: la sección lo dice */ }
 
+// Se comprueban LAS CINCO líneas, no solo roam: que funcione en roam no dice
+// nada de las otras cuatro. La maestría y las partidas viven en el móvil de
+// Javi y no se pueden ver desde aquí: se apagan a propósito (si fueran
+// avisos, todos los informes vendrían con avisos y dejaríamos de leerlos).
+let fallosTotales = 0;
+const partes = [];
 for (const linea of LINEAS) {
-  const roamPool = poolDeLinea(allHeroes, indiceLineas, linea);
-
-  // La maestría y las partidas viven en el móvil de Javi y no se pueden ver
-  // desde aquí. Se apagan a propósito: si fueran avisos, todos los informes
-  // vendrían con avisos y dejaríamos de leerlos.
-  const r = runSelfTest({
-    historial: historialPrevio,
-    pro,
-    catalog, meta, metaCtx, allHeroes, roamPool,
-    mastery: {},
-    partidas: [],
-    linea,
-    env: {
-      version: versionRepo, buildTime: null, rango,
+  const r = diagnosticar({
+    datos, linea, historial: historialPrevio, pro,
+    maestria: {}, partidas: [],
+    entorno: {
+      version: versionRepo, buildTime: null, rango: datos.rango,
       width: 412, height: 915, standalone: false, storage: true,
       sw: 'sin navegador', sinDatosPersonales: true,
     },
@@ -127,9 +108,7 @@ for (let i = 1; i < partes.length; i++) {
   console.log('');
   console.log(`--- LÍNEA ${LINEAS[i].toUpperCase()} ---`);
   for (const l of partes[i].texto.split('\n')) {
-    if (/^\[(FALLO|AVISO)\]/.test(l) || /pool|Winrates|Counters|propone|dashes|curación/.test(l)) {
-      console.log(l);
-    }
+    if (/^\[(FALLO|AVISO)\]/.test(l) || /pool|Winrates|Counters|propone|dashes|curación/.test(l)) console.log(l);
   }
 }
 console.log('');
@@ -150,33 +129,11 @@ console.log(`Fuente: ${LOCAL ? 'public/data (local)' : BASE}`);
 // ---------- historial ----------
 const rutaHistorial = arg('--historial', null);
 if (rutaHistorial) {
-  const pares = (m) => Object.values(m ?? {}).reduce((n, f) => n + Object.keys(f ?? {}).length, 0);
-  const media = (a) => a.reduce((x, y) => x + y, 0) / a.length;
-  const desv = (a) => Math.sqrt(a.reduce((s, x) => s + (x - media(a)) ** 2, 0) / (a.length - 1));
-
-  const nombres = Object.keys(meta.stats ?? {});
-
-  // La misma medida de ruido que vigila el diagnóstico, guardada para poder
-  // ver la tendencia: una subida lenta no la caza un umbral, la caza una serie.
-  let ruido = null;
-  const filas = [];
-  for (const n of nombres) {
-    const pr = meta.stats[n]?.pickRate;
-    if (!(pr > 0)) continue;
-    const v = nombres.filter((o) => o !== n)
-      .map((o) => matchup(metaCtx.counters, n, o)).filter((x) => x != null);
-    if (v.length > 50) filas.push({ pr, sd: desv(v) });
-  }
-  if (filas.length >= 100) {
-    filas.sort((a, b) => a.pr - b.pr);
-    const c = Math.floor(filas.length / 4);
-    ruido = Number((media(filas.slice(0, c).map((f) => f.sd))
-      / media(filas.slice(-c).map((f) => f.sd))).toFixed(3));
-  }
-
-  const pools = Object.fromEntries(LINEAS.map((l, i) => [l, partes[i]
-    ? poolDeLinea(allHeroes, indiceDeLineas(meta.heroes ?? []), l).length : null]));
-
+  // Las mismas medidas que vigila el diagnóstico (medirRuido, cifrasDe),
+  // guardadas para poder ver la tendencia: una subida lenta no la caza un
+  // umbral, la caza una serie.
+  const ruido = medirRuido(datos);
+  const cifras = cifrasDe(datos, 'roam');
   const fila = {
     fecha: new Date().toISOString(),
     fuente: LOCAL ? 'local' : BASE,
@@ -186,26 +143,18 @@ if (rutaHistorial) {
     fallos: fallosTotales,
     avisos: partes.reduce((n, p) => n + p.avisos, 0),
     datosDe: meta.generatedAt ?? null,
-    edadHoras: meta.generatedAt
-      ? Number(((Date.now() - new Date(meta.generatedAt)) / 3.6e6).toFixed(1)) : null,
-    heroes: (meta.heroes ?? []).length,
+    edadHoras: meta.generatedAt ? Number(((Date.now() - new Date(meta.generatedAt)) / 3.6e6).toFixed(1)) : null,
+    heroes: cifras.heroes,
     conLinea: (meta.heroes ?? []).filter((h) => h.lanes?.length).length,
     conDano: (meta.heroes ?? []).filter((h) => h.damage).length,
-    cruces: pares(meta.counters),
-    sinergias: pares(meta.synergies),
-    cobertura: Number(densidadCounters(
-      poolDeLinea(allHeroes, indiceDeLineas(meta.heroes ?? []), 'roam'),
-      metaCtx.counters, allHeroes,
-    ).cobertura.toFixed(4)),
-    ruido,
-    objetos: Object.keys(meta.equipment ?? {}).length,
-    // Las builds, no los heroes con builds: perder dos de las tres de cada
-    // heroe no mueve el segundo numero y si el primero.
-    builds: Object.values(meta.builds ?? {})
-      .reduce((n, porLinea) => n + Object.values(porLinea ?? {}).reduce((m, l) => m + (l?.length ?? 0), 0), 0),
-    pools,
+    cruces: cifras.cruces,
+    sinergias: cifras.sinergias,
+    cobertura: Number(densidadCounters(datos.poolsPorLinea.roam, datos.meta.counters, datos.heroes).cobertura.toFixed(4)),
+    ruido: ruido ? Number(ruido.razon.toFixed(3)) : null,
+    objetos: cifras.objetos,
+    builds: cifras.builds,
+    pools: Object.fromEntries(LINEAS.map((l) => [l, datos.poolsPorLinea[l].length])),
   };
-
   await mkdir(dirname(resolve(ROOT, rutaHistorial)), { recursive: true });
   await appendFile(resolve(ROOT, rutaHistorial), `${JSON.stringify(fila)}\n`);
   console.log(`Anotado en ${rutaHistorial}`);

@@ -11,7 +11,7 @@ export default defineConfig({
   // el pie de la app siempre dice qué build estás usando de verdad.
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
-    // Las novedades, del mismo CHANGELOG.md que exige check-version.mjs.
+    // Las novedades, del mismo CHANGELOG.md que exige comprobar/version.mjs.
     __CHANGELOG__: JSON.stringify(parsearChangelog(readFileSync(new URL('./CHANGELOG.md', import.meta.url), 'utf8'))),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   },

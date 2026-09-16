@@ -1,0 +1,39 @@
+# Las pruebas de interfaz en un Chrome de verdad (pruebas/interfaz/*.e2e.mjs)
+# sobre la app compilada. No las espera el despliegue: publicar no depende
+# de tener un navegador, y la vigilancia mira lo publicado. Corren en cada
+# push a main y en cada pull request, y se pueden lanzar a mano.
+name: Pruebas de interfaz
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: pruebas-ui-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: node_modules (caché por lockfile)
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
+      - name: Compilar
+        run: npm run build
+      # El runner de GitHub trae Google Chrome; playwright-core lo usa por
+      # `channel: 'chrome'` sin descargar nada.
+      - name: Pruebas de interfaz
+        run: node pruebas/correr.mjs --e2e

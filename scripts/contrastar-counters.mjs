@@ -20,11 +20,12 @@
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { indexByName, matchup, normName } from '../src/engine/score.js';
+import { indexarPorNombre, nombreClave } from '../src/motor/nombres.js';
+import { cruce } from '../src/motor/matrices.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const raw = JSON.parse(readFileSync(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8'));
-const counters = indexByName(raw.counters ?? {}, 2);
+const counters = indexarPorNombre(raw.counters ?? {}, 2);
 const heroes = raw.heroes ?? [];
 const TODOS = process.argv.includes('--todos');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -32,7 +33,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /** Los rivales de un héroe, ordenados de mejor a peor cruce contra él. */
 function ordenContra(nombre) {
   return heroes
-    .map((h) => ({ nombre: h.name, v: matchup(counters, h.name, nombre) }))
+    .map((h) => ({ nombre: h.name, v: cruce(counters, h.name, nombre) }))
     .filter((x) => x.v != null && x.nombre !== nombre)
     .sort((a, b) => b.v - a.v);
 }
@@ -58,7 +59,7 @@ for (const h of lista) {
   let suyos;
   try {
     suyos = await traer(h.id);
-  } catch (err) {
+  } catch {
     fallos++;
     continue;
   }
@@ -66,14 +67,14 @@ for (const h of lista) {
   if (!orden.length || !suyos.length) { sinDato++; continue; }
 
   const p = suyos.map((n) => {
-    const i = orden.findIndex((x) => normName(x.nombre) === normName(n));
+    const i = orden.findIndex((x) => nombreClave(x.nombre) === nombreClave(n));
     return i < 0 ? null : i + 1;
   }).filter((x) => x != null);
   puestos.push(...p);
 
   const total = orden.length;
   console.log(`${h.name.padEnd(14)} ${suyos.map((n, i) => {
-    const q = orden.findIndex((x) => normName(x.nombre) === normName(n));
+    const q = orden.findIndex((x) => nombreClave(x.nombre) === nombreClave(n));
     return `${n} ${q < 0 ? '(?)' : `#${q + 1}`}`;
   }).join(' · ')}   de ${total}`);
   await sleep(250);

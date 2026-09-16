@@ -32,14 +32,15 @@
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { indexByName, matchup } from '../src/engine/score.js';
-import { COUNTER_RULES } from '../src/engine/rules.js';
+import { indexarPorNombre } from '../src/motor/nombres.js';
+import { cruce } from '../src/motor/matrices.js';
+import { COUNTER_RULES } from '../src/motor/reglas.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const leer = (f) => JSON.parse(readFileSync(resolve(ROOT, 'public/data', f), 'utf8'));
 const raw = leer('roam-meta.json');
 const catalogo = leer('heroes.json').heroes;
-const counters = indexByName(raw.counters ?? {}, 2);
+const counters = indexarPorNombre(raw.counters ?? {}, 2);
 
 /** Tasa de falsos hallazgos que se acepta. */
 const FDR = 0.05;
@@ -74,7 +75,7 @@ const corteBH = (ps) => {
 /** Compara los cruces de `heroe` contra dos grupos de rivales. */
 function comparar(heroe, conTag, sinTag) {
   const vals = (ns) => ns.filter((n) => n !== heroe)
-    .map((n) => matchup(counters, heroe, n)).filter((v) => v != null);
+    .map((n) => cruce(counters, heroe, n)).filter((v) => v != null);
   const a = vals(conTag);
   const b = vals(sinTag);
   if (a.length < MINIMO || b.length < MINIMO) return null;

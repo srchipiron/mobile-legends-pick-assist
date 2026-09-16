@@ -40,10 +40,11 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mergeCatalog, indexByName, normName, matchup, sinergia, LINEAS, SATISFIES } from '../src/engine/score.js';
-import { TEAM_NEEDS } from '../src/engine/rules.js';
-import { indiceDeLineas, frecuenciaDeRoles } from '../src/engine/rival-de-linea.js';
-import { mediaDeSinergia } from '../src/engine/estimacion.js';
+import { nombreClave, indexarPorNombre } from '../src/motor/nombres.js';
+import { fundirCatalogo, LINEAS } from '../src/motor/catalogo.js';
+import { cruce, sinergia, mediaDeSinergia } from '../src/motor/matrices.js';
+import { TEAM_NEEDS, SATISFIES } from '../src/motor/reglas.js';
+import { indiceDeLineas, frecuenciaDeRoles } from '../src/motor/lineas.js';
 import { logistica, asignarLineas } from './medir-rival.mjs';
 import { resolverHeroe } from './ingesta-pro.mjs';
 
@@ -56,14 +57,14 @@ const valido = (p) => typeof p === 'number' && p > 0.02 && p < 0.98;
 /** Los términos de una partida ya resuelta a héroes: { H, C, S, R, O, N, B, y }. */
 export function terminosDe(p, { M, info, frec, centro }) {
   const [A, E] = p.equipos;
-  const wr = (h) => M.stats[normName(h.name)]?.winRate;
+  const wr = (h) => M.stats[nombreClave(h.name)]?.winRate;
   let H = 0;
   for (const h of A) { const w = wr(h); if (valido(w)) H += logit(w); }
   for (const h of E) { const w = wr(h); if (valido(w)) H -= logit(w); }
   const la = asignarLineas(A, info, frec); const le = asignarLineas(E, info, frec);
   let R = 0; let O = 0;
   for (const a of A) for (const e of E) {
-    const c = matchup(M.counters, a.name, e.name);
+    const c = cruce(M.counters, a.name, e.name);
     if (!valido(c)) continue;
     if (LINEAS.some((l) => la[l] === a && le[l] === e)) R += logit(c); else O += logit(c);
   }
@@ -132,11 +133,11 @@ export async function cargar(dias) {
   const lineas = (await readFile(resolve(ROOT, 'historial/pro-partidas.jsonl'), 'utf8')).split('\n').filter(Boolean).map((l) => JSON.parse(l));
   const cat = JSON.parse(await readFile(resolve(ROOT, 'public/data/heroes.json'), 'utf8'));
   const meta = JSON.parse(await readFile(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8'));
-  const heroes = mergeCatalog(cat.heroes, meta.heroes ?? []);
+  const heroes = fundirCatalogo(cat.heroes, meta.heroes ?? []);
   const info = indiceDeLineas(meta.heroes ?? []); const frec = frecuenciaDeRoles(meta.heroes ?? []);
-  const M = { stats: indexByName(meta.stats), counters: indexByName(meta.counters, 2), synergies: indexByName(meta.synergies, 2) };
+  const M = { stats: indexarPorNombre(meta.stats), counters: indexarPorNombre(meta.counters, 2), synergies: indexarPorNombre(meta.synergies, 2) };
   const centro = mediaDeSinergia(M.synergies, info, M.stats);
-  const indice = new Map(heroes.map((h) => [normName(h.name), h]));
+  const indice = new Map(heroes.map((h) => [nombreClave(h.name), h]));
   const usables = [];
   for (const p of lineas.filter((x) => x.fecha && x.fecha >= desde)) {
     const eq = p.picks.map((lado) => lado.map((s) => resolverHeroe(s, indice)));

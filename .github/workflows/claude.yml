@@ -91,7 +91,7 @@ jobs:
           # tras la coma ("Grep, Bash(npm test)") y la herramienta podia quedar
           # sin reconocer, o sea npm test denegado en modo sin cabeza.
           claude_args: >-
-            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(npm test),Bash(npm run build),Bash(npm ci),Bash(node scripts/diagnostico.mjs --local*),Bash(node scripts/test-engine.mjs),Bash(git diff*),Bash(git log*),Bash(git status*)"
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(npm test),Bash(npm run build),Bash(npm ci),Bash(node scripts/diagnostico.mjs --local*),Bash(node pruebas/correr.mjs*),Bash(git diff*),Bash(git log*),Bash(git status*)"
             --max-turns 40
           prompt: |
             Trabajas en la app de Javi para elegir roamer en Mobile Legends.

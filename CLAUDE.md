@@ -24,10 +24,14 @@ La iteración de mejora se lanza con `/iterar` (o `/iterar analizar` para
 quedarse en el plan): es `.claude/commands/iterar.md`, y su semáforo dice qué
 se puede hacer solo y qué hay que proponer antes.
 
-**Nunca subas nada sin pasar `npm test`.** Son cuatro comprobaciones y ~100
-pruebas (orden de declaraciones, CSS, versión documentada y motor). El
-despliegue corre esas cuatro más dos que no están en `npm test`: que la corrida
-nueva no resuelva menos que la guardada (`comparar-ingesta.mjs`), y que los
+**Nunca subas nada sin pasar `npm test`.** Son los tres guardarraíles
+(`scripts/comprobar/`: orden de declaraciones, CSS, versión documentada),
+ESLint y todas las pruebas de `pruebas/` (`pruebas/correr.mjs`, un proceso por
+fichero). Las de navegador NO van ahí (`npm run test:ui`, sobre `dist/`):
+publicar no puede depender de tener un Chrome a mano, y las corre
+`pruebas-ui.yml` con el del runner. El despliegue corre `npm test` más dos
+cosas que no están dentro: que la corrida nueva de la ingesta no resuelva
+menos que la guardada (`comparar-ingesta.mjs`), y que los
 datos con los que se va a publicar no pasen de 72 horas ni vengan sin matriz de
 cruces. Si la API está caída se publica con los datos del repositorio: el
 despliegue de código NO depende de que la API esté viva, y eso ya costó una
@@ -49,7 +53,7 @@ lleva medio día sin traer datos, y eso es lo que hay que mirar.
 **Sube la versión en `package.json` y documéntala en `CHANGELOG.md`.** Criterio:
 `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para correcciones.
 La versión sale en el pie de la app, así que sirve para saber desde el móvil si
-lo que estás mirando es lo que acabas de subir. `check-version.mjs` falla si la
+lo que estás mirando es lo que acabas de subir. `comprobar/version.mjs` falla si la
 versión no tiene entrada en el CHANGELOG, y corre tanto en `npm test` como en el
 despliegue. Escribe la entrada para quien USA la app, no para quien lee el diff.
 
@@ -73,19 +77,19 @@ prueba, cámbiala a la vez que la real.
 
 **No ajustes el modelo por una partida.** Los winrates se mueven entre el 48% y
 el 55%; una derrota no dice nada. Desde 2.0 no hay pesos: hay UN modelo
-(`src/engine/modelo.js`) cuya escala está medida contra partidas con resultado
+(`src/motor/modelo.js`) cuya escala está medida contra partidas con resultado
 (`scripts/ajustar-modelo.mjs`, validación cruzada). Si hay que tocar el motor,
 mídelo ahí primero: un término nuevo entra si mejora la verosimilitud fuera de
 muestra, y si no, no entra aunque «parezca mejor». Ver «El modelo».
 
 **Prefiere el dato a la regla escrita a mano.** Desde 1.5.0 la matriz de
 counters está COMPLETA (17.556 cruces, el 100%), así que las reglas de
-`rules.js` ya no deciden ningún counter: solo entran con un héroe tan nuevo que
+`reglas.js` ya no deciden ningún counter: solo entran con un héroe tan nuevo que
 la API no publica ni un cruce suyo. Y hay con qué medirlas:
 `node scripts/medir-reglas.mjs` hace una t de Welch por HÉROE y controla la tasa
 de falsos hallazgos con Benjamini-Hochberg.
 
-Lo que dice hoy, y conviene leerlo entero antes de tocar `rules.js`:
+Lo que dice hoy, y conviene leerlo entero antes de tocar `reglas.js`:
 
 - Siete de las once reglas medibles encuentran más héroes de los que daría el
   azar. El efecto existe.
@@ -109,6 +113,60 @@ enseña igual, que es justo para lo que está. Y el umbral de «ganas el cruce»
 salió de medir la distribución (p90/p10 = 0.5154/0.4846), no de suponer que un
 53% es ventaja: 0.53 era el percentil 99 y por eso el motivo bien fundado casi
 nunca salía. Medido en 2.000 tarjetas: motivos con dato del 14,5% al 50,4%.
+
+## La estructura (3.0)
+
+El programa se rehízo entero en 3.0.0 SIN cambiar ninguna decisión medida: el
+mismo modelo, los mismos datos, las mismas claves guardadas y las mismas
+pantallas. La paridad se verificó con un arnés que compara 2.0.2 con 3.0 sobre
+2.000 drafts de las cinco líneas —ranking entero, probabilidad, términos,
+motivos, empate, rival, simulación, composición, consejo a los compañeros,
+análisis, baneos sugeridos, siguiente baneo y estimación— con CERO diferencias,
+y el informe del diagnóstico sale letra por letra igual. El arnés se queda en
+`pruebas/paridad/viejo-vs-nuevo.mjs`: si algún día hay que rehacer otra cosa,
+esa es la forma de hacerlo sin fiarse.
+
+```
+src/motor/      el motor, PURO: sin React, sin red, sin almacenamiento
+src/app/        la interfaz: App.jsx, estado/, pantallas/, componentes/, i18n/
+scripts/        ingest.mjs (entrada fina de ingesta/), medición, diagnóstico, comprobar/
+pruebas/        arnes.mjs, correr.mjs, motor/, app/, scripts/, interfaz/, fixtures/, paridad/
+```
+
+Cuatro reglas de forma, con prueba (`pruebas/app/dependencias.test.mjs`):
+
+- **El motor no importa de la app, de React, de `scripts/` ni de Node.** Si un
+  módulo del motor necesita `window` o `localStorage`, está en el sitio
+  equivocado: eso vive en `src/app/` (`entorno.js`, `estado/almacen.js`).
+- **Sin ciclos de importación** y **sin dos ficheros con el mismo nombre** en
+  `src/`: dos `Baneos.jsx` en dos carpetas es una trampa para quien busca.
+- **`src/motor/draft.js` es el único cerebro.** `prepararDatos` indexa el meta
+  y arma los pools UNA vez; `recomendar`, `ordenar`, `estimarCon`, `simular`,
+  `aconsejar`, `baneosSugeridos` y `siguientesBaneos` son lo que consumen la
+  app (`useRecomendacion`), el botón Diagnóstico, `scripts/diagnostico.mjs` y
+  las pruebas. Si añades algo que monte el contexto del motor por su cuenta,
+  acabas de crear el fallo que este fichero ya tuvo dos veces: la app decidía
+  con un montaje y la vigilancia con otro. Va en `draft.js`.
+- **La persistencia está en un solo sitio** (`src/app/estado/almacen.js`, con
+  las claves `roam-picker:*`). Ningún componente toca `localStorage`.
+
+El motor por módulos: `nombres` (la clave de todos los datos), `catalogo`
+(fundir con la API, tags deducidos, pools), `matrices` (cruces y parejas, sus
+umbrales medidos), `reglas` (tablas por etiqueta), `maestria`, `modelo` (los
+términos y la escala), `ranking`, `baneos`, `lineas`, `robustez`, `equipo`,
+`analisis`, `composicion`, `builds`, `alias`, `registro`, `perfil`, y
+`diagnostico/` (el informe por secciones, el mismo en el móvil y en el bot).
+
+Las pruebas: un fichero por módulo, con el arnés propio (`pruebas/arnes.mjs`:
+`test`, `ok`, `eq`, `casi`, `terminar`; las asíncronas se esperan con
+`Promise.all`, sin plazos). `pruebas/correr.mjs` las ejecuta en procesos
+separados —un `process.exit` en una no puede tapar a las demás— y las de
+navegador viven en `pruebas/interfaz/*.e2e.mjs` con `playwright-core` (sin
+descargar navegador: `PLAYWRIGHT_CHROME` en local, el Chrome del runner en
+GitHub). Si añades un guardarraíl, no le hagas una lista fija de ficheros:
+`comprobar/orden.mjs` y `comprobar/css.mjs` recorren `src/` entero y la prueba
+de claves de idioma recorre todos los componentes y el motor, justo porque las
+listas fijas ya dejaron fuera lo que se añadió después.
 
 ## Qué son los datos, de verdad
 
@@ -175,13 +233,14 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   datos congelados del despliegue anterior, sin ninguna señal. Se quitó, y hay
   una comprobación de que el JSON se ha regenerado.
 - **Uso antes de declarar en `App.jsx`** — dejó la pantalla en negro. De ahí
-  salió `check-order.mjs`.
+  salió `comprobar/orden.mjs`, que desde 3.0 recorre `src/` entero en vez de
+  una lista de dos ficheros.
 - **La × de quitar un pick, oculta en móvil por CSS** — de ahí salió
-  `check-css.mjs`.
+  `comprobar/css.mjs`.
 - **Nombres de héroe** — la API y el catálogo escriben distinto ("X.Borg" /
   "X Borg"). Todo se busca con `normName`. La matriz de counters tiene DOS
   niveles y hay que indexar los dos: `indexByName(m, 2)`. Esto volvió en 0.4.0:
-  `App.jsx` indexaba con profundidad 1, el segundo nivel se quedaba crudo y
+  la app indexaba con profundidad 1, el segundo nivel se quedaba crudo y
   `riesgoContrapick` devolvía `null` para los 34 roamers sin que nada chillara.
   El motor no se enteró porque `counterScore` busca con `lookup` en los dos
   niveles y `lookup` prueba también la clave cruda. Dentro de una fila, usa
@@ -263,7 +322,7 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   nunca». Y las parejas ni siquiera comparten distribución con los cruces
   (p90 0.5100 frente a 0.5154), así que copiar el número de un sitio a otro es
   doblemente erróneo. Hay una prueba que falla si vuelve a aparecer un umbral de
-  cruce suelto en `score.js` o `analisis.js`.
+  cruce suelto en el motor.
 - **El motivo de maestría decidido con el winrate bruto y un corte de 20
   partidas** — 20 partidas al 60% sacaban «lo llevas al 60%» (encogido: 54%,
   nada) y 300 al 57% no sacaban nada (encogido: 55,7%, señal real). La
@@ -341,7 +400,7 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   especificidad: cualquier regla base escrita después la pisa entera. El móvil
   llevaba quién sabe cuánto enseñando el diseño de escritorio y nada fallaba.
   Medido: `.slot` pedía `min-width: 0` y salía 84px; `.pick-name` pedía 16px y
-  salía 24px. Hoy los bloques van AL FINAL y `check-css.mjs` falla si vuelve a
+  salía 24px. Hoy los bloques van AL FINAL y `comprobar/css.mjs` falla si vuelve a
   aparecer una regla normal después del primer `@media`. Si añades una consulta
   de medios, va al final del fichero, siempre.
 - **La fase de baneos a un héroe por apertura** — el selector se cerraba con
@@ -428,14 +487,14 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   calla si no son los de ahora. Si difieres otro cálculo, marca para qué
   entrada se hizo o el consumidor lo cruzará con la entrada nueva.
 - **La prueba de claves i18n que solo miraba las reglas** — `t('pro.inexistente')`
-  en `ui.jsx` pasaba `npm test` y salía la clave cruda en pantalla (probado
+  en la interfaz pasaba `npm test` y salía la clave cruda en pantalla (probado
   por mutación). Desde 1.32.4 la prueba recorre `t('…')`, `t(\`prefijo.${…}\`)`
   y `clave: '…'` en la interfaz y el motor. Un guardarraíl se comprueba
   rompiendo lo que vigila, no leyendo su nombre.
-- **Un guardarraíl con la expresión muerta** — `check-css.mjs` buscaba
+- **Un guardarraíl con la expresión muerta** — `comprobar/css.mjs` buscaba
   `\\.slot` (barra literal + un carácter) y la comprobación de la × oculta,
   que nació de un fallo real, no casaba con nada desde que se escribió. Y
-  `check-order.mjs` no veía `const [x] =` ni `const { x } =`, que son la
+  `comprobar/orden.mjs` no veía `const [x] =` ni `const { x } =`, que son la
   mitad de las declaraciones de App.jsx. Desde 1.40.1 los dos scripts
   aceptan una ruta por argumento y hay pruebas que les dan un fichero roto.
 - **El bucle de rebase+push en verde** — el último mandato del `for` era
@@ -561,8 +620,8 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   máximo del historial de salud (`FIJAS` en `comparar-ingesta.mjs`).
 - **Guardas por texto, no por forma** — `run: echo "antes: node
   scripts/comparar-ingesta.mjs"` pasaba la prueba del guardarraíl, `h > 7200`
-  pasaba la del tope de antigüedad, quitar `check-css` de `npm test` pasaba
-  todo, y `check-order.mjs` solo veía `const` (un `let` usado antes es el
+  pasaba la del tope de antigüedad, quitar `comprobar/css.mjs` de `npm test` pasaba
+  todo, y `comprobar/orden.mjs` solo veía `const` (un `let` usado antes es el
   mismo TDZ). Si una prueba busca una cadena, pregúntate si la cadena en un
   comentario o en un echo también la pasaría.
 - **`matchup is not defined` en `diagnostico.mjs`, después del último OK**
@@ -596,9 +655,39 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   compara con lo guardado y solo se copia encima si no empeora. Hay una prueba
   que falla si alguien vuelve a apuntar la ingesta directa a `public/data`.
 
+- **Un `export ... from` NO mete el nombre en el ámbito del módulo** (3.0) —
+  `pruebas/interfaz/navegador.mjs` reexportaba `test` del arnés y lo usaba
+  dentro: `ReferenceError` en los seis ficheros de navegador a la vez. Y
+  ESLint, que lo habría cazado en la primera línea, no miraba ahí: su
+  configuración listaba `src/**` y `scripts/**`, no `pruebas/**`. Un fichero
+  que el linter no mira no está protegido, y la configuración del linter es
+  otra lista fija de las que este proyecto ya ha pagado tres veces.
+- **Ampliar un guardarraíl a más ficheros puede hacerlo mentir en la otra
+  dirección** (3.0) — `comprobar/orden.mjs` pasó de dos ficheros a `src/`
+  entero y empezó a dar falsos positivos en el motor: su heurística de «dos
+  espacios de sangría = cuerpo de la función» tomaba por lo mismo una variable
+  anidada y un parámetro de flecha que se llaman como una de fuera. Hoy sobre
+  un directorio solo mira los `.jsx` (que es donde vive el fallo que caza) y
+  descuenta los parámetros de flecha. Al ampliar un guardarraíl hay que
+  comprobar LAS DOS cosas: que sigue cazando lo roto y que no chilla con lo
+  bueno.
+- **Una prueba puede perder su poder de detección sin que nadie se entere**
+  (3.0) — la de «los motivos se filtran antes de cortar a tres» muestreaba 30
+  drafts reales, y con el modelo de 2.0 los motivos comunes casi no existen:
+  medido, 0 de 30 drafts y 0 de 1.078 tarjetas afectadas (en 1.x acortaba 478
+  de 1.017). Seguía en verde y ya no vigilaba nada: la mutación lo dijo y se le
+  añadió un fixture determinista que no depende de los datos del día. Cuando
+  cambie el modelo, las pruebas calibradas contra los datos del modelo anterior
+  hay que volver a mutarlas, no solo volver a pasarlas.
+- **Una prueba vieja que falla no siempre acusa al código nuevo** (3.0) — al
+  reescribir la interfaz, el script de los baneos probables del scratch daba
+  dos fallos; corriéndolo contra 2.0.2 compilado daba los mismos dos. Era la
+  prueba la que estaba desfasada, no la app. Antes de arreglar nada por lo que
+  diga una prueba vieja, córrela contra la versión anterior.
+
 ## El modelo (2.0)
 
-`src/engine/modelo.js` y `src/engine/ranking.js`. La nota de un pick ES la
+`src/motor/modelo.js` y `src/motor/ranking.js`. La nota de un pick ES la
 probabilidad de ganar el draft que resulta con él: un modelo aditivo en
 log-odds con cinco términos (héroes, cruces, parejas, tú, por ver), todos
 centrados, sumados con coeficiente 1 y multiplicados por UNA escala medida
@@ -667,7 +756,7 @@ del código.
 
 ## El siguiente baneo probable
 
-Desde 1.35.0, `src/engine/baneos.js`: en la fase de baneos, los más baneados
+Desde 1.35.0, `src/motor/baneos.js`: en la fase de baneos, los más baneados
 del rango que aún no están marcados, para tocar en vez de escribir. Es la
 `banRate` de la API sin más, y está medido por qué no hay más:
 
@@ -695,7 +784,7 @@ del rango que aún no están marcados, para tocar en vez de escribir. Es la
 
 ## El consejo para los compañeros
 
-Desde 1.34.0, `src/engine/equipo.js`. Con algún enemigo a la vista, para cada
+Desde 1.34.0, `src/motor/equipo.js`. Con algún enemigo a la vista, para cada
 línea que tu equipo aún no cubre (`lineasOcupadas` con tus aliados, el mismo
 reparto que con los enemigos) se ejecuta `rankRoamers` sobre el pool de esa
 línea, con tu nº1 como aliado ya elegido, sin maestría (el término «tú» es
@@ -710,7 +799,7 @@ consejo cambia entre tres asesinos y tres magos (verificado por mutación).
 
 ## Simular lo que falta por salir
 
-Desde 1.27.0, `src/engine/robustez.js`. Con el draft a medias se simulan
+Desde 1.27.0, `src/motor/robustez.js`. Con el draft a medias se simulan
 finales plausibles —por las líneas enemigas abiertas (`lineasOcupadas`, el
 mismo reparto que el rival) y ponderando cada línea por pickrate— y se cuenta
 en qué fracción tu nº1 sigue siéndolo. Dos cosas medidas que no conviene volver
@@ -747,6 +836,35 @@ a suponer:
   Las pruebas que generan drafts sintéticos con el congruencial no importan
   (muestrean, no calibran); una que AJUSTE algo con él, sí.
 
+## Lo que cuesta un toque (medido en 3.0)
+
+Medido en el portátil del contenedor con los datos reales (`coste.mjs` en el
+scratch de la sesión). Un móvil de gama media va entre cuatro y seis veces más
+lento, así que la columna que importa es la de la derecha:
+
+| | 1 enemigo | 3 enemigos | draft completo | en el móvil |
+|---|---|---|---|---|
+| `prepararDatos` (una vez por carga) | 44 ms | — | — | ~0,2 s |
+| `ordenarPicks` (CADA toque) | 11,4 ms | 6,0 ms | 3,6 ms | 20–60 ms |
+| `aconsejarEquipo` (cada toque) | 21,9 ms | 12,5 ms | 8,0 ms | 40–110 ms |
+| `baneosSugeridos` + `siguientesBaneos` | 0,9 ms | 0,5 ms | 0,5 ms | ~4 ms |
+| `simularFinales` (60 finales, DIFERIDA) | 78 ms | 62 ms | — | 0,3–0,5 s |
+
+Tres cosas que se leen de ahí:
+
+- **Cuanto más vacío el draft, más caro**: con un enemigo hay cuatro líneas
+  abiertas y el término «por ver» recorre el pool de cada una. Es justo al
+  revés de lo que uno supondría.
+- **La simulación es lo caro y por eso va diferida** (`useDeferredValue` en
+  `useRecomendacion`), con la marca de para qué draft se hizo: sin la marca,
+  el análisis cruzaba la cuota del draft anterior con el nº1 nuevo.
+- **`aconsejarEquipo` cuesta el doble que el ranking y NO va diferido**, igual
+  que en 1.x y 2.x: son cuatro rankings más, y se calculan aunque el bloque
+  venga plegado. Es el primer candidato si alguna vez el toque se nota lento,
+  pero diferirlo pide la misma marca que la simulación (si no, enseñaría el
+  consejo de un draft con el nº1 de otro) y no se tocó en 3.0 para no cambiar
+  dos cosas a la vez. Si añades algo al toque, mídelo aquí.
+
 ## Las partidas profesionales (Liquipedia)
 
 Desde 1.29.0, `scripts/ingesta-pro.mjs` y `pro.yml` (lunes). Es la ÚNICA
@@ -782,7 +900,7 @@ aquí: pidiéndole datos, no leyendo su README.
   azul 50%. Con ese ± no se concluye nada de la escala. En pro los dos
   equipos eligen del mismo meta, así que el término de héroes discrimina
   poco ahí; en solo queue de Javi no tiene por qué ser igual. **No toques la
-  escala de `estimacion.js` por esto**: hacen falta miles de partidas de la
+  escala del modelo por esto**: hacen falta miles de partidas de la
   misma época (`--dias 120`) y `medir-pro.mjs` corre en cada corrida del bot.
 - **Lo medido con 233 partidas de 2026 (misma época que los datos), primera
   corrida del bot**: modelo completo acierto 57,5%, AUC 0.61, Brier 0.244,
@@ -825,7 +943,9 @@ aquí: pidiéndole datos, no leyendo su README.
 
 ## La probabilidad estimada de ganar
 
-Desde 1.28.0, `src/engine/estimacion.js`. Modelo aditivo en log-odds con
+Desde 1.28.0, y desde 3.0 dentro de `src/motor/modelo.js` (`evaluarDraft`,
+la misma función que puntúa el ranking: la nota ES la probabilidad). Modelo
+aditivo en log-odds con
 cuatro términos, y cada uno está medido antes de sumarse. Lo que NO conviene
 volver a suponer:
 
@@ -863,7 +983,7 @@ elemento a elemento.
 
 ## Las builds de objetos
 
-Desde 1.11.0. `src/engine/builds.js`, y conviene tener clara la diferencia entre
+Desde 1.11.0. `src/motor/builds.js`, y conviene tener clara la diferencia entre
 sus dos mitades porque NO valen lo mismo:
 
 - `buildsDe` es DATO: las tres builds más jugadas de ese héroe en esa línea, de
@@ -942,14 +1062,14 @@ Iconos de objeto (`public/objetos/{id}.png`, 71) y caras de héroe
   el hueco del draft es al revés: manda la cara y el nombre se retira con
   `:has(.slot-cara)`, porque a 390px no caben los dos (medido: 0 píxeles para el
   nombre). Si no hay cara, el nombre recupera su sitio.
-- **El prop se llama `className`, no `clase`.** `check-css.mjs` busca
+- **El prop se llama `className`, no `clase`.** `comprobar/css.mjs` busca
   literalmente `className=` para saber qué clases usa la interfaz; con otro
   nombre, una clase sin estilo pasa el control sin que nadie se entere.
 
 ## Los idiomas
 
-Español e inglés, en `src/i18n.js`. Lo importante: **los motivos que salen en
-las tarjetas NO son frases dentro del motor**. `rules.js` guarda una CLAVE en
+Español e inglés, en `src/app/i18n/` (`es.js`, `en.js` y el traductor). Lo importante: **los motivos que salen en
+las tarjetas NO son frases dentro del motor**. `reglas.js` guarda una CLAVE en
 `why`, el motor devuelve `{ clave, params }` y traduce la interfaz. Si añades
 una regla, añade su clave a los DOS idiomas: hay una prueba que falla si un
 idioma se queda a medias, y otra que comprueba que toda clave usada existe.
@@ -968,14 +1088,14 @@ por quien juega en español, no adivinados.
 Los NOMBRES de héroe no se traducen en pantalla: son la clave de todos los
 datos, y enseñar "Cíclope" mientras el motor busca "Cyclops" es justo el fallo
 invisible que ya costó una corrección. Lo que sí acepta los dos idiomas es la
-BÚSQUEDA, con `src/engine/alias.js`. Javi juega con el móvil en español y
+BÚSQUEDA, con `src/motor/alias.js`. Javi juega con el móvil en español y
 escribía "Cíclope" sin encontrar nada. Un alias no envejece con los
 reequilibrios, pero solo se apunta lo comprobado: uno equivocado saca el héroe
 de al lado, que es peor que no tenerlo. Hay una prueba que comprueba que cada
 alias apunta a un héroe real, que ninguno pisa el nombre de otro y que el
 buscador de verdad los usa.
 
-El diagnóstico (`selftest.js`) sigue en español a propósito: es depuración.
+El diagnóstico (`motor/diagnostico/`) sigue en español a propósito: es depuración.
 
 ## La vigilancia automática
 
@@ -995,7 +1115,7 @@ en avisos: si no, todos los informes vendrían con avisos y dejaríamos de leerl
 
 Desde 1.27.0 el diagnóstico del móvil también se compara con ese historial:
 `vite.config.js` embebe las últimas 40 filas en `historial.json` (fuera de la
-precarga y de `/data/`, como `version.json`) y `selftest.js` avisa si cruces,
+precarga y de `/data/`, como `version.json`) y `motor/diagnostico/` avisa si cruces,
 sinergias, objetos, builds o el pool de la línea caen por debajo de la mediana
 de la serie más 3 MAD. Y detecta datos imposibles (winrate fuera de 35–65%,
 cuotas de pick que no suman 1, filas de counters planas): la ingesta conserva lo
@@ -1014,7 +1134,7 @@ en un pull request, y avisa de héroes nuevos SIN inventarles tags.
 
 Desde 1.30.0 la versión del pie abre el CHANGELOG (`scripts/changelog.mjs`,
 metido en `__CHANGELOG__` al compilar). Es el MISMO fichero que exige
-`check-version.mjs`: no hay que escribir las novedades dos veces ni pueden
+`comprobar/version.mjs`: no hay que escribir las novedades dos veces ni pueden
 desincronizarse. Formato: `## X.Y.Z` y viñetas `- ` con continuación
 indentada; el resumen es la primera frase de cada viñeta, así que escribe
 primero QUÉ cambia y después el porqué. Hay una prueba de que la primera
@@ -1035,7 +1155,7 @@ porque todo lo que comprobaba estaba bien: solo que comprobaba una app que ya no
 era la publicada.
 
 `vite.config.js` emite un `version.json` diminuto en cada compilación, la app lo
-pide con `cache: 'no-store'` antes del diagnóstico y `selftest.js` compara. Si no
+pide con `cache: 'no-store'` antes del diagnóstico y `motor/diagnostico/` compara. Si no
 hay red no avisa: no poder preguntarlo no es un problema. NO lo metas en la
 precarga ni bajo `/data/`, o se serviría de caché y diría siempre que estás al
 día, que es peor que no comprobarlo.
@@ -1055,7 +1175,7 @@ esto hay que revisarlo antes.
 
 ## Llevarse los datos a otro dispositivo
 
-`src/engine/perfil.js`. El almacenamiento del navegador va por dispositivo, así
+`src/motor/perfil.js`. El almacenamiento del navegador va por dispositivo, así
 que la maestría no viaja sola. NO se ha montado una base de datos con códigos
 por persona: haría falta un servidor -la app es estática en GitHub Pages-,
 alguien pagándolo, y convertiría a Javi en responsable de datos de otras
@@ -1153,15 +1273,33 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   medias; el caso de `medir-pro` era distinto porque su salida SÍ entra en
   `pro.json` (arreglado en 1.32.2 con una comprobación en el diagnóstico).
 
+- **La prueba de que la simulación predice, hecha con las líneas DEDUCIDAS**
+  (3.0): al portarla se midió con cinco semillas si daba igual usar la vía de
+  la app (`draft.simular`, líneas deducidas) que el diseño con el que se
+  calibró (líneas abiertas reales). Diseño calibrado: diferencia de tasas
+  0,26 / 0,32 / 0,28 / 0,43 / 0,27, dentro del 0,25–0,33 documentado. Vía de
+  la app: 0,19 / 0,23 / 0,24 / 0,43 / 0,33, o sea una semilla a 1,4 errores
+  típicos del umbral 0,12. Se conserva el diseño calibrado; la deducción de
+  líneas ya tiene su propia prueba de precisión.
+- **Traducir los nombres de héroe en pantalla** (3.0, otra vez): sigue siendo
+  no. Son la clave de todos los datos y enseñar «Cíclope» mientras el motor
+  busca «Cyclops» es el fallo invisible que ya costó una corrección. Lo que
+  acepta los dos idiomas es la BÚSQUEDA (`motor/alias.js`).
+- **Un tipado de verdad (TypeScript o JSDoc comprobado)** (3.0): el motor
+  lleva JSDoc en las funciones de contrato, pero nadie lo comprueba. Añadir
+  `tsc --checkJs` es un candidato razonable para la siguiente iteración;
+  no entró en 3.0 porque la reescritura ya se verificaba por paridad y
+  meter un compilador nuevo en el despliegue el mismo día era cambiar dos
+  cosas a la vez.
 - **`useOrdenEstable` y el foco de las hojas, comprobados por mutación en el
   navegador** (1.41.0): quitar la limpieza de nombres, el desmarcado del
-  rival, el orden estable de la hoja o la devolución del foco hace fallar
-  `ui-tanda-e2e.mjs` (scratch de la sesión). El tope de `anadirA` en el
-  selector de enemigos NO tiene prueba que lo vea: con la limpieza de
+  rival, el orden estable de la hoja o la devolución del foco hace fallar las
+  pruebas de navegador. Desde 3.0 están EN el repositorio
+  (`pruebas/interfaz/hojas.e2e.mjs`, `npm run test:ui`) con
+  `playwright-core`, que no descarga navegador. El tope de `anadir` en el
+  selector de enemigos sigue sin prueba que lo vea: con la limpieza de
   nombres no queda camino en la interfaz para abrir el selector con los
-  cinco huecos llenos, así que es defensa en profundidad. No están en
-  `npm test` porque Playwright no está en las dependencias; si algún día
-  entra, esa suite es la primera que va dentro.
+  cinco huecos llenos, así que es defensa en profundidad.
 
 ## Lo que queda pendiente
 

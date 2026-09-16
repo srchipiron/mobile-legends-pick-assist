@@ -40,7 +40,7 @@ así que en el draft nunca esperas a la red.
 
 La ingesta también descarga la **lista completa de héroes** con su rol, así que el catálogo escrito a
 mano nunca deja a nadie fuera: un héroe que exista en el juego y no esté en `heroes.json` entra igual,
-con tags deducidos de su rol y de la «speciality» de Moonton (`tagsDeducidos` en `src/engine/score.js`),
+con tags deducidos de su rol y de la «speciality» de Moonton (`tagsDeducidos` en `src/motor/catalogo.js`),
 descontados como deducidos. El workflow avisa de cuáles son. Escribirle sus tags propios lo hace
 mejor, pero es opcional, no un requisito.
 
@@ -101,7 +101,7 @@ composición por etiqueta valen 0,00 ± 0,07: se dicen, no se puntúan. El botó
 ## Cómo puntúa
 
 Cada tarjeta enseña la probabilidad y, en puntos, cuánto aporta cada término
-(`src/engine/modelo.js`; el ranking en `src/engine/ranking.js`).
+(`src/motor/modelo.js`; el ranking en `src/motor/ranking.js`).
 
 Tres decisiones que conviene entender antes de tocar nada:
 
@@ -176,32 +176,67 @@ de hoy salió bien y que tu móvil está mostrando lo que debe.
 ## Comprobaciones
 
 ```bash
-npm test    # orden de declaraciones + estilos + versión documentada + ~100 pruebas del motor
+npm test          # guardarraíles + ESLint + todas las pruebas (pruebas/**/*.test.mjs)
+npm run test:ui   # pruebas de navegador sobre dist/ (compila antes con npm run build)
+node pruebas/correr.mjs motor/modelo   # solo los ficheros que casen con el patrón
 ```
 
-Las cuatro corren en GitHub **antes** de compilar, así que un cambio que rompa la
+Todo corre en GitHub **antes** de compilar, así que un cambio que rompa la
 lógica no llega a publicarse: te quedas con la versión anterior funcionando.
 
-- `check-order.mjs` — consts usadas antes de declararse. Ese fallo no da error al
-  compilar: deja la pantalla en negro al arrancar, y en el móvil no hay consola.
-- `check-css.mjs` — que nada esencial quede oculto en móvil (la × de quitar un
-  pick llegó a estarlo), variables sin declarar y clases sin estilo.
-- `test-engine.mjs` — desde el encogido del winrate hasta que ningún roamer
-  acapare las recomendaciones. Varias son regresiones de fallos ya publicados.
+- `scripts/comprobar/orden.mjs` — variables usadas antes de declararse en los
+  componentes. Ese fallo no da error al compilar: deja la pantalla en negro al
+  arrancar, y en el móvil no hay consola.
+- `scripts/comprobar/css.mjs` — que nada esencial quede oculto en móvil (la ×
+  de quitar un pick llegó a estarlo), variables sin declarar, consultas de
+  medios al final y clases sin estilo, recorriendo todos los componentes.
+- `scripts/comprobar/version.mjs` — la versión que se publica tiene entrada en
+  el CHANGELOG.
+- ESLint — un identificador que no existe o un import muerto (un
+  `ReferenceError` llegó a producción pasando todas las pruebas).
+- `pruebas/motor/*.test.mjs` — un fichero por módulo del motor; desde el
+  encogido del winrate hasta que ningún héroe acapare las recomendaciones.
+  Cada guardarraíl se verificó rompiendo lo que vigila.
+- `pruebas/app/`, `pruebas/scripts/` — idiomas completos, forma del código
+  (el motor no importa de la app ni de React, sin ciclos), guardarraíles con
+  ficheros rotos, ingesta contra una API simulada, workflows.
+- `pruebas/interfaz/*.e2e.mjs` — Chrome de verdad: fases, hojas, foco, botón
+  atrás, chips estables, inglés sin fugas y la tarjeta nº1 en la primera
+  pantalla. En GitHub las corre `pruebas-ui.yml` con el Chrome del runner.
 
 ## Estructura
 
 ```
-scripts/ingest.mjs        descarga y normaliza el meta
-src/engine/modelo.js      EL modelo: los términos y la escala medida
-src/engine/ranking.js     el ranking, los baneos y el margen de empate
-src/engine/rules.js       reglas de counter y necesidades de equipo (solo sin dato)
-src/engine/score.js       utilidades: nombres, matrices, catálogo, maestría, pools
+src/motor/                el motor, puro (sin React, sin red, sin almacén)
+  draft.js                EL cerebro: prepara los datos y recomienda; lo usan la app, el diagnóstico y las pruebas
+  modelo.js               el modelo: los términos y la escala medida
+  ranking.js              el ranking y el margen de empate
+  baneos.js               a quién banear y el siguiente baneo probable
+  lineas.js               líneas de cada héroe, líneas abiertas, rival de línea
+  robustez.js             ¿aguanta el nº1 lo que falta por salir?
+  equipo.js               qué pueden coger tus compañeros
+  analisis.js             las frases sobre el draft
+  composicion.js          qué tiene y qué le falta a cada equipo
+  builds.js               objetos: lo que se compra y el ajuste al draft
+  maestria.js             tu nivel, el prior medido y la nota de maestría
+  matrices.js             cruces y parejas, cobertura, umbrales medidos
+  catalogo.js             el catálogo fundido con la API, tags deducidos, pools
+  reglas.js               reglas por etiqueta (solo sin dato) y tablas deducidas
+  nombres.js              la clave de todos los datos
+  registro.js, perfil.js, alias.js
+  diagnostico/            el informe del botón Diagnóstico y del bot, por secciones
+src/app/                  la interfaz
+  App.jsx                 pantallas, hojas y acciones
+  estado/                 hooks: almacén (claves roam-picker:*), draft, ajustes, datos, personal, recomendación, actualización
+  pantallas/              ElegirLinea, FaseBaneos, FasePicks
+  componentes/            un fichero por componente, con nombre propio
+  i18n/                   es.js, en.js y el traductor
+scripts/ingest.mjs        descarga y normaliza el meta (entrada fina de scripts/ingesta/)
+scripts/ingesta/          descubrimiento de rutas, descarga, extracción, relaciones, fusión, imágenes, salida
 scripts/ajustar-modelo.mjs  qué coeficiente sale para cada término, con validación cruzada
-src/components/ui.jsx     selector de héroes, slots, tarjeta, pie de versión
-scripts/test-engine.mjs   pruebas del motor
-scripts/check-order.mjs   uso antes de declarar
-scripts/check-css.mjs     estilos y clases
+scripts/diagnostico.mjs   el diagnóstico del bot, contra lo publicado
+scripts/comprobar/        orden, css y versión
+pruebas/                  arnés, runner, un fichero de pruebas por módulo, e2e en interfaz/
 public/data/heroes.json   catálogo de roles y tags escrito a mano (esto es el activo real)
 ```
 

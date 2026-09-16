@@ -36,16 +36,15 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mergeCatalog, indexByName, normName } from '../src/engine/score.js';
-import { indiceDeLineas } from '../src/engine/rival-de-linea.js';
-import { estimarVictoria } from '../src/engine/estimacion.js';
-import { ESCALA } from '../src/engine/modelo.js';
+import { nombreClave, indexarPorNombre } from '../src/motor/nombres.js';
+import { fundirCatalogo } from '../src/motor/catalogo.js';
+import { indiceDeLineas } from '../src/motor/lineas.js';
+import { evaluarDraft, ESCALA } from '../src/motor/modelo.js';
 import { resolverHeroe } from './ingesta-pro.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 
-const logit = (p) => Math.log(p / (1 - p));
 const sigmoide = (x) => 1 / (1 + Math.exp(-x));
 
 /** Acierto, AUC, Brier y pendiente de calibración de una lista de { L, y }. */
@@ -83,7 +82,7 @@ export function evaluar(filas) {
 }
 
 export function cargarPartidas(lineas, heroes) {
-  const indice = new Map(heroes.map((h) => [normName(h.name), h]));
+  const indice = new Map(heroes.map((h) => [nombreClave(h.name), h]));
   const usables = [];
   const sinMapear = {};
   for (const p of lineas) {
@@ -112,8 +111,8 @@ async function main() {
   const lineas = (await readFile(resolve(ROOT, 'historial/pro-partidas.jsonl'), 'utf8')).split('\n').filter(Boolean).map((l) => JSON.parse(l));
   const cat = JSON.parse(await readFile(resolve(ROOT, 'public/data/heroes.json'), 'utf8'));
   const meta = JSON.parse(await readFile(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8'));
-  const heroes = mergeCatalog(cat.heroes, meta.heroes ?? []);
-  const M = { stats: indexByName(meta.stats), counters: indexByName(meta.counters, 2), synergies: indexByName(meta.synergies, 2) };
+  const heroes = fundirCatalogo(cat.heroes, meta.heroes ?? []);
+  const M = { stats: indexarPorNombre(meta.stats), counters: indexarPorNombre(meta.counters, 2), synergies: indexarPorNombre(meta.synergies, 2) };
   const recientes = lineas.filter((p) => p.fecha && p.fecha >= desde);
   const { usables, sinMapear } = cargarPartidas(recientes, heroes);
   console.log(`Partidas desde ${desde}: ${recientes.length} · usables ${usables.length} · datos del ${meta.generatedAt?.slice(0, 10)}`);
@@ -130,7 +129,7 @@ async function main() {
   }
 
   const indiceLineas = indiceDeLineas(meta.heroes ?? []);
-  const est = (p) => estimarVictoria({ allies: p.equipos[0].slice(1), yo: p.equipos[0][0], enemies: p.equipos[1], meta: M, lineas: indiceLineas });
+  const est = (p) => evaluarDraft({ aliados: p.equipos[0].slice(1), yo: p.equipos[0][0], enemigos: p.equipos[1], meta: M, lineas: indiceLineas });
   const filas = usables.map((p) => ({ e: est(p), y: p.ganador === 1 ? 1 : 0 }));
   // `escala`: con qué modelo se midió. El diagnóstico solo compara la
   // pendiente con 1 si la medida se hizo con el modelo escalado; una medida

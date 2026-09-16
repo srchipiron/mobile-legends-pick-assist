@@ -8,6 +8,42 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.0.0
+
+- La app está reescrita de arriba abajo con la misma cabeza: el motor de
+  2.0 (la probabilidad de ganar el draft con cada pick, medida contra 902
+  partidas profesionales), los mismos datos, las mismas claves guardadas en
+  el móvil y las mismas pantallas. Nada de lo que sabía se ha perdido: un
+  arnés comparó 2.0.2 con 3.0.0 en 2.000 drafts de las cinco líneas (nº1,
+  probabilidad, motivos, empate, rival, simulación, composición, consejo a
+  los compañeros, análisis, baneos y siguiente baneo) sin una sola
+  diferencia, y el informe del diagnóstico sale letra por letra igual.
+- Lo que cambia por dentro, y por qué te importa: un solo «cerebro»
+  (`src/motor/draft.js`) del que beben la app, el botón Diagnóstico, el
+  diagnóstico del bot y las pruebas, así que ya no puede haber un montaje de
+  datos en la app y otro distinto en la vigilancia. El motor está partido en
+  módulos de una responsabilidad (nombres, catálogo, matrices, maestría,
+  modelo, ranking, baneos, líneas, robustez, equipo, análisis, composición,
+  builds, alias, registro, perfil, diagnóstico) y la interfaz en pantallas,
+  componentes con nombre propio y hooks de estado con una sola capa de
+  persistencia.
+- Las pruebas cambian de forma: un fichero por módulo bajo `pruebas/`, un
+  arnés propio que espera las asíncronas, ESLint dentro de `npm test` (un
+  identificador que no existe ya no llega a publicarse) y, por primera vez,
+  las pruebas de navegador viven en el repositorio (`npm run test:ui`, y en
+  GitHub con el Chrome del runner): fases, hojas, foco, botón atrás, chips
+  estables, idioma inglés sin fugas, novedades y la tarjeta nº1 en la primera
+  pantalla en 390×844 y 430×932.
+- Los guardarraíles ya no llevan listas fijas: el de orden de declaraciones
+  y el de CSS recorren toda la interfaz, la prueba de claves de idioma
+  recorre todos los componentes y el motor, y hay pruebas de forma (el motor
+  no importa de la app ni de React, sin ciclos, sin ficheros con el mismo
+  nombre).
+- La ingesta está partida en módulos bajo `scripts/ingesta/` y
+  `scripts/ingest.mjs` es la entrada de siempre: los bots la llaman igual.
+- Para quien usa la app: nada cambia de sitio ni de número. Si algo se ve
+  distinto, es un fallo y el Diagnóstico lo debería cantar.
+
 ## 2.0.2
 
 - La vigilancia automática volvía a funcionar: se caía al final por un

@@ -37,7 +37,8 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { normName, mergeCatalog } from '../src/engine/score.js';
+import { nombreClave } from '../src/motor/nombres.js';
+import { fundirCatalogo } from '../src/motor/catalogo.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -210,7 +211,7 @@ export function sinSubpaginas(titulos) {
 /** Slug de Liquipedia → héroe del catálogo, o null. */
 export function resolverHeroe(slug, indice) {
   const alias = ALIAS[slug.toLowerCase()] ?? slug;
-  return indice.get(normName(alias)) ?? indice.get(normName(slug)) ?? null;
+  return indice.get(nombreClave(alias)) ?? indice.get(nombreClave(slug)) ?? null;
 }
 
 /**
@@ -219,7 +220,7 @@ export function resolverHeroe(slug, indice) {
  * para que se vea en vez de perderse.
  */
 export function resumirPro(partidas, heroes, { desde = null } = {}) {
-  const indice = new Map(heroes.map((h) => [normName(h.name), h]));
+  const indice = new Map(heroes.map((h) => [nombreClave(h.name), h]));
   const porHeroe = {};
   const sinMapear = {};
   const cuenta = (nombre) => (porHeroe[nombre] ??= { picks: 0, ganadas: 0, bans: 0 });
@@ -366,7 +367,7 @@ async function main() {
   const cat = JSON.parse(await readFile(resolve(ROOT, 'public/data/heroes.json'), 'utf8'));
   let meta = { heroes: [] };
   try { meta = JSON.parse(await readFile(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8')); } catch { /* sin meta también vale */ }
-  const heroes = mergeCatalog(cat.heroes, meta.heroes ?? []);
+  const heroes = fundirCatalogo(cat.heroes, meta.heroes ?? []);
 
   const previas = await leerJsonl(resolve(ROOT, 'historial/pro-partidas.jsonl'));
   const porClave = new Map(previas.map((p) => [claveDe(p), p]));

@@ -25,8 +25,10 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { mergeCatalog, indexByName, normName, matchup, LINEAS } from '../src/engine/score.js';
-import { indiceDeLineas, frecuenciaDeRoles, probabilidadDeLinea, detectarRivalDeLinea } from '../src/engine/rival-de-linea.js';
+import { nombreClave, indexarPorNombre } from '../src/motor/nombres.js';
+import { fundirCatalogo, LINEAS } from '../src/motor/catalogo.js';
+import { cruce } from '../src/motor/matrices.js';
+import { indiceDeLineas, frecuenciaDeRoles, probabilidadDeLinea, detectarRivalDeLinea } from '../src/motor/lineas.js';
 import { resolverHeroe } from './ingesta-pro.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -41,7 +43,7 @@ function permutaciones(arr) {
 
 /** Mejor reparto de cinco héroes en las cinco líneas: { linea: héroe }. */
 export function asignarLineas(equipo, info, frec) {
-  const P = equipo.map((h) => Object.fromEntries(LINEAS.map((l) => [l, probabilidadDeLinea(h, info.get(normName(h.name)), l, frec)])));
+  const P = equipo.map((h) => Object.fromEntries(LINEAS.map((l) => [l, probabilidadDeLinea(h, info.get(nombreClave(h.name)), l, frec)])));
   let mejor = null;
   for (const perm of permutaciones([...LINEAS])) {
     const total = perm.reduce((s, l, i) => s + P[i][l], 0);
@@ -98,7 +100,7 @@ export function medirRival(partidas, { M, info, frec }) {
     const seguras = LINEAS.every((l) => detectarRivalDeLinea(A, info, l, frec) === la[l].name && detectarRivalDeLinea(E, info, l, frec) === le[l].name);
     let R = 0; let O = 0; let rivalesGanados = 0;
     for (const a of A) for (const e of E) {
-      const c = matchup(M.counters, a.name, e.name);
+      const c = cruce(M.counters, a.name, e.name);
       if (c == null || c <= 0.02 || c >= 0.98) continue;
       const deLinea = LINEAS.some((l) => la[l] === a && le[l] === e);
       if (deLinea) { R += logit(c); if (c > 0.5) rivalesGanados += 1; } else O += logit(c);
@@ -134,13 +136,13 @@ async function main() {
   const lineas = (await readFile(resolve(ROOT, 'historial/pro-partidas.jsonl'), 'utf8')).split('\n').filter(Boolean).map((l) => JSON.parse(l));
   const cat = JSON.parse(await readFile(resolve(ROOT, 'public/data/heroes.json'), 'utf8'));
   const meta = JSON.parse(await readFile(resolve(ROOT, 'public/data/roam-meta.json'), 'utf8'));
-  const heroes = mergeCatalog(cat.heroes, meta.heroes ?? []);
+  const heroes = fundirCatalogo(cat.heroes, meta.heroes ?? []);
   // La frecuencia sale de meta.heroes (con `lanes`), como en la app: con el
   // catálogo fundido salía vacía y el reparto de líneas no era el de la app.
   const info = indiceDeLineas(meta.heroes ?? []); const frec = frecuenciaDeRoles(meta.heroes ?? []);
   if (Object.keys(frec).length < LINEAS.length) throw new Error(`frecuencia de líneas incompleta: ${Object.keys(frec).join(',')}`);
-  const M = { counters: indexByName(meta.counters, 2) };
-  const indice = new Map(heroes.map((h) => [normName(h.name), h]));
+  const M = { counters: indexarPorNombre(meta.counters, 2) };
+  const indice = new Map(heroes.map((h) => [nombreClave(h.name), h]));
   const usables = [];
   for (const p of lineas.filter((x) => x.fecha && x.fecha >= desde)) {
     const eq = p.picks.map((lado) => lado.map((s) => resolverHeroe(s, indice)));
