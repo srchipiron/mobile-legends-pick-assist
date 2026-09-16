@@ -124,7 +124,16 @@ motivos, empate, rival, simulación, composición, consejo a los compañeros,
 análisis, baneos sugeridos, siguiente baneo y estimación— con CERO diferencias,
 y el informe del diagnóstico sale letra por letra igual. El arnés se queda en
 `pruebas/paridad/viejo-vs-nuevo.mjs`: si algún día hay que rehacer otra cosa,
-esa es la forma de hacerlo sin fiarse.
+esa es la forma de hacerlo sin fiarse. NO corre en `npm test` (necesita los
+dos árboles); para volver a pasarlo:
+
+```bash
+git worktree add /tmp/viejo becb6a5     # el último commit con src/engine (2.0.2)
+ln -s "$PWD/node_modules" /tmp/viejo/node_modules
+PARIDAD_VIEJO=/tmp/viejo node pruebas/paridad/viejo-vs-nuevo.mjs 2000
+```
+
+Tarda unos 3,5 minutos y tiene que decir «0 diferencias».
 
 ```
 src/motor/      el motor, PURO: sin React, sin red, sin almacenamiento
@@ -1319,6 +1328,15 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
 
 ## Lo que queda pendiente
 
+- **Lo que 3.0 dejó a medias, a propósito y con su porqué**: el pestillo
+  contra el bucle de recargas (`yaRecargado` en `useActualizacion`) no tiene
+  prueba —verificado por mutación: quitarlo no tumba nada, porque tras la
+  recarga el hook se monta de cero y no se sabe simular aquí un navegador que
+  dispare `controllerchange` varias veces en la misma vida de la página—;
+  `aconsejarEquipo` cuesta el doble que el ranking y no va diferido (ver «Lo
+  que cuesta un toque»); y no hay tipado comprobado (`tsc --checkJs` es el
+  candidato razonable para la siguiente iteración, no entró en 3.0 por no
+  meter un compilador nuevo en el despliegue el mismo día).
 - Ya no queda ningún héroe con tags deducidos: los 7 que faltaban (Marcel,
   Hirara, Zetian, Sora, Obsidia, Cici, Valir) se escribieron a mano en
   `2917b2d`. El mecanismo de deducción (`tagsDeducidos`, `PRECISION_DEDUCIDA`)
