@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.0.1
+
+- La línea «Pro» de las tarjetas contará tres partidas más: Liquipedia
+  escribe a Dyrroth como «dyr» y ese nombre no se reconocía, así que esas
+  partidas se descartaban enteras. Lo avisó el propio diagnóstico. El alias
+  se comprobó contra el catálogo antes de escribirlo: «dyr» solo puede ser
+  Dyrroth, y un alias adivinado mete al héroe de al lado, que es peor que
+  perder la partida.
+
 ## 3.0.0
 
 - La app está reescrita de arriba abajo con la misma cabeza: el motor de

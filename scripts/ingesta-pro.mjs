@@ -64,6 +64,7 @@ export const ALIAS = {
   lance: 'Lancelot',
   esme: 'Esmeralda',
   arlot: 'Arlott',
+  dyr: 'Dyrroth',
   ceci: 'Cici',
   haya: 'Hayabusa',
   valen: 'Valentina',
