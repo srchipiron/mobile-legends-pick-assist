@@ -1,5 +1,5 @@
 import { Cara } from './Imagen.jsx';
-import { claveDeMotivo } from './Tarjeta.jsx';
+import { idMotivo } from '../../motor/nombres.js';
 import { tPorDefecto } from './tPorDefecto.js';
 
 /**
@@ -46,7 +46,7 @@ export function ConsejoEquipo({ consejos, yo, onElegir, t = tPorDefecto }) {
               <div className="equipo-motivo">
                 <span>{mejor.heroe.name}</span>
                 <ul className="reasons">
-                  {motivos.map((m) => <li key={claveDeMotivo(m)} className={m.bueno ? '' : 'bad'}>{t(m.clave, m.params)}</li>)}
+                  {motivos.map((m) => <li key={idMotivo(m)} className={m.bueno ? '' : 'bad'}>{t(m.clave, m.params)}</li>)}
                 </ul>
               </div>
             )}

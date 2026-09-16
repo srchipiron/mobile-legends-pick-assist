@@ -123,7 +123,7 @@ export default {
   'hist.anadirPista': 'Cuentan para tu maestría y hacen la recomendación más tuya. NO cuentan para comprobar si la app acierta: cuando las jugaste no había consejo que seguir.',
   'hist.elegirHeroe': 'Con qué héroe',
   'hist.anadida': 'Añadida: {hero}, {resultado}.',
-  'hist.resumenLineas': '{total} apuntadas · {conApp} con la app · {previas} de tu historial',
+  'hist.resumenLineas': '{total} {total|apuntada|apuntadas} · {conApp} con la app · {previas} de tu historial',
 
   // --- ¿te está funcionando? ---
   // Nunca se afirma nada antes de tiempo: el margen va SIEMPRE al lado del
@@ -133,7 +133,7 @@ export default {
   'veredicto.conApp': 'Siguiendo la app: {pct}% en {n} partidas',
   'veredicto.tuyo': 'Tu winrate de siempre: {pct}% en {n} partidas',
   'veredicto.dif': '{signo}{dif} puntos, con un margen de ±{margen}',
-  'veredicto.noSeVe': 'El margen se come la diferencia: todavía no se distingue de una racha. Faltan unas {faltan} partidas más siguiendo la app.',
+  'veredicto.noSeVe': 'El margen se come la diferencia: todavía no se distingue de una racha. {faltan|Falta|Faltan unas} {faltan} {faltan|partida|partidas} más siguiendo la app.',
   'veredicto.noSeVeSinCifra': 'Vas exactamente a tu winrate de siempre: todavía no se distingue nada. Sigue apuntando.',
   'veredicto.mejor': 'La diferencia ya no cabe en el azar: con este héroe y este criterio, te va mejor siguiendo la app.',
   'veredicto.peor': 'La diferencia ya no cabe en el azar, y va en tu contra: te está yendo peor siguiendo la app que por tu cuenta.',
@@ -189,8 +189,8 @@ export default {
   'regla.protege': 'protege a {a}, que no tiene escape',
   'regla.abrePelea': 'abre la pelea para {a}',
   'regla.mantieneVivo': 'mantiene vivo a {a}',
-  'regla.maestriaBuena': 'lo llevas al {pct}% en {n} partidas',
-  'regla.maestriaMala': 'solo {pct}% en {n} partidas',
+  'regla.maestriaBuena': 'lo llevas al {pct}% en {n} {n|partida|partidas}',
+  'regla.maestriaMala': 'solo {pct}% en {n} {n|partida|partidas}',
   'regla.arriesgadoCiego': 'arriesgado como pick ciego',
 
   // --- necesidades del equipo ---
@@ -235,7 +235,7 @@ export default {
   'sheet.listo': 'Listo',
   'sheet.sugeridos': 'Siguiente baneo probable',
   'sheet.baneados': '{n}/{max} baneados · toca para quitar',
-  'estimacion.calibrada': 'En tus {n} partidas con estimación: previsto {prev}%, ganadas {real}%.',
+  'estimacion.calibrada': 'En {n|tu|tus} {n} {n|partida|partidas} con estimación: previsto {prev}%, ganadas {real}%.',
   'estimacion.brier': 'Error del modelo {brier} (una moneda: 0.250). Con ≥50% ganaste el {altas}% de {nAltas}; con menos, el {bajas}% de {nBajas}.',
   'estimacion.faltanCalibrar': '{n|Falta|Faltan} {n} {n|partida apuntada|partidas apuntadas} para saber si la estimación se parece a lo que pasa.',
   'comp.tu': 'Tu equipo',

@@ -5,12 +5,13 @@
  */
 import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
 import { catalogo, h, crearRnd } from '../fixtures/catalogo.mjs';
-import { indexarPorNombre } from '../../src/motor/nombres.js';
+import { indexarPorNombre, nombreClave } from '../../src/motor/nombres.js';
 import { terminoHeroe, terminoCruce, terminoPareja, evaluarDraft, logit, ESCALA, SUB_MAX } from '../../src/motor/modelo.js';
 import { COUNTER_RULES } from '../../src/motor/reglas.js';
 import { mediaDeSinergia } from '../../src/motor/matrices.js';
 import { LINEAS } from '../../src/motor/catalogo.js';
 import { prepararDatos, estimarCon, ordenar } from '../../src/motor/draft.js';
+import { generador } from '../../src/motor/robustez.js';
 
 test('el winrate NO se encoge por una muestra inventada', () => {
   // Medido el ruido real entre 14 corridas consecutivas de la ingesta: la
@@ -179,6 +180,28 @@ test('el termino de cruces es la suma de logits y ningun cruce pesa doble', () =
   const cruces = (extra) => evaluarDraft({ yo, enemigos: [e1, e2], meta: { counters: M }, ...extra }).terminos.cruces;
   ok(Math.abs(cruces({}) - logit(0.56)) < 1e-9, `el término de cruces no es la suma de logits: ${cruces({})}`);
   eq(cruces({ enemyRoam: 'E1' }), cruces({}), 'el rival marcado sigue pesando distinto');
+});
+
+test('la estimación no favorece al equipo que lleva más héroes en pantalla', () => {
+  const meta = leerJson('public/data/roam-meta.json');
+  if (!(meta.heroes ?? []).length || !meta.synergies) return;
+  const datos = prepararDatos({ catalogo, meta });
+  const pools = datos.poolsPorLinea;
+  if (LINEAS.some((l) => pools[l].length < 10)) return;
+  // El centro de las parejas es el de las que pueden ir JUNTAS (líneas
+  // distintas), ponderado por pick. Con la media de toda la matriz, un
+  // equipo real de cinco sumaba +4 puntos y a medias el número favorecía al
+  // que llevaba más héroes: 1 contra 5 daba 46%, 5 contra 1, 53% (medido).
+  ok(mediaDeSinergia(datos.meta.synergies, datos.lineas, datos.meta.stats) > mediaDeSinergia(datos.meta.synergies), 'el centro de líneas distintas no queda por encima del global');
+  const rnd = generador(5);
+  const muestra = (pool, excl) => { const c = pool.filter((x) => !excl.includes(x)); const w = c.map((x) => datos.meta.stats[nombreClave(x.name)]?.pickRate ?? 0.001); let z = rnd() * w.reduce((p, q) => p + q, 0); for (let i = 0; i < c.length; i++) { z -= w[i]; if (z <= 0) return c[i]; } return c.at(-1); };
+  const equipo = (n, excl) => { const e = []; for (const l of LINEAS.slice(0, n)) e.push(muestra(pools[l], [...excl, ...e])); return e; };
+  for (const [mios, suyos] of [[1, 5], [5, 1]]) {
+    let sp = 0;
+    for (let i = 0; i < 300; i++) { const A = equipo(mios, []); const B = equipo(suyos, A); sp += estimarCon(datos, { yo: A[0], aliados: A.slice(1), enemigos: B }).p; }
+    const media = sp / 300 * 100;
+    ok(Math.abs(media - 50) <= 2.5, `${mios} contra ${suyos}: la estimación media es ${media.toFixed(1)}% (sesgo por número de héroes)`);
+  }
 });
 
 await terminar('motor/modelo');

@@ -6,7 +6,7 @@
  * porqué del nº1 y una medición pro que falta.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { catalogo, heroes, poolRoam } from '../fixtures/catalogo.mjs';
+import { catalogo, heroes, poolRoam, crearRnd } from '../fixtures/catalogo.mjs';
 import { prepararDatos } from '../../src/motor/draft.js';
 import { diagnosticar } from '../../src/motor/diagnostico/index.js';
 import { ESCALA } from '../../src/motor/modelo.js';
@@ -109,6 +109,31 @@ test('revision linea a linea del diagnostico: nombres de maestria que no casan y
   const heroesPro = Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`H${i}`, { picks: 3 }]));
   const pocasUsables = diagnosticar({ ...base, maestria: {}, pro: { generatedAt: new Date().toISOString(), torneos: 3, sinMapear: {}, heroes: heroesPro, partidas: 40, medicion: { usables: 20, terminos: {} } } });
   ok(!/\[FALLO\].*medici/.test(pocasUsables.texto), 'FALLO falso con 20 usables de 40 partidas');
+});
+
+test('el autodiagnóstico detecta datos rotos y aprueba los buenos', () => {
+  const rnd = crearRnd(99);
+  const entorno = { version: 'test', rango: 'mythic', width: 412, height: 915, storage: true };
+  const stats = Object.fromEntries(heroes.map((x) => [x.name, { winRate: 0.497 + (rnd() - 0.5) * 0.06, pickRate: 0.02 }]));
+  const base = { linea: 'roam', maestria: {}, partidas: [], entorno };
+  // Los datos como los monta la app: el mismo prepararDatos que la interfaz,
+  // en vez de armar a mano el catálogo, el pool y el meta indexado.
+  const datosDe = (meta) => prepararDatos({ catalogo: { heroes: catalogo.heroes }, meta, rango: 'mythic' });
+
+  const bueno = diagnosticar({
+    ...base,
+    datos: datosDe({ generatedAt: new Date().toISOString(), ranks: ['mythic'], days: 7, heroCount: 133, stats, statsByRank: { mythic: stats }, patchAvgWinRate: 0.497, diagnostics: {} }),
+  });
+  // Sin counters siempre hay un fallo; lo que no puede haber son fallos de motor.
+  ok(!bueno.texto.includes('[FALLO] Winrate NO influye'), 'marca el winrate como plano teniéndolo');
+  ok(!bueno.texto.includes('[FALLO] Contra dashes'), 'falla la sensatez táctica con datos buenos');
+
+  const roto = diagnosticar({
+    ...base,
+    datos: datosDe({ generatedAt: new Date(0).toISOString(), ranks: [], days: 7, heroCount: 0, stats: {}, statsByRank: {}, patchAvgWinRate: 0.5, diagnostics: {} }),
+  });
+  ok(roto.fallos > bueno.fallos, 'no distingue unos datos rotos de unos buenos');
+  ok(roto.texto.includes('Winrate NO influye'), 'no detecta que los winrates no entran');
 });
 
 await terminar('motor/diagnostico');

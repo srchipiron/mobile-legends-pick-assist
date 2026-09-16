@@ -6,7 +6,9 @@
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { catalogo } from '../fixtures/catalogo.mjs';
-import { poolDeLinea, LINEAS, tagsDeducidos, fundirCatalogo } from '../../src/motor/catalogo.js';
+import { poolDeLinea, LINEAS, tagsDeducidos, fundirCatalogo, tipoDeDano, perfilDeDano, tapaElHueco } from '../../src/motor/catalogo.js';
+import { analizarDraft } from '../../src/motor/analisis.js';
+import { evaluarDraft } from '../../src/motor/modelo.js';
 import { SPECIALITY_TAGS, ROLE_VETO, ROLE_DEFAULTS } from '../../src/motor/reglas.js';
 import { indiceDeLineas } from '../../src/motor/lineas.js';
 
@@ -100,6 +102,63 @@ test('revision linea a linea del motor: fundirCatalogo decide por nombre normali
   const fundido = fundirCatalogo([{ name: 'X Borg', role: 'fighter', tags: ['sustain'] }], [{ name: 'X.Borg', id: 1, role: 'fighter' }]);
   eq(fundido.length, 1, `X Borg / X.Borg son dos héroes: ${fundido.map((x) => x.name)}`);
   eq(fundido[0].id, 1, 'el id de la API no llega al héroe del catálogo con otra grafía');
+});
+
+test('el tipo de dano sale del texto de Moonton, no del rol', () => {
+  // Los dos casos que el rol se comeria, comprobados contra la API real:
+  // Gusion es asesino y pega magico; Hylos es tanque y pega magico.
+  eq(tipoDeDano({ name: 'Gusion', role: 'assassin', damage: { fisico: 0, magico: 5 } }), 'magico');
+  eq(tipoDeDano({ name: 'Hylos', role: 'tank', damage: { fisico: 0, magico: 2 } }), 'magico');
+  eq(tipoDeDano({ name: 'Miya', role: 'marksman', damage: { fisico: 4, magico: 0 } }), 'fisico');
+  // Esmeralda pega las dos cosas de verdad: 4 y 4 en sus habilidades.
+  eq(tipoDeDano({ name: 'Esmeralda', damage: { fisico: 4, magico: 4 } }), 'mixto');
+  // El dano verdadero no decide el lado: atraviesa las dos defensas.
+  eq(tipoDeDano({ name: 'Karrie', damage: { fisico: 4, magico: 0, verdadero: 1 } }), 'fisico');
+  eq(tipoDeDano({ name: 'Nuevo' }), null, 'se inventa un tipo para un heroe sin dato');
+
+  const fis = (n) => ({ name: n, tags: [], damage: { fisico: 3, magico: 0 } });
+  const mag = (n) => ({ name: n, tags: [], damage: { fisico: 0, magico: 3 } });
+  const mix = (n) => ({ name: n, tags: [], damage: { fisico: 3, magico: 3 } });
+
+  eq(perfilDeDano([fis('a'), fis('b'), fis('c')]).falta, 'magico');
+  eq(perfilDeDano([mag('a'), mag('b')]).falta, 'fisico');
+  eq(perfilDeDano([fis('a'), mag('b')]).falta, null, 've un hueco donde hay de las dos');
+  eq(perfilDeDano([fis('a'), mix('b')]).falta, null, 'un mixto no cuenta como que tapa el hueco');
+
+  // Con un solo aliado no se puede decir que al equipo le falte nada, y sin
+  // dato tampoco: inventar un aviso es peor que callarse.
+  eq(perfilDeDano([fis('a')]).falta, null, 'avisa con un solo aliado elegido');
+  eq(perfilDeDano([{ name: 'x', tags: [] }, { name: 'y', tags: [] }]).falta, null,
+    'avisa sin tener el dato de ninguno');
+
+  ok(tapaElHueco(mag('m'), 'magico'), 'no ve que un magico tapa el hueco magico');
+  ok(tapaElHueco(mix('m'), 'magico'), 'no ve que un mixto tapa cualquier hueco');
+  ok(!tapaElHueco(fis('f'), 'magico'), 'cree que un fisico tapa el hueco magico');
+  ok(!tapaElHueco(mag('m'), null), 'tapa un hueco que no existe');
+});
+
+test('el hueco de dano se dice, y no lo encoge la deduccion; pero no puntua', () => {
+  const fis = (n) => ({ name: n, tags: ['tanky'], damage: { fisico: 3, magico: 0 } });
+  const aliados = [fis('a1'), fis('a2'), fis('a3')];
+  const base = { name: 'Yo', tags: ['engage'], damage: { fisico: 3, magico: 0 } };
+  const tapa = { ...base, damage: { fisico: 0, magico: 3 } };
+
+  // El hueco sale del texto del juego (perfilDeDano) y el heroe deducido lo
+  // tapa igual: el tipo de dano es un dato, no una etiqueta adivinada.
+  eq(perfilDeDano(aliados).falta, 'magico', 'no ve que al equipo le falta magia');
+  ok(tapaElHueco(tapa, 'magico') && tapaElHueco({ ...tapa, inferred: true }, 'magico') && !tapaElHueco(base, 'magico'), 'tapaElHueco se equivoca');
+  const mixtos = [fis('a1'), { name: 'a2', tags: ['tanky'], damage: { fisico: 0, magico: 3 } }];
+  eq(perfilDeDano(mixtos).falta, null, 've un hueco donde el equipo esta equilibrado');
+
+  // Se dice en el analisis: tapa -> razon; no tapa -> aviso.
+  const frases = (yo) => analizarDraft({ ranking: [{ heroe: yo, p: 0.6 }], enemigos: [{ name: 'E', tags: [] }], aliados, meta: { counters: {} } }).map((f) => f.clave);
+  ok(frases(tapa).includes('analisis.todoFisico'), `no dice que el pick tapa el hueco: ${frases(tapa)}`);
+  ok(frases(base).includes('analisis.faltaMagico'), `no avisa del hueco sin tapar: ${frases(base)}`);
+
+  // Pero NO puntua: 0 de 902 equipos pro tienen el hueco, asi que no se puede
+  // medir, y un termino que no se puede medir no entra en la nota.
+  eq(evaluarDraft({ yo: tapa, aliados, meta: {} }).logOdds, evaluarDraft({ yo: base, aliados, meta: {} }).logOdds,
+    'el hueco de dano cambia la nota sin dato que lo respalde');
 });
 
 await terminar('motor/catalogo');

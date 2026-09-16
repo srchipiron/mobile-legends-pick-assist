@@ -1,9 +1,15 @@
+import { idMotivo } from '../../motor/nombres.js';
 import { Cara } from './Imagen.jsx';
 import { Desglose } from './Desglose.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
 
-/** La identidad de un motivo en pantalla: clave y a quién señala. */
-export const claveDeMotivo = (m) => `${m.clave}|${m.params?.e ?? m.params?.a ?? ''}`;
+/**
+ * La identidad de un motivo, para las `key` de React: la MISMA que usa el
+ * motor para filtrar los comunes y quitar repetidos (`idMotivo`). Estuvo
+ * escrita dos veces; si una se cambia y la otra no, las claves de la lista y
+ * el dedupe dejan de hablar de lo mismo.
+ */
+export { idMotivo };
 
 /**
  * Tarjeta de recomendación: la probabilidad de ganar el draft con ese pick
@@ -27,7 +33,7 @@ export function Tarjeta({ candidato, indice, stat, pro = null, onBuild, t = tPor
         <ul className="reasons">
           {candidato.motivos.length ? candidato.motivos.map((m) => (
             <li
-              key={claveDeMotivo(m)}
+              key={idMotivo(m)}
               /* Un motivo de EQUIPO («no hay primera línea») le vale igual a
                  media lista: se apaga para que no compita con los que sí
                  hablan de ESTE héroe contra ESTE draft. */
