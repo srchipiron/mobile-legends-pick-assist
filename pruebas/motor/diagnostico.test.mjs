@@ -126,7 +126,17 @@ test('el autodiagnóstico detecta datos rotos y aprueba los buenos', () => {
   });
   // Sin counters siempre hay un fallo; lo que no puede haber son fallos de motor.
   ok(!bueno.texto.includes('[FALLO] Winrate NO influye'), 'marca el winrate como plano teniéndolo');
-  ok(!bueno.texto.includes('[FALLO] Contra dashes'), 'falla la sensatez táctica con datos buenos');
+  // La sensatez táctica que el diagnóstico comprueba de verdad es que la
+  // RECOMENDACIÓN cambie según el equipo enemigo (hasta 1.5.0 se exigía que
+  // el nº1 «cortara dashes», y eso solo se cumplía porque mandaban las
+  // reglas por tags). Antes aquí ponía `!texto.includes('[FALLO] Contra
+  // dashes')`, que no podía fallar nunca: «Contra dashes:» se emite con
+  // `inf.linea()` y nunca lleva prefijo de estado.
+  const lineas = bueno.texto.split('\n');
+  ok(lineas.some((l) => /^\[OK/.test(l) && /La recomendación cambia según el equipo enemigo/.test(l)),
+    `la sensatez táctica no sale en verde con datos buenos: ${lineas.filter((l) => /recomendación/.test(l)).join(' | ')}`);
+  ok(!lineas.some((l) => /^\[FALLO\]/.test(l) && /MISMA recomendación/.test(l)),
+    'falla la sensatez táctica con datos buenos: misma recomendación ante equipos enemigos opuestos');
 
   const roto = diagnosticar({
     ...base,

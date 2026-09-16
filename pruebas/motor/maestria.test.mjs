@@ -13,7 +13,12 @@ import { ordenarPicks } from '../../src/motor/ranking.js';
 import { ESCALA } from '../../src/motor/modelo.js';
 import { prepararDatos } from '../../src/motor/draft.js';
 
-test('perfiles y registro: fundir por instante, sanear lo que llega y maestria por nombre normalizado', () => {
+test('la maestria se lee por nombre normalizado y un winRate nulo no castiga', () => {
+  // (Es la mitad «maestría» de la prueba original «perfiles y registro:
+  //  fundir por instante, sanear lo que llega y maestria por nombre
+  //  normalizado»; la mitad de fundir y sanear se quedó en perfil.test.mjs
+  //  con aquel nombre. Las dos compartían nombre y una tapaba a la otra en
+  //  el resumen.)
   // 3. La maestria escrita como "X.Borg" le sirve al heroe "X Borg", y el
   //    motor la lee: antes 400 partidas desaparecian por un punto.
   const ef = maestriaEfectiva({ 'X.Borg': { games: 400, winRate: 0.6 } }, [{ t: 3, pick: 'X Borg', gane: true }]);

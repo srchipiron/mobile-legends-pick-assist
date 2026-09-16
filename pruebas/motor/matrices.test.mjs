@@ -4,13 +4,26 @@
  * queda sin datos en silencio, así que la cobertura tiene que decir quién
  * falta, por nombre.
  */
-import { test, ok, eq, leerJson, leerTexto, terminar } from '../arnes.mjs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { test, ok, eq, leerJson, RAIZ, terminar } from '../arnes.mjs';
 import { h } from '../fixtures/catalogo.mjs';
 import { indexarPorNombre } from '../../src/motor/nombres.js';
 import {
   cobertura, cruce, sinergia, CRUCE_DESTACABLE, CRUCE_MALO, PAREJA_DESTACABLE,
 } from '../../src/motor/matrices.js';
 import { terminoPareja } from '../../src/motor/modelo.js';
+
+/** Todos los .js de src/motor, subcarpetas incluidas (diagnostico/). */
+function ficherosDelMotor(dir) {
+  const salida = [];
+  for (const nombre of readdirSync(dir)) {
+    const ruta = join(dir, nombre);
+    if (statSync(ruta).isDirectory()) { salida.push(...ficherosDelMotor(ruta)); continue; }
+    if (nombre.endsWith('.js')) salida.push(ruta);
+  }
+  return salida.sort();
+}
 
 test('la cobertura detecta héroes sin datos', () => {
   const c = cobertura([h('Khufra'), h('Atlas')], indexarPorNombre({ Khufra: { winRate: 0.5 } }));
@@ -85,11 +98,22 @@ test('ningun 0.53 escrito a mano suelto en el motor', () => {
   // analisis del draft y sinergias- y las tres es el percentil 99 de su
   // distribucion, o sea "casi nunca". Es la clase de constante que se copia de
   // un sitio a otro sin volver a medirla.
-  // (En 3.0 el viejo score.js está repartido entre nombres, catalogo,
-  // matrices y maestria: se miran los cuatro además de modelo, ranking y
-  // analisis, que son donde vivían los tres 0.53.)
-  const motor = ['nombres', 'catalogo', 'matrices', 'maestria', 'modelo', 'ranking', 'analisis']
-    .map((f) => leerTexto(`src/motor/${f}.js`))
+  // Se recorre src/motor ENTERO (incluido diagnostico/), no una lista escrita
+  // a mano: la lista tenia siete ficheros de los dieciocho modulos del motor
+  // y dejaba fuera justo donde el patron se repite (baneos, equipo,
+  // composicion, robustez, draft, builds, reglas, lineas). Sin exclusiones:
+  // los umbrales calibrados viven en matrices.js y son ASIGNACIONES
+  // (`export const CRUCE_MALO = 0.4846;`), no comparaciones, asi que no casan.
+  const ficheros = ficherosDelMotor(resolve(RAIZ, 'src/motor'));
+  ok(ficheros.length >= 18, `solo se encuentran ${ficheros.length} modulos del motor: el recorrido no ve el arbol entero`);
+  // Y que estan los que la lista escrita a mano dejaba fuera, por nombre: un
+  // recuento solo dice cuantos, no cuales.
+  const relativos = ficheros.map((f) => f.slice(resolve(RAIZ, 'src/motor').length + 1));
+  for (const f of ['baneos.js', 'equipo.js', 'composicion.js', 'robustez.js', 'draft.js', 'builds.js', 'reglas.js', 'lineas.js', 'diagnostico/seccion-motor.js']) {
+    ok(relativos.includes(f), `el recorrido del motor no llega a ${f}: ${relativos.join(', ')}`);
+  }
+  const motor = ficheros
+    .map((f) => readFileSync(f, 'utf8'))
     .join('\n')
     .replace(/\/\*[\s\S]*?\*\//g, '')          // sin comentarios de bloque
     .split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');

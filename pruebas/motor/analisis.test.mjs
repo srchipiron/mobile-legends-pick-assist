@@ -3,7 +3,7 @@
  * el pick aguanta lo que falta por salir, que se calle con el draft completo
  * y que no cruce la simulación de OTRO draft con el ranking de este.
  */
-import { test, ok, eq, leerTexto, terminar } from '../arnes.mjs';
+import { test, ok, eq, terminar } from '../arnes.mjs';
 import { nombreClave, indexarPorNombre } from '../../src/motor/nombres.js';
 import { analizarDraft } from '../../src/motor/analisis.js';
 import { CRUCE_MALO } from '../../src/motor/matrices.js';
@@ -119,10 +119,31 @@ test('el analisis avisa del peor cruce del draft cuando el dato lo dice', () => 
     'avisa de un cruce que esta dentro de lo normal');
 
   // El umbral es el MISMO que usa el motor para las tarjetas: si se separan,
-  // la etiqueta y el analisis dicen cosas distintas del mismo cruce.
-  const analisis = leerTexto('src/motor/analisis.js');
-  ok(/CRUCE_MALO/.test(analisis),
-    'el analisis tiene su propio umbral: acabara diciendo algo distinto que la tarjeta');
+  // la etiqueta y el analisis dicen cosas distintas del mismo cruce. Antes
+  // esto era `/CRUCE_MALO/.test(leerTexto('src/motor/analisis.js'))`, que es
+  // una guarda por TEXTO: la palabra sale tambien en un comentario del
+  // fichero, asi que pasaba aunque el umbral volviera a escribirse a mano
+  // (fue el error de MATCHUP_CLARO = 0.03). Se comprueba el LIMITE: un cruce
+  // un pelo por debajo de CRUCE_MALO avisa y uno un pelo por encima se calla,
+  // asi que el numero del que habla el analisis ES la constante.
+  const EPS = 1e-4;
+  const conCruce = (v, e) => analizarDraft({
+    ranking, enemigos: [e], aliados: [], empate: [],
+    meta: { counters: indexarPorNombre({ Minotaur: { [e.name]: v } }, 2) },
+  });
+  const avisaDe = (v) => conCruce(v, malo).some((f) => f.clave === 'analisis.cuidadoCon');
+  ok(avisaDe(CRUCE_MALO - EPS), `el analisis no avisa justo por debajo de CRUCE_MALO (${CRUCE_MALO}): su umbral es otro`);
+  ok(!avisaDe(CRUCE_MALO + EPS), `el analisis avisa justo por encima de CRUCE_MALO (${CRUCE_MALO}): su umbral es otro`);
+
+  // Y por el lado bueno, la misma cola: «ganas el cruce» arranca en
+  // 1 - CRUCE_MALO (= CRUCE_DESTACABLE), no en un 0.53 escrito a mano.
+  const contraRival = (v) => analizarDraft({
+    ranking, enemigos: [malo], aliados: [], empate: [], rivalDeLinea: malo.name,
+    meta: { counters: indexarPorNombre({ Minotaur: { [malo.name]: v } }, 2) },
+  });
+  const ganaDe = (v) => contraRival(v).some((f) => f.clave === 'analisis.ganasCruce');
+  ok(ganaDe(1 - CRUCE_MALO + EPS), `el analisis no dice «ganas el cruce» justo por encima de ${1 - CRUCE_MALO}: su umbral es otro`);
+  ok(!ganaDe(1 - CRUCE_MALO - EPS), `el analisis dice «ganas el cruce» justo por debajo de ${1 - CRUCE_MALO}: su umbral es otro`);
 });
 
 await terminar('motor/analisis');

@@ -5,7 +5,7 @@
  * `scripts/test-engine.mjs`: con la reescritura, una ruta vieja en un
  * workflow es un bot que falla el lunes sin que nadie lo vea hasta el martes.
  */
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { test, ok, terminar, RAIZ, leerTexto } from '../arnes.mjs';
 
@@ -33,14 +33,11 @@ test('toda ruta citada en workflows, configuración y documentación existe', ()
   ok(!faltan.length, `rutas que ya no existen:\n    ${[...new Set(faltan)].join('\n    ')}`);
 });
 
-test('el guardarraíl de la ingesta cubre todos los workflows que la llaman', () => {
-  const dir = join(RAIZ, '.github/workflows');
-  for (const f of readdirSync(dir)) {
-    const y = readFileSync(join(dir, f), 'utf8');
-    const llamadas = [...y.matchAll(/node scripts\/ingest\.mjs[^\n]*/g)].map((m) => m[0]);
-    for (const l of llamadas) ok(/--out\s+\S+/.test(l), `${f} llama a la ingesta sin --out: escribiría directa sobre public/data`);
-    if (llamadas.length) ok(/comparar-ingesta\.mjs/.test(y), `${f} llama a la ingesta y no pasa por comparar-ingesta.mjs`);
-  }
-});
+// El guardarraíl de la ingesta (que toda llamada lleve `--out` y pase por
+// comparar-ingesta) vive en pruebas/scripts/workflows.test.mjs, «los workflows
+// que publican datos pasan por el guardarrail»: allí se comprueba que la
+// comparación es un MANDATO y no una mención -`run: echo "antes: node
+// scripts/comparar-ingesta.mjs"` pasaba una guarda por texto como la que había
+// aquí-, y que ningún workflow nuevo llama a la ingesta fuera de la lista.
 
 await terminar('app/rutas');

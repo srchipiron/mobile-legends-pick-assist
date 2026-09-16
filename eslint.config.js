@@ -18,6 +18,8 @@ const node = {
   structuredClone: 'readonly', Intl: 'readonly', URLSearchParams: 'readonly', setInterval: 'readonly', clearInterval: 'readonly', crypto: 'readonly', Response: 'readonly', Blob: 'readonly',
   CompressionStream: 'readonly', DecompressionStream: 'readonly', localStorage: 'readonly', sessionStorage: 'readonly', window: 'readonly',
   document: 'readonly', navigator: 'readonly', history: 'readonly', location: 'readonly', __dirname: 'readonly',
+  // Los callbacks que se ejecutan DENTRO del navegador (page.evaluate, addInitScript).
+  Event: 'readonly', CustomEvent: 'readonly', HTMLElement: 'readonly',
 };
 
 const reglas = {

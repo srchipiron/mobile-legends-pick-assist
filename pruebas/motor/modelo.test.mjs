@@ -111,7 +111,7 @@ test('la estimacion de victoria: neutra sin datos, simetrica, y cae donde se mid
   ok(q(0.05) > 0.33 && q(0.05) < 0.47 && q(0.95) > 0.53 && q(0.95) < 0.67, `p05/p95 fuera de lo medido: ${q(0.05)} / ${q(0.95)}`);
 });
 
-test('el modelo: la nota es la probabilidad de ganar, sube con el cruce, y la escala es la medida en las partidas pro', () => {
+test('el modelo: la nota es la probabilidad de ganar y sube con el cruce', () => {
   // 1. Ordenado por probabilidad, y la probabilidad es la del draft con el
   //    candidato dentro (el mismo numero que enseña la estimacion). Los datos
   //    y el ranking, por la vía de la app (prepararDatos + ordenar), y la
@@ -131,11 +131,13 @@ test('el modelo: la nota es la probabilidad de ganar, sube con el cruce, y la es
   const yo = ranking[5].heroe; const e = enemigos[0];
   const conCruce = (v) => evaluarDraft({ yo, aliados, enemigos, meta: { ...datos.meta, counters: indexarPorNombre({ ...meta.counters, [yo.name]: { ...(meta.counters[yo.name] ?? {}), [e.name]: v } }, 2) }, lineas: datos.lineas }).logOdds;
   ok(Math.abs((conCruce(0.56) - conCruce(0.50)) - ESCALA * logit(0.56)) < 1e-9, 'la nota no sube con el cruce lo que dice la escala');
-  // 3. Que la escala sea la medida en el corpus pro (regresión logística de
-  //    «ganó» sobre H+C+S dentro de 2,5 errores típicos, y mejor fuera de
-  //    muestra que el modelo de coeficientes 1) se comprueba con
-  //    scripts/ajustar-modelo.mjs, que no es el motor: queda para la suite
-  //    de scripts.
+  // 3. Que la escala del código sea la que MIDEN hoy las partidas pro
+  //    (regresión logística de «ganó» sobre H+C+S dentro de 2,5 errores
+  //    típicos, y mejor fuera de muestra que el modelo de coeficientes 1) NO
+  //    se comprueba aquí: hace falta ejecutar scripts/ajustar-modelo.mjs
+  //    sobre el corpus, que no es el motor. Vive en
+  //    pruebas/scripts/modelo-medido.test.mjs. Esta prueba solo comprueba
+  //    que el motor USA la escala que tiene escrita, no que esa escala valga.
 });
 
 test('revision linea a linea del motor: el termino de heroe no recorta y el techo sale de las reglas', () => {

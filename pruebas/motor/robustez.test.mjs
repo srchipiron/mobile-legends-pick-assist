@@ -14,13 +14,18 @@ import { prepararDatos, lineasEnemigasAbiertas } from '../../src/motor/draft.js'
 
 test('la robustez del pick: determinista, suma uno y predice si aguanta', () => {
   const meta = leerJson('public/data/roam-meta.json');
-  if (!(meta.heroes ?? []).length || !meta.counters) return;
+  // Sin datos no se simula nada, y eso es un FALLO, no un pase: con el
+  // `return` de antes el fichero imprimía «1 de 1 correctas» sin haber
+  // simulado un solo final.
+  ok((meta.heroes ?? []).length >= 100 && meta.counters,
+    `roam-meta.json trae ${(meta.heroes ?? []).length} heroes y ${meta.counters ? '' : 'NINGUNA '}matriz de cruces: la simulacion no se puede comprobar`);
   // Los datos como los monta la app: catálogo fundido con la API, matrices
   // indexadas por clave en los dos niveles y pools por línea.
   const datos = prepararDatos({ catalogo, meta });
   const M = datos.meta;
   const pools = datos.poolsPorLinea;
-  if (LINEAS.some((l) => pools[l].length < 10)) return;
+  ok(!LINEAS.some((l) => pools[l].length < 10),
+    `alguna linea se queda sin pool: ${LINEAS.map((l) => `${l}:${pools[l].length}`).join(' ')}`);
 
   // 1. Con el mismo draft, la misma cuota: sin esto el numero bailaria entre
   //    dos aperturas del diagnostico y no se podria probar nada.

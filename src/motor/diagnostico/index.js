@@ -1,15 +1,15 @@
 import { cobertura } from '../matrices.js';
 import { crearInforme, titular } from './informe.js';
-import { seccionEntorno } from './entorno.js';
-import { seccionDraft } from './draft.js';
-import { seccionDatos, seccionCobertura, seccionSalud, seccionHistorial } from './datos.js';
-import { seccionPro } from './pro.js';
-import { seccionMotor, seccionModelo } from './motor.js';
-import { seccionMaestria, seccionPartidas } from './personal.js';
+import { seccionEntorno } from './seccion-entorno.js';
+import { seccionDraft } from './seccion-draft.js';
+import { seccionDatos, seccionCobertura, seccionSalud, seccionHistorial } from './seccion-datos.js';
+import { seccionPro } from './seccion-pro.js';
+import { seccionMotor, seccionModelo } from './seccion-motor.js';
+import { seccionMaestria, seccionPartidas } from './seccion-personal.js';
 
 export { titular } from './informe.js';
-export { medirRuido, cifrasDe } from './datos.js';
-export { MINIMO_PARA_MEDIR_PRO } from './pro.js';
+export { medirRuido, cifrasDe } from './seccion-datos.js';
+export { MINIMO_PARA_MEDIR_PRO } from './seccion-pro.js';
 
 /**
  * Autodiagnóstico. Se ejecuta EN EL MÓVIL contra los datos que tiene la app
