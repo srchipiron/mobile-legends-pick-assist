@@ -111,6 +111,12 @@ export default {
   // --- historial de partidas ---
   'hist.titulo': 'Tus partidas',
   'hist.boton': 'Partidas',
+  'meta.boton': 'Meta',
+  'meta.titulo': 'Lo que está fuerte ahora',
+  'meta.pista': 'La tier list que usa la app: winrate en {rango} de los últimos {dias|día|días}, por línea, en el mismo orden con el que empuja las tarjetas. Se actualiza sola dos veces al día.',
+  'meta.deriva': 'La cifra pequeña es cuánto se mueve cada héroe en los últimos {dias|día|días} respecto a la semana: lo que sube tras un parche se ve aquí antes.',
+  'meta.uso': 'pick {pick}% · ban {ban}%',
+  'meta.resto': 'Esto es solo la fuerza general. Quién te come a ti, con quién combinas y con cuáles eres bueno tú lo deciden los otros términos, draft a draft.',
   'hist.vacio': 'Todavía no has apuntado ninguna partida.',
   'hist.gane': 'Gané',
   'hist.perdi': 'Perdí',

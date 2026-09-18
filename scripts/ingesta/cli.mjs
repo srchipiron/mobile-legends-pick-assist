@@ -7,7 +7,7 @@
 import { writeFile, readFile, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import {
-  DAYS, HEROES, ICONOS, OUT, RANK, RANKS, RETRATOS, diagnostics, estado, sleep,
+  DAYS, DIAS_RECIENTES, HEROES, ICONOS, OUT, RANK, RANKS, RETRATOS, diagnostics, estado, sleep,
 } from './contexto.mjs';
 import { discoverRoutes, elegirRutaConMasDatos } from './descubrimiento.mjs';
 import {
@@ -108,6 +108,26 @@ async function main() {
     await sleep(250);
   }
   const stats = statsByRank[RANK] ?? Object.values(statsByRank)[0] ?? previous?.stats ?? {};
+
+  // La ventana corta de las estadisticas por heroe, por rango. NO se conserva
+  // de la corrida anterior: unos datos "recientes" de hace dias son peores
+  // que ninguno, y sin ellos la app cae sola a los de 7 dias (ventana.js).
+  // Es un extra: un fallo aqui no tira la corrida ni deja de publicar.
+  const recientesPorRango = {};
+  diagnostics.recientes = {};
+  for (const rank of RANKS) {
+    try {
+      const s = await fetchStats(rank, DIAS_RECIENTES);
+      if (Object.keys(s).length) recientesPorRango[rank] = s;
+      diagnostics.recientes[rank] = `${Object.keys(s).length} héroes`;
+    } catch (err) {
+      diagnostics.recientes[rank] = `fallo: ${err.message.slice(0, 120)}`;
+      console.warn(`  · ${rank} (${DIAS_RECIENTES} días): fallo (${err.message}); la app usará la ventana de ${DAYS}`);
+    }
+    await sleep(250);
+  }
+  const recientes = Object.keys(recientesPorRango).length ? { dias: DIAS_RECIENTES, statsByRank: recientesPorRango } : null;
+  console.log(`  · ventana de ${DIAS_RECIENTES} días: ${Object.keys(recientesPorRango).join(', ') || 'ninguno'}`);
 
   // Antes de pedir 266 veces, comprobar por cual de las rutas candidatas viene
   // el dato completo. Cuesta unas pocas peticiones y ha valido la matriz entera.
@@ -244,6 +264,7 @@ async function main() {
       dano: diagnostics.dano ?? null,
       builds: diagnostics.builds ?? null,
       rangos: diagnostics.rangos ?? null,
+      recientes: diagnostics.recientes ?? null,
       ok: [...new Set(diagnostics.ok)].slice(0, 6),
       // Lo que falló, si NO se descargó nada: antes se vaciaba en cuanto había
       // datos previos (statsByRank lleva dentro el `previous`), o sea casi
@@ -253,6 +274,7 @@ async function main() {
     },
     stats,
     statsByRank,
+    ...(recientes ? { recientes } : {}),
     counters: relations.counters,
     synergies: relations.synergies,
     equipment: equipo,

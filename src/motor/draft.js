@@ -9,6 +9,7 @@ import { simularFinales } from './robustez.js';
 import { aconsejarEquipo } from './equipo.js';
 import { analizarComposicion } from './composicion.js';
 import { analizarDraft } from './analisis.js';
+import { elegirVentana, mediaDeWinrate } from './ventana.js';
 
 /**
  * El cerebro: de los ficheros de datos y el draft a todo lo que la app
@@ -56,11 +57,25 @@ export function prepararDatos({ catalogo = null, meta = null, rango = null } = {
   // Todo por clave normalizada: la API y el catálogo escriben algunos héroes
   // distinto y sin esto se quedaban sin datos en silencio. Las matrices
   // tienen nombre de héroe en los DOS niveles.
+  // La fuerza de cada héroe sale de la ventana más corta cuya precisión
+  // aguanta (3 días si la ingesta la trae y es coherente con la de 7, ver
+  // ventana.js); cruces y parejas siguen a 7. Es el ÚNICO sitio donde se
+  // decide: la app, el bot y las pruebas ven las mismas estadísticas.
+  const semana = indexarPorNombre(meta?.statsByRank?.[rangoUsado] ?? meta?.stats);
+  const recientes = meta?.recientes?.statsByRank?.[rangoUsado] ? indexarPorNombre(meta.recientes.statsByRank[rangoUsado]) : null;
+  const { stats, ventana } = elegirVentana(semana, recientes, meta?.recientes?.dias ?? 3);
   const metaCtx = {
-    stats: indexarPorNombre(meta?.statsByRank?.[rangoUsado] ?? meta?.stats),
+    stats,
+    statsSemana: semana,
+    ventana,
     counters: indexarPorNombre(meta?.counters, 2),
     synergies: indexarPorNombre(meta?.synergies, 2),
-    mediaDelRango: meta?.avgByRank?.[rangoUsado] ?? meta?.patchAvgWinRate ?? 0.5,
+    // El centro del término de héroe es la media de LA MISMA ventana: con la
+    // de 7 días, la que calculó la ingesta (idéntica a la de 2.x); con la de
+    // 3, la de los valores que de verdad se usan.
+    mediaDelRango: ventana.dias === 7
+      ? (meta?.avgByRank?.[rangoUsado] ?? meta?.patchAvgWinRate ?? 0.5)
+      : mediaDeWinrate(stats),
   };
   const poolsPorLinea = Object.fromEntries(LINEAS.map((l) => [l, poolDeLinea(heroes, lineas, l)]));
   return {

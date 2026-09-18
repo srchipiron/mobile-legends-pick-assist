@@ -22,6 +22,7 @@ import { ApuntarPartida } from './componentes/ApuntarPartida.jsx';
 import { HistorialPartidas } from './componentes/HistorialPartidas.jsx';
 import { Perfil } from './componentes/Perfil.jsx';
 import { EditorDeMaestria } from './componentes/EditorDeMaestria.jsx';
+import { Meta } from './componentes/Meta.jsx';
 
 /**
  * La app: estado (hooks de ./estado), motor (src/motor, por useRecomendacion)
@@ -193,6 +194,7 @@ export default function App() {
         />
       )}
       {hoja === 'perfil' && <Perfil datos={datosPerfil} onImportar={traerPerfil} onCerrar={cerrar} t={t} />}
+      {hoja === 'meta' && <Meta datos={datos} linea={linea} onCerrar={cerrar} t={t} />}
       {hoja === 'maestria' && (
         <EditorDeMaestria pool={rec.pool} maestria={personal.maestria} onGuardar={personal.guardarMaestria} onCerrar={cerrar} t={t} />
       )}

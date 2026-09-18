@@ -72,6 +72,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   } };
   const golpes = {};
   let fallaCounters = false;
+  let fallaRecientes = false;
   let fallaDetail = false;
   let academyVacia = false;
   let fallosCountersPendientes = 0;
@@ -84,10 +85,15 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     let m;
     if (/openapi\.json$/.test(ruta)) { marca('esquema'); return json(esquema); }
     if (ruta === '/api/heroes/hero-rank/') {
-      marca(`rank:${u.searchParams.get('rank')}`);
+      // La ventana corta (days=3) se sirve DISTINTA a la de 7 para poder
+      // comprobar que lo que sale es lo servido y no lo de siempre; y se
+      // puede tirar sola, porque es un extra que no debe tumbar la corrida.
+      const corta = u.searchParams.get('days') === '3';
+      if (corta && fallaRecientes) { res.statusCode = 500; return res.end('{}'); }
+      marca(`${corta ? 'rank3' : 'rank'}:${u.searchParams.get('rank')}`);
       return json({ code: 0, data: { records: heroes.map((h) => ({ data: {
         main_heroid: h.id, main_hero: { data: { name: h.name } },
-        main_hero_win_rate: 0.5 + h.id / 100, main_hero_appearance_rate: 0.01 * h.id, main_hero_ban_rate: 0.2,
+        main_hero_win_rate: 0.5 + h.id / 100 + (corta ? 0.002 : 0), main_hero_appearance_rate: 0.01 * h.id, main_hero_ban_rate: 0.2,
       } })) } });
     }
     if (ruta === '/api/heroes/hero-position/') {
@@ -152,7 +158,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
 
     // Cada endpoint que la ingesta conoce se ha llamado. Si uno deja de
     // llamarse, la app se queda con el dato conservado sin que nadie lo vea.
-    for (const k of ['esquema', 'rank:mythic', 'rank:glory', 'position', 'detail', 'counters', 'academy', 'compat', 'equipo', 'equipoCorto', 'builds:roam', 'img']) {
+    for (const k of ['esquema', 'rank:mythic', 'rank:glory', 'rank3:glory', 'position', 'detail', 'counters', 'academy', 'compat', 'equipo', 'equipoCorto', 'builds:roam', 'img']) {
       ok(golpes[k] > 0, `la ingesta no ha llamado a ${k}: ${JSON.stringify(golpes)}`);
     }
 
@@ -164,6 +170,11 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     ok(d.diagnostics.frescos.includes('glory') && d.diagnostics.frescos.includes('mythic'), `rangos frescos: ${d.diagnostics.frescos}`);
     eq(d.stats.Atlas?.winRate, 0.51, `winrate de Atlas: ${JSON.stringify(d.stats.Atlas)}`);
     eq(d.statsByRank.mythic?.Khufra?.winRate, 0.52, 'las estadísticas por rango no son las servidas');
+    // La ventana corta: pedida, guardada aparte y con lo que sirvió la API
+    // (0.512 y no 0.51), sin pisar la de 7 días.
+    eq(d.recientes?.dias, 3, `la ventana corta no se guarda: ${JSON.stringify(d.recientes)}`);
+    eq(d.recientes?.statsByRank?.glory?.Atlas?.winRate, 0.512, `la ventana corta no es la servida: ${JSON.stringify(d.recientes?.statsByRank?.glory?.Atlas)}`);
+    eq(d.stats.Atlas?.winRate, 0.51, 'la ventana corta ha pisado a la de 7 días');
     const atlas = d.heroes.find((h) => h.name === 'Atlas');
     ok(atlas && atlas.id === 1 && atlas.role === 'tank' && atlas.lanes.includes('roam'), `ficha de Atlas: ${JSON.stringify(atlas)}`);
     eq(atlas?.damage?.magico, 1, `tipo de daño de Atlas: ${JSON.stringify(atlas?.damage)}`);
@@ -187,7 +198,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     // Segunda corrida con la ruta de counters CAÍDA: estadísticas frescas
     // pero matriz de otro día. Antes salía con la fecha de hoy, pasaba el
     // comparador (mismos recuentos) y la puerta de 72 h del despliegue.
-    fallaCounters = true;
+    fallaCounters = true; fallaRecientes = true;
     const out2 = resolve(dir, 'sin-counters.json');
     const r2 = await correrIngesta([
       '--base', `http://127.0.0.1:${puerto}/api`,
@@ -199,6 +210,10 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     const d2 = JSON.parse(readFileSync(out2, 'utf8'));
     eq(d2.generatedAt, guardada.generatedAt, 'con la matriz conservada la corrida se fecha como si fuera nueva');
     eq(d2.diagnostics.conservado, true, 'no dice que conserva la matriz');
+    // Con la ventana corta caída no se conserva la de ayer (unos «recientes»
+    // viejos son peores que ninguno): simplemente no va, y la app cae a 7.
+    ok(d2.recientes === undefined, `la ventana corta caída sale conservada o inventada: ${JSON.stringify(d2.recientes)}`);
+    ok(/fallo:/.test(d2.diagnostics.recientes?.glory ?? ''), `el diagnóstico no dice que la ventana corta falló: ${JSON.stringify(d2.diagnostics.recientes)}`);
     eq(d2.diagnostics.frescosRecursos?.relaciones, 0, `cuenta relaciones frescas sin haberlas descargado: ${JSON.stringify(d2.diagnostics.frescosRecursos)}`);
     const atlasAntes = JSON.stringify(guardada.counters?.Atlas ?? null);
     ok(atlasAntes !== 'null' && JSON.stringify(d2.counters?.Atlas) === atlasAntes, 'la fila de Atlas no se conserva héroe a héroe');
@@ -209,7 +224,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     // de counters falla UNA vez al sondear y la alternativa trae CERO pares:
     // antes 0 > -1 cambiaba la ruta por la vacía y la matriz entera salía
     // conservada.
-    fallaCounters = false; fallaDetail = true; academyVacia = true; fallosCountersPendientes = 1;
+    fallaCounters = false; fallaRecientes = false; fallaDetail = true; academyVacia = true; fallosCountersPendientes = 1;
     const out3 = resolve(dir, 'ficha-caida.json');
     const r3 = await correrIngesta([
       '--base', `http://127.0.0.1:${puerto}/api`,

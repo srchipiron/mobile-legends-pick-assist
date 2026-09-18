@@ -114,6 +114,12 @@ export default {
 
   'hist.titulo': 'Your matches',
   'hist.boton': 'Matches',
+  'meta.boton': 'Meta',
+  'meta.titulo': 'What is strong now',
+  'meta.pista': 'The tier list the app uses: win rate in {rango} over the last {dias|day|days}, per lane, in the same order that drives the cards. It refreshes itself twice a day.',
+  'meta.deriva': 'The small figure is how much each hero has moved over the last {dias|day|days} versus the week: what rises after a patch shows up here first.',
+  'meta.uso': 'pick {pick}% · ban {ban}%',
+  'meta.resto': 'This is only overall strength. Who beats you, who you pair with and which heroes you are good at are decided by the other terms, draft by draft.',
   'hist.vacio': 'You have not logged any match yet.',
   'hist.gane': 'Won',
   'hist.perdi': 'Lost',

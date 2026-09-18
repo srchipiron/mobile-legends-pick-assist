@@ -42,6 +42,12 @@ export const PREVIO = typeof args.previo === 'string' ? resolve(ROOT, args.previ
 // en serio, asi que sus counters son los mas informativos.
 export const RANK = typeof args.rank === 'string' ? args.rank : 'glory';
 export const DAYS = Number.isFinite(Number(args.days)) && Number(args.days) > 0 ? Number(args.days) : 7;
+// La ventana CORTA, solo para las estadisticas por heroe: una media de 7 dias
+// tarda una semana en recoger un parche. 3 y no 1 porque esta medido con la
+// misma ruta y la misma poblacion (src/motor/ventana.js): a 3 dias el ruido
+// queda 12 veces por debajo de la dispersion entre heroes; a 1 dia la ruta
+// devuelve heroes al 0% y al 100% (r = 0,09 con la de 7).
+export const DIAS_RECIENTES = 3;
 export const RANKS = (typeof args.ranks === 'string' ? args.ranks : 'epic,legend,mythic,glory').split(',').map((r) => r.trim()).filter(Boolean);
 // El rango pedido se descarga siempre: fuera de la lista, `estadisticasNuevas`
 // era falso para siempre y la fecha del fichero no avanzaba jamás.

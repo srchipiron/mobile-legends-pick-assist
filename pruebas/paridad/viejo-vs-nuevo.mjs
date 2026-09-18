@@ -30,6 +30,9 @@ const [nDraft, nNombres, nMaestria] = await Promise.all(['draft.js', 'nombres.js
 
 const catalogo = JSON.parse(readFileSync(resolve(RAIZ, 'public/data/heroes.json'), 'utf8'));
 const meta = JSON.parse(readFileSync(resolve(RAIZ, 'public/data/roam-meta.json'), 'utf8'));
+// La ventana corta (3.2.0) no existe en 2.0.2: con ella el término de héroe
+// difiere POR DISEÑO. Se quita para que la paridad siga midiendo todo lo demás.
+delete meta.recientes;
 
 // ---- viejo, montado como lo montaba App.jsx 2.0.2 ----
 const allHeroes = vScore.mergeCatalog(catalogo.heroes, meta.heroes);

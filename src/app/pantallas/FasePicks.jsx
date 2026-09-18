@@ -22,7 +22,7 @@ import { HORAS_DATOS_VIEJOS } from '../componentes/Pie.jsx';
  * @param d.draft     el hook useDraft (nombres, anadir, quitar, marcarRival, setFase, reiniciar)
  * @param d.equipo    { enemigos, aliados, baneos } ya resueltos a héroes
  * @param d.rec       lo que devuelve useRecomendacion
- * @param d.abrir     abre una hoja: 'enemigos' | 'aliados' | 'maestria' | 'historial' | 'perfil' | 'linea' | 'apuntar' | { build }
+ * @param d.abrir     abre una hoja: 'enemigos' | 'aliados' | 'maestria' | 'historial' | 'perfil' | 'meta' | 'linea' | 'apuntar' | { build }
  */
 export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, rec, abrir, onDiagnostico, pie }) {
   const { enemigos, aliados, baneos } = equipo;
@@ -72,6 +72,8 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, da
             <button className="reset" onClick={() => abrir('maestria')}>{t('app.maestria')}</button>
             <button className="reset" onClick={() => abrir('historial')}>{t('hist.boton')}</button>
             <button className="reset" onClick={() => abrir('perfil')}>{t('perfil.boton')}</button>
+            {/* Al final a propósito: las pruebas de navegador abren maestría e historial por posición. */}
+            <button className="reset" onClick={() => abrir('meta')}>{t('meta.boton')}</button>
           </div>
           <button className="reset" style={{ marginTop: '14px' }} onClick={onDiagnostico}>{t('app.diagnostico')}</button>
         </details>

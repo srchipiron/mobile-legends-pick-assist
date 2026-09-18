@@ -8,6 +8,30 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.2.0
+
+- La app reacciona a un parche en tres días en vez de siete. La fuerza de
+  cada héroe (el primer término de la nota, el que hace de tier list) sale
+  ahora del winrate de los **últimos 3 días** en tu rango, no de los últimos
+  7. Los cruces y las parejas siguen a 7 días. Está medido con la misma ruta
+  y la misma población (`/api/heroes/rank` admite 1, 3, 7, 15 y 30 días): la
+  ventana de 3 días dice lo mismo que la de 7 cuando no hay parche (r =
+  0,997, diferencia mediana 0,18 puntos, 14 de los 15 primeros coinciden) y
+  el ruido queda doce veces por debajo de la dispersión entre héroes. La de 1
+  día NO vale (héroes al 0% y al 100%, r = 0,09) y por eso no se usa. Si
+  algún día la de 3 viene igual de rara (temporada recién empezada, API a
+  medias), la app vuelve sola a la de 7 y el Diagnóstico dice por qué.
+  Hasta que el bot de datos pase, la app sigue con 7 días: no cambia nada
+  hasta la siguiente descarga.
+- Nueva pantalla **Meta** en Ajustes: la tier list que la app usa de verdad,
+  por línea y con la tuya primero, en el mismo orden con el que empuja las
+  tarjetas, con el winrate, el pick y el ban de cada héroe y cuánto se ha
+  movido en los últimos 3 días respecto a la semana. No es otra fuente ni
+  cambia la nota: es para que puedas compararla con la tier list que leas
+  por ahí en vez de fiarte. Se buscó una tier list publicada que se pudiera
+  pedir y no existe: la de la propia API está retirada en origen y mlbb.gg no
+  la publica. Copiar una a mano envejece en días y no se puede medir.
+
 ## 3.1.0
 
 - El Diagnóstico avisa cuando Moonton le rehace las habilidades a un héroe.

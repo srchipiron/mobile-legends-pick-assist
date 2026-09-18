@@ -163,7 +163,8 @@ El motor por módulos: `nombres` (la clave de todos los datos), `catalogo`
 (fundir con la API, tags deducidos, pools), `matrices` (cruces y parejas, sus
 umbrales medidos), `reglas` (tablas por etiqueta), `maestria`, `modelo` (los
 términos y la escala), `ranking`, `baneos`, `lineas`, `robustez`, `equipo`,
-`analisis`, `composicion`, `builds`, `alias`, `registro`, `perfil`, y
+`analisis`, `composicion`, `builds`, `alias`, `registro`, `perfil`, `ventana`
+(qué ventana de días manda en la fuerza de un héroe, con su guarda) y
 `diagnostico/` (el informe por secciones, el mismo en el móvil y en el bot).
 
 Las pruebas: un fichero por módulo, con el arnés propio (`pruebas/arnes.mjs`:
@@ -210,6 +211,25 @@ ninguna constante.
   mediana de 0,00003. Por eso en 1.x `PICKRATE_FIABLE` bajó de 0,004 a
   0,00041 y desde 2.0 el cruce no se encoge por muestra en absoluto: el dato
   no lo pide. El diagnóstico vigila las dos cosas y avisa si cambian.
+
+- **La ventana de la fuerza de un héroe es de 3 días, la del resto de 7**
+  (3.2.0, `src/motor/ventana.js`). La ruta `/api/heroes/rank` admite 1, 3,
+  7, 15 y 30 días con la misma población, así que se puede comparar sin
+  cambiar de fuente. Medido el 18 de septiembre de 2026 sobre los 133 héroes
+  en Gloria: 3 días frente a 7, σ 0,27 pp, mediana 0,18 pp, máximo 1,16 pp,
+  r = 0,9969, 14 de los 15 primeros iguales, con 3,2 pp de dispersión entre
+  héroes (ruido 12 veces por debajo de la señal); 1 día frente a 3, σ 34,7
+  pp, r = 0,09, héroes al 0% y al 100%. Así que se usa la más corta cuya
+  precisión aguanta, sin peso ni mezcla, y hay GUARDA: si la corta no es
+  coherente con la de 7 (`COHERENCIA_MINIMA = 0.9`, lejos del 0,997 bueno y
+  del 0,09 malo) o trae valores imposibles, manda la de 7 héroe a héroe o
+  entera, y el diagnóstico dice por qué. La ingesta NO conserva la ventana
+  corta de la corrida anterior (unos «recientes» viejos son peores que
+  ninguno) y su fallo no tira la corrida. Cruces y parejas siguen a 7: son
+  17.556 celdas con muchas menos partidas cada una y nadie ha medido su
+  ruido a 3. `prepararDatos` es el único sitio donde se decide, y el centro
+  del término de héroe (`mediaDelRango`) es la media de la MISMA ventana. El
+  arnés de paridad quita `meta.recientes` porque 2.0.2 no la conoce.
 
 Dos constantes que se midieron y se dejaron como estaban, para no volver a
 medirlas: el umbral de «tu héroe está N puntos por encima» (`>= 0.02` en
@@ -702,6 +722,12 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   que solo leen no se enteraban. Hoy se siembra una vez por contexto, con
   pestillo. Mismo error de familia que las pruebas que medían el orden del
   fichero en vez del motor: comprobar el andamio en lugar de la app.
+- **Un parámetro de la API adivinado en vez de leído del esquema** (3.1.0,
+  no llegó a producción) — la ruta de tendencias se probó con `days` y su
+  parámetro se llama `past-days`; la de estadísticas admite `days` de 1 a 30.
+  El esquema OpenAPI está descargado en cada ingesta: antes de decir que una
+  ruta «no cuadra», leer sus parámetros y sus enumeraciones ahí. La ingesta
+  ya lo hace (`discoverRoutes`); a mano hay que hacer lo mismo.
 - **Guardar en el almacén DENTRO de un updater de `setState`** (3.0) — React
   puede llamar a un updater más de una vez (evaluación ansiosa, modo
   estricto, reproceso de la cola), así que ahí dentro no va ningún efecto.
@@ -1326,19 +1352,23 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   término de héroe ordena por winrate del rango con la media del rango
   restada, con ventana de 7 días y dos corridas al día.
 - **Reaccionar antes a un parche con la serie diaria** (`/api/heroes/{id}/trends`,
-  3.1.0): la ruta está VIVA y da winrate, pickrate y banrate día a día, que es
-  justo lo que una media de 7 días tarda en recoger. No se usa porque sus
-  números no reconcilian con los que usa la app: medido sobre los 30 héroes
-  más jugados (19 con serie utilizable), la mediana de |wr7 de la serie − el
-  winrate guardado| es 3,28 pp SOBRE LA MISMA VENTANA, con casos como Granger
-  42,0% guardado frente a 52,5% de la serie y Minotaur 54,3% frente a 39,5%; y
-  la serie salta ±10 pp de un día para otro en héroes con pickrate alto, que
-  con ese tamaño de muestra no es posible. Es otra población (el registro trae
-  `bigrank`, `camp_type` y `match_type` propios y no parece filtrar por el
-  `rank` que se le pide). Además los dos últimos días vienen a medias
-  (`win_rate: 0` y pickrate diez veces por debajo). Antes de construir nada
-  encima hay que entender QUÉ población es; calibrar contra una suposición es
-  el error que este fichero ya documenta dos veces.
+  3.1.0): la ruta está VIVA y da winrate, pickrate y banrate día a día. No se
+  usa: sus números no reconcilian con los de la app en la misma ventana
+  (mediana 3,28 pp; Granger 42,0% guardado frente a 52,5%; Minotaur 54,3%
+  frente a 39,5%), salta ±10 pp de un día a otro y los dos últimos días vienen
+  a medias. OJO: la primera medida se hizo pasando `days`, y en esa ruta el
+  parámetro se llama `past-days` (el esquema lo dice; hay que leerlo, no
+  suponerlo). Aun así el desajuste de población está ahí. Lo que SÍ sirvió
+  para reaccionar antes fue la ventana de 3 días de `/api/heroes/rank`, que
+  es la misma ruta y la misma población (ver «Qué son los datos»). Se reabre
+  solo si hace falta algo más fino que 3 días.
+- **La tier list, en pantalla en vez de en la nota** (3.2.0, hoja «Meta»,
+  `src/app/componentes/Meta.jsx`): enseña por línea, con la tuya primero, el
+  orden del término de héroe con el que puntúa el modelo, con winrate, pick,
+  ban y la deriva de 3 días frente a la semana. No es una fuente nueva ni
+  toca el motor: es para poder comparar con la que se lea por ahí. El botón
+  va el ÚLTIMO de la fila de `.tools` a propósito: las pruebas de navegador
+  abren maestría e historial por posición.
 - **Un tipado de verdad (TypeScript o JSDoc comprobado)** (3.0): el motor
   lleva JSDoc en las funciones de contrato, pero nadie lo comprueba. Añadir
   `tsc --checkJs` es un candidato razonable para la siguiente iteración;

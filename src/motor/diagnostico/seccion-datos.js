@@ -1,6 +1,7 @@
 import { nombreClave } from '../nombres.js';
 import { cruce, cobertura, densidadCounters } from '../matrices.js';
 import { coberturaBuilds } from '../builds.js';
+import { WINRATE_POSIBLE } from '../ventana.js';
 
 /**
  * Los datos con los que decide la app: que estén, que sean frescos, que
@@ -37,6 +38,18 @@ export function seccionDatos(inf, { datos, linea, entorno = {} }) {
     inf.linea('Cobertura por línea: ' + Object.entries(meta.coberturaPorLinea).map(([l, c]) => `${l} ${c.conCounters}/${c.total}`).join(' · '));
   }
   inf.linea(`Ventana: ${meta.days ?? '?'} días · héroes con estadísticas: ${meta.heroCount ?? 0}`);
+  // Qué ventana manda en la fuerza de cada héroe. Con la de 3 días coherente
+  // con la de 7 la app reacciona a un parche en tres días en vez de siete; si
+  // la corta viene rara (temporada recién empezada, API a medias), manda la
+  // de 7 y aquí se ve por qué.
+  const v = datos.meta?.ventana;
+  if (v?.dias === 7 && meta.recientes) {
+    inf.check(false, '', `Fuerza de héroe: ventana de 7 días porque la de ${meta.recientes.dias} no vale: ${v.motivo}`, true);
+  } else if (v?.dias && v.dias !== 7) {
+    inf.linea(`Fuerza de héroe: ventana de ${v.dias} días (${v.usados} héroes; coherencia con 7 días r=${v.coherencia?.toFixed(3)})`);
+  } else {
+    inf.linea('Fuerza de héroe: ventana de 7 días (la ingesta no trae la reciente todavía)');
+  }
   inf.linea(`API: ${meta.diagnostics?.base ?? 'desconocida'}`);
   if (meta.diagnostics?.conservado != null) {
     inf.check(!meta.diagnostics.conservado, `Última corrida con estadísticas nuevas (${(meta.diagnostics.frescos ?? []).join(', ') || 'ninguno'})`,
@@ -44,7 +57,7 @@ export function seccionDatos(inf, { datos, linea, entorno = {} }) {
   }
   const st = Object.entries(meta.stats ?? {});
   if (st.length) {
-    const raros = st.filter(([, v]) => v?.winRate != null && (v.winRate < 0.35 || v.winRate > 0.65)).map(([n]) => n);
+    const raros = st.filter(([, v]) => v?.winRate != null && (v.winRate < WINRATE_POSIBLE[0] || v.winRate > WINRATE_POSIBLE[1])).map(([n]) => n);
     inf.check(!raros.length, 'Winrates dentro de lo posible (35-65%)', `Winrates imposibles: ${raros.slice(0, 5).join(', ')} (¿API rota?)`, true);
     const sumaPick = st.reduce((acc, [, v]) => acc + (v?.pickRate ?? 0), 0);
     inf.check(Math.abs(sumaPick - 1) < 0.05, `Cuotas de pick suman ${sumaPick.toFixed(3)}`,

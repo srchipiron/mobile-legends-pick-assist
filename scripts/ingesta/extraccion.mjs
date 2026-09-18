@@ -401,9 +401,9 @@ export async function fetchHeroList() {
   return heroes;
 }
 
-export async function fetchStats(rank) {
+export async function fetchStats(rank, days = DAYS) {
   const values = {
-    days: DAYS, past_days: DAYS,
+    days, past_days: days,
     rank, rank_id: rank,
     size: 200, index: 1, page_size: 200, page_index: 1,
     sort_field: 'win_rate', sort_order: 'desc', order: 'desc', lang: 'en',

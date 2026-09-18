@@ -132,6 +132,32 @@ await prueba('un nombre guardado que ya no existe se limpia, y el rival fantasma
   await contexto.close();
 });
 
+await prueba('la hoja Meta enseña la tier list por línea, con la tuya primero, y se cierra con Escape', async () => {
+  const { contexto, pagina, errores } = await con(PICKS);
+  await pagina.locator('.more summary').click(); await pagina.waitForTimeout(200);
+  // El botón Meta va el ÚLTIMO de la fila a propósito: los de antes se abren por posición.
+  await pagina.locator('.more .tools .reset').last().click(); await pagina.waitForTimeout(400);
+  eq(await pagina.locator('[role=dialog]').count(), 1, 'no se abre la hoja Meta');
+  const titulos = await pagina.locator('[role=dialog] .meta-titulo').allInnerTexts();
+  eq(titulos.length, 5, `no salen las cinco líneas: ${titulos.join(' · ')}`);
+  // innerText devuelve lo que se VE, y el CSS lo pone en mayúsculas.
+  eq(titulos[0].toLowerCase(), 'roam', `tu línea no va la primera: ${titulos[0]}`);
+  const filas = await pagina.locator('[role=dialog] .meta-fila').count();
+  ok(filas >= 5 * 5, `salen ${filas} filas en total: la lista viene vacía`);
+  // El nº1 de tu línea es el que más winrate tiene DE VERDAD en los datos
+  // servidos: la hoja ordena por el mismo término que las tarjetas.
+  const primero = await pagina.locator('[role=dialog] .meta-fila.top .meta-nombre').first().innerText();
+  const wr = await pagina.locator('[role=dialog] .meta-fila.top .meta-wr').first().innerText();
+  ok(primero.length > 1 && /^\d{2}\.\d%$/.test(wr), `el nº1 sale raro: «${primero}» «${wr}»`);
+  // Nada en crudo ni en otro idioma.
+  const texto = await pagina.locator('[role=dialog]').innerText();
+  ok(!/meta\.[a-z]/.test(texto), 'sale una clave de texto cruda');
+  await pagina.keyboard.press('Escape'); await pagina.waitForTimeout(300);
+  eq(await pagina.locator('[role=dialog]').count(), 0, 'Escape no cierra Meta');
+  ok(!errores.length, `errores: ${errores}`);
+  await contexto.close();
+});
+
 await prueba('el pie se abre con teclado, la cabecera dice la línea y el foco vuelve al botón que abrió la hoja', async () => {
   const { contexto, pagina } = await con(PICKS);
   const pie = pagina.locator('footer.pie');

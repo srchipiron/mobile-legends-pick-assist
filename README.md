@@ -108,6 +108,13 @@ Tres decisiones que conviene entender antes de tocar nada:
 **El winrate no se encoge.** Medido el ruido entre corridas de la ingesta (0,0003 frente a 0,03 de
 dispersión entre héroes), no hay nada que encoger; tampoco el cruce por lo raro que sea el rival.
 
+**La fuerza de un héroe es la de los últimos 3 días; cruces y parejas, de 7.** Una media de 7 días
+tarda una semana en recoger un parche. La ventana de 3 dice lo mismo que la de 7 cuando no lo hay
+(r = 0,997, mediana 0,18 puntos) y su ruido queda doce veces por debajo de la dispersión entre héroes;
+la de 1 día no vale (héroes al 0% y al 100%). Si la de 3 viene rara, manda la de 7 y el Diagnóstico
+lo dice (`src/motor/ventana.js`). El botón **Meta** de Ajustes enseña esa tier list por línea, con la
+deriva de cada héroe, para compararla con la que leas por ahí en vez de fiarte.
+
 **Los counters usan el dato real si existe, y reglas por tags si no.** Las reglas están en
 `COUNTER_RULES` y son legibles: "si el enemigo tiene dashes, un roamer con anti-mobility sube". Solo
 entran con un héroe recién salido del que no hay ni un cruce, a la misma equivalencia que en 1.x.
