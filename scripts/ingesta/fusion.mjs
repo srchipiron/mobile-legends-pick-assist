@@ -50,10 +50,14 @@ export function conservarFichasPrevias(heroList, previous) {
   const specialityPrevia = Object.fromEntries(
     (previous?.heroes ?? []).filter((h) => Array.isArray(h?.speciality) && h.speciality.length).map((h) => [h.name, h.speciality]),
   );
+  const kitPrevio = Object.fromEntries(
+    (previous?.heroes ?? []).filter((h) => typeof h?.kitTexto === 'string').map((h) => [h.name, h.kitTexto]),
+  );
   for (const h of heroList) {
     if (danoPrevio[h.name]) h.damage = danoPrevio[h.name];
     if (retratoPrevio[h.name]) h.retrato = retratoPrevio[h.name];
     if (specialityPrevia[h.name]) h.speciality = specialityPrevia[h.name];
+    if (kitPrevio[h.name]) h.kitTexto = kitPrevio[h.name];
   }
   return { danoPrevio };
 }

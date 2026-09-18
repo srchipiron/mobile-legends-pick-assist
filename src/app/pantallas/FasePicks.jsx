@@ -125,6 +125,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, da
               t={t}
               stat={buscar(datos.meta.stats, c.heroe.name)}
               pro={pro?.heroes?.[c.heroe.name] ?? null}
+              tier={meta?.tiers?.tiers?.[c.heroe.name] ?? null}
               onBuild={meta?.builds ? (h) => abrir({ build: h }) : null}
             />
             {i === 0 && <ConsejoEquipo consejos={consejos} yo={c.heroe} onElegir={anadirAliado} t={t} />}

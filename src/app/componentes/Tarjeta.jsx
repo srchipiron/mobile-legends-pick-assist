@@ -15,7 +15,7 @@ export { idMotivo };
  * Tarjeta de recomendación: la probabilidad de ganar el draft con ese pick
  * y de dónde sale, en puntos, término a término.
  */
-export function Tarjeta({ candidato, indice, stat, pro = null, onBuild, t = tPorDefecto }) {
+export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, onBuild, t = tPorDefecto }) {
   const pct = Math.round(candidato.p * 100);
   const heroe = candidato.heroe;
   return (
@@ -47,6 +47,9 @@ export function Tarjeta({ candidato, indice, stat, pro = null, onBuild, t = tPor
       <div>
         <div className="pick-score" title={t('pick.probTitulo')} aria-label={t('pick.probTitulo')}>{pct}%</div>
         <span className="pick-wr">{stat?.winRate != null ? t('pick.wr', { pct: (stat.winRate * 100).toFixed(1) }) : t('app.sinDatos')}</span>
+        {/* La tier de mlbb.gg: OPINIÓN, al lado del dato y sin puntuar. Medido
+            que no añade nada al winrate (scripts/ingesta/tiers.mjs). */}
+        {tier && <span className={`pick-tier tier-${tier}`} title={t('pick.tierTitulo')}>{t('pick.tier', { tier })}</span>}
         {/* Lo que hacen los profesionales con él (Liquipedia): DATO, no
             opinión. El porcentaje solo con muestra: «0% en 1 pick» no dice nada. */}
         {pro && pro.picks + pro.bans >= 3 && (

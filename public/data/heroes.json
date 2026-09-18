@@ -36,7 +36,7 @@
         "anti_mobility"
       ],
       "roam": true,
-      "kit": "fisico|Crowd Control,Guard"
+      "kit": "fisico|Crowd Control,Guard|456fc637"
     },
     {
       "name": "Atlas",
@@ -49,7 +49,7 @@
         "zone"
       ],
       "roam": true,
-      "kit": "magico|Crowd Control,Initiator"
+      "kit": "magico|Crowd Control,Initiator|cd36d302"
     },
     {
       "name": "Barats",
@@ -62,7 +62,7 @@
         "anti_mobility"
       ],
       "roam": true,
-      "kit": "fisico|Crowd Control,Damage"
+      "kit": "fisico|Crowd Control,Damage|1c2af326"
     },
     {
       "name": "Baxia",
@@ -75,7 +75,7 @@
         "engage"
       ],
       "roam": true,
-      "kit": "magico|Damage,Support"
+      "kit": "magico|Damage,Support|7fd85e50"
     },
     {
       "name": "Belerick",
@@ -89,7 +89,7 @@
         "heal"
       ],
       "roam": true,
-      "kit": "magico|Crowd Control,Regen"
+      "kit": "magico|Crowd Control,Regen|562a5c45"
     },
     {
       "name": "Carmilla",
@@ -102,7 +102,7 @@
         "sustain"
       ],
       "roam": true,
-      "kit": "magico|Crowd Control,Damage"
+      "kit": "magico|Crowd Control,Damage|b3356db5"
     },
     {
       "name": "Chip",
@@ -115,7 +115,7 @@
         "zone"
       ],
       "roam": true,
-      "kit": "magico|Crowd Control,Support"
+      "kit": "magico|Crowd Control,Support|441e9ee4"
     },
     {
       "name": "Edith",
@@ -128,7 +128,7 @@
         "anti_dive"
       ],
       "roam": true,
-      "kit": "magico|Burst,Control"
+      "kit": "magico|Burst,Control|b5879854"
     },
     {
       "name": "Franco",
@@ -141,7 +141,7 @@
         "anti_mobility"
       ],
       "roam": true,
-      "kit": "fisico|Control,Initiator"
+      "kit": "fisico|Control,Initiator|aad773ea"
     },
     {
       "name": "Fredrinn",
@@ -154,7 +154,7 @@
         "zone"
       ],
       "roam": true,
-      "kit": "fisico|Chase,Damage"
+      "kit": "fisico|Chase,Damage|e7a73573"
     },
     {
       "name": "Gatotkaca",
@@ -167,7 +167,7 @@
         "zone"
       ],
       "roam": true,
-      "kit": "magico|Burst,Crowd Control"
+      "kit": "magico|Burst,Crowd Control|4d6847b3"
     },
     {
       "name": "Gloo",
@@ -179,7 +179,7 @@
         "anti_mobility"
       ],
       "roam": true,
-      "kit": "magico|Control,Regen"
+      "kit": "magico|Control,Regen|4184cc84"
     },
     {
       "name": "Grock",
@@ -192,7 +192,7 @@
         "mobile"
       ],
       "roam": true,
-      "kit": "fisico|Crowd Control,Initiator"
+      "kit": "fisico|Crowd Control,Initiator|9e6d9988"
     },
     {
       "name": "Hilda",
@@ -205,7 +205,7 @@
         "heal"
       ],
       "roam": true,
-      "kit": "fisico|Damage,Regen"
+      "kit": "fisico|Damage,Regen|60162cee"
     },
     {
       "name": "Hylos",
@@ -217,7 +217,7 @@
         "immobile"
       ],
       "roam": true,
-      "kit": "magico|Guard,Initiator"
+      "kit": "magico|Guard,Initiator|090dff22"
     },
     {
       "name": "Johnson",
@@ -230,7 +230,7 @@
         "mobile"
       ],
       "roam": true,
-      "kit": "magico|Crowd Control,Support"
+      "kit": "magico|Crowd Control,Support|82672f6c"
     },
     {
       "name": "Kalea",
@@ -242,7 +242,7 @@
         "mobile"
       ],
       "roam": true,
-      "kit": "fisico|Control,Regen"
+      "kit": "fisico|Control,Regen|9ba04e28"
     },
     {
       "name": "Khufra",
@@ -255,7 +255,7 @@
         "zone"
       ],
       "roam": true,
-      "kit": "mixto|Crowd Control,Initiator"
+      "kit": "mixto|Crowd Control,Initiator|652b5fc9"
     },
     {
       "name": "Lolita",
@@ -269,7 +269,7 @@
         "zone"
       ],
       "roam": true,
-      "kit": "fisico|Crowd Control,Guard"
+      "kit": "fisico|Crowd Control,Guard|3288ee4b"
     },
     {
       "name": "Minotaur",
@@ -282,7 +282,7 @@
         "immobile"
       ],
       "roam": true,
-      "kit": "fisico|Crowd Control"
+      "kit": "fisico|Crowd Control|f604206e"
     },
     {
       "name": "Minsitthar",
@@ -295,7 +295,7 @@
         "zone"
       ],
       "roam": true,
-      "kit": "fisico|Crowd Control,Initiator"
+      "kit": "fisico|Crowd Control,Initiator|5f766012"
     },
     {
       "name": "Ruby",
@@ -308,7 +308,7 @@
         "antiheal"
       ],
       "roam": true,
-      "kit": "fisico|Crowd Control,Regen"
+      "kit": "fisico|Crowd Control,Regen|3b607e8c"
     },
     {
       "name": "Terizla",
@@ -321,7 +321,7 @@
         "heal"
       ],
       "roam": true,
-      "kit": "fisico|Burst,Crowd Control"
+      "kit": "fisico|Burst,Crowd Control|4f131663"
     },
     {
       "name": "Tigreal",
@@ -335,7 +335,7 @@
         "zone"
       ],
       "roam": true,
-      "kit": "fisico|Crowd Control"
+      "kit": "fisico|Crowd Control|4d9623a8"
     },
     {
       "name": "Uranus",
@@ -347,7 +347,7 @@
         "zone"
       ],
       "roam": true,
-      "kit": "magico|Regen"
+      "kit": "magico|Regen|08783276"
     },
     {
       "name": "Angela",
@@ -360,7 +360,7 @@
         "immobile"
       ],
       "roam": true,
-      "kit": "magico|Guard,Support"
+      "kit": "magico|Guard,Support|b2f58522"
     },
     {
       "name": "Diggie",
@@ -373,7 +373,7 @@
         "immobile"
       ],
       "roam": true,
-      "kit": "magico|Guard,Poke"
+      "kit": "magico|Guard,Poke|3192f6e3"
     },
     {
       "name": "Estes",
@@ -385,7 +385,7 @@
         "immobile"
       ],
       "roam": true,
-      "kit": "magico|Guard,Regen"
+      "kit": "magico|Guard,Regen|8d275a94"
     },
     {
       "name": "Faramis",
@@ -397,7 +397,7 @@
         "engage"
       ],
       "roam": true,
-      "kit": "magico|Charge,Guard"
+      "kit": "magico|Charge,Guard|f63188ee"
     },
     {
       "name": "Floryn",
@@ -409,7 +409,7 @@
         "immobile"
       ],
       "roam": true,
-      "kit": "magico|Guard,Poke"
+      "kit": "magico|Guard,Poke|016b1b30"
     },
     {
       "name": "Mathilda",
@@ -422,7 +422,7 @@
         "cc_hard"
       ],
       "roam": true,
-      "kit": "magico|Guard,Initiator"
+      "kit": "magico|Guard,Initiator|6d113455"
     },
     {
       "name": "Rafaela",
@@ -435,7 +435,7 @@
         "mobile"
       ],
       "roam": true,
-      "kit": "magico|Guard,Regen"
+      "kit": "magico|Guard,Regen|0a839a2b"
     },
     {
       "name": "Kaja",
@@ -447,7 +447,7 @@
         "anti_mobility"
       ],
       "roam": true,
-      "kit": "magico|Charge,Initiator"
+      "kit": "magico|Charge,Initiator|ef720566"
     },
     {
       "name": "Chou",
@@ -461,7 +461,7 @@
         "dash"
       ],
       "roam": true,
-      "kit": "fisico|Chase,Control"
+      "kit": "fisico|Chase,Control|27ec69a4"
     },
     {
       "name": "Aamon",
@@ -472,7 +472,7 @@
         "dive",
         "dash"
       ],
-      "kit": "magico|Chase,Magic Damage"
+      "kit": "magico|Chase,Magic Damage|893dd9e9"
     },
     {
       "name": "Alice",
@@ -483,7 +483,7 @@
         "hypercarry",
         "dive"
       ],
-      "kit": "magico|Charge,Regen"
+      "kit": "magico|Charge,Regen|5d5e790f"
     },
     {
       "name": "Aldous",
@@ -493,7 +493,7 @@
         "dive",
         "hypercarry"
       ],
-      "kit": "fisico|Burst,Support"
+      "kit": "fisico|Burst,Support|e96bf5be"
     },
     {
       "name": "Alpha",
@@ -503,7 +503,7 @@
         "burst",
         "mobile"
       ],
-      "kit": "fisico|Charge,Damage"
+      "kit": "fisico|Charge,Damage|95378f09"
     },
     {
       "name": "Alucard",
@@ -514,7 +514,7 @@
         "burst",
         "dash"
       ],
-      "kit": "fisico|Chase,Damage"
+      "kit": "fisico|Chase,Damage|76aec084"
     },
     {
       "name": "Argus",
@@ -526,7 +526,7 @@
         "mobile",
         "dash"
       ],
-      "kit": "fisico|Burst,Charge"
+      "kit": "fisico|Burst,Charge|d35002a6"
     },
     {
       "name": "Arlott",
@@ -538,7 +538,7 @@
         "mobile",
         "dash"
       ],
-      "kit": "fisico|Burst,Charge"
+      "kit": "fisico|Burst,Charge|43bffe42"
     },
     {
       "name": "Aulus",
@@ -549,7 +549,7 @@
         "mobile",
         "dash"
       ],
-      "kit": "fisico|Charge,Damage"
+      "kit": "fisico|Charge,Damage|e56487d9"
     },
     {
       "name": "Aurora",
@@ -560,7 +560,7 @@
         "poke",
         "immobile"
       ],
-      "kit": "magico|Crowd Control,Poke"
+      "kit": "magico|Crowd Control,Poke|00f52bd6"
     },
     {
       "name": "Badang",
@@ -570,7 +570,7 @@
         "burst",
         "zone"
       ],
-      "kit": "fisico|Burst,Charge"
+      "kit": "fisico|Burst,Charge|6b3cb138"
     },
     {
       "name": "Balmond",
@@ -580,7 +580,7 @@
         "tanky",
         "burst"
       ],
-      "kit": "fisico|Damage,Regen"
+      "kit": "fisico|Damage,Regen|7f760331"
     },
     {
       "name": "Bane",
@@ -590,7 +590,7 @@
         "burst",
         "tanky"
       ],
-      "kit": "mixto|Burst,Push"
+      "kit": "mixto|Burst,Push|8a69fd69"
     },
     {
       "name": "Beatrix",
@@ -602,7 +602,7 @@
         "immobile",
         "dash"
       ],
-      "kit": "fisico|Damage,Finisher"
+      "kit": "fisico|Damage,Finisher|9f3da982"
     },
     {
       "name": "Benedetta",
@@ -614,7 +614,7 @@
         "shield",
         "dash"
       ],
-      "kit": "fisico|Burst,Chase"
+      "kit": "fisico|Burst,Chase|a57cae67"
     },
     {
       "name": "Brody",
@@ -624,17 +624,18 @@
         "mobile",
         "hypercarry"
       ],
-      "kit": "fisico|Burst,Finisher"
+      "kit": "fisico|Burst,Finisher|5df5f48a"
     },
     {
       "name": "Bruno",
       "role": "marksman",
       "tags": [
         "hypercarry",
-        "poke",
-        "immobile"
+        "burst",
+        "cc_hard",
+        "dash"
       ],
-      "kit": "fisico|Burst,Finisher"
+      "kit": "fisico|Burst,Finisher|f307f98e"
     },
     {
       "name": "Cecilion",
@@ -644,7 +645,7 @@
         "hypercarry",
         "zone"
       ],
-      "kit": "magico|Burst,Poke"
+      "kit": "magico|Burst,Poke|9781ba63"
     },
     {
       "name": "Chang'e",
@@ -654,7 +655,7 @@
         "mobile",
         "hypercarry"
       ],
-      "kit": "magico|Burst,Poke"
+      "kit": "magico|Burst,Poke|aac76ffe"
     },
     {
       "name": "Claude",
@@ -664,7 +665,7 @@
         "mobile",
         "assassin_late"
       ],
-      "kit": "fisico|Burst,Chase"
+      "kit": "fisico|Burst,Chase|d079e9d7"
     },
     {
       "name": "Clint",
@@ -674,7 +675,7 @@
         "burst",
         "immobile"
       ],
-      "kit": "fisico|Burst,Finisher"
+      "kit": "fisico|Burst,Finisher|47d35910"
     },
     {
       "name": "Cyclops",
@@ -684,7 +685,7 @@
         "cc_hard",
         "poke"
       ],
-      "kit": "magico|Control,Damage"
+      "kit": "magico|Control,Damage|a2c88e8c"
     },
     {
       "name": "Dyrroth",
@@ -694,7 +695,7 @@
         "antiheal",
         "dive"
       ],
-      "kit": "fisico|Burst,Charge"
+      "kit": "fisico|Burst,Charge|dad64341"
     },
     {
       "name": "Esmeralda",
@@ -706,7 +707,7 @@
         "mobile",
         "hypercarry"
       ],
-      "kit": "mixto|Mixed Damage,Regen"
+      "kit": "mixto|Mixed Damage,Regen|28c54fff"
     },
     {
       "name": "Eudora",
@@ -716,7 +717,7 @@
         "cc_hard",
         "immobile"
       ],
-      "kit": "magico|Burst,Control"
+      "kit": "magico|Burst,Control|a77d20e0"
     },
     {
       "name": "Fanny",
@@ -728,7 +729,7 @@
         "assassin_late",
         "dash"
       ],
-      "kit": "fisico|Chase,Finisher"
+      "kit": "fisico|Chase,Finisher|edb32f2f"
     },
     {
       "name": "Freya",
@@ -739,7 +740,7 @@
         "mobile",
         "dash"
       ],
-      "kit": "fisico|Chase,Damage"
+      "kit": "fisico|Chase,Damage|2837d6e5"
     },
     {
       "name": "Gord",
@@ -749,7 +750,7 @@
         "zone",
         "immobile"
       ],
-      "kit": "magico|Burst,Poke"
+      "kit": "magico|Burst,Poke|317e47f8"
     },
     {
       "name": "Granger",
@@ -760,7 +761,7 @@
         "mobile",
         "dash"
       ],
-      "kit": "fisico|Burst,Finisher"
+      "kit": "fisico|Burst,Finisher|71af5f73"
     },
     {
       "name": "Guinevere",
@@ -772,7 +773,7 @@
         "dive",
         "dash"
       ],
-      "kit": "magico|Burst,Magic Damage"
+      "kit": "magico|Burst,Magic Damage|f6c04317"
     },
     {
       "name": "Gusion",
@@ -783,7 +784,7 @@
         "burst",
         "dash"
       ],
-      "kit": "magico|Burst,Magic Damage"
+      "kit": "magico|Burst,Magic Damage|adfcce19"
     },
     {
       "name": "Hanabi",
@@ -793,7 +794,7 @@
         "immobile",
         "poke"
       ],
-      "kit": "fisico|Damage,Finisher"
+      "kit": "fisico|Damage,Finisher|497e443b"
     },
     {
       "name": "Hanzo",
@@ -804,7 +805,7 @@
         "mobile",
         "dash"
       ],
-      "kit": "fisico|Burst,Poke"
+      "kit": "fisico|Burst,Poke|ff3e1522"
     },
     {
       "name": "Harith",
@@ -815,7 +816,7 @@
         "dive",
         "dash"
       ],
-      "kit": "magico|Chase,Damage"
+      "kit": "magico|Chase,Damage|4648cf31"
     },
     {
       "name": "Harley",
@@ -826,7 +827,7 @@
         "burst",
         "dash"
       ],
-      "kit": "magico|Burst,Poke"
+      "kit": "magico|Burst,Poke|828f9943"
     },
     {
       "name": "Hayabusa",
@@ -838,7 +839,7 @@
         "assassin_late",
         "dash"
       ],
-      "kit": "fisico|Burst,Chase"
+      "kit": "fisico|Burst,Chase|b8f9a1fb"
     },
     {
       "name": "Helcurt",
@@ -850,7 +851,7 @@
         "vision",
         "dash"
       ],
-      "kit": "fisico|Burst,Push"
+      "kit": "fisico|Burst,Push|6c5ab2c7"
     },
     {
       "name": "Irithel",
@@ -859,7 +860,7 @@
         "hypercarry",
         "mobile"
       ],
-      "kit": "fisico|Burst,Finisher"
+      "kit": "fisico|Burst,Finisher|ee2edf51"
     },
     {
       "name": "Ixia",
@@ -869,7 +870,7 @@
         "immobile",
         "zone"
       ],
-      "kit": "fisico|Damage,Finisher"
+      "kit": "fisico|Damage,Finisher|e6c02f21"
     },
     {
       "name": "Jawhead",
@@ -880,7 +881,7 @@
         "burst",
         "peel"
       ],
-      "kit": "fisico|Burst,Charge"
+      "kit": "fisico|Burst,Charge|b396dc8d"
     },
     {
       "name": "Joy",
@@ -891,7 +892,7 @@
         "burst",
         "dash"
       ],
-      "kit": "magico|Chase,Damage"
+      "kit": "magico|Chase,Damage|78d8c09d"
     },
     {
       "name": "Julian",
@@ -902,7 +903,7 @@
         "dive",
         "dash"
       ],
-      "kit": "magico|Chase,Magic Damage"
+      "kit": "magico|Chase,Magic Damage|3d4a50d9"
     },
     {
       "name": "Kadita",
@@ -914,7 +915,7 @@
         "dive",
         "dash"
       ],
-      "kit": "magico|Burst,Charge"
+      "kit": "magico|Burst,Charge|96f6ccd7"
     },
     {
       "name": "Kagura",
@@ -926,7 +927,7 @@
         "cc_hard",
         "dash"
       ],
-      "kit": "magico|Finisher,Poke"
+      "kit": "magico|Finisher,Poke|395cf2df"
     },
     {
       "name": "Karina",
@@ -938,7 +939,7 @@
         "heal",
         "dash"
       ],
-      "kit": "magico|Finisher,Magic Damage"
+      "kit": "magico|Finisher,Magic Damage|a6c2be12"
     },
     {
       "name": "Karrie",
@@ -947,7 +948,7 @@
         "hypercarry",
         "mobile"
       ],
-      "kit": "fisico|Damage,Finisher"
+      "kit": "fisico|Damage,Finisher|f071f79c"
     },
     {
       "name": "Khaleed",
@@ -958,7 +959,7 @@
         "engage",
         "dash"
       ],
-      "kit": "fisico|Damage,Regen"
+      "kit": "fisico|Damage,Regen|aba353ba"
     },
     {
       "name": "Kimmy",
@@ -968,7 +969,7 @@
         "hypercarry",
         "immobile"
       ],
-      "kit": "magico|Damage,Magic Damage"
+      "kit": "magico|Damage,Magic Damage|6c3e72f5"
     },
     {
       "name": "Lancelot",
@@ -979,7 +980,7 @@
         "burst",
         "dash"
       ],
-      "kit": "fisico|Burst,Chase"
+      "kit": "fisico|Burst,Chase|851f70e6"
     },
     {
       "name": "Lapu-Lapu",
@@ -989,7 +990,7 @@
         "burst",
         "shield"
       ],
-      "kit": "fisico|Burst,Chase"
+      "kit": "fisico|Burst,Chase|993d91da"
     },
     {
       "name": "Layla",
@@ -999,7 +1000,7 @@
         "immobile",
         "poke"
       ],
-      "kit": "fisico|Damage,Finisher"
+      "kit": "fisico|Damage,Finisher|e93eaba4"
     },
     {
       "name": "Leomord",
@@ -1010,7 +1011,7 @@
         "mobile",
         "dash"
       ],
-      "kit": "fisico|Burst,Chase"
+      "kit": "fisico|Burst,Chase|a88a2f4a"
     },
     {
       "name": "Lesley",
@@ -1021,7 +1022,7 @@
         "mobile",
         "assassin_late"
       ],
-      "kit": "fisico|Burst,Finisher"
+      "kit": "fisico|Burst,Finisher|c8efa832"
     },
     {
       "name": "Ling",
@@ -1033,7 +1034,7 @@
         "assassin_late",
         "dash"
       ],
-      "kit": "fisico|Burst,Chase"
+      "kit": "fisico|Burst,Chase|3a936690"
     },
     {
       "name": "Lukas",
@@ -1045,7 +1046,7 @@
         "mobile",
         "dash"
       ],
-      "kit": "fisico|Damage,Regen"
+      "kit": "fisico|Damage,Regen|948db1ad"
     },
     {
       "name": "Lunox",
@@ -1055,7 +1056,7 @@
         "heal",
         "hypercarry"
       ],
-      "kit": "magico|Burst,Damage"
+      "kit": "magico|Burst,Damage|5c6c060f"
     },
     {
       "name": "Luo Yi",
@@ -1065,7 +1066,7 @@
         "zone",
         "burst"
       ],
-      "kit": "magico|Crowd Control,Support"
+      "kit": "magico|Crowd Control,Support|cb36d397"
     },
     {
       "name": "Lylia",
@@ -1076,7 +1077,7 @@
         "mobile",
         "dash"
       ],
-      "kit": "magico|Damage,Push"
+      "kit": "magico|Damage,Push|31b4ee99"
     },
     {
       "name": "Martis",
@@ -1087,7 +1088,7 @@
         "mobile",
         "dash"
       ],
-      "kit": "fisico|Charge,Finisher"
+      "kit": "fisico|Charge,Finisher|89ec0851"
     },
     {
       "name": "Masha",
@@ -1096,9 +1097,11 @@
         "dive",
         "tanky",
         "mobile",
-        "antiheal"
+        "cc_hard",
+        "engage",
+        "dash"
       ],
-      "kit": "fisico|Damage,Push"
+      "kit": "fisico|Damage,Push|a0a4b7e8"
     },
     {
       "name": "Melissa",
@@ -1108,7 +1111,7 @@
         "anti_dive",
         "immobile"
       ],
-      "kit": "mixto|Damage,Finisher"
+      "kit": "mixto|Damage,Finisher|28ad44cf"
     },
     {
       "name": "Miya",
@@ -1117,7 +1120,7 @@
         "hypercarry",
         "mobile"
       ],
-      "kit": "fisico|Damage,Finisher"
+      "kit": "fisico|Damage,Finisher|01715c7c"
     },
     {
       "name": "Moskov",
@@ -1127,7 +1130,7 @@
         "poke",
         "cc_hard"
       ],
-      "kit": "fisico|Chase,Finisher"
+      "kit": "fisico|Chase,Finisher|f5c5f408"
     },
     {
       "name": "Nana",
@@ -1137,7 +1140,7 @@
         "poke",
         "peel"
       ],
-      "kit": "magico|Burst,Poke"
+      "kit": "magico|Burst,Poke|94c9ec67"
     },
     {
       "name": "Natalia",
@@ -1148,7 +1151,7 @@
         "burst",
         "dash"
       ],
-      "kit": "fisico|Chase,Finisher"
+      "kit": "fisico|Chase,Finisher|e5f6a715"
     },
     {
       "name": "Natan",
@@ -1158,7 +1161,7 @@
         "poke",
         "immobile"
       ],
-      "kit": "magico|Burst,Magic Damage"
+      "kit": "magico|Burst,Magic Damage|33b8d823"
     },
     {
       "name": "Nolan",
@@ -1169,7 +1172,7 @@
         "burst",
         "dash"
       ],
-      "kit": "fisico|Burst,Chase"
+      "kit": "fisico|Burst,Chase|4aa5b3f3"
     },
     {
       "name": "Novaria",
@@ -1180,7 +1183,7 @@
         "zone",
         "immobile"
       ],
-      "kit": "magico|Burst,Poke"
+      "kit": "magico|Burst,Poke|abaab5d6"
     },
     {
       "name": "Odette",
@@ -1190,7 +1193,7 @@
         "zone",
         "immobile"
       ],
-      "kit": "magico|Burst,Poke"
+      "kit": "magico|Burst,Poke|820dc54c"
     },
     {
       "name": "Paquito",
@@ -1202,7 +1205,7 @@
         "mobile",
         "dash"
       ],
-      "kit": "fisico|Chase,Damage"
+      "kit": "fisico|Chase,Damage|c9aed7ec"
     },
     {
       "name": "Pharsa",
@@ -1213,7 +1216,7 @@
         "mobile",
         "dash"
       ],
-      "kit": "magico|Burst,Poke"
+      "kit": "magico|Burst,Poke|ec053346"
     },
     {
       "name": "Phoveus",
@@ -1223,7 +1226,7 @@
         "tanky",
         "heal"
       ],
-      "kit": "mixto|Damage,Regen"
+      "kit": "mixto|Damage,Regen|743e633f"
     },
     {
       "name": "Popol and Kupa",
@@ -1233,7 +1236,7 @@
         "poke",
         "cc_hard"
       ],
-      "kit": "fisico|Burst,Push"
+      "kit": "fisico|Burst,Push|d3c06512"
     },
     {
       "name": "Roger",
@@ -1244,7 +1247,7 @@
         "mobile",
         "dash"
       ],
-      "kit": "fisico|Burst,Finisher"
+      "kit": "fisico|Burst,Finisher|4acec7fc"
     },
     {
       "name": "Saber",
@@ -1255,7 +1258,7 @@
         "cc_hard",
         "dash"
       ],
-      "kit": "fisico|Charge,Finisher"
+      "kit": "fisico|Charge,Finisher|8bfcf3e6"
     },
     {
       "name": "Selena",
@@ -1266,7 +1269,7 @@
         "poke",
         "vision"
       ],
-      "kit": "magico|Finisher,Initiator"
+      "kit": "magico|Finisher,Initiator|e5f73e8c"
     },
     {
       "name": "Silvanna",
@@ -1277,7 +1280,7 @@
         "burst",
         "dash"
       ],
-      "kit": "magico|Initiator,Magic Damage"
+      "kit": "magico|Initiator,Magic Damage|2b236377"
     },
     {
       "name": "Sun",
@@ -1288,7 +1291,7 @@
         "zone",
         "hypercarry"
       ],
-      "kit": "fisico|Damage,Push"
+      "kit": "fisico|Damage,Push|5ca2225d"
     },
     {
       "name": "Suyou",
@@ -1299,7 +1302,7 @@
         "burst",
         "dash"
       ],
-      "kit": "fisico|Burst,Chase"
+      "kit": "fisico|Burst,Chase|63bcdd35"
     },
     {
       "name": "Thamuz",
@@ -1309,7 +1312,7 @@
         "tanky",
         "zone"
       ],
-      "kit": "fisico|Chase,Damage"
+      "kit": "fisico|Chase,Damage|2f1a2f11"
     },
     {
       "name": "Vale",
@@ -1319,7 +1322,7 @@
         "burst",
         "cc_chain"
       ],
-      "kit": "magico|Burst,Crowd Control"
+      "kit": "magico|Burst,Crowd Control|33977828"
     },
     {
       "name": "Valentina",
@@ -1330,7 +1333,7 @@
         "mobile",
         "dash"
       ],
-      "kit": "mixto|Burst,Finisher"
+      "kit": "mixto|Burst,Finisher|2bb2ba68"
     },
     {
       "name": "Vexana",
@@ -1341,7 +1344,7 @@
         "zone",
         "immobile"
       ],
-      "kit": "magico|Control,Poke"
+      "kit": "magico|Control,Poke|df87b7ec"
     },
     {
       "name": "Wanwan",
@@ -1353,7 +1356,7 @@
         "dive",
         "dash"
       ],
-      "kit": "fisico|Burst,Finisher"
+      "kit": "fisico|Burst,Finisher|ec581506"
     },
     {
       "name": "X.Borg",
@@ -1363,7 +1366,7 @@
         "poke",
         "tanky"
       ],
-      "kit": "fisico|Burst,Regen"
+      "kit": "fisico|Burst,Regen|c6fc1d8d"
     },
     {
       "name": "Xavier",
@@ -1373,7 +1376,7 @@
         "burst",
         "zone"
       ],
-      "kit": "magico|Burst,Damage"
+      "kit": "magico|Burst,Damage|9b586e16"
     },
     {
       "name": "Yi Sun-shin",
@@ -1384,7 +1387,7 @@
         "vision",
         "dash"
       ],
-      "kit": "fisico|Chase,Finisher"
+      "kit": "fisico|Chase,Finisher|8899ac64"
     },
     {
       "name": "Yin",
@@ -1395,7 +1398,7 @@
         "cc_hard",
         "dash"
       ],
-      "kit": "fisico|Burst,Control"
+      "kit": "fisico|Burst,Control|f7d18101"
     },
     {
       "name": "Yu Zhong",
@@ -1406,7 +1409,7 @@
         "cc_hard",
         "engage"
       ],
-      "kit": "fisico|Damage,Regen"
+      "kit": "fisico|Damage,Regen|a155b50c"
     },
     {
       "name": "Yve",
@@ -1416,7 +1419,7 @@
         "zone",
         "cc_chain"
       ],
-      "kit": "magico|Burst,Poke"
+      "kit": "magico|Burst,Poke|2a63c66e"
     },
     {
       "name": "Zhask",
@@ -1426,7 +1429,7 @@
         "zone",
         "immobile"
       ],
-      "kit": "magico|Chase,Damage"
+      "kit": "magico|Chase,Damage|b16a1e6c"
     },
     {
       "name": "Zhuxin",
@@ -1436,7 +1439,7 @@
         "zone",
         "burst"
       ],
-      "kit": "magico|Crowd Control,Damage"
+      "kit": "magico|Crowd Control,Damage|77514a95"
     },
     {
       "name": "Zilong",
@@ -1447,7 +1450,7 @@
         "burst",
         "dash"
       ],
-      "kit": "fisico|Chase,Damage"
+      "kit": "fisico|Chase,Damage|f566681c"
     },
     {
       "name": "Hirara",
@@ -1459,7 +1462,7 @@
         "dash"
       ],
       "roam": false,
-      "kit": "fisico|Chase,Finisher"
+      "kit": "fisico|Chase,Finisher|690c2129"
     },
     {
       "name": "Sora",
@@ -1472,7 +1475,7 @@
         "tanky"
       ],
       "roam": false,
-      "kit": "fisico|Burst,Charge"
+      "kit": "fisico|Burst,Charge|2cf9009b"
     },
     {
       "name": "Zetian",
@@ -1485,7 +1488,7 @@
         "immobile"
       ],
       "roam": false,
-      "kit": "magico|Crowd Control,Damage"
+      "kit": "magico|Crowd Control,Damage|a1b9efdd"
     },
     {
       "name": "Obsidia",
@@ -1498,7 +1501,7 @@
         "cc_hard"
       ],
       "roam": false,
-      "kit": "fisico|Damage,Finisher"
+      "kit": "fisico|Damage,Finisher|57fc3783"
     },
     {
       "name": "Cici",
@@ -1511,7 +1514,7 @@
         "heal"
       ],
       "roam": false,
-      "kit": "fisico|Damage,Regen"
+      "kit": "fisico|Damage,Regen|00d08660"
     },
     {
       "name": "Valir",
@@ -1525,7 +1528,7 @@
         "immobile"
       ],
       "roam": false,
-      "kit": "magico|Damage,Guard"
+      "kit": "magico|Damage,Guard|98483549"
     },
     {
       "name": "Marcel",
@@ -1539,7 +1542,7 @@
         "mobile"
       ],
       "roam": true,
-      "kit": "fisico|Crowd Control,Support"
+      "kit": "fisico|Crowd Control,Support|b7b0e0a9"
     }
   ]
 }

@@ -113,7 +113,9 @@ tarda una semana en recoger un parche. La ventana de 3 dice lo mismo que la de 7
 (r = 0,997, mediana 0,18 puntos) y su ruido queda doce veces por debajo de la dispersión entre héroes;
 la de 1 día no vale (héroes al 0% y al 100%). Si la de 3 viene rara, manda la de 7 y el Diagnóstico
 lo dice (`src/motor/ventana.js`). El botón **Meta** de Ajustes enseña esa tier list por línea, con la
-deriva de cada héroe, para compararla con la que leas por ahí en vez de fiarte.
+deriva de cada héroe, y al lado la tier de **mlbb.gg** (SS…D), que el bot baja con los datos: es
+opinión curada, se enseña para comparar y no cuenta en la nota (medido: sabiendo el winrate no añade
+nada; donde discrepa es por dificultad, Fanny en S al 41% y Argus en C al 54%).
 
 **Los counters usan el dato real si existe, y reglas por tags si no.** Las reglas están en
 `COUNTER_RULES` y son legibles: "si el enemigo tiene dashes, un roamer con anti-mobility sube". Solo

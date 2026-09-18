@@ -23,6 +23,7 @@ const POR_LINEA = 12;
  */
 export function Meta({ datos, linea, onCerrar, t = tPorDefecto }) {
   const { stats, ventana, mediaDelRango } = datos.meta;
+  const tiers = datos.crudo?.tiers?.tiers ?? null;
   const conDeriva = ventana?.dias && ventana.dias !== 7;
   const lineas = useMemo(() => {
     const orden = linea ? [linea, ...LINEAS.filter((l) => l !== linea)] : LINEAS;
@@ -45,6 +46,7 @@ export function Meta({ datos, linea, onCerrar, t = tPorDefecto }) {
       <div className="sheet-body">
         <p className="nota">{t('meta.pista', { rango: ETIQUETAS_RANGO[datos.rango] ?? datos.rango, dias: ventana?.dias ?? 7 })}</p>
         {conDeriva && <p className="nota">{t('meta.deriva', { dias: ventana.dias })}</p>}
+        {tiers && <p className="nota">{t('meta.tierPista')}</p>}
         {lineas.map(({ linea: l, filas }) => (
           <section key={l} className="meta-linea">
             <h3 className="meta-titulo">{t(`linea.${l}`)}</h3>
@@ -56,6 +58,7 @@ export function Meta({ datos, linea, onCerrar, t = tPorDefecto }) {
                   <span className="meta-pos">{i + 1}</span>
                   <Cara heroe={f.heroe} className="grid-cara" tam={30} alt="" />
                   <span className="meta-nombre">{f.heroe.name}</span>
+                  <span className={`meta-tier${tiers?.[f.heroe.name] ? ` tier-${tiers[f.heroe.name]}` : ''}`}>{tiers?.[f.heroe.name] ?? ''}</span>
                   <span className="meta-wr">{pct(f.stat.winRate)}%</span>
                   <span className={`meta-delta${delta == null ? '' : delta > 0.001 ? ' sube' : delta < -0.001 ? ' baja' : ''}`}>
                     {delta == null ? '' : `${delta >= 0 ? '+' : '−'}${pct(Math.abs(delta))}`}

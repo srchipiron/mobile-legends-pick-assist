@@ -209,6 +209,12 @@ test('la huella del kit calla con un reequilibrio y habla con un rework', () => 
   // Sin ficha no hay huella que comparar, y eso NO puede parecerse a un kit
   // valido: una peticion caida no es un rework.
   eq(huellaDeKit({ name: 'X' }), '?|', 'un heroe sin ficha deberia dar una huella reconocible como vacia');
+
+  // Y el texto de las habilidades: un rework que deja la misma speciality y
+  // el mismo tipo de dano (Masha y Bruno, 2.2.16) solo se ve por ahi.
+  ok(huellaDeKit({ ...base, kitTexto: 'aaaaaaaa' }) !== huellaDeKit({ ...base, kitTexto: 'bbbbbbbb' }),
+    'reescribir las habilidades no mueve la huella');
+  eq(huellaDeKit({ ...base, kitTexto: 'aaaaaaaa' }), huellaDeKit(base) + '|aaaaaaaa', 'la huella con texto no extiende a la de dos trozos');
 });
 
 test('todos los heroes del catalogo llevan su huella de kit', () => {
@@ -221,7 +227,7 @@ test('todos los heroes del catalogo llevan su huella de kit', () => {
   // Y la huella tiene la forma que produce huellaDeKit, no cualquier texto:
   // "tipo|speciality ordenada". Con otra forma no casaria nunca y el aviso
   // saltaria con los 133 a la vez.
-  const raras = catalogo.heroes.filter((h) => !/^(fisico|magico|mixto)\|[^|]*$/.test(h.kit)).map((h) => h.name);
+  const raras = catalogo.heroes.filter((h) => !/^(fisico|magico|mixto)\|[^|]*(\|[0-9a-f]{8})?$/.test(h.kit)).map((h) => h.name);
   ok(!raras.length, `huellas con forma rara: ${raras.slice(0, 8).join(', ')}`);
 
   // La huella de hoy tiene que coincidir con la del catalogo, o el aviso

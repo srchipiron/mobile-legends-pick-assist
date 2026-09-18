@@ -8,6 +8,34 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.3.0
+
+- La tier list de mlbb.gg sale en la app, al lado del winrate: una letra
+  (SS, S, A, B, C, D) en cada tarjeta y en la pantalla Meta. Se busca en
+  internet una tier list que se pudiera PEDIR en vez de copiar, y la de
+  mlbb.gg se puede: la baja el bot con los datos. Es opinión curada, y se
+  guarda como tal: se enseña para que puedas comparar y **no cuenta en la
+  nota**. Está medido por qué: solo coincide con los datos en la cima (SS,
+  53,9% de winrate medio), de S para abajo no distingue nada (S 50,3%, A/B/C/D
+  entre 48,0% y 49,5%), y sabiendo el winrate la tier no dice nada de hacia
+  dónde va un héroe (−0,045 puntos por escalón ± 0,015). Donde discrepan es
+  sistemático: Fanny y Granger en S ganando el 40–42%, Argus y Dyrroth en C/D
+  ganando el 52–54%. La tier mide «techo en buenas manos»; el winrate, «qué
+  gana en Gloria». Tu techo de verdad ya lo pone tu maestría.
+- Masha y Bruno llevan tags nuevos, leídos de sus habilidades tras el
+  rework del parche 2.2.16 (Temporada 42): Masha ya no tiene anticuración y
+  sí tres barras de vida, un salto y un aturdimiento; Bruno ya no es
+  inmóvil y tiene un deslizamiento que aturde. Con la matriz de cruces al
+  100% eso no cambia ningún counter; cambia el consejo de composición y el
+  texto de los motivos.
+- El aviso de héroes reworkeados de 3.1.0 no los vio: Moonton les
+  reescribió las habilidades y les dejó la misma speciality y el mismo tipo
+  de daño. Ahora la huella lleva también el texto de las habilidades (sin
+  las cifras, para que un reequilibrio de números no la mueva), y el
+  próximo rework así sí saltará.
+- Y los datos de hoy ya llevan la ventana de 3 días de la 3.2.0: la app la
+  está usando desde este despliegue, no desde la próxima descarga del bot.
+
 ## 3.2.0
 
 - La app reacciona a un parche en tres días en vez de siete. La fuerza de

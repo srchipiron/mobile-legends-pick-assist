@@ -19,6 +19,7 @@ import {
   kitsRehechos, leerPrevio, relacionesPrevias,
 } from './fusion.mjs';
 import { bajarImagenes } from './imagenes.mjs';
+import { fetchTiers } from './tiers.mjs';
 import { serializar } from './salida.mjs';
 // La MISMA funcion que usa la app para decidir quien entra al pool de roam.
 // Duplicar el criterio aqui ya costo un fallo: la app metia a Marcel (support
@@ -66,6 +67,9 @@ async function main() {
       if (f?.speciality) h.speciality = f.speciality;
       if (f?.damage) h.damage = f.damage;
       if (f?.retrato) h.retrato = f.retrato;
+      // La huella del texto tambien: sin esta linea se calculaba en la ficha
+      // y se quedaba la conservada del repositorio (lo dijo la mutacion).
+      if (f?.kitTexto) h.kitTexto = f.kitTexto;
     }
     diagnostics.speciality.ok = Object.values(fichas).filter((f) => f.speciality).length;
     diagnostics.dano.ok = Object.values(fichas).filter((f) => f.damage).length;
@@ -127,6 +131,10 @@ async function main() {
     await sleep(250);
   }
   const recientes = Object.keys(recientesPorRango).length ? { dias: DIAS_RECIENTES, statsByRank: recientesPorRango } : null;
+
+  // La tier list de mlbb.gg: opinion curada, se ensena y no puntua (tiers.mjs).
+  const tiers = await fetchTiers(heroList, previous);
+  console.log(`  · tier list (mlbb.gg): ${diagnostics.tiers}`);
   console.log(`  · ventana de ${DIAS_RECIENTES} días: ${Object.keys(recientesPorRango).join(', ') || 'ninguno'}`);
 
   // Antes de pedir 266 veces, comprobar por cual de las rutas candidatas viene
@@ -265,6 +273,7 @@ async function main() {
       builds: diagnostics.builds ?? null,
       rangos: diagnostics.rangos ?? null,
       recientes: diagnostics.recientes ?? null,
+      tiers: diagnostics.tiers ?? null,
       ok: [...new Set(diagnostics.ok)].slice(0, 6),
       // Lo que falló, si NO se descargó nada: antes se vaciaba en cuanto había
       // datos previos (statsByRank lleva dentro el `previous`), o sea casi
@@ -275,6 +284,7 @@ async function main() {
     stats,
     statsByRank,
     ...(recientes ? { recientes } : {}),
+    ...(tiers ? { tiers } : {}),
     counters: relations.counters,
     synergies: relations.synergies,
     equipment: equipo,

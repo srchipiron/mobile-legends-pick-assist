@@ -164,16 +164,24 @@ test('prepararDatos decide la ventana en UN sitio: la corta si viene y es cohere
   // paridad ven las mismas estadisticas. Y el centro del termino de heroe
   // (mediaDelRango) tiene que ser el de LA MISMA ventana, o el termino queda
   // descentrado justo cuando cambia la ventana.
-  const sin = prepararDatos({ catalogo, meta });
-  eq(sin.meta.ventana?.dias ?? 7, meta.recientes ? sin.meta.ventana.dias : 7);
+  // Los datos reales traen ya la ventana corta (3.2.0), asi que la base de
+  // la prueba es el meta SIN ella: es la unica forma de saber que lo que
+  // cambia lo cambia la ventana y no otra cosa.
+  const sinRecientes = { ...meta }; delete sinRecientes.recientes;
+  const sin = prepararDatos({ catalogo, meta: sinRecientes });
+  eq(sin.meta.ventana.dias, 7, 'sin ventana corta no manda la de 7');
   ok(sin.meta.statsSemana, 'no expone las estadisticas de la semana');
+  eq(sin.meta.mediaDelRango, meta.avgByRank[sin.rango], 'con la de 7 la media no es la que calculo la ingesta');
+  // Y con los datos reales tal cual, la ventana es la que traen (hoy, 3 dias).
+  const real = prepararDatos({ catalogo, meta });
+  eq(real.meta.ventana.dias, meta.recientes ? meta.recientes.dias : 7, `con los datos reales la ventana es ${real.meta.ventana.dias}: ${real.meta.ventana.motivo}`);
 
   // Con una ventana corta coherente (la de 7 desplazada 0,3 pp): entra, y
   // la media se recalcula con lo que de verdad se usa.
   const rango = sin.rango;
   const base = meta.statsByRank?.[rango] ?? meta.stats;
   const corta = Object.fromEntries(Object.entries(base).map(([k, v]) => [k, { winRate: v.winRate + 0.003 }]));
-  const con = prepararDatos({ catalogo, meta: { ...meta, recientes: { dias: 3, statsByRank: { [rango]: corta } } } });
+  const con = prepararDatos({ catalogo, meta: { ...sinRecientes, recientes: { dias: 3, statsByRank: { [rango]: corta } } } });
   eq(con.meta.ventana.dias, 3, `la ventana corta coherente no entra: ${con.meta.ventana.motivo}`);
   ok(con.meta.ventana.usados > 100, `solo ${con.meta.ventana.usados} heroes con la ventana corta`);
   ok(Math.abs(con.meta.mediaDelRango - (sin.meta.mediaDelRango + 0.003)) < 1e-6,
@@ -184,7 +192,7 @@ test('prepararDatos decide la ventana en UN sitio: la corta si viene y es cohere
   // Con una ventana corta como la de 1 dia (0% y 100%): NO entra, y la media
   // vuelve a ser exactamente la de la ingesta.
   const basura = Object.fromEntries(Object.keys(base).map((k, i) => [k, { winRate: i % 2 }]));
-  const mal = prepararDatos({ catalogo, meta: { ...meta, recientes: { dias: 1, statsByRank: { [rango]: basura } } } });
+  const mal = prepararDatos({ catalogo, meta: { ...sinRecientes, recientes: { dias: 1, statsByRank: { [rango]: basura } } } });
   eq(mal.meta.ventana.dias, 7, 'una ventana corta imposible ha entrado');
   eq(mal.meta.mediaDelRango, sin.meta.mediaDelRango, 'al descartar la corta la media no es la de la ingesta');
   eq(mal.meta.stats, mal.meta.statsSemana, 'al descartar la corta las estadisticas no son las de la semana');

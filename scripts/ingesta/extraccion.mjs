@@ -133,6 +133,36 @@ function extraerDano(node, out = { fisico: 0, magico: 0, verdadero: 0 }, depth =
 }
 
 /**
+ * Huella del TEXTO de la ficha: todas las cadenas largas (descripciones de
+ * habilidades, consejos), sin etiquetas, sin cifras y sin espacios, ordenadas
+ * y resumidas en ocho hexadecimales (FNV-1a). Sin las cifras, un
+ * reequilibrio de numeros no la mueve; un rework, que reescribe lo que hace
+ * cada habilidad, si. Hizo falta porque la huella de tipo de dano +
+ * speciality NO vio los reworks de Masha y Bruno del parche 2.2.16: Moonton
+ * les reescribio las habilidades y les dejo la misma speciality.
+ */
+export function extraerTextos(node, out = [], depth = 0) {
+  if (depth > HONDURA || node == null) return out;
+  if (typeof node === 'string') {
+    const t = node.replace(/<[^>]*>/g, '').replace(/[0-9%.,]+/g, '').replace(/\s+/g, '').toLowerCase();
+    if (t.length >= 40) out.push(t);
+    return out;
+  }
+  if (typeof node !== 'object') return out;
+  for (const v of Array.isArray(node) ? node : Object.values(node)) extraerTextos(v, out, depth + 1);
+  return out;
+}
+
+/** FNV-1a de 32 bits, en hexadecimal: sin dependencias y estable entre corridas. */
+export function huellaTexto(node) {
+  const textos = [...new Set(extraerTextos(node))].sort().join('|');
+  if (!textos) return null;
+  let h = 0x811c9dc5;
+  for (let i = 0; i < textos.length; i++) { h ^= textos.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16).padStart(8, '0');
+}
+
+/**
  * El retrato de un heroe, de la ficha que ya se descarga.
  *
  * Se busca por FORMA, no por una ruta fija -la API ya ha movido sus campos de
@@ -185,6 +215,8 @@ export async function fetchFichas(heroes) {
       if (dano.fisico || dano.magico || dano.verdadero) ficha.damage = dano;
       const retrato = extraerRetrato(data);
       if (retrato) ficha.retrato = retrato;
+      const kitTexto = huellaTexto(data);
+      if (kitTexto) ficha.kitTexto = kitTexto;
       if (Object.keys(ficha).length) out[h.name] = ficha;
     } catch (err) {
       if (diagnostics.speciality.errores.length < 4) {

@@ -113,7 +113,12 @@ export function tipoDeDano(heroe) {
  */
 export function huellaDeKit(heroe) {
   const esp = [...(heroe?.speciality ?? [])].sort().join(',');
-  return `${tipoDeDano(heroe) ?? '?'}|${esp}`;
+  // El tercer trozo es la huella del TEXTO de las habilidades (sin cifras),
+  // que calcula la ingesta: con solo tipo y speciality no se vieron los
+  // reworks de Masha y Bruno (2.2.16). Sin ella (datos de antes de 3.3.0) la
+  // huella es la de dos trozos, y sigue casando con un catalogo antiguo.
+  const texto = typeof heroe?.kitTexto === 'string' ? `|${heroe.kitTexto}` : '';
+  return `${tipoDeDano(heroe) ?? '?'}|${esp}${texto}`;
 }
 
 /**

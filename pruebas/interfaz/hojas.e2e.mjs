@@ -98,6 +98,11 @@ await prueba('los chips del siguiente baneo no se mueven: el tocado se queda tac
 
 await prueba('plurales, sin frases crudas, la probabilidad en la tarjeta y el consejo después del nº1', async () => {
   const { contexto, pagina } = await con({ enemies: ['Layla'], allies: ['Chou', 'Miya', 'Kagura'], bans: [], enemyRoam: null, fase: 'picks' });
+  // La tier de mlbb.gg en la tarjeta: una letra al lado del winrate, nunca una
+  // clave cruda. Con los datos publicados (3.3.0) la traen los 133 heroes.
+  await pagina.locator('.pick .pick-tier').first().waitFor({ timeout: 5000 });
+  const tier = await pagina.locator('.pick .pick-tier').first().innerText();
+  ok(/^(SS|S|A|B|C|D) en mlbb\.gg$/.test(tier), `la tier de la tarjeta sale rara: «${tier}»`);
   const txt = await pagina.locator('.results').innerText();
   ok(!/1 líneas/i.test(txt) && /1 línea abierta/i.test(txt), 'con una línea abierta no dice «1 línea abierta»');
   const an = await pagina.locator('.analisis').innerText().catch(() => '');

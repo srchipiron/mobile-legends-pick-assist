@@ -139,6 +139,7 @@ Tarda unos 3,5 minutos y tiene que decir «0 diferencias».
 src/motor/      el motor, PURO: sin React, sin red, sin almacenamiento
 src/app/        la interfaz: App.jsx, estado/, pantallas/, componentes/, i18n/
 scripts/        ingest.mjs (entrada fina de ingesta/), medición, diagnóstico, comprobar/
+                ingesta/tiers.mjs baja la tier list de mlbb.gg (opinión: se enseña, no puntúa)
 pruebas/        arnes.mjs, correr.mjs, motor/, app/, scripts/, interfaz/, fixtures/, paridad/
 ```
 
@@ -722,6 +723,21 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   que solo leen no se enteraban. Hoy se siembra una vez por contexto, con
   pestillo. Mismo error de familia que las pruebas que medían el orden del
   fichero en vez del motor: comprobar el andamio en lugar de la app.
+- **Una huella de kit que no veía un rework** (3.1.0 → 3.3.0, el mismo día):
+  la de tipo de daño + speciality se calibró contra nueve días sin reworks y
+  salió muda, pero el parche 2.2.16 (Temporada 42, 16 de septiembre de 2026)
+  rehizo a Masha y a Bruno DEJÁNDOLES la misma speciality y el mismo tipo de
+  daño: Moonton reescribe las habilidades y no siempre reetiqueta. Se supo
+  por la prensa del parche, no por el aviso. Hoy la huella lleva un tercer
+  trozo, `kitTexto` (`huellaTexto` en extraccion.mjs): FNV-1a del texto de
+  la ficha sin etiquetas, sin cifras y sin espacios, para que un
+  reequilibrio de números no la mueva y un rework sí. Se conserva con la
+  ficha caída, como `speciality`. Los tags de Masha y Bruno se reescribieron
+  leyendo sus habilidades en la API (Masha: 3 barras de vida, salto, carga
+  con aturdimiento y empujón, sin anticuración; Bruno: deslizamiento que
+  aturde, patada con empujón y aturdimiento, ya no inmóvil). Un guardarraíl
+  calibrado en un periodo sin el fallo que vigila no está calibrado: hay que
+  esperar al primer caso real y mirar si lo vio.
 - **Un parámetro de la API adivinado en vez de leído del esquema** (3.1.0,
   no llegó a producción) — la ruta de tendencias se probó con `days` y su
   parámetro se llama `past-days`; la de estadísticas admite `days` de 1 a 30.
@@ -1336,21 +1352,32 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   no. Son la clave de todos los datos y enseñar «Cíclope» mientras el motor
   busca «Cyclops» es el fallo invisible que ya costó una corrección. Lo que
   acepta los dos idiomas es la BÚSQUEDA (`motor/alias.js`).
-- **Meter una tier list publicada en el modelo** (3.1.0, pedido tras el
-  cambio de temporada): no hay ninguna que se pueda PEDIR, que es el requisito
-  del proyecto para una fuente. Comprobado pidiendo datos, no leyendo
-  documentación: (1) la propia API la tenía y está retirada en origen —
-  `/api/academy/heroes/ratings` y `/ratings/{subject}` salen en el esquema y
-  responden `{"code":10407,"message":"接口下线"}` con `data: null`—; (2)
-  mlbb.gg, que ya se usa para contrastar counters, no publica ninguna ruta de
-  tier list (`/api/v1/tier-list`, `/tierlist`, `/heroes/tier-list`,
-  `/meta/tier-list`: 404). Escribirla a mano es exactamente la regla escrita a
-  mano que el proyecto lleva versiones quitando: envejece en días, no se puede
-  medir contra un resultado (no hay tier lists históricas con las que probar
-  si mejora la verosimilitud fuera de muestra) y duplicaría lo que el término
-  de héroe ya mide en el rango de Javi. **La app ya ES una tier list**: el
-  término de héroe ordena por winrate del rango con la media del rango
-  restada, con ventana de 7 días y dos corridas al día.
+- **Meter una tier list publicada EN LA NOTA** (3.1.0–3.3.0, pedido tras el
+  cambio de temporada). Se buscó en internet y se probó pidiendo datos, no
+  leyendo documentación. Lo que hay: (1) la propia API la tenía y está
+  retirada en origen (`/api/academy/heroes/ratings` → `{"code":10407,
+  "message":"接口下线"}`); (2) mlbb.gg SÍ la publica, héroe a héroe, en
+  `back.mlbb.gg/api/v1/heroes/{id}` (`tier`: SS/S/A/B/C/D; la lista en
+  `/api/v1/heroes`; ignora `rank`), y desde 3.3.0 la baja la ingesta
+  (`scripts/ingesta/tiers.mjs`, `--tiers`, apagada con la base fijada);
+  (3) mlbb.io, mlbbhub, mlbbmeta, mobadraft, esports.gg, sportskeeda,
+  gfinity, pocketgamer: páginas sin ruta de datos (404 en `/api/...`, 403 en
+  `api.mlbb.io`), y mlbbhub es de todas formas el winrate ordenado por
+  escalones, o sea lo mismo que ya tenemos. **La de mlbb.gg se enseña y no
+  puntúa**, y está medido por qué (18 de septiembre de 2026, 133 héroes,
+  Gloria): winrate medio SS 53,9%, S 50,3%, A 48,7%, B 48,7%, C 49,5%, D
+  48,0% —de S para abajo no distingue—; Spearman tier~winrate 0,51 (~pick
+  0,22, ~ban 0,37); y en `wr3 ~ a + b·wr7 + c·tier` sale b = 1,027 ± 0,007
+  y **c = −0,045 pp/escalón ± 0,015**: sabiendo el winrate, la tier no dice
+  nada de hacia dónde va un héroe. Donde discrepan es sistemático y es el
+  eje de la DIFICULTAD: Fanny (S) 40,6%, Granger (S) 41,9%, Bruno (S) 46,3%,
+  Kaja (S) 47,5%; Argus (C) 53,7%, Valir (C) 52,4%, Sun (D) 52,1%, Dyrroth
+  (D) 52,1%. La tier mide «techo en buenas manos»; el winrate, «qué gana en
+  Gloria»; el techo de Javi con cada héroe ya lo pone su maestría. Meterla
+  en la nota sería sumar una opinión que, medida, no predice. Se reabre si
+  algún día hay forma de medirla contra un resultado (partidas apuntadas
+  con la tier del día, por ejemplo). El precedente es la línea «Pro» de las
+  tarjetas: se enseña, no puntúa.
 - **Reaccionar antes a un parche con la serie diaria** (`/api/heroes/{id}/trends`,
   3.1.0): la ruta está VIVA y da winrate, pickrate y banrate día a día. No se
   usa: sus números no reconcilian con los de la app en la misma ventana

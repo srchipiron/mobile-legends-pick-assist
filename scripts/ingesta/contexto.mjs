@@ -63,6 +63,11 @@ if (!RANKS.includes(RANK)) RANKS.push(RANK);
  * red y disparaba cuarenta peticiones en cada despliegue.
  */
 const BASE_FIJADA = args.base ?? process.env.MLBB_API_BASE;
+// La tier list de mlbb.gg (scripts/ingesta/tiers.mjs) tiene su propia base:
+// `--tiers <base>` la cambia, `--tiers off` la apaga, y con la base principal
+// fijada (pruebas, local) se apaga sola para que una prueba no salga a internet.
+export const TIERS = args.tiers === 'off' ? null
+  : (typeof args.tiers === 'string' ? args.tiers.replace(/\/$/, '') : (BASE_FIJADA ? null : 'https://back.mlbb.gg/api/v1'));
 export const BASES = BASE_FIJADA ? [BASE_FIJADA] : [
   'https://arena-hv.fastapicloud.dev/api',   // responde: /heroes/hero-rank/ existe
   'https://arena.rone.dev/api',

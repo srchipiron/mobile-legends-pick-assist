@@ -20,6 +20,7 @@ import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
 import { comparar } from '../../scripts/comparar-ingesta.mjs';
+import { huellaTexto } from '../../scripts/ingesta/extraccion.mjs';
 
 const INGESTA = resolve(RAIZ, 'scripts/ingest.mjs');
 const REAL = resolve(RAIZ, 'public/data/roam-meta.json');
@@ -70,6 +71,11 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     '/api/equipment': parametros('size', 'index', 'lang'),
     '/api/heroes/{hero_id}/builds': parametros('lane', 'rank', 'size', 'index'),
   } };
+  // Larga a proposito: la huella del texto solo cuenta cadenas de 40 o mas
+  // caracteres una vez quitadas etiquetas, cifras y espacios. Con una corta,
+  // la huella salia CONSERVADA del repositorio y la prueba pasaba sin mirar
+  // lo servido (lo dijo la mutacion).
+  const DESCRIPCION = 'Deals 300 <font color="x">Magic Damage</font> to enemies in a line and slows them by 40% for 1.5 seconds, then heals allies';
   const golpes = {};
   let fallaCounters = false;
   let fallaRecientes = false;
@@ -108,7 +114,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       const h = heroes.find((x) => String(x.id) === m[1]) ?? heroes[0];
       return json({ code: 0, data: { hero: { data: {
         name: h.name, head: `http://127.0.0.1:${puerto}/img/${h.id}.jpg`, speciality: ['Guard', 'Crowd Control'],
-        skill: { skilllist: [{ skilldesc: 'Deals <font color="x">Magic Damage</font> to enemies' }] },
+        skill: { skilllist: [{ skilldesc: DESCRIPCION }] },
       } } } });
     }
     if (/^\/api\/(academy\/)?heroes\/[^/]+\/counters$/.test(ruta) && fallaCounters) { res.statusCode = 500; return res.end('{}'); }
@@ -135,6 +141,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       return json({ code: 0, data: [{ equipid: [90001, 90002, 90003], build_win_rate: 0.555, build_pick_rate: 0.1,
         emblem: { data: { emblemname: 'Tank' } }, battleskill: { data: { skillname: 'Flicker' } } }] });
     }
+    // La tier list de mlbb.gg, en el mismo servidor con otra base (--tiers).
+    if (ruta === '/api/v1/heroes') { marca('tiers'); return json(heroes.map((h) => ({ id: h.id, name: h.name }))); }
+    if ((m = ruta.match(/^\/api\/v1\/heroes\/(\d+)$/))) { marca('tier'); return json({ id: Number(m[1]), name: heroes.find((x) => String(x.id) === m[1])?.name, tier: m[1] === '1' ? 'S' : 'B' }); }
     if (ruta.startsWith('/img/')) { marca('img'); return bin(ruta.endsWith('.jpg') ? JPG : PNG); }
     res.statusCode = 404; res.end('{}');
   });
@@ -147,7 +156,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   try {
     const r = await correrIngesta([
       '--base', `http://127.0.0.1:${puerto}/api`,
-      '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out,
+      '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
       '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
     ]);
     const salida = `${r.stdout}\n${r.stderr}`;
@@ -158,7 +167,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
 
     // Cada endpoint que la ingesta conoce se ha llamado. Si uno deja de
     // llamarse, la app se queda con el dato conservado sin que nadie lo vea.
-    for (const k of ['esquema', 'rank:mythic', 'rank:glory', 'rank3:glory', 'position', 'detail', 'counters', 'academy', 'compat', 'equipo', 'equipoCorto', 'builds:roam', 'img']) {
+    for (const k of ['esquema', 'rank:mythic', 'rank:glory', 'rank3:glory', 'position', 'detail', 'counters', 'academy', 'compat', 'equipo', 'equipoCorto', 'builds:roam', 'img', 'tiers', 'tier']) {
       ok(golpes[k] > 0, `la ingesta no ha llamado a ${k}: ${JSON.stringify(golpes)}`);
     }
 
@@ -175,9 +184,13 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(d.recientes?.dias, 3, `la ventana corta no se guarda: ${JSON.stringify(d.recientes)}`);
     eq(d.recientes?.statsByRank?.glory?.Atlas?.winRate, 0.512, `la ventana corta no es la servida: ${JSON.stringify(d.recientes?.statsByRank?.glory?.Atlas)}`);
     eq(d.stats.Atlas?.winRate, 0.51, 'la ventana corta ha pisado a la de 7 días');
+    // La tier list: la servida, casada por nombre, y la huella del texto de la ficha.
+    eq(d.tiers?.tiers?.Atlas, 'S', `la tier de Atlas no es la servida: ${JSON.stringify(d.tiers)}`);
+    eq(d.tiers?.tiers?.Khufra, 'B', 'la tier de Khufra no es la servida');
     const atlas = d.heroes.find((h) => h.name === 'Atlas');
     ok(atlas && atlas.id === 1 && atlas.role === 'tank' && atlas.lanes.includes('roam'), `ficha de Atlas: ${JSON.stringify(atlas)}`);
     eq(atlas?.damage?.magico, 1, `tipo de daño de Atlas: ${JSON.stringify(atlas?.damage)}`);
+    eq(atlas?.kitTexto, huellaTexto({ skilldesc: DESCRIPCION }), `la huella del texto no es la de la ficha SERVIDA: ${atlas?.kitTexto}`);
     eq(d.counters.Atlas?.Khufra, 0.5123, `cruce Atlas→Khufra: ${JSON.stringify(d.counters.Atlas)}`);
     eq(d.counters.Atlas?.Layla, 0.53, 'no ha elegido la ruta con MÁS cruces (academy trae 4, la del esquema 2)');
     ok(/^4 pares .*academy/.test(d.diagnostics.rutasMedidas?.counter ?? ''), `rutas medidas: ${JSON.stringify(d.diagnostics.rutasMedidas)}`);
@@ -202,7 +215,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     const out2 = resolve(dir, 'sin-counters.json');
     const r2 = await correrIngesta([
       '--base', `http://127.0.0.1:${puerto}/api`,
-      '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', out2,
+      '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', out2, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
       '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
     ]);
     eq(r2.status, 0, `la ingesta sin counters no acaba bien: ${(r2.stdout + r2.stderr).slice(-400)}`);
@@ -228,13 +241,14 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     const out3 = resolve(dir, 'ficha-caida.json');
     const r3 = await correrIngesta([
       '--base', `http://127.0.0.1:${puerto}/api`,
-      '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', out3, '--previo', out,
+      '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', out3, '--previo', out, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
       '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
     ]);
     eq(r3.status, 0, `la tercera corrida no acaba bien: ${(r3.stdout + r3.stderr).slice(-400)}`);
     const d3 = JSON.parse(readFileSync(out3, 'utf8'));
     const atlas3 = d3.heroes.find((h) => h.name === 'Atlas');
     ok(atlas3?.speciality?.includes('Guard'), `con la ficha caída la speciality no se conserva: ${JSON.stringify(atlas3?.speciality)}`);
+    eq(atlas3?.kitTexto, huellaTexto({ skilldesc: DESCRIPCION }), 'con la ficha caída la huella del texto no se conserva de la corrida anterior: avisaría de un rework falso');
     ok(/^2 pares /.test(d3.diagnostics.rutasMedidas?.counter ?? '') && !/academy/.test(d3.diagnostics.rutasMedidas?.counter ?? ''),
       `un fallo suelto al sondear cambió la ruta de counters por una vacía: ${d3.diagnostics.rutasMedidas?.counter}`);
     eq(d3.counters.Atlas?.Khufra, 0.5123, 'la matriz no se descargó por la ruta buena tras el fallo suelto');
