@@ -11,7 +11,7 @@
  *   PRUEBAS_TRAZA=1 node pruebas/correr.mjs  con traza completa de cada fallo
  */
 import { spawn } from 'node:child_process';
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -38,7 +38,32 @@ const ficheros = listar(AQUI).filter((f) => !patrones.length || patrones.some((p
 if (!ficheros.length) { console.error('No hay ficheros de prueba que casen'); process.exit(2); }
 
 const PARALELO = E2E ? 1 : Math.max(1, Math.min(3, Number(process.env.PRUEBAS_PARALELO) || 3));
-if (E2E && !existsSync(resolve(RAIZ, 'dist/index.html'))) { console.error('No hay dist/: compila antes con `npm run build`'); process.exit(2); }
+if (E2E) comprobarDist();
+
+/**
+ * Las pruebas de navegador corren sobre `dist/`, no sobre el código: con un
+ * `dist/` de otra versión fallan diciendo cosas que no son (la de novedades
+ * se queja de que la primera entrada del CHANGELOG no es la publicada), y
+ * desde el móvil eso es un rojo que cuesta media hora antes de caer en que
+ * solo faltaba compilar. En GitHub no pasa porque `pruebas-ui.yml` compila
+ * en el paso de antes.
+ */
+function comprobarDist() {
+  if (!existsSync(resolve(RAIZ, 'dist/index.html'))) {
+    console.error('No hay dist/: compila antes con `npm run build`');
+    process.exit(2);
+  }
+  const version = JSON.parse(readFileSync(resolve(RAIZ, 'package.json'), 'utf8')).version;
+  let compilada = null;
+  try {
+    compilada = JSON.parse(readFileSync(resolve(RAIZ, 'dist/version.json'), 'utf8')).version;
+  } catch { /* un dist/ sin version.json es de antes de 1.13.0, o está a medias */ }
+  if (compilada !== version) {
+    console.error(`dist/ trae la ${compilada ?? '(sin version.json)'} y package.json dice ${version}: compila antes con \`npm run build\``);
+    console.error('Sin eso, lo que fallaría es la versión vieja, no tu cambio.');
+    process.exit(2);
+  }
+}
 const resultados = [];
 let indice = 0;
 

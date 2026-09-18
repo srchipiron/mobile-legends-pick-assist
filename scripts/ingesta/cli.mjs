@@ -16,7 +16,7 @@ import {
 import { fetchRelations } from './relaciones.mjs';
 import {
   anotarFrescura, conservarFichasPrevias, fechaDeLaCorrida, fundirRelaciones,
-  leerPrevio, relacionesPrevias,
+  kitsRehechos, leerPrevio, relacionesPrevias,
 } from './fusion.mjs';
 import { bajarImagenes } from './imagenes.mjs';
 import { serializar } from './salida.mjs';
@@ -194,6 +194,16 @@ async function main() {
   const seen = new Set([...Object.keys(stats), ...heroList.map((h) => h.name)]);
   const newHeroes = [...seen].filter((n) => !known.has(n));
 
+  // Heroes a los que Moonton les ha rehecho el kit DESPUES de que alguien les
+  // escribiera los tags a mano. `newHeroes` no los ve: siguen en el catalogo
+  // y con su nombre de siempre, asi que se quedarian con tags de otro heroe
+  // para siempre y en silencio. La huella (tipo de dano + speciality) se
+  // guarda en heroes.json al revisar los tags, asi que el aviso PERSISTE
+  // hasta que una persona los mire, igual que pasa con los heroes nuevos.
+  // Un heroe cuya ficha no haya llegado conserva la anterior (ver
+  // conservarFichasPrevias), asi que una peticion caida no inventa un aviso.
+  const heroesCambiados = kitsRehechos(heroList, heroes.heroes);
+
   const estadisticasNuevas = frescos.includes(RANK);
   const generatedAt = fechaDeLaCorrida({ frescos, estadisticasNuevas, matrizNueva, previous });
   const out = {
@@ -216,6 +226,7 @@ async function main() {
     ),
     heroes: heroList,
     newHeroes,
+    heroesCambiados,
     diagnostics: {
       // Cuando las rutas salen del esquema, LOCKED no llega a usarse: la base
       // hay que sacarla de ahí o la app muestra "API: desconocida" teniéndola.
@@ -266,6 +277,9 @@ async function main() {
   }
   if (newHeroes.length) {
     console.log(`Héroes sin tags propios (usan los de su rol): ${newHeroes.join(', ')}`);
+  }
+  if (heroesCambiados.length) {
+    console.log(`Héroes con el kit cambiado desde que se escribieron sus tags: ${heroesCambiados.map((h) => `${h.name} (${h.antes} → ${h.ahora})`).join(', ')}`);
   }
 }
 

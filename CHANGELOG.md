@@ -8,6 +8,31 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.1.0
+
+- El Diagnóstico avisa cuando Moonton le rehace las habilidades a un héroe.
+  Hasta ahora, un héroe reworkeado se quedaba con las etiquetas que alguien
+  le escribió a mano para su kit anterior, y nadie se enteraba nunca: el
+  aviso de «héroes sin tags propios» solo veía a los que FALTAN del catálogo.
+  El catálogo guarda ahora la huella del kit (de qué pega y cómo lo etiqueta
+  Moonton) con la que se escribieron sus tags; si deja de cuadrar, lo dice el
+  Diagnóstico y el bot de los lunes abre una incidencia. No se le inventan
+  etiquetas nuevas: eso lo mira una persona. Con la matriz de cruces al 100%
+  un tag desfasado no decide ningún counter, pero sí ensucia el consejo de
+  composición y el texto de los motivos.
+  El aviso está calibrado para no dar la lata: entre el 7 y el 16 de
+  septiembre cuatro héroes cambiaron su recuento de habilidades (Argus, Aulus,
+  Bruno, Balmond) y otros cuatro de línea, y no habría saltado con ninguno.
+- La pantalla del Veredicto vuelve a tener quien la vigile. Las tres reglas
+  que la hacen honesta —el margen en la misma frase que la diferencia, no
+  afirmar nada mientras la diferencia quepa en el margen, y decir que no está
+  aleatorizado— tenían una prueba desde 1.17.0 y la reescritura de 3.0 la
+  perdió por el camino. Con once partidas el margen es de ±29 puntos, así que
+  el número sin el margen no dice nada.
+- `npm run test:ui` ya no da un rojo falso cuando se te olvida compilar. Antes
+  fallaba la prueba de las novedades diciendo que el CHANGELOG no cuadra;
+  ahora dice «compila antes» y no gasta el tiempo de las demás.
+
 ## 3.0.1
 
 - La línea «Pro» de las tarjetas contará tres partidas más: Liquipedia

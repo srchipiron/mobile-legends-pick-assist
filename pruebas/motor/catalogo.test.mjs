@@ -6,7 +6,7 @@
  */
 import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
 import { catalogo } from '../fixtures/catalogo.mjs';
-import { poolDeLinea, LINEAS, tagsDeducidos, fundirCatalogo, tipoDeDano, perfilDeDano, tapaElHueco } from '../../src/motor/catalogo.js';
+import { poolDeLinea, LINEAS, tagsDeducidos, fundirCatalogo, tipoDeDano, perfilDeDano, tapaElHueco, huellaDeKit } from '../../src/motor/catalogo.js';
 import { analizarDraft } from '../../src/motor/analisis.js';
 import { evaluarDraft } from '../../src/motor/modelo.js';
 import { SPECIALITY_TAGS, ROLE_VETO, ROLE_DEFAULTS } from '../../src/motor/reglas.js';
@@ -178,6 +178,61 @@ test('cada heroe lleva su id, tambien los de nombre raro', () => {
     const heroe = todos.find((x) => x.name === nombre);
     if (heroe) ok(heroe.id != null, `${nombre} se ha quedado sin id: el nombre no cuadra entre API y catalogo`);
   }
+});
+
+test('la huella del kit calla con un reequilibrio y habla con un rework', () => {
+  // Para que el aviso sirva tiene que cumplir DOS cosas, y las dos se rompen
+  // por los lados contrarios: si salta con cada retoque de numeros, se deja
+  // de leer; si no salta nunca, no vigila nada.
+  const base = { name: 'X', damage: { fisico: 4, magico: 0, verdadero: 0 }, speciality: ['Burst', 'Chase'] };
+
+  // 1. CALLA con lo que de verdad paso entre el 7 y el 16 de septiembre de
+  //    2026: cuatro heroes cambiaron su recuento de habilidades por tipo y
+  //    ninguno cambio de kit.
+  eq(huellaDeKit({ ...base, damage: { fisico: 5, magico: 0, verdadero: 0 } }), huellaDeKit(base),
+    'la huella cambia al sumar una habilidad fisica: avisaria con cada reequilibrio');
+  eq(huellaDeKit({ ...base, damage: { fisico: 4, magico: 0, verdadero: 2 } }), huellaDeKit(base),
+    'el dano verdadero mueve la huella, y tipoDeDano ni lo mira');
+  // Y el orden en que la API devuelva la speciality no es informacion.
+  eq(huellaDeKit({ ...base, speciality: ['Chase', 'Burst'] }), huellaDeKit(base),
+    'la huella depende del ORDEN de la speciality: avisaria sin que cambie nada');
+
+  // 2. HABLA cuando a Moonton le cambia de qué pega el heroe o como lo
+  //    etiqueta, que es lo que deja los tags escritos a mano hablando de otro.
+  ok(huellaDeKit({ ...base, speciality: ['Burst', 'Guard'] }) !== huellaDeKit(base),
+    'cambiar una speciality no mueve la huella');
+  ok(huellaDeKit({ ...base, damage: { fisico: 0, magico: 4, verdadero: 0 } }) !== huellaDeKit(base),
+    'pasar de fisico a magico no mueve la huella');
+  ok(huellaDeKit({ ...base, damage: { fisico: 4, magico: 4, verdadero: 0 } }) !== huellaDeKit(base),
+    'volverse mixto no mueve la huella');
+
+  // Sin ficha no hay huella que comparar, y eso NO puede parecerse a un kit
+  // valido: una peticion caida no es un rework.
+  eq(huellaDeKit({ name: 'X' }), '?|', 'un heroe sin ficha deberia dar una huella reconocible como vacia');
+});
+
+test('todos los heroes del catalogo llevan su huella de kit', () => {
+  // Sin `kit`, `kitsRehechos` no mira a ese heroe: se quedaria con los tags
+  // de otro heroe para siempre y en silencio, que es justo lo que el aviso
+  // viene a evitar. Un heroe anadido a mano sin huella es un agujero mudo.
+  const sin = catalogo.heroes.filter((h) => !h.kit).map((h) => h.name);
+  ok(!sin.length, `heroes del catalogo sin \`kit\`: ${sin.slice(0, 8).join(', ')}`);
+
+  // Y la huella tiene la forma que produce huellaDeKit, no cualquier texto:
+  // "tipo|speciality ordenada". Con otra forma no casaria nunca y el aviso
+  // saltaria con los 133 a la vez.
+  const raras = catalogo.heroes.filter((h) => !/^(fisico|magico|mixto)\|[^|]*$/.test(h.kit)).map((h) => h.name);
+  ok(!raras.length, `huellas con forma rara: ${raras.slice(0, 8).join(', ')}`);
+
+  // La huella de hoy tiene que coincidir con la del catalogo, o el aviso
+  // estaria encendido de fabrica. Se comprueba contra los datos reales.
+  const meta = leerJson('public/data/roam-meta.json');
+  const api = Object.fromEntries((meta.heroes ?? []).map((h) => [h.name, h]));
+  const descuadran = catalogo.heroes
+    .filter((h) => api[h.name] && (api[h.name].speciality ?? []).length && huellaDeKit(api[h.name]) !== h.kit)
+    .map((h) => `${h.name}: ${h.kit} vs ${huellaDeKit(api[h.name])}`);
+  ok(!descuadran.length,
+    `el catalogo dice una huella y la API otra (revisa los tags y actualiza \`kit\`): ${descuadran.slice(0, 6).join(' · ')}`);
 });
 
 await terminar('motor/catalogo');

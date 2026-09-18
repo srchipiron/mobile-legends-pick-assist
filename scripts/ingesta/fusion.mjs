@@ -7,6 +7,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { OUT, PREVIO, ROOT, diagnostics } from './contexto.mjs';
+import { huellaDeKit } from '../../src/motor/catalogo.js';
 
 /**
  * Lo anterior se lee de los DATOS GUARDADOS, no de la salida: los tres
@@ -100,4 +101,26 @@ export function fechaDeLaCorrida({ frescos, estadisticasNuevas, matrizNueva, pre
   diagnostics.frescos = frescos;
   diagnostics.conservado = !(estadisticasNuevas && matrizNueva);
   return estadisticasNuevas && matrizNueva ? new Date().toISOString() : (previous?.generatedAt ?? null);
+}
+
+/**
+ * Héroes a los que Moonton les ha rehecho el kit DESPUÉS de que alguien les
+ * escribiera los tags a mano.
+ *
+ * `newHeroes` no los ve: siguen en el catálogo y con su nombre de siempre,
+ * así que se quedarían con los tags de otro héroe para siempre y en silencio.
+ * La huella se guarda en `heroes.json` al revisar los tags, así que el aviso
+ * PERSISTE hasta que una persona los mire, igual que con los héroes nuevos;
+ * calcularlo contra la corrida anterior lo apagaría solo al día siguiente.
+ *
+ * Un héroe cuya ficha no haya llegado conserva la anterior
+ * (`conservarFichasPrevias`), y si no hay ninguna se queda sin `speciality`:
+ * en ese caso NO se avisa, porque una petición caída no es un rework.
+ */
+export function kitsRehechos(heroList = [], catalogo = []) {
+  const escrito = new Map(catalogo.filter((h) => h?.kit).map((h) => [h.name, h.kit]));
+  return heroList
+    .filter((h) => escrito.has(h?.name) && (h.speciality ?? []).length)
+    .map((h) => ({ name: h.name, antes: escrito.get(h.name), ahora: huellaDeKit(h) }))
+    .filter((x) => x.antes !== x.ahora);
 }

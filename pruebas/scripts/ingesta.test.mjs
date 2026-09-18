@@ -16,6 +16,7 @@ import { extraerLineas, extraerRol } from '../../scripts/ingesta/extraccion.mjs'
 import { callRoute } from '../../scripts/ingesta/descarga.mjs';
 import { idPrincipal, esIdDeHeroe, recogerPares, relationMap, pick } from '../../scripts/ingesta/relaciones.mjs';
 import { serializar } from '../../scripts/ingesta/salida.mjs';
+import { kitsRehechos } from '../../scripts/ingesta/fusion.mjs';
 
 test('el rol y la línea se leen aunque vengan hondos en la respuesta', () => {
   // Forma REAL de la API: el titulo de la linea vive en el nivel 8. El limite de
@@ -251,6 +252,58 @@ test('las builds sobreviven al guardado compacto', () => {
   eq(vuelta.builds.Paquito.exp[0].emblema, 'Assassin', 'se pierde el emblema al guardar');
   eq(Object.keys(vuelta.builds.Paquito).length, 2, 'se pierde una linea al guardar');
   eq(vuelta.equipment['3009'].nombre, 'Hunter Strike', 'se pierde el catalogo de objetos');
+});
+
+test('los heroes con el kit rehecho se avisan, y una peticion caida no inventa un aviso', () => {
+  // El catalogo guarda la huella del kit CON LA QUE se escribieron los tags a
+  // mano. Si la API deja de dar esa huella, es que le han rehecho las
+  // habilidades y los tags hablan de otro heroe.
+  const catalogo = [
+    { name: 'Akai', kit: 'fisico|Crowd Control,Guard' },
+    { name: 'Nana', kit: 'magico|Burst,Poke' },
+    { name: 'Marcel', kit: 'fisico|Crowd Control,Support' },
+    // Uno sin huella: es un heroe que nadie ha revisado todavia.
+    { name: 'Hirara' },
+  ];
+  const conKit = (name, tipo, esp) => ({
+    name,
+    damage: tipo === 'magico' ? { fisico: 0, magico: 3, verdadero: 0 } : { fisico: 3, magico: 0, verdadero: 0 },
+    speciality: esp,
+  });
+
+  // Sin cambios, ni un aviso.
+  eq(kitsRehechos([
+    conKit('Akai', 'fisico', ['Guard', 'Crowd Control']),
+    conKit('Nana', 'magico', ['Burst', 'Poke']),
+  ], catalogo).length, 0, 'avisa de un kit que no ha cambiado');
+
+  // A Nana le rehacen el kit: sale, y con el antes y el despues, que es lo
+  // que hace falta para decidir si los tags siguen valiendo.
+  const rehechos = kitsRehechos([
+    conKit('Akai', 'fisico', ['Crowd Control', 'Guard']),
+    conKit('Nana', 'magico', ['Burst', 'Guard']),
+  ], catalogo);
+  eq(rehechos.length, 1, 'no ve el kit rehecho de Nana');
+  eq(rehechos[0].name, 'Nana');
+  eq(rehechos[0].antes, 'magico|Burst,Poke');
+  eq(rehechos[0].ahora, 'magico|Burst,Guard');
+
+  // Una ficha que no llego se queda sin speciality y conserva la anterior: eso
+  // NO es un rework, y avisarlo llenaria la incidencia de ruido cada vez que
+  // la API se cae a medias. Es el mismo criterio que «conservo lo anterior».
+  eq(kitsRehechos([{ name: 'Akai', damage: null, speciality: [] }], catalogo).length, 0,
+    'una ficha caida se cuenta como kit rehecho');
+  eq(kitsRehechos([{ name: 'Akai' }], catalogo).length, 0, 'un heroe sin ficha se cuenta como kit rehecho');
+
+  // Y un heroe sin huella en el catalogo no se mira: ese caso lo cubre
+  // `newHeroes`, que avisa de que no tiene tags propios.
+  eq(kitsRehechos([conKit('Hirara', 'magico', ['Chase'])], catalogo).length, 0,
+    'avisa de un heroe que aun no tiene huella escrita');
+
+  // Un heroe que la API conoce y el catalogo no, tampoco: no hay tags que
+  // revisar todavia.
+  eq(kitsRehechos([conKit('Desconocido', 'fisico', ['Burst'])], catalogo).length, 0,
+    'avisa de un heroe que no esta en el catalogo');
 });
 
 await terminar('scripts/ingesta');

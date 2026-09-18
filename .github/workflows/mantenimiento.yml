@@ -92,6 +92,48 @@ jobs:
               ].join('\n'),
             });
 
+      # Un héroe REWORKEADO no lo ve el aviso de arriba: sigue en el catálogo
+      # y con su nombre, así que se queda con los tags que alguien le escribió
+      # para OTRO kit, callado y para siempre. La huella (tipo de daño +
+      # speciality) se guarda en heroes.json al revisar los tags, así que esto
+      # sigue avisando hasta que una persona los mire. Tampoco se automatiza:
+      # deducirle tags a un héroe rehecho es el sesgo de Marcel otra vez.
+      - name: Avisar de héroes con el kit rehecho
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = await import('node:fs');
+            const meta = JSON.parse(fs.readFileSync('./public/data/roam-meta.json', 'utf8'));
+            const cambiados = meta.heroesCambiados ?? [];
+            if (!cambiados.length) return;
+            const titulo = `Héroes con el kit rehecho: ${cambiados.map((h) => h.name).join(', ')}`;
+            const previas = await github.rest.issues.listForRepo({
+              ...context.repo, state: 'open', labels: 'tags',
+            });
+            if (previas.data.some((i) => i.title === titulo)) return;
+            await github.rest.issues.create({
+              ...context.repo, title: titulo, labels: ['tags'],
+              body: [
+                'A estos héroes la API les da hoy un kit distinto del que tenían',
+                'cuando se les escribieron los tags a mano:',
+                '',
+                cambiados.map((h) => `- **${h.name}**: \`${h.antes}\` → \`${h.ahora}\``).join('\n'),
+                '',
+                'El formato de la huella es `tipoDeDaño|speciality`. NO significa que',
+                'los tags estén mal: significa que nadie los ha vuelto a mirar desde',
+                'que Moonton le cambió las habilidades.',
+                '',
+                'Con la matriz de cruces al 100% un tag desfasado no decide ningún',
+                'counter (las reglas por etiqueta solo entran sin dato del cruce),',
+                'pero sí ensucia el consejo de composición y el texto de los motivos.',
+                '',
+                'Para revisarlos: la API publica la descripción de sus habilidades en',
+                '`/api/heroes/{id}`. Cuando estén revisados, actualiza su `kit` en',
+                '`public/data/heroes.json` con lo que dé `huellaDeKit()` y este aviso',
+                'se apaga solo.',
+              ].join('\n'),
+            });
+
       # Las tablas derivadas SÍ se regeneran solas: no llevan criterio, salen
       # del catálogo. Si cambian, se propone el cambio; no se mete a la brava.
       - name: Regenerar tablas de deducción

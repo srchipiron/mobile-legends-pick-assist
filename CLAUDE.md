@@ -1310,6 +1310,35 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   no. Son la clave de todos los datos y enseñar «Cíclope» mientras el motor
   busca «Cyclops» es el fallo invisible que ya costó una corrección. Lo que
   acepta los dos idiomas es la BÚSQUEDA (`motor/alias.js`).
+- **Meter una tier list publicada en el modelo** (3.1.0, pedido tras el
+  cambio de temporada): no hay ninguna que se pueda PEDIR, que es el requisito
+  del proyecto para una fuente. Comprobado pidiendo datos, no leyendo
+  documentación: (1) la propia API la tenía y está retirada en origen —
+  `/api/academy/heroes/ratings` y `/ratings/{subject}` salen en el esquema y
+  responden `{"code":10407,"message":"接口下线"}` con `data: null`—; (2)
+  mlbb.gg, que ya se usa para contrastar counters, no publica ninguna ruta de
+  tier list (`/api/v1/tier-list`, `/tierlist`, `/heroes/tier-list`,
+  `/meta/tier-list`: 404). Escribirla a mano es exactamente la regla escrita a
+  mano que el proyecto lleva versiones quitando: envejece en días, no se puede
+  medir contra un resultado (no hay tier lists históricas con las que probar
+  si mejora la verosimilitud fuera de muestra) y duplicaría lo que el término
+  de héroe ya mide en el rango de Javi. **La app ya ES una tier list**: el
+  término de héroe ordena por winrate del rango con la media del rango
+  restada, con ventana de 7 días y dos corridas al día.
+- **Reaccionar antes a un parche con la serie diaria** (`/api/heroes/{id}/trends`,
+  3.1.0): la ruta está VIVA y da winrate, pickrate y banrate día a día, que es
+  justo lo que una media de 7 días tarda en recoger. No se usa porque sus
+  números no reconcilian con los que usa la app: medido sobre los 30 héroes
+  más jugados (19 con serie utilizable), la mediana de |wr7 de la serie − el
+  winrate guardado| es 3,28 pp SOBRE LA MISMA VENTANA, con casos como Granger
+  42,0% guardado frente a 52,5% de la serie y Minotaur 54,3% frente a 39,5%; y
+  la serie salta ±10 pp de un día para otro en héroes con pickrate alto, que
+  con ese tamaño de muestra no es posible. Es otra población (el registro trae
+  `bigrank`, `camp_type` y `match_type` propios y no parece filtrar por el
+  `rank` que se le pide). Además los dos últimos días vienen a medias
+  (`win_rate: 0` y pickrate diez veces por debajo). Antes de construir nada
+  encima hay que entender QUÉ población es; calibrar contra una suposición es
+  el error que este fichero ya documenta dos veces.
 - **Un tipado de verdad (TypeScript o JSDoc comprobado)** (3.0): el motor
   lleva JSDoc en las funciones de contrato, pero nadie lo comprueba. Añadir
   `tsc --checkJs` es un candidato razonable para la siguiente iteración;
@@ -1328,6 +1357,16 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
 
 ## Lo que queda pendiente
 
+- **Lo que 3.0 perdió sin querer, repuesto en 3.1.0**: la prueba de que la
+  PANTALLA del Veredicto enseña el margen junto a la diferencia existía en
+  2.0.2 (leía el fichero de interfaz de 2.x desde la prueba del motor) y el
+  port la perdió, porque el motor ya no puede leer la interfaz. Hoy es
+  `pruebas/app/veredicto.test.mjs`, verificada por mutación en las tres
+  reglas. Lección: al partir un proyecto en capas, una prueba que cruzaba dos
+  capas no se mueve sola; hay que ir a buscarla. Y `npm run test:ui` compara
+  `dist/version.json` con `package.json` antes de arrancar, porque con un
+  `dist/` viejo lo que fallaba era la versión anterior y el mensaje no lo
+  decía.
 - **Lo que 3.0 dejó a medias, a propósito y con su porqué**: el pestillo
   contra el bucle de recargas (`yaRecargado` en `useActualizacion`) no tiene
   prueba —verificado por mutación: quitarlo no tumba nada, porque tras la
@@ -1345,6 +1384,22 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
 - La deducción se apoya en `SPECIALITY_TAGS` y `ROLE_VETO`, que NO se editan a
   mano: las regenera `node scripts/derivar-tags.mjs` del propio catálogo.
   Reejecútalo cuando crezca `heroes.json` o Moonton cambie sus etiquetas.
+- **Un héroe REWORKEADO no lo ve `newHeroes`** (3.1.0): conserva su nombre y
+  sigue en el catálogo, así que se quedaba con los tags que alguien le
+  escribió para OTRO kit, callado y para siempre. Desde 3.1.0 cada héroe de
+  `heroes.json` lleva su `kit`: la huella (`huellaDeKit`, tipo de daño +
+  speciality ordenada) que daba la API cuando se le escribieron los tags. La
+  ingesta compara (`kitsRehechos`, fusion.mjs), el diagnóstico lo canta y
+  `mantenimiento.yml` abre incidencia. Se guarda en el CATÁLOGO y no contra la
+  corrida anterior a propósito: así el aviso persiste hasta que una persona
+  mire los tags, igual que con los héroes nuevos; contra la corrida anterior
+  se apagaría solo al día siguiente. La huella ignora los RECUENTOS de
+  habilidades por tipo: entre el 7 y el 16 de septiembre de 2026 cambiaron
+  cuatro (Argus 4→5 de físico, Aulus 5→6, Bruno 4→3, Balmond +1 de verdadero)
+  y otros cuatro héroes cambiaron de línea, y la huella no se movió en
+  ninguno. Un aviso que salta con cada reequilibrio es un aviso que se deja de
+  leer. Al revisar los tags de un héroe, actualiza su `kit` con lo que dé
+  `huellaDeKit()` y el aviso se apaga solo.
 - Desde 1.9.0 el registro SÍ personaliza: `maestriaEfectiva` junta la maestría
   escrita a mano con la que sale de las partidas apuntadas, quedándose con la
   fuente que tenga más partidas de cada héroe (no se suman: la escrita a mano ya

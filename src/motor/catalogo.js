@@ -97,6 +97,26 @@ export function tipoDeDano(heroe) {
 }
 
 /**
+ * La huella del kit de un héroe: de qué pega y las etiquetas que le pone
+ * Moonton. Es lo que cambia cuando le REHACEN las habilidades, y lo que NO
+ * cambia con un reequilibrio de números.
+ *
+ * Medido entre el 7 y el 16 de septiembre de 2026: cuatro héroes cambiaron su
+ * recuento de habilidades por tipo (Argus 4→5 de físico, Aulus 5→6, Bruno
+ * 4→3, Balmond +1 de verdadero) y la huella no se movió en ninguno; tampoco
+ * se movió con los cuatro que cambiaron de línea. Un aviso que salta con cada
+ * retoque de números es un aviso que se deja de leer.
+ *
+ * Sirve para avisar de que los tags escritos a mano de un héroe se
+ * escribieron para OTRO kit. NO se le deducen tags nuevos por eso: eso lo
+ * mira una persona, que es la regla del proyecto desde el sesgo de Marcel.
+ */
+export function huellaDeKit(heroe) {
+  const esp = [...(heroe?.speciality ?? [])].sort().join(',');
+  return `${tipoDeDano(heroe) ?? '?'}|${esp}`;
+}
+
+/**
  * De qué pega un equipo y qué lado le falta. `falta` solo con dos héroes con
  * dato y ninguno del lado que falta: con uno no se puede decir nada.
  */

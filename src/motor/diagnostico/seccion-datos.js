@@ -110,6 +110,13 @@ export function seccionCobertura(inf, { datos, linea, entorno = {} }) {
   const huerfanos = nombresApi.filter((n) => !catalogoNorm.has(nombreClave(n)));
   inf.check(huerfanos.length < 12, `Nombres: ${nombresApi.length} de la API, ${huerfanos.length} sin tags propios`,
     `Nombres: ${huerfanos.length} sin casar (${huerfanos.slice(0, 10).join(', ')})`, true);
+  // Un héroe al que le rehacen las habilidades conserva su nombre y sus tags
+  // viejos: no lo ve el aviso de arriba, que solo mira quién FALTA. Con la
+  // matriz de cruces al 100% un tag rancio no decide ningún counter, pero sí
+  // ensucia el consejo de composición y el texto de los motivos.
+  const cambiados = meta?.heroesCambiados ?? [];
+  inf.check(!cambiados.length, 'Kits: ninguno rehecho desde que se escribieron sus tags',
+    `Kits rehechos, tags escritos para otro héroe: ${cambiados.slice(0, 6).map((h) => `${h.name} (${h.antes} → ${h.ahora})`).join(', ')}`, true);
 }
 
 /**
