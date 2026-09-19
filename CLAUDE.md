@@ -764,6 +764,15 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   El esquema OpenAPI está descargado en cada ingesta: antes de decir que una
   ruta «no cuadra», leer sus parámetros y sus enumeraciones ahí. La ingesta
   ya lo hace (`discoverRoutes`); a mano hay que hacer lo mismo.
+- **Una prueba que exigía que el dato real fuera BUENO, no que la guarda
+  decidiera bien** (3.3.0 → 3.4.0, incidencia #8) — `draft.test` comprobaba
+  que con los datos reales la ventana fuera la de 3 días. El 19 de
+  septiembre de 2026, tres días después del reinicio de temporada, la de 3
+  vino vacía, la guarda la descartó (lo correcto) y la prueba tumbó el
+  despliegue de los datos de la tarde y abrió la incidencia de vigilancia.
+  Hoy exige que `prepararDatos` decida lo mismo que `elegirVentana`. Una
+  prueba sobre datos reales comprueba que el código reacciona bien al dato
+  que haya, nunca que el dato sea el de un día bueno.
 - **Un peso por defecto de 1 entre cuotas que suman 1** (3.4.0, cazado en
   pruebas) — `equilibrioEsperado` ponderaba cada héroe por su pickrate con
   `?? 1` para el que no tuviera dato: un héroe recién salido, sin
