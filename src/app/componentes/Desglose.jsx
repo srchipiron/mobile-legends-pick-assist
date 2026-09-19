@@ -5,6 +5,7 @@ export const COLORES_TERMINO = {
   heroes: 'var(--c-meta)',
   cruces: 'var(--c-counter)',
   parejas: 'var(--c-synergy)',
+  equilibrio: 'var(--c-balance)',
   porVer: 'var(--c-comp)',
   tu: 'var(--c-mastery)',
 };

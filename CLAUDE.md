@@ -135,6 +135,13 @@ PARIDAD_VIEJO=/tmp/viejo node pruebas/paridad/viejo-vs-nuevo.mjs 2000
 
 Tarda unos 3,5 minutos y tiene que decir «0 diferencias».
 
+OJO: desde 3.4.0 la paridad con 2.0.2 se rompe A PROPÓSITO (el término de
+equilibrio de daño y la disponibilidad con baneos cambian la nota), así que
+contra `becb6a5` ya no da cero. El arnés sigue valiendo para lo que nació:
+comparar dos versiones que DEBAN dar lo mismo (una reescritura), no dos
+modelos distintos. Si se rehace otra cosa, la referencia es el commit
+anterior a la reescritura, no 2.0.2.
+
 ```
 src/motor/      el motor, PURO: sin React, sin red, sin almacenamiento
 src/app/        la interfaz: App.jsx, estado/, pantallas/, componentes/, i18n/
@@ -231,6 +238,19 @@ ninguna constante.
   ruido a 3. `prepararDatos` es el único sitio donde se decide, y el centro
   del término de héroe (`mediaDelRango`) es la media de la MISMA ventana. El
   arnés de paridad quita `meta.recientes` porque 2.0.2 no la conoce.
+  **La guarda saltó de verdad el 19 de septiembre de 2026**, tres días
+  después del reinicio de temporada (2.2.16, Temporada 42): en la corrida
+  de la mañana la de 3 días de Gloria iba a r = 0,997 con la de 7, y en la
+  de la tarde vino vacía (Lolita al 100%, Terizla 87%, σ 0,168 frente a
+  0,032, 34 héroes fuera de lo posible, r = −0,01 entre los posibles);
+  Mítico a r = 0,27 y Épico a 0,999. La de 7 días NO se movió entre las dos
+  corridas (r = 0,9999, mediana 0,0003): la API reconstruye las ventanas
+  cortas alrededor del reinicio y la de 7 aguanta. La app cayó a 7 días
+  sola y el diagnóstico lo dijo. Una prueba que exigía que con los datos
+  reales entrara la de 3 habría bloqueado el despliegue por un dato
+  legítimo: hoy exige que `prepararDatos` decida lo mismo que
+  `elegirVentana`, no cuál. Cada temporada nueva, esperar este aviso unos
+  días es normal; si dura más de una semana, mirar la ruta.
 
 Dos constantes que se midieron y se dejaron como estaban, para no volver a
 medirlas: el umbral de «tu héroe está N puntos por encima» (`>= 0.02` en
@@ -744,6 +764,12 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   El esquema OpenAPI está descargado en cada ingesta: antes de decir que una
   ruta «no cuadra», leer sus parámetros y sus enumeraciones ahí. La ingesta
   ya lo hace (`discoverRoutes`); a mano hay que hacer lo mismo.
+- **Un peso por defecto de 1 entre cuotas que suman 1** (3.4.0, cazado en
+  pruebas) — `equilibrioEsperado` ponderaba cada héroe por su pickrate con
+  `?? 1` para el que no tuviera dato: un héroe recién salido, sin
+  estadísticas, pesaba tanto como los 133 juntos y movía el centro del
+  término. Un valor por defecto tiene que estar en la escala de lo que
+  sustituye; entre cuotas, el «no sé» vale 0, no 1.
 - **Guardar en el almacén DENTRO de un updater de `setState`** (3.0) — React
   puede llamar a un updater más de una vez (evaluación ansiosa, modo
   estricto, reproceso de la cola), así que ahí dentro no va ningún efecto.
@@ -756,8 +782,9 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
 
 `src/motor/modelo.js` y `src/motor/ranking.js`. La nota de un pick ES la
 probabilidad de ganar el draft que resulta con él: un modelo aditivo en
-log-odds con cinco términos (héroes, cruces, parejas, tú, por ver), todos
-centrados, sumados con coeficiente 1 y multiplicados por UNA escala medida
+log-odds con seis términos (héroes, cruces, parejas, equilibrio de daño
+desde 3.4.0, tú, por ver), todos centrados, sumados con coeficiente 1 (el
+equilibrio con 0,5, medido) y multiplicados por UNA escala medida
 (`ESCALA = 0.44 ± 0.12`). No hay reescala min-max dentro del pool ni pesos por
 componente. Todo lo de abajo está medido con `scripts/ajustar-modelo.mjs`
 (regresión logística sobre 902 partidas pro de 120 días con resultado, 10
@@ -780,19 +807,51 @@ se repite en cada corrida de `pro.yml` al log. NO vuelvas a suponer:
   se sigue deduciendo para el análisis.
 - **Los huecos de composición por etiqueta no predicen** (0.00 ± 0.07 por
   hueco, σ del término 0.96). TEAM_NEEDS se dice (composicion.js), no puntúa.
-  El hueco de daño no se puede medir: 0 de 902 equipos pro lo tienen. Se
-  dice igual, como consejo.
+  El hueco de daño COMO REGLA (todo físico o todo mágico, con un mixto
+  tapándolo) no se puede medir: 0 de 902 equipos pro lo tienen. Se dice
+  igual, como consejo. Lo que SÍ se mide es el equilibrio, abajo.
+- **El equilibrio de daño puntúa** (3.4.0, `terminoEquilibrio`,
+  `PESO_EQUILIBRIO_DANO = 0.5`): min(físicos, mágicos) de los tuyos menos el
+  de los suyos, con el tipo de daño contado del texto de las habilidades y
+  el MIXTO sin contar para ninguno (así se midió; contarlo medio, o
+  −|f−m|, o «ambos ≥ 1», o el nº de magos, salen peor o igual). Es el único
+  de doce candidatos medidos en 3.4.0 que mejora la validación cruzada:
+  winrate por nº de magos puros (400 días): 0 → 42,9% (77 equipos), 1 →
+  45,3% (782), 2 → 51,6% (1.610), 3 → 52,2% (1.045), 4 → 47,2% (144).
+  Coeficiente libre 0,22 ± 0,09 (120 días) y 0,21 ± 0,06 (400); ganancia
+  fuera de muestra con ocho semillas de partición: +3,05 a +3,87 de logL
+  por 1.000 partidas a 120 días y +2,52 a +3,38 a 400 (con el signo
+  cambiado, negativa); AUC 0,574 → 0,591 y 0,565 → 0,581. El peso 0,5 sale
+  de una rejilla con la escala única: el óptimo está en 0,45–0,55 en las
+  dos ventanas, y la escala con él dentro es 0,48 ± 0,10 y 0,42 ± 0,07,
+  compatible con 0,44. Con el draft a medias cada equipo se centra en lo
+  que cabe esperar de su tamaño (`equilibrioEsperado`, multinomial por
+  cuota de pick: sin centrar, 1 contra 5 daba el 39,8%), con cinco y cinco
+  se cancela. Motivo en la tarjeta solo cuando TU pick sube el mínimo. La
+  prueba de la escala exige además que el término siga mejorando la
+  validación cruzada (mínimo 0,5 por 1.000, cinco veces por debajo de lo
+  medido) y `ajustar-modelo.mjs` lo enseña como `+dano` y `escala+dano`.
+  La banda de drafts al azar se abre de 40/60 a 38/62 (p05/p95): es la
+  información nueva, no ruido.
 - **El orden de pick de Liquipedia no lleva contrapick medible**: el cruce
   medio del héroe elegido después contra el elegido antes es 0.000 (n=19.072
   pares). Así que no hay castigo adversarial; lo que falta por salir entra
   como ESPERANZA del cruce contra lo que se juega en cada línea abierta
-  (`esperanzaCruces`, ponderado por pickrate). El aviso de «arriesgado como
+  (`esperanzaCruces`, ponderado por lo que se juega cuando no está baneado,
+  `disponibilidad = pickRate/(1−banRate)`, desde 3.4.0). Medido en 14.640
+  situaciones de draft pro (dados 1–4 picks por equipo, adivinar los que
+  faltan): por pickrate, MRR 0,054 y el 13,0% de acierto en el top 10; por
+  pickrate/(1−banrate), 0,081 y 15,3%; condicionar además por sinergia con
+  los aliados vistos (13,3%) o por cruce con los enemigos (13,2%) no añade
+  nada, y la frecuencia pro (42,6% con leave-one-out) es otra población y
+  no vale para Gloria. El aviso de «arriesgado como
   pick ciego» sigue como aviso (`riesgoContrapick`, `esPickCiego`), no
   puntúa.
 - **El lado azul** vale 0.07 ± 0.07 (120 días) y 0.02 ± 0.05 (400): nada
   que la app pueda usar, y no sabe el lado.
-- **La AUC es 0.56–0.57.** Es lo que consiguen los predictores de draft en
-  MOBA: el draft inclina, no gana. Cualquier cosa que prometa más está mal.
+- **La AUC es 0.56–0.59** (0,57 sin el equilibrio, 0,58–0,59 con él). Es lo
+  que consiguen los predictores de draft en MOBA: el draft inclina, no
+  gana. Cualquier cosa que prometa más está mal.
 - **Las parejas solas no se distinguen** (sin S la validación es igual).
   Se dejan con la misma escala porque el dato es real (dos magos −4pp) y
   no empeora; si algún día estorban, se mide, no se supone.
@@ -812,8 +871,9 @@ se repite en cada corrida de `pro.yml` al log. NO vuelvas a suponer:
   iguales; el nº1 viejo queda entre los tres nuevos en el 84%). Es la
   consecuencia de medir en vez de pesar a mano.
 - **Los baneos sugeridos** son pérdida esperada: (pickrate cuando no está
-  baneado, `pickRate/(1−banRate)`) × (su término de héroe + sus cruces contra
-  tus aliados). Sin pesos.
+  baneado, `disponibilidad`) × (su término de héroe + sus cruces contra
+  tus aliados). Sin pesos. Desde 3.4.0 esa misma función pondera el término
+  «por ver» y la simulación: una sola definición de «lo que se juega».
 
 Para volver a ajustar: `node scripts/ajustar-modelo.mjs` (y `--dias 400`),
 mirar `logL/n` fuera de muestra, y cambiar `ESCALA`/`AJUSTE` en modelo.js
@@ -868,7 +928,9 @@ consejo cambia entre tres asesinos y tres magos (verificado por mutación).
 
 Desde 1.27.0, `src/motor/robustez.js`. Con el draft a medias se simulan
 finales plausibles —por las líneas enemigas abiertas (`lineasOcupadas`, el
-mismo reparto que el rival) y ponderando cada línea por pickrate— y se cuenta
+mismo reparto que el rival) y muestreando cada línea por lo que se juega
+cuando no está baneado (`disponibilidad`, desde 3.4.0; antes por pickrate a
+secas)— y se cuenta
 en qué fracción tu nº1 sigue siéndolo. Dos cosas medidas que no conviene volver
 a suponer:
 
@@ -1012,8 +1074,8 @@ aquí: pidiéndole datos, no leyendo su README.
 
 Desde 1.28.0, y desde 3.0 dentro de `src/motor/modelo.js` (`evaluarDraft`,
 la misma función que puntúa el ranking: la nota ES la probabilidad). Modelo
-aditivo en log-odds con
-cuatro términos, y cada uno está medido antes de sumarse. Lo que NO conviene
+aditivo en log-odds con los términos de «El modelo» (desde 3.4.0 también el
+equilibrio de daño), y cada uno está medido antes de sumarse. Lo que NO conviene
 volver a suponer:
 
 - **Las tres matrices están centradas.** Los cruces son antisimétricos
@@ -1294,6 +1356,27 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
 - **El peso doble del rival de línea**: quitado en 2.0 (ver «El modelo»).
 - **La escala de la probabilidad estimada**: medida en 2.0 (0,44 ± 0,12 con
   902 partidas, validación cruzada). Las partidas de Javi la contrastan.
+- **Diez términos más, medidos en 3.4.0 y sin entrar** (ΔlogL fuera de
+  muestra por 1.000 partidas, 120/400 días, y coeficiente libre): el peor
+  cruce de cada equipo (Cmin −0,56/+0,33; −1,02 ± 0,90/−1,19 ± 0,63), el
+  mejor (Cmax −1,39/−0,38), los cinco mejores (Ctop5 +0,75/+0,72;
+  −1,05 ± 0,61/−0,92 ± 0,43), cruces a favor y en contra por separado
+  (−1,23/−0,60), el héroe más flojo (Hmin +0,47/−0,51) y el más fuerte
+  (Hmax +0,08/−0,50), el pickrate total del equipo (−0,85/−0,20), el
+  banrate total (+0,17/−0,42), la peor pareja (Smin −1,10/−0,75) y la tier
+  de mlbb.gg (+0,65/+1,97; 0,038 ± 0,020/0,040 ± 0,014: al borde, y es
+  opinión que se mueve con cada parche, así que se queda en pantalla). Del
+  equilibrio de daño se probaron también −|f−m|, «ambos ≥ 1», mixto a
+  medias, nº de mixtos, nº de magos, magos ≥ 2 y magos == 1: ninguna gana
+  a min(f, m). Y para predecir qué falta por salir (14.640 situaciones
+  pro): condicionar por sinergia o por cruce no añade nada a la
+  disponibilidad, ordenar por winrate acierta menos (11,1%) y la
+  frecuencia pro es otra población. Lo leído por ahí (regresión logística
+  con sinergias y counters, embeddings/factorization machines, MCTS sobre
+  el draft, modo «counterpick» de las herramientas de LoL) pide decenas de
+  miles de partidas de la MISMA cola para ganar algo: con 1.830 pro no se
+  distingue ni un coeficiente por término. Se reabre con más partidas o
+  con una fuente de solo queue.
 - **Un coeficiente por término, el lado azul, los huecos por etiqueta, el
   hueco de daño, el contrapick por orden de pick** (2.0): medidos en
   `ajustar-modelo.mjs` y ninguno mejora la validación cruzada ni sale del

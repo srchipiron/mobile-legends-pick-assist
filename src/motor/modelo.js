@@ -1,6 +1,6 @@
 import { nombreClave, buscar } from './nombres.js';
 import { cruce, sinergia, mediaDeSinergia, valido, CRUCE_DESTACABLE, CRUCE_MALO, PAREJA_DESTACABLE } from './matrices.js';
-import { PRECISION_DEDUCIDA, hayQueProtegerlo } from './catalogo.js';
+import { PRECISION_DEDUCIDA, hayQueProtegerlo, tipoDeDano } from './catalogo.js';
 import { tuNivel, priorDeMaestria } from './maestria.js';
 import { COUNTER_RULES } from './reglas.js';
 
@@ -63,6 +63,46 @@ export const SUB_MAX = (() => {
  * con un héroe recién salido. Las parejas por regla, igual.
  */
 export const CRUCE_POR_REGLA_MAXIMA = 0.06;
+
+/**
+ * Peso del EQUILIBRIO DE DAÑO: cuántos físicos y mágicos lleva cada equipo,
+ * medido como min(físicos, mágicos), tuyos menos suyos, en unidades de la
+ * escala común. Es el único término que no es un logit de la API: sale de
+ * contar el tipo de daño de cada héroe (que la ingesta lee de sus
+ * habilidades) y está MEDIDO contra las partidas pro (ajustar-modelo.mjs,
+ * validación cruzada con cinco semillas, 18-19 de septiembre de 2026):
+ *
+ *   winrate por nº de mágicos en el equipo (1.830 partidas, 400 días):
+ *   0 → 42,9% (n=77) · 1 → 45,3% (782) · 2 → 51,6% (1.610) · 3 → 52,2%
+ *   (1.045) · 4 → 47,2% (144). Un equipo sin mezcla pierde, y no es poco.
+ *
+ *   Con el término: logL/n fuera de muestra mejora 2,0 por 1.000 (120 días,
+ *   944 partidas) y 2,8 (400 días), AUC 0,561 → 0,575 en las dos; el
+ *   coeficiente libre sale 0,224 ± 0,088 y 0,214 ± 0,062. Con una sola
+ *   escala sobre H+C+S+k·D, el k óptimo cae en 0,45-0,55 en las dos
+ *   ventanas (0,51 y 0,49 implícitos) y la escala se queda en 0,48 ± 0,10
+ *   y 0,42 ± 0,07: compatible con 0,44. Otras formas del mismo dato
+ *   (|f−m|, «hay de los dos», mixtos a medias, nº de mágicos) predicen
+ *   peor o igual; min(f,m) es la que mejor separa.
+ *
+ * Los huecos por ETIQUETA (TEAM_NEEDS) siguen sin predecir (0,00 ± 0,07 por
+ * hueco); el tipo de daño se cuenta de las habilidades, no se etiqueta, y
+ * por eso funciona donde la etiqueta no. Va centrado por tamaño de equipo
+ * (`equilibrioEsperado`) para no favorecer al que lleva más héroes.
+ */
+export const PESO_EQUILIBRIO_DANO = 0.5;
+
+/**
+ * Cuánto cabe esperar que aparezca un héroe entre los que aún faltan: su
+ * cuota de picks CUANDO NO ESTÁ BANEADO, pickRate/(1−banRate). Medido sobre
+ * 14.640 situaciones de draft pro (los k primeros picks de un equipo, k=1..4,
+ * y adivinar el resto): con el pickrate a secas el pick real cae en el top 10
+ * el 13,0% de las veces; corregido por baneos, el 15,3% (MRR 0,054 → 0,081).
+ * Condicionar además por sinergia con los ya elegidos o por cruce contra el
+ * rival no añade nada (13,3% y 13,2%). Es la misma cantidad que usan los
+ * baneos sugeridos desde 2.0.
+ */
+export const disponibilidad = (stat) => (stat?.pickRate ?? 0) / Math.max(0.05, 1 - (stat?.banRate ?? 0));
 const PAREJA_POR_REGLA_MAXIMA = 0.06;
 const SUB_MAX_PAREJA = 0.8;
 
@@ -180,7 +220,7 @@ export function esperanzaCruces(heroe, { lineasAbiertas = [], poolsPorLinea = {}
       if (ne === nombreClave(heroe.name) || excluidos.has(ne)) continue;
       const c = cruce(counters, heroe.name, e.name);
       if (!valido(c)) continue;
-      const w = buscar(stats, e.name)?.pickRate ?? 0.001;
+      const w = disponibilidad(buscar(stats, e.name)) || 0.001;
       suma += logit(c) * w; peso += w;
     }
     if (!peso) continue;
@@ -188,6 +228,31 @@ export function esperanzaCruces(heroe, { lineasAbiertas = [], poolsPorLinea = {}
     total += detalle[l];
   }
   return { valor: total, detalle };
+}
+
+/** min(físicos, mágicos) de un equipo; los mixtos y los sin dato no cuentan para ninguno (así se midió). */
+export function equilibrioDe(equipo = []) {
+  let f = 0; let m = 0;
+  for (const h of equipo) { const t = tipoDeDano(h); if (t === 'fisico') f++; else if (t === 'magico') m++; }
+  return Math.min(f, m);
+}
+
+/**
+ * El término de equilibrio de daño: min(físicos, mágicos) de los tuyos menos
+ * el de los suyos, cada uno centrado en lo que cabe esperar de un equipo de
+ * su tamaño, y por PESO_EQUILIBRIO_DANO. Con motivo cuando TU pick es el que
+ * mete la mezcla que faltaba.
+ */
+export function terminoEquilibrio(mios, enemigos, yo = null, esperado = null) {
+  const centro = (n) => esperado?.[n] ?? 0;
+  const mio = equilibrioDe(mios) - centro(mios.length);
+  const suyo = equilibrioDe(enemigos) - centro(enemigos.length);
+  const motivos = [];
+  if (yo && mios.length > 1) {
+    const sinMi = mios.filter((h) => h !== yo);
+    if (equilibrioDe(mios) > equilibrioDe(sinMi)) motivos.push({ clave: 'regla.equilibraDano', params: { tipo: [`comp.${tipoDeDano(yo)}`] }, bueno: true, peso: 1.0 });
+  }
+  return { valor: PESO_EQUILIBRIO_DANO * (mio - suyo), mio, suyo, motivos };
 }
 
 /**
@@ -244,14 +309,18 @@ export function evaluarDraft({
     for (let j = i + 1; j < enemigos.length; j++) parejas -= terminoPareja(enemigos[i], enemigos[j], meta.synergies, centro).valor;
   }
 
+  const eq = terminoEquilibrio(mios, enemigos, yo, meta.equilibrioEsperado ?? null);
+  const equilibrio = eq.valor;
+  if (yo) motivos.push(...eq.motivos);
+
   let porVer = 0;
   if (yo && lineasAbiertas.length) {
     const excluidos = new Set([...mios, ...enemigos, ...baneos].map((h) => nombreClave(h.name)));
     porVer = esperanzaCruces(yo, { lineasAbiertas, poolsPorLinea, stats, counters: meta.counters, excluidos }).valor;
   }
 
-  const terminos = { heroes, cruces, parejas, tu, porVer };
-  const logOdds = ESCALA * (heroes + cruces + parejas + tu + porVer);
+  const terminos = { heroes, cruces, parejas, equilibrio, tu, porVer };
+  const logOdds = ESCALA * (heroes + cruces + parejas + equilibrio + tu + porVer);
   const puntos = Object.fromEntries(Object.entries(terminos).map(([k, v]) => [k, Math.round(ESCALA * v * PUNTOS_POR_LOGIT)]));
   return {
     p: sigmoide(logOdds),

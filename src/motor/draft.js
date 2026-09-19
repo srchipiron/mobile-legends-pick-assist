@@ -1,5 +1,5 @@
 import { indexarPorNombre } from './nombres.js';
-import { fundirCatalogo, LINEAS, poolDeLinea } from './catalogo.js';
+import { fundirCatalogo, LINEAS, poolDeLinea, equilibrioEsperado } from './catalogo.js';
 import { indiceDeLineas, frecuenciaDeRoles, lineasOcupadas, detectarRivalDeLinea } from './lineas.js';
 import { cobertura } from './matrices.js';
 import { ordenarPicks, empatados } from './ranking.js';
@@ -70,6 +70,9 @@ export function prepararDatos({ catalogo = null, meta = null, rango = null } = {
     ventana,
     counters: indexarPorNombre(meta?.counters, 2),
     synergies: indexarPorNombre(meta?.synergies, 2),
+    // Lo que cabe esperar de equilibrio de daño en un equipo de n héroes
+    // (modelo.js, terminoEquilibrio): centra el término a medias.
+    equilibrioEsperado: equilibrioEsperado(heroes, stats),
     // El centro del término de héroe es la media de LA MISMA ventana: con la
     // de 7 días, la que calculó la ingesta (idéntica a la de 2.x); con la de
     // 3, la de los valores que de verdad se usan.

@@ -17,7 +17,7 @@ import { LINEAS } from '../../src/motor/catalogo.js';
 import { indiceDeLineas, frecuenciaDeRoles, detectarRivalDeLinea } from '../../src/motor/lineas.js';
 import { generador } from '../../src/motor/robustez.js';
 import { prepararDatos, estimarCon } from '../../src/motor/draft.js';
-import { ESCALA, ESCALA_SE } from '../../src/motor/modelo.js';
+import { ESCALA, ESCALA_SE, PESO_EQUILIBRIO_DANO, terminoEquilibrio } from '../../src/motor/modelo.js';
 import { logistica, asignarLineas } from '../../scripts/medir-rival.mjs';
 import { cargar, terminosDe, validar } from '../../scripts/ajustar-modelo.mjs';
 
@@ -69,13 +69,29 @@ test('el modelo: la escala es la medida en las partidas pro', async () => {
   // único que esta prueba promete.
   ok(usables.length >= 300, `el corpus pro trae ${usables.length} partidas usables (mínimo 300): la escala no se puede medir`);
   const filas = usables.map((p) => terminosDe(p, ctx));
-  const r = validar(filas, (f) => [f.H + f.C + f.S]);
+  // Lo que el motor suma desde 3.4.0: H + C + S + PESO_EQUILIBRIO_DANO · D.
+  const r = validar(filas, (f) => [f.H + f.C + f.S + PESO_EQUILIBRIO_DANO * f.D]);
   const b = r.ajuste.b[1]; const se = r.ajuste.se[1];
   ok(Math.abs(b - ESCALA) < 2.5 * Math.max(se, ESCALA_SE), `la escala medida hoy (${b.toFixed(2)} ± ${se.toFixed(2)}) no es la del modelo (${ESCALA}): vuelve a ajustar y documentalo`);
   //    Y el modelo escalado predice mejor fuera de muestra que el de 1.x sin
   //    escala: es la razon de existir de la escala.
   const fijo = validar(filas, (f) => [f.H, f.C, f.S], { fijo: [1, 1, 1] });
   ok(r.cv.logL > fijo.cv.logL, `el modelo escalado no mejora al de coeficientes 1: ${r.cv.logL.toFixed(1)} vs ${fijo.cv.logL.toFixed(1)}`);
+  //    Y el equilibrio de daño (3.4.0) sigue mejorando la validacion cruzada
+  //    frente al modelo sin el: es la razon de existir del termino. Medido
+  //    con ocho semillas de particion: +3,05 a +3,87 de logL por 1.000
+  //    partidas a 120 dias (+2,52 a +3,38 a 400); con el signo cambiado,
+  //    negativo. El minimo exigido (0,5) deja cinco veces de holgura.
+  //    Y lo que mide el script es lo que suma el motor: el mismo termino,
+  //    con el mismo signo (un signo cambiado en el motor no lo veria la
+  //    validacion cruzada, que llama a `equilibrioDe` directamente).
+  for (const [i, p] of usables.slice(0, 50).entries()) {
+    const motor = terminoEquilibrio(p.equipos[0], p.equipos[1]).valor;
+    ok(Math.abs(motor - PESO_EQUILIBRIO_DANO * filas[i].D) < 1e-12, `el motor suma ${motor} de equilibrio y el ajuste mide ${filas[i].D}`);
+  }
+  const sinDano = validar(filas, (f) => [f.H + f.C + f.S]);
+  const ganancia = (r.cv.logL - sinDano.cv.logL) / filas.length * 1000;
+  ok(ganancia >= 0.5, `el equilibrio de daño ya no mejora la validacion cruzada (${ganancia.toFixed(2)} de logL por 1.000 partidas, minimo 0,5): mide y decide si sigue en la nota`);
 
   //    El margen de 2,5 SE es el correcto para no tumbar el despliegue por
   //    ruido, pero deja pasar mucho: con el ajuste de hoy (0.40 ± 0.13) todo
@@ -84,12 +100,14 @@ test('el modelo: la escala es la medida en las partidas pro', async () => {
   //    hace en pantalla, que también está medido y documentado: con drafts
   //    completos al azar la probabilidad va del 40% al 60% (p05/p95); sin
   //    escala iba del 30% al 70%, y eso era exagerar.
-  //    El margen, medido con ocho semillas y 1.000 drafts cada una: a 0.44
-  //    p05 cae entre 0.3995 y 0.4093 y p95 entre 0.5917 y 0.5982; a 0.58,
-  //    p05 entre 0.3688 y 0.3815 y p95 entre 0.6199 y 0.6282. La banda de
-  //    abajo deja casi un punto de holgura por el lado malo, el doble de lo
-  //    que se mueve entre semillas, y una escala +32% se sale por los dos
-  //    extremos (verificado por mutacion).
+  //    El margen, medido con ocho semillas y 1.000 drafts cada una (3.4.0,
+  //    con el equilibrio de daño dentro, que ensancha la banda): a 0.44 p05
+  //    cae entre 0.3804 y 0.3867 y p95 entre 0.6106 y 0.6254; a 0.58, p05
+  //    entre 0.3446 y 0.3525 y p95 entre 0.6441 y 0.6628. La banda deja un
+  //    punto de holgura por el lado malo, mas del doble de lo que se mueve
+  //    entre semillas, y una escala +32% se sale por los dos extremos
+  //    (verificado por mutacion). Antes de 3.4.0: 0.3995–0.4093 y
+  //    0.5917–0.5982.
   const meta = leerJson('public/data/roam-meta.json');
   ok((meta.heroes ?? []).length >= 100 && meta.counters, 'roam-meta.json llega sin héroes o sin matriz de cruces: la banda de probabilidad no se puede medir');
   const datos = prepararDatos({ catalogo, meta });
@@ -105,8 +123,8 @@ test('el modelo: la escala es la medida en las partidas pro', async () => {
   }
   ps.sort((a, b2) => a - b2);
   const q = (f) => ps[Math.floor(ps.length * f)];
-  ok(q(0.05) > 0.39 && q(0.05) < 0.42, `p05 de 1.000 drafts al azar fuera de lo medido con la escala 0.44: ${q(0.05).toFixed(4)}`);
-  ok(q(0.95) > 0.58 && q(0.95) < 0.61, `p95 de 1.000 drafts al azar fuera de lo medido con la escala 0.44: ${q(0.95).toFixed(4)}`);
+  ok(q(0.05) > 0.37 && q(0.05) < 0.40, `p05 de 1.000 drafts al azar fuera de lo medido con la escala 0.44: ${q(0.05).toFixed(4)}`);
+  ok(q(0.95) > 0.60 && q(0.95) < 0.63, `p95 de 1.000 drafts al azar fuera de lo medido con la escala 0.44: ${q(0.95).toFixed(4)}`);
 });
 
 await terminar('scripts/modelo-medido');

@@ -122,8 +122,18 @@ nada; donde discrepa es por dificultad, Fanny en S al 41% y Argus en C al 54%).
 entran con un héroe recién salido del que no hay ni un cruce, a la misma equivalencia que en 1.x.
 
 **Lo que falta por salir cuenta como esperanza, no como castigo.** Para cada línea enemiga abierta se
-suma el cruce esperado contra lo que se juega ahí, ponderado por pickrate. El aviso de «arriesgado
-como pick ciego» sigue como aviso.
+suma el cruce esperado contra lo que se juega ahí, ponderado por lo que se juega cuando no está
+baneado (pickrate/(1−banrate): un héroe baneado el 80% de las veces sale poco en las estadísticas,
+pero en tu partida no lo han baneado; medido, acierta más lo que falta por salir). El aviso de
+«arriesgado como pick ciego» sigue como aviso.
+
+**El equilibrio de daño puntúa; los huecos por etiqueta, no.** Un equipo con físicos y mágicos de
+verdad gana más que uno que pega todo de un tipo (en 1.830 partidas pro, sin ningún mago puro se gana
+el 42,9%; con dos, el 51,6%), y es el único término de doce probados en 3.4.0 que predice mejor
+fuera de muestra. Se cuenta min(físicos, mágicos) de los tuyos menos el de los suyos, un mixto no
+cuenta para ninguno, y pesa la mitad que un cruce (medido). La tarjeta lo dice cuando tu pick es el
+que mete el tipo que faltaba. Los demás huecos de composición (tanque, control, iniciador...) se
+dicen como consejo y no puntúan: medidos, no predicen.
 
 Tu maestría se edita desde el botón **Tu maestría**: partidas y winrate de cada roamer, tal como
 salen en tu perfil del juego. El winrate va en porcentaje (`50,6` o `50.6`, las dos formas valen) y

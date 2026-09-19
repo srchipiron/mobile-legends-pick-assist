@@ -12,6 +12,8 @@ import {
   rangoActivo, prepararDatos, resolverNombres, poolDe,
   lineasEnemigasAbiertas, rivalDeLinea, recomendar,
 } from '../../src/motor/draft.js';
+import { elegirVentana } from '../../src/motor/ventana.js';
+import { indexarPorNombre } from '../../src/motor/nombres.js';
 
 const meta = leerJson('public/data/roam-meta.json');
 
@@ -172,9 +174,18 @@ test('prepararDatos decide la ventana en UN sitio: la corta si viene y es cohere
   eq(sin.meta.ventana.dias, 7, 'sin ventana corta no manda la de 7');
   ok(sin.meta.statsSemana, 'no expone las estadisticas de la semana');
   eq(sin.meta.mediaDelRango, meta.avgByRank[sin.rango], 'con la de 7 la media no es la que calculo la ingesta');
-  // Y con los datos reales tal cual, la ventana es la que traen (hoy, 3 dias).
+  // Y con los datos reales tal cual, la decision es la de elegirVentana
+  // sobre las mismas entradas: la corta si es coherente, la de 7 si no.
+  // NO se exige que sea la corta: el 19 de septiembre de 2026, tres dias
+  // despues del reinicio de temporada, la de 3 dias de Gloria vino vacia
+  // (Lolita al 100%, σ 0,168 frente a 0,032; r = -0,01 con la de 7) y la
+  // guarda la descarto, que es justo lo que tiene que hacer. Una prueba que
+  // exigiera la corta habria bloqueado el despliegue por un dato legitimo.
   const real = prepararDatos({ catalogo, meta });
-  eq(real.meta.ventana.dias, meta.recientes ? meta.recientes.dias : 7, `con los datos reales la ventana es ${real.meta.ventana.dias}: ${real.meta.ventana.motivo}`);
+  const recientesReales = meta.recientes?.statsByRank?.[real.rango] ? indexarPorNombre(meta.recientes.statsByRank[real.rango]) : null;
+  const decision = elegirVentana(indexarPorNombre(meta.statsByRank?.[real.rango] ?? meta.stats), recientesReales, meta.recientes?.dias ?? 3);
+  eq(real.meta.ventana.dias, decision.ventana.dias, `prepararDatos decide otra ventana (${real.meta.ventana.dias}) que elegirVentana (${decision.ventana.dias}: ${decision.ventana.motivo})`);
+  eq(real.meta.ventana.motivo, decision.ventana.motivo);
 
   // Con una ventana corta coherente (la de 7 desplazada 0,3 pp): entra, y
   // la media se recalcula con lo que de verdad se usa.

@@ -1,7 +1,7 @@
 import { nombreClave, buscar, idMotivo } from './nombres.js';
 import { CRUCE_DESTACABLE, valido } from './matrices.js';
 import { PRECISION_DEDUCIDA, hayQueProtegerlo } from './catalogo.js';
-import { terminoHeroe, terminoCruce, ESCALA, PUNTOS_POR_LOGIT, logit, CRUCE_POR_REGLA_MAXIMA } from './modelo.js';
+import { terminoHeroe, terminoCruce, ESCALA, PUNTOS_POR_LOGIT, logit, CRUCE_POR_REGLA_MAXIMA, disponibilidad } from './modelo.js';
 import { DANGER_RULES } from './reglas.js';
 
 /**
@@ -30,7 +30,7 @@ export function sugerirBaneos(heroes, { aliados = [], enemigos = [], baneos = []
     .filter((h) => !cogidos.has(nombreClave(h.name)) && buscar(meta.stats, h.name))
     .map((heroe) => {
       const stat = buscar(meta.stats, heroe.name);
-      const disponible = (stat.pickRate ?? 0) / Math.max(0.05, 1 - (stat.banRate ?? 0));
+      const disponible = disponibilidad(stat);
       let amenaza = terminoHeroe(heroe, meta.stats, media).valor;
       const motivos = [];
       for (const aliado of aliados) {

@@ -65,6 +65,9 @@ test('los parámetros y los plurales se sustituyen en los dos idiomas', () => {
     // Una lista de claves se traduce elemento a elemento.
     const lista = t('analisis.equipoLeFalta', { yo: 'X', lista: ['comp.tanky', 'comp.cc_hard'] });
     ok(!lista.includes('comp.'), `${idioma} no traduce la lista: ${lista}`);
+    // El motivo del equilibrio de daño lleva el tipo como clave traducible.
+    const dano = t('regla.equilibraDano', { tipo: ['comp.magico'] });
+    ok(!/[{}|]/.test(dano) && !dano.includes('comp.'), `${idioma} no traduce el tipo de daño: ${dano}`);
   }
 });
 

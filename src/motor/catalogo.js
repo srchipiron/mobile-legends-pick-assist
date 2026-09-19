@@ -138,6 +138,40 @@ export function perfilDeDano(heroes = []) {
   return { fisico, magico, mixto, sinDato: tipos.length - conDato, falta };
 }
 
+/**
+ * Cuánto equilibrio de daño (min(físicos, mágicos)) cabe esperar de un
+ * equipo de n héroes sacados al azar por pickrate: sirve para CENTRAR el
+ * término de equilibrio con el draft a medias, como el centro de las
+ * parejas. Sin centrar, el equipo con más héroes en pantalla saldría con
+ * más equilibrio por el mero hecho de tener más héroes (el mismo sesgo que
+ * ya costó una versión con las parejas). Con los dos equipos al completo la
+ * corrección es la misma para los dos y se cancela.
+ */
+export function equilibrioEsperado(heroes = [], stats = null) {
+  let pf = 0; let pm = 0; let po = 0;
+  for (const h of heroes) {
+    // Con estadísticas, cada héroe pesa su cuota de picks y uno sin dato no
+    // pesa nada: un `?? 1` le daría a un héroe recién salido tanto peso como
+    // a los 133 juntos (las cuotas suman 1). Sin estadísticas, todos igual.
+    const w = stats ? (stats[nombreClave(h.name)]?.pickRate ?? 0) : 1;
+    const t = tipoDeDano(h);
+    if (t === 'fisico') pf += w; else if (t === 'magico') pm += w; else po += w;
+  }
+  const total = pf + pm + po || 1;
+  pf /= total; pm /= total; po /= total;
+  const fact = [1, 1, 2, 6, 24, 120];
+  const esperado = [0];
+  for (let n = 1; n <= 5; n++) {
+    let e = 0;
+    for (let f = 0; f <= n; f++) for (let m = 0; m <= n - f; m++) {
+      const o = n - f - m;
+      e += (fact[n] / (fact[f] * fact[m] * fact[o])) * pf ** f * pm ** m * po ** o * Math.min(f, m);
+    }
+    esperado.push(e);
+  }
+  return esperado;
+}
+
 /** Un héroe mixto tapa cualquier hueco; uno puro solo el suyo. */
 export function tapaElHueco(heroe, falta) {
   if (!falta) return false;

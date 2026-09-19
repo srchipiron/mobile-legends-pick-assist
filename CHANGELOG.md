@@ -8,6 +8,51 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.4.0
+
+- **La nota tiene en cuenta el equilibrio de daño del equipo.** Un equipo con
+  físicos y mágicos de verdad (no «mixtos») gana más que uno que pega todo
+  de un tipo, y lo dice el dato, no una regla: en 1.830 partidas
+  profesionales, los equipos sin ningún mago puro ganan el 42,9%, con uno
+  el 45,3%, con dos el 51,6% y con tres el 52,2%. Es el único término nuevo
+  de doce probados que mejora la predicción fuera de muestra (la
+  verosimilitud sube 2,5–3,9 puntos por 1.000 partidas en ocho particiones
+  distintas, y el AUC del modelo pasa de 0,57 a 0,59); los otros once (peor
+  cruce, mejor cruce, cinco mejores cruces, cruces a favor y en contra por
+  separado, héroe más flojo, héroe más fuerte, pickrate total, banrate
+  total, la tier list, la peor pareja, y varias formas de contar el daño)
+  no mejoran nada y no entran. Se cuenta min(físicos, mágicos) de los tuyos
+  menos el de los suyos, centrado en lo que cabe esperar con los héroes que
+  hay en pantalla, y pesa la mitad que un cruce (0,5, medido: el óptimo
+  está entre 0,45 y 0,55 en las dos ventanas de partidas). La tarjeta lo
+  dice cuando tu pick es el que mete el tipo de daño que faltaba («mete el
+  daño mágico que le faltaba al equipo»), el desglose lleva una barra nueva
+  («daño») y la probabilidad estimada se abre un poco (drafts al azar del
+  38% al 62% en vez de 40–60): es la información nueva. Un héroe mixto no
+  cuenta para ninguno de los dos, que es como se midió.
+- **Lo que falta por salir se pondera por lo que se juega cuando no está
+  baneado.** Un héroe que banean el 80% de las veces sale poco en las
+  estadísticas, pero en TU partida no lo han baneado, así que es más
+  probable de lo que dice su pickrate. Medido en 14.640 situaciones de
+  draft profesional (adivinar los picks que faltan viendo 1–4 por equipo):
+  por pickrate se acierta el 13,0% en el top 10; por pickrate/(1−banrate),
+  el 15,3%. Afecta al término «por ver» de la nota y a la simulación de
+  finales; los baneos sugeridos ya lo hacían.
+- **Un héroe recién salido, sin estadísticas, ya no distorsiona el centro
+  del equilibrio.** Cazado en pruebas antes de publicar: pesaba como los
+  133 juntos.
+- **Tras el reinicio de temporada la ventana de 3 días viene vacía unos
+  días y la app usa la de 7 sola.** Pasó el 19 de septiembre: la de 3 días
+  de Gloria trajo héroes al 100% y la guarda la descartó, como estaba
+  previsto; el Diagnóstico lo dice («ventana de 7 días porque la de 3 no
+  vale»). Es normal durante la primera semana de cada temporada. Una prueba
+  que daba por hecho que la de 3 siempre entraría habría parado el
+  despliegue por un dato legítimo; ya no.
+- El script de ajuste (`scripts/ajustar-modelo.mjs`) mide el término nuevo
+  y el bot lo repite cada lunes; la prueba de la escala exige además que el
+  equilibrio siga mejorando la validación cruzada, y avisa si deja de
+  hacerlo.
+
 ## 3.3.0
 
 - La tier list de mlbb.gg sale en la app, al lado del winrate: una letra

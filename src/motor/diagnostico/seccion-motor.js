@@ -75,15 +75,18 @@ export function seccionModelo(inf, { datos, linea, maestria = {}, pro = null }) 
   inf.seccion('MODELO');
   const muestra = ordenarPicks(pool, {
     enemigos: ['Fanny', 'Esmeralda', 'Melissa'].map(H).filter(Boolean),
-    aliados: ['Cecilion', 'Granger'].map(H).filter(Boolean),
+    // Dos físicos de aliados a propósito: así el equilibrio de daño (3.4.0)
+    // varía entre candidatos y su rango dice algo; con un mago y un tirador
+    // todo candidato daba el mismo mínimo y el rango salía 0.
+    aliados: ['Lancelot', 'Granger'].map(H).filter(Boolean),
     meta: datos.meta, maestria,
   });
   if (muestra.length) {
     const rango = (k) => { const v = muestra.map((x) => x.puntos?.[k] ?? 0); return Math.max(...v) - Math.min(...v); };
-    const deDatos = rango('heroes') + rango('cruces') + rango('parejas') + rango('porVer');
+    const deDatos = rango('heroes') + rango('cruces') + rango('parejas') + rango('equilibrio') + rango('porVer');
     const tuyo = rango('tu');
     const total = deDatos + tuyo || 1;
-    inf.linea(`Partidas reales: ${((deDatos / total) * 100).toFixed(0)}% · tus partidas: ${((tuyo / total) * 100).toFixed(0)}% (rango en puntos: héroes ${rango('heroes')}, cruces ${rango('cruces')}, parejas ${rango('parejas')}, tú ${rango('tu')})`);
+    inf.linea(`Partidas reales: ${((deDatos / total) * 100).toFixed(0)}% · tus partidas: ${((tuyo / total) * 100).toFixed(0)}% (rango en puntos: héroes ${rango('heroes')}, cruces ${rango('cruces')}, parejas ${rango('parejas')}, equilibrio ${rango('equilibrio')}, tú ${rango('tu')})`);
     inf.check(deDatos / total >= 0.6, 'La recomendación se apoya sobre todo en datos', `Solo el ${((deDatos / total) * 100).toFixed(0)}% viene de datos`);
     const sinDato = muestra.filter((x) => !x.dato).length;
     inf.check(sinDato === 0, 'Todos los candidatos tienen dato de winrate', `${sinDato} candidatos sin winrate: mandan las reglas por etiqueta`, true);

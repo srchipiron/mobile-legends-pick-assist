@@ -6,7 +6,7 @@
 import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
 import { catalogo, h, crearRnd } from '../fixtures/catalogo.mjs';
 import { indexarPorNombre, nombreClave } from '../../src/motor/nombres.js';
-import { terminoHeroe, terminoCruce, terminoPareja, evaluarDraft, logit, ESCALA, SUB_MAX } from '../../src/motor/modelo.js';
+import { terminoHeroe, terminoCruce, terminoPareja, evaluarDraft, logit, ESCALA, SUB_MAX, equilibrioDe, terminoEquilibrio, esperanzaCruces, disponibilidad, PESO_EQUILIBRIO_DANO } from '../../src/motor/modelo.js';
 import { COUNTER_RULES } from '../../src/motor/reglas.js';
 import { mediaDeSinergia } from '../../src/motor/matrices.js';
 import { LINEAS } from '../../src/motor/catalogo.js';
@@ -107,7 +107,9 @@ test('la estimacion de victoria: neutra sin datos, simetrica, y cae donde se mid
   const q = (f) => ps[Math.floor(ps.length * f)];
   ok(Math.abs(q(0.5) - 0.5) < 0.06, `la mediana en drafts al azar deberia ser 50%, es ${q(0.5)}`);
   // Con la escala medida (0.44) la dispersion de drafts al azar es 40/60
-  // (p05/p95), no 30/70: aquello era el modelo sin calibrar.
+  // (p05/p95), no 30/70: aquello era el modelo sin calibrar. Desde 3.4.0,
+  // con el equilibrio de daño dentro, 38/62 (la banda fina, con su margen
+  // medido, esta en pruebas/scripts/modelo-medido.test.mjs).
   ok(q(0.05) > 0.33 && q(0.05) < 0.47 && q(0.95) > 0.53 && q(0.95) < 0.67, `p05/p95 fuera de lo medido: ${q(0.05)} / ${q(0.95)}`);
 });
 
@@ -182,6 +184,67 @@ test('el termino de cruces es la suma de logits y ningun cruce pesa doble', () =
   const cruces = (extra) => evaluarDraft({ yo, enemigos: [e1, e2], meta: { counters: M }, ...extra }).terminos.cruces;
   ok(Math.abs(cruces({}) - logit(0.56)) < 1e-9, `el término de cruces no es la suma de logits: ${cruces({})}`);
   eq(cruces({ enemyRoam: 'E1' }), cruces({}), 'el rival marcado sigue pesando distinto');
+});
+
+test('el equilibrio de daño: min(fisicos, magicos), centrado por tamaño, y motivo solo si tu pick mete la mezcla', () => {
+  // Medido en las partidas pro (3.4.0): con 0 magos puros se gana el 42,9%,
+  // con 1 el 45,3%, con 2 el 51,6%, con 3 el 52,2%; y min(físicos, mágicos)
+  // tuyos − suyos es el único candidato de doce que mejora la validación
+  // cruzada (+2,5 a +3,9 de logL por 1.000 partidas en ocho semillas).
+  const F = (n) => ({ name: n, tags: [], damage: { fisico: 3, magico: 0 } });
+  const M = (n) => ({ name: n, tags: [], damage: { fisico: 0, magico: 3 } });
+  const X = (n) => ({ name: n, tags: [], damage: { fisico: 3, magico: 3 } });
+  eq(equilibrioDe([]), 0); eq(equilibrioDe([F('a'), F('b'), F('c')]), 0);
+  eq(equilibrioDe([F('a'), F('b'), M('c')]), 1); eq(equilibrioDe([F('a'), M('b'), F('c'), M('d')]), 2);
+  // Un mixto no cuenta para ninguno de los dos (así se midió); sin dato, tampoco.
+  eq(equilibrioDe([F('a'), X('b')]), 0); eq(equilibrioDe([F('a'), { name: 'z', tags: [] }]), 0);
+
+  // Tuyos menos suyos, por el peso medido.
+  const yo = M('yo');
+  const r = terminoEquilibrio([F('a'), yo], [F('e1'), F('e2')], yo);
+  ok(Math.abs(r.valor - PESO_EQUILIBRIO_DANO * 1) < 1e-12, `valor ${r.valor}`);
+  eq(r.motivos.length, 1, 'tu pick mete el mago que faltaba y no hay motivo');
+  eq(r.motivos[0].clave, 'regla.equilibraDano');
+  eq(r.motivos[0].params.tipo[0], 'comp.magico', 'el motivo no dice de qué tipo es el daño que aportas');
+  //   Si sin ti el equipo ya estaba igual de equilibrado, no hay motivo.
+  eq(terminoEquilibrio([F('a'), M('b'), yo], [], yo).motivos.length, 0, 'motivo cuando tu pick no cambia el mínimo');
+  //   Un mixto ni suma ni saca motivo.
+  const mixto = X('yo');
+  eq(terminoEquilibrio([F('a'), mixto], [], mixto).valor, 0); eq(terminoEquilibrio([F('a'), mixto], [], mixto).motivos.length, 0);
+  //   Solo contigo no hay equipo que equilibrar.
+  eq(terminoEquilibrio([yo], [], yo).motivos.length, 0);
+
+  // Centrado: con el draft a medias cada equipo se compara con lo que cabe
+  // esperar de su tamaño, si no el que lleva más héroes saldría con más.
+  const esperado = [0, 0, 0.4, 0.8, 1.2, 1.5];
+  const c = terminoEquilibrio([F('a'), M('b')], [F('e')], null, esperado);
+  ok(Math.abs(c.mio - (1 - 0.4)) < 1e-12 && Math.abs(c.suyo - 0) < 1e-12, `centrado mal: ${c.mio} / ${c.suyo}`);
+  ok(Math.abs(c.valor - PESO_EQUILIBRIO_DANO * 0.6) < 1e-12);
+
+  // Y entra en la nota con la escala del modelo, con su motivo.
+  const ev = evaluarDraft({ aliados: [F('a')], yo, enemigos: [F('e')], meta: {} });
+  ok(Math.abs(ev.terminos.equilibrio - PESO_EQUILIBRIO_DANO) < 1e-12, `término en evaluarDraft: ${ev.terminos.equilibrio}`);
+  ok(Math.abs(ev.logOdds - ESCALA * PESO_EQUILIBRIO_DANO) < 1e-12, 'el término no llega al log-odds con la escala');
+  ok(ev.motivos.some((m) => m.clave === 'regla.equilibraDano'), 'el motivo no llega a la tarjeta');
+});
+
+test('lo que falta por salir se pondera por lo que se JUEGA: pickrate cuando no esta baneado', () => {
+  // Medido en 14.640 situaciones de draft pro (predecir los picks que faltan
+  // dados 1–4 por equipo): por pickrate acierta el 13,0% en el top 10; por
+  // pickrate/(1−banrate), el 15,3%. Un héroe muy baneado se juega mucho
+  // cuando NO lo banean, y en tu partida no lo han baneado.
+  ok(Math.abs(disponibilidad({ pickRate: 0.02, banRate: 0.75 }) - 0.08) < 1e-12);
+  eq(disponibilidad({ pickRate: 0.02 }), 0.02); eq(disponibilidad(null), 0);
+  ok(disponibilidad({ pickRate: 0.02, banRate: 1 }) < 1, 'con banrate 1 divide por cero');
+  // E se juega poco porque casi siempre está baneado; F es el habitual.
+  // Contra E tu héroe gana, contra F pierde: si se pondera por lo que se
+  // juega cuando no está baneado, la esperanza sale a tu favor.
+  const stats = indexarPorNombre({ E: { pickRate: 0.01, banRate: 0.9 }, F: { pickRate: 0.02, banRate: 0 } });
+  const counters = indexarPorNombre({ Y: { E: 0.6, F: 0.4 } }, 2);
+  const yo = { name: 'Y' };
+  const pools = { roam: [{ name: 'E' }, { name: 'F' }] };
+  const r = esperanzaCruces(yo, { lineasAbiertas: ['roam'], poolsPorLinea: pools, stats, counters });
+  ok(r.valor > 0, `pondera por pickrate a secas: ${r.valor}`);
 });
 
 test('la estimación no favorece al equipo que lleva más héroes en pantalla', () => {

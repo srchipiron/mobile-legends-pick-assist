@@ -1,6 +1,7 @@
 import { nombreClave } from './nombres.js';
 import { LINEAS } from './catalogo.js';
 import { ordenarPicks } from './ranking.js';
+import { disponibilidad } from './modelo.js';
 
 /**
  * ¿Aguanta este pick lo que falta por salir?
@@ -62,7 +63,9 @@ export function simularFinales({ pool, enemigos = [], aliados = [], lineasAbiert
   const abiertas = lineasAbiertas.filter((l) => LINEAS.includes(l) && poolsPorLinea[l]?.length);
   if (!pool?.length || !enemigos.length || !abiertas.length) return null;
   const rnd = generador(semilla);
-  const pickRateDe = (h) => ctx.meta?.stats?.[nombreClave(h.name)]?.pickRate ?? 0.001;
+  // Cuota de picks cuando NO está baneado: es lo que de verdad sale (medido
+  // en drafts pro, ver `disponibilidad` en modelo.js).
+  const pickRateDe = (h) => disponibilidad(ctx.meta?.stats?.[nombreClave(h.name)]) || 0.001;
   const fijos = new Set([...enemigos, ...aliados, ...(ctx.baneos ?? [])].map((h) => h.name));
   const votos = {};
   for (let k = 0; k < n; k++) {

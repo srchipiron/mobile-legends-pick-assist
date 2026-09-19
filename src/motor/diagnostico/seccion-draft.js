@@ -50,7 +50,7 @@ export function seccionDraft(inf, { draft = null, linea, entorno = {} } = {}) {
   const signo = (v) => (v > 0 ? `+${v}` : `${v}`);
   for (const e of draft.estimaciones ?? []) {
     if (e?.p == null) continue;
-    inf.linea(`Estimación con ${e.yo}: ${Math.round(e.p * 100)}% · héroes ${signo(e.puntos.heroes)} · cruces ${signo(e.puntos.cruces)} · parejas ${signo(e.puntos.parejas)} · tú ${signo(e.puntos.tu)} · por ver ${signo(e.puntos.porVer ?? 0)} (${e.vistos}/10 a la vista)`);
+    inf.linea(`Estimación con ${e.yo}: ${Math.round(e.p * 100)}% · héroes ${signo(e.puntos.heroes)} · cruces ${signo(e.puntos.cruces)} · parejas ${signo(e.puntos.parejas)} · equilibrio ${signo(e.puntos.equilibrio ?? 0)} · tú ${signo(e.puntos.tu)} · por ver ${signo(e.puntos.porVer ?? 0)} (${e.vistos}/10 a la vista)`);
   }
   const comp = (c) => (c?.n ? `${c.n} héroes · físico ${c.dano.fisico} · mágico ${c.dano.magico} · mixto ${c.dano.mixto}`
     + (c.huecos.length ? ` · sin ${c.huecos.join(', ')}` : ' · sin huecos')

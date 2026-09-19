@@ -23,6 +23,10 @@
  *       reparto que la app) y los otros 20. El motor viejo ponía R a peso 2.
  *  - N: huecos de composición (TEAM_NEEDS) cubiertos, tuyos − suyos.
  *  - B: +1 si el equipo 1 es el azul, −1 si rojo, 0 si no se sabe.
+ *  - D: equilibrio de daño, min(físicos, mágicos) tuyos − suyos (3.4.0). El
+ *       único candidato de los doce medidos en 3.4.0 que mejora la validación
+ *       cruzada: +2,0 (120 días) y +2,8 (400) de logL por 1.000 partidas,
+ *       AUC 0.561 → 0.575, coeficiente 0,22 ± 0,09 y 0,21 ± 0,06.
  *
  * MODELOS comparados con validación cruzada (10 pliegues, misma partición):
  *  fijo    a=0, H+C+S con coeficiente 1 (la estimación de 1.28–1.41).
@@ -31,6 +35,9 @@
  *  +lado   libre más B.
  *  +linea  libre con C partido en R y O.
  *  +huecos libre más N.
+ *  +dano   libre más D.
+ *  escala+dano  una sola pendiente sobre H+C+S+PESO_EQUILIBRIO_DANO·D, que
+ *          es lo que el motor puntúa desde 3.4.0.
  *
  * Lo que se mira: log-verosimilitud fuera de muestra (lo que se optimiza),
  * AUC y Brier. Una diferencia de log-verosimilitud menor que ~2 por 1.000
@@ -44,6 +51,7 @@ import { nombreClave, indexarPorNombre } from '../src/motor/nombres.js';
 import { fundirCatalogo, LINEAS } from '../src/motor/catalogo.js';
 import { cruce, sinergia, mediaDeSinergia } from '../src/motor/matrices.js';
 import { TEAM_NEEDS, SATISFIES } from '../src/motor/reglas.js';
+import { equilibrioDe, PESO_EQUILIBRIO_DANO } from '../src/motor/modelo.js';
 import { indiceDeLineas, frecuenciaDeRoles } from '../src/motor/lineas.js';
 import { logistica, asignarLineas } from './medir-rival.mjs';
 import { resolverHeroe } from './ingesta-pro.mjs';
@@ -54,7 +62,7 @@ const logit = (p) => Math.log(p / (1 - p));
 const sigmoide = (x) => 1 / (1 + Math.exp(-x));
 const valido = (p) => typeof p === 'number' && p > 0.02 && p < 0.98;
 
-/** Los términos de una partida ya resuelta a héroes: { H, C, S, R, O, N, B, y }. */
+/** Los términos de una partida ya resuelta a héroes: { H, C, S, R, O, N, B, D, y }. */
 export function terminosDe(p, { M, info, frec, centro }) {
   const [A, E] = p.equipos;
   const wr = (h) => M.stats[nombreClave(h.name)]?.winRate;
@@ -83,7 +91,10 @@ export function terminosDe(p, { M, info, frec, centro }) {
   };
   const N = huecos(A) - huecos(E);
   const B = p.lado1 === 'blue' ? 1 : p.lado1 === 'red' ? -1 : 0;
-  return { H, C: R + O, S, R, O, N, B, y: p.ganador === 1 ? 1 : 0 };
+  // La misma cuenta que el motor (`equilibrioDe`): con cinco y cinco el
+  // centrado por tamaño de equipo se cancela, así que aquí no hace falta.
+  const D = equilibrioDe(A) - equilibrioDe(E);
+  return { H, C: R + O, S, R, O, N, B, D, y: p.ganador === 1 ? 1 : 0 };
 }
 
 /** Log-verosimilitud, AUC y Brier de una lista de { L, y }. */
@@ -153,6 +164,8 @@ export const MODELOS = {
   '+lado': { x: (f) => [f.H, f.C, f.S, f.B] },
   '+linea': { x: (f) => [f.H, f.R, f.O, f.S] },
   '+huecos': { x: (f) => [f.H, f.C, f.S, f.N] },
+  '+dano': { x: (f) => [f.H, f.C, f.S, f.D] },
+  'escala+dano': { x: (f) => [f.H + f.C + f.S + PESO_EQUILIBRIO_DANO * f.D] },
   'sin parejas': { x: (f) => [f.H, f.C] },
 };
 
@@ -165,7 +178,7 @@ async function main() {
   const filas = usables.map((p) => terminosDe(p, ctx));
   console.log(`Partidas desde ${desde}: ${filas.length} usables · datos del ${meta.generatedAt?.slice(0, 10)}`);
   const sd = (k) => { const v = filas.map((f) => f[k]); const m = v.reduce((a, b) => a + b, 0) / v.length; return Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length); };
-  console.log(`σ de cada término: H ${sd('H').toFixed(3)} · C ${sd('C').toFixed(3)} (R ${sd('R').toFixed(3)}, O ${sd('O').toFixed(3)}) · S ${sd('S').toFixed(3)} · N ${sd('N').toFixed(3)}`);
+  console.log(`σ de cada término: H ${sd('H').toFixed(3)} · C ${sd('C').toFixed(3)} (R ${sd('R').toFixed(3)}, O ${sd('O').toFixed(3)}) · S ${sd('S').toFixed(3)} · N ${sd('N').toFixed(3)} · D ${sd('D').toFixed(3)}`);
   const f = (v, d = 3) => (v == null ? '—' : Number(v).toFixed(d));
   const salida = { desde, usables: filas.length, datosDe: meta.generatedAt ?? null, modelos: {} };
   for (const [nombre, m] of Object.entries(MODELOS)) {

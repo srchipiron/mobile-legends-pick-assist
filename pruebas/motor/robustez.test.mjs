@@ -79,6 +79,15 @@ test('la robustez del pick: determinista, suma uno y predice si aguanta', () => 
   const conAbiertasEnCtx = simularFinales({ ...fixtureArgs, ctx: { ...fixtureArgs.ctx, lineasAbiertas: ['roam'], poolsPorLinea: { roam: [E, F] } } });
   eq(conAbiertasEnCtx.lider, 'A', 'las lineas abiertas del ctx se cuelan en el final simulado: gana B por la esperanza contra F');
 
+  // 2d. Lo que sale por una linea abierta se muestrea por lo que se JUEGA
+  //     cuando no esta baneado (pickrate/(1−banrate), medido en 3.4.0: del
+  //     13,0% al 15,3% de acierto en el top 10 de los picks que faltan).
+  //     E se juega poco porque casi siempre lo banean: en esta partida no.
+  //     Por pickrate a secas saldria F cinco veces mas y ganaria B.
+  const stBan = indexarPorNombre({ A: { winRate: 0.5, pickRate: 0.01 }, B: { winRate: 0.5, pickRate: 0.01 }, V: { winRate: 0.5, pickRate: 0.01 }, E: { winRate: 0.5, pickRate: 0.01, banRate: 0.9 }, F: { winRate: 0.5, pickRate: 0.05, banRate: 0 } });
+  const conBanRate = simularFinales({ ...fixtureArgs, n: 40, ctx: { ...fixtureArgs.ctx, meta: { ...fixtureArgs.ctx.meta, stats: stBan } } });
+  eq(conBanRate.lider, 'A', `la simulacion no tiene en cuenta que E se juega cuando no lo banean: cuota ${JSON.stringify(conBanRate.cuota)}`);
+
   // 3. Lo que importa: la cuota PREDICE si el nº1 aguanta hasta el final. Medido
   //    con 3 enemigos vistos: si la cuota >= 0.5 aguanta el 59%, si no el 27%.
   //    Aqui se exige que la razon entre ambos sea al menos 1,5 sobre 150

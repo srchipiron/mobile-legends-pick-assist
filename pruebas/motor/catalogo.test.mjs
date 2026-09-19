@@ -6,9 +6,10 @@
  */
 import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
 import { catalogo } from '../fixtures/catalogo.mjs';
-import { poolDeLinea, LINEAS, tagsDeducidos, fundirCatalogo, tipoDeDano, perfilDeDano, tapaElHueco, huellaDeKit } from '../../src/motor/catalogo.js';
+import { poolDeLinea, LINEAS, tagsDeducidos, fundirCatalogo, tipoDeDano, perfilDeDano, tapaElHueco, huellaDeKit, equilibrioEsperado } from '../../src/motor/catalogo.js';
 import { analizarDraft } from '../../src/motor/analisis.js';
-import { evaluarDraft } from '../../src/motor/modelo.js';
+import { evaluarDraft, ESCALA, PESO_EQUILIBRIO_DANO } from '../../src/motor/modelo.js';
+import { indexarPorNombre } from '../../src/motor/nombres.js';
 import { SPECIALITY_TAGS, ROLE_VETO, ROLE_DEFAULTS } from '../../src/motor/reglas.js';
 import { indiceDeLineas } from '../../src/motor/lineas.js';
 
@@ -155,10 +156,32 @@ test('el hueco de dano se dice, y no lo encoge la deduccion; pero no puntua', ()
   ok(frases(tapa).includes('analisis.todoFisico'), `no dice que el pick tapa el hueco: ${frases(tapa)}`);
   ok(frases(base).includes('analisis.faltaMagico'), `no avisa del hueco sin tapar: ${frases(base)}`);
 
-  // Pero NO puntua: 0 de 902 equipos pro tienen el hueco, asi que no se puede
-  // medir, y un termino que no se puede medir no entra en la nota.
-  eq(evaluarDraft({ yo: tapa, aliados, meta: {} }).logOdds, evaluarDraft({ yo: base, aliados, meta: {} }).logOdds,
-    'el hueco de dano cambia la nota sin dato que lo respalde');
+  // Pero el HUECO como regla NO puntua: 0 de 902 equipos pro lo tienen (un
+  // mixto lo tapa), asi que no se puede medir. Lo que si puntua desde 3.4.0
+  // es el equilibrio medido, min(fisicos, magicos), y SOLO eso: la diferencia
+  // entre tapar y no tapar es exactamente ese termino, sin nada encima.
+  const dif = evaluarDraft({ yo: tapa, aliados, meta: {} }).logOdds - evaluarDraft({ yo: base, aliados, meta: {} }).logOdds;
+  ok(Math.abs(dif - ESCALA * PESO_EQUILIBRIO_DANO) < 1e-12, `el hueco de dano cambia la nota mas alla del equilibrio medido: ${dif}`);
+});
+
+test('el equilibrio esperado de un equipo al azar: por pickrate, creciente y acotado', () => {
+  const F = (n) => ({ name: n, damage: { fisico: 3, magico: 0 } });
+  const M = (n) => ({ name: n, damage: { fisico: 0, magico: 3 } });
+  // Mitad y mitad sin estadisticas (todos pesan igual): con dos heroes,
+  // P(uno de cada) = 1/2, asi que E[min] = 0,5; con uno, 0; con nadie, 0.
+  const e = equilibrioEsperado([F('a'), M('b')]);
+  eq(e.length, 6); eq(e[0], 0); eq(e[1], 0);
+  ok(Math.abs(e[2] - 0.5) < 1e-12, `E[2] ${e[2]}`);
+  for (let n = 2; n <= 5; n++) ok(e[n] > e[n - 1] && e[n] <= n / 2, `E[${n}] = ${e[n]} no crece o pasa de n/2`);
+  // Ponderado por pickrate: si casi nadie juega magos, casi nunca hay mezcla.
+  const stats = indexarPorNombre({ a: { pickRate: 0.99 }, b: { pickRate: 0.01 } });
+  ok(equilibrioEsperado([F('a'), M('b')], stats)[2] < 0.03, 'no pondera por pickrate');
+  // Un heroe SIN estadisticas no pesa nada habiendolas: con `?? 1` un heroe
+  // recien salido pesaba tanto como los 133 juntos (las cuotas suman 1).
+  const conNuevo = equilibrioEsperado([F('a'), M('b'), M('nuevo')], stats);
+  ok(Math.abs(conNuevo[2] - equilibrioEsperado([F('a'), M('b')], stats)[2]) < 1e-12, 'un heroe sin estadisticas pesa en el esperado');
+  // Los mixtos no cuentan para ninguno.
+  eq(equilibrioEsperado([{ name: 'x', damage: { fisico: 3, magico: 3 } }, F('a')])[2], 0);
 });
 
 test('cada heroe lleva su id, tambien los de nombre raro', () => {
