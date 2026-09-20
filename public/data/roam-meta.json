@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-19T19:29:20.255Z",
+  "generatedAt": "2026-09-20T09:58:15.929Z",
   "rank": "glory",
   "ranks": [
     "epic",
@@ -2831,7 +2831,7 @@
       "mythic": "133 héroes",
       "glory": "133 héroes"
     },
-    "tiers": "117 héroes (16 fallos)",
+    "tiers": "fallo: HTTP 403 en https://back.mlbb.gg/api/v1/heroes; conservo la anterior",
     "ok": [],
     "failed": [],
     "imagenes": {
