@@ -58,8 +58,8 @@ export default defineConfig({
         name: 'Mobile Legends Pick Assist',
         short_name: 'Pick Assist',
         description: 'Qué héroe coger en tu línea, según el draft y el meta actual',
-        theme_color: '#0B0F14',
-        background_color: '#0B0F14',
+        theme_color: '#0B0E17',
+        background_color: '#0B0E17',
         display: 'standalone',
         // 'any', no 'landscape': forzarla giraba la app instalada en un móvil
         // que se usa en vertical.

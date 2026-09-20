@@ -46,6 +46,7 @@ export default function App() {
   const enemigos = useMemo(() => resolverNombres(datos, draft.enemigos), [datos, draft.enemigos]);
   const aliados = useMemo(() => resolverNombres(datos, draft.aliados), [datos, draft.aliados]);
   const baneos = useMemo(() => resolverNombres(datos, draft.baneos), [datos, draft.baneos]);
+  const miPick = useMemo(() => (draft.miPick ? datos.porNombre.get(draft.miPick) ?? null : null), [datos, draft.miPick]);
 
   // Un nombre guardado que ya no resuelve (la API renombró al héroe) era
   // invisible, inamovible y contaba como cogido. Se limpia al tener el catálogo.
@@ -56,7 +57,7 @@ export default function App() {
   }, [carga.catalogo, metaListo, datos, limpiarDesconocidos]);
 
   const rec = useRecomendacion({
-    datos, linea, enemigos, aliados, baneos, rivalMarcado: draft.rivalMarcado,
+    datos, linea, enemigos, aliados, baneos, rivalMarcado: draft.rivalMarcado, miPick,
     maestria: personal.maestriaUsada, partidas: personal.partidas,
   });
 
@@ -74,10 +75,14 @@ export default function App() {
     if (hoja === 'baneos') { draft.alternarBaneo(h); return; }
     if (hoja === 'enemigos') draft.anadir('enemigos', h);
     if (hoja === 'aliados') draft.anadir('aliados', h);
+    if (hoja === 'yo') draft.fijarPick(h);
     cerrar();
   };
 
-  /** Apunta la partida con la estimación que había delante para ESE héroe, y limpia el draft. */
+  /**
+   * Apunta la partida con la estimación que había delante para ESE héroe y
+   * el draft entero (es lo que la hace medible después), y limpia el draft.
+   */
   const guardarPartida = (pick, gane) => {
     const heroe = datos.porNombre.get(pick);
     const est = heroe ? rec.estimacionCon(heroe) : null;
@@ -86,6 +91,7 @@ export default function App() {
       recomendados: rec.ranking.slice(0, 3).map((r) => r.heroe.name),
       ...(est ? { estimacion: est.p } : {}),
       bans: draft.baneos,
+      draft: { linea, enemigos: draft.enemigos, aliados: draft.aliados, rival: rec.rival.nombre },
     });
     cerrar();
     draft.reiniciar();
@@ -105,7 +111,7 @@ export default function App() {
         datos, linea,
         maestria: personal.maestriaUsada, maestriaManual: personal.maestria, partidas: personal.partidas,
         draft: {
-          enemigos, aliados, baneos, rival: rec.rival, ranking: rec.ranking, analisis: rec.analisis,
+          enemigos, aliados, baneos, rival: rec.rival, ranking: rec.ranking, analisis: rec.analisis, miPick: draft.miPick,
           robustez: rec.robustez, composicion: rec.composicion,
           estimaciones: rec.ranking.slice(0, 3).map((r) => ({ yo: r.heroe.name, p: r.p, puntos: r.puntos, terminos: r.terminos, vistos: aliados.length + enemigos.length + 1 })),
         },
@@ -132,9 +138,10 @@ export default function App() {
   }
 
   const pie = <Pie t={t} meta={meta} generado={generado} edadHoras={edadHoras} rango={datos.rango} cov={rec.cov} />;
-  const selector = ['enemigos', 'aliados', 'baneos'].includes(hoja) ? (
+  const selector = ['enemigos', 'aliados', 'baneos', 'yo'].includes(hoja) ? (
     <SelectorDeHeroe
-      heroes={datos.heroes}
+      // Para tu pick: solo tu pool, en el orden del ranking.
+      heroes={hoja === 'yo' ? rec.ranking.map((c) => c.heroe) : datos.heroes}
       stats={datos.meta.stats}
       // Para banear, los baneados no están «cogidos»: se tocan para quitarlos.
       cogidos={hoja === 'baneos' ? cogidosSinBaneos : cogidos}
@@ -144,7 +151,7 @@ export default function App() {
       seleccionados={hoja === 'baneos' ? seleccionadosBaneo : null}
       max={10}
       sugeridos={hoja === 'baneos' ? rec.proximos.map((b) => b.heroe) : []}
-      orden={hoja === 'baneos' ? 'ban' : 'pick'}
+      orden={hoja === 'baneos' ? 'ban' : hoja === 'yo' ? 'dado' : 'pick'}
       t={t}
     />
   ) : null;
@@ -153,7 +160,7 @@ export default function App() {
     return (
       <>
         <FaseBaneos
-          t={t} baneos={baneos} proximos={rec.proximos} sugeridos={rec.baneosSugeridos}
+          t={t} baneos={baneos} proximos={rec.proximos} sugeridos={rec.baneosSugeridos} plan={rec.plan}
           tasaDe={(n) => buscar(datos.meta.stats, n)?.banRate ?? null}
           sinWinrates={sinWinrates} idioma={idioma} onIdioma={setIdioma}
           onAbrirSelector={() => setHoja('baneos')}
@@ -172,7 +179,8 @@ export default function App() {
       <FasePicks
         t={t} linea={linea} rango={datos.rango} idioma={idioma} onIdioma={setIdioma} onRango={setRango}
         meta={meta} datos={datos} metaListo={metaListo} sinWinrates={sinWinrates} edadHoras={edadHoras} pro={pro}
-        draft={draft} equipo={{ enemigos, aliados, baneos }} rec={rec} abrir={setHoja} onDiagnostico={lanzarDiagnostico}
+        draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={setHoja} onDiagnostico={lanzarDiagnostico}
+        onResultado={(gane) => guardarPartida(draft.miPick, gane)}
         pie={pie}
       />
       {informe && <Diagnostico t={t} resultado={informe} onCerrar={() => setInforme(null)} />}
@@ -183,7 +191,7 @@ export default function App() {
         <ElegirLinea valor={linea} onElegir={(l) => { setLinea(l); cerrar(); }} onCerrar={cerrar} t={t} />
       )}
       {hoja === 'apuntar' && (
-        <ApuntarPartida pool={rec.pool} recomendados={rec.ranking.slice(0, 3).map((r) => r.heroe.name)} onGuardar={guardarPartida} onCerrar={cerrar} t={t} />
+        <ApuntarPartida pool={rec.pool} heroes={datos.heroes} miPick={draft.miPick} recomendados={rec.ranking.slice(0, 3).map((r) => r.heroe.name)} onGuardar={guardarPartida} onCerrar={cerrar} t={t} />
       )}
       {hoja === 'historial' && (
         <HistorialPartidas

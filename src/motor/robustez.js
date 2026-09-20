@@ -57,7 +57,7 @@ function muestrear(pool, excluidos, pickRateDe, rnd) {
  * @param d.lineasAbiertas  líneas enemigas por las que aún falta alguien
  * @param d.poolsPorLinea   { linea: [héroes] } de dónde salen los que faltan
  * @param d.ctx             lo mismo que recibe ordenarPicks (meta, maestria, baneos, lineas...)
- * @returns {{ cuota, lider, cuotaLider, n, lineasAbiertas, enemigos, aliados } | null}
+ * @returns {{ cuota, lider, cuotaLider, n, lineasAbiertas, enemigos, aliados, baneos } | null}
  */
 export function simularFinales({ pool, enemigos = [], aliados = [], lineasAbiertas = [], poolsPorLinea = {}, ctx = {}, n = FINALES_POR_DEFECTO, semilla = 7 }) {
   const abiertas = lineasAbiertas.filter((l) => LINEAS.includes(l) && poolsPorLinea[l]?.length);
@@ -85,5 +85,5 @@ export function simularFinales({ pool, enemigos = [], aliados = [], lineasAbiert
   // Para qué draft se simuló: en la app va diferida y el ranking no; sin la
   // marca, el análisis cruzaba la cuota del draft anterior con el nº1 nuevo.
   const claves = (hs) => hs.map((h) => nombreClave(h.name)).sort();
-  return { cuota, lider, cuotaLider, n, lineasAbiertas: abiertas, enemigos: claves(enemigos), aliados: claves(aliados) };
+  return { cuota, lider, cuotaLider, n, lineasAbiertas: abiertas, enemigos: claves(enemigos), aliados: claves(aliados), baneos: claves(ctx.baneos ?? []) };
 }

@@ -43,7 +43,8 @@ await prueba('atrás y Escape cierran la hoja sin salir de la app, y cerrar por 
 
 await prueba('Intro elige el prefijo y la fila de maestría no salta al escribir', async () => {
   const { contexto, pagina } = await con(PICKS, { 'roam-picker:mastery': { Khufra: { games: 40, winRate: 0.6 } } });
-  await pagina.locator('.side.ally .slot.empty').first().click(); await pagina.waitForTimeout(300);
+  // El primer hueco de tu equipo es «Tú» (tu pick, solo tu pool): el de un compañero es el siguiente.
+  await pagina.locator('.side.ally .slot.empty:not(.yo)').first().click(); await pagina.waitForTimeout(300);
   await pagina.locator('.sheet input').fill('la'); await pagina.waitForTimeout(150);
   const primero = (await pagina.locator('.hero-grid button').first().textContent()).trim();
   ok(/^La/.test(primero), `con «la» el primero no empieza por La: ${primero}`);

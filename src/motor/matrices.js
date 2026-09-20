@@ -61,7 +61,11 @@ export function mediaDeSinergia(synergies, lineas = null, stats = null) {
   const cache = mediasDeSinergia.get(synergies);
   if (cache && cache.lineas === lineas && cache.stats === stats) return cache.media;
   const lanesDe = (n) => lineas?.get?.(n)?.lanes ?? null;
-  const pesoDe = (n) => stats?.[n]?.pickRate ?? 1;
+  // Con estadísticas, un héroe sin dato no pesa nada: `?? 1` entre cuotas
+  // que suman 1 le daba a un héroe recién salido 133 veces el peso de
+  // cualquier pareja (medido: quitar las estadísticas de UN héroe movía el
+  // centro 0,36 pp). Es el mismo fallo que `equilibrioEsperado` en 3.4.0.
+  const pesoDe = (n) => (stats ? (stats[n]?.pickRate ?? 0) : 1);
   let suma = 0; let n = 0;
   for (const [a, fila] of Object.entries(synergies)) {
     const la = lineas ? lanesDe(nombreClave(a)) : null;

@@ -31,7 +31,9 @@ export function SelectorDeHeroe({
     const pickRate = (h) => buscar(stats, h.name)?.pickRate ?? -1;
     // Para banear, primero los más baneados: es lo que se va a buscar.
     const banRate = (h) => buscar(stats, h.name)?.banRate ?? -1;
-    const criterio = orden === 'ban' ? banRate : pickRate;
+    // `dado`: el orden en que llegan (el ranking, para fijar tu pick).
+    const posicion = new Map(heroes.map((h, i) => [h.name, -i]));
+    const criterio = orden === 'ban' ? banRate : orden === 'dado' ? (h) => posicion.get(h.name) : pickRate;
     // Buscando, primero los que EMPIEZAN por lo escrito: «la» + Intro cogía a
     // Angela habiendo Lancelot, Layla y Lapu-Lapu. Sin buscar, los más
     // jugados: el pick que necesitas suele estar entre los veinte primeros.

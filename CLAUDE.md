@@ -778,7 +778,11 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   `?? 1` para el que no tuviera dato: un héroe recién salido, sin
   estadísticas, pesaba tanto como los 133 juntos y movía el centro del
   término. Un valor por defecto tiene que estar en la escala de lo que
-  sustituye; entre cuotas, el «no sé» vale 0, no 1.
+  sustituye; entre cuotas, el «no sé» vale 0, no 1. Y tenía un GEMELO:
+  `mediaDeSinergia` hacía lo mismo desde 1.x (medido en 3.5.0 con los datos
+  reales: quitar las estadísticas de UN héroe movía el centro de las
+  parejas 0,36 pp). Si arreglas un patrón, busca sus gemelos con `grep`
+  (`?? 1` sobre `pickRate`).
 - **Guardar en el almacén DENTRO de un updater de `setState`** (3.0) — React
   puede llamar a un updater más de una vez (evaluación ansiosa, modo
   estricto, reproceso de la cola), así que ahí dentro no va ningún efecto.
@@ -889,6 +893,42 @@ mirar `logL/n` fuera de muestra, y cambiar `ESCALA`/`AJUSTE` en modelo.js
 solo si la diferencia sale del error. La prueba «el modelo: la nota es la
 probabilidad…» falla si la escala medida hoy se aleja más de 2,5 SE de la
 del código.
+
+## Tu pick fijado (3.5.0)
+
+Desde 3.5.0 el draft guarda `miPick` y `miPickDesde` (dentro de
+`roam-picker:draft`, la misma clave). Se fija tocando el NOMBRE de una
+tarjeta (el nombre es el botón: cada bloque nuevo en la tarjeta empujaba la
+nº1 fuera de la primera pantalla, medido en `primera-pantalla.e2e.mjs`) o
+el hueco «Tú» de tu equipo, que abre tu pool en el orden del ranking
+(`SelectorDeHeroe` con `orden='dado'`). `eleccionDe(ranking, miPick)` en
+`draft.js` es el ÚNICO sitio que decide de quién se habla: el fijado si
+está en el ranking, si no el nº1. De él hablan el análisis (`eleccion`), la
+composición, el consejo a los compañeros, la estimación en pantalla y
+«Apuntar partida» (viene marcado). Lo que NO cambia con el pick fijado: el
+ranking (sigue siendo el de la línea) y la simulación de finales, que
+cuenta votos de nº1: por eso `analizarDraft` se calla la frase de
+robustez para un pick fijado que no es el nº1 («sigue siendo el nº1 en el
+0%» no dice nada) y dice en su lugar cuántos puntos le faltan
+(`analisis.tuPickPorDebajo`, con el mismo umbral `BRECHA_CLARA`).
+
+Diez minutos después de fijarlo (`MINUTOS_PARA_RECORDAR`, una partida dura
+más), al volver a la app (`useAhora`: cada minuto y en `visibilitychange`),
+se pregunta cómo fue: Gané/Perdí apuntan con un toque y «Más tarde» vuelve
+a poner el instante. Es lo que hace crecer el Veredicto (30+30) y la
+calibración (20) sin acordarse de nada. Cada partida apuntada lleva desde
+3.5.0 su `draft` (`sanearDraft` en registro.js: línea, enemigos, aliados,
+rival; unos 200 bytes; pasa por `sanear` del perfil y viaja en el código):
+sin el draft, una partida apuntada era irrecuperable para medir el modelo en
+la cola de Javi. El siguiente paso natural es un `medir-mias.mjs` calcado
+de `medir-pro.mjs` cuando haya unas decenas de partidas con draft.
+
+El consejo a los compañeros va DIFERIDO desde 3.5.0 (`useDeferredValue`
+sobre enemigos, aliados, baneos y el pick), con su propio `yo` en el
+resultado (`consejos.yo`) para que lo que se enseña sea coherente consigo
+mismo aunque vaya un render por detrás. Medido antes de diferirlo: 41 ms
+con un enemigo (160–250 en un móvil), el doble que el ranking; ahora el
+toque síncrono es el ranking (10 ms) más el análisis.
 
 ## El siguiente baneo probable
 
@@ -1355,6 +1395,38 @@ y el botón Diagnóstico mentía sobre los rangos. No le quites el `--out`.
 Lo examinado y dejado como está, con su medida, para que la siguiente
 iteración no lo repita. Si aparece evidencia nueva, se reabre.
 
+- **Lo examinado en la revisión de arriba abajo de 3.5.0 y dejado como
+  está**: (1) el tamaño de `roam-meta.json` (933 KB en crudo, 178 KB gzip;
+  cruces y parejas son el 60% y YA van a cuatro decimales; quitar la mitad
+  antisimétrica de los cruces ahorraría ~15% comprimido y obligaría a
+  reconstruirla en cada carga: no compensa); (2) el aviso «Node.js 20 is
+  deprecated» de `actions/cache@v4` en los runners: es un aviso, el paso
+  corre en Node 24 forzado y funciona; se cambia cuando haya una versión de
+  la acción que lo pida, no antes; (3) el pie (`footer role="button"` con
+  un botón dentro) es un control anidado: funciona en táctil y en teclado,
+  y arreglarlo pide rehacer el pie, que no está en el camino del draft; (4)
+  `stats.matches` viene `null` de la API para todos: no hay recuento de
+  partidas por héroe, así que ningún encogimiento por muestra es posible
+  aunque se quisiera (y no se quiere, ver «Qué son los datos»). De las
+  ideas de producto medidas en 3.5.0 quedaron fuera, con su porqué: el
+  desglose RELATIVO al nº1 en cada tarjeta (medido: un solo término explica
+  ≥60% de la diferencia nº1–nº2 en el 59% de los drafts de roam, así que
+  vale, pero añade una línea a cada tarjeta y la nº1 va a 11 px del borde
+  en 390×844 con 5v4; entrará cuando se mida cómo meterlo sin alto nuevo);
+  «quién pesa más en su draft» (leave-one-out, mediana +3,5 puntos al
+  quitar al que más pesa, coincide con tu peor cruce solo el 43%: es lectura
+  del modelo, no medible contra resultado, y el análisis ya va a tres
+  frases); el winrate por duración (`/api/academy/heroes/{id}/win-rate/
+  timeline`, 164 peticiones más; en pro la señal por héroe es ruidosa, σ≈7
+  pp y 8 de 64 héroes fuera de 2 SE donde el azar daría 2,9: se enseñaría,
+  no puntuaría, y antes hay que medirlo en `ajustar-modelo.mjs`); la
+  versión del parche (`/api/academy/meta/version`) y la dificultad de la
+  ficha (`difficulty`, `abilityshow`, ya descargadas y no guardadas): baratas
+  y pendientes de un hueco en pantalla que no empuje la nº1; la tasa de ban
+  a 3 días para el siguiente baneo (medir primero, como el winrate, cuando
+  la ventana corta vuelva a ser coherente tras el reinicio); compartir el
+  draft por enlace y el modo dúo con la maestría del compañero (app de una
+  persona; se reabren si alguien más la usa).
 - **La frase de empate cortada por el tope de tres del análisis**: medido en
   300 drafts con tres enemigos y tres aliados, 76 con empate y 0 cortadas.
   No hay problema.

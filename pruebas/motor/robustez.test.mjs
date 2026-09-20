@@ -49,6 +49,10 @@ test('la robustez del pick: determinista, suma uno y predice si aguanta', () => 
   const lider = { name: r1.lider };
   const conBan = simularFinales({ ...args, ctx: { ...args.ctx, baneos: [lider] } });
   eq(conBan.cuota[r1.lider] ?? 0, 0, 'la simulacion vota a un heroe baneado');
+  //     Y la simulacion lleva la marca de con QUE baneos se hizo: el analisis
+  //     la compara con los de ahora (una hecha con otros baneos no es de este draft).
+  eq(JSON.stringify(conBan.baneos), JSON.stringify([nombreClave(r1.lider)]), 'la simulacion no marca con que baneos se hizo');
+  eq(JSON.stringify(r1.baneos), '[]');
   //     Y banear a unos cuantos es lo mismo que quitarlos de TODOS los pools
   //     enemigos (solo los que no son candidatos tuyos, para no tocar tu pool
   //     por el otro lado; un mago que tambien juega jungla sale de las dos).

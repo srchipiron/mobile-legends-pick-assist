@@ -15,19 +15,30 @@ export { idMotivo };
  * Tarjeta de recomendación: la probabilidad de ganar el draft con ese pick
  * y de dónde sale, en puntos, término a término.
  */
-export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, onBuild, t = tPorDefecto }) {
+export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, onBuild, elegido = false, onElegir = null, t = tPorDefecto }) {
   const pct = Math.round(candidato.p * 100);
   const heroe = candidato.heroe;
+  const nombre = (
+    <>
+      <Cara heroe={heroe} className="hero-cara" tam={34} />
+      {heroe.name}
+      {/* Un héroe que no está en el catálogo escrito a mano juega con los
+          tags genéricos de su rol. Se recomienda igual, pero conviene saberlo. */}
+      {heroe.inferred && <span className="inferred" title={t('app.tagsDeRolTitulo')}>{t('app.tagsDeRol')}</span>}
+      {elegido && <span className="pick-tuyo">{t('pick.tuyo')}</span>}
+    </>
+  );
   return (
-    <article className={`pick ${indice === 0 ? 'top' : ''}`}>
+    <article className={`pick ${indice === 0 ? 'top' : ''} ${elegido ? 'elegido' : ''}`.trim()} data-heroe={heroe.name}>
       <div className="rank">{indice + 1}</div>
       <div>
+        {/* El nombre es el botón de «lo cojo»: sin añadir un píxel de alto a
+            la tarjeta (medido: cada bloque nuevo empujaba la nº1 fuera de la
+            primera pantalla). Segundo toque lo suelta. */}
         <h3 className="pick-name">
-          <Cara heroe={heroe} className="hero-cara" tam={34} />
-          {heroe.name}
-          {/* Un héroe que no está en el catálogo escrito a mano juega con los
-              tags genéricos de su rol. Se recomienda igual, pero conviene saberlo. */}
-          {heroe.inferred && <span className="inferred" title={t('app.tagsDeRolTitulo')}>{t('app.tagsDeRol')}</span>}
+          {onElegir ? (
+            <button className="pick-nombre-boton" aria-pressed={elegido} title={t(elegido ? 'pick.soltar' : 'pick.loCojo', { nombre: heroe.name })} onClick={() => onElegir(heroe)}>{nombre}</button>
+          ) : nombre}
         </h3>
         <Desglose puntos={candidato.puntos} t={t} />
         <ul className="reasons">

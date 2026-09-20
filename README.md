@@ -121,6 +121,12 @@ nada; donde discrepa es por dificultad, Fanny en S al 41% y Argus en C al 54%).
 `COUNTER_RULES` y son legibles: "si el enemigo tiene dashes, un roamer con anti-mobility sube". Solo
 entran con un héroe recién salido del que no hay ni un cruce, a la misma equivalencia que en 1.x.
 
+**Tu pick se fija tocando el nombre de la tarjeta** (o el hueco «Tú» de tu equipo). Desde ahí el
+análisis, la composición, el consejo a los compañeros y la estimación hablan de ÉL, no del nº1, y
+diez minutos después la app pregunta cómo fue: Gané/Perdí apuntan la partida con su draft entero en un
+toque. El filtro **Mis héroes** deja solo los que llevas, y en la fase de baneos sale tu plan A · B · C
+con su tasa de ban.
+
 **Lo que falta por salir cuenta como esperanza, no como castigo.** Para cada línea enemiga abierta se
 suma el cruce esperado contra lo que se juega ahí, ponderado por lo que se juega cuando no está
 baneado (pickrate/(1−banrate): un héroe baneado el 80% de las veces sale poco en las estadísticas,

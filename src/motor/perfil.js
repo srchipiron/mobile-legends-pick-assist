@@ -12,6 +12,8 @@
  * dispositivo bueno no borra nada.
  */
 
+import { sanearDraft } from './registro.js';
+
 const MARCA = 'MLPA1';
 
 /** Suma de control corta. No es criptografía: es cazar un pegado a medias. */
@@ -119,6 +121,8 @@ export function sanear(perfil) {
       if (!(typeof p.estimacion === 'number' && p.estimacion > 0 && p.estimacion < 1)) delete limpia.estimacion;
       const limpios = Array.isArray(p.bans) ? p.bans.filter((b) => typeof b === 'string' && b).slice(0, 10) : [];
       if (limpios.length) limpia.bans = limpios; else delete limpia.bans;
+      const draft = sanearDraft(p.draft);
+      if (draft) limpia.draft = draft; else delete limpia.draft;
       return limpia;
     });
   return { ...(perfil ?? {}), mastery, partidas };

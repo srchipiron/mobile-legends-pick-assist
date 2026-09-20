@@ -1,4 +1,4 @@
-import { indexarPorNombre } from './nombres.js';
+import { indexarPorNombre, nombreClave } from './nombres.js';
 import { fundirCatalogo, LINEAS, poolDeLinea, equilibrioEsperado } from './catalogo.js';
 import { indiceDeLineas, frecuenciaDeRoles, lineasOcupadas, detectarRivalDeLinea } from './lineas.js';
 import { cobertura } from './matrices.js';
@@ -179,25 +179,51 @@ export function siguientesBaneos(datos, { baneos = [], enemigos = [], aliados = 
 }
 
 /**
+ * Tu pick, del que hablan el análisis, la composición y el consejo a los
+ * compañeros: el que has FIJADO («Lo cojo», 3.5.0) si está en el ranking, y
+ * si no el nº1. Antes todo lo posterior al pick hablaba del nº1 aunque
+ * cogieras el nº2 (nº1 y nº2 empatan en uno de cada cuatro drafts).
+ */
+export function eleccionDe(ranking, miPick = null) {
+  if (miPick) {
+    const c = ranking.find((r) => r.heroe === miPick || r.heroe.name === miPick.name);
+    if (c) return c;
+  }
+  return ranking[0] ?? null;
+}
+
+/**
+ * Tu plan antes de que salga nadie: los mejores de tu línea con el draft
+ * vacío (fuerza general y tu maestría), con su tasa de ban. Para la fase de
+ * baneos: la mitad de las veces el plan A llega baneado (Marcel 55%, Gloo
+ * 51% de ban en Gloria) y conviene saberlo antes de los 30 segundos.
+ */
+export function planDePicks(datos, { linea, maestria = null, n = 3 } = {}) {
+  return ordenar(datos, { linea, maestria }).slice(0, n)
+    .map((c) => ({ heroe: c.heroe, p: c.p, banRate: datos.meta.stats?.[nombreClave(c.heroe.name)]?.banRate ?? null }));
+}
+
+/**
  * Todo de una vez, para quien no tiene render que cuidar (diagnóstico, bot,
  * paridad, pruebas). Devuelve lo mismo que la app calcula pieza a pieza.
  *
  * @param {Datos} datos
- * @param {object} draft  { linea, enemigos, aliados, baneos, maestria, rivalMarcado, conSimulacion }
+ * @param {object} draft  { linea, enemigos, aliados, baneos, maestria, rivalMarcado, miPick, conSimulacion }
  */
-export function recomendar(datos, { linea, enemigos = [], aliados = [], baneos = [], maestria = null, rivalMarcado = null, conSimulacion = true } = {}) {
+export function recomendar(datos, { linea, enemigos = [], aliados = [], baneos = [], maestria = null, rivalMarcado = null, miPick = null, conSimulacion = true } = {}) {
   const pool = poolDe(datos, linea);
   const lineasAbiertas = lineasEnemigasAbiertas(datos, enemigos);
   const ranking = ordenarPicks(pool, contextoDe(datos, { enemigos, aliados, baneos, maestria, lineasAbiertas }));
   const empate = empatados(ranking);
   const rival = rivalDeLinea(datos, { linea, enemigos, marcado: rivalMarcado });
-  const yo = ranking[0]?.heroe ?? null;
+  const eleccion = eleccionDe(ranking, miPick);
+  const yo = eleccion?.heroe ?? null;
   const robustez = conSimulacion ? simular(datos, { linea, enemigos, aliados, baneos, maestria }) : null;
   const composicion = composicionDe({ aliados, enemigos, yo });
   const consejos = aconsejar(datos, { linea, yo, enemigos, aliados, baneos, lineasAbiertas });
-  const analisis = analizarDraft({ ranking, enemigos, aliados, meta: datos.meta, rivalDeLinea: rival.nombre, empate, robustez, composicion });
+  const analisis = analizarDraft({ eleccion, ranking, enemigos, aliados, baneos, meta: datos.meta, rivalDeLinea: rival.nombre, empate, robustez, composicion });
   return {
-    pool, lineasAbiertas, ranking, empate, rival, robustez, composicion, consejos, analisis,
+    pool, lineasAbiertas, ranking, empate, rival, eleccion, robustez, composicion, consejos, analisis,
     baneosSugeridos: baneosSugeridos(datos, { aliados, enemigos, baneos }),
     cobertura: cobertura(pool, datos.meta.stats, datos.meta.counters),
   };

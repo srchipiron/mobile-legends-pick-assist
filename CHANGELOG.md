@@ -8,6 +8,53 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.5.0
+
+- **«Lo cojo»: fija tu pick y todo lo demás habla de él.** Toca el nombre
+  de una tarjeta (o el hueco «Tú» nuevo en tu equipo, que abre tu pool en el
+  orden del ranking) y ese es tu pick: el análisis, la composición, el
+  consejo a los compañeros y la estimación hablan de él y no del nº1, aunque
+  cojas el nº2 (empatan en uno de cada cuatro drafts). Segundo toque lo
+  suelta. Si fijas uno que va por debajo del nº1, el análisis te dice cuántos
+  puntos le faltan; y la frase de «sigue siendo el nº1 en el X% de los
+  finales» se calla para un pick que no es el nº1, porque no tendría sentido.
+  Su tarjeta sube la primera (con su puesto real: el nº22 no se veía entre
+  las ocho), y se guarda con el draft, así que sobrevive a cerrar la app.
+- **La app pregunta cómo fue.** Diez minutos después de fijar el pick, al
+  volver a la app: «¿Cómo fue con X? Gané / Perdí / Más tarde». Un toque y
+  la partida queda apuntada; «Más tarde» vuelve a preguntar en otros diez
+  minutos. Es lo que hace crecer el Veredicto y la calibración sin acordarse
+  de nada.
+- **Cada partida apuntada guarda el draft entero** (enemigos, aliados,
+  línea, rival), unos 200 bytes. Es lo que permitirá medir el modelo en TU
+  cola, no solo en las partidas pro: una partida apuntada sin su draft era
+  irrecuperable. Va dentro del código de perfil, así que viaja contigo.
+- **Filtro «Mis héroes».** Un botón en la cabecera de las tarjetas deja solo
+  los héroes que llevas (con maestría o partidas) y dice quién sería el nº1
+  fuera de ellos. Un héroe que nunca has jugado entra en el ranking «como tu
+  media», que es optimista: el filtro es la versión honesta. Solo sale si
+  tienes maestría.
+- **Tu plan A · B · C en la fase de baneos**: tus tres mejores de la línea
+  con el draft vacío y su tasa de ban, para saber antes de los 30 segundos
+  si tu plan A va a llegar (Marcel llega baneado el 55% de las veces). Un
+  plan ya baneado sale tachado.
+- **Apuntar una partida con un héroe de otra línea**: «Otro héroe…» abre el
+  resto del catálogo. Y con el pick fijado, apuntar es un toque: ya viene
+  marcado.
+- **El toque va más ligero.** El consejo a los compañeros (cuatro rankings
+  más, medido: el doble que el tuyo, 40 ms aquí y 160–250 en un móvil) va
+  ahora diferido como la simulación, con su propia marca de para qué pick se
+  hizo. El consejo que se enseña es siempre coherente consigo mismo.
+- **Corregido: un héroe recién salido sin estadísticas movía el centro de
+  las parejas** (pesaba 133 veces lo que cualquier pareja; medido: 0,36
+  puntos porcentuales por héroe). Y la simulación de finales lleva ahora la
+  marca de con qué baneos se hizo: una hecha con otros baneos ya no se
+  cruza con el draft de ahora.
+- La cobertura («37/37 con datos · 37 con counters») solo se dice cuando
+  falta algo: con todo cubierto ocupaba el sitio sin decidir nada, y la
+  tarjeta nº1 sube 15 píxeles en la primera pantalla. El color de la barra
+  de estado del móvil coincide ahora con el fondo de la app.
+
 ## 3.4.0
 
 - **La nota tiene en cuenta el equilibrio de daño del equipo.** Un equipo con

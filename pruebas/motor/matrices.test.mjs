@@ -12,6 +12,7 @@ import { indexarPorNombre } from '../../src/motor/nombres.js';
 import {
   cobertura, cruce, sinergia, CRUCE_DESTACABLE, CRUCE_MALO, PAREJA_DESTACABLE,
 } from '../../src/motor/matrices.js';
+import { mediaDeSinergia } from '../../src/motor/matrices.js';
 import { terminoPareja } from '../../src/motor/modelo.js';
 
 /** Todos los .js de src/motor, subcarpetas incluidas (diagnostico/). */
@@ -124,6 +125,19 @@ test('ningun 0.53 escrito a mano suelto en el motor', () => {
   ok(!sueltos.length,
     `umbrales de cruce escritos a mano: ${[...new Set(sueltos)].join(', ')}. `
     + 'Van como constante medida contra la distribucion, no a ojo.');
+});
+
+test('un heroe sin estadisticas no pesa en el centro de las parejas', () => {
+  // `?? 1` entre cuotas que suman 1: un héroe recién salido (en la matriz de
+  // parejas, aún sin estadísticas) pesaba 133 veces lo que cualquier pareja
+  // y movía el centro (medido con los datos reales: 0,36 pp por héroe).
+  const synergies = { a: { b: 0.52, n: 0.30 }, b: { a: 0.52, n: 0.30 }, n: { a: 0.30, b: 0.30 } };
+  const stats = { a: { pickRate: 0.01 }, b: { pickRate: 0.01 } };
+  const conTodos = mediaDeSinergia(synergies, null, { ...stats, n: { pickRate: 0.01 } });
+  const sinN = mediaDeSinergia(JSON.parse(JSON.stringify(synergies)), null, stats);
+  ok(Math.abs(sinN - 0.52) < 1e-9, `el héroe sin estadísticas ha entrado en el centro: ${sinN} (con todos, ${conTodos})`);
+  // Sin estadísticas, todos pesan igual: la media simple.
+  ok(Math.abs(mediaDeSinergia(JSON.parse(JSON.stringify(synergies)), null, null) - (0.52 * 2 + 0.3 * 4) / 6) < 1e-9, 'sin estadísticas no es la media simple');
 });
 
 await terminar('motor/matrices');

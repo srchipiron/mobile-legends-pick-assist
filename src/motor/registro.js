@@ -6,10 +6,26 @@ import { maestriaEfectiva, winrateDeReferencia } from './maestria.js';
  * probabilidad que estimaba, los baneos y si ganaste. Es lo único que puede
  * decir si acertar el pick que recomienda la app hace ganar más.
  *
- * Una partida apuntada: `{ t, pick, gane, rango, recomendados, estimacion?, bans?, previa? }`.
+ * Una partida apuntada: `{ t, pick, gane, rango, recomendados, estimacion?, bans?, draft?, previa? }`.
  * El instante `t` ES su identidad: por ahí se quita, se corrige y se
  * deduplica al fundir perfiles.
+ *
+ * `draft` (3.5.0) es el draft que tenías delante: `{ linea, enemigos,
+ * aliados, rival? }`, unos 200 bytes. Es lo que hace medible el modelo en
+ * TU cola (re-puntuar partidas viejas con cada modelo nuevo, como
+ * `medir-pro.mjs` con las pro): una partida apuntada sin su draft es
+ * irrecuperable. Se guarda tal cual estaba, con nombres, como el draft.
  */
+
+/** El draft de una partida, con la forma esperada, o null si no hay nada que guardar. */
+export function sanearDraft(draft) {
+  if (!draft || typeof draft !== 'object' || Array.isArray(draft)) return null;
+  const nombres = (lista, max) => (Array.isArray(lista) ? lista.filter((n) => typeof n === 'string' && n.trim()).map((n) => n.trim()).slice(0, max) : []);
+  const salida = { enemigos: nombres(draft.enemigos, 5), aliados: nombres(draft.aliados, 4) };
+  if (typeof draft.linea === 'string' && draft.linea) salida.linea = draft.linea;
+  if (typeof draft.rival === 'string' && draft.rival && salida.enemigos.includes(draft.rival)) salida.rival = draft.rival;
+  return salida.enemigos.length || salida.aliados.length || salida.linea ? salida : null;
+}
 
 /** Partidas mínimas de cada rama antes de que los números signifiquen algo. */
 export const MINIMO_PARA_CONCLUIR = 30;
@@ -37,6 +53,7 @@ export function apuntar(partidas, entrada, tope = 500) {
     ...(entrada.previa ? { previa: true } : {}),
     ...(Array.isArray(entrada.bans) && entrada.bans.some((b) => typeof b === 'string' && b)
       ? { bans: entrada.bans.filter((b) => typeof b === 'string' && b).slice(0, 10) } : {}),
+    ...(sanearDraft(entrada.draft) ? { draft: sanearDraft(entrada.draft) } : {}),
   };
   if (!limpia.pick) return partidas;
   return [limpia, ...(partidas ?? [])].sort((a, b) => (b.t ?? 0) - (a.t ?? 0)).slice(0, tope);

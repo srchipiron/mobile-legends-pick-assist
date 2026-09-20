@@ -6,7 +6,8 @@
  * número.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { apuntar, olvidar, corregir, calibracion, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
+import { sanear } from '../../src/motor/perfil.js';
+import { sanearDraft, apuntar, olvidar, corregir, calibracion, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
 import { maestriaDesdeRegistro, maestriaEfectiva, winrateDeReferencia } from '../../src/motor/maestria.js';
 import { nombreClave } from '../../src/motor/nombres.js';
 import { generador } from '../../src/motor/robustez.js';
@@ -266,6 +267,23 @@ test('el veredicto no canta victoria antes de tiempo', () => {
   // ensenar una sin la otra por descuido.
   ok(Number.isFinite(r.contraReferencia.margen) && r.contraReferencia.margen > 0,
     'la diferencia viene sin margen: el numero solo es publicidad');
+});
+
+test('cada partida apuntada guarda el draft que tenias delante, saneado', () => {
+  // Sin el draft, una partida apuntada es irrecuperable para medir el modelo
+  // en TU cola. Se guarda con nombres, como el draft, y saneado.
+  const draft = { linea: 'roam', enemigos: ['Fanny', 'Layla', '', 7, 'Ling'], aliados: ['Chou'], rival: 'Fanny' };
+  const [p] = apuntar([], { pick: 'Tigreal', gane: true, draft });
+  eq(JSON.stringify(p.draft), JSON.stringify({ enemigos: ['Fanny', 'Layla', 'Ling'], aliados: ['Chou'], linea: 'roam', rival: 'Fanny' }));
+  // Un rival que no está entre los enemigos no se guarda; sin nada, no hay campo.
+  eq(apuntar([], { pick: 'Tigreal', draft: { enemigos: ['Layla'], rival: 'Fanny' } })[0].draft.rival, undefined);
+  ok(!('draft' in apuntar([], { pick: 'Tigreal', draft: { enemigos: [], aliados: [] } })[0]), 'un draft vacío deja el campo');
+  ok(!('draft' in apuntar([], { pick: 'Tigreal', draft: 'roam' })[0]), 'un draft con la forma rota deja el campo');
+  eq(sanearDraft({ enemigos: ['A', 'B', 'C', 'D', 'E', 'F'] }).enemigos.length, 5, 'más de cinco enemigos');
+  // Y sobrevive al saneado del perfil, que es por donde pasa lo guardado al cargar.
+  const { partidas } = sanear({ partidas: [p, { ...p, t: p.t + 1, draft: { enemigos: 'no' } }] });
+  eq(JSON.stringify(partidas[0].draft), JSON.stringify(p.draft), 'el saneado del perfil pierde el draft');
+  ok(!('draft' in partidas[1]), 'el saneado del perfil deja un draft roto');
 });
 
 await terminar('motor/registro');

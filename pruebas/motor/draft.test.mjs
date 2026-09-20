@@ -10,7 +10,7 @@ import { catalogo, h } from '../fixtures/catalogo.mjs';
 import { LINEAS } from '../../src/motor/catalogo.js';
 import {
   rangoActivo, prepararDatos, resolverNombres, poolDe,
-  lineasEnemigasAbiertas, rivalDeLinea, recomendar,
+  lineasEnemigasAbiertas, rivalDeLinea, recomendar, eleccionDe, planDePicks, ordenar,
 } from '../../src/motor/draft.js';
 import { elegirVentana } from '../../src/motor/ventana.js';
 import { indexarPorNombre } from '../../src/motor/nombres.js';
@@ -207,6 +207,28 @@ test('prepararDatos decide la ventana en UN sitio: la corta si viene y es cohere
   eq(mal.meta.ventana.dias, 7, 'una ventana corta imposible ha entrado');
   eq(mal.meta.mediaDelRango, sin.meta.mediaDelRango, 'al descartar la corta la media no es la de la ingesta');
   eq(mal.meta.stats, mal.meta.statsSemana, 'al descartar la corta las estadisticas no son las de la semana');
+});
+
+test('tu pick fijado manda sobre el nº1 en lo que viene despues, y el plan de baneos es el ranking con el draft vacio', () => {
+  const datos = prepararDatos({ catalogo, meta });
+  if (LINEAS.some((l) => datos.poolsPorLinea[l].length < 10)) return;
+  const H = (n) => datos.porNombre.get(n);
+  const enemigos = ['Fanny', 'Layla'].map(H); const aliados = [H('Chou')];
+  const libre = recomendar(datos, { linea: 'roam', enemigos, aliados, conSimulacion: false });
+  const segundo = libre.ranking[1].heroe;
+  const fijado = recomendar(datos, { linea: 'roam', enemigos, aliados, miPick: segundo, conSimulacion: false });
+  eq(fijado.eleccion.heroe.name, segundo.name, 'la elección no es el pick fijado');
+  eq(JSON.stringify(fijado.ranking.map((c) => c.heroe.name)), JSON.stringify(libre.ranking.map((c) => c.heroe.name)), 'fijar un pick cambia el ranking');
+  ok(fijado.composicion.mio.n === libre.composicion.mio.n && JSON.stringify(fijado.composicion) !== JSON.stringify(libre.composicion), 'la composición no habla del pick fijado');
+  ok(fijado.consejos.every((c) => c.sugerencias.every((s) => s.heroe.name !== segundo.name)), 'el consejo a los compañeros ofrece tu propio pick');
+  // Un pick fijado que ya no está en el pool (otra línea) cae al nº1.
+  eq(recomendar(datos, { linea: 'roam', enemigos, aliados, miPick: H('Layla'), conSimulacion: false }).eleccion.heroe.name, libre.ranking[0].heroe.name);
+  eq(eleccionDe([], H('Chou')), null);
+  // El plan: los tres primeros con el draft vacío, con su tasa de ban.
+  const plan = planDePicks(datos, { linea: 'roam' });
+  eq(plan.length, 3);
+  eq(JSON.stringify(plan.map((x) => x.heroe.name)), JSON.stringify(ordenar(datos, { linea: 'roam' }).slice(0, 3).map((c) => c.heroe.name)));
+  ok(plan.every((x) => typeof x.banRate === 'number'), 'el plan no trae la tasa de ban');
 });
 
 await terminar('motor/draft');

@@ -38,18 +38,21 @@ export const BRECHA_CLARA = 2;
  * este, y un héroe que la simulación no vio salía «frágil 0%». Una
  * simulación sin marca se acepta.
  */
-function esDeEsteDraft(robustez, enemigos, aliados) {
+function esDeEsteDraft(robustez, enemigos, aliados, baneos) {
   const mismo = (marca, equipo) => {
     if (!Array.isArray(marca)) return true;
     const ahora = equipo.map((h) => nombreClave(h.name)).sort();
     return marca.length === ahora.length && marca.every((n, i) => n === ahora[i]);
   };
-  return mismo(robustez.enemigos, enemigos) && mismo(robustez.aliados, aliados);
+  // Los baneos también cambian los finales (un baneado no sale por ninguna
+  // línea): una simulación hecha con otros baneos no es de este draft.
+  return mismo(robustez.enemigos, enemigos) && mismo(robustez.aliados, aliados) && mismo(robustez.baneos, baneos);
 }
 
 /**
  * @param {object} d
- * @param d.eleccion      el candidato del que se habla (por defecto, el nº1)
+ * @param d.eleccion      el candidato del que se habla (por defecto, el nº1): tu pick fijado, si lo hay
+ * @param d.baneos        los baneados, para saber si la simulación es de este draft
  * @param d.ranking       lo que devuelve ordenarPicks
  * @param d.rivalDeLinea  nombre del rival de tu línea, o null
  * @param d.empate        lo que devuelve empatados
@@ -58,16 +61,21 @@ function esDeEsteDraft(robustez, enemigos, aliados) {
  * @returns {Frase[]} como mucho tres
  */
 export function analizarDraft({
-  eleccion, ranking = [], enemigos = [], aliados = [], meta = {},
+  eleccion, ranking = [], enemigos = [], aliados = [], baneos = [], meta = {},
   rivalDeLinea = null, empate = [], robustez = null, composicion = null,
 } = {}) {
   const salida = [];
   const top = eleccion ?? ranking[0];
+  // ¿Se habla del nº1 o de un pick fijado que no lo es? La simulación cuenta
+  // votos de nº1, así que «sigue siendo el nº1 en el 0%» de un pick fijado
+  // que iba segundo no dice nada: esa frase es para decidir, no para el que
+  // ya decidió.
+  const esElNumeroUno = !ranking[0] || !top || top.heroe === ranking[0].heroe || top.heroe?.name === ranking[0].heroe?.name;
 
   // 0. ¿Aguanta el nº1 lo que falta por salir? Solo a medias y con simulación
   //    hecha para este draft. Va primera: es la única frase que habla del
   //    futuro del draft y no de lo que ya se ve.
-  if (top && robustez?.lineasAbiertas?.length && robustez.cuota && esDeEsteDraft(robustez, enemigos, aliados)) {
+  if (top && esElNumeroUno && robustez?.lineasAbiertas?.length && robustez.cuota && esDeEsteDraft(robustez, enemigos, aliados, baneos)) {
     const cuota = robustez.cuota[top.heroe.name] ?? 0;
     const pct = Math.round(cuota * 100);
     const params = { yo: top.heroe.name, pct, faltan: robustez.lineasAbiertas.length };
@@ -156,7 +164,11 @@ export function analizarDraft({
   const segundo = ranking.find((r) => r.heroe.name !== heroe.name);
   if (segundo && top.p != null && segundo.p != null) {
     const brecha = Math.round((top.p - segundo.p) * 100);
-    if (brecha >= BRECHA_CLARA) {
+    // Con un pick fijado que NO es el nº1, «el siguiente» es el nº1: se dice
+    // cuánto le falta, con el mismo umbral, para que se sepa lo que cuesta.
+    if (!esElNumeroUno && -brecha >= BRECHA_CLARA) {
+      salida.push({ tono: 'duda', clave: 'analisis.tuPickPorDebajo', params: { yo: heroe.name, puntos: -brecha, mejor: segundo.heroe.name } });
+    } else if (brecha >= BRECHA_CLARA) {
       salida.push({ tono: 'bien', clave: 'analisis.pickClaro', params: { yo: heroe.name, puntos: brecha } });
     } else if (empate.length > 1 && empate.some((x) => x.heroe.name === heroe.name)) {
       const otros = empate.map((x) => x.heroe.name).filter((n) => n !== heroe.name);

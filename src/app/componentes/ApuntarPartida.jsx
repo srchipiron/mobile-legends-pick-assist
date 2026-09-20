@@ -7,12 +7,19 @@ import { tPorDefecto } from './tPorDefecto.js';
  * recomendados van primero y marcados: saber si le hiciste caso es justo el
  * dato que hace falta para saber si la app sirve de algo.
  */
-export function ApuntarPartida({ pool, recomendados, onGuardar, onCerrar, t = tPorDefecto }) {
-  const [pick, setPick] = useState(recomendados[0] ?? null);
+export function ApuntarPartida({ pool, heroes = [], miPick = null, recomendados, onGuardar, onCerrar, t = tPorDefecto }) {
+  // Tu pick fijado va marcado de entrada: apuntar es un toque (Gané/Perdí).
+  const [pick, setPick] = useState(miPick ?? recomendados[0] ?? null);
+  const [todos, setTodos] = useState(false);
   const orden = useMemo(() => {
     const rec = new Set(recomendados);
     return [...pool].sort((a, b) => (rec.has(b.name) ? 1 : 0) - (rec.has(a.name) ? 1 : 0) || a.name.localeCompare(b.name));
   }, [pool, recomendados]);
+  // Te pusieron en otra línea: cualquier héroe, detrás de un toque.
+  const resto = useMemo(() => {
+    const enPool = new Set(pool.map((h) => h.name));
+    return heroes.filter((h) => !enPool.has(h.name)).sort((a, b) => a.name.localeCompare(b.name));
+  }, [heroes, pool]);
 
   return (
     <Hoja etiqueta={t('app.apuntarPartida')} onCerrar={onCerrar}>
@@ -24,7 +31,12 @@ export function ApuntarPartida({ pool, recomendados, onGuardar, onCerrar, t = tP
           <button key={h.name} className={pick === h.name ? 'elegido' : ''} onClick={() => setPick(h.name)}>
             {h.name}
             {recomendados.includes(h.name) && <span className="inferred">{t('registro.recomendado')}</span>}
+            {miPick === h.name && <span className="inferred">{t('pick.tuyo')}</span>}
           </button>
+        ))}
+        {resto.length > 0 && !todos && <button className="otro-heroe" onClick={() => setTodos(true)}>{t('registro.otroHeroe')}</button>}
+        {todos && resto.map((h) => (
+          <button key={h.name} className={pick === h.name ? 'elegido' : ''} onClick={() => setPick(h.name)}>{h.name}</button>
         ))}
       </div>
       <div className="resultado">

@@ -146,4 +146,28 @@ test('el analisis avisa del peor cruce del draft cuando el dato lo dice', () => 
   ok(!ganaDe(1 - CRUCE_MALO - EPS), `el analisis dice «ganas el cruce» justo por debajo de ${1 - CRUCE_MALO}: su umbral es otro`);
 });
 
+test('un pick fijado que no es el nº1: sin la frase de robustez, y se dice cuanto le falta', () => {
+  // La simulación cuenta votos de nº1: «Tigreal sigue siendo el nº1 en el
+  // 0%» de un pick fijado que iba segundo no dice nada. Y una simulación
+  // hecha con OTROS baneos tampoco es de este draft.
+  const H = (name) => ({ name, tags: [] });
+  const ranking = [{ heroe: H('A'), p: 0.55 }, { heroe: H('B'), p: 0.52 }, { heroe: H('C'), p: 0.50 }];
+  const enemigos = [H('E')]; const baneos = [H('X')];
+  const robustez = { cuota: { A: 0.7 }, lider: 'A', lineasAbiertas: ['mid'], enemigos: ['e'], aliados: [], baneos: ['x'] };
+  const base = { ranking, enemigos, aliados: [], baneos, meta: {}, robustez };
+  const delUno = analizarDraft(base).map((f) => f.clave);
+  ok(delUno.includes('analisis.pickRobusto'), `con el nº1 se dice si aguanta: ${delUno}`);
+  const fijado = analizarDraft({ ...base, eleccion: ranking[1] });
+  ok(!fijado.some((f) => f.clave === 'analisis.pickRobusto' || f.clave === 'analisis.pickFragil'), `un pick fijado que no es el nº1 no puede «seguir siendo el nº1»: ${fijado.map((f) => f.clave)}`);
+  const debajo = fijado.find((f) => f.clave === 'analisis.tuPickPorDebajo');
+  ok(debajo && debajo.params.yo === 'B' && debajo.params.mejor === 'A' && debajo.params.puntos === 3, `no dice cuánto le falta al pick fijado: ${JSON.stringify(fijado)}`);
+  // Fijar el propio nº1 es lo mismo que no fijar nada.
+  eq(JSON.stringify(analizarDraft({ ...base, eleccion: ranking[0] })), JSON.stringify(analizarDraft(base)));
+  // Una simulación con otros baneos no es de este draft: se calla.
+  const otrosBaneos = analizarDraft({ ...base, baneos: [H('Y')] }).map((f) => f.clave);
+  ok(!otrosBaneos.includes('analisis.pickRobusto'), 'acepta una simulación hecha con otros baneos');
+  //   Y una sin marca de baneos (simulación vieja) se acepta.
+  ok(analizarDraft({ ...base, robustez: { ...robustez, baneos: undefined } }).some((f) => f.clave === 'analisis.pickRobusto'), 'rechaza una simulación sin marca de baneos');
+});
+
 await terminar('motor/analisis');

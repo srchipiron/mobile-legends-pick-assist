@@ -412,7 +412,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* ---------- pie de versión y frescura ---------- */
 
 .pie {
-  position: fixed; right: 8px; bottom: 6px; z-index: 5;
+  position: fixed; right: 8px; bottom: max(6px, env(safe-area-inset-bottom)); z-index: 5;
   font-family: var(--font-num); font-size: 10px; color: var(--muted);
   background: rgba(11, 14, 23, 0.88); border: 1px solid var(--line);
   border-radius: var(--r); padding: 4px 8px; cursor: pointer;
@@ -728,6 +728,42 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 }
 .pick-tier { display: block; text-align: right; margin-top: 2px; }
 .tier-SS, .tier-S { color: var(--gold); }
+
+/* ---------- tu pick fijado (3.5.0) ---------- */
+/* El hueco «Tú» en tu equipo, como en el draft del juego. */
+.slot.yo { border-color: var(--gold) !important; }
+.slot.empty.yo { color: var(--gold); border-color: var(--gold); border-style: dashed; }
+/* La tarjeta de tu pick: una franja dorada, sin cambiar de alto. */
+.pick.elegido { border-color: var(--gold); box-shadow: inset 3px 0 0 var(--gold); }
+/* El nombre es el botón: hereda la letra del titular y ocupa lo mismo. */
+.pick-nombre-boton {
+  display: flex; align-items: center; gap: 8px; padding: 0; text-align: left;
+  font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; min-height: 34px;
+}
+.pick-tuyo { font-size: 11px; color: var(--gold); text-transform: none; letter-spacing: normal; font-weight: 400; margin-left: 4px; white-space: nowrap; }
+/* ¿Cómo fue? Diez minutos después de fijar el pick, al volver a la app. */
+.recordatorio {
+  border: 1px solid var(--gold); border-radius: var(--r); background: rgba(227, 178, 60, 0.08);
+  padding: 10px 12px; margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+}
+.recordatorio p { margin: 0; flex: 1 1 140px; font-size: 13px; }
+.recordatorio button {
+  min-height: 40px; padding: 6px 12px; border: 1px solid var(--line); border-radius: var(--r); color: var(--muted);
+  font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.1em; font-size: 11px;
+}
+.recordatorio .gane { color: var(--gold); border-color: var(--gold); }
+/* «Mis héroes»: el filtro va en la cabecera de las tarjetas, sin fila nueva. */
+.filtro {
+  min-height: 32px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px;
+  font-size: 11px; color: var(--muted); font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.1em;
+}
+.filtro[aria-pressed='true'] { border-color: var(--gold); color: var(--gold); }
+.fuera-de-mios { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
+/* Tu plan A · B · C en la fase de baneos. */
+.plan { margin-top: 14px; }
+.plan .chip { padding: 8px 12px 8px 6px; font-size: 14px; }
+/* Apuntar con un héroe de otra línea: el resto, detrás de un toque. */
+.hero-grid .otro-heroe { grid-column: 1 / -1; color: var(--muted); border-style: dashed; }
 
 @media (max-width: 820px) and (orientation: portrait) {
   /* Una sola columna y la PÁGINA entera se desplaza: con `height: 100%` y

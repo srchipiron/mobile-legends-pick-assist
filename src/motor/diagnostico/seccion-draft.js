@@ -47,6 +47,7 @@ export function seccionDraft(inf, { draft = null, linea, entorno = {} } = {}) {
     const con = (d) => `${d[0]} (${d[1] >= 0 ? '+' : ''}${d[1]})`;
     inf.linea(`Por qué ${a.heroe.name} y no ${b.heroe.name}: ${margen} puntos de margen · lo decide ${con(dif[0])}${dif[1] ? `, luego ${con(dif[1])}` : ''}`);
   }
+  if (draft.miPick) inf.linea(`Tu pick fijado: ${draft.miPick}${a && a.heroe.name !== draft.miPick ? ` (el nº1 es ${a.heroe.name})` : ''}`);
   const signo = (v) => (v > 0 ? `+${v}` : `${v}`);
   for (const e of draft.estimaciones ?? []) {
     if (e?.p == null) continue;

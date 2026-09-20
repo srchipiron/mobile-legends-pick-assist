@@ -1,5 +1,7 @@
-import { Fragment } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { buscar } from '../../motor/nombres.js';
+import { MINUTOS_PARA_RECORDAR } from '../estado/useDraft.js';
+import { useAhora } from '../estado/useAhora.js';
 import { IDIOMAS } from '../i18n/index.js';
 import { Bando } from '../componentes/Bando.jsx';
 import { Cara } from '../componentes/Imagen.jsx';
@@ -19,16 +21,37 @@ import { HORAS_DATOS_VIEJOS } from '../componentes/Pie.jsx';
  * después de él: encima empujaba la tarjeta nº1 fuera de la primera
  * pantalla en un móvil de 390×844.
  *
- * @param d.draft     el hook useDraft (nombres, anadir, quitar, marcarRival, setFase, reiniciar)
- * @param d.equipo    { enemigos, aliados, baneos } ya resueltos a héroes
- * @param d.rec       lo que devuelve useRecomendacion
- * @param d.abrir     abre una hoja: 'enemigos' | 'aliados' | 'maestria' | 'historial' | 'perfil' | 'meta' | 'linea' | 'apuntar' | { build }
+ * @param d.draft       el hook useDraft (nombres, anadir, quitar, marcarRival, setFase, reiniciar, fijarPick, posponerRecordatorio)
+ * @param d.equipo      { enemigos, aliados, baneos } ya resueltos a héroes
+ * @param d.miPick      tu pick fijado (héroe) o null
+ * @param d.maestria    la maestría que ve el motor, para el filtro «mis héroes»
+ * @param d.rec         lo que devuelve useRecomendacion
+ * @param d.abrir       abre una hoja: 'enemigos' | 'aliados' | 'yo' | 'maestria' | 'historial' | 'perfil' | 'meta' | 'linea' | 'apuntar' | { build }
+ * @param d.onResultado (gane) apunta la partida con tu pick fijado, desde el recordatorio
  */
-export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, rec, abrir, onDiagnostico, pie }) {
+export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, pie }) {
   const { enemigos, aliados, baneos } = equipo;
-  const { ranking, rival, cov, pool, analisis, composicion, consejos } = rec;
+  const { ranking, rival, cov, pool, analisis, composicion, consejos, yo } = rec;
   const rivalAuto = rival.marcado ? null : rival.nombre;
   const anadirAliado = (h) => draft.anadir('aliados', h);
+  // «Mis héroes»: solo los que llevas (maestría o partidas). Un héroe que
+  // nunca has jugado entra en el ranking «como tu media», que es optimista;
+  // el filtro es la versión honesta. No se recuerda: es cosa de este draft.
+  const [soloMios, setSoloMios] = useState(false);
+  const esMio = (h) => (buscar(maestria, h.name)?.games ?? 0) > 0;
+  const mios = useMemo(() => ranking.filter((c) => (buscar(maestria, c.heroe.name)?.games ?? 0) > 0), [ranking, maestria]);
+  const hayMios = mios.length > 0;
+  const lista = soloMios && hayMios ? mios : ranking;
+  // Tu pick fijado va el primero: con ocho tarjetas a la vista, el nº22 no
+  // se veía, y el consejo a los compañeros (que va tras la primera) es «si
+  // tú vas con él». El número de la tarjeta sigue siendo su puesto real.
+  const fijada = miPick ? lista.find((c) => c.heroe.name === miPick.name) : null;
+  const visibles = fijada ? [fijada, ...lista.filter((c) => c !== fijada)] : lista;
+  const fueraDeMios = soloMios && hayMios && ranking[0] && !esMio(ranking[0].heroe) ? ranking[0] : null;
+  // ¿Cómo fue? Diez minutos después de fijar el pick (una partida dura más),
+  // al volver a la app: Gané / Perdí / Más tarde.
+  const ahora = useAhora();
+  const preguntar = !!(miPick && draft.miPickDesde && ahora - draft.miPickDesde >= MINUTOS_PARA_RECORDAR * 60 * 1000);
 
   return (
     <div className="app">
@@ -54,7 +77,11 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, da
           pista={rivalAuto ? t('app.tuRival', { nombre: rivalAuto }) : t('app.marcarRival')}
           automatico={rivalAuto}
         />
-        <Bando t={t} titulo={t('app.tuEquipo')} tipo="ally" picks={aliados} max={4} onAnadir={() => abrir('aliados')} onQuitar={(h) => draft.quitar('aliados', h)} />
+        <Bando
+          t={t} titulo={t('app.tuEquipo')} tipo="ally" picks={aliados} max={4}
+          onAnadir={() => abrir('aliados')} onQuitar={(h) => draft.quitar('aliados', h)}
+          yo={miPick} onYo={() => abrir('yo')} onQuitarYo={() => draft.fijarPick(miPick)}
+        />
         <Composicion comp={composicion} t={t} />
 
         <details className="more">
@@ -87,10 +114,26 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, da
       <main className="results">
         <div className="results-head">
           <h2>{t('app.pick', { linea: t(`linea.${linea}`) })}</h2>
-          <span className={`freshness ${cov.conDatos && cov.conDatos < cov.total ? 'stale' : ''}`}>
-            {cov.conDatos ? t('app.cobertura', { con: cov.conDatos, total: cov.total, counters: cov.conCounters }) : t('app.enPool', { n: pool.length })}
-          </span>
+          {/* La cobertura solo se dice cuando falta algo: con todo cubierto
+              era una línea de números que no decidía nada y ocupaba el sitio
+              del filtro. */}
+          {cov.conDatos && (cov.conDatos < cov.total || cov.conCounters < cov.total) ? (
+            <span className="freshness stale">{t('app.cobertura', { con: cov.conDatos, total: cov.total, counters: cov.conCounters })}</span>
+          ) : !cov.conDatos ? (
+            <span className="freshness">{t('app.enPool', { n: pool.length })}</span>
+          ) : null}
+          {hayMios && (
+            <button className="filtro" aria-pressed={soloMios} onClick={() => setSoloMios((v) => !v)}>{t('filtro.mios', { n: mios.length })}</button>
+          )}
         </div>
+        {preguntar && (
+          <section className="recordatorio" role="status">
+            <p>{t('recordatorio.pregunta', { yo: miPick.name })}</p>
+            <button className="gane" onClick={() => onResultado?.(true)}>{t('registro.gane')}</button>
+            <button onClick={() => onResultado?.(false)}>{t('registro.perdi')}</button>
+            <button onClick={draft.posponerRecordatorio}>{t('recordatorio.masTarde')}</button>
+          </section>
+        )}
 
         {sinWinrates ? (
           <div className="notice">
@@ -113,22 +156,25 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, da
             tarjeta (es la nota). Aquí solo queda el contexto: cuántos se ven,
             y que es un modelo. */}
         <Analisis frases={analisis} t={t} />
-        {ranking[0] && (aliados.length || enemigos.length) ? (
-          <p className="estimacion-nota">{t('estimacion.resumen', { yo: ranking[0].heroe.name, n: aliados.length + enemigos.length + 1 })}</p>
+        {yo && (aliados.length || enemigos.length) ? (
+          <p className="estimacion-nota">{t('estimacion.resumen', { yo: yo.name, n: aliados.length + enemigos.length + 1 })}</p>
         ) : null}
+        {fueraDeMios && <p className="fuera-de-mios">{t('filtro.fueraDeMios', { nombre: fueraDeMios.heroe.name, pct: Math.round(fueraDeMios.p * 100) })}</p>}
 
-        {ranking.slice(0, 8).map((c, i) => (
+        {visibles.slice(0, 8).map((c, i) => (
           <Fragment key={c.heroe.name}>
             <Tarjeta
               candidato={c}
-              indice={i}
+              indice={ranking.indexOf(c)}
               t={t}
               stat={buscar(datos.meta.stats, c.heroe.name)}
               pro={pro?.heroes?.[c.heroe.name] ?? null}
               tier={meta?.tiers?.tiers?.[c.heroe.name] ?? null}
               onBuild={meta?.builds ? (h) => abrir({ build: h }) : null}
+              elegido={miPick?.name === c.heroe.name}
+              onElegir={draft.fijarPick}
             />
-            {i === 0 && <ConsejoEquipo consejos={consejos} yo={c.heroe} onElegir={anadirAliado} t={t} />}
+            {i === 0 && <ConsejoEquipo consejos={consejos.lista} yo={consejos.yo} onElegir={anadirAliado} t={t} />}
           </Fragment>
         ))}
 
