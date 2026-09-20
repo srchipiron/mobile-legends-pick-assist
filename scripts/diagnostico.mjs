@@ -141,7 +141,10 @@ if (rutaHistorial) {
     version: publicada?.version ?? null,
     versionRepo,
     fallos: fallosTotales,
-    avisos: partes.reduce((n, p) => n + p.avisos, 0),
+    // Avisos DISTINTOS entre las cinco líneas: un aviso global (la ventana de
+    // 3 días, un slug de Liquipedia) salía cinco veces en la serie y la
+    // columna decía 10 donde el informe del móvil decía 2.
+    avisos: new Set(partes.flatMap((p) => p.texto.split('\n').filter((l) => l.startsWith('[AVISO]')))).size,
     datosDe: meta.generatedAt ?? null,
     edadHoras: meta.generatedAt ? Number(((Date.now() - new Date(meta.generatedAt)) / 3.6e6).toFixed(1)) : null,
     heroes: cifras.heroes,

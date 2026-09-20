@@ -230,6 +230,11 @@ test('la vigilancia arranca de verdad contra los datos del repositorio', () => {
   const salud = join(dir, 'salud.jsonl');
   const r = corre('scripts/diagnostico.mjs', ['--local', '--historial', salud], { timeout: 240000 });
   eq(r.status, 0, `diagnostico.mjs --local sale con ${r.status}: ${(r.stderr || '').split('\n').slice(0, 6).join(' | ')}`);
+  // La fila de salud cuenta avisos DISTINTOS, no la suma de las cinco líneas:
+  // un aviso global salía cinco veces (10 en la serie donde el móvil decía 2).
+  const fila = JSON.parse(readFileSync(salud, 'utf8').trim().split('\n').at(-1));
+  const distintos = new Set((r.stdout || '').split('\n').filter((l) => l.startsWith('[AVISO]'))).size;
+  ok(fila.avisos <= distintos, `la fila de salud cuenta ${fila.avisos} avisos y el informe tiene ${distintos} distintos: suma las cinco líneas`);
   ok(/Fuente: public\/data/.test(r.stdout + r.stderr), 'el diagnóstico local no llega al final');
   ok(existsSync(salud) && /"cruces":\d+/.test(readFileSync(salud, 'utf8')), 'no deja la fila de salud con sus cifras');
 });

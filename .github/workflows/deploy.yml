@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'
       # node_modules ENTERO, por hash del lockfile. La cache de npm de
       # setup-node solo guarda las descargas: medido, npm ci seguia en 3,7-4,7
       # minutos con ella (despliegue 99, vigilancia 77). Con node_modules
@@ -41,7 +41,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: modulos-${{ runner.os }}-node20-${{ hashFiles('package-lock.json') }}
+          key: modulos-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}
 
       # npm ci, no npm install: instala EXACTAMENTE lo que dice el lockfile.
       # Con npm install, una version menor mala de una dependencia entraba sola

@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.5.1
+
+- Los bots corren en Node 22: el 20 llegó a su fin de vida en abril y los
+  runners lo ejecutaban forzado. Nada cambia en la app.
+- La serie de salud cuenta los avisos distintos, no la suma de las cinco
+  líneas: un aviso global (la ventana de 3 días tras el reinicio de
+  temporada) salía como 10 en el historial donde el móvil decía 2.
+
 ## 3.5.0
 
 - **«Lo cojo»: fija tu pick y todo lo demás habla de él.** Toca el nombre
