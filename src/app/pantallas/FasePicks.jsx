@@ -62,6 +62,8 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, da
           <span className={`freshness ${edadHoras > HORAS_DATOS_VIEJOS ? 'stale' : ''}`}>
             {edadHoras != null ? `${Math.round(edadHoras)}h` : t('app.sinDatosMeta')}
           </span>
+          {/* La versión arriba, a la vista: en el móvil el pie ya no flota. */}
+          <span className="freshness version">v{__APP_VERSION__}</span>
         </div>
 
         <button className="bans-resumen" onClick={() => draft.setFase('baneos')} aria-label={t('fase.volverBaneos')}>

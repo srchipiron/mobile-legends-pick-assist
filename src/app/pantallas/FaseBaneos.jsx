@@ -18,6 +18,7 @@ export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, 
         <div className="brand">
           <h1>{t('fase.baneos')}</h1>
           <span className="freshness">{t('fase.baneosResumen', { n: baneos.length, max: 10 })}</span>
+          <span className="freshness version">v{__APP_VERSION__}</span>
         </div>
         <p className="fase-pista">{t('fase.baneosPista')}</p>
         <Bando t={t} titulo={t('app.baneados')} tipo="bans" picks={baneos} max={10} onAnadir={onAbrirSelector} onQuitar={onQuitar} />

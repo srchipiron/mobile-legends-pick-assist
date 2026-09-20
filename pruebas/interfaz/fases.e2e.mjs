@@ -22,7 +22,7 @@ for (const ancho of [390, 360]) {
     for (const n of ['Fanny', 'Ling']) await elegirEnSelector(pagina, n);
     eq(await pagina.locator('.sheet').count(), 1, 'el selector de baneos se cerró tras dos toques');
     await pagina.locator('.sheet .close').click(); await pagina.waitForTimeout(300);
-    ok(/Baneos 2\/10/.test(await pagina.locator('.brand .freshness').textContent()), 'no cuenta 2/10 baneados');
+    ok(/Baneos 2\/10/.test(await pagina.locator('.brand .freshness:not(.version)').textContent()), 'no cuenta 2/10 baneados');
     ok(/Ir a los picks/.test(await pagina.locator('.reset.primario').textContent()), 'con baneos el botón no dice «Ir a los picks»');
     await pagina.locator('.reset.primario').click(); await pagina.waitForTimeout(400);
     eq(await pagina.locator('.side.enemy').count(), 1, 'tras el botón no se ve la fase de picks');
@@ -44,11 +44,11 @@ for (const ancho of [390, 360]) {
     ok(guardado.fase === 'picks' && guardado.bans.length === 2 && guardado.enemies[0] === 'Layla', `el draft guardado no lleva la fase y los nombres: ${JSON.stringify(guardado)}`);
     // Volver a baneos desde la tira, y de vuelta sin perder nada.
     await pagina.locator('.bans-resumen').click(); await pagina.waitForTimeout(300);
-    ok((await pagina.locator('h1').textContent()) === 'Fase de baneos' && /2\/10/.test(await pagina.locator('.brand .freshness').textContent()), 'la tira no vuelve a la fase de baneos con los baneos');
+    ok((await pagina.locator('h1').textContent()) === 'Fase de baneos' && /2\/10/.test(await pagina.locator('.brand .freshness:not(.version)').textContent()), 'la tira no vuelve a la fase de baneos con los baneos');
     await pagina.locator('.reset.primario').click(); await pagina.waitForTimeout(300);
     eq(await pagina.locator('.side.enemy .slot:not(.empty)').count(), 1, 'volver a picks pierde la enemiga');
     await pagina.getByRole('button', { name: 'Nuevo draft' }).click(); await pagina.waitForTimeout(300);
-    ok((await pagina.locator('h1').textContent()) === 'Fase de baneos' && /0\/10/.test(await pagina.locator('.brand .freshness').textContent()), '«Nuevo draft» no vuelve a la fase de baneos vacía');
+    ok((await pagina.locator('h1').textContent()) === 'Fase de baneos' && /0\/10/.test(await pagina.locator('.brand .freshness:not(.version)').textContent()), '«Nuevo draft» no vuelve a la fase de baneos vacía');
     ok(!errores.length, `errores de página: ${errores}`);
     await contexto.close();
   });

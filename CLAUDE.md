@@ -616,6 +616,20 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   bO 0,77 ± 0,73, razón 0,32 (259 partidas de 120 días); ganar ≥3 cruces de
   línea sí acompaña a ganar (62% frente a 53%), pero la razón sigue sin
   distinguirse de 1 ni de 2. La conclusión aguanta; las cifras de antes, no.
+- **Una interfaz que solo se había medido en dos anchos** (3.6.0) — las
+  comprobaciones de desborde se hacían a 360 y 390 px y con lo que hubiera
+  en pantalla. Medido en doce tamaños (320–1.920, dos apaisados) abriendo
+  TODAS las hojas: la fila de uso de la hoja «Meta» se salía 48 px a 320 y
+  8 a 360, la × del hueco enemigo se salía 1 px a 320 (la huella de ○, cara
+  y × sumaba 54 px en un contenido de 50), las × y los ○ medían 21–31 px de
+  toque y el pie 21 px de alto; y de 700 a 820 px (tabletas en vertical)
+  la app iba a una columna con huecos de 190 px. Hoy el corte de una
+  columna está en 699 px, el pie es estático en el móvil (flotando tapaba
+  el 92% del ancho a 320) y `pruebas/interfaz/responsive.e2e.mjs` repite
+  la medida en 320, 360, 768 y 640×360 con las hojas abiertas (verificada
+  por mutación: quitar el arreglo de Meta o volver la × a 31 px la tumba).
+  Cuando midas un desborde, mide en el ancho MÁS estrecho que admita la
+  app y con cada hoja abierta, no solo en el móvil que tengas a mano.
 - **La tarjeta nº1 fuera de la primera pantalla** — cada bloque nuevo encima
   de las tarjetas (análisis, estimación de 141-152 px, consejo para los
   compañeros, composición) fue empujando el nº1: medido en 390×844 asomaba

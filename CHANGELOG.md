@@ -8,6 +8,25 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.6.0
+
+- **La interfaz, medida y ajustada en doce tamaños de pantalla** (móviles de
+  320 a 430 px en vertical y apaisado, tablets de 540 a 1.024, escritorio
+  hasta 1.920) abriendo todas las hojas en cada uno. Lo que salió y se
+  arregló: la tabla Meta se salía por la derecha en móviles de 320–360 px
+  (pick y ban pasan a una segunda línea bajo el nombre); las × de los huecos
+  y las marcas de rival tenían 21–31 px de ancho de toque (ahora 32 o más,
+  sin ensanchar el hueco); las tablets en vertical (700–820 px) iban a una
+  columna con huecos medio vacíos (ahora a dos, y la tarjeta nº1 se ve sin
+  desplazarse); en pantallas anchas las hojas se estiraban a todo el ancho
+  (se centran en 1.100 px) y desde 1.700 px las tarjetas van en tres
+  columnas. Y queda vigilado: una prueba de navegador repite la medida en
+  cuatro tamaños (320, 360, 768 y apaisado) con las hojas abiertas y falla
+  si algo vuelve a salirse o a quedar por debajo de 32 px.
+- **En el móvil el pie ya no flota**: tapaba lo que quedara debajo (a 320 px,
+  el 92% del ancho). La versión sale ahora arriba, junto a la línea y la edad
+  de los datos, y el detalle del pie sigue al final de la página.
+
 ## 3.5.1
 
 - Los bots corren en Node 22: el 20 llegó a su fin de vida en abril y los

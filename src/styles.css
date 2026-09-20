@@ -102,6 +102,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   margin: 0; font-weight: 600;
 }
 .freshness { font-size: 11px; color: var(--muted); font-family: var(--font-num); }
+.brand .version { margin-left: auto; opacity: 0.8; }
 .freshness.stale { color: var(--gold); }
 
 /* ---------- slots del draft ---------- */
@@ -126,8 +127,10 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
 }
 .slot.empty { color: var(--muted); border-style: dashed; }
-/* Área de toque grande sin cambiar la caja: el relleno se compensa con margen negativo. */
-.slot .x { color: var(--muted); font-size: 18px; line-height: 1; padding: 10px 8px; margin: -10px -6px; }
+/* Área de toque grande sin cambiar la caja: el relleno se compensa con margen
+   negativo. Medido en 3.6.0 en doce tamaños de pantalla: la × salía de 27 a
+   31 px de ancho y la marca de rival de 21 a 25; desde entonces, 32 o más. */
+.slot .x { color: var(--muted); font-size: 18px; line-height: 1; padding: 10px 11px; margin: -10px -9px; }
 .slot .slot-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* La cara dentro del hueco del draft.
@@ -146,7 +149,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   border-radius: 4px; object-fit: cover; background: var(--ink);
 }
 .slot:has(.slot-cara) .slot-name { display: none; }
-.slot .mark { color: var(--muted); font-size: 13px; line-height: 1; padding: 12px 7px; margin: -12px -6px; }
+.slot .mark { color: var(--muted); font-size: 13px; line-height: 1; padding: 12px 11px; margin: -12px -10px; }
 .slot.marked { border-color: var(--gold) !important; }
 /* Deducido por la app, no marcado por ti: se distingue del marcado a mano. */
 .slot.auto { border-color: var(--gold) !important; border-style: dashed; }
@@ -249,7 +252,10 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
    móvil en mitad de una partida es lo único que importa. */
 .sheet {
   position: fixed; inset: 0; background: var(--ink);
-  display: flex; flex-direction: column; padding: 16px; z-index: 20;
+  display: flex; flex-direction: column; z-index: 20;
+  /* En una pantalla ancha el contenido de la hoja se centra en 1100 px: una
+     fila de maestría con los dos campos a 1.800 px del nombre no se rellena. */
+  padding: 16px max(16px, calc((100vw - 1100px) / 2));
 }
 /* Con cuatro botones (Enviar, A GitHub, Copiar, Cerrar) el de Cerrar quedaba
    fuera de la pantalla en un móvil real: se envuelve. */
@@ -415,8 +421,10 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   position: fixed; right: 8px; bottom: max(6px, env(safe-area-inset-bottom)); z-index: 5;
   font-family: var(--font-num); font-size: 10px; color: var(--muted);
   background: rgba(11, 14, 23, 0.88); border: 1px solid var(--line);
-  border-radius: var(--r); padding: 4px 8px; cursor: pointer;
+  border-radius: var(--r); padding: 4px 10px; cursor: pointer;
   max-width: min(92vw, 340px); text-align: right;
+  /* Es un botón (abre el detalle): 32 px de alto, como el resto. */
+  min-height: 32px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;
 }
 .pie.stale { color: var(--gold); border-color: var(--gold); }
 .pie-detalle {
@@ -429,8 +437,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .pie-detalle { max-height: 46vh; overflow-y: auto; }
 
 /* Que el pie no tape la última recomendación ni el botón de guardar. */
-.results { padding-bottom: 38px; }
-.mastery-list { padding-bottom: 34px; }
+.results { padding-bottom: 46px; }
+.mastery-list { padding-bottom: 42px; }
 
 /* ---------- diagnóstico ---------- */
 
@@ -765,13 +773,21 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* Apuntar con un héroe de otra línea: el resto, detrás de un toque. */
 .hero-grid .otro-heroe { grid-column: 1 / -1; color: var(--muted); border-style: dashed; }
 
-@media (max-width: 820px) and (orientation: portrait) {
-  /* Una sola columna y la PÁGINA entera se desplaza: con `height: 100%` y
+@media (max-width: 699px) and (orientation: portrait) {
+  /* Solo MÓVILES (hasta 699 px): una tablet de 768 en vertical cabe a dos
+     columnas (300 de draft y 468 de tarjetas) y así ve la nº1 sin
+     desplazarse; a una columna tenía cinco huecos de 150 px medio vacíos.
+     Una sola columna y la PÁGINA entera se desplaza: con `height: 100%` y
      el draft en `overflow: visible`, un draft más alto que la pantalla
      (Ajustes abierto en 360×640) dejaba a los resultados 48 px y la lista
      de recomendaciones desaparecía. */
-  .app { grid-template-columns: 1fr; grid-template-rows: auto auto; height: auto; min-height: 100%; }
+  .app { grid-template-columns: 1fr; grid-template-rows: auto auto auto; height: auto; min-height: 100%; }
   .results { overflow: visible; }
+  /* El pie deja de flotar: fijo abajo tapaba lo que quedara debajo (a 320 px
+     ocupa el 92% del ancho). La versión y la edad de los datos ya van en la
+     cabecera; el detalle sigue al final de la página. */
+  .pie { position: static; margin: 4px 12px 12px auto; width: fit-content; max-width: none; }
+  .results { padding-bottom: 8px; }
   .draft {
     border-right: none; border-bottom: 1px solid var(--line);
     padding: 10px 12px; overflow: visible;
@@ -786,8 +802,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
      es una recomendacion mas a la vista sin desplazarse. */
   /* Cinco huecos enemigos en 360px: (360-24-4·6)/5 = 57px por hueco. */
   .slot { min-height: 38px; min-width: 0; flex: 1 1 0; padding: 6px 2px; font-size: 12px; gap: 1px; }
-  .slot .x { font-size: 18px; padding: 10px 6px; margin: -10px -5px; }
-  .slot .mark { padding: 12px 5px; margin: -12px -4px; }
+  /* 32 px de toque también aquí, y el relleno se compensa con el margen para
+     que la huella en la fila sea el propio signo: la × mide 15 px y el ○ 11,
+     y en el hueco enemigo de 320 px (54 px, 50 de contenido) caben justo
+     11 + 1 + 22 + 1 + 15. Con dos píxeles más de huella la × se salía del
+     hueco y de la página (medido: 321 px de ancho en 320). Las dos cajas de
+     toque (33 px) no se pisan porque entre medias va la cara (22 px). */
+  .slot .x { font-size: 18px; padding: 10px 9px; margin: -10px -9px; }
+  .slot .mark { padding: 12px 11px; margin: -12px -11px; }
   /* Diez baneos en UNA fila de 336 px son huecos de 28 px: la cara (22) más
      la × (27) no caben, la × se salía del hueco, pisaba al vecino y el
      décimo sacaba 8 px por el borde de la página (medido a 360 px). Con
@@ -797,7 +819,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   /* Fuera del desplegable no caben; dentro sí, y ahí deben verse. */
   .tools { margin-top: 10px; }
   .tools .reset { padding: 8px; font-size: 11px; min-height: 40px; }
-  .results { padding: 10px 12px 38px; }
+  .results { padding: 10px 12px 46px; }
   /* Dos columnas: con tres, «Popol and Kupa» y «Yi Sun-shin» se cortaban. */
   .hero-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
   .pick { grid-template-columns: 28px 1fr auto; gap: 8px; padding: 9px 10px; }
@@ -814,12 +836,12 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 @media (max-height: 560px) and (orientation: landscape) {
   .app { grid-template-columns: minmax(220px, 34%) 1fr; grid-template-rows: 100%; }
   .draft { padding: 8px 10px; overflow-y: auto; }
-  .results { padding: 8px 12px 38px; }
+  .results { padding: 8px 12px 46px; }
   .brand h1 { font-size: 16px; }
   .side { margin-top: 8px; }
   .side-label { font-size: 10px; margin-bottom: 3px; }
   .slot { min-height: 34px; flex: 1 1 92px; padding: 5px 6px; font-size: 12px; gap: 3px; }
-  .slot .x { font-size: 18px; padding: 10px 8px; margin: -10px -6px; }
+  .slot .x { font-size: 18px; padding: 10px 9px; margin: -10px -7px; }
   .pick { padding: 8px 10px; gap: 8px; margin-bottom: 6px; }
   .pick-name { font-size: 16px; }
   .pick.top .pick-name { font-size: 19px; }
@@ -848,4 +870,23 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 
 @media (prefers-reduced-motion: no-preference) {
   .pick { transition: border-color 120ms ease; }
+}
+
+/* Teléfonos de 320 px: el hueco enemigo queda en 54 px y el contenido
+   (○, cara, ×) pide 50: un píxel menos de relleno a cada lado da margen. */
+@media (max-width: 340px) {
+  .slot { padding: 6px 1px; }
+}
+
+@media (max-width: 420px) {
+  /* La tabla Meta: siete columnas no caben (medido: pick/ban se salía 48 px a
+     320 y 8 a 360). Pick y ban pasan a una segunda línea bajo el nombre. */
+  .meta-fila { grid-template-columns: 22px 30px minmax(0, 1fr) 26px 52px 48px; row-gap: 0; }
+  .meta-uso { grid-column: 2 / -1; font-size: 10px; }
+}
+
+@media (min-width: 1700px) {
+  /* Tres columnas de tarjetas: a 1.920 px dos tarjetas de 750 son un
+     pasillo de aire por tarjeta; con tres caben las ocho sin desplazarse. */
+  .results { grid-template-columns: 1fr 1fr 1fr; }
 }

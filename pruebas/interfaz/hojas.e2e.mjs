@@ -71,9 +71,9 @@ await prueba('los chips del siguiente baneo no se mueven: el tocado se queda tac
   const despues = await chips.allTextContents();
   ok(despues[0] === antes[0] && await chips.first().evaluate((e) => e.classList.contains('elegido')), 'el chip tocado no sigue el primero, tachado');
   ok(despues.length === antes.length + 1 && !antes.includes(despues.at(-1)), `no entra un candidato nuevo al final (${despues.length} chips)`);
-  ok(/1\/10/.test(await pagina.locator('.brand .freshness').innerText()), 'no cuenta 1/10');
+  ok(/1\/10/.test(await pagina.locator('.brand .freshness:not(.version)').innerText()), 'no cuenta 1/10');
   await chips.first().click(); await pagina.waitForTimeout(300);
-  ok(/0\/10/.test(await pagina.locator('.brand .freshness').innerText()) && !(await chips.first().evaluate((e) => e.classList.contains('elegido'))), 'el segundo toque no lo quita');
+  ok(/0\/10/.test(await pagina.locator('.brand .freshness:not(.version)').innerText()) && !(await chips.first().evaluate((e) => e.classList.contains('elegido'))), 'el segundo toque no lo quita');
   // Dentro del selector, los mismos probables (diez), estables y con tope.
   await pagina.locator('.side.bans .slot.empty').first().click(); await pagina.waitForTimeout(400);
   const sugeridos = pagina.locator('.sheet-sugeridos .chip');
