@@ -1,28 +1,62 @@
+/* ---------------------------------------------------------------------------
+   El material (3.7.0)
+
+   La interfaz sigue el lenguaje visual de iOS 26 («Liquid Glass»): fondo
+   negro con dos resplandores de color, superficies translúcidas con borde
+   fino de luz y brillo en la arista superior, esquinas grandes y
+   CONCÉNTRICAS (el radio interior es el exterior menos el relleno: 14 − 4 =
+   10, 20 − 6 = 14), controles en píldora, tipografía del sistema (SF Pro en
+   Apple, Inter/Segoe/Roboto donde no) con títulos gruesos y seguimiento
+   negativo, y números en la variante redondeada con cifras tabulares.
+
+   Lo que NO cambia respecto a 3.6.0, a propósito: ningún alto, relleno ni
+   hueco que decida dónde cae la tarjeta nº1 (medido en
+   primera-pantalla.e2e.mjs) ni los 32 px de toque (responsive.e2e.mjs).
+   El desenfoque de fondo (`backdrop-filter`) solo va en lo que FLOTA sobre
+   contenido que se mueve —el pie, la cabecera fija de la maestría, el panel
+   del draft en escritorio—: en ocho tarjetas y veinte chips costaría un
+   repintado por toque en un móvil de gama media y no se vería, porque
+   debajo solo hay el degradado del fondo.
+
+   Las hojas siguen OPACAS (ver «selector de héroes»): al sol no se leía lo
+   translúcido, y una hoja es una pantalla entera.
+   ------------------------------------------------------------------------- */
+
 :root {
-  --ink:        #0B0E17;
-  --panel:      #161B2B;
-  --panel-hi:   #1F2739;
-  --line:       #2A3450;
-  --text:       #E6E9F2;
-  --muted:      #8A93A8;
+  --ink:        #000000;                      /* el fondo del sistema */
+  --panel:      rgba(28, 28, 30, 0.72);       /* material base */
+  --panel-hi:   rgba(44, 44, 46, 0.72);       /* material elevado */
+  --glass:      rgba(255, 255, 255, 0.06);    /* relleno de un control en cristal */
+  --glass-hi:   rgba(255, 255, 255, 0.11);    /* el mismo, activo o elevado */
+  --line:       rgba(255, 255, 255, 0.12);    /* la arista fina de cristal */
+  --line-hi:    rgba(255, 255, 255, 0.24);
+  --field:      rgba(118, 118, 128, 0.24);    /* campos de texto */
+  --text:       #F5F5F7;
+  --muted:      rgba(235, 235, 245, 0.62);    /* etiqueta secundaria */
 
-  --gold:       #E3B23C;   /* recomendación, acento único */
-  --ally:       #4FA8D8;
-  --enemy:      #D1495B;
-  --ban:        #4A5468;
+  --gold:       #FFD60A;   /* recomendación, acento único (amarillo del sistema) */
+  --ally:       #409CFF;
+  --enemy:      #FF453A;
+  --ban:        #98989D;
 
-  --c-meta:     #E3B23C;
-  --c-counter:  #D1495B;
-  --c-synergy:  #4FA8D8;
-  --c-comp:     #6BCB77;
-  --c-mastery:  #A57BE0;
-  --c-balance:  #E08A5B;
+  --c-meta:     #FFD60A;
+  --c-counter:  #FF453A;
+  --c-synergy:  #409CFF;
+  --c-comp:     #30D158;
+  --c-mastery:  #BF5AF2;
+  --c-balance:  #FF9F0A;
 
-  --font-display: 'Bahnschrift', 'DIN Condensed', 'Roboto Condensed', 'Arial Narrow', system-ui, sans-serif;
-  --font-body: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-num: ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, monospace;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI Variable Display', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-num: ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, 'Roboto Mono', monospace;
 
-  --r: 6px;
+  --r: 14px;       /* tarjetas y paneles */
+  --r-sm: 10px;    /* lo que va dentro de una tarjeta */
+  --r-lg: 20px;    /* hojas y el panel del draft en escritorio */
+  --blur: blur(24px) saturate(180%);
+  --brillo: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  --sombra: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
 * { box-sizing: border-box; }
@@ -30,10 +64,14 @@
 html, body, #root { height: 100%; margin: 0; }
 
 body {
-  background: var(--ink);
+  background:
+    radial-gradient(1100px 620px at 12% -8%, rgba(64, 156, 255, 0.16), transparent 62%),
+    radial-gradient(900px 560px at 100% 104%, rgba(255, 214, 10, 0.10), transparent 58%),
+    var(--ink);
   color: var(--text);
   font-family: var(--font-body);
   font-size: 15px;
+  -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
 }
@@ -49,23 +87,12 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   height: 100%;
 }
 
-/* Móvil en vertical: el draft es una tira compacta arriba y las recomendaciones
-   ocupan el resto. En 30 segundos hay que ver el pick sin desplazarse. */
-
-
-/* Móvil en horizontal: caben las dos columnas, pero hay poca altura, así que
-   se aprieta todo en vertical y cada columna se desplaza por su cuenta. */
-
-
-/* Tablet o móvil grande en horizontal: el diseño de dos columnas original. */
-
-
 /* Panel plegable: en móvil los baneos y los ajustes se esconden hasta que hacen falta. */
 .more { margin-top: 10px; }
 .more > summary {
   list-style: none; cursor: pointer;
-  font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.14em;
-  font-size: 11px; color: var(--muted); padding: 6px 0;
+  font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;
+  font-size: 12px; color: var(--muted); padding: 6px 0;
 }
 .more > summary::-webkit-details-marker { display: none; }
 /* Objetivos de toque de 40 px en lo que se usa con la partida delante. */
@@ -73,22 +100,16 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .rank-picker button, .ban-row button, .idiomas button { min-height: 40px; }
 .more[open] > summary { color: var(--text); }
 
+/* El panel del draft: cristal sobre el fondo, con la arista a la derecha. */
 .draft {
   background: var(--panel);
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
   border-right: 1px solid var(--line);
   padding: 14px;
   overflow-y: auto;
 }
 
 .results { padding: 14px 16px; overflow-y: auto; }
-
-/* Pantalla ancha: las recomendaciones en dos columnas.
-   La tarjeta es una fila baja y ancha, asi que a 1300px se quedaban 900 pixeles
-   de aire por tarjeta y solo cabian cuatro sin desplazarse. En dos columnas
-   caben las ocho de un vistazo, que es de lo que va la app: treinta segundos de
-   draft. Se parte a partir de 1100px, que es cuando cada columna sigue teniendo
-   sitio para el nombre, los motivos y la nota. */
-
 
 /* ---------- cabecera ---------- */
 
@@ -98,10 +119,10 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 }
 .brand h1 {
   font-family: var(--font-display);
-  font-size: 22px; letter-spacing: 0.14em; text-transform: uppercase;
-  margin: 0; font-weight: 600;
+  font-size: 22px; letter-spacing: -0.02em;
+  margin: 0; font-weight: 700;
 }
-.freshness { font-size: 11px; color: var(--muted); font-family: var(--font-num); }
+.freshness { font-size: 11px; color: var(--muted); font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .brand .version { margin-left: auto; opacity: 0.8; }
 .freshness.stale { color: var(--gold); }
 
@@ -109,9 +130,10 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 
 .side { margin-top: 16px; }
 
+/* Cabecera de sección, como en las listas agrupadas de iOS. */
 .side-label {
-  font-family: var(--font-display);
-  text-transform: uppercase; letter-spacing: 0.18em; font-size: 11px;
+  font-family: var(--font-display); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em; font-size: 12px;
   color: var(--muted); margin-bottom: 6px;
   display: flex; justify-content: space-between;
 }
@@ -120,13 +142,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 
 .slot {
   min-height: 40px; min-width: 84px; flex: 1 1 84px;
-  border: 1px solid var(--line); border-radius: var(--r);
-  background: var(--panel-hi);
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--glass);
+  box-shadow: var(--brillo);
   padding: 8px 10px;
   font-size: 13px; text-align: left;
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
 }
-.slot.empty { color: var(--muted); border-style: dashed; }
+.slot.empty { color: var(--muted); border-style: dashed; border-color: var(--line-hi); background: transparent; box-shadow: none; }
 /* Área de toque grande sin cambiar la caja: el relleno se compensa con margen
    negativo. Medido en 3.6.0 en doce tamaños de pantalla: la × salía de 27 a
    31 px de ancho y la marca de rival de 21 a 25; desde entonces, 32 o más. */
@@ -146,26 +169,30 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
    escritorio no. */
 .slot-cara {
   width: 24px; height: 24px; flex: 0 0 24px;
-  border-radius: 4px; object-fit: cover; background: var(--ink);
+  border-radius: 6px; object-fit: cover; background: var(--ink);
 }
 .slot:has(.slot-cara) .slot-name { display: none; }
 .slot .mark { color: var(--muted); font-size: 13px; line-height: 1; padding: 12px 11px; margin: -12px -10px; }
-.slot.marked { border-color: var(--gold) !important; }
+.slot.marked { border-color: var(--gold) !important; box-shadow: 0 0 0 1px var(--gold), var(--brillo); }
 /* Deducido por la app, no marcado por ti: se distingue del marcado a mano. */
 .slot.auto { border-color: var(--gold) !important; border-style: dashed; }
 .slot.auto .mark { color: var(--gold); opacity: 0.75; }
 .slot.marked .mark { color: var(--gold); }
-.side.enemy .slot:not(.empty) { border-color: var(--enemy); }
-.side.ally  .slot:not(.empty) { border-color: var(--ally); }
-.side.bans  .slot:not(.empty) { border-color: var(--ban); text-decoration: line-through; color: var(--muted); }
+/* El bando tiñe el cristal, no solo el borde. */
+.side.enemy .slot:not(.empty) { border-color: color-mix(in srgb, var(--enemy) 55%, transparent); background: color-mix(in srgb, var(--enemy) 14%, var(--glass)); }
+.side.ally  .slot:not(.empty) { border-color: color-mix(in srgb, var(--ally) 55%, transparent); background: color-mix(in srgb, var(--ally) 14%, var(--glass)); }
+.side.bans  .slot:not(.empty) { border-color: color-mix(in srgb, var(--ban) 45%, transparent); text-decoration: line-through; color: var(--muted); }
 
+/* Botón secundario: píldora de cristal, texto del sistema en semibold. */
 .reset {
   margin-top: 18px; width: 100%;
-  border: 1px solid var(--line); border-radius: var(--r);
-  padding: 10px; color: var(--muted);
-  font-family: var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px;
+  border: 1px solid var(--line); border-radius: 999px;
+  background: var(--glass); box-shadow: var(--brillo);
+  padding: 10px; color: var(--text);
+  font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: -0.005em;
 }
-.reset:hover { color: var(--text); border-color: var(--gold); }
+.reset:hover { background: var(--glass-hi); border-color: var(--line-hi); }
+.reset:disabled { opacity: 0.4; }
 
 /* ---------- recomendaciones ---------- */
 
@@ -174,29 +201,34 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   margin-bottom: 12px;
 }
 .results-head h2 {
-  font-family: var(--font-display);
-  text-transform: uppercase; letter-spacing: 0.16em; font-size: 13px;
-  color: var(--muted); margin: 0; font-weight: 500;
+  font-family: var(--font-display); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em; font-size: 12px;
+  color: var(--muted); margin: 0;
 }
 
 .pick {
   border: 1px solid var(--line); border-radius: var(--r);
   background: var(--panel);
+  box-shadow: var(--brillo);
   padding: 12px 14px; margin-bottom: 8px;
   display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: start;
   text-align: left; width: 100%;
 }
-.pick.top { border-color: var(--gold); background: linear-gradient(180deg, #1C1B20, var(--panel)); }
+.pick.top {
+  border-color: color-mix(in srgb, var(--gold) 60%, transparent);
+  background: linear-gradient(180deg, rgba(255, 214, 10, 0.10), var(--panel) 70%);
+  box-shadow: var(--brillo), 0 12px 36px rgba(255, 214, 10, 0.10);
+}
 
 .rank {
-  font-family: var(--font-num); font-size: 20px; color: var(--muted);
+  font-family: var(--font-num); font-size: 18px; font-weight: 600; color: var(--muted);
   font-variant-numeric: tabular-nums; padding-top: 2px;
 }
-.pick.top .rank { color: var(--gold); font-size: 26px; }
+.pick.top .rank { color: var(--gold); font-size: 24px; font-weight: 700; }
 
 .pick-name {
   font-family: var(--font-display);
-  font-size: 19px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600;
+  font-size: 17px; letter-spacing: -0.01em; font-weight: 600;
   margin: 0 0 6px;
   display: flex; align-items: center; gap: 8px;
 }
@@ -206,42 +238,44 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
    Tamaño fijo y hueco reservado para que la lista no salte al cargar. */
 .hero-cara {
   width: 34px; height: 34px; flex: 0 0 34px;
-  border-radius: 5px; object-fit: cover;
+  border-radius: 9px; object-fit: cover;
   background: var(--ink); border: 1px solid var(--line);
 }
-.pick.top .hero-cara { width: 40px; height: 40px; flex-basis: 40px; border-color: var(--gold); }
-.pick.top .pick-name { font-size: 24px; }
+.pick.top .hero-cara { width: 40px; height: 40px; flex-basis: 40px; border-color: var(--gold); border-radius: 11px; }
+.pick.top .pick-name { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
 
 .pick-score {
-  font-family: var(--font-num); font-size: 20px; font-variant-numeric: tabular-nums;
-  color: var(--gold);
+  font-family: var(--font-num); font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em; color: var(--gold);
 }
-.pick-wr { display: block; font-size: 11px; color: var(--muted); text-align: right; }
+.pick-wr { display: block; font-size: 11px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
 
 /* De dónde sale la probabilidad: puntos por término, con signo y color. */
 .desglose { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-bottom: 6px; font-size: 11px; color: var(--muted); }
 .desglose span { white-space: nowrap; }
-.desglose b { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
-.chip-pct { font-family: var(--font-num); font-size: 11px; color: var(--muted); margin-left: 4px; }
+.desglose b { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 600; }
+.chip-pct { font-family: var(--font-num); font-size: 11px; color: var(--muted); margin-left: 4px; font-variant-numeric: tabular-nums; }
 
+/* Motivos: cápsulas rellenas, sin borde, como las etiquetas de iOS. */
 .reasons { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
 .reasons li {
   font-size: 12px; color: var(--muted);
-  border: 1px solid var(--line); border-radius: 99px; padding: 2px 9px;
+  border: 1px solid transparent; border-radius: 99px; padding: 2px 9px;
+  background: var(--glass);
 }
-.reasons li.bad { color: var(--enemy); border-color: #4A2833; }
+.reasons li.bad { color: var(--enemy); background: rgba(255, 69, 58, 0.14); }
 /* Un motivo de EQUIPO ("no hay primera linea") le vale igual a media lista y
    sale repetido en varias tarjetas. Se apaga para que no compita con los que
    hablan de ESTE heroe contra ESTE draft, que son los que decides mirando. */
-.reasons li.de-equipo { opacity: 0.62; border-style: dashed; }
+.reasons li.de-equipo { opacity: 0.62; background: transparent; border-style: dashed; border-color: var(--line); }
 
 .legend { display: flex; gap: 12px; flex-wrap: wrap; margin: 14px 0 4px; font-size: 11px; color: var(--muted); }
-.legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
+.legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
 
 .notice {
-  border: 1px solid var(--gold); border-radius: var(--r);
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent); border-radius: var(--r-sm);
   padding: 10px 12px; margin-bottom: 12px; font-size: 13px; color: var(--gold);
-  background: rgba(227, 178, 60, 0.06);
+  background: rgba(255, 214, 10, 0.08);
 }
 
 /* ---------- selector de héroes ---------- */
@@ -249,9 +283,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* Fondo OPACO. Estuvo al 0.9 y en los paneles cortos -objetos, perfil- el draft
    se transparentaba por detrás del texto y al sol no se leía. Es una pantalla
    completa: dejar ver lo de atrás no aporta nada y quita legibilidad, que en un
-   móvil en mitad de una partida es lo único que importa. */
+   móvil en mitad de una partida es lo único que importa. El resplandor del
+   fondo se repite aquí para que la hoja sea del mismo material que la app. */
 .sheet {
-  position: fixed; inset: 0; background: var(--ink);
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(900px 500px at 10% -6%, rgba(64, 156, 255, 0.14), transparent 60%),
+    radial-gradient(760px 480px at 100% 104%, rgba(255, 214, 10, 0.08), transparent 58%),
+    var(--ink);
   display: flex; flex-direction: column; z-index: 20;
   /* En una pantalla ancha el contenido de la hoja se centra en 1100 px: una
      fila de maestría con los dos campos a 1.800 px del nombre no se rellena. */
@@ -259,12 +298,18 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 }
 /* Con cuatro botones (Enviar, A GitHub, Copiar, Cerrar) el de Cerrar quedaba
    fuera de la pantalla en un móvil real: se envuelve. */
-.sheet-head { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.sheet-head { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; align-items: center; }
+/* Título de la hoja como en una barra de navegación: grueso y apretado. */
+.sheet-head strong { font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+/* Campo de texto de iOS: relleno gris translúcido, sin borde. */
 .sheet input {
-  flex: 1; background: var(--panel-hi); border: 1px solid var(--line);
-  border-radius: var(--r); padding: 12px 14px; color: var(--text); font-size: 16px;
+  flex: 1; background: var(--field); border: 1px solid transparent;
+  border-radius: var(--r-sm); padding: 12px 14px; color: var(--text); font-size: 16px;
 }
-.sheet .close { padding: 0 14px; min-height: 40px; color: var(--muted); }
+.sheet input:focus { outline: none; border-color: var(--gold); }
+/* Los botones de la cabecera: texto teñido, como en una barra de navegación. */
+.sheet .close { padding: 0 14px; min-height: 40px; color: var(--muted); font-weight: 600; font-size: 15px; border-radius: 999px; }
+.sheet .close:hover { background: var(--glass); }
 
 .hero-grid {
   flex: 1; overflow-y: auto;
@@ -272,15 +317,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   align-content: start;
 }
 .hero-grid button {
-  border: 1px solid var(--line); border-radius: var(--r); background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--glass);
+  box-shadow: var(--brillo);
   padding: 12px 8px; font-size: 13px; min-height: 46px;
 }
-.hero-grid button:hover { border-color: var(--gold); }
+.hero-grid button:hover { background: var(--glass-hi); border-color: var(--line-hi); }
 .hero-grid button:disabled { opacity: 0.3; }
 
-.empty-state { color: var(--muted); font-size: 13px; padding: 24px 0; }
-
-
+.empty-state { color: var(--muted); font-size: 13px; padding: 24px 0; line-height: 1.45; }
 
 /* ---------- maestría ---------- */
 
@@ -290,18 +334,21 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   display: grid; grid-template-columns: 1fr 92px 92px; gap: 8px; align-items: center;
   padding: 7px 0; border-bottom: 1px solid var(--line);
 }
+/* La cabecera fija SÍ lleva desenfoque: flota sobre la lista que se mueve. */
 .mastery-row.head {
-  color: var(--muted); font-size: 11px; text-transform: uppercase;
-  letter-spacing: 0.1em; font-family: var(--font-display);
-  position: sticky; top: 0; background: rgba(6, 8, 14, 0.95);
+  color: var(--muted); font-size: 12px; text-transform: uppercase; font-weight: 600;
+  letter-spacing: 0.05em; font-family: var(--font-display);
+  position: sticky; top: 0; background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
 }
 .mastery-row.head span:not(:first-child) { text-align: center; }
 
 .mastery-row input {
-  background: var(--panel-hi); border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--field); border: 1px solid transparent; border-radius: var(--r-sm);
   padding: 9px 10px; color: var(--text); font-size: 16px; width: 100%;
-  font-family: var(--font-num); text-align: center;
+  font-family: var(--font-num); font-variant-numeric: tabular-nums; text-align: center;
 }
+.mastery-row input:focus { outline: none; border-color: var(--gold); }
 .mastery-row input.bad { border-color: var(--enemy); color: var(--enemy); }
 
 /* Se envuelve. Sin esto los cinco botones se salian del ancho y "Tu perfil"
@@ -310,18 +357,18 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .tools .reset { margin-top: 0; flex: 1 1 108px; min-height: 40px; }
 
 .inferred { font-size: 11px; color: var(--muted); margin-left: 6px; }
-/* Dentro del titular, que no herede mayusculas ni el espaciado del display. */
-.pick-name .inferred { text-transform: none; letter-spacing: normal; font-weight: 400; }
+/* Dentro del titular, que no herede el peso del display. */
+.pick-name .inferred { letter-spacing: normal; font-weight: 400; }
 
 /* ---------- selector de rango ---------- */
 
 .rank-picker { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
 .rank-picker button {
-  border: 1px solid var(--line); border-radius: var(--r);
-  padding: 6px 10px; font-size: 11px; color: var(--muted);
-  font-family: var(--font-display); letter-spacing: 0.1em; text-transform: uppercase;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--glass);
+  padding: 6px 12px; font-size: 12px; color: var(--muted);
+  font-family: var(--font-display); font-weight: 600;
 }
-.rank-picker button[aria-pressed='true'] { border-color: var(--gold); color: var(--gold); }
+.rank-picker button[aria-pressed='true'] { border-color: var(--gold); color: var(--gold); background: rgba(255, 214, 10, 0.10); }
 
 /* ---------- baneos sugeridos ---------- */
 
@@ -334,32 +381,33 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .fase-pista { color: var(--muted); font-size: 13px; margin: 0 0 12px; line-height: 1.4; }
 /* El único camino hacia delante, con el acento de la app: que no haya que buscarlo. */
 .reset.primario {
-  background: var(--gold); border-color: var(--gold); color: var(--ink); font-weight: 700;
-  margin-top: 10px; padding: 14px;
+  background: var(--gold); border-color: var(--gold); color: #000; font-weight: 700; font-size: 16px;
+  margin-top: 10px; padding: 14px; box-shadow: 0 8px 24px rgba(255, 214, 10, 0.25);
 }
-.reset.primario:hover { color: var(--ink); }
+.reset.primario:hover { color: #000; background: #FFE04A; }
 /* La tira de baneos en la fase de picks: se ve lo baneado y se vuelve con un toque. */
 .bans-resumen {
   display: flex; align-items: center; flex-wrap: wrap; gap: 6px; width: 100%;
-  border: 1px solid var(--line); border-radius: var(--r); padding: 8px 10px; margin-bottom: 12px;
+  border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--glass); box-shadow: var(--brillo);
+  padding: 8px 10px; margin-bottom: 12px;
   color: var(--muted); font-size: 12px; text-align: left;
-  font-family: var(--font-display); letter-spacing: 0.1em; text-transform: uppercase;
+  font-family: var(--font-display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
 }
 .bans-resumen .cara-ban {
-  width: 22px; height: 22px; border-radius: 4px; object-fit: cover; background: var(--ink);
+  width: 22px; height: 22px; border-radius: 6px; object-fit: cover; background: var(--ink);
   border: 1px solid var(--ban); opacity: 0.7;
 }
-.bans-resumen .fase-cambiar { margin-left: auto; color: var(--gold); }
+.bans-resumen .fase-cambiar { margin-left: auto; color: var(--gold); text-transform: none; letter-spacing: -0.005em; font-size: 13px; }
 
 /* ---------- consejos para los compañeros, línea a línea ---------- */
 
 .equipo {
-  border: 1px solid var(--line); border-radius: var(--r); background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); box-shadow: var(--brillo);
   padding: 8px 12px; margin-bottom: 10px;
 }
 .equipo > summary {
   list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
-  font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.14em; font-size: 11px; color: var(--muted);
+  font-family: var(--font-display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; font-size: 12px; color: var(--muted);
   padding: 4px 0;
 }
 .equipo > summary::-webkit-details-marker { display: none; }
@@ -367,11 +415,11 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .equipo-pista { color: var(--muted); font-size: 12px; margin: 4px 0 8px; line-height: 1.4; }
 .equipo-linea { margin-top: 10px; }
 .equipo-nombre {
-  display: block; font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.12em;
-  font-size: 11px; color: var(--muted);
+  display: block; font-family: var(--font-display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+  font-size: 12px; color: var(--muted);
 }
 .equipo-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-.chip.mejor { border-color: var(--gold); color: var(--gold); }
+.chip.mejor { border-color: var(--gold); color: var(--gold); background: rgba(255, 214, 10, 0.10); }
 .equipo-motivo { font-size: 12px; color: var(--muted); margin: 6px 0 0; line-height: 1.4; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .equipo-motivo > span { color: var(--text); }
 
@@ -386,47 +434,60 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 7px 0; font-size: 13px;
 }
-.ban-row .rate { font-family: var(--font-num); font-size: 12px; color: var(--muted); }
+.ban-row .rate { font-family: var(--font-num); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .ban-row button {
-  border: 1px solid var(--line); border-radius: var(--r); padding: 5px 10px;
-  font-size: 11px; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 999px; background: var(--glass); padding: 5px 12px;
+  font-size: 12px; font-weight: 600; color: var(--muted);
 }
 .ban-row button:hover { border-color: var(--enemy); color: var(--enemy); }
 
 /* ---------- diagnóstico de datos ---------- */
 
 .diag { font-size: 12px; color: var(--muted); margin-top: 14px; }
-.diag code { font-family: var(--font-num); font-size: 11px; word-break: break-all; }
+.diag code { font-family: var(--font-mono); font-size: 11px; word-break: break-all; }
 .diag summary { cursor: pointer; color: var(--gold); }
-
 
 /* ---------- pantalla de error ---------- */
 
 .crash { padding: 24px 18px; max-width: 620px; }
-.crash h1 { font-family: var(--font-display); font-size: 20px; letter-spacing: 0.08em; text-transform: uppercase; }
-.crash p { color: var(--enemy); font-family: var(--font-num); font-size: 13px; }
+.crash h1 { font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.crash p { color: var(--enemy); font-family: var(--font-mono); font-size: 13px; }
 .crash pre {
-  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-sm);
   padding: 10px; font-size: 11px; color: var(--muted); overflow-x: auto; white-space: pre-wrap;
+  font-family: var(--font-mono);
 }
 .crash button {
-  border: 1px solid var(--gold); color: var(--gold); border-radius: var(--r);
+  border: 1px solid var(--gold); color: var(--gold); border-radius: 999px;
   padding: 11px 18px; margin-top: 12px;
-  font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.12em; font-size: 12px;
+  font-family: var(--font-display); font-weight: 600; font-size: 14px;
 }
 
 /* ---------- pie de versión y frescura ---------- */
 
+/* La cápsula que flota: cristal de verdad, con desenfoque de lo que pasa debajo.
+   El desenfoque va en un `::before`, NO en el propio pie: `backdrop-filter`
+   (como `filter` y `transform`) convierte al elemento en bloque contenedor
+   de sus descendientes `position: fixed`, y la hoja de novedades vive
+   DENTRO del pie: con el filtro en el pie la hoja quedaba encerrada en la
+   cápsula de 32 px (cazado por novedades.e2e.mjs). */
 .pie {
   position: fixed; right: 8px; bottom: max(6px, env(safe-area-inset-bottom)); z-index: 5;
-  font-family: var(--font-num); font-size: 10px; color: var(--muted);
-  background: rgba(11, 14, 23, 0.88); border: 1px solid var(--line);
-  border-radius: var(--r); padding: 4px 10px; cursor: pointer;
+  font-family: var(--font-num); font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums;
+  background: rgba(28, 28, 30, 0.62); border: 1px solid var(--line);
+  box-shadow: var(--brillo), var(--sombra);
+  border-radius: 999px; padding: 4px 12px; cursor: pointer;
   max-width: min(92vw, 340px); text-align: right;
   /* Es un botón (abre el detalle): 32 px de alto, como el resto. */
   min-height: 32px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;
 }
+.pie::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+}
 .pie.stale { color: var(--gold); border-color: var(--gold); }
+/* Abierto, deja de ser cápsula: el detalle son varias líneas. */
+.pie[aria-expanded='true'] { border-radius: var(--r); padding: 8px 12px; }
 .pie-detalle {
   text-align: left; margin-bottom: 5px; padding-bottom: 5px;
   border-bottom: 1px solid var(--line); line-height: 1.5; color: var(--text);
@@ -444,20 +505,20 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 
 .selftest {
   flex: 1; overflow: auto; margin: 0;
-  font-family: var(--font-num); font-size: 11px; line-height: 1.55;
+  font-family: var(--font-mono); font-size: 11px; line-height: 1.55;
   color: var(--text); white-space: pre-wrap; word-break: break-word;
-  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-sm);
   padding: 10px; user-select: text; -webkit-user-select: text;
 }
 
 /* ---------- apuntar partida ---------- */
 
-.hero-grid button.elegido { border-color: var(--gold); color: var(--gold); }
+.hero-grid button.elegido { border-color: var(--gold); color: var(--gold); background: rgba(255, 214, 10, 0.10); box-shadow: 0 0 0 1px var(--gold), var(--brillo); }
 .resultado {
   display: flex; gap: 10px; padding: 12px 0 4px;
 }
-.resultado .reset { flex: 1; padding: 14px; font-size: 14px; }
-.resultado .reset:last-child { color: var(--gold); border-color: var(--gold); }
+.resultado .reset { flex: 1; padding: 14px; font-size: 15px; }
+.resultado .reset:last-child { color: var(--gold); border-color: var(--gold); background: rgba(255, 214, 10, 0.10); }
 
 /* ---------- selector de línea ---------- */
 
@@ -465,12 +526,11 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .linea {
   display: flex; flex-direction: column; gap: 2px; text-align: left;
   border: 1px solid var(--line); border-radius: var(--r);
-  padding: 14px; background: transparent; color: var(--text);
+  padding: 14px; background: var(--glass); box-shadow: var(--brillo); color: var(--text);
 }
-.linea.elegida { border-color: var(--gold); }
+.linea.elegida { border-color: var(--gold); background: rgba(255, 214, 10, 0.08); }
 .linea-nombre {
-  font-family: var(--font-display); font-size: 15px;
-  letter-spacing: 0.08em; text-transform: uppercase;
+  font-family: var(--font-display); font-size: 17px; font-weight: 600; letter-spacing: -0.01em;
 }
 .linea.elegida .linea-nombre { color: var(--gold); }
 .linea-pista { font-size: 12px; color: var(--muted); }
@@ -480,28 +540,29 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .analisis { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
 /* Compacta a proposito: son tres frases justo por encima de la recomendacion,
    y en un movil de 844px cada pixel de aqui es un pixel que la tarjeta nº1 no
-   ve. Medido: de 146px a 118px el bloque entero. */
+   ve. Medido: de 146px a 118px el bloque entero. La barra de color va en
+   sombra interior, no en borde: el mismo alto, la esquina redonda entera. */
 .frase {
-  margin: 0; padding: 6px 9px; font-size: 12.5px; line-height: 1.3;
-  border-left: 3px solid var(--line); border-radius: 0 var(--r) var(--r) 0;
-  background: var(--panel);
+  margin: 0; padding: 6px 9px 6px 12px; font-size: 12.5px; line-height: 1.3;
+  border-radius: var(--r-sm);
+  background: var(--glass); box-shadow: inset 3px 0 0 var(--line-hi);
 }
-.frase.bien { border-left-color: var(--c-comp); }
-.frase.ojo  { border-left-color: var(--enemy); }
-.frase.duda { border-left-color: var(--muted); }
+.frase.bien { box-shadow: inset 3px 0 0 var(--c-comp); }
+.frase.ojo  { box-shadow: inset 3px 0 0 var(--enemy); }
+.frase.duda { box-shadow: inset 3px 0 0 var(--muted); }
 
 /* ---------- ¿te está funcionando? ---------- */
 
 .veredicto {
   display: flex; flex-direction: column; gap: 5px;
   padding: 10px 12px; margin-bottom: 10px;
-  border: 1px solid var(--line); border-radius: var(--r); background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); box-shadow: var(--brillo);
 }
 .veredicto-cifra { margin: 0; font-size: 13px; font-variant-numeric: tabular-nums; }
 /* El margen va pegado al número, no en una nota al pie: la diferencia sin su
    margen es publicidad, y ese es justo el error que esta pantalla evita. */
 .veredicto-dif {
-  margin: 0; font-family: var(--font-num); font-size: 15px; color: var(--gold);
+  margin: 0; font-family: var(--font-num); font-size: 16px; font-weight: 600; color: var(--gold);
   font-variant-numeric: tabular-nums;
 }
 
@@ -511,26 +572,26 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
    tocable con el pulgar: 34px de alto, que es lo mínimo cómodo en móvil. */
 .pick-build {
   display: block; margin-top: 6px; margin-left: auto;
-  min-height: 34px; padding: 6px 10px;
-  border: 1px solid var(--line); border-radius: var(--r);
-  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--muted); background: var(--panel);
+  min-height: 34px; padding: 6px 12px;
+  border: 1px solid var(--line); border-radius: 999px;
+  font-size: 12px; font-weight: 600;
+  color: var(--muted); background: var(--glass);
 }
-.pick.top .pick-build { color: var(--gold); border-color: var(--gold); }
+.pick.top .pick-build { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 60%, transparent); background: rgba(255, 214, 10, 0.10); }
 
 .build-cuerpo { padding: 12px 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
 .build-vacio { margin: 0; font-size: 13px; color: var(--muted); }
 
 .build { display: flex; flex-direction: column; gap: 8px; }
 .build-nucleo {
-  margin: 0; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--muted);
+  margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--muted); font-family: var(--font-display);
 }
 .build-objetos { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .build-objetos li {
   display: flex; justify-content: space-between; align-items: center; gap: 10px;
-  padding: 9px 10px; border: 1px solid var(--line); border-radius: var(--r);
-  background: var(--panel);
+  padding: 9px 10px; border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--glass); box-shadow: var(--brillo);
 }
 .obj-nombre { font-size: 14px; flex: 1; }
 
@@ -538,7 +599,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
    en inglés y Javi juega en español. Tamaño fijo para que la fila no baile
    mientras cargan, y hueco reservado aunque falte el fichero. */
 .obj-icono {
-  width: 28px; height: 28px; border-radius: 4px; flex: 0 0 28px;
+  width: 28px; height: 28px; border-radius: 7px; flex: 0 0 28px;
   background: var(--ink);
 }
 
@@ -551,7 +612,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .build-propuestos li {
   display: flex; align-items: center; gap: 6px;
   padding: 5px 9px 5px 5px; font-size: 12px;
-  border: 1px solid var(--line); border-radius: var(--r); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 999px; background: var(--glass);
 }
 
 .build-otra-objetos { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
@@ -572,7 +633,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .build-otra {
   margin: 0; display: flex; flex-direction: column; gap: 3px;
   font-size: 12px; padding: 8px 10px;
-  border: 1px solid var(--line); border-radius: var(--r);
+  border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--glass);
 }
 
 /* El aviso de que el winrate de una build no es causal. Va junto al dato, no
@@ -588,14 +649,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .aviso p { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
 .idiomas { display: flex; gap: 6px; }
 .idiomas button {
-  border: 1px solid var(--line); border-radius: var(--r); background: transparent;
-  color: var(--muted); font-size: 11px; padding: 4px 9px; letter-spacing: 0.06em;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--glass);
+  color: var(--muted); font-size: 12px; font-weight: 600; padding: 4px 12px;
 }
-.idiomas button.elegido { border-color: var(--gold); color: var(--gold); }
+.idiomas button.elegido { border-color: var(--gold); color: var(--gold); background: rgba(255, 214, 10, 0.10); }
 .donar {
-  align-self: flex-start; margin-top: 4px; padding: 8px 14px;
-  border: 1px solid var(--gold); border-radius: var(--r);
-  color: var(--gold); font-size: 12px; text-decoration: none;
+  align-self: flex-start; margin-top: 4px; padding: 8px 16px;
+  border: 1px solid var(--gold); border-radius: 999px;
+  color: var(--gold); font-size: 12px; font-weight: 600; text-decoration: none;
 }
 
 /* --- Tu perfil: el codigo que lleva tus datos a otro dispositivo --- */
@@ -612,16 +673,17 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
    espacios, y sin esto se sale de la pantalla en vez de doblarse. */
 .codigo {
   width: 100%; box-sizing: border-box; resize: vertical;
-  background: var(--panel-hi); border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--field); border: 1px solid transparent; border-radius: var(--r-sm);
   padding: 10px 12px; color: var(--text);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 16px; line-height: 1.45; word-break: break-all;
 }
+.codigo:focus { outline: none; border-color: var(--gold); }
 
 .ancho {
-  width: 100%; padding: 12px; border-radius: var(--r);
-  background: var(--panel-hi); border: 1px solid var(--line); color: var(--text);
-  font-size: 15px;
+  width: 100%; padding: 12px; border-radius: 999px;
+  background: var(--glass); border: 1px solid var(--line); color: var(--text);
+  font-size: 15px; font-weight: 600; box-shadow: var(--brillo);
 }
 .ancho:disabled { opacity: 0.45; }
 
@@ -637,7 +699,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   gap: 8px; align-items: center;
   padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px;
 }
-.partida-fecha { color: var(--muted); font-family: var(--font-num); font-size: 11px; }
+.partida-fecha { color: var(--muted); font-family: var(--font-num); font-size: 11px; font-variant-numeric: tabular-nums; }
 .partida-hero { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .partida-bien { color: var(--c-comp); }
 .partida-mal { color: var(--enemy); }
@@ -663,7 +725,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
    regla base con su mismo selector.
    ------------------------------------------------------------------------- */
 
-.pick-pro { display: block; font-size: 11px; color: var(--muted); font-family: var(--font-num); margin-top: 2px; max-width: 130px; text-align: right; }
+.pick-pro { display: block; font-size: 11px; color: var(--muted); font-family: var(--font-num); font-variant-numeric: tabular-nums; margin-top: 2px; max-width: 130px; text-align: right; }
 
 /* ---------- novedades (changelog) ---------- */
 /* Área de toque de 40 px aunque el texto mida 11: fallar abría el detalle del pie. */
@@ -672,14 +734,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* El pie va alineado a la derecha y la hoja lo hereda: se deshace aquí. */
 .pie .sheet { text-align: left; font-size: 14px; color: var(--text); cursor: auto; font-family: var(--font-body); }
 .changelog { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
-.changelog section { border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; background: var(--panel); }
+.changelog section { border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; background: var(--panel); box-shadow: var(--brillo); }
 .changelog section.actual { border-color: var(--gold); }
-.changelog h3 { margin: 0 0 6px; font-size: 15px; display: flex; align-items: center; gap: 8px; font-family: var(--font-num); }
-.changelog-mas { margin-left: auto; font-size: 12px; color: var(--muted); padding: 6px 10px; min-height: 32px; border: 1px solid var(--line); border-radius: 999px; }
+.changelog h3 { margin: 0 0 6px; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; font-family: var(--font-num); }
+.changelog-mas { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--muted); padding: 6px 12px; min-height: 32px; border: 1px solid var(--line); border-radius: 999px; background: var(--glass); }
 .changelog ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.4; }
 
 .estimacion-nota { margin: 0 0 8px; font-size: 11px; color: var(--muted); line-height: 1.3; }
-.equipo-vistos { font-size: 11px; color: var(--muted); font-family: var(--font-num); }
+.equipo-vistos { font-size: 11px; color: var(--muted); font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .legend-nota { color: var(--muted); }
 /* El foco va a la hoja al abrirse (teclado y lector): sin anillo visible. */
 .sheet:focus { outline: none; }
@@ -688,13 +750,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .comp { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
 .comp-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 12px; }
 .comp-quien { color: var(--muted); min-width: 62px; }
-.comp-dano { font-family: var(--font-num); }
+.comp-dano { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .comp-chip {
-  border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; font-size: 11px; color: var(--muted);
+  border: 1px solid transparent; border-radius: 999px; padding: 1px 8px; font-size: 11px; color: var(--muted);
+  background: var(--glass);
 }
 .comp-chip.si { color: var(--text); }
-.comp-chip.falta { border-color: var(--enemy); color: var(--enemy); }
-.comp-chip.doble { border-color: var(--enemy); color: var(--enemy); font-family: var(--font-num); }
+.comp-chip.falta { color: var(--enemy); background: rgba(255, 69, 58, 0.14); }
+.comp-chip.doble { color: var(--enemy); background: rgba(255, 69, 58, 0.14); font-family: var(--font-num); }
 
 /* ---------- selector: caras, cuenta de baneos y sugeridos ---------- */
 .grid-cara { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex: none; }
@@ -705,16 +768,16 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .sheet-sugeridos .side-label { margin: 0; width: auto; }
 .chip {
   display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px;
-  background: var(--panel); padding: 4px 10px 4px 4px; font-size: 13px;
+  background: var(--glass); box-shadow: var(--brillo); padding: 4px 10px 4px 4px; font-size: 13px;
 }
 .chip .grid-cara { width: 22px; height: 22px; }
-.chip.elegido { border-color: var(--ban); color: var(--muted); text-decoration: line-through; }
+.chip.elegido { border-color: var(--ban); color: var(--muted); text-decoration: line-through; background: transparent; box-shadow: none; }
 .calibracion { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
 
 /* ---------- meta: la tier list que usa la app ---------- */
 .meta-linea { margin-top: 14px; }
 .meta-titulo {
-  margin: 0 0 4px; font-family: var(--font-display); font-size: 12px; letter-spacing: 0.1em;
+  margin: 0 0 4px; font-family: var(--font-display); font-size: 12px; font-weight: 600; letter-spacing: 0.05em;
   text-transform: uppercase; color: var(--muted);
 }
 .meta-fila {
@@ -722,16 +785,16 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px;
 }
 .meta-fila.top .meta-nombre { color: var(--gold); font-weight: 600; }
-.meta-pos { font-family: var(--font-num); font-size: 11px; color: var(--muted); text-align: right; }
+.meta-pos { font-family: var(--font-num); font-size: 11px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
 .meta-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.meta-wr { font-family: var(--font-num); text-align: right; }
-.meta-delta { font-family: var(--font-num); font-size: 11px; color: var(--muted); text-align: right; }
+.meta-wr { font-family: var(--font-num); text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.meta-delta { font-family: var(--font-num); font-size: 11px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
 .meta-delta.sube { color: var(--c-comp); }
 .meta-delta.baja { color: var(--enemy); }
-.meta-uso { font-family: var(--font-num); font-size: 11px; color: var(--muted); white-space: nowrap; }
+.meta-uso { font-family: var(--font-num); font-size: 11px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 /* La tier de mlbb.gg: una letra, opinion, al lado del dato. */
 .meta-tier, .pick-tier {
-  font-family: var(--font-display); font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  font-family: var(--font-display); font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
   color: var(--muted); text-align: center;
 }
 .pick-tier { display: block; text-align: right; margin-top: 2px; }
@@ -739,39 +802,40 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 
 /* ---------- tu pick fijado (3.5.0) ---------- */
 /* El hueco «Tú» en tu equipo, como en el draft del juego. */
-.slot.yo { border-color: var(--gold) !important; }
-.slot.empty.yo { color: var(--gold); border-color: var(--gold); border-style: dashed; }
+.slot.yo { border-color: var(--gold) !important; background: rgba(255, 214, 10, 0.10); }
+.slot.empty.yo { color: var(--gold); border-color: var(--gold); border-style: dashed; background: transparent; }
 /* La tarjeta de tu pick: una franja dorada, sin cambiar de alto. */
-.pick.elegido { border-color: var(--gold); box-shadow: inset 3px 0 0 var(--gold); }
+.pick.elegido { border-color: var(--gold); box-shadow: inset 3px 0 0 var(--gold), var(--brillo); }
 /* El nombre es el botón: hereda la letra del titular y ocupa lo mismo. */
 .pick-nombre-boton {
   display: flex; align-items: center; gap: 8px; padding: 0; text-align: left;
-  font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; min-height: 34px;
+  font: inherit; letter-spacing: inherit; color: inherit; min-height: 34px;
 }
-.pick-tuyo { font-size: 11px; color: var(--gold); text-transform: none; letter-spacing: normal; font-weight: 400; margin-left: 4px; white-space: nowrap; }
+.pick-tuyo { font-size: 11px; color: var(--gold); letter-spacing: normal; font-weight: 600; margin-left: 4px; white-space: nowrap; }
 /* ¿Cómo fue? Diez minutos después de fijar el pick, al volver a la app. */
 .recordatorio {
-  border: 1px solid var(--gold); border-radius: var(--r); background: rgba(227, 178, 60, 0.08);
+  border: 1px solid color-mix(in srgb, var(--gold) 60%, transparent); border-radius: var(--r);
+  background: rgba(255, 214, 10, 0.08); box-shadow: var(--brillo);
   padding: 10px 12px; margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
 }
-.recordatorio p { margin: 0; flex: 1 1 140px; font-size: 13px; }
+.recordatorio p { margin: 0; flex: 1 1 140px; font-size: 13px; font-weight: 600; }
 .recordatorio button {
-  min-height: 40px; padding: 6px 12px; border: 1px solid var(--line); border-radius: var(--r); color: var(--muted);
-  font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.1em; font-size: 11px;
+  min-height: 40px; padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted);
+  background: var(--glass); font-family: var(--font-display); font-weight: 600; font-size: 13px;
 }
-.recordatorio .gane { color: var(--gold); border-color: var(--gold); }
+.recordatorio .gane { color: #000; background: var(--gold); border-color: var(--gold); }
 /* «Mis héroes»: el filtro va en la cabecera de las tarjetas, sin fila nueva. */
 .filtro {
-  min-height: 32px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px;
-  font-size: 11px; color: var(--muted); font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.1em;
+  min-height: 32px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--glass);
+  font-size: 12px; font-weight: 600; color: var(--muted); font-family: var(--font-display);
 }
-.filtro[aria-pressed='true'] { border-color: var(--gold); color: var(--gold); }
+.filtro[aria-pressed='true'] { border-color: var(--gold); color: var(--gold); background: rgba(255, 214, 10, 0.10); }
 .fuera-de-mios { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
 /* Tu plan A · B · C en la fase de baneos. */
 .plan { margin-top: 14px; }
 .plan .chip { padding: 8px 12px 8px 6px; font-size: 14px; }
 /* Apuntar con un héroe de otra línea: el resto, detrás de un toque. */
-.hero-grid .otro-heroe { grid-column: 1 / -1; color: var(--muted); border-style: dashed; }
+.hero-grid .otro-heroe { grid-column: 1 / -1; color: var(--muted); border-style: dashed; background: transparent; box-shadow: none; }
 
 @media (max-width: 699px) and (orientation: portrait) {
   /* Solo MÓVILES (hasta 699 px): una tablet de 768 en vertical cabe a dos
@@ -786,7 +850,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   /* El pie deja de flotar: fijo abajo tapaba lo que quedara debajo (a 320 px
      ocupa el 92% del ancho). La versión y la edad de los datos ya van en la
      cabecera; el detalle sigue al final de la página. */
-  .pie { position: static; margin: 4px 12px 12px auto; width: fit-content; max-width: none; }
+  .pie { position: relative; z-index: 0; margin: 4px 12px 12px auto; width: fit-content; max-width: none; }
   .results { padding-bottom: 8px; }
   .draft {
     border-right: none; border-bottom: 1px solid var(--line);
@@ -869,7 +933,16 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .pick { transition: border-color 120ms ease; }
+  .pick { transition: border-color 120ms ease, box-shadow 160ms ease; }
+  /* El toque responde como en iOS: el control se encoge un poco al pulsar.
+     El pie NO: la hoja de novedades vive DENTRO de él, y un `transform` en
+     el padre convierte a un `position: fixed` en relativo a ese padre, así
+     que al tocar «ver todo» la hoja entera se encogía y se movía (cazado
+     por novedades.e2e.mjs: la cabecera de la hoja interceptaba el toque). */
+  button { transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1), background-color 140ms ease, border-color 140ms ease; }
+  button:active { transform: scale(0.96); }
+  /* La × y el ○ no: viven dentro de un hueco y al encogerse bailaban. */
+  .slot .x:active, .slot .mark:active, .partida .x:active { transform: none; }
 }
 
 /* Teléfonos de 320 px: el hueco enemigo queda en 54 px y el contenido

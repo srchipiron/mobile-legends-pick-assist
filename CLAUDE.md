@@ -630,6 +630,16 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   por mutación: quitar el arreglo de Meta o volver la × a 31 px la tumba).
   Cuando midas un desborde, mide en el ancho MÁS estrecho que admita la
   app y con cada hoja abierta, no solo en el móvil que tengas a mano.
+- **Un `backdrop-filter` en el pie encerrando la hoja de novedades** (3.7.0,
+  cazado en pruebas) — `backdrop-filter`, como `filter` y `transform`,
+  convierte al elemento en bloque contenedor de sus descendientes
+  `position: fixed`, y la hoja de novedades se monta DENTRO del pie: con el
+  desenfoque en el propio pie la hoja quedaba metida en una cápsula de 32
+  px y la cabecera interceptaba «ver todo». Hoy el desenfoque va en un
+  `::before` del pie, que no tiene descendientes. Antes de poner un filtro
+  o una transformación en un elemento, mira si algo `fixed` cuelga de él;
+  y por lo mismo el encogimiento al tocar (`button:active { transform }`)
+  no se aplica al pie.
 - **La tarjeta nº1 fuera de la primera pantalla** — cada bloque nuevo encima
   de las tarjetas (análisis, estimación de 141-152 px, consejo para los
   compañeros, composición) fue empujando el nº1: medido en 390×844 asomaba
@@ -1258,6 +1268,40 @@ Iconos de objeto (`public/objetos/{id}.png`, 71) y caras de héroe
   literalmente `className=` para saber qué clases usa la interfaz; con otro
   nombre, una clase sin estilo pasa el control sin que nadie se entere.
 
+## El material de la interfaz (3.7.0)
+
+Desde 3.7.0 la interfaz sigue el lenguaje visual de iOS 26 («Liquid
+Glass»): fondo negro con dos resplandores, superficies translúcidas con
+arista de luz (`--line`) y brillo en la arista superior (`--brillo`),
+esquinas grandes y CONCÉNTRICAS (`--r` 14 para tarjetas, `--r-sm` 10 para
+lo que va dentro, `--r-lg` 20), controles en píldora, letra del sistema
+(SF Pro donde la haya; Inter, Segoe o Roboto donde no) con títulos gruesos
+y seguimiento negativo, y números con `--font-num` (la variante redondeada)
+y cifras tabulares. Los colores son los del sistema en modo oscuro
+(amarillo `#FFD60A` como acento único, azul aliado, rojo enemigo, verde,
+morado, naranja). Todo está en las variables de `:root` de `styles.css`;
+el diagnóstico y el código del perfil siguen en `--font-mono`, porque son
+texto preformateado.
+
+Tres decisiones que conviene no deshacer sin medir:
+
+- **Ningún alto, relleno ni hueco cambió respecto a 3.6.0.** Lo que decide
+  dónde cae la tarjeta nº1 (`primera-pantalla.e2e.mjs`) y los 32 px de
+  toque (`responsive.e2e.mjs`) son los mismos números; el rediseño es de
+  material, tipografía y color. Si se cambia un relleno, se vuelve a medir.
+- **El desenfoque de fondo (`backdrop-filter`) solo va en lo que FLOTA
+  sobre contenido que se mueve**: el pie, la cabecera fija de la maestría
+  y el panel del draft en escritorio. En las ocho tarjetas y los chips
+  sería un repintado por toque en un móvil de gama media y no se vería,
+  porque debajo solo hay el degradado del fondo.
+- **Las hojas siguen opacas**: al sol no se leía lo translúcido, y una hoja
+  es una pantalla entera (ver el comentario de `.sheet`).
+
+El modo claro (Apple lo adapta al sistema) NO está: el acento amarillo y
+los seis colores de término están elegidos para negro y sobre blanco no
+aguantan el contraste; hacerlo pide una segunda paleta medida, no una
+consulta de medios. Está en «Candidatos descartados».
+
 ## Los idiomas
 
 Español e inglés, en `src/app/i18n/` (`es.js`, `en.js` y el traductor). Lo importante: **los motivos que salen en
@@ -1441,6 +1485,14 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   la ventana corta vuelva a ser coherente tras el reinicio); compartir el
   draft por enlace y el modo dúo con la maestría del compañero (app de una
   persona; se reabren si alguien más la usa).
+- **El modo claro** (3.7.0): el rediseño al estilo de iOS 26 va solo en
+  oscuro. El amarillo `#FFD60A` que es el acento de todo (notas, nombres,
+  botón primario) y los seis colores de término están elegidos para negro:
+  sobre blanco el amarillo no llega a 2:1 de contraste. Hacerlo bien pide
+  una segunda paleta (Apple usa otros seis valores en claro) y pasar por
+  las ~30 reglas que tiñen con `rgba(255, 214, 10, …)`; no es una consulta
+  de medios sobre `:root`. Se reabre si Javi lo pide o si alguien más usa
+  la app en claro.
 - **La frase de empate cortada por el tope de tres del análisis**: medido en
   300 drafts con tres enemigos y tres aliados, 76 con empate y 0 cortadas.
   No hay problema.

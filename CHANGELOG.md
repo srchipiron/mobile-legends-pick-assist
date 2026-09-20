@@ -8,6 +8,21 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.7.0
+
+- **La interfaz sigue el lenguaje visual actual de Apple (iOS 26, «Liquid
+  Glass»)**: fondo negro con dos resplandores de color, paneles y tarjetas
+  de cristal translúcido con arista de luz, esquinas grandes y concéntricas,
+  botones y chips en píldora, letra del sistema con títulos gruesos (ya no
+  hay mayúsculas condensadas) y números en la variante redondeada con cifras
+  alineadas. El pie flota como una cápsula con desenfoque de lo que pasa
+  debajo, el botón principal de la fase de baneos va relleno de amarillo y
+  cada control se encoge un poco al tocarlo. Los colores pasan a la paleta
+  del sistema (amarillo, azul, rojo, verde, morado, naranja).
+- **Nada se ha movido de sitio**: los altos, huecos y áreas de toque son los
+  de 3.6.0, así que la tarjeta nº1 sigue cabiendo en la primera pantalla y
+  las pruebas de tamaño (320 a 1.920 px) siguen en verde.
+
 ## 3.6.0
 
 - **La interfaz, medida y ajustada en doce tamaños de pantalla** (móviles de
