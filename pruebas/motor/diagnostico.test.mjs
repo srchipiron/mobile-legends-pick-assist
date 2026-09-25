@@ -5,6 +5,7 @@
  * rota se nota en los VALORES), caídas frente a su propio historial, el
  * porqué del nº1 y una medición pro que falta.
  */
+import { seccionPro } from '../../src/motor/diagnostico/seccion-pro.js';
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { catalogo, heroes, poolRoam, crearRnd, h } from '../fixtures/catalogo.mjs';
 import { prepararDatos } from '../../src/motor/draft.js';
@@ -225,6 +226,16 @@ test('el diagnostico avisa si el movil esta usando una version vieja', () => {
   // (La mitad que comprobaba que vite.config.js emite version.json y que
   // App.jsx lo pide con `no-store` NO es del motor: queda para las pruebas
   // de la app y de la compilación.)
+});
+
+test('la línea de la corrida pro dice la edad de los datos y, si el lunes Liquipedia cortó, lo explica (sin «? peticiones»)', () => {
+  const hace = (d) => new Date(Date.now() - d * 86400e3).toISOString();
+  const lineas = (pro) => { const L = []; seccionPro({ seccion: () => {}, linea: (t) => L.push(t), check: (bien, a, b) => L.push(bien ? a : b) }, { partidas: 10, generatedAt: hace(11.4), ...pro }); return L; };
+  const cortada = lineas({ errores: ['Liquipedia sigue limitando tras 3 esperas'] });
+  ok(!cortada.some((l) => /\? peticiones/.test(l)), 'sigue saliendo «? peticiones», un campo que pro.json ya no lleva');
+  ok(cortada.some((l) => /Datos de hace 11\.4 días · 1 error en la última corrida/.test(l)), `no dice la edad ni los errores: ${cortada.filter((l) => /hace/.test(l))}`);
+  ok(cortada.some((l) => /no pudo leer Liquipedia/.test(l)), 'no explica que la corrida semanal se quedó sin partidas');
+  ok(!lineas({ errores: [], generatedAt: hace(2) }).some((l) => /no pudo leer Liquipedia/.test(l)), 'lo dice sin errores');
 });
 
 await terminar('motor/diagnostico');

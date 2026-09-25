@@ -16,7 +16,14 @@ export function seccionPro(inf, pro = null) {
   }
   inf.linea(`${pro.partidas ?? 0} partidas de ${pro.torneos ?? 0} torneos desde ${pro.desde ?? '?'} (${pro.primera ?? '?'} → ${pro.ultima ?? '?'}) · ${pro.total ?? '?'} guardadas en total`);
   const edadDias = pro.generatedAt ? (Date.now() - Date.parse(pro.generatedAt)) / 86400e3 : null;
-  if (edadDias != null) inf.linea(`Corrida de hace ${edadDias.toFixed(1)} días · ${pro.peticiones ?? '?'} peticiones · ${(pro.errores ?? []).length} errores`);
+  // `generatedAt` solo avanza si la corrida trajo partidas; los errores son
+  // los de la ÚLTIMA corrida. El número de peticiones ya no va en pro.json
+  // (se quitó para no commitear nada nuevo sin partidas): va al log.
+  if (edadDias != null) {
+    const errores = (pro.errores ?? []).length;
+    inf.linea(`Datos de hace ${edadDias.toFixed(1)} días · ${errores} ${errores === 1 ? 'error' : 'errores'} en la última corrida`);
+    if (errores && edadDias > 7.5) inf.linea('  La corrida semanal no pudo leer Liquipedia y se conservan las partidas de la anterior; el lunes vuelve a intentarlo sola');
+  }
   for (const e of (pro.errores ?? []).slice(0, 3)) inf.linea(`  ${e}`);
   const m = pro.medicion;
   if (m?.terminos?.modelo) {

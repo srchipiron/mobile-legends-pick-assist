@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.12.1
+
+- **El diagnóstico explica cuando las partidas profesionales no se han
+  podido actualizar.** Si el lunes Liquipedia no deja leer (limita mucho
+  las descargas desde los servidores de GitHub), la app conserva las
+  partidas de la semana anterior, y ahora el diagnóstico lo dice con esas
+  palabras y la edad de los datos, en vez de «? peticiones». El 21 de
+  septiembre pasó exactamente eso; el lunes siguiente se reintenta solo.
+
 ## 3.12.0
 
 - **Cada tarjeta enseña el winrate del héroe EN TU LÍNEA.** Debajo del
