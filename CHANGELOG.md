@@ -8,6 +8,23 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.8.0
+
+- **Tus partidas tienen base de datos en el proyecto** (`historial/partidas.json`).
+  En «Tus partidas» hay un botón nuevo, «Enviar mis partidas al proyecto»:
+  abre una incidencia de GitHub ya rellena con tu código de perfil dentro
+  (partidas apuntadas con su draft, resultado, baneos, estimación y tu
+  maestría) y tú solo confirmas. Un bot la lee, la funde con lo guardado
+  sin perder nada (la copia del móvil gana si corregiste un resultado),
+  mide el modelo contra tus partidas y te responde en la misma incidencia:
+  si seguir a la app hace ganar (con su margen), si la probabilidad que
+  enseñó se parece a lo que pasó, cómo puntúa el modelo de hoy los drafts
+  que tuviste delante (Brier, AUC, pendiente), y tus números por héroe y
+  por mes. Es público, porque es tu repositorio, y se dice antes de tocar.
+  Solo se aceptan envíos del dueño del repositorio. Con eso el modelo se
+  puede medir en TU cola, no solo en las partidas profesionales.
+- El informe también se puede sacar a mano: `node scripts/medir-mias.mjs`.
+
 ## 3.7.1
 
 - **La probabilidad con el draft a medias vuelve a estar centrada**: el

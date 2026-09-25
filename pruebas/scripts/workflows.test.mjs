@@ -126,7 +126,7 @@ test('los workflows que publican datos pasan por el guardarrail', () => {
 
   // Los bots que commitean hacen rebase antes del push: la vigilancia mueve
   // main varias veces al dia y un push rechazado pierde la corrida entera.
-  for (const f of ['update-data.yml', 'pro.yml']) {
+  for (const f of ['update-data.yml', 'pro.yml', 'partidas.yml']) {
     const w = leerWorkflow(f);
     const paso = w.pasos.find((p) => mandatos(p.run).some((c) => /^git push\b/.test(c)));
     ok(paso, `${f}: ya no hace push`);
@@ -269,7 +269,7 @@ test('revisión línea a línea de scripts y workflows: guardas que no vigilaban
   const bin = join(dir, 'bin'); mkdirSync(bin, { recursive: true });
   writeFileSync(join(bin, 'git'), '#!/bin/sh\ncase "$1" in\n  push) echo push >> "$GITLOG"; exit 1 ;;\n  diff) case "$*" in *--staged*) exit 0 ;; *) exit 1 ;; esac ;;\n  *) exit 0 ;;\nesac\n', { mode: 0o755 });
   writeFileSync(join(bin, 'sleep'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
-  for (const f of ['update-data.yml', 'pro.yml', 'vigilancia.yml']) {
+  for (const f of ['update-data.yml', 'pro.yml', 'vigilancia.yml', 'partidas.yml']) {
     const paso = leerWorkflow(f).pasos.find((p) => mandatos(p.run).some((c) => /^git push\b/.test(c)));
     ok(paso, `${f}: ya no hace push`);
     const caja = join(dir, `push-${f}`); mkdirSync(join(caja, 'historial'), { recursive: true });

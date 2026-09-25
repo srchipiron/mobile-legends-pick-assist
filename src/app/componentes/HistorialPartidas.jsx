@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { esPrevia, siguioConsejo } from '../../motor/registro.js';
+import { recogerPerfil, exportarPerfil } from '../../motor/perfil.js';
+import { urlDeIncidencia, TOPE_URL } from '../github.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Veredicto } from './Veredicto.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
@@ -11,11 +13,34 @@ import { tPorDefecto } from './tPorDefecto.js';
  * NO para comprobar si la app acierta: cuando las jugaste no había consejo
  * que seguir).
  */
-export function HistorialPartidas({ partidas, pool, maestria = {}, onOlvidar, onCorregir, onAnadir, onCerrar, t = tPorDefecto }) {
+export function HistorialPartidas({ partidas, pool, maestria = {}, perfil = null, onOlvidar, onCorregir, onAnadir, onCerrar, t = tPorDefecto }) {
   const [anadiendo, setAnadiendo] = useState(false);
   const [heroe, setHeroe] = useState(null);
   const [aviso, setAviso] = useState(null);
   const conApp = partidas.filter((p) => !esPrevia(p)).length;
+
+  /**
+   * Manda tus partidas al proyecto: abre una incidencia de GitHub YA RELLENA
+   * con tu código de perfil dentro, y un bot (partidas.yml) la lee, la
+   * guarda en historial/partidas.json y responde con la medida del modelo
+   * contra tus drafts. Es público (es tu repositorio): se dice antes de
+   * tocar. Si el código no cabe en la dirección, se copia al portapapeles y
+   * la incidencia se abre vacía para pegarlo.
+   */
+  const [envio, setEnvio] = useState(null);
+  const enviar = async () => {
+    const codigo = await exportarPerfil(recogerPerfil(perfil ?? { partidas, mastery: maestria }));
+    const titulo = t('hist.enviarTitulo', { n: conApp, fecha: new Date().toLocaleDateString() });
+    let url = urlDeIncidencia({ titulo, etiquetas: ['partidas'], cuerpo: `${t('hist.enviarCuerpo')}\n\n\`\`\`\n${codigo}\n\`\`\`` });
+    if (url.length > TOPE_URL) {
+      try { await navigator.clipboard.writeText(codigo); } catch { /* queda el código en «Tu perfil» */ }
+      url = urlDeIncidencia({ titulo, etiquetas: ['partidas'], cuerpo: t('hist.enviarPegar') });
+      setEnvio(t('hist.enviarCopiado'));
+    } else {
+      setEnvio(t('hist.enviarAbierto'));
+    }
+    window.open(url, '_blank', 'noopener');
+  };
 
   const guardar = (gane) => {
     if (!heroe) return;
@@ -35,6 +60,11 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, onOlvidar, on
             la lista en un móvil de 640 de alto. */}
         <Veredicto partidas={partidas} maestria={maestria} t={t} />
         <p className="nota">{t('hist.resumenLineas', { total: partidas.length, conApp, previas: partidas.length - conApp })}</p>
+        {/* La base de datos del proyecto: sin tus partidas dentro, el modelo
+            no se puede medir en tu cola. */}
+        <button className="ancho" disabled={!partidas.length} onClick={enviar}>{t('hist.enviar')}</button>
+        <p className="nota">{t('hist.enviarPista')}</p>
+        {envio && <p className="nota bien">{envio}</p>}
         <button className="ancho" onClick={() => setAnadiendo((v) => !v)}>{t('hist.anadir')}</button>
         {anadiendo && (
           <>

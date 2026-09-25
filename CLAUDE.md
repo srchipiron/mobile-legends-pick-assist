@@ -987,8 +987,8 @@ calibración (20) sin acordarse de nada. Cada partida apuntada lleva desde
 3.5.0 su `draft` (`sanearDraft` en registro.js: línea, enemigos, aliados,
 rival; unos 200 bytes; pasa por `sanear` del perfil y viaja en el código):
 sin el draft, una partida apuntada era irrecuperable para medir el modelo en
-la cola de Javi. El siguiente paso natural es un `medir-mias.mjs` calcado
-de `medir-pro.mjs` cuando haya unas decenas de partidas con draft.
+la cola de Javi. Desde 3.8.0 llegan al repositorio (ver «La base de datos de
+tus partidas») y `medir-mias.mjs` las mide.
 
 El consejo a los compañeros va DIFERIDO desde 3.5.0 (`useDeferredValue`
 sobre enemigos, aliados, baneos y el pick), con su propio `yo` en el
@@ -996,6 +996,40 @@ resultado (`consejos.yo`) para que lo que se enseña sea coherente consigo
 mismo aunque vaya un render por detrás. Medido antes de diferirlo: 41 ms
 con un enemigo (160–250 en un móvil), el doble que el ranking; ahora el
 toque síncrono es el ranking (10 ms) más el análisis.
+
+## La base de datos de tus partidas (3.8.0)
+
+`historial/partidas.json`: las partidas de Javi apuntadas con la app (con
+su draft, resultado, baneos y estimación) y su maestría, fundidas envío a
+envío. Es la ÚNICA forma de medir el modelo en su cola: hasta 3.8.0 esos
+datos vivían solo en su móvil y ninguna sesión podía leerlos.
+
+- **Cómo llegan**: «Tus partidas» → «Enviar mis partidas al proyecto»
+  (HistorialPartidas.jsx) abre una incidencia de GitHub ya rellena con el
+  código de perfil (`exportarPerfil`, el mismo de «Tu perfil»); si el
+  código no cabe en la dirección (`TOPE_URL`, 7.000 caracteres) se copia
+  al portapapeles y la incidencia se abre para pegarlo. `partidas.yml`
+  escucha `issues` (opened, edited), SOLO del dueño del repositorio y SOLO
+  si el cuerpo lleva `MLPA1.`; el cuerpo va por variable de entorno a un
+  fichero, nunca dentro del mandato; `scripts/importar-partidas.mjs` busca
+  la forma exacta del código, lo lee con `leerPerfil` (suma de control y
+  `sanear`) y lo funde con `fundirPerfil` con el MÓVIL como copia que gana
+  (lleva las correcciones); commitea con rebase y reintentos; y
+  `scripts/medir-mias.mjs` responde en la incidencia y la cierra.
+- **Qué mide `medir-mias.mjs`**: el Veredicto (`resumen`), la calibración
+  de la estimación guardada (`calibracion`) y, lo nuevo, la RE-PUNTUACIÓN
+  de cada draft guardado con el modelo y los datos de hoy (Brier, AUC,
+  acierto del lado, pendiente logística sobre el log-odds con su error
+  típico), más partidas por héroe y por mes. Cuando haya unas 100 partidas
+  con draft, la pendiente dice si la escala 0,44 vale en su cola; hasta
+  entonces manda el ±. El fichero se puede leer en cualquier sesión y
+  `medir-mias.mjs` se puede pasar a mano.
+- **No se redespliega**: la app no lee `historial/partidas.json` (el bot
+  no está en el `workflow_run` de `deploy.yml` a propósito). Si algún día
+  la app lo enseña, hay que meterlo ahí.
+- **Privacidad**: es su repositorio público y lo manda él con un botón
+  que lo dice; la promesa «tus datos no salen de tu móvil» sigue: salen
+  porque los saca él. No hay servidor ni credencial en la app.
 
 ## El siguiente baneo probable
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { titular } from '../../motor/diagnostico/index.js';
 import { Hoja } from './Hoja.jsx';
+import { urlDeIncidencia } from '../github.js';
 import { tPorDefecto } from './tPorDefecto.js';
 
 /** El informe del diagnóstico, listo para copiar, compartir o dejar como incidencia en GitHub. */
@@ -31,13 +32,12 @@ export function Diagnostico({ resultado, onCerrar, t = tPorDefecto }) {
    * primer tramo de la ruta ES el nombre del repositorio).
    */
   const aGitHub = () => {
-    const duenno = window.location.hostname.split('.')[0];
-    const repo = window.location.pathname.split('/').filter(Boolean)[0] ?? 'mlbb-roam-picker';
-    const url = new URL(`https://github.com/${duenno}/${repo}/issues/new`);
-    url.searchParams.set('title', t('diag.tituloIncidencia', { fecha: new Date().toLocaleDateString(), titular: titular(resultado.fallos, resultado.avisos) }));
-    url.searchParams.set('labels', 'diagnostico');
-    url.searchParams.set('body', `${t('diag.cuerpoIncidencia')}\n\n\`\`\`\n${resultado.texto}\n\`\`\``);
-    window.open(url.toString(), '_blank', 'noopener');
+    const url = urlDeIncidencia({
+      titulo: t('diag.tituloIncidencia', { fecha: new Date().toLocaleDateString(), titular: titular(resultado.fallos, resultado.avisos) }),
+      etiquetas: ['diagnostico'],
+      cuerpo: `${t('diag.cuerpoIncidencia')}\n\n\`\`\`\n${resultado.texto}\n\`\`\``,
+    });
+    window.open(url, '_blank', 'noopener');
   };
 
   return (

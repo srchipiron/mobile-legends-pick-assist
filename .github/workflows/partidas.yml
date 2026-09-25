@@ -1,0 +1,87 @@
+name: Partidas apuntadas
+
+# La base de datos de TUS partidas (historial/partidas.json). El móvil abre
+# una incidencia con el código de perfil dentro («Tus partidas» → «Enviar al
+# proyecto»); aquí se lee, se funde con lo guardado, se mide el modelo
+# contra ellas y se responde en la misma incidencia con el informe.
+#
+# Solo incidencias del DUEÑO del repositorio: cualquiera puede abrir una en
+# un repositorio público, y el cuerpo es dato, no instrucciones (solo se
+# busca en él la forma exacta de un código y se descodifica con el lector de
+# la app, con suma de control y saneado).
+on:
+  issues:
+    types: [opened, edited]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # commitea historial/partidas.json
+  issues: write     # responde y cierra la incidencia
+
+# Un envío cada vez: dos a la vez se pisarían el fichero.
+concurrency:
+  group: partidas
+  cancel-in-progress: false
+
+jobs:
+  importar:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.issue.user.login == github.repository_owner && contains(github.event.issue.body, 'MLPA1.')) }}
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - id: modulos
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: modulos-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}
+      - if: steps.modulos.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Leer el código de la incidencia
+        if: github.event_name == 'issues'
+        # El cuerpo va por variable de entorno y a un fichero: nunca dentro
+        # del propio mandato, que es por donde entra una inyección.
+        env:
+          CUERPO: ${{ github.event.issue.body }}
+          NUMERO: ${{ github.event.issue.number }}
+        run: |
+          printf '%s' "$CUERPO" > /tmp/cuerpo.txt
+          node scripts/importar-partidas.mjs /tmp/cuerpo.txt --incidencia "$NUMERO" | tee /tmp/importado.txt
+
+      - name: Medir el modelo contra tus partidas
+        run: node scripts/medir-mias.mjs --json /tmp/mias.json > /tmp/informe.md
+
+      - name: Guardar
+        run: |
+          git config user.name  "partidas-bot"
+          git config user.email "partidas-bot@users.noreply.github.com"
+          git add historial/partidas.json
+          git diff --staged --quiet || git commit -m "partidas: $(date -u +%Y-%m-%d)"
+          # Otro bot puede haber movido main mientras: se rebasa y se
+          # reintenta; si fallan los tres intentos el paso sale EN ROJO.
+          subido=0
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push && { subido=1; break; }
+            sleep 5
+          done
+          [ "$subido" = 1 ] || { echo "::error::push rechazado tres veces"; exit 1; }
+
+      - name: Responder en la incidencia
+        if: ${{ always() && github.event_name == 'issues' }}
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = await import('node:fs');
+            const leer = (f) => { try { return fs.readFileSync(f, 'utf8'); } catch { return ''; } };
+            const bien = '${{ job.status }}' === 'success';
+            const importado = leer('/tmp/importado.txt').trim();
+            const informe = leer('/tmp/informe.md').trim();
+            const cuerpo = bien
+              ? [`Recibido. ${importado}`, '', informe, '', `Guardado en \`historial/partidas.json\`. [Ver la ejecución](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`].join('\n')
+              : [`No he podido leer el código: ${importado || '(sin salida)'}.`, 'Vuelve a «Tus partidas» → «Enviar al proyecto» y comprueba que el código llega entero.', '', `[Ver la ejecución](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`].join('\n');
+            await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body: cuerpo });
+            if (bien) await github.rest.issues.update({ ...context.repo, issue_number: context.issue.number, state: 'closed', state_reason: 'completed' });

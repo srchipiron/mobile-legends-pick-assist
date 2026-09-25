@@ -266,3 +266,10 @@ public/data/heroes.json   catálogo de roles y tags escrito a mano (esto es el a
 ```
 
 Datos © Moonton. Proyecto personal, sin relación con Moonton ni con los mantenedores de la API.
+
+## Tus partidas, en el proyecto
+
+Desde 3.8.0, «Tus partidas» → «Enviar mis partidas al proyecto» abre una
+incidencia con tu código de perfil dentro; un bot la guarda en
+`historial/partidas.json`, mide el modelo contra tus drafts y te responde
+ahí mismo. A mano: `node scripts/medir-mias.mjs`.

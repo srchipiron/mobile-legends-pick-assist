@@ -148,6 +148,13 @@ export default {
   'hist.anadirPista': 'They count towards your mastery and make the pick more yours. They do NOT count towards checking whether the app works: when you played them there was no advice to follow.',
   'hist.elegirHeroe': 'Which hero',
   'hist.anadida': 'Added: {hero}, {resultado}.',
+  'hist.enviar': 'Send my matches to the project',
+  'hist.enviarPista': 'Opens a GitHub issue with your profile code inside (your matches and mastery, a few KB). It is public: it is your repository. A bot stores it in historial/partidas.json and replies with what your matches say about the model. Without this, the model cannot be measured in your queue.',
+  'hist.enviarTitulo': 'Matches: {n} with the app · {fecha}',
+  'hist.enviarCuerpo': 'Sent from the app (“Your matches” → “Send to the project”). The code below carries my logged matches and my mastery; the bot merges it into historial/partidas.json and replies with the measurement.',
+  'hist.enviarPegar': 'The code was too long for the address: it is in the clipboard. Paste it here and submit.',
+  'hist.enviarCopiado': 'The code is long: I copied it to the clipboard. In the issue that just opened, paste it into the body and submit.',
+  'hist.enviarAbierto': 'The issue opened with the code inside. Just submit it.',
   'hist.resumenLineas': '{total} logged · {conApp} with the app · {previas} from your history',
 
   // --- is it working for you? ---

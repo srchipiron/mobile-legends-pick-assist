@@ -195,7 +195,7 @@ export default function App() {
       )}
       {hoja === 'historial' && (
         <HistorialPartidas
-          partidas={personal.partidas} maestria={personal.maestria} pool={rec.pool}
+          partidas={personal.partidas} maestria={personal.maestria} pool={rec.pool} perfil={datosPerfil}
           onOlvidar={personal.olvidarPartida} onCorregir={personal.corregirPartida}
           onAnadir={(heroe, gane) => personal.apuntarPartida({ pick: heroe, gane, previa: true, rango: datos.rango })}
           onCerrar={cerrar} t={t}

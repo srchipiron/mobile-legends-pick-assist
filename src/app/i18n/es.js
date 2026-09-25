@@ -145,6 +145,13 @@ export default {
   'hist.anadirPista': 'Cuentan para tu maestría y hacen la recomendación más tuya. NO cuentan para comprobar si la app acierta: cuando las jugaste no había consejo que seguir.',
   'hist.elegirHeroe': 'Con qué héroe',
   'hist.anadida': 'Añadida: {hero}, {resultado}.',
+  'hist.enviar': 'Enviar mis partidas al proyecto',
+  'hist.enviarPista': 'Abre una incidencia en GitHub con tu código de perfil dentro (tus partidas y tu maestría, unos pocos KB). Es público: es tu repositorio. Un bot la guarda en historial/partidas.json y responde con lo que dicen tus partidas del modelo. Sin esto, el modelo no se puede medir en tu cola.',
+  'hist.enviarTitulo': 'Partidas: {n} con la app · {fecha}',
+  'hist.enviarCuerpo': 'Enviado desde la app («Tus partidas» → «Enviar al proyecto»). El código de abajo lleva mis partidas apuntadas y mi maestría; el bot lo funde con historial/partidas.json y responde con la medida.',
+  'hist.enviarPegar': 'El código era demasiado largo para ir en la dirección: está copiado en el portapapeles. Pégalo aquí y confirma.',
+  'hist.enviarCopiado': 'El código es largo: lo he copiado al portapapeles. En la incidencia que se ha abierto, pégalo en el cuerpo y confirma.',
+  'hist.enviarAbierto': 'Se ha abierto la incidencia con el código dentro. Solo tienes que confirmar.',
   'hist.resumenLineas': '{total} {total|apuntada|apuntadas} · {conApp} con la app · {previas} de tu historial',
 
   // --- ¿te está funcionando? ---
