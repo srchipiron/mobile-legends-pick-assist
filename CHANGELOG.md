@@ -8,6 +8,31 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.7.1
+
+- **La probabilidad con el draft a medias vuelve a estar centrada**: el
+  equipo con más héroes en pantalla salía favorecido (con un héroe tuyo y
+  cinco suyos, la app decía 45% aunque no supiera nada de los otros cuatro).
+  El centro del término de héroe era la media simple de los 133 winrates y
+  los héroes que salen en un draft son los populares, que este parche ganan
+  más que esa media; ahora el centro es la media ponderada por lo que se
+  juega (≈50%, como tiene que ser). Y el equilibrio de daño se centra en
+  un equipo de uno por línea, no en cinco al azar: el oro es físico y el
+  medio mágico, así que un equipo real mezcla más. Medido: 1 contra 5 pasa
+  del 45% al 50%. El ranking de tu línea no cambia (los tres primeros son
+  los mismos en 300 de 300 drafts medidos): el centro es el mismo para
+  todos los candidatos. Los baneos sugeridos sí se mueven un poco: con el
+  centro bajo, cualquier héroe popular parecía más amenaza que uno raro y
+  fuerte, y ahora la amenaza se mide contra lo que cabe esperar del que
+  cogerían en su lugar (el primer baneo cambia en el 13% de los drafts,
+  casi siempre el tercero).
+- **Los datos vuelven a publicarse dos veces al día.** Desde el 23 de
+  septiembre el despliegue se paraba porque una prueba exigía que la banda
+  de probabilidades de drafts al azar fuera la de un parche asentado, y
+  una semana después del reinicio de temporada los winrates se dispersan
+  más (5 puntos entre héroes en vez de 3). Esa prueba mide ahora la
+  escala sobre datos sintéticos fijos y la banda del día solo se enseña.
+
 ## 3.7.0
 
 - **La interfaz sigue el lenguaje visual actual de Apple (iOS 26, «Liquid

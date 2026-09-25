@@ -182,6 +182,22 @@ test('el equilibrio esperado de un equipo al azar: por pickrate, creciente y aco
   ok(Math.abs(conNuevo[2] - equilibrioEsperado([F('a'), M('b')], stats)[2]) < 1e-12, 'un heroe sin estadisticas pesa en el esperado');
   // Los mixtos no cuentan para ninguno.
   eq(equilibrioEsperado([{ name: 'x', damage: { fisico: 3, magico: 3 } }, F('a')])[2], 0);
+  // Con LÍNEAS: un equipo real lleva uno por línea, y si una línea es toda
+  // física y otra toda mágica, dos héroes (uno de cada) mezclan SIEMPRE:
+  // E[2] = 1, no el 0,5 de sacar dos al azar del conjunto. Medido en los
+  // datos reales del 25 de septiembre de 2026: con el centro de «cinco al
+  // azar de los 133», 1 contra 5 daba el 48,8% y 5 contra 1 el 51,3% solo
+  // por este término; con el de líneas, 50,1 y 50,0.
+  const pools = { oro: [F('a'), F('c')], medio: [M('b'), M('d')] };
+  const conLineas = equilibrioEsperado([F('a'), M('b'), F('c'), M('d')], null, pools);
+  ok(Math.abs(conLineas[2] - 1) < 1e-12, `con una línea física y otra mágica, E[2] debería ser 1 y es ${conLineas[2]}`);
+  eq(conLineas[1], 0);
+  // Tres líneas, la tercera mixta: con dos héroes, la media de los tres
+  // pares de líneas: (1 + 0 + 0) / 3.
+  const tres = equilibrioEsperado([], null, { ...pools, mix: [{ name: 'z', damage: { fisico: 3, magico: 3 } }] });
+  ok(Math.abs(tres[2] - 1 / 3) < 1e-12, `E[2] con tres líneas ${tres[2]}`);
+  // Sin líneas (o vacías) vuelve al multinomial de siempre.
+  ok(Math.abs(equilibrioEsperado([F('a'), M('b')], null, {})[2] - 0.5) < 1e-12, 'con pools vacíos no cae al multinomial');
 });
 
 test('cada heroe lleva su id, tambien los de nombre raro', () => {

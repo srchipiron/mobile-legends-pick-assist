@@ -252,6 +252,15 @@ ninguna constante.
   `elegirVentana`, no cuál. Cada temporada nueva, esperar este aviso unos
   días es normal; si dura más de una semana, mirar la ruta.
 
+- **La dispersión del winrate entre héroes no es constante**: 3,2–3,3 pp
+  en un parche asentado (agosto–20 de septiembre de 2026) y 5,0 pp en las
+  DOS ventanas una semana después del reinicio de temporada (23–24 de
+  septiembre). El término de héroe es lineal en el logit, así que la banda
+  de probabilidades se abre con ella (36/64 en vez de 38/62). La escala se
+  midió con la dispersión asentada; si `medir-pro.mjs` (cada lunes) saca
+  una pendiente que se aleja de 1 en las semanas siguientes a un reinicio,
+  es esto, y se mira antes de tocar la escala.
+
 Dos constantes que se midieron y se dejaron como estaban, para no volver a
 medirlas: el umbral de «tu héroe está N puntos por encima» (`>= 0.02` en
 `analisis.js`) lo supera el 63% de los pares y la σ del winrate global entre
@@ -640,6 +649,37 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   o una transformación en un elemento, mira si algo `fixed` cuelga de él;
   y por lo mismo el encogimiento al tocar (`button:active { transform }`)
   no se aplica al pie.
+- **El centro del término de héroe en la media SIMPLE de los 133** (3.7.1,
+  incidencia #9, dos días sin publicar datos) — `avgByRank` de la ingesta y
+  `mediaDeWinrate` eran medias sin ponderar (0,482 el 24 de septiembre de
+  2026) y los héroes que salen en un draft son los populares, que ganan
+  más que esa media: cada héroe visto sumaba +0,09 de logit y el equipo con
+  más héroes en pantalla iba por delante (1 contra 5: 45%; con la de 7 días
+  del 20 de septiembre, 47,8%, dentro del margen de la prueba pero ya
+  sesgado). La media ponderada por cuota de pick es ≈0,50 por
+  construcción (cada partida tiene un ganador) y es lo que cabe esperar
+  del héroe que sale. Y tenía GEMELO: `equilibrioEsperado` centraba en
+  «cinco al azar de los 133» (multinomial) cuando un equipo real lleva uno
+  por línea y las líneas no reparten el daño igual: −0,13/+0,11 de logit,
+  1,2 puntos. Hoy se promedia sobre subconjuntos de líneas. El ranking no
+  cambia con ninguno de los dos (el centro es el mismo para todos los
+  candidatos); cambia la probabilidad con el draft a medias, que es lo que
+  se enseña. Un centro es «lo que cabe esperar de lo que SALE», no la media
+  de lo que existe.
+- **Una banda de probabilidad exigida sobre los datos del día** (3.7.1, la
+  misma incidencia) — `modelo-medido.test` pedía p05 en 0.37–0.40 sobre
+  1.000 drafts al azar con los datos reales, calibrado en un parche
+  asentado (σ de winrates 3,3 pp). El 23 de septiembre de 2026, una semana
+  después del reinicio de temporada, la σ subió a 5,0 pp en las DOS
+  ventanas, la banda se abrió a 0.356 con la escala intacta y el
+  despliegue de los datos se paró dos días. Es la lección de 3.4.0 otra
+  vez («una prueba sobre datos reales comprueba que el código reacciona
+  bien al dato que haya, nunca que el dato sea el de un día bueno»), en
+  otra prueba. Hoy la banda se mide sobre `pruebas/fixtures/meta-sintetico.mjs`
+  (determinista: 0.3741/0.6259 a 0.44; 0.3366/0.6634 a 0.58) y la del día
+  se escribe en el registro. Toda prueba nueva que mida un estadístico
+  con los datos reales tiene que preguntarse qué pasa con el dato del
+  primer día de temporada.
 - **La tarjeta nº1 fuera de la primera pantalla** — cada bloque nuevo encima
   de las tarjetas (análisis, estimación de 141-152 px, consejo para los
   compañeros, composición) fue empujando el nº1: medido en 390×844 asomaba
@@ -869,7 +909,10 @@ se repite en cada corrida de `pro.yml` al log. NO vuelvas a suponer:
   validación cruzada (mínimo 0,5 por 1.000, cinco veces por debajo de lo
   medido) y `ajustar-modelo.mjs` lo enseña como `+dano` y `escala+dano`.
   La banda de drafts al azar se abre de 40/60 a 38/62 (p05/p95): es la
-  información nueva, no ruido.
+  información nueva, no ruido. OJO (3.7.1): esa banda depende de la
+  dispersión de los winrates del parche (5 pp en vez de 3 la semana
+  después de un reinicio de temporada → 36/64) y por eso ya no se exige
+  sobre los datos reales, sino sobre el meta sintético.
 - **El orden de pick de Liquipedia no lleva contrapick medible**: el cruce
   medio del héroe elegido después contra el elegido antes es 0.000 (n=19.072
   pares). Así que no hay castigo adversarial; lo que falta por salir entra
@@ -1151,6 +1194,11 @@ aditivo en log-odds con los términos de «El modelo» (desde 3.4.0 también el
 equilibrio de daño), y cada uno está medido antes de sumarse. Lo que NO conviene
 volver a suponer:
 
+- **El centro del término de héroe es la media PONDERADA por cuota de pick
+  de la ventana en uso** (3.7.1): ≈0,50 por construcción. La media simple
+  de los 133 (0,482 tras el reinicio de temporada, 0,493 antes) sesgaba a
+  favor del equipo con más héroes vistos. Y `equilibrioEsperado` centra en
+  un equipo de uno por línea, no en cinco al azar (ver «Errores»).
 - **Las tres matrices están centradas.** Los cruces son antisimétricos
   (c[a][b]+c[b][a] = 1.0000 en los 8.778 pares) y no llevan la fuerza de
   nadie (r=0,009 con wrA−wrB). Las parejas TAMPOCO llevan la fuerza de los

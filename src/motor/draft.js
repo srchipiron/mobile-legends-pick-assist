@@ -64,23 +64,25 @@ export function prepararDatos({ catalogo = null, meta = null, rango = null } = {
   const semana = indexarPorNombre(meta?.statsByRank?.[rangoUsado] ?? meta?.stats);
   const recientes = meta?.recientes?.statsByRank?.[rangoUsado] ? indexarPorNombre(meta.recientes.statsByRank[rangoUsado]) : null;
   const { stats, ventana } = elegirVentana(semana, recientes, meta?.recientes?.dias ?? 3);
+  const poolsPorLinea = Object.fromEntries(LINEAS.map((l) => [l, poolDeLinea(heroes, lineas, l)]));
   const metaCtx = {
     stats,
     statsSemana: semana,
     ventana,
     counters: indexarPorNombre(meta?.counters, 2),
     synergies: indexarPorNombre(meta?.synergies, 2),
-    // Lo que cabe esperar de equilibrio de daño en un equipo de n héroes
-    // (modelo.js, terminoEquilibrio): centra el término a medias.
-    equilibrioEsperado: equilibrioEsperado(heroes, stats),
-    // El centro del término de héroe es la media de LA MISMA ventana: con la
-    // de 7 días, la que calculó la ingesta (idéntica a la de 2.x); con la de
-    // 3, la de los valores que de verdad se usan.
-    mediaDelRango: ventana.dias === 7
-      ? (meta?.avgByRank?.[rangoUsado] ?? meta?.patchAvgWinRate ?? 0.5)
-      : mediaDeWinrate(stats),
+    // Lo que cabe esperar de equilibrio de daño en un equipo de n héroes,
+    // uno por línea (modelo.js, terminoEquilibrio): centra el término a
+    // medias. Con las líneas, no con cinco al azar de los 133: las líneas
+    // no reparten el daño igual y un equipo real mezcla más.
+    equilibrioEsperado: equilibrioEsperado(heroes, stats, poolsPorLinea),
+    // El centro del término de héroe es la media de LA MISMA ventana y
+    // PONDERADA por cuota de pick (ventana.js). Hasta 3.7.1 con la de 7 días
+    // se usaba `avgByRank` de la ingesta, que es la media simple de los 133:
+    // 0,482 frente a 0,502, y cada héroe visto sumaba +0,09 de logit. La
+    // ingesta sigue escribiendo `avgByRank`, pero ya no decide nada.
+    mediaDelRango: mediaDeWinrate(stats),
   };
-  const poolsPorLinea = Object.fromEntries(LINEAS.map((l) => [l, poolDeLinea(heroes, lineas, l)]));
   return {
     heroes, lineas, frecuencias, rango: rangoUsado, meta: metaCtx, poolsPorLinea,
     porNombre: new Map(heroes.map((h) => [h.name, h])),

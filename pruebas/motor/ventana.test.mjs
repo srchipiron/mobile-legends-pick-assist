@@ -68,6 +68,14 @@ test('la media de la ventana es la misma cuenta que hace la ingesta', () => {
   // `avgOf` en la ingesta: media simple de los winrates que no son nulos.
   casi(mediaDeWinrate({ a: { winRate: 0.4 }, b: { winRate: 0.6 }, c: { winRate: null }, d: {} }), 0.5, 1e-12);
   eq(mediaDeWinrate({}), 0.5);
+  // PONDERADA por cuota de pick: el centro es lo que cabe esperar del héroe
+  // que sale en un draft. Con la media simple (0,482 frente a 0,502 el 24
+  // de septiembre de 2026) cada héroe visto sumaba +0,09 de logit y 1
+  // contra 5 daba el 45% (incidencia #9).
+  casi(mediaDeWinrate({ a: { winRate: 0.4, pickRate: 0.01 }, b: { winRate: 0.6, pickRate: 0.03 } }), 0.55, 1e-12, 'no pondera por cuota de pick');
+  // Un héroe sin cuota pesa 0, no 1: entre cuotas que suman 1, «no sé» es 0.
+  casi(mediaDeWinrate({ a: { winRate: 0.4, pickRate: 0.01 }, b: { winRate: 0.6, pickRate: 0.03 }, c: { winRate: 0.9 } }), 0.55, 1e-12, 'un héroe sin cuota mueve el centro');
+  casi(mediaDeWinrate({ a: { winRate: 0.4, pickRate: 0 }, b: { winRate: 0.6, pickRate: 0 } }), 0.5, 1e-12, 'sin ninguna cuota no cae a la media simple');
 });
 
 await terminar('motor/ventana');

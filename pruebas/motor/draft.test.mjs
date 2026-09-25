@@ -7,12 +7,12 @@
  */
 import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
 import { catalogo, h } from '../fixtures/catalogo.mjs';
-import { LINEAS } from '../../src/motor/catalogo.js';
+import { LINEAS, equilibrioEsperado } from '../../src/motor/catalogo.js';
 import {
   rangoActivo, prepararDatos, resolverNombres, poolDe,
   lineasEnemigasAbiertas, rivalDeLinea, recomendar, eleccionDe, planDePicks, ordenar,
 } from '../../src/motor/draft.js';
-import { elegirVentana } from '../../src/motor/ventana.js';
+import { elegirVentana, mediaDeWinrate } from '../../src/motor/ventana.js';
 import { indexarPorNombre } from '../../src/motor/nombres.js';
 
 const meta = leerJson('public/data/roam-meta.json');
@@ -173,7 +173,11 @@ test('prepararDatos decide la ventana en UN sitio: la corta si viene y es cohere
   const sin = prepararDatos({ catalogo, meta: sinRecientes });
   eq(sin.meta.ventana.dias, 7, 'sin ventana corta no manda la de 7');
   ok(sin.meta.statsSemana, 'no expone las estadisticas de la semana');
-  eq(sin.meta.mediaDelRango, meta.avgByRank[sin.rango], 'con la de 7 la media no es la que calculo la ingesta');
+  // Desde 3.7.1 el centro es la media PONDERADA por pick de la ventana en
+  // uso, no `avgByRank` de la ingesta (media simple, 0,48 tras el reinicio
+  // de temporada; ver la prueba del cableado de abajo).
+  ok(Math.abs(sin.meta.mediaDelRango - mediaDeWinrate(sin.meta.stats)) < 1e-12, 'con la de 7 la media no es la ponderada de la semana');
+  ok(Math.abs(sin.meta.mediaDelRango - meta.avgByRank[sin.rango]) > 0.005, 'la media ponderada coincide con la simple de la ingesta: o la ingesta ya pondera, o el centro ha vuelto a la simple');
   // Y con los datos reales tal cual, la decision es la de elegirVentana
   // sobre las mismas entradas: la corta si es coherente, la de 7 si no.
   // NO se exige que sea la corta: el 19 de septiembre de 2026, tres dias
@@ -229,6 +233,28 @@ test('tu pick fijado manda sobre el nº1 en lo que viene despues, y el plan de b
   eq(plan.length, 3);
   eq(JSON.stringify(plan.map((x) => x.heroe.name)), JSON.stringify(ordenar(datos, { linea: 'roam' }).slice(0, 3).map((c) => c.heroe.name)));
   ok(plan.every((x) => typeof x.banRate === 'number'), 'el plan no trae la tasa de ban');
+});
+
+test('prepararDatos centra el termino de heroe en la media ponderada y el equilibrio en un equipo de uno por linea', () => {
+  // Los dos centros de 3.7.1 (incidencia #9). El de héroe: la media
+  // PONDERADA por cuota de pick de la ventana en uso (≈0,50), no la media
+  // simple de la ingesta (`avgByRank`, 0,48). El de equilibrio: uno por
+  // línea, no cinco al azar de los 133. Aquí se comprueba el CABLEADO, que
+  // la prueba estadística de modelo.test (1 contra 5 dentro de 2,5 puntos)
+  // no distingue: el equilibrio multinomial solo sesgaba 1,2 puntos.
+  const meta = leerJson('public/data/roam-meta.json');
+  if (!(meta.heroes ?? []).length || !meta.synergies) return;
+  const datos = prepararDatos({ catalogo, meta });
+  const { stats, mediaDelRango, equilibrioEsperado: esperado } = datos.meta;
+  ok(Math.abs(mediaDelRango - mediaDeWinrate(stats)) < 1e-12, `el centro (${mediaDelRango}) no es la media ponderada de la ventana en uso (${mediaDeWinrate(stats)})`);
+  let sw = 0; let swr = 0;
+  for (const s of Object.values(stats)) if (s.winRate != null && s.pickRate > 0) { sw += s.pickRate; swr += s.pickRate * s.winRate; }
+  ok(Math.abs(mediaDelRango - swr / sw) < 1e-12, 'el centro no pondera por cuota de pick');
+  ok(Math.abs(mediaDelRango - 0.5) < 0.01, `la media ponderada debería quedar en ≈0,50 por construcción y es ${mediaDelRango}`);
+  const conLineas = equilibrioEsperado(datos.heroes, stats, datos.poolsPorLinea);
+  const multinomial = equilibrioEsperado(datos.heroes, stats);
+  for (let n = 0; n <= 5; n++) ok(Math.abs(esperado[n] - conLineas[n]) < 1e-12, `el equilibrio esperado de ${n} héroes no es el de uno por línea`);
+  ok(conLineas[5] > multinomial[5], `un equipo de uno por línea debería mezclar más que cinco al azar (${conLineas[5]} frente a ${multinomial[5]})`);
 });
 
 await terminar('motor/draft');

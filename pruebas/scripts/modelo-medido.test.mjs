@@ -16,10 +16,11 @@ import { catalogo } from '../fixtures/catalogo.mjs';
 import { LINEAS } from '../../src/motor/catalogo.js';
 import { indiceDeLineas, frecuenciaDeRoles, detectarRivalDeLinea } from '../../src/motor/lineas.js';
 import { generador } from '../../src/motor/robustez.js';
-import { prepararDatos, estimarCon } from '../../src/motor/draft.js';
+import { prepararDatos } from '../../src/motor/draft.js';
 import { ESCALA, ESCALA_SE, PESO_EQUILIBRIO_DANO, terminoEquilibrio } from '../../src/motor/modelo.js';
 import { logistica, asignarLineas } from '../../scripts/medir-rival.mjs';
 import { cargar, terminosDe, validar } from '../../scripts/ajustar-modelo.mjs';
+import { metaSintetica, bandaDe } from '../fixtures/meta-sintetico.mjs';
 
 test('la medida del rival de linea: la logistica recupera coeficientes conocidos y el reparto de lineas es el de la app', () => {
   // Datos sinteticos con coeficientes conocidos (a=0.3, b1=1.5, b2=-0.8): el
@@ -97,34 +98,37 @@ test('el modelo: la escala es la medida en las partidas pro', async () => {
   //    ruido, pero deja pasar mucho: con el ajuste de hoy (0.40 ± 0.13) todo
   //    lo que hay entre 0.08 y 0.73 lo pasa, o sea que una ESCALA puesta a
   //    0.58 (+32%) no la caza NADIE. Lo que sí la caza es lo que la escala
-  //    hace en pantalla, que también está medido y documentado: con drafts
-  //    completos al azar la probabilidad va del 40% al 60% (p05/p95); sin
-  //    escala iba del 30% al 70%, y eso era exagerar.
-  //    El margen, medido con ocho semillas y 1.000 drafts cada una (3.4.0,
-  //    con el equilibrio de daño dentro, que ensancha la banda): a 0.44 p05
-  //    cae entre 0.3804 y 0.3867 y p95 entre 0.6106 y 0.6254; a 0.58, p05
-  //    entre 0.3446 y 0.3525 y p95 entre 0.6441 y 0.6628. La banda deja un
-  //    punto de holgura por el lado malo, mas del doble de lo que se mueve
-  //    entre semillas, y una escala +32% se sale por los dos extremos
-  //    (verificado por mutacion). Antes de 3.4.0: 0.3995–0.4093 y
-  //    0.5917–0.5982.
-  const meta = leerJson('public/data/roam-meta.json');
-  ok((meta.heroes ?? []).length >= 100 && meta.counters, 'roam-meta.json llega sin héroes o sin matriz de cruces: la banda de probabilidad no se puede medir');
-  const datos = prepararDatos({ catalogo, meta });
+  //    hace en pantalla: la banda p05/p95 de drafts completos al azar. Hasta
+  //    3.7.1 esa banda se medía sobre los DATOS DEL DÍA con un margen fijo
+  //    (0.37–0.40 / 0.60–0.63), y el 23 de septiembre de 2026, una semana
+  //    después del reinicio de temporada, la dispersión de los winrates
+  //    pasó de 3,3 a 5,0 pp, la banda se abrió a 0.356/0.643 con la escala
+  //    intacta, y el despliegue de los datos se quedó parado dos días
+  //    (incidencia #9): una prueba que exigía que el dato fuera el de un
+  //    día bueno. Hoy la banda se mide sobre un META SINTÉTICO y
+  //    determinista (winrates σ 3,2 pp desde el nombre, cruces y parejas
+  //    con la dispersión real), así que es una función de la escala y de
+  //    nada más: a 0.44 sale p05 0.3741 y p95 0.6259; a 0.58, 0.3366 y
+  //    0.6634, y a 0.40, 0.3851 y 0.6149 (verificado por mutación; el
+  //    margen de 0.004 caza un cambio de ±0.04 en la escala). La de los datos del día se enseña
+  //    en el registro, no se exige.
+  const sintetico = metaSintetica();
+  const datos = prepararDatos({ catalogo, meta: sintetico });
   const pools = datos.poolsPorLinea;
-  ok(!LINEAS.some((ln) => pools[ln].length < 10), `alguna línea se ha quedado con menos de diez héroes (${LINEAS.map((ln) => `${ln} ${pools[ln].length}`).join(', ')}): no hay drafts que sortear`);
-  const rnd = generador(3);
-  const ps = [];
-  for (let d = 0; d < 1000; d++) {
-    const u = new Set();
-    const coge = (ln) => { const c = pools[ln].filter((x) => !u.has(x.name)); const x = c[Math.floor(rnd() * c.length)]; u.add(x.name); return x; };
-    const A = LINEAS.map(coge); const E = LINEAS.map(coge);
-    ps.push(estimarCon(datos, { yo: A[0], aliados: A.slice(1), enemigos: E }).p);
+  ok(!LINEAS.some((ln) => pools[ln].length < 10), `el meta sintético deja alguna línea con menos de diez héroes (${LINEAS.map((ln) => `${ln} ${pools[ln].length}`).join(', ')})`);
+  const banda = bandaDe(datos, pools);
+  ok(Math.abs(banda.p05 - 0.3741) < 0.004, `p05 de 1.000 drafts sintéticos al azar fuera de lo que da la escala 0.44: ${banda.p05.toFixed(4)} (esperado 0.3741)`);
+  ok(Math.abs(banda.p95 - 0.6259) < 0.004, `p95 de 1.000 drafts sintéticos al azar fuera de lo que da la escala 0.44: ${banda.p95.toFixed(4)} (esperado 0.6259)`);
+  // Y la de hoy, para leerla en el registro del despliegue: se mueve con la
+  // dispersión de los winrates del parche y no es un fallo que se mueva.
+  const meta = leerJson('public/data/roam-meta.json');
+  if ((meta.heroes ?? []).length >= 100 && meta.counters) {
+    const reales = prepararDatos({ catalogo, meta });
+    if (!LINEAS.some((ln) => reales.poolsPorLinea[ln].length < 10)) {
+      const hoy = bandaDe(reales, reales.poolsPorLinea);
+      console.log(`  banda de hoy con los datos reales: p05 ${hoy.p05.toFixed(3)} · p95 ${hoy.p95.toFixed(3)} (ventana ${reales.meta.ventana.dias} días)`);
+    }
   }
-  ps.sort((a, b2) => a - b2);
-  const q = (f) => ps[Math.floor(ps.length * f)];
-  ok(q(0.05) > 0.37 && q(0.05) < 0.40, `p05 de 1.000 drafts al azar fuera de lo medido con la escala 0.44: ${q(0.05).toFixed(4)}`);
-  ok(q(0.95) > 0.60 && q(0.95) < 0.63, `p95 de 1.000 drafts al azar fuera de lo medido con la escala 0.44: ${q(0.95).toFixed(4)}`);
 });
 
 await terminar('scripts/modelo-medido');

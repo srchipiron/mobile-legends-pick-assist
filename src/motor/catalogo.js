@@ -147,29 +147,74 @@ export function perfilDeDano(heroes = []) {
  * ya costó una versión con las parejas). Con los dos equipos al completo la
  * corrección es la misma para los dos y se cancela.
  */
-export function equilibrioEsperado(heroes = [], stats = null) {
-  let pf = 0; let pm = 0; let po = 0;
-  for (const h of heroes) {
-    // Con estadísticas, cada héroe pesa su cuota de picks y uno sin dato no
-    // pesa nada: un `?? 1` le daría a un héroe recién salido tanto peso como
-    // a los 133 juntos (las cuotas suman 1). Sin estadísticas, todos igual.
-    const w = stats ? (stats[nombreClave(h.name)]?.pickRate ?? 0) : 1;
-    const t = tipoDeDano(h);
-    if (t === 'fisico') pf += w; else if (t === 'magico') pm += w; else po += w;
-  }
-  const total = pf + pm + po || 1;
-  pf /= total; pm /= total; po /= total;
-  const fact = [1, 1, 2, 6, 24, 120];
-  const esperado = [0];
-  for (let n = 1; n <= 5; n++) {
-    let e = 0;
-    for (let f = 0; f <= n; f++) for (let m = 0; m <= n - f; m++) {
-      const o = n - f - m;
-      e += (fact[n] / (fact[f] * fact[m] * fact[o])) * pf ** f * pm ** m * po ** o * Math.min(f, m);
+export function equilibrioEsperado(heroes = [], stats = null, poolsPorLinea = null) {
+  // Reparto de tipos de daño de un conjunto de héroes, ponderado por cuota
+  // de pick. Con estadísticas, cada héroe pesa su cuota y uno sin dato no
+  // pesa nada: un `?? 1` le daría a un héroe recién salido tanto peso como
+  // a los 133 juntos (las cuotas suman 1). Sin estadísticas, todos igual.
+  const reparto = (lista) => {
+    let pf = 0; let pm = 0; let po = 0;
+    for (const h of lista) {
+      const w = stats ? (stats[nombreClave(h.name)]?.pickRate ?? 0) : 1;
+      const t = tipoDeDano(h);
+      if (t === 'fisico') pf += w; else if (t === 'magico') pm += w; else po += w;
     }
-    esperado.push(e);
+    const total = pf + pm + po || 1;
+    return [pf / total, pm / total, po / total];
+  };
+  const lineas = poolsPorLinea ? Object.values(poolsPorLinea).filter((p) => p?.length) : [];
+  if (!lineas.length) {
+    // Sin líneas: n héroes sacados al azar del conjunto entero (multinomial).
+    const [pf, pm, po] = reparto(heroes);
+    const fact = [1, 1, 2, 6, 24, 120];
+    const esperado = [0];
+    for (let n = 1; n <= 5; n++) {
+      let e = 0;
+      for (let f = 0; f <= n; f++) for (let m = 0; m <= n - f; m++) {
+        const o = n - f - m;
+        e += (fact[n] / (fact[f] * fact[m] * fact[o])) * pf ** f * pm ** m * po ** o * Math.min(f, m);
+      }
+      esperado.push(e);
+    }
+    return esperado;
   }
-  return esperado;
+  // Con líneas: un equipo real lleva UN héroe por línea, y las líneas no
+  // reparten el daño igual (el oro es físico, el medio mágico), así que un
+  // equipo de cinco mezcla más de lo que dice sacar cinco al azar de los
+  // 133. Medido el 25 de septiembre de 2026 con el centro multinomial: 1
+  // contra 5 daba el 48,8% y 5 contra 1 el 51,3% solo por este término
+  // (−0,13 y +0,11 de logit sin escalar). Aquí, para n héroes, la media
+  // sobre los subconjuntos de n líneas de E[min(físicos, mágicos)], con
+  // el reparto de cada línea ponderado por cuota de pick dentro de su pool.
+  const porLinea = lineas.map(reparto);
+  const esperado = [0, 0, 0, 0, 0, 0];
+  const cuenta = [0, 0, 0, 0, 0, 0];
+  const total = 1 << porLinea.length;
+  for (let mascara = 1; mascara < total; mascara++) {
+    // Distribución de (físicos, mágicos) del subconjunto, por convolución.
+    let dist = new Map([['0,0', 1]]);
+    let n = 0;
+    for (let i = 0; i < porLinea.length; i++) {
+      if (!(mascara & (1 << i))) continue;
+      n += 1;
+      const [pf, pm, po] = porLinea[i];
+      const siguiente = new Map();
+      for (const [clave, p] of dist) {
+        const [f, m] = clave.split(',').map(Number);
+        for (const [df, dm, q] of [[1, 0, pf], [0, 1, pm], [0, 0, po]]) {
+          if (!q) continue;
+          const k = `${f + df},${m + dm}`;
+          siguiente.set(k, (siguiente.get(k) ?? 0) + p * q);
+        }
+      }
+      dist = siguiente;
+    }
+    if (n > 5) continue;
+    let e = 0;
+    for (const [clave, p] of dist) { const [f, m] = clave.split(',').map(Number); e += p * Math.min(f, m); }
+    esperado[n] += e; cuenta[n] += 1;
+  }
+  return esperado.map((e, n) => (cuenta[n] ? e / cuenta[n] : 0));
 }
 
 /** Un héroe mixto tapa cualquier hueco; uno puro solo el suyo. */

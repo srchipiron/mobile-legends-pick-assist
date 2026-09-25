@@ -84,6 +84,24 @@ export function elegirVentana(semana = {}, recientes = null, dias = 3) {
 
 /** Media del winrate de un conjunto de estadísticas, como la calcula la ingesta (`avgOf`). */
 export function mediaDeWinrate(stats = {}) {
-  const v = Object.values(stats).map((s) => s?.winRate).filter((x) => x != null);
-  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0.5;
+  // PONDERADA por cuota de pick, no la media simple de los 133. El centro
+  // del término de héroe tiene que ser lo que cabe esperar del héroe que
+  // SALE en un draft, y los que salen son los populares. Medido el 24 de
+  // septiembre de 2026 (Gloria, tras el reinicio de temporada): media
+  // simple 0,482, ponderada 0,502; con la simple cada héroe visto sumaba
+  // +0,09 de logit y el equipo con más héroes en pantalla iba por delante
+  // (1 contra 5: 45%; incidencia #9, dos días sin publicar datos). La
+  // ponderada es ≈0,50 por construcción: cada partida tiene un ganador.
+  // Un héroe sin cuota pesa 0, no 1 (el mismo `?? 1` que ya costó dos
+  // centros en 3.4.0 y 3.5.0); sin ninguna cuota, la media simple.
+  let sw = 0; let swr = 0; let n = 0; let suma = 0;
+  for (const s of Object.values(stats)) {
+    const w = s?.winRate;
+    if (w == null) continue;
+    n += 1; suma += w;
+    const peso = Number.isFinite(s.pickRate) && s.pickRate > 0 ? s.pickRate : 0;
+    sw += peso; swr += peso * w;
+  }
+  if (sw > 0) return swr / sw;
+  return n ? suma / n : 0.5;
 }
