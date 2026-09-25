@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T20:39:06.189Z",
+  "generatedAt": "2026-09-25T10:17:38.791Z",
   "rank": "glory",
   "ranks": [
     "epic",
@@ -2740,7 +2740,7 @@
     "base": "GET https://arena-hv.fastapicloud.dev",
     "schema": {
       "url": "https://arena-hv.fastapicloud.dev/api/openapi.json",
-      "pathCount": 46,
+      "pathCount": 47,
       "heroPaths": [
         "/api/heroes",
         "/api/heroes/rank",
@@ -2748,6 +2748,7 @@
         "/api/heroes/{hero_identifier}",
         "/api/heroes/{hero_identifier}/stats",
         "/api/heroes/{hero_identifier}/skill-combos",
+        "/api/heroes/{hero_identifier}/wallpapers",
         "/api/heroes/{hero_identifier}/trends",
         "/api/heroes/{hero_identifier}/relations",
         "/api/heroes/{hero_identifier}/counters",
