@@ -22,7 +22,10 @@ const POR_LINEA = 12;
  * sube tras un parche se ve aquí antes de que la media de 7 días lo recoja.
  */
 export function Meta({ datos, linea, onCerrar, t = tPorDefecto }) {
-  const { stats, ventana, mediaDelRango } = datos.meta;
+  const { stats, ventana, mediaDelRango, fuerza } = datos.meta;
+  // De qué rango sale la fuerza: el tuyo, salvo Gloria recién vaciada por un
+  // reinicio de temporada (motor/ventana.js, elegirRango).
+  const rangoFuerza = fuerza?.rango ?? datos.rango;
   const tiers = datos.crudo?.tiers?.tiers ?? null;
   const conDeriva = ventana?.dias && ventana.dias !== 7;
   const lineas = useMemo(() => {
@@ -44,7 +47,8 @@ export function Meta({ datos, linea, onCerrar, t = tPorDefecto }) {
         <button className="close" onClick={onCerrar}>{t('app.cerrar')}</button>
       </CabeceraDeHoja>
       <div className="sheet-body">
-        <p className="nota">{t('meta.pista', { rango: ETIQUETAS_RANGO[datos.rango] ?? datos.rango, dias: ventana?.dias ?? 7 })}</p>
+        <p className="nota">{t('meta.pista', { rango: ETIQUETAS_RANGO[rangoFuerza] ?? rangoFuerza, dias: ventana?.dias ?? 7 })}</p>
+        {rangoFuerza !== datos.rango && <p className="nota mal">{t('meta.fuerzaDe', { pedido: ETIQUETAS_RANGO[datos.rango] ?? datos.rango, usado: ETIQUETAS_RANGO[rangoFuerza] ?? rangoFuerza })}</p>}
         {conDeriva && <p className="nota">{t('meta.deriva', { dias: ventana.dias })}</p>}
         {tiers && <p className="nota">{t('meta.tierPista')}</p>}
         {lineas.map(({ linea: l, filas }) => (

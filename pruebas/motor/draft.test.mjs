@@ -12,7 +12,7 @@ import {
   rangoActivo, prepararDatos, resolverNombres, poolDe,
   lineasEnemigasAbiertas, rivalDeLinea, recomendar, eleccionDe, planDePicks, ordenar,
 } from '../../src/motor/draft.js';
-import { elegirVentana, mediaDeWinrate } from '../../src/motor/ventana.js';
+import { elegirVentana, elegirRango, mediaDeWinrate } from '../../src/motor/ventana.js';
 import { indexarPorNombre } from '../../src/motor/nombres.js';
 
 const meta = leerJson('public/data/roam-meta.json');
@@ -186,14 +186,17 @@ test('prepararDatos decide la ventana en UN sitio: la corta si viene y es cohere
   // guarda la descarto, que es justo lo que tiene que hacer. Una prueba que
   // exigiera la corta habria bloqueado el despliegue por un dato legitimo.
   const real = prepararDatos({ catalogo, meta });
-  const recientesReales = meta.recientes?.statsByRank?.[real.rango] ? indexarPorNombre(meta.recientes.statsByRank[real.rango]) : null;
-  const decision = elegirVentana(indexarPorNombre(meta.statsByRank?.[real.rango] ?? meta.stats), recientesReales, meta.recientes?.dias ?? 3);
+  // La ventana se decide sobre el rango del que sale la fuerza (3.11.0:
+  // Mítico si Gloria está vacía tras un reinicio), no sobre el pedido.
+  const rf = real.meta.fuerza.rango;
+  const recientesReales = meta.recientes?.statsByRank?.[rf] ? indexarPorNombre(meta.recientes.statsByRank[rf]) : null;
+  const decision = elegirVentana(indexarPorNombre(meta.statsByRank?.[rf] ?? meta.stats), recientesReales, meta.recientes?.dias ?? 3);
   eq(real.meta.ventana.dias, decision.ventana.dias, `prepararDatos decide otra ventana (${real.meta.ventana.dias}) que elegirVentana (${decision.ventana.dias}: ${decision.ventana.motivo})`);
   eq(real.meta.ventana.motivo, decision.ventana.motivo);
 
   // Con una ventana corta coherente (la de 7 desplazada 0,3 pp): entra, y
   // la media se recalcula con lo que de verdad se usa.
-  const rango = sin.rango;
+  const rango = sin.meta.fuerza.rango;
   const base = meta.statsByRank?.[rango] ?? meta.stats;
   const corta = Object.fromEntries(Object.entries(base).map(([k, v]) => [k, { winRate: v.winRate + 0.003 }]));
   const con = prepararDatos({ catalogo, meta: { ...sinRecientes, recientes: { dias: 3, statsByRank: { [rango]: corta } } } });
@@ -255,6 +258,28 @@ test('prepararDatos centra el termino de heroe en la media ponderada y el equili
   const multinomial = equilibrioEsperado(datos.heroes, stats);
   for (let n = 0; n <= 5; n++) ok(Math.abs(esperado[n] - conLineas[n]) < 1e-12, `el equilibrio esperado de ${n} héroes no es el de uno por línea`);
   ok(conLineas[5] > multinomial[5], `un equipo de uno por línea debería mezclar más que cinco al azar (${conLineas[5]} frente a ${multinomial[5]})`);
+});
+
+test('prepararDatos decide el RANGO de la fuerza en UN sitio, igual que elegirRango, y el tuyo sigue siendo el tuyo', () => {
+  // Con los datos reales NO se exige cuál: tras un reinicio de temporada
+  // Gloria está vacía y manda Mítico; con Gloria llena, Gloria. Lo que se
+  // exige es que la decisión sea la de elegirRango sobre las mismas
+  // entradas, que las estadísticas sean las de ese rango y que `rango`
+  // (lo que se apunta en cada partida) siga siendo el pedido.
+  const real = prepararDatos({ catalogo, meta, rango: 'glory' });
+  const porRango = Object.fromEntries(Object.entries(meta.statsByRank).map(([r, s]) => [r, indexarPorNombre(s)]));
+  const decision = elegirRango(porRango, 'glory');
+  eq(real.meta.fuerza.rango, decision.rango, `prepararDatos saca la fuerza de ${real.meta.fuerza.rango} y elegirRango de ${decision.rango}`);
+  eq(real.rango, 'glory', 'el rango pedido se pierde (las partidas apuntadas dirían otro rango)');
+  const k = Object.keys(real.meta.statsSemana)[0];
+  eq(real.meta.statsSemana[k].winRate, porRango[decision.rango][k].winRate, 'las estadísticas de la semana no son las del rango elegido');
+  // Forzado: con Mítico idéntico a Gloria, manda Gloria; con Gloria revuelta, Mítico.
+  const revuelta = Object.fromEntries(Object.entries(meta.statsByRank.mythic).map(([n, s], i) => [n, { ...s, winRate: 0.4 + ((i * 37) % 20) / 100 }]));
+  const llena = prepararDatos({ catalogo, meta: { ...meta, statsByRank: { ...meta.statsByRank, glory: meta.statsByRank.mythic } }, rango: 'glory' });
+  eq(llena.meta.fuerza.rango, 'glory', 'con Gloria coherente no manda Gloria');
+  const vacia = prepararDatos({ catalogo, meta: { ...meta, statsByRank: { ...meta.statsByRank, glory: revuelta } }, rango: 'glory' });
+  eq(vacia.meta.fuerza.rango, 'mythic', 'con Gloria sin parecerse a Mítico sigue mandando Gloria');
+  ok(Math.abs(vacia.meta.mediaDelRango - mediaDeWinrate(vacia.meta.stats)) < 1e-12, 'el centro del término de héroe no es el del rango en uso');
 });
 
 await terminar('motor/draft');

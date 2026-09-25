@@ -8,6 +8,13 @@
 import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
+/** Lo que decide el motor con los datos que sirve dist/: de qué rango sale la fuerza con Gloria pedida. */
+async function decisionDeRango() {
+  const { readFile } = await import('node:fs/promises');
+  const { prepararDatos } = await import('../../src/motor/draft.js');
+  const leerJson = async (f) => JSON.parse(await readFile(new URL(`../../dist/data/${f}`, import.meta.url), 'utf8'));
+  return prepararDatos({ catalogo: await leerJson('heroes.json'), meta: await leerJson('roam-meta.json'), rango: 'glory' }).meta.fuerza;
+}
 const navegador = await abrirNavegador();
 const LINEA = { 'roam-picker:linea': 'roam' };
 const PICKS = { enemies: ['Layla', 'Fanny', 'Pharsa'], allies: ['Chou'], bans: ['Hirara'], enemyRoam: null, fase: 'picks' };
@@ -158,6 +165,11 @@ await prueba('la hoja Meta enseña la tier list por línea, con la tuya primero,
   // Nada en crudo ni en otro idioma.
   const texto = await pagina.locator('[role=dialog]').innerText();
   ok(!/meta\.[a-z]/.test(texto), 'sale una clave de texto cruda');
+  // El aviso de «la fuerza sale de otro rango» sale EXACTAMENTE cuando el
+  // motor lo decide con los datos servidos (tras un reinicio de temporada
+  // sí, con Gloria llena no): se compara con prepararDatos, no con el día.
+  const fuerza = await decisionDeRango();
+  eq(await pagina.locator('[role=dialog] .nota.mal').count(), fuerza.rango === fuerza.pedido ? 0 : 1, `la hoja no cuenta de qué rango sale la fuerza (${fuerza.pedido} → ${fuerza.rango})`);
   await pagina.keyboard.press('Escape'); await pagina.waitForTimeout(300);
   eq(await pagina.locator('[role=dialog]').count(), 0, 'Escape no cierra Meta');
   ok(!errores.length, `errores: ${errores}`);

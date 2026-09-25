@@ -5,7 +5,7 @@
  * (héroes al 0% y al 100%, r = 0,09), que es la forma real de fallar.
  */
 import { test, ok, eq, casi, terminar } from '../arnes.mjs';
-import { elegirVentana, mediaDeWinrate, COHERENCIA_MINIMA, WINRATE_POSIBLE } from '../../src/motor/ventana.js';
+import { elegirVentana, elegirRango, mediaDeWinrate, COHERENCIA_MINIMA, COHERENCIA_DE_RANGO_MINIMA, WINRATE_POSIBLE } from '../../src/motor/ventana.js';
 
 /** 40 héroes con winrates repartidos entre 0,44 y 0,56, como los de verdad. */
 const semana = Object.fromEntries(Array.from({ length: 40 }, (_, i) => [`h${i}`, { winRate: 0.44 + (i % 13) / 100, pickRate: 0.01, banRate: 0.1, heroId: i }]));
@@ -76,6 +76,29 @@ test('la media de la ventana es la misma cuenta que hace la ingesta', () => {
   // Un héroe sin cuota pesa 0, no 1: entre cuotas que suman 1, «no sé» es 0.
   casi(mediaDeWinrate({ a: { winRate: 0.4, pickRate: 0.01 }, b: { winRate: 0.6, pickRate: 0.03 }, c: { winRate: 0.9 } }), 0.55, 1e-12, 'un héroe sin cuota mueve el centro');
   casi(mediaDeWinrate({ a: { winRate: 0.4, pickRate: 0 }, b: { winRate: 0.6, pickRate: 0 } }), 0.5, 1e-12, 'sin ninguna cuota no cae a la media simple');
+});
+
+test('rango: Gloria manda si se parece a Mítico; si no (reinicio de temporada), Mítico, y se dice por qué', () => {
+  const mitico = semana;
+  // Gloria llena: Mítico con ruido pequeño (r ≈ 0,9, como en un parche asentado).
+  const llena = Object.fromEntries(Object.entries(mitico).map(([k, s], i) => [k, { ...s, winRate: s.winRate + ((i * 7) % 5 - 2) * 0.004 }]));
+  const a = elegirRango({ glory: llena, mythic: mitico }, 'glory');
+  eq(a.rango, 'glory'); eq(a.pedido, 'glory'); eq(a.motivo, null);
+  ok(a.coherencia >= COHERENCIA_DE_RANGO_MINIMA, `Gloria llena sale incoherente: r=${a.coherencia}`);
+  // Gloria vacía: el mismo rango de valores, barajado (r ≈ 0).
+  const vacia = Object.fromEntries(Object.entries(mitico).map(([k, s], i) => [k, { ...s, winRate: 0.44 + ((i * 17) % 13) / 100 }]));
+  const b = elegirRango({ glory: vacia, mythic: mitico }, 'glory');
+  eq(b.rango, 'mythic', `Gloria revuelta sigue mandando (r=${b.coherencia})`); eq(b.pedido, 'glory');
+  ok(b.coherencia < COHERENCIA_DE_RANGO_MINIMA && /glory/.test(b.motivo), `no dice por qué: ${b.motivo}`);
+  // Sin datos de Gloria para comparar (menos de 20 héroes posibles): Mítico.
+  const pocos = Object.fromEntries(Object.entries(vacia).slice(0, 10));
+  eq(elegirRango({ glory: pocos, mythic: mitico }, 'glory').rango, 'mythic');
+  // Otros rangos, o sin Mítico descargado: el pedido, sin tocar.
+  eq(elegirRango({ glory: vacia, mythic: mitico, legend: vacia }, 'mythic').rango, 'mythic');
+  eq(elegirRango({ glory: vacia }, 'glory').rango, 'glory');
+  eq(elegirRango({}, 'glory').rango, 'glory');
+  // El umbral está entre lo medido: 0,86–0,90 con Gloria llena, 0,63–0,67 vacía.
+  ok(COHERENCIA_DE_RANGO_MINIMA > 0.67 && COHERENCIA_DE_RANGO_MINIMA < 0.86, `umbral fuera de lo medido: ${COHERENCIA_DE_RANGO_MINIMA}`);
 });
 
 await terminar('motor/ventana');

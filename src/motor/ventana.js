@@ -82,6 +82,51 @@ export function elegirVentana(semana = {}, recientes = null, dias = 3) {
   return { stats, ventana: { dias, coherencia: r, usados, motivo: null } };
 }
 
+/**
+ * Qué RANGO manda en la fuerza de un héroe (3.11.0). Gloria Mítica es el
+ * rango más alto y el que se vacía en cada reinicio de temporada: todos
+ * bajan y vuelven a subir en semanas. Mientras tanto su winrate sale de muy
+ * pocas partidas y es sobre todo ruido. Medido en la historia de
+ * `roam-meta.json` (40 corridas del 3 al 22 de septiembre de 2026, parche
+ * asentado): r(Gloria 7 días, Mítico 7 días) = 0,86–0,90 siempre, σ de Gloria
+ * 3,2 pp. El 23 por la tarde, cuando la ventana de 7 días dejó de incluir
+ * días anteriores al reinicio del 16, cayó a 0,63 y la σ saltó a 5,3 pp; Mítico
+ * no se movió (r con «todos los rangos» 0,89, con su propia ventana de 15 días
+ * 0,86). Gloria a 7 días se parecía a Gloria a 15 solo a r = 0,36, y Gloria a
+ * 15 y a 30 daban r = 1,00: los nueve días desde el reinicio casi no
+ * aportaban partidas. Así que, si Gloria no es coherente con Mítico en la
+ * MISMA ventana, manda Mítico entero (winrate, pick y ban: una sola
+ * población) y el diagnóstico lo dice; cuando Gloria se rellena, vuelve sola.
+ * Solo se mira el par Gloria–Mítico porque el umbral está calibrado ahí:
+ * Mítico–Leyenda va a 0,97 en un parche asentado y necesitaría el suyo.
+ */
+
+/**
+ * Coherencia mínima de Gloria con Mítico (7 días) para fiarse de Gloria.
+ * Derivada de la distribución medida: 0,86–0,90 en 40 corridas con Gloria
+ * llena, 0,63–0,67 con Gloria vacía tras el reinicio. 0,80 queda entre las dos.
+ */
+export const COHERENCIA_DE_RANGO_MINIMA = 0.8;
+
+/** El rango que se consulta cuando Gloria no aguanta. */
+const RANGO_DE_RESPALDO = { glory: 'mythic' };
+
+/**
+ * @param {Record<string, Record<string, {winRate:number}>>} statsByRank  las de 7 días por rango, ya indexadas
+ * @param {string} rango  el rango pedido
+ * @returns {{ rango: string, pedido: string, coherencia: number|null, motivo: string|null }}
+ */
+export function elegirRango(statsByRank = {}, rango = null) {
+  const respaldo = RANGO_DE_RESPALDO[rango];
+  const pedidas = statsByRank?.[rango]; const otras = respaldo ? statsByRank?.[respaldo] : null;
+  if (!pedidas || !otras) return { rango, pedido: rango, coherencia: null, motivo: null };
+  const comunes = Object.keys(pedidas).filter((k) => posible(pedidas[k]?.winRate) && posible(otras[k]?.winRate));
+  if (comunes.length < MINIMO_PARA_COMPARAR) return { rango: respaldo, pedido: rango, coherencia: null, motivo: `solo ${comunes.length} héroes con dato en ${rango}` };
+  const r = correlacion(comunes.map((k) => pedidas[k].winRate), comunes.map((k) => otras[k].winRate));
+  if (r >= COHERENCIA_DE_RANGO_MINIMA) return { rango, pedido: rango, coherencia: r, motivo: null };
+  return { rango: respaldo, pedido: rango, coherencia: r, motivo: `${rango} no se parece a ${respaldo} (r=${r.toFixed(2)}): pocas partidas en ${rango}, normal tras un reinicio de temporada` };
+}
+
 /** Media del winrate de un conjunto de estadísticas, como la calcula la ingesta (`avgOf`). */
 export function mediaDeWinrate(stats = {}) {
   // PONDERADA por cuota de pick, no la media simple de los 133. El centro

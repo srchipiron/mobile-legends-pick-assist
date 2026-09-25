@@ -42,6 +42,14 @@ export function seccionDatos(inf, { datos, linea, entorno = {} }) {
   // con la de 7 la app reacciona a un parche en tres días en vez de siete; si
   // la corta viene rara (temporada recién empezada, API a medias), manda la
   // de 7 y aquí se ve por qué.
+  // Y de qué rango: tras un reinicio de temporada Gloria se vacía y su
+  // winrate es ruido; entonces manda Mítico (ventana.js, elegirRango).
+  const f = datos.meta?.fuerza;
+  if (f?.motivo) {
+    inf.check(false, '', `Fuerza de héroe: de ${f.rango} en vez de ${f.pedido} porque ${f.motivo}`, true);
+  } else if (f?.coherencia != null) {
+    inf.linea(`Fuerza de héroe: de ${f.rango} (coherencia con el rango de abajo r=${f.coherencia.toFixed(3)})`);
+  }
   const v = datos.meta?.ventana;
   if (v?.dias === 7 && meta.recientes) {
     inf.check(false, '', `Fuerza de héroe: ventana de 7 días porque la de ${meta.recientes.dias} no vale: ${v.motivo}`, true);

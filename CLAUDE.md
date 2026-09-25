@@ -255,11 +255,39 @@ ninguna constante.
 - **La dispersión del winrate entre héroes no es constante**: 3,2–3,3 pp
   en un parche asentado (agosto–20 de septiembre de 2026) y 5,0 pp en las
   DOS ventanas una semana después del reinicio de temporada (23–24 de
-  septiembre). El término de héroe es lineal en el logit, así que la banda
-  de probabilidades se abre con ella (36/64 en vez de 38/62). La escala se
-  midió con la dispersión asentada; si `medir-pro.mjs` (cada lunes) saca
-  una pendiente que se aleja de 1 en las semanas siguientes a un reinicio,
-  es esto, y se mira antes de tocar la escala.
+  septiembre). OJO (3.11.0): eso NO era el parche separando a los héroes,
+  era Gloria sin partidas (ver el punto siguiente); Mítico siguió en 3,3.
+  El término de héroe es lineal en el logit, así que la banda de
+  probabilidades se abre con la dispersión; si `medir-pro.mjs` saca una
+  pendiente que se aleja de 1 tras un reinicio, mirar primero de qué rango
+  sale la fuerza.
+- **Gloria se vacía en cada reinicio de temporada y su winrate pasa a ser
+  ruido durante semanas** (3.11.0, `elegirRango` en `ventana.js`). Es el
+  rango más alto: todos bajan y vuelven a subir poco a poco. Medido en la
+  historia de `roam-meta.json`: r(Gloria 7 días, Mítico 7 días) 0,86–0,90
+  en las 40 corridas del 3 al 22 de septiembre de 2026, σ de Gloria 3,2 pp;
+  el 23 por la tarde, cuando la ventana de 7 días quedó entera dentro de la
+  temporada nueva (reinicio el 16), 0,63 y σ 5,3 pp, y Mítico no se movió.
+  El 25, con la ruta `/api/heroes/rank` a 1, 3, 7, 15 y 30 días en Gloria,
+  Mítico y «todos»: Gloria a 1/3/7 se parece a todo lo demás a r ≈ 0,4
+  (incluso a «todos» en los MISMOS días, 0,40), Mítico a 7 se parece a
+  «todos» a 7 a 0,89, y Gloria a 15 y a 30 dan r = 1,00 entre sí: los
+  nueve días desde el reinicio casi no aportaban partidas. La ventana corta
+  no lo caza (3 y 7 días salen de las mismas pocas partidas, r = 0,99). Hoy
+  si Gloria no se parece a Mítico a `COHERENCIA_DE_RANGO_MINIMA = 0.8`,
+  manda Mítico entero (winrate, pick y ban) y la ventana se decide dentro de
+  Mítico; `rango` sigue siendo el tuyo (va en cada partida) y
+  `meta.fuerza` dice de dónde sale. Rejugada sobre las 63 corridas
+  guardadas, solo salta desde el 23 por la tarde. Cambia el nº1 en 162 de
+  300 drafts de roam y 119 de 300 de exp (el de Gloria sigue entre los tres
+  primeros en 201 y 249). No se pudo medir contra resultados: no hay
+  partidas pro posteriores al reinicio; es una decisión por calidad del
+  dato, como la guarda de la ventana. Mítico–Leyenda va a 0,97 asentado y
+  bajó a 0,77 del 18 al 20 (Mítico también se vació un poco): si alguna
+  vez hace falta guardar Mítico, su umbral es otro y se mide aparte. Los
+  cruces no se degradaron (r = 0,96 con los de antes del reinicio, σ igual).
+  La fila de salud lleva `fuerza` y `coherenciaRango`: la serie dice cuándo
+  vuelve Gloria.
 
 Dos constantes que se midieron y se dejaron como estaban, para no volver a
 medirlas: el umbral de «tu héroe está N puntos por encima» (`>= 0.02` en
@@ -858,6 +886,15 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   habla con la API. Un canal de envío que depende de una sesión en otro
   sitio no es un canal; y una prueba con el perfil vacío no prueba el
   tamaño real.
+- **Ruido de muestra leído como cambio de meta** (3.7.1 → 3.11.0) — la
+  subida de la dispersión de Gloria a 5 pp tras el reinicio de temporada se
+  documentó como «el parche separa más a los héroes» y se ajustó una prueba
+  para convivir con ella; nadie miró si otro rango la tenía. Mítico seguía
+  en 3,3 pp: era Gloria con cuatro partidas por héroe, y la app puntuó
+  con ruido del 23 al 26 de septiembre (el nº1 cambiaba en la mitad de los
+  drafts de roam). Antes de explicar un cambio en los datos con el juego,
+  compáralo con una población más grande del MISMO periodo: si solo se
+  mueve la pequeña, es muestra.
 - **Guardar en el almacén DENTRO de un updater de `setState`** (3.0) — React
   puede llamar a un updater más de una vez (evaluación ansiosa, modo
   estricto, reproceso de la cola), así que ahí dentro no va ningún efecto.
@@ -1839,6 +1876,37 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   evento, que es el completo; no se pierde nada. (3) Un comentario del bot
   por cada partida subida: es ruido en la incidencia, pero cada uno es la
   medida al día; se reabre si molesta (se podría comentar solo cada N).
+
+- **Otras fuentes de winrate y de tier list, buscadas y medidas en 3.11.0**
+  (25 de septiembre de 2026). Rutas de la API que la app no usaba, pedidas
+  una a una: (1) `/api/academy/heroes/{id}/win-rate/timeline?lane=` trae el
+  winrate del héroe EN ESA LÍNEA (`total_win_rate`) y por tramos de
+  duración (10–12 … 20+ min); descargado para las 165 combinaciones
+  héroe-línea: su población casa con Gloria a 15/30 días (r = 0,99) y la
+  diferencia entre las líneas de un mismo héroe es real y grande (mediana
+  3,0 pp; Saber jungla 53,8% y roam 42,4%; Lukas exp 49,6% y jungla
+  55,8%). Medido en `ajustar-modelo` (805 partidas pro de 120 días y 1.830
+  de 400, cinco semillas, reparto de líneas igual que la app): contra el
+  winrate global de la MISMA ventana gana en 9 de 10 comparaciones pero
+  por +0,0 a +1,5 de logL por 1.000 partidas, dentro del ruido; juntos,
+  0,19 ± 0,49 y 0,43 ± 0,47, no se distinguen. No entra en la nota. Se
+  reabre con partidas de solo queue (en pro cada héroe juega casi siempre
+  su línea principal, así que ahí la línea apenas añade) o para
+  enseñarlo en pantalla, que son 165 peticiones más en la ingesta. (2) La
+  curva por duración como término (lo que sube un héroe de 10 a 20+ min,
+  tuyos menos suyos): −0,56 ± 0,29 encima del término de héroe, ganancia
+  de −0,7 a +0,8 según la semilla. Descartada. (3)
+  `/api/heroes/{id}/relations`: dos «fuerte contra», dos «débil contra» y
+  dos «combina con» por héroe, elegidos a mano por Moonton; la matriz de
+  cruces ya los tiene todos medidos. (4) `/api/academy/recommended`: guías
+  de usuarios (UGC), opinión. (5) `/api/academy/heroes/{id}/lane` y
+  `/api/heroes/positions`: etiquetas fijas de línea, sin winrate. (6)
+  `/api/academy/heroes/ratings`: sigue retirada (`10407 接口下线`). (7)
+  Otros rangos y ventanas de `/api/heroes/rank` como término de héroe: en
+  pro gana Gloria a 30 días (+5,4 a +6,5 por 1.000) y «todos» a 30 (+3,3 a
+  +3,7), pero las partidas pro son de ANTES del reinicio, igual que esas
+  ventanas: es la época, no el rango. No se cambia la ventana por eso; lo
+  que sí entró es la guarda de rango (ver «Qué son los datos»).
 
 ## Lo que queda pendiente
 

@@ -8,6 +8,27 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.11.0
+
+- **La fuerza de cada héroe ya no sale de un puñado de partidas tras un
+  reinicio de temporada.** Gloria Mítica es el rango más alto y en cada
+  temporada nueva se vacía: todos bajan y tardan semanas en volver. Desde
+  el 23 de septiembre, con la semana entera ya dentro de la temporada
+  nueva, el winrate de Gloria salía de tan pocas partidas que era casi todo
+  ruido: se parecía al de Mítico a r = 0,67, cuando lo normal es 0,86–0,90,
+  y héroes como Chip o Freya aparecían entre los más fuertes por azar.
+  Ahora, si Gloria no se parece a Mítico, la fuerza de los héroes sale de
+  Mítico, que tiene muchas más partidas y con Gloria llena se le parece
+  mucho; en cuanto Gloria se rellena, vuelve a Gloria sola. Hoy cambia el
+  nº1 en algo más de la mitad de los drafts de roam. La hoja «Meta» lo dice
+  cuando pasa, y el diagnóstico también.
+- Buscadas otras fuentes de winrate y de tier list, y medidas contra 805
+  partidas profesionales antes de meter ninguna en la nota: el winrate de
+  cada héroe POR LÍNEA (existe en la API y Chou, por ejemplo, gana el 42,8%
+  de roam y el 46,0% de exp) y la curva de winrate por duración de partida.
+  Ninguna mejora la predicción de forma distinguible de lo que ya hay, así
+  que no puntúan. La tier list oficial de Moonton sigue retirada.
+
 ## 3.10.1
 
 - **Quitar una partida la quita también del proyecto.** Hasta ahora, si

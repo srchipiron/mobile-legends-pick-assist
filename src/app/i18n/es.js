@@ -132,6 +132,7 @@ export default {
   'pick.tierTitulo': 'Tier de mlbb.gg: opinión curada, no puntúa',
   'meta.titulo': 'Lo que está fuerte ahora',
   'meta.pista': 'La tier list que usa la app: winrate en {rango} de los últimos {dias|día|días}, por línea, en el mismo orden con el que empuja las tarjetas. Se actualiza sola dos veces al día.',
+  'meta.fuerzaDe': 'Ahora mismo {pedido} tiene muy pocas partidas (pasa en las semanas siguientes a cada reinicio de temporada) y su winrate es casi todo ruido. Mientras tanto la fuerza de los héroes sale de {usado}, que con {pedido} llena se le parece mucho. Vuelve a {pedido} sola en cuanto se rellene.',
   'meta.deriva': 'La cifra pequeña es cuánto se mueve cada héroe en los últimos {dias|día|días} respecto a la semana: lo que sube tras un parche se ve aquí antes.',
   'meta.uso': 'pick {pick}% · ban {ban}%',
   'meta.resto': 'Esto es solo la fuerza general. Quién te come a ti, con quién combinas y con cuáles eres bueno tú lo deciden los otros términos, draft a draft.',

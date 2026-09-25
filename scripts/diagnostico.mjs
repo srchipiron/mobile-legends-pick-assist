@@ -157,6 +157,9 @@ if (rutaHistorial) {
     objetos: cifras.objetos,
     builds: cifras.builds,
     pools: Object.fromEntries(LINEAS.map((l) => [l, datos.poolsPorLinea[l].length])),
+    // De qué rango sale la fuerza (3.11.0): Mítico mientras Gloria está vacía tras un reinicio.
+    fuerza: datos.meta.fuerza?.rango ?? null,
+    coherenciaRango: datos.meta.fuerza?.coherencia != null ? Number(datos.meta.fuerza.coherencia.toFixed(3)) : null,
   };
   await mkdir(dirname(resolve(ROOT, rutaHistorial)), { recursive: true });
   await appendFile(resolve(ROOT, rutaHistorial), `${JSON.stringify(fila)}\n`);

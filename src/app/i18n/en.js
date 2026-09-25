@@ -135,6 +135,7 @@ export default {
   'pick.tierTitulo': 'mlbb.gg tier: curated opinion, not scored',
   'meta.titulo': 'What is strong now',
   'meta.pista': 'The tier list the app uses: win rate in {rango} over the last {dias|day|days}, per lane, in the same order that drives the cards. It refreshes itself twice a day.',
+  'meta.fuerzaDe': 'Right now {pedido} has very few games (this happens in the weeks after every season reset) and its win rate is mostly noise. Meanwhile hero strength comes from {usado}, which closely matches {pedido} when it is full. It switches back to {pedido} on its own once it fills up.',
   'meta.deriva': 'The small figure is how much each hero has moved over the last {dias|day|days} versus the week: what rises after a patch shows up here first.',
   'meta.uso': 'pick {pick}% · ban {ban}%',
   'meta.resto': 'This is only overall strength. Who beats you, who you pair with and which heroes you are good at are decided by the other terms, draft by draft.',

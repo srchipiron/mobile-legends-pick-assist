@@ -9,7 +9,7 @@ import { simularFinales } from './robustez.js';
 import { aconsejarEquipo } from './equipo.js';
 import { analizarComposicion } from './composicion.js';
 import { analizarDraft } from './analisis.js';
-import { elegirVentana, mediaDeWinrate } from './ventana.js';
+import { elegirVentana, elegirRango, mediaDeWinrate } from './ventana.js';
 
 /**
  * El cerebro: de los ficheros de datos y el draft a todo lo que la app
@@ -61,14 +61,21 @@ export function prepararDatos({ catalogo = null, meta = null, rango = null } = {
   // aguanta (3 días si la ingesta la trae y es coherente con la de 7, ver
   // ventana.js); cruces y parejas siguen a 7. Es el ÚNICO sitio donde se
   // decide: la app, el bot y las pruebas ven las mismas estadísticas.
-  const semana = indexarPorNombre(meta?.statsByRank?.[rangoUsado] ?? meta?.stats);
-  const recientes = meta?.recientes?.statsByRank?.[rangoUsado] ? indexarPorNombre(meta.recientes.statsByRank[rangoUsado]) : null;
+  // Y el RANGO del que sale: el tuyo, salvo que sea Gloria y Gloria tenga
+  // tan pocas partidas que no se parezca a Mítico (reinicio de temporada,
+  // ventana.js). `rango` sigue siendo el tuyo: es lo que se apunta en cada
+  // partida y lo que eliges; `meta.fuerza` dice de dónde sale la fuerza.
+  const porRango = Object.fromEntries(Object.entries(meta?.statsByRank ?? {}).map(([r, s]) => [r, indexarPorNombre(s)]));
+  const fuerza = elegirRango(porRango, rangoUsado);
+  const semana = porRango[fuerza.rango] ?? indexarPorNombre(meta?.stats);
+  const recientes = meta?.recientes?.statsByRank?.[fuerza.rango] ? indexarPorNombre(meta.recientes.statsByRank[fuerza.rango]) : null;
   const { stats, ventana } = elegirVentana(semana, recientes, meta?.recientes?.dias ?? 3);
   const poolsPorLinea = Object.fromEntries(LINEAS.map((l) => [l, poolDeLinea(heroes, lineas, l)]));
   const metaCtx = {
     stats,
     statsSemana: semana,
     ventana,
+    fuerza,
     counters: indexarPorNombre(meta?.counters, 2),
     synergies: indexarPorNombre(meta?.synergies, 2),
     // Lo que cabe esperar de equilibrio de daño en un equipo de n héroes,
