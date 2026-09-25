@@ -1,13 +1,1854 @@
 {
- "actualizado": "2026-09-25T09:06:22.198Z",
- "partidas": [],
- "maestria": {},
+ "actualizado": "2026-09-25T23:06:39.474Z",
+ "partidas": [
+  {
+   "t": 1790377298025,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Lolita",
+    "Helcurt",
+    "Kalea"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.507,
+   "bans": [
+    "Hirara",
+    "Khufra",
+    "Marcel",
+    "Kagura",
+    "Yi Sun-shin",
+    "Lukas",
+    "Saber",
+    "Minotaur"
+   ],
+   "draft": {
+    "enemigos": [
+     "Angela",
+     "Fredrinn",
+     "Obsidia",
+     "Lapu-Lapu",
+     "Valir"
+    ],
+    "aliados": [
+     "Cecilion",
+     "Lesley",
+     "Guinevere",
+     "Karina"
+    ],
+    "linea": "roam",
+    "rival": "Angela"
+   }
+  },
+  {
+   "t": 1790374140904,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Gloo",
+    "Rafaela",
+    "Diggie"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.582,
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Paquito",
+    "Belerick",
+    "Atlas",
+    "Brody"
+   ],
+   "draft": {
+    "enemigos": [
+     "Eudora",
+     "Akai",
+     "Hanabi",
+     "Cici",
+     "Karina"
+    ],
+    "aliados": [
+     "Kadita",
+     "X.Borg",
+     "Yu Zhong",
+     "Layla"
+    ],
+    "linea": "roam",
+    "rival": "Akai"
+   }
+  },
+  {
+   "t": 1790369900043,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Johnson",
+    "Atlas",
+    "Natalia"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.535,
+   "bans": [
+    "Marcel",
+    "Khufra",
+    "Hirara",
+    "Belerick",
+    "Masha",
+    "Melissa",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Sun",
+     "Bruno",
+     "Eudora",
+     "Carmilla",
+     "Nolan"
+    ],
+    "aliados": [
+     "Kagura",
+     "Chou",
+     "Miya",
+     "Gusion"
+    ],
+    "linea": "roam",
+    "rival": "Carmilla"
+   }
+  },
+  {
+   "t": 1790368417248,
+   "pick": "Gloo",
+   "recomendados": [
+    "Gloo",
+    "Marcel",
+    "Rafaela"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.494,
+   "bans": [
+    "Belerick",
+    "Hirara",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Atlas",
+     "Hanabi",
+     "Sun",
+     "Kadita",
+     "Nolan"
+    ],
+    "aliados": [
+     "Miya",
+     "Eudora",
+     "Freya",
+     "Alpha"
+    ],
+    "linea": "roam",
+    "rival": "Atlas"
+   }
+  },
+  {
+   "t": 1790283636932,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Estes",
+    "Chip",
+    "Carmilla"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.489,
+   "bans": [
+    "Eudora",
+    "Kaja",
+    "Belerick",
+    "Hirara",
+    "Marcel",
+    "Esmeralda"
+   ],
+   "draft": {
+    "enemigos": [
+     "Barats",
+     "Yi Sun-shin",
+     "Khufra",
+     "Irithel",
+     "Kagura"
+    ],
+    "aliados": [
+     "Gord",
+     "Chou",
+     "Obsidia"
+    ],
+    "linea": "roam",
+    "rival": "Khufra"
+   }
+  },
+  {
+   "t": 1790281909589,
+   "pick": "Diggie",
+   "recomendados": [
+    "Marcel",
+    "Khufra",
+    "Rafaela"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.44,
+   "draft": {
+    "enemigos": [
+     "Kadita",
+     "Miya",
+     "Badang",
+     "Carmilla"
+    ],
+    "aliados": [
+     "Eudora",
+     "Clint",
+     "Esmeralda"
+    ],
+    "linea": "roam",
+    "rival": "Carmilla"
+   }
+  },
+  {
+   "t": 1790280826411,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Marcel",
+    "Khufra",
+    "Rafaela"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.554,
+   "draft": {
+    "enemigos": [
+     "Dyrroth",
+     "Vexana",
+     "Franco",
+     "Karrie"
+    ],
+    "aliados": [
+     "Esmeralda",
+     "Valir",
+     "Hanabi"
+    ],
+    "linea": "roam",
+    "rival": "Franco"
+   }
+  },
+  {
+   "t": 1790278542697,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Rafaela",
+    "Floryn"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.519,
+   "draft": {
+    "enemigos": [
+     "Aulus",
+     "Chang'e",
+     "Yu Zhong",
+     "Carmilla",
+     "Obsidia"
+    ],
+    "aliados": [
+     "Minsitthar",
+     "Kadita",
+     "Brody",
+     "Bane"
+    ],
+    "linea": "roam",
+    "rival": "Carmilla"
+   }
+  },
+  {
+   "t": 1790276120516,
+   "pick": "Chip",
+   "recomendados": [
+    "Chip",
+    "Carmilla",
+    "Rafaela"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.566,
+   "bans": [
+    "Hirara",
+    "Belerick",
+    "Marcel",
+    "Atlas",
+    "Paquito",
+    "Yi Sun-shin",
+    "Melissa"
+   ],
+   "draft": {
+    "enemigos": [
+     "Popol and Kupa",
+     "Gatotkaca",
+     "Chang'e",
+     "Helcurt",
+     "Gloo"
+    ],
+    "aliados": [
+     "Kadita",
+     "Minsitthar",
+     "Hanabi",
+     "Lukas"
+    ],
+    "linea": "roam"
+   }
+  },
+  {
+   "t": 1790273478008,
+   "pick": "Estes",
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.52,
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Eudora",
+    "Atlas",
+    "Hanzo",
+    "Belerick"
+   ],
+   "draft": {
+    "enemigos": [
+     "Kimmy",
+     "Carmilla",
+     "Obsidia",
+     "Zilong",
+     "Aulus"
+    ],
+    "aliados": [
+     "Minsitthar",
+     "Kadita",
+     "Leomord",
+     "Brody"
+    ],
+    "linea": "roam",
+    "rival": "Carmilla"
+   }
+  },
+  {
+   "t": 1790272509180,
+   "pick": "Gloo",
+   "recomendados": [
+    "Khufra",
+    "Atlas",
+    "Carmilla"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.515,
+   "draft": {
+    "enemigos": [
+     "Layla",
+     "Lylia",
+     "Sora",
+     "Leomord",
+     "Guinevere"
+    ],
+    "aliados": [
+     "Kadita",
+     "Popol and Kupa",
+     "Estes",
+     "Suyou"
+    ],
+    "linea": "roam"
+   }
+  },
+  {
+   "t": 1790271557440,
+   "pick": "Floryn",
+   "recomendados": [
+    "Floryn",
+    "Belerick",
+    "Carmilla"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.523,
+   "draft": {
+    "enemigos": [
+     "Estes",
+     "Melissa",
+     "Lylia",
+     "Guinevere"
+    ],
+    "aliados": [
+     "Kadita",
+     "Alucard",
+     "Clint",
+     "Suyou"
+    ],
+    "linea": "roam",
+    "rival": "Estes"
+   }
+  },
+  {
+   "t": 1790270657490,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Marcel",
+    "Gloo",
+    "Khufra"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.481,
+   "draft": {
+    "enemigos": [
+     "Melissa",
+     "Gusion",
+     "Sun"
+    ],
+    "aliados": [
+     "Kadita",
+     "Zilong"
+    ],
+    "linea": "roam"
+   }
+  },
+  {
+   "t": 1790269536405,
+   "pick": "Diggie",
+   "recomendados": [
+    "Marcel",
+    "Floryn",
+    "Rafaela"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.491,
+   "draft": {
+    "enemigos": [
+     "Lesley",
+     "Minotaur",
+     "Vexana"
+    ],
+    "aliados": [
+     "Kadita",
+     "Clint",
+     "Esmeralda"
+    ],
+    "linea": "roam",
+    "rival": "Minotaur"
+   }
+  },
+  {
+   "t": 1790268493071,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Carmilla",
+    "Belerick",
+    "Khufra"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.589,
+   "bans": [
+    "Hirara",
+    "Paquito",
+    "Marcel",
+    "Gloo",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Kalea",
+     "Suyou",
+     "Aurora",
+     "Claude",
+     "Argus"
+    ],
+    "aliados": [
+     "Kadita",
+     "Jawhead",
+     "Clint",
+     "Angela"
+    ],
+    "linea": "roam",
+    "rival": "Kalea"
+   }
+  },
+  {
+   "t": 1790267431273,
+   "pick": "Diggie",
+   "recomendados": [
+    "Marcel",
+    "Diggie",
+    "Khufra"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.48,
+   "draft": {
+    "enemigos": [
+     "Arlott",
+     "Badang",
+     "Harley",
+     "Atlas"
+    ],
+    "aliados": [
+     "Kadita",
+     "Clint",
+     "Esmeralda"
+    ],
+    "linea": "roam",
+    "rival": "Atlas"
+   }
+  },
+  {
+   "t": 1790266363533,
+   "pick": "Estes",
+   "recomendados": [
+    "Lolita",
+    "Khaleed",
+    "Akai"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.428,
+   "bans": [
+    "Belerick",
+    "Marcel",
+    "Hirara",
+    "Atlas",
+    "Eudora",
+    "Rafaela",
+    "Minotaur",
+    "Khufra"
+   ],
+   "draft": {
+    "enemigos": [
+     "Barats",
+     "Badang",
+     "Nana",
+     "Alucard",
+     "Miya"
+    ],
+    "aliados": [
+     "Lunox",
+     "Esmeralda",
+     "Lesley",
+     "Silvanna"
+    ],
+    "linea": "roam",
+    "rival": "Badang"
+   }
+  },
+  {
+   "t": 1790191489582,
+   "pick": "Diggie",
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Diggie"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.585,
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Melissa",
+    "Gloo",
+    "Belerick",
+    "Rafaela",
+    "Alpha",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Zetian",
+     "Julian",
+     "Phoveus",
+     "Brody",
+     "Angela"
+    ],
+    "aliados": [
+     "Kagura",
+     "Paquito",
+     "Yi Sun-shin",
+     "X.Borg"
+    ],
+    "linea": "roam",
+    "rival": "Angela"
+   }
+  },
+  {
+   "t": 1790190365603,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Minotaur",
+    "Natalia",
+    "Khaleed"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.507,
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Belerick",
+    "Yi Sun-shin",
+    "Estes",
+    "X.Borg",
+    "Tigreal"
+   ],
+   "draft": {
+    "enemigos": [
+     "Kaja",
+     "Vexana",
+     "Miya",
+     "Alpha",
+     "Atlas"
+    ],
+    "aliados": [
+     "Eudora",
+     "Hanabi",
+     "Julian",
+     "Silvanna"
+    ],
+    "linea": "roam",
+    "rival": "Kaja"
+   }
+  },
+  {
+   "t": 1790189134313,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Marcel",
+    "Lolita",
+    "Minotaur"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.604,
+   "draft": {
+    "enemigos": [
+     "Pharsa",
+     "Yu Zhong",
+     "Karrie",
+     "Gusion",
+     "Estes"
+    ],
+    "aliados": [
+     "Gord",
+     "Julian",
+     "Melissa",
+     "Helcurt"
+    ],
+    "linea": "roam",
+    "rival": "Estes"
+   }
+  },
+  {
+   "t": 1790188017570,
+   "pick": "Floryn",
+   "recomendados": [
+    "Floryn",
+    "Estes",
+    "Diggie"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.597,
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Yi Sun-shin",
+    "Carmilla"
+   ],
+   "draft": {
+    "enemigos": [
+     "Barats",
+     "Valentina",
+     "Lukas",
+     "Rafaela",
+     "Roger"
+    ],
+    "aliados": [
+     "Lesley",
+     "Hylos",
+     "Saber",
+     "Kadita"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   }
+  },
+  {
+   "t": 1790102793363,
+   "pick": "Gloo",
+   "recomendados": [
+    "Gloo",
+    "Alice",
+    "Edith"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.501,
+   "draft": {
+    "enemigos": [
+     "Hanabi",
+     "Benedetta",
+     "Atlas",
+     "Aamon",
+     "Zetian"
+    ],
+    "aliados": [
+     "Minotaur",
+     "Lesley",
+     "Kadita",
+     "Balmond"
+    ],
+    "linea": "exp",
+    "rival": "Benedetta"
+   }
+  },
+  {
+   "t": 1790024287791,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Khufra",
+    "Natalia",
+    "Hilda"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.587,
+   "bans": [
+    "Hirara",
+    "Yi Sun-shin",
+    "Eudora",
+    "Estes",
+    "Melissa",
+    "Hanzo",
+    "Marcel"
+   ],
+   "draft": {
+    "enemigos": [
+     "Belerick",
+     "Vexana",
+     "Ixia",
+     "Lapu-Lapu",
+     "Harley"
+    ],
+    "aliados": [
+     "Kadita",
+     "X.Borg",
+     "Brody",
+     "Gusion"
+    ],
+    "linea": "roam",
+    "rival": "Belerick"
+   }
+  },
+  {
+   "t": 1790023088844,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Rafaela",
+    "Lolita"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.557,
+   "bans": [
+    "Marcel",
+    "Hirara",
+    "Hanzo",
+    "Yi Sun-shin",
+    "Eudora",
+    "Belerick",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Floryn",
+     "Lunox",
+     "Thamuz",
+     "Ling"
+    ],
+    "aliados": [
+     "Kadita",
+     "Badang",
+     "Brody",
+     "Julian"
+    ],
+    "linea": "roam",
+    "rival": "Floryn"
+   }
+  },
+  {
+   "t": 1790022070071,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Marcel",
+    "Khufra",
+    "Atlas"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.591,
+   "bans": [
+    "Hirara",
+    "Belerick",
+    "Yi Sun-shin",
+    "Hanzo",
+    "Melissa",
+    "Lesley",
+    "Paquito",
+    "Estes"
+   ],
+   "draft": {
+    "enemigos": [
+     "Franco",
+     "Vexana",
+     "Ixia",
+     "Lapu-Lapu",
+     "Leomord"
+    ],
+    "aliados": [
+     "Kadita",
+     "Brody",
+     "Silvanna",
+     "Martis"
+    ],
+    "linea": "roam",
+    "rival": "Franco"
+   }
+  },
+  {
+   "t": 1790020898247,
+   "pick": "Floryn",
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Diggie"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.55,
+   "bans": [
+    "Marcel",
+    "Hirara",
+    "Hanzo",
+    "Eudora",
+    "Khufra"
+   ],
+   "draft": {
+    "enemigos": [
+     "Kadita",
+     "X.Borg",
+     "Obsidia",
+     "Kimmy",
+     "Hylos"
+    ],
+    "aliados": [
+     "Aurora",
+     "Lukas",
+     "Esmeralda",
+     "Brody"
+    ],
+    "linea": "roam",
+    "rival": "Hylos"
+   }
+  },
+  {
+   "t": 1790019664270,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Gloo",
+    "Marcel"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.59,
+   "draft": {
+    "enemigos": [
+     "Belerick",
+     "Selena",
+     "Melissa",
+     "Esmeralda",
+     "X.Borg"
+    ],
+    "aliados": [
+     "Kadita",
+     "Julian",
+     "Brody",
+     "Hayabusa"
+    ],
+    "linea": "roam",
+    "rival": "Belerick"
+   }
+  },
+  {
+   "t": 1790018462723,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Chip",
+    "Floryn"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.527,
+   "draft": {
+    "enemigos": [
+     "Rafaela",
+     "Obsidia"
+    ],
+    "aliados": [
+     "Minsitthar",
+     "Kadita",
+     "Brody"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   }
+  },
+  {
+   "t": 1789942411013,
+   "pick": "Faramis",
+   "recomendados": [
+    "Gloo",
+    "Atlas",
+    "Khufra"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.381,
+   "bans": [
+    "Hirara",
+    "Sun",
+    "Yin",
+    "Eudora",
+    "Granger",
+    "Yi Sun-shin",
+    "Belerick",
+    "Kadita"
+   ],
+   "draft": {
+    "enemigos": [
+     "Cecilion",
+     "Ixia",
+     "Paquito",
+     "Alpha",
+     "Floryn"
+    ],
+    "aliados": [
+     "Hanabi",
+     "Freya",
+     "Chang'e",
+     "Valir"
+    ],
+    "linea": "roam",
+    "rival": "Floryn"
+   }
+  },
+  {
+   "t": 1789941103569,
+   "pick": "Gloo",
+   "recomendados": [
+    "Lolita",
+    "Gloo",
+    "Marcel"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.543,
+   "bans": [
+    "Hirara",
+    "Paquito",
+    "Hanabi",
+    "Lesley",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Aamon",
+     "Xavier",
+     "Johnson",
+     "Miya",
+     "Lukas"
+    ],
+    "aliados": [
+     "Chang'e",
+     "Dyrroth",
+     "Valir",
+     "X.Borg"
+    ],
+    "linea": "roam",
+    "rival": "Johnson"
+   }
+  },
+  {
+   "t": 1789939697722,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Diggie",
+    "Floryn",
+    "Gloo"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.529,
+   "bans": [
+    "Hirara",
+    "Miya",
+    "Belerick",
+    "Marcel",
+    "Alpha",
+    "Hanabi",
+    "Estes"
+   ],
+   "draft": {
+    "enemigos": [
+     "Tigreal",
+     "Vexana",
+     "Yu Zhong",
+     "Lesley",
+     "Leomord"
+    ],
+    "aliados": [
+     "Valir",
+     "Clint",
+     "Alucard",
+     "Freya"
+    ],
+    "linea": "roam",
+    "rival": "Tigreal"
+   }
+  },
+  {
+   "t": 1789938516584,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Chip",
+    "Floryn",
+    "Gloo"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.393,
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Khufra",
+    "Zhuxin",
+    "Sun",
+    "Belerick",
+    "Yin"
+   ],
+   "draft": {
+    "enemigos": [
+     "Paquito",
+     "Cecilion",
+     "Carmilla",
+     "Miya"
+    ],
+    "aliados": [
+     "Chang'e",
+     "Lukas",
+     "Irithel"
+    ],
+    "linea": "roam",
+    "rival": "Carmilla"
+   }
+  },
+  {
+   "t": 1789796966479,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Marcel",
+    "Minsitthar",
+    "Gloo"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.419
+  },
+  {
+   "t": 1789713575586,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Chip",
+    "Estes",
+    "Lolita"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.502,
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Paquito"
+   ]
+  },
+  {
+   "t": 1789588719982,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Khufra",
+    "Estes"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.541
+  },
+  {
+   "t": 1789587177271,
+   "pick": "Gloo",
+   "recomendados": [
+    "Gloo",
+    "Lolita",
+    "Diggie"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.414,
+   "bans": [
+    "Belerick",
+    "Eudora",
+    "Marcel",
+    "Khufra"
+   ]
+  },
+  {
+   "t": 1789585914560,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Diggie",
+    "Minotaur"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.486,
+   "bans": [
+    "Hirara",
+    "Paquito",
+    "Marcel",
+    "Khufra"
+   ]
+  },
+  {
+   "t": 1789339769541,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Minotaur",
+    "Chip"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.565,
+   "bans": [
+    "Hirara",
+    "Melissa",
+    "Marcel",
+    "Gusion",
+    "Atlas",
+    "Belerick",
+    "Paquito"
+   ]
+  },
+  {
+   "t": 1789338083373,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Lolita",
+    "Gloo",
+    "Minotaur"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.44,
+   "bans": [
+    "Hirara",
+    "Eudora",
+    "Melissa",
+    "Marcel"
+   ]
+  },
+  {
+   "t": 1789253569361,
+   "pick": "Angela",
+   "recomendados": [
+    "Lolita",
+    "Belerick",
+    "Khaleed"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.489,
+   "bans": [
+    "Atlas",
+    "Eudora",
+    "Marcel",
+    "Hanzo",
+    "Miya",
+    "Gloo",
+    "Hirara",
+    "Paquito",
+    "Melissa"
+   ]
+  },
+  {
+   "t": 1789214144885,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Chip",
+    "Natalia",
+    "Hilda"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.45,
+   "bans": [
+    "Hirara",
+    "Eudora",
+    "Paquito",
+    "Belerick",
+    "Marcel",
+    "Melissa",
+    "Miya",
+    "Yi Sun-shin",
+    "Khufra"
+   ]
+  },
+  {
+   "t": 1789213189698,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Khufra",
+    "Rafaela",
+    "Gloo"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.576,
+   "bans": [
+    "Eudora",
+    "Hirara",
+    "Melissa",
+    "Atlas",
+    "Belerick",
+    "Marcel",
+    "Lesley",
+    "Barats"
+   ]
+  },
+  {
+   "t": 1789169878309,
+   "pick": "Gloo",
+   "recomendados": [
+    "Gloo",
+    "Khufra",
+    "Akai"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.488,
+   "bans": [
+    "Hirara",
+    "Eudora",
+    "Melissa",
+    "Paquito",
+    "Esmeralda",
+    "Lukas",
+    "Marcel",
+    "Suyou"
+   ]
+  },
+  {
+   "t": 1789079426705,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Floryn",
+    "Lolita",
+    "Rafaela"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.563,
+   "bans": [
+    "Hirara",
+    "Hanzo",
+    "Eudora",
+    "Yi Sun-shin",
+    "Marcel",
+    "Paquito",
+    "Atlas"
+   ]
+  },
+  {
+   "t": 1789078086270,
+   "pick": "Franco",
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Atlas"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.305,
+   "bans": [
+    "Hirara",
+    "Melissa",
+    "Eudora",
+    "Gloo",
+    "Marcel",
+    "Paquito",
+    "Gusion",
+    "Hayabusa",
+    "Miya"
+   ]
+  },
+  {
+   "t": 1789074536652,
+   "pick": "Gloo",
+   "recomendados": [
+    "Gloo",
+    "Hilda",
+    "Khufra"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.734,
+   "bans": [
+    "Hanabi",
+    "Hirara",
+    "Estes",
+    "Marcel",
+    "Paquito",
+    "Eudora",
+    "Belerick",
+    "Kaja"
+   ]
+  },
+  {
+   "t": 1789073502870,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Minotaur",
+    "Khufra"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.546,
+   "bans": [
+    "Hirara",
+    "Eudora",
+    "Marcel",
+    "Miya",
+    "Estes",
+    "Kaja"
+   ]
+  },
+  {
+   "t": 1788905763339,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Minotaur",
+    "Rafaela",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.582,
+   "bans": [
+    "Melissa",
+    "Yi Sun-shin",
+    "Paquito",
+    "Marcel",
+    "Hanzo",
+    "Eudora"
+   ]
+  },
+  {
+   "t": 1788903900990,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Marcel",
+    "Rafaela",
+    "Gloo"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.677,
+   "bans": [
+    "Hirara",
+    "Eudora",
+    "Paquito",
+    "Melissa",
+    "Minotaur",
+    "Sora",
+    "Yu Zhong"
+   ]
+  },
+  {
+   "t": 1788732110008,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Diggie",
+    "Gloo"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.558,
+   "bans": [
+    "Eudora",
+    "Hirara",
+    "Marcel",
+    "Paquito",
+    "Melissa",
+    "Hanzo"
+   ]
+  },
+  {
+   "t": 1788730938037,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Minotaur",
+    "Edith",
+    "Natalia"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.542,
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Hanabi",
+    "Eudora",
+    "Paquito",
+    "Atlas",
+    "Miya",
+    "Melissa",
+    "Kaja",
+    "Gusion"
+   ]
+  },
+  {
+   "t": 1788729429786,
+   "pick": "Estes",
+   "recomendados": [
+    "Chip",
+    "Floryn",
+    "Johnson"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.488,
+   "bans": [
+    "Melissa",
+    "Atlas",
+    "Suyou",
+    "Hirara",
+    "Paquito",
+    "Belerick",
+    "Marcel",
+    "Dyrroth"
+   ]
+  },
+  {
+   "t": 1788728151235,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Belerick",
+    "Carmilla",
+    "Gloo"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.455,
+   "bans": [
+    "Hirara",
+    "Hanzo",
+    "Marcel",
+    "Estes",
+    "Khufra",
+    "Atlas",
+    "Paquito",
+    "Yi Sun-shin",
+    "Eudora"
+   ]
+  },
+  {
+   "t": 1788647511373,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Lolita",
+    "Minotaur",
+    "Khufra"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.549
+  },
+  {
+   "t": 1788634005132,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Minotaur",
+    "Akai",
+    "Tigreal"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.802
+  },
+  {
+   "t": 1788633028824,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Diggie",
+    "Chip",
+    "Minotaur"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.397
+  },
+  {
+   "t": 1788631577936,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Mathilda",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.621
+  },
+  {
+   "t": 1788630311516,
+   "pick": "Estes",
+   "recomendados": [
+    "Gloo",
+    "Rafaela",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.734
+  },
+  {
+   "t": 1788472627139,
+   "pick": "Diggie",
+   "recomendados": [
+    "Diggie",
+    "Rafaela",
+    "Floryn"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.739
+  },
+  {
+   "t": 1788469271898,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Gloo",
+    "Baxia"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.504
+  },
+  {
+   "t": 1788467374189,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Floryn",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.395
+  },
+  {
+   "t": 1788205965762,
+   "pick": "Diggie",
+   "recomendados": [
+    "Diggie",
+    "Rafaela",
+    "Floryn"
+   ],
+   "gane": true,
+   "rango": "glory"
+  },
+  {
+   "t": 1788203136070,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Floryn",
+    "Gloo"
+   ],
+   "gane": false,
+   "rango": "glory"
+  },
+  {
+   "t": 1788201906351,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Atlas",
+    "Minotaur",
+    "Gloo"
+   ],
+   "gane": false,
+   "rango": "glory"
+  },
+  {
+   "t": 1788199357078,
+   "pick": "Estes",
+   "recomendados": [
+    "Diggie",
+    "Estes",
+    "Chip"
+   ],
+   "gane": false,
+   "rango": "glory"
+  },
+  {
+   "t": 1788198145779,
+   "pick": "Hilda",
+   "recomendados": [
+    "Hilda",
+    "Chip",
+    "Khaleed"
+   ],
+   "gane": false,
+   "rango": "glory"
+  },
+  {
+   "t": 1788132071023,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Gloo",
+    "Atlas"
+   ],
+   "gane": false,
+   "rango": "glory"
+  },
+  {
+   "t": 1788130139893,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Gloo",
+    "Rafaela",
+    "Minotaur"
+   ],
+   "gane": true,
+   "rango": "glory"
+  },
+  {
+   "t": 1788129010779,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Minotaur",
+    "Chip"
+   ],
+   "gane": false,
+   "rango": "glory"
+  },
+  {
+   "t": 1788128052624,
+   "pick": "Khufra",
+   "recomendados": [
+    "Khufra",
+    "Atlas",
+    "Diggie"
+   ],
+   "gane": true,
+   "rango": "glory"
+  },
+  {
+   "t": 1788126691316,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Estes",
+    "Gloo"
+   ],
+   "gane": true,
+   "rango": "glory"
+  },
+  {
+   "t": 1788125225287,
+   "pick": "Chip",
+   "recomendados": [
+    "Chip",
+    "Carmilla",
+    "Rafaela"
+   ],
+   "gane": false,
+   "rango": "glory"
+  },
+  {
+   "t": 1788123140403,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Minotaur",
+    "Baxia",
+    "Rafaela"
+   ],
+   "gane": true,
+   "rango": "glory"
+  },
+  {
+   "t": 1788120051106,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Floryn",
+    "Chou"
+   ],
+   "gane": true,
+   "rango": "glory"
+  },
+  {
+   "t": 1788118607393,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Carmilla",
+    "Chou"
+   ],
+   "gane": true,
+   "rango": "glory"
+  },
+  {
+   "t": 1788117333270,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Baxia",
+    "Carmilla",
+    "Marcel"
+   ],
+   "gane": false,
+   "rango": "glory"
+  },
+  {
+   "t": 1788115739566,
+   "pick": "Floryn",
+   "recomendados": [
+    "Carmilla",
+    "Gloo",
+    "Minsitthar"
+   ],
+   "gane": true,
+   "rango": "glory"
+  },
+  {
+   "t": 1788108888627,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Estes",
+    "Floryn"
+   ],
+   "gane": true,
+   "rango": "glory"
+  },
+  {
+   "t": 1788107122606,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Minotaur",
+    "Carmilla",
+    "Rafaela"
+   ],
+   "gane": true,
+   "rango": "glory"
+  }
+ ],
+ "maestria": {
+  "Diggie": {
+   "games": 3821,
+   "winRate": 0.54
+  },
+  "Angela": {
+   "games": 2223,
+   "winRate": 0.493
+  },
+  "Mathilda": {
+   "games": 1515,
+   "winRate": 0.467
+  },
+  "Floryn": {
+   "games": 815,
+   "winRate": 0.528
+  },
+  "Estes": {
+   "games": 694,
+   "winRate": 0.522
+  },
+  "Rafaela": {
+   "games": 564,
+   "winRate": 0.53
+  },
+  "Minotaur": {
+   "games": 263,
+   "winRate": 0.517
+  },
+  "Faramis": {
+   "games": 178,
+   "winRate": 0.455
+  },
+  "Chip": {
+   "games": 163,
+   "winRate": 0.552
+  },
+  "Kaja": {
+   "games": 152,
+   "winRate": 0.401
+  },
+  "Gloo": {
+   "games": 146,
+   "winRate": 0.534
+  }
+ },
+ "olvidadas": [],
  "envios": [
   {
    "cuando": "2026-09-25T09:06:22.198Z",
    "partidas": 0,
    "heroes": 0,
    "incidencia": 10
+  },
+  {
+   "cuando": "2026-09-25T23:06:39.474Z",
+   "partidas": 79,
+   "heroes": 11,
+   "incidencia": 11
   }
  ]
 }
