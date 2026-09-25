@@ -11,7 +11,7 @@ import {
 } from './contexto.mjs';
 import { discoverRoutes, elegirRutaConMasDatos } from './descubrimiento.mjs';
 import {
-  fetchBuilds, fetchEquipo, fetchFichas, fetchHeroList, fetchStats,
+  fetchBuilds, fetchEquipo, fetchFichas, fetchHeroList, fetchStats, fetchWinrateLinea,
 } from './extraccion.mjs';
 import { fetchRelations } from './relaciones.mjs';
 import {
@@ -169,6 +169,17 @@ async function main() {
     console.warn(`  · builds: fallo (${err.message}); conservo las anteriores`);
   }
 
+  // El winrate de cada heroe en cada linea (3.12.0): se ensena, no puntua.
+  // Si falla, lo anterior, como las builds.
+  let winrateLinea = previous?.winrateLinea ?? {};
+  try {
+    const fresh = await fetchWinrateLinea(heroList);
+    if (Object.keys(fresh).length) winrateLinea = fresh;
+    console.log(`  · winrate por linea: ${Object.keys(winrateLinea).length} heroes`);
+  } catch (err) {
+    console.warn(`  · winrate por linea: fallo (${err.message}); conservo el anterior`);
+  }
+
   // Los iconos, solo de los objetos que la app puede llegar a ensenar: los que
   // salen en alguna build y los que puede proponer por su defensa o su efecto.
   // Son ~70 de 184, y la segunda corrida no baja ninguno.
@@ -271,6 +282,7 @@ async function main() {
       rutasMedidas: diagnostics.rutasMedidas ?? null,
       dano: diagnostics.dano ?? null,
       builds: diagnostics.builds ?? null,
+      lineas: diagnostics.lineas ?? null,
       rangos: diagnostics.rangos ?? null,
       recientes: diagnostics.recientes ?? null,
       tiers: diagnostics.tiers ?? null,
@@ -289,6 +301,7 @@ async function main() {
     synergies: relations.synergies,
     equipment: equipo,
     builds,
+    winrateLinea,
   };
 
   await mkdir(dirname(OUT), { recursive: true });

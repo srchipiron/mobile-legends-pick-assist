@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { LINEAS } from '../../motor/catalogo.js';
 import { terminoHeroe } from '../../motor/modelo.js';
 import { buscar } from '../../motor/nombres.js';
+import { winrateEnLinea } from '../../motor/draft.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Cara } from './Imagen.jsx';
 import { ETIQUETAS_RANGO } from './SelectorDeRango.jsx';
@@ -51,6 +52,7 @@ export function Meta({ datos, linea, onCerrar, t = tPorDefecto }) {
         {rangoFuerza !== datos.rango && <p className="nota mal">{t('meta.fuerzaDe', { pedido: ETIQUETAS_RANGO[datos.rango] ?? datos.rango, usado: ETIQUETAS_RANGO[rangoFuerza] ?? rangoFuerza })}</p>}
         {conDeriva && <p className="nota">{t('meta.deriva', { dias: ventana.dias })}</p>}
         {tiers && <p className="nota">{t('meta.tierPista')}</p>}
+        {datos.meta.winrateLinea && Object.keys(datos.meta.winrateLinea).length > 0 && <p className="nota">{t('meta.wrLineaPista')}</p>}
         {lineas.map(({ linea: l, filas }) => (
           <section key={l} className="meta-linea">
             <h3 className="meta-titulo">{t(`linea.${l}`)}</h3>
@@ -67,7 +69,10 @@ export function Meta({ datos, linea, onCerrar, t = tPorDefecto }) {
                   <span className={`meta-delta${delta == null ? '' : delta > 0.001 ? ' sube' : delta < -0.001 ? ' baja' : ''}`}>
                     {delta == null ? '' : `${delta >= 0 ? '+' : '−'}${pct(Math.abs(delta))}`}
                   </span>
-                  <span className="meta-uso">{t('meta.uso', { pick: pct(f.stat.pickRate ?? 0), ban: pct(f.stat.banRate ?? 0, 0) })}</span>
+                  <span className="meta-uso">
+                    {t('meta.uso', { pick: pct(f.stat.pickRate ?? 0), ban: pct(f.stat.banRate ?? 0, 0) })}
+                    {winrateEnLinea(datos, f.heroe, l) != null && <span className="meta-wrlinea">{t('meta.wrLinea', { linea: t(`linea.${l}`), pct: pct(winrateEnLinea(datos, f.heroe, l)) })}</span>}
+                  </span>
                 </div>
               );
             })}

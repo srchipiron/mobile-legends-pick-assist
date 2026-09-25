@@ -1,4 +1,4 @@
-import { indexarPorNombre, nombreClave } from './nombres.js';
+import { indexarPorNombre, nombreClave, buscar } from './nombres.js';
 import { fundirCatalogo, LINEAS, poolDeLinea, equilibrioEsperado } from './catalogo.js';
 import { indiceDeLineas, frecuenciaDeRoles, lineasOcupadas, detectarRivalDeLinea } from './lineas.js';
 import { cobertura } from './matrices.js';
@@ -76,6 +76,11 @@ export function prepararDatos({ catalogo = null, meta = null, rango = null } = {
     statsSemana: semana,
     ventana,
     fuerza,
+    // El winrate de cada héroe EN CADA LÍNEA (3.12.0), por clave normalizada.
+    // Se ENSEÑA, no puntúa: medido en 3.11.0, no mejora la predicción sobre
+    // el global de la misma ventana. Su ventana es de ~15–30 días del rango
+    // de la ingesta (Gloria), no la de la fuerza.
+    winrateLinea: indexarPorNombre(meta?.winrateLinea),
     counters: indexarPorNombre(meta?.counters, 2),
     synergies: indexarPorNombre(meta?.synergies, 2),
     // Lo que cabe esperar de equilibrio de daño en un equipo de n héroes,
@@ -95,6 +100,12 @@ export function prepararDatos({ catalogo = null, meta = null, rango = null } = {
     porNombre: new Map(heroes.map((h) => [h.name, h])),
     catalogo, crudo: meta,
   };
+}
+
+/** El winrate de un héroe en una línea (0..1) o null si la API no lo da. El único sitio que lo lee. */
+export function winrateEnLinea(datos, heroe, linea) {
+  const v = buscar(datos?.meta?.winrateLinea ?? {}, heroe?.name ?? heroe)?.[linea];
+  return typeof v === 'number' && v > 0 && v < 1 ? v : null;
 }
 
 /** Los héroes de una lista de nombres guardados; los que ya no existen se ignoran. */

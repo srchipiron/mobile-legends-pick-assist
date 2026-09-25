@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
 import { buscar } from '../../motor/nombres.js';
+import { winrateEnLinea } from '../../motor/draft.js';
 import { MINUTOS_PARA_RECORDAR } from '../estado/useDraft.js';
 import { useAhora } from '../estado/useAhora.js';
 import { IDIOMAS } from '../i18n/index.js';
@@ -181,6 +182,8 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, da
               stat={buscar(datos.meta.stats, c.heroe.name)}
               pro={pro?.heroes?.[c.heroe.name] ?? null}
               tier={meta?.tiers?.tiers?.[c.heroe.name] ?? null}
+              wrLinea={linea ? winrateEnLinea(datos, c.heroe, linea) : null}
+              linea={linea}
               onBuild={meta?.builds ? (h) => abrir({ build: h }) : null}
               elegido={miPick?.name === c.heroe.name}
               onElegir={draft.fijarPick}

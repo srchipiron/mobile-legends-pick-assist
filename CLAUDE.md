@@ -1407,6 +1407,34 @@ Lo que hay medido y no conviene volver a suponer:
   simplemente no aparece-, pero `comparar-ingesta.mjs` sí rechaza una corrida que
   pierda builds u objetos respecto a la guardada.
 
+## El winrate por línea (3.12.0)
+
+`winrateLinea` en `roam-meta.json`: `{ héroe: { línea: winrate } }`, 165
+pares (solo las líneas que cada héroe juega). La ingesta lo baja de
+`/api/academy/heroes/{id}/win-rate/timeline?lane=&rank=` (`fetchWinrateLinea`,
+el `total_win_rate` que va junto a la curva por duración; objetivo `lineas`
+en `WANTED`, descubierto por la forma de la ruta como todo lo demás), una
+petición por héroe y línea con 200 ms de pausa (~35 s más de ingesta). Si
+falla, se conserva el anterior, como las builds, y `comparar-ingesta`
+cuenta los PARES héroe-línea (`winrateLinea`): una corrida que los pierda
+no se commitea. La ingesta simulada sirve la ruta con la forma real y
+comprueba que sale lo servido (verificado por mutación: sin la ruta en
+`CON_ID` o sin el lector, falla).
+
+Se ENSEÑA y no puntúa (medido en 3.11.0, ver «Candidatos descartados»).
+`winrateEnLinea(datos, héroe, línea)` en `draft.js` es el único acceso, por
+clave normalizada (el catálogo dice «X Borg», la API «X.Borg»); la tarjeta
+lo pone bajo el winrate general (`.pick-wrlinea`, en la columna derecha, que
+no es la que marca el alto: `primera-pantalla.e2e` sigue en verde) y
+«Meta» en la línea de uso de cada fila. Hay una prueba de que el ranking es
+idéntico con y sin el dato. Su población es la de Gloria a 15–30 días
+(r = 0,99 con esa ventana), NO la de la fuerza: tras un reinicio de
+temporada tarda semanas en ponerse al día, y el texto lo dice («unas semanas
+de Gloria»). La primera tanda se metió a mano el 25 de septiembre de 2026
+con lo bajado de la misma ruta en la medida de 3.11.0 (y el serializador de
+la ingesta, que reescribe el fichero byte a byte igual); desde ahí la trae
+el bot.
+
 ## Las imágenes
 
 Iconos de objeto (`public/objetos/{id}.png`, 71) y caras de héroe
@@ -1891,8 +1919,8 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   por +0,0 a +1,5 de logL por 1.000 partidas, dentro del ruido; juntos,
   0,19 ± 0,49 y 0,43 ± 0,47, no se distinguen. No entra en la nota. Se
   reabre con partidas de solo queue (en pro cada héroe juega casi siempre
-  su línea principal, así que ahí la línea apenas añade) o para
-  enseñarlo en pantalla, que son 165 peticiones más en la ingesta. (2) La
+  su línea principal, así que ahí la línea apenas añade). Desde 3.12.0 SÍ
+  se enseña (ver «El winrate por línea»). (2) La
   curva por duración como término (lo que sube un héroe de 10 a 20+ min,
   tuyos menos suyos): −0,56 ± 0,29 encima del término de héroe, ganancia
   de −0,7 a +0,8 según la semilla. Descartada. (3)

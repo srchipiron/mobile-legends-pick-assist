@@ -35,10 +35,13 @@ const WANTED = {
   // Builds de un heroe EN UNA LINEA. El parametro `lane` es obligatorio: sin
   // el la API devuelve 422.
   builds: [/builds?\/?$/i, /equip[-_]?recommend/i],
+  // El winrate de un heroe EN UNA LINEA (3.12.0). Vive en la curva por
+  // duracion de partida (`total_win_rate`), y como las builds pide `lane`.
+  lineas: [/win[-_]?rate\/timeline\/?$/i],
 };
 
 /** Rutas que llevan el heroe (o el recurso) dentro del camino, no como parametro. */
-const CON_ID = new Set(['counter', 'compatibility', 'detail', 'builds']);
+const CON_ID = new Set(['counter', 'compatibility', 'detail', 'builds', 'lineas']);
 
 /**
  * Lee el esquema OpenAPI y devuelve un mapa de lo que nos interesa:

@@ -15,7 +15,7 @@ export { idMotivo };
  * Tarjeta de recomendación: la probabilidad de ganar el draft con ese pick
  * y de dónde sale, en puntos, término a término.
  */
-export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, onBuild, elegido = false, onElegir = null, t = tPorDefecto }) {
+export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLinea = null, linea = null, onBuild, elegido = false, onElegir = null, t = tPorDefecto }) {
   const pct = Math.round(candidato.p * 100);
   const heroe = candidato.heroe;
   const nombre = (
@@ -58,6 +58,11 @@ export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, onBu
       <div>
         <div className="pick-score" title={t('pick.probTitulo')} aria-label={t('pick.probTitulo')}>{pct}%</div>
         <span className="pick-wr">{stat?.winRate != null ? t('pick.wr', { pct: (stat.winRate * 100).toFixed(1) }) : t('app.sinDatos')}</span>
+        {/* Su winrate EN ESTA LÍNEA (3.12.0): el global mezcla todas las que
+            juega (Saber: jungla 53,8%, roam 42,4%). Se enseña, no puntúa. */}
+        {wrLinea != null && linea && (
+          <span className="pick-wrlinea" title={t('pick.wrLineaTitulo', { linea: t(`linea.${linea}`) })}>{t('pick.wrLinea', { linea: t(`linea.${linea}`), pct: (wrLinea * 100).toFixed(1) })}</span>
+        )}
         {/* La tier de mlbb.gg: OPINIÓN, al lado del dato y sin puntuar. Medido
             que no añade nada al winrate (scripts/ingesta/tiers.mjs). */}
         {tier && <span className={`pick-tier tier-${tier}`} title={t('pick.tierTitulo')}>{t('pick.tier', { tier })}</span>}

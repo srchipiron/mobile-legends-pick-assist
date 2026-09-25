@@ -42,6 +42,7 @@ export function serializar(out) {
       counters: compactar(out.counters),
       synergies: compactar(out.synergies),
       builds: compactarBuilds(out.builds),
+      ...(out.winrateLinea ? { winrateLinea: compactarBuilds(out.winrateLinea) } : {}),
     },
     null,
     2,

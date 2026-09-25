@@ -64,6 +64,8 @@ export function medir(datos) {
     // ensenar. Mismo fallo que ya costo la matriz de counters.
     builds: Object.values(datos?.builds ?? {})
       .reduce((n, porLinea) => n + Object.values(porLinea ?? {}).reduce((m, l) => m + (l?.length ?? 0), 0), 0),
+    // El winrate por linea (3.12.0): los PARES heroe-linea, no los heroes.
+    winrateLinea: Object.values(datos?.winrateLinea ?? {}).reduce((n, porLinea) => n + Object.keys(porLinea ?? {}).length, 0),
   };
 }
 

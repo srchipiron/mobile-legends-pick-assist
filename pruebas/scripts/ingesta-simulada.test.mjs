@@ -70,6 +70,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     '/api/equipment/expanded': parametros('size', 'index', 'lang'),
     '/api/equipment': parametros('size', 'index', 'lang'),
     '/api/heroes/{hero_id}/builds': parametros('lane', 'rank', 'size', 'index'),
+    '/api/academy/heroes/{hero_id}/win-rate/timeline': parametros('lane', 'rank', 'size', 'index'),
   } };
   // Larga a proposito: la huella del texto solo cuenta cadenas de 40 o mas
   // caracteres una vez quitadas etiquetas, cifras y espacios. Con una corta,
@@ -141,6 +142,15 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       return json({ code: 0, data: [{ equipid: [90001, 90002, 90003], build_win_rate: 0.555, build_pick_rate: 0.1,
         emblem: { data: { emblemname: 'Tank' } }, battleskill: { data: { skillname: 'Flicker' } } }] });
     }
+    // El winrate por línea (3.12.0), con la forma real: el dato en
+    // `total_win_rate`, junto a la curva por duración. Distinto por héroe
+    // para saber que se guarda el de cada uno.
+    if ((m = ruta.match(/^\/api\/academy\/heroes\/([^/]+)\/win-rate\/timeline$/))) {
+      if (!u.searchParams.get('lane')) { res.statusCode = 422; res.end('{}'); return; }
+      marca(`lineas:${u.searchParams.get('lane')}`);
+      return json({ code: 0, data: { records: [{ data: { heroid: Number(m[1]), real_road: 3, big_rank: '9', total_win_rate: 0.4321 + Number(m[1]) / 1000,
+        time_win_rate: [{ time_min: 10, time_max: 12, win_rate: 0.4 }, { time_min: 20, win_rate: 0.5 }] } }], total: 1 } });
+    }
     // La tier list de mlbb.gg, en el mismo servidor con otra base (--tiers).
     if (ruta === '/api/v1/heroes') { marca('tiers'); return json(heroes.map((h) => ({ id: h.id, name: h.name }))); }
     if ((m = ruta.match(/^\/api\/v1\/heroes\/(\d+)$/))) { marca('tier'); return json({ id: Number(m[1]), name: heroes.find((x) => String(x.id) === m[1])?.name, tier: m[1] === '1' ? 'S' : 'B' }); }
@@ -167,7 +177,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
 
     // Cada endpoint que la ingesta conoce se ha llamado. Si uno deja de
     // llamarse, la app se queda con el dato conservado sin que nadie lo vea.
-    for (const k of ['esquema', 'rank:mythic', 'rank:glory', 'rank3:glory', 'position', 'detail', 'counters', 'academy', 'compat', 'equipo', 'equipoCorto', 'builds:roam', 'img', 'tiers', 'tier']) {
+    for (const k of ['esquema', 'rank:mythic', 'rank:glory', 'rank3:glory', 'position', 'detail', 'counters', 'academy', 'compat', 'equipo', 'equipoCorto', 'builds:roam', 'lineas:roam', 'img', 'tiers', 'tier']) {
       ok(golpes[k] > 0, `la ingesta no ha llamado a ${k}: ${JSON.stringify(golpes)}`);
     }
 
@@ -202,6 +212,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     const build = d.builds?.Atlas?.roam?.[0];
     ok(build && build.objetos.join(',') === '90001,90002,90003' && build.emblema === 'Tank' && build.hechizo === 'Flicker', `build de Atlas: ${JSON.stringify(build)}`);
     eq(build?.winRate, 0.555, `winrate de la build: ${build?.winRate}`);
+    eq(d.winrateLinea?.Atlas?.roam, 0.4331, `winrate de Atlas en roam: ${JSON.stringify(d.winrateLinea?.Atlas)}`);
+    eq(d.winrateLinea?.Khufra?.roam, 0.4341, 'el winrate por línea no es el de cada héroe');
+    ok(!(d.diagnostics.lineas?.errores ?? []).length && d.diagnostics.lineas?.valores === 3, `diagnóstico del winrate por línea: ${JSON.stringify(d.diagnostics.lineas)}`);
     ok(existsSync(resolve(dir, 'objetos', '90001.png')), 'no ha bajado el icono del objeto');
     ok(existsSync(resolve(dir, 'heroes', '1.jpg')), 'no ha bajado el retrato de Atlas');
     for (const [k, v] of Object.entries({ speciality: d.diagnostics.speciality?.errores, builds: d.diagnostics.builds?.errores, relations: d.diagnostics.relations?.errores })) {

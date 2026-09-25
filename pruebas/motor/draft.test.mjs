@@ -10,7 +10,7 @@ import { catalogo, h } from '../fixtures/catalogo.mjs';
 import { LINEAS, equilibrioEsperado } from '../../src/motor/catalogo.js';
 import {
   rangoActivo, prepararDatos, resolverNombres, poolDe,
-  lineasEnemigasAbiertas, rivalDeLinea, recomendar, eleccionDe, planDePicks, ordenar,
+  lineasEnemigasAbiertas, rivalDeLinea, recomendar, eleccionDe, planDePicks, ordenar, winrateEnLinea,
 } from '../../src/motor/draft.js';
 import { elegirVentana, elegirRango, mediaDeWinrate } from '../../src/motor/ventana.js';
 import { indexarPorNombre } from '../../src/motor/nombres.js';
@@ -280,6 +280,26 @@ test('prepararDatos decide el RANGO de la fuerza en UN sitio, igual que elegirRa
   const vacia = prepararDatos({ catalogo, meta: { ...meta, statsByRank: { ...meta.statsByRank, glory: revuelta } }, rango: 'glory' });
   eq(vacia.meta.fuerza.rango, 'mythic', 'con Gloria sin parecerse a Mítico sigue mandando Gloria');
   ok(Math.abs(vacia.meta.mediaDelRango - mediaDeWinrate(vacia.meta.stats)) < 1e-12, 'el centro del término de héroe no es el del rango en uso');
+});
+
+test('winrateEnLinea: el de ESE héroe en ESA línea, por clave normalizada; null si no lo hay o no es posible', () => {
+  const m = { ...meta, winrateLinea: { 'X.Borg': { exp: 0.4901 }, Saber: { roam: 0.4242, jungle: 0.5381 }, Raro: { roam: 1.2 } } };
+  const d = prepararDatos({ catalogo, meta: m });
+  const heroe = (n) => d.porNombre.get(n) ?? { name: n };
+  eq(winrateEnLinea(d, heroe('Saber'), 'roam'), 0.4242);
+  eq(winrateEnLinea(d, heroe('Saber'), 'jungle'), 0.5381, 'mezcla las líneas del mismo héroe');
+  // El catálogo escribe «X Borg» y la API «X.Borg»: sin la clave normalizada se perdía en silencio.
+  const xborg = d.heroes.find((h) => /borg/i.test(h.name));
+  eq(winrateEnLinea(d, xborg, 'exp'), 0.4901, `no casa ${xborg?.name} con X.Borg`);
+  eq(winrateEnLinea(d, heroe('Saber'), 'gold'), null, 'se inventa una línea que no juega');
+  eq(winrateEnLinea(d, heroe('Raro'), 'roam'), null, 'enseña un winrate imposible');
+  eq(winrateEnLinea(prepararDatos({ catalogo, meta: { ...meta, winrateLinea: undefined } }), heroe('Saber'), 'roam'), null, 'sin el dato no devuelve null');
+  // No puntúa: el ranking es el mismo con y sin el dato.
+  const sin = prepararDatos({ catalogo, meta: { ...meta, winrateLinea: undefined } });
+  const enemigos = ['Layla', 'Fanny'].map((n) => d.porNombre.get(n));
+  const a = ordenar(d, { linea: 'roam', enemigos }).map((c) => `${c.heroe.name}:${c.p}`).join();
+  const b = ordenar(sin, { linea: 'roam', enemigos: enemigos.map((h) => sin.porNombre.get(h.name)) }).map((c) => `${c.heroe.name}:${c.p}`).join();
+  eq(a, b, 'el winrate por línea ha entrado en la nota (se enseña, no puntúa)');
 });
 
 await terminar('motor/draft');

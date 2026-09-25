@@ -92,4 +92,20 @@ test('una corrida que pierde builds no pasa el filtro', () => {
     'una corrida sin catalogo de objetos pasa el filtro');
 });
 
+test('una corrida que pierde el winrate por línea no pasa el filtro (se cuentan pares héroe-línea)', () => {
+  const base = {
+    heroes: [{ name: 'A', lanes: ['exp', 'jungle'], role: 'fighter', damage: { fisico: 3 } }],
+    stats: { A: {} }, counters: { A: { B: 0.5 } }, synergies: { A: { B: 0.5 } },
+    winrateLinea: { A: { exp: 0.5, jungle: 0.52 }, B: { roam: 0.49 } },
+  };
+  eq(comparar(base, base).peores.length, 0, 'una corrida idéntica se rechaza');
+  // Los mismos héroes con UNA línea cada uno: contando héroes pasaría.
+  ok(comparar({ ...base, winrateLinea: { A: { exp: 0.5 }, B: { roam: 0.49 } } }, base).peores.some((p) => p.clave === 'winrateLinea'),
+    'una corrida con un tercio menos de pares héroe-línea pasa el filtro');
+  ok(comparar({ ...base, winrateLinea: {} }, base).peores.some((p) => p.clave === 'winrateLinea'), 'una corrida sin winrate por línea pasa el filtro');
+  // Un fichero de antes (sin el campo) no bloquea la primera corrida que lo trae.
+  const viejo = { ...base }; delete viejo.winrateLinea;
+  eq(comparar(base, viejo).peores.length, 0, 'la primera corrida con winrate por línea se rechaza contra un fichero que no lo tenía');
+});
+
 await terminar('scripts/comparar');

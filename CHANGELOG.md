@@ -8,6 +8,20 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.12.0
+
+- **Cada tarjeta enseña el winrate del héroe EN TU LÍNEA.** Debajo del
+  winrate general sale, por ejemplo, «Exp 53.8%»: cómo le va a ese héroe
+  jugando justo en la línea que has elegido. El general mezcla todas las
+  líneas que juega, y hay héroes que cambian mucho según dónde: Saber gana
+  el 53,8% en jungla y el 42,4% en roam; Natalia, el 54,8% en jungla y el
+  48,2% en roam. La hoja «Meta» lo enseña también en cada fila («en Exp
+  53.1%»), línea por línea.
+- Es información, no cambia la nota: medido contra partidas profesionales,
+  no predice mejor que el winrate general. Son unas semanas de Gloria, así
+  que tras un reinicio de temporada tarda en ponerse al día. Se actualiza
+  solo, dos veces al día, con el resto de los datos.
+
 ## 3.11.0
 
 - **La fuerza de cada héroe ya no sale de un puñado de partidas tras un

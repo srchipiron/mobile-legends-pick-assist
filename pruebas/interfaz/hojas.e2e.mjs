@@ -8,13 +8,15 @@
 import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
-/** Lo que decide el motor con los datos que sirve dist/: de qué rango sale la fuerza con Gloria pedida. */
-async function decisionDeRango() {
+/** El motor con los datos que sirve dist/, con Gloria pedida (lo que ve la app sin rango guardado). */
+async function datosServidos() {
   const { readFile } = await import('node:fs/promises');
-  const { prepararDatos } = await import('../../src/motor/draft.js');
+  const motor = await import('../../src/motor/draft.js');
   const leerJson = async (f) => JSON.parse(await readFile(new URL(`../../dist/data/${f}`, import.meta.url), 'utf8'));
-  return prepararDatos({ catalogo: await leerJson('heroes.json'), meta: await leerJson('roam-meta.json'), rango: 'glory' }).meta.fuerza;
+  return { motor, datos: motor.prepararDatos({ catalogo: await leerJson('heroes.json'), meta: await leerJson('roam-meta.json'), rango: 'glory' }) };
 }
+/** De qué rango sale la fuerza con los datos servidos. */
+const decisionDeRango = async () => (await datosServidos()).datos.meta.fuerza;
 const navegador = await abrirNavegador();
 const LINEA = { 'roam-picker:linea': 'roam' };
 const PICKS = { enemies: ['Layla', 'Fanny', 'Pharsa'], allies: ['Chou'], bans: ['Hirara'], enemyRoam: null, fase: 'picks' };
@@ -170,6 +172,35 @@ await prueba('la hoja Meta enseña la tier list por línea, con la tuya primero,
   // sí, con Gloria llena no): se compara con prepararDatos, no con el día.
   const fuerza = await decisionDeRango();
   eq(await pagina.locator('[role=dialog] .nota.mal').count(), fuerza.rango === fuerza.pedido ? 0 : 1, `la hoja no cuenta de qué rango sale la fuerza (${fuerza.pedido} → ${fuerza.rango})`);
+  // El winrate por línea (3.12.0): el nº1 de roam lleva el SUYO en roam, el que da el motor con los datos servidos.
+  const { motor, datos } = await datosServidos();
+  const esperado = motor.winrateEnLinea(datos, datos.porNombre.get(primero) ?? { name: primero }, 'roam');
+  const enFila = await pagina.locator('[role=dialog] .meta-fila.top .meta-wrlinea').first().innerText().catch(() => '');
+  if (esperado != null) ok(enFila.includes(`${(esperado * 100).toFixed(1)}%`) && /roam/i.test(enFila), `la fila de ${primero} no enseña su winrate en roam (${(esperado * 100).toFixed(1)}%): «${enFila}»`);
+  else eq(enFila, '', `enseña un winrate en roam que el motor no tiene: «${enFila}»`);
+  // Y en TODAS las filas de las cinco líneas, el de SU sección: con 60 filas
+  // salen héroes de varias líneas, que es donde se ve si se cruzan.
+  const secciones = pagina.locator('[role=dialog] .meta-linea');
+  // Los títulos que pinta la app en español (innerText los da en mayúsculas).
+  const DE_TITULO = { roam: 'roam', jungla: 'jungle', mid: 'mid', gold: 'gold', exp: 'exp' };
+  const LINEAS = Object.values(DE_TITULO); let comprobadas = 0; let multi = 0;
+  for (let sec = 0; sec < await secciones.count(); sec++) {
+    const l = DE_TITULO[(await secciones.nth(sec).locator('.meta-titulo').innerText()).trim().toLowerCase()];
+    ok(l, 'una sección de Meta con un título de línea que no se reconoce');
+    const filasL = secciones.nth(sec).locator('.meta-fila');
+    for (let i = 0; i < await filasL.count(); i++) {
+      const nombre = await filasL.nth(i).locator('.meta-nombre').innerText();
+      const heroe = datos.porNombre.get(nombre) ?? { name: nombre };
+      const v = motor.winrateEnLinea(datos, heroe, l);
+      const txt = await filasL.nth(i).locator('.meta-wrlinea').innerText().catch(() => '');
+      if (v == null) { eq(txt, '', `${nombre} en ${l}: enseña «${txt}» sin dato`); continue; }
+      comprobadas += 1;
+      if (LINEAS.filter((x) => motor.winrateEnLinea(datos, heroe, x) != null).length > 1) multi += 1;
+      ok(txt.includes(`${(v * 100).toFixed(1)}%`), `${nombre} en ${l}: esperaba ${(v * 100).toFixed(1)}%, sale «${txt}»`);
+    }
+  }
+  ok(comprobadas >= 30, `solo ${comprobadas} filas con winrate por línea comprobadas`);
+  ok(multi >= 3, `solo ${multi} filas de héroes con varias líneas: la prueba no distinguiría una línea de otra`);
   await pagina.keyboard.press('Escape'); await pagina.waitForTimeout(300);
   eq(await pagina.locator('[role=dialog]').count(), 0, 'Escape no cierra Meta');
   ok(!errores.length, `errores: ${errores}`);
@@ -191,6 +222,27 @@ await prueba('el pie se abre con teclado, la cabecera dice la línea y el foco v
   ok(await pagina.locator('[role=dialog]').count() === 1 && await pagina.locator('[role=dialog]').evaluate((e) => e.contains(document.activeElement)), 'Maestría no se abre con teclado con el foco dentro');
   await pagina.locator('[role=dialog] .close').first().click(); await pagina.waitForTimeout(300);
   ok(await boton.evaluate((e) => e === document.activeElement), 'al cerrar, el foco no vuelve al botón que abrió la hoja');
+  await contexto.close();
+});
+
+await prueba('la tarjeta enseña el winrate del héroe EN TU LÍNEA, el mismo que da el motor, y no en otra', async () => {
+  // En exp: es la línea con más héroes que juegan también otra (42 en el pool).
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { 'roam-picker:linea': 'exp', 'roam-picker:draft': PICKS } });
+  const { motor, datos } = await datosServidos();
+  const tarjetas = pagina.locator('.pick');
+  const n = await tarjetas.count();
+  ok(n >= 3, 'no hay tarjetas');
+  let vistos = 0;
+  for (let i = 0; i < Math.min(n, 8); i++) {
+    const nombre = await tarjetas.nth(i).getAttribute('data-heroe');
+    const esperado = motor.winrateEnLinea(datos, datos.porNombre.get(nombre), 'exp');
+    const texto = await tarjetas.nth(i).locator('.pick-wrlinea').innerText().catch(() => null);
+    if (esperado == null) { eq(texto, null, `${nombre} enseña un winrate en exp que el motor no tiene`); continue; }
+    vistos += 1;
+    ok(texto && texto.includes(`${(esperado * 100).toFixed(1)}%`) && /exp/i.test(texto), `${nombre}: esperaba exp ${(esperado * 100).toFixed(1)}%, sale «${texto}»`);
+  }
+  ok(vistos >= 3, `solo ${vistos} de las ocho primeras tarjetas llevan el winrate en exp: el dato no llega`);
+  ok(!errores.length, `errores: ${errores}`);
   await contexto.close();
 });
 

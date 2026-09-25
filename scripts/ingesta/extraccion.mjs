@@ -382,6 +382,55 @@ export async function fetchBuilds(heroList) {
 }
 
 /**
+ * El winrate de cada heroe EN CADA UNA DE SUS LINEAS (3.12.0): Saber gana
+ * el 53,8% de jungla y el 42,4% de roam, y el winrate global mezcla las
+ * dos. Sale de la curva por duracion de partida de la academia
+ * (`total_win_rate`), una peticion por heroe y linea, solo las que juega
+ * (unas 165). Medido en 3.11.0: su poblacion casa con la ventana de 15-30
+ * dias del rango (r = 0,99), no con la de 7, y NO puntua (en partidas pro
+ * no mejora la prediccion sobre el global de la misma ventana): se ensena.
+ */
+export async function fetchWinrateLinea(heroList) {
+  const out = {};
+  if (!estado.ROUTES?.lineas) return out;
+  const lineasValidas = new Set(['roam', 'jungle', 'mid', 'gold', 'exp']);
+  const errores = [];
+  let pedidas = 0;
+  for (const h of heroList) {
+    for (const lane of (h.lanes ?? []).filter((l) => lineasValidas.has(l))) {
+      pedidas += 1;
+      try {
+        const { data } = await callRoute(estado.ROUTES.lineas, { lane, rank: RANK, lang: 'en', size: 20, index: 1 }, h.id ?? h.name);
+        const wr = recogerWinrateLinea(data);
+        if (wr != null) (out[h.name] ??= {})[lane] = Math.round(wr * 1e4) / 1e4;
+      } catch (err) {
+        if (errores.length < 4) errores.push(`${h.name}/${lane}: ${err.message}`);
+      }
+      await sleep(200);
+    }
+  }
+  diagnostics.lineas = {
+    pedidas,
+    heroes: Object.keys(out).length,
+    valores: Object.values(out).reduce((n, porLinea) => n + Object.keys(porLinea).length, 0),
+    errores,
+  };
+  return out;
+}
+
+/** El primer `total_win_rate` posible de la respuesta, este donde este. */
+export function recogerWinrateLinea(node, depth = 0) {
+  if (depth > HONDURA || node == null || typeof node !== 'object') return null;
+  const v = Number(node.total_win_rate);
+  if (node.total_win_rate != null && Number.isFinite(v) && v > 0 && v < 1) return v;
+  for (const x of Array.isArray(node) ? node : Object.values(node)) {
+    const r = recogerWinrateLinea(x, depth + 1);
+    if (r != null) return r;
+  }
+  return null;
+}
+
+/**
  * Saca las builds de la respuesta sin fijar la forma del envoltorio: se busca
  * el primer array cuyos elementos tengan `equipid`, este donde este.
  */
