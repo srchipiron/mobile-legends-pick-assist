@@ -103,6 +103,8 @@ export default {
   'filtro.mios': 'My heroes ({n})',
   'filtro.fueraDeMios': 'Outside your heroes, #1 would be {nombre} ({pct}%).',
   'recordatorio.pregunta': 'How did it go with {yo}?',
+  'recordatorio.preguntaSinFijar': 'Did you play {yo}? If it was someone else, tap “Other hero”.',
+  'recordatorio.otroHeroe': 'Other hero',
   'recordatorio.masTarde': 'Later',
   'plan.titulo': 'Your plan A · B · C',
   'plan.segun': 'with an empty draft',

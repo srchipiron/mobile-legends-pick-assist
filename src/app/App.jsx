@@ -180,7 +180,7 @@ export default function App() {
         t={t} linea={linea} rango={datos.rango} idioma={idioma} onIdioma={setIdioma} onRango={setRango}
         meta={meta} datos={datos} metaListo={metaListo} sinWinrates={sinWinrates} edadHoras={edadHoras} pro={pro}
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={setHoja} onDiagnostico={lanzarDiagnostico}
-        onResultado={(gane) => guardarPartida(draft.miPick, gane)}
+        onResultado={(gane) => guardarPartida(rec.eleccion?.heroe.name ?? draft.miPick, gane)}
         pie={pie}
       />
       {informe && <Diagnostico t={t} resultado={informe} onCerrar={() => setInforme(null)} />}

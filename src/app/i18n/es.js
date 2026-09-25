@@ -98,6 +98,8 @@ export default {
   'filtro.mios': 'Mis héroes ({n})',
   'filtro.fueraDeMios': 'Fuera de tus héroes, el nº1 sería {nombre} ({pct}%).',
   'recordatorio.pregunta': '¿Cómo fue con {yo}?',
+  'recordatorio.preguntaSinFijar': '¿Jugaste con {yo}? Si fue con otro, toca «Otro héroe».',
+  'recordatorio.otroHeroe': 'Otro héroe',
   'recordatorio.masTarde': 'Más tarde',
   'plan.titulo': 'Tu plan A · B · C',
   'plan.segun': 'con el draft vacío',

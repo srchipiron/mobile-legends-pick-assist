@@ -982,7 +982,13 @@ robustez para un pick fijado que no es el nº1 («sigue siendo el nº1 en el
 Diez minutos después de fijarlo (`MINUTOS_PARA_RECORDAR`, una partida dura
 más), al volver a la app (`useAhora`: cada minuto y en `visibilitychange`),
 se pregunta cómo fue: Gané/Perdí apuntan con un toque y «Más tarde» vuelve
-a poner el instante. Es lo que hace crecer el Veredicto (30+30) y la
+a poner el instante. Desde 3.9.0 también SIN pick fijado: el draft guarda
+`completoDesde` (cuándo llegó a cinco enemigos y cuatro compañeros;
+`completoDesdeDe` lo conserva, arranca o borra en cada cambio, y `cargar`
+lo descarta si el draft guardado no está completo) y a los diez minutos se
+pregunta por `rec.eleccion` (el nº1) con «Otro héroe» para abrir «Apuntar
+partida». Sin esto, quien mete el draft entero y no toca «Lo cojo» no
+apuntaba nunca, y la base de datos de partidas (3.8.0) no crecía. Es lo que hace crecer el Veredicto (30+30) y la
 calibración (20) sin acordarse de nada. Cada partida apuntada lleva desde
 3.5.0 su `draft` (`sanearDraft` en registro.js: línea, enemigos, aliados,
 rival; unos 200 bytes; pasa por `sanear` del perfil y viaja en el código):

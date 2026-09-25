@@ -51,7 +51,15 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, da
   // ¿Cómo fue? Diez minutos después de fijar el pick (una partida dura más),
   // al volver a la app: Gané / Perdí / Más tarde.
   const ahora = useAhora();
-  const preguntar = !!(miPick && draft.miPickDesde && ahora - draft.miPickDesde >= MINUTOS_PARA_RECORDAR * 60 * 1000);
+  const plazo = MINUTOS_PARA_RECORDAR * 60 * 1000;
+  // Diez minutos después de fijar tu pick, o de que el draft esté COMPLETO
+  // sin pick fijado (3.9.0): la partida se está jugando igual, y sin
+  // pregunta no se apuntaba. Sin pick fijado se pregunta por el nº1
+  // (`rec.eleccion`), y «Otro héroe» abre «Apuntar partida».
+  const preguntar = !!(rec.eleccion && (
+    (miPick && draft.miPickDesde && ahora - draft.miPickDesde >= plazo)
+    || (!miPick && draft.completoDesde && ahora - draft.completoDesde >= plazo)
+  ));
 
   return (
     <div className="app">
@@ -130,9 +138,10 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, da
         </div>
         {preguntar && (
           <section className="recordatorio" role="status">
-            <p>{t('recordatorio.pregunta', { yo: miPick.name })}</p>
+            <p>{t(miPick ? 'recordatorio.pregunta' : 'recordatorio.preguntaSinFijar', { yo: rec.eleccion.heroe.name })}</p>
             <button className="gane" onClick={() => onResultado?.(true)}>{t('registro.gane')}</button>
             <button onClick={() => onResultado?.(false)}>{t('registro.perdi')}</button>
+            {!miPick && <button onClick={() => abrir('apuntar')}>{t('recordatorio.otroHeroe')}</button>}
             <button onClick={draft.posponerRecordatorio}>{t('recordatorio.masTarde')}</button>
           </section>
         )}

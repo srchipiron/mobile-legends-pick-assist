@@ -121,6 +121,61 @@ await prueba('la fase de baneos enseña tu plan A · B · C con su tasa de ban, 
   await con.contexto.close();
 });
 
+await prueba('con el draft completo y sin pick fijado, a los diez minutos pregunta por el nº1, y «Otro héroe» abre apuntar', async () => {
+  // 3.9.0: quien mete el draft entero y no toca «Lo cojo» también juega, y
+  // antes no se le preguntaba nunca. El instante de completarse se guarda
+  // en el draft; aquí se siembra hace once minutos.
+  const hace11min = Date.now() - 11 * 60 * 1000;
+  const COMPLETO = { enemies: ['Layla', 'Fanny', 'Pharsa', 'Tigreal', 'Ling'], allies: ['Chou', 'Miya', 'Kagura', 'Lukas'], bans: ['Hirara'], enemyRoam: null, fase: 'picks', completoDesde: hace11min };
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': COMPLETO } });
+  const aviso = pagina.locator('.recordatorio');
+  eq(await aviso.count(), 1, 'con el draft completo y sin pick fijado no pregunta cómo fue');
+  const primero = await nombreDe(pagina.locator('.pick').first());
+  ok((await aviso.innerText()).includes(primero), `la pregunta no nombra al nº1 (${primero}): ${await aviso.innerText()}`);
+  // «Otro héroe» abre «Apuntar partida» con el nº1 preseleccionado.
+  await aviso.getByRole('button', { name: 'Otro héroe' }).click(); await pagina.waitForTimeout(400);
+  eq(await pagina.locator('.sheet').count(), 1, '«Otro héroe» no abre la hoja de apuntar');
+  eq((await pagina.locator('.sheet .hero-grid button.elegido').innerText()).trim().split('\n')[0], primero, 'apuntar no viene con el nº1 marcado');
+  await pagina.keyboard.press('Escape'); await pagina.waitForTimeout(300);
+  // «Más tarde» la quita y la vuelve a programar.
+  await aviso.getByRole('button', { name: 'Más tarde' }).click(); await pagina.waitForTimeout(300);
+  eq(await pagina.locator('.recordatorio').count(), 0, '«Más tarde» no quita la pregunta');
+  ok((await leer(pagina, 'roam-picker:draft')).completoDesde > hace11min + 60 * 1000, '«Más tarde» no vuelve a programar la pregunta');
+  // Quitar un enemigo deja el draft incompleto: se borra el instante y no se pregunta.
+  await pagina.evaluate((t) => { const d = JSON.parse(localStorage.getItem('roam-picker:draft')); d.completoDesde = t; localStorage.setItem('roam-picker:draft', JSON.stringify(d)); }, hace11min);
+  await pagina.reload({ waitUntil: 'networkidle' }); await pagina.waitForTimeout(500);
+  eq(await pagina.locator('.recordatorio').count(), 1, 'con la hora de antes no vuelve a preguntar');
+  await pagina.locator('.side.enemy .slot .x').first().click(); await pagina.waitForTimeout(300);
+  eq(await pagina.locator('.recordatorio').count(), 0, 'con el draft incompleto sigue preguntando');
+  eq((await leer(pagina, 'roam-picker:draft')).completoDesde, null, 'quitar un enemigo no borra el instante de completo');
+  // Y un draft guardado INCOMPLETO con un instante viejo dentro no pregunta al cargar.
+  await pagina.evaluate((t) => { const d = JSON.parse(localStorage.getItem('roam-picker:draft')); d.completoDesde = t; localStorage.setItem('roam-picker:draft', JSON.stringify(d)); }, hace11min);
+  await pagina.reload({ waitUntil: 'networkidle' }); await pagina.waitForTimeout(500);
+  eq(await pagina.locator('.recordatorio').count(), 0, 'un instante viejo en un draft incompleto pregunta al cargar');
+  // Gané con el draft completo apunta al nº1 con su draft entero.
+  await pagina.evaluate(({ t, e }) => { const d = JSON.parse(localStorage.getItem('roam-picker:draft')); d.enemies = e; d.completoDesde = t; localStorage.setItem('roam-picker:draft', JSON.stringify(d)); }, { t: hace11min, e: COMPLETO.enemies });
+  await pagina.reload({ waitUntil: 'networkidle' }); await pagina.waitForTimeout(500);
+  const nombre = await nombreDe(pagina.locator('.pick').first());
+  await pagina.locator('.recordatorio .gane').click(); await pagina.waitForTimeout(500);
+  const partidas = await leer(pagina, 'roam-picker:partidas');
+  eq(partidas?.length, 1, 'Gané no apunta la partida');
+  ok(partidas[0].pick === nombre && partidas[0].gane === true && partidas[0].draft?.enemigos?.length === 5 && partidas[0].draft?.aliados?.length === 4, `la partida apuntada no es la del nº1 con el draft entero: ${JSON.stringify(partidas[0])}`);
+  // Y el instante lo ARRANCA la app al completar el draft, no el sembrado:
+  // con tres compañeros no hay instante; al meter al cuarto por el selector,
+  // aparece con la hora de ahora. (La primera versión de esta prueba solo
+  // sembraba el instante y una app que nunca lo arrancara pasaba.)
+  await pagina.evaluate(({ e, a }) => { localStorage.setItem('roam-picker:draft', JSON.stringify({ enemies: e, allies: a, bans: [], enemyRoam: null, fase: 'picks' })); }, { e: COMPLETO.enemies, a: COMPLETO.allies.slice(0, 3) });
+  await pagina.reload({ waitUntil: 'networkidle' }); await pagina.waitForTimeout(500);
+  eq((await leer(pagina, 'roam-picker:draft')).completoDesde ?? null, null, 'con tres compañeros ya hay instante de completo');
+  const antes = Date.now();
+  await pagina.locator('.side.ally .slot.empty:not(.yo)').first().click(); await pagina.waitForTimeout(300);
+  await pagina.locator('.sheet .hero-grid button:not([disabled])').first().click(); await pagina.waitForTimeout(400);
+  const d = await leer(pagina, 'roam-picker:draft');
+  ok(d.allies.length === 4 && typeof d.completoDesde === 'number' && d.completoDesde >= antes - 1000 && d.completoDesde <= Date.now() + 1000, `al completar el draft la app no arranca el instante: ${JSON.stringify(d)}`);
+  ok(!errores.length, `errores de página: ${errores}`);
+  await contexto.close();
+});
+
 await terminar('interfaz/pick');
 await navegador.close();
 await cerrar();

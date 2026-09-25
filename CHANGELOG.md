@@ -8,6 +8,19 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.9.0
+
+- **La app pregunta cómo fue aunque no hayas fijado tu pick.** Hasta ahora
+  la pregunta «¿Cómo fue con X?» solo salía si habías tocado «Lo cojo»; si
+  metías el draft entero y jugabas, no se apuntaba nada. Ahora, diez
+  minutos después de que el draft esté completo (cinco enemigos y cuatro
+  compañeros), al volver a la app pregunta «¿Jugaste con {nº1}?» con Gané,
+  Perdí, «Otro héroe» (abre «Apuntar partida» con la lista) y «Más tarde».
+  Cada partida apuntada es una más en la base de datos del proyecto.
+- El canal de envío de partidas (3.8.0) está probado de extremo a extremo
+  con una incidencia real del dueño: el bot la leyó, respondió y la cerró
+  en quince segundos.
+
 ## 3.8.0
 
 - **Tus partidas tienen base de datos en el proyecto** (`historial/partidas.json`).

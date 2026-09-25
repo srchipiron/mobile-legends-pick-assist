@@ -21,6 +21,9 @@ function cargar() {
     // cómo fue la partida.
     miPick: typeof d.miPick === 'string' ? d.miPick : null,
     miPickDesde: Number.isFinite(d.miPickDesde) ? d.miPickDesde : null,
+    // Desde cuándo el draft está COMPLETO (cinco enemigos y cuatro aliados):
+    // sin pick fijado, es lo que dispara la pregunta de cómo fue (3.9.0).
+    completoDesde: Number.isFinite(d.completoDesde) && lista(d.enemies).length >= TOPES.enemigos && lista(d.allies).length >= TOPES.aliados ? d.completoDesde : null,
     // La fase del draft: primero los baneos, después los picks. Un draft
     // guardado antes de que existiera (sin `fase`) sigue donde estaba: con
     // picks metidos, en picks; vacío, en baneos.
@@ -38,20 +41,34 @@ function cargar() {
  * repetir. Un nombre guardado que ya no resuelve (la API renombró al héroe)
  * se limpia al llegar el catálogo, con `limpiarDesconocidos`.
  */
+/** ¿Están los cinco enemigos y los cuatro compañeros? Entonces se está jugando. */
+export const draftCompleto = (d) => d.enemigos.length >= TOPES.enemigos && d.aliados.length >= TOPES.aliados;
+
+/** Cuándo se completó: se conserva si ya lo estaba, arranca si acaba de completarse, se borra si deja de estarlo. */
+function completoDesdeDe(d, ahora) {
+  if (!draftCompleto(d)) return null;
+  return d.completoDesde ?? ahora;
+}
+
 export function useDraft() {
   const [draft, setDraft] = useState(cargar);
 
   useEffect(() => {
-    guardar(CLAVES.draft, { enemies: draft.enemigos, allies: draft.aliados, bans: draft.baneos, enemyRoam: draft.rivalMarcado, fase: draft.fase, miPick: draft.miPick, miPickDesde: draft.miPickDesde });
+    guardar(CLAVES.draft, { enemies: draft.enemigos, allies: draft.aliados, bans: draft.baneos, enemyRoam: draft.rivalMarcado, fase: draft.fase, miPick: draft.miPick, miPickDesde: draft.miPickDesde, completoDesde: draft.completoDesde });
   }, [draft]);
 
-  const anadir = useCallback((bando, heroe) => setDraft((d) => {
-    const lista = d[bando];
-    if (lista.length >= TOPES[bando] || lista.includes(heroe.name)) return d;
-    // Tu pick fijado no puede ser a la vez enemigo o baneado.
-    const sueltaPick = bando !== 'aliados' && d.miPick === heroe.name;
-    return { ...d, [bando]: [...lista, heroe.name], ...(sueltaPick ? { miPick: null, miPickDesde: null } : {}) };
-  }), []);
+  const anadir = useCallback((bando, heroe) => {
+    // El instante se calcula FUERA del updater (React puede llamarlo dos veces).
+    const ahora = Date.now();
+    setDraft((d) => {
+      const lista = d[bando];
+      if (lista.length >= TOPES[bando] || lista.includes(heroe.name)) return d;
+      // Tu pick fijado no puede ser a la vez enemigo o baneado.
+      const sueltaPick = bando !== 'aliados' && d.miPick === heroe.name;
+      const nuevo = { ...d, [bando]: [...lista, heroe.name], ...(sueltaPick ? { miPick: null, miPickDesde: null } : {}) };
+      return { ...nuevo, completoDesde: completoDesdeDe(nuevo, ahora) };
+    });
+  }, []);
 
   /** «Lo cojo»: fija tu pick (segundo toque en el mismo lo suelta). El instante se calcula FUERA del updater. */
   const fijarPick = useCallback((heroe) => {
@@ -62,14 +79,17 @@ export function useDraft() {
   /** «Más tarde»: la pregunta de cómo fue vuelve dentro de otros MINUTOS_PARA_RECORDAR. */
   const posponerRecordatorio = useCallback(() => {
     const ahora = Date.now();
-    setDraft((d) => (d.miPick ? { ...d, miPickDesde: ahora } : d));
+    setDraft((d) => (d.miPick ? { ...d, miPickDesde: ahora } : (d.completoDesde ? { ...d, completoDesde: ahora } : d)));
   }, []);
 
-  const quitar = useCallback((bando, heroe) => setDraft((d) => ({
-    ...d,
-    [bando]: d[bando].filter((n) => n !== heroe.name),
-    rivalMarcado: bando === 'enemigos' && d.rivalMarcado === heroe.name ? null : d.rivalMarcado,
-  })), []);
+  const quitar = useCallback((bando, heroe) => setDraft((d) => {
+    const nuevo = {
+      ...d,
+      [bando]: d[bando].filter((n) => n !== heroe.name),
+      rivalMarcado: bando === 'enemigos' && d.rivalMarcado === heroe.name ? null : d.rivalMarcado,
+    };
+    return { ...nuevo, completoDesde: completoDesdeDe(nuevo, null) };
+  }), []);
 
   /** Baneos: se marca y se desmarca sin cerrar el selector. */
   const alternarBaneo = useCallback((heroe) => setDraft((d) => (d.baneos.includes(heroe.name)
@@ -82,7 +102,7 @@ export function useDraft() {
   const setFase = useCallback((fase) => setDraft((d) => (d.fase === fase ? d : { ...d, fase })), []);
 
   /** Nuevo draft: todo vacío y a la fase de baneos. */
-  const reiniciar = useCallback(() => setDraft({ enemigos: [], aliados: [], baneos: [], rivalMarcado: null, fase: 'baneos', miPick: null, miPickDesde: null }), []);
+  const reiniciar = useCallback(() => setDraft({ enemigos: [], aliados: [], baneos: [], rivalMarcado: null, fase: 'baneos', miPick: null, miPickDesde: null, completoDesde: null }), []);
 
   /** Fuera los nombres que el catálogo ya no conoce, y el rival si ya no está entre los enemigos. */
   const limpiarDesconocidos = useCallback((conocidos) => setDraft((d) => {
@@ -91,7 +111,8 @@ export function useDraft() {
     const rivalMarcado = d.rivalMarcado && enemigos.includes(d.rivalMarcado) ? d.rivalMarcado : null;
     const miPick = d.miPick && conocidos.has(d.miPick) ? d.miPick : null;
     if (enemigos === d.enemigos && aliados === d.aliados && baneos === d.baneos && rivalMarcado === d.rivalMarcado && miPick === d.miPick) return d;
-    return { ...d, enemigos, aliados, baneos, rivalMarcado, miPick, miPickDesde: miPick ? d.miPickDesde : null };
+    const nuevo = { ...d, enemigos, aliados, baneos, rivalMarcado, miPick, miPickDesde: miPick ? d.miPickDesde : null };
+    return { ...nuevo, completoDesde: completoDesdeDe(nuevo, null) };
   }), []);
 
   return { ...draft, anadir, quitar, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio };
