@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { esPrevia, siguioConsejo } from '../../motor/registro.js';
 import { recogerPerfil, exportarPerfil } from '../../motor/perfil.js';
-import { urlDeIncidencia, TOPE_URL } from '../github.js';
+import { urlDeIncidencia, TOPE_URL, tokenPlausible } from '../github.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Veredicto } from './Veredicto.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
@@ -13,7 +13,16 @@ import { tPorDefecto } from './tPorDefecto.js';
  * NO para comprobar si la app acierta: cuando las jugaste no había consejo
  * que seguir).
  */
-export function HistorialPartidas({ partidas, pool, maestria = {}, perfil = null, onOlvidar, onCorregir, onAnadir, onCerrar, t = tPorDefecto }) {
+/** Qué dice la línea de estado de la subida automática. */
+function estadoDeEnvio(envio, t) {
+  if (envio.enCurso) return t('hist.autoSubiendo');
+  if (envio.error) return t(`hist.error.${envio.error}`);
+  if (envio.pendiente) return t('hist.autoPendiente');
+  if (envio.cuando) return t('hist.autoUltima', { fecha: new Date(envio.cuando).toLocaleString(), numero: envio.incidencia ?? '?' });
+  return t('hist.autoNada');
+}
+
+export function HistorialPartidas({ partidas, pool, maestria = {}, perfil = null, envio = null, onOlvidar, onCorregir, onAnadir, onCerrar, t = tPorDefecto }) {
   const [anadiendo, setAnadiendo] = useState(false);
   const [heroe, setHeroe] = useState(null);
   const [aviso, setAviso] = useState(null);
@@ -26,18 +35,27 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, perfil = null
    * contra tus drafts. Es público (es tu repositorio): se dice antes de
    * tocar. Si el código no cabe en la dirección, se copia al portapapeles y
    * la incidencia se abre vacía para pegarlo.
+   *
+   * Con la subida automática activada (3.10.0) no se abre nada: se sube por
+   * la API a la incidencia de siempre, sin iniciar sesión en el navegador.
    */
-  const [envio, setEnvio] = useState(null);
+  const [aviso2, setAviso2] = useState(null);
+  const [tokenNuevo, setTokenNuevo] = useState('');
   const enviar = async () => {
+    if (envio?.activo) {
+      const r = await envio.enviar();
+      setAviso2(r?.error ? t(`hist.error.${r.error}`) : t('hist.subida', { n: conApp, numero: r?.numero ?? '?' }));
+      return;
+    }
     const codigo = await exportarPerfil(recogerPerfil(perfil ?? { partidas, mastery: maestria }));
     const titulo = t('hist.enviarTitulo', { n: conApp, fecha: new Date().toLocaleDateString() });
     let url = urlDeIncidencia({ titulo, etiquetas: ['partidas'], cuerpo: `${t('hist.enviarCuerpo')}\n\n\`\`\`\n${codigo}\n\`\`\`` });
     if (url.length > TOPE_URL) {
       try { await navigator.clipboard.writeText(codigo); } catch { /* queda el código en «Tu perfil» */ }
       url = urlDeIncidencia({ titulo, etiquetas: ['partidas'], cuerpo: t('hist.enviarPegar') });
-      setEnvio(t('hist.enviarCopiado'));
+      setAviso2(t('hist.enviarCopiado'));
     } else {
-      setEnvio(t('hist.enviarAbierto'));
+      setAviso2(t('hist.enviarAbierto'));
     }
     window.open(url, '_blank', 'noopener');
   };
@@ -62,9 +80,28 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, perfil = null
         <p className="nota">{t('hist.resumenLineas', { total: partidas.length, conApp, previas: partidas.length - conApp })}</p>
         {/* La base de datos del proyecto: sin tus partidas dentro, el modelo
             no se puede medir en tu cola. */}
-        <button className="ancho" disabled={!partidas.length} onClick={enviar}>{t('hist.enviar')}</button>
-        <p className="nota">{t('hist.enviarPista')}</p>
-        {envio && <p className="nota bien">{envio}</p>}
+        <button className="ancho" disabled={!partidas.length || !!envio?.enCurso} onClick={enviar}>{t('hist.enviar')}</button>
+        <p className="nota">{t(envio?.activo ? 'hist.enviarPistaAuto' : 'hist.enviarPista')}</p>
+        {aviso2 && <p className="nota bien">{aviso2}</p>}
+        {/* La subida automática (3.10.0): con un token de GitHub limitado a
+            las incidencias de este repositorio, cada partida apuntada se
+            sube sola. Sin pasar por el navegador ni iniciar sesión. */}
+        <section className="envio-auto">
+          <strong>{t('hist.auto')}</strong>
+          {envio?.activo ? (
+            <>
+              <p className={`nota ${envio.error ? 'mal' : 'bien'}`}>{estadoDeEnvio(envio, t)}</p>
+              <button className="ancho" onClick={() => envio.guardarToken(null)}>{t('hist.autoQuitar')}</button>
+            </>
+          ) : (
+            <>
+              <p className="nota">{t('hist.autoPista')}</p>
+              <input type="password" autoComplete="off" spellCheck={false} placeholder={t('hist.autoPlaceholder')} aria-label={t('hist.autoPlaceholder')} value={tokenNuevo} onChange={(e) => setTokenNuevo(e.target.value)} />
+              <button className="ancho" disabled={!envio || !tokenPlausible(tokenNuevo)} onClick={() => { envio.guardarToken(tokenNuevo); setTokenNuevo(''); }}>{t('hist.autoActivar')}</button>
+              <p className="nota"><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">{t('hist.autoCrear')}</a> {t('hist.autoComo')}</p>
+            </>
+          )}
+        </section>
         <button className="ancho" onClick={() => setAnadiendo((v) => !v)}>{t('hist.anadir')}</button>
         {anadiendo && (
           <>

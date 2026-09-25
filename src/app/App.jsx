@@ -7,6 +7,7 @@ import { useAjustes } from './estado/useAjustes.js';
 import { useDatos } from './estado/useDatos.js';
 import { useDraft } from './estado/useDraft.js';
 import { usePersonal } from './estado/usePersonal.js';
+import { useEnvio } from './estado/useEnvio.js';
 import { useRecomendacion } from './estado/useRecomendacion.js';
 import { useActualizacion } from './estado/useActualizacion.js';
 import { leerEntorno, pedirPublicada } from './entorno.js';
@@ -70,6 +71,8 @@ export default function App() {
     () => ({ mastery: personal.maestria, partidas: personal.partidas, rango: datos.rango, linea, idioma }),
     [personal.maestria, personal.partidas, datos.rango, linea, idioma],
   );
+  // La subida automática de partidas (3.10.0): con token, cada cambio se sube solo.
+  const envio = useEnvio({ perfil: datosPerfil, t });
 
   const elegirEnSelector = (h) => {
     if (hoja === 'baneos') { draft.alternarBaneo(h); return; }
@@ -195,7 +198,7 @@ export default function App() {
       )}
       {hoja === 'historial' && (
         <HistorialPartidas
-          partidas={personal.partidas} maestria={personal.maestria} pool={rec.pool} perfil={datosPerfil}
+          partidas={personal.partidas} maestria={personal.maestria} pool={rec.pool} perfil={datosPerfil} envio={envio}
           onOlvidar={personal.olvidarPartida} onCorregir={personal.corregirPartida}
           onAnadir={(heroe, gane) => personal.apuntarPartida({ pick: heroe, gane, previa: true, rango: datos.rango })}
           onCerrar={cerrar} t={t}

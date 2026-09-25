@@ -691,6 +691,9 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* Los mismos colores que ya usa la app para bien y mal, no dos nuevos. */
 .nota.bien { color: var(--c-comp); }
 .nota.mal { color: var(--enemy); }
+/* La subida automática de partidas (3.10.0), dentro de «Tus partidas». */
+.envio-auto { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--glass); box-shadow: var(--brillo); }
+.envio-auto a { color: var(--gold); }
 
 /* --- Historial de partidas --- */
 

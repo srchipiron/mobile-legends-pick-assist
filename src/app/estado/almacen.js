@@ -15,6 +15,8 @@ export const CLAVES = {
   rango: 'roam-picker:rank',
   linea: 'roam-picker:linea',
   idioma: 'roam-picker:idioma',
+  // La subida automática de partidas (3.10.0): token de GitHub, incidencia y qué se subió ya.
+  envio: 'roam-picker:envio',
 };
 
 /** Lee un valor guardado; con cualquier fallo (JSON roto, sin almacén) devuelve `porDefecto`. */

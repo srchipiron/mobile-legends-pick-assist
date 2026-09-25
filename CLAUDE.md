@@ -847,6 +847,17 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   reales: quitar las estadísticas de UN héroe movía el centro de las
   parejas 0,36 pp). Si arreglas un patrón, busca sus gemelos con `grep`
   (`?? 1` sobre `pickRate`).
+- **Un canal que dependía de iniciar sesión en GitHub desde el móvil**
+  (3.8.0 → 3.10.0) — «Enviar mis partidas al proyecto» abría el formulario
+  de incidencia ya relleno; funcionó en la prueba (#10, sesión iniciada,
+  perfil vacío) y falló en la primera de verdad: sin sesión, GitHub manda
+  al inicio de sesión con la dirección entera (el código dentro) como
+  `return_to`, y eso acabó en un 501. Aquí no se reproduce (el proxy
+  devuelve 403 en `/login`), así que la causa exacta queda sin confirmar;
+  lo que se hizo fue quitar el navegador del camino: con un token la app
+  habla con la API. Un canal de envío que depende de una sesión en otro
+  sitio no es un canal; y una prueba con el perfil vacío no prueba el
+  tamaño real.
 - **Guardar en el almacén DENTRO de un updater de `setState`** (3.0) — React
   puede llamar a un updater más de una vez (evaluación ansiosa, modo
   estricto, reproceso de la cola), así que ahí dentro no va ningún efecto.
@@ -1030,6 +1041,26 @@ datos vivían solo en su móvil y ninguna sesión podía leerlos.
   con draft, la pendiente dice si la escala 0,44 vale en su cola; hasta
   entonces manda el ±. El fichero se puede leer en cualquier sesión y
   `medir-mias.mjs` se puede pasar a mano.
+- **La subida automática (3.10.0)**: `src/app/envio.js` (puro: huella
+  FNV-1a de partidas+maestría, `tocaSubir`, `ESPERA_MS` 3 s, `REINTENTO_MS`
+  10 min), `src/app/estado/useEnvio.js` (el estado en `roam-picker:envio`:
+  token, incidencia, huella subida, último error) y `subirIncidencia` en
+  `src/app/github.js` (la API: PATCH a la incidencia guardada, POST con
+  etiqueta si no hay o si ya no existe; 401 → `token`, 403/404 al crear →
+  `permiso`, fetch roto → `red`). El token es de grano fino, limitado a
+  «Issues: read and write» de este repositorio, lo pega Javi en «Tus
+  partidas» y SOLO viaja a `api.github.com` en la cabecera Authorization:
+  no entra en el código de perfil (`recogerPerfil` toma campos explícitos)
+  ni en el diagnóstico, y la hoja recibe `activo`, no el token
+  (`envio.e2e.mjs` lo comprueba, verificado por mutación). Con él, cada
+  cambio en partidas o maestría se sube solo a la MISMA incidencia, que el
+  bot procesa igual (`edited` también dispara `partidas.yml`), así que las
+  respuestas quedan en hilo. Sin token, el botón sigue abriendo el
+  formulario. Si el token caduca, la hoja lo dice y no se insiste: los
+  mismos datos que fallaron esperan `REINTENTO_MS` o un cambio. Nació de
+  que el formulario ya relleno obligaba a iniciar sesión en GitHub desde el
+  móvil y ese inicio de sesión, con el código dentro de la dirección,
+  fallaba con un 501.
 - **No se redespliega**: la app no lee `historial/partidas.json` (el bot
   no está en el `workflow_run` de `deploy.yml` a propósito). Si algún día
   la app lo enseña, hay que meterlo ahí.

@@ -8,6 +8,28 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.10.0
+
+- **Tus partidas se suben solas al proyecto.** En «Tus partidas» hay un
+  bloque nuevo, «Subida automática»: pegas un token de GitHub (se crea en
+  GitHub con acceso SOLO a las incidencias de este repositorio, y la propia
+  hoja enlaza dónde y dice qué marcar) y desde ese momento cada partida que
+  apuntes, corrijas o quites se sube sola a los pocos segundos, siempre a la
+  misma incidencia, y el bot responde ahí con la medida. Sin abrir el
+  navegador ni iniciar sesión: el botón «Enviar mis partidas al proyecto»
+  abría GitHub y, sin sesión iniciada, el inicio de sesión con el código
+  dentro de la dirección fallaba (error 501). Con el token, ese botón sube
+  al momento por la API; sin token, sigue abriendo el formulario como antes.
+  La hoja dice cuándo fue la última subida, si hay algo pendiente y, si el
+  token caduca o no tiene permiso, qué hacer. Sin red se espera a que vuelva;
+  tras un fallo no se insiste hasta pasados diez minutos o hasta que haya
+  algo nuevo.
+- El token se guarda solo en tu móvil y solo viaja a `api.github.com`, en la
+  cabecera de la petición: no entra en el código de perfil ni en el
+  diagnóstico (hay prueba de navegador de las dos cosas). Un token limitado a
+  «Issues: read and write» de este repositorio no puede tocar nada más, y no
+  tiene ninguna relación con tu cuenta del juego.
+
 ## 3.9.0
 
 - **La app pregunta cómo fue aunque no hayas fijado tu pick.** Hasta ahora
