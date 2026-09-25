@@ -1533,6 +1533,20 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   la ventana corta vuelva a ser coherente tras el reinicio); compartir el
   draft por enlace y el modo dúo con la maestría del compañero (app de una
   persona; se reabren si alguien más la usa).
+- **La esperanza del término de héroe de las líneas abiertas** (3.7.1):
+  el gemelo de `esperanzaCruces` para la fuerza de los héroes que faltan.
+  Medido con el centro ponderado: el término medio por línea queda en
+  roam +0,04, jungla +0,02, medio −0,01, oro 0,00, exp −0,02 de logit sin
+  escalar, o sea menos de medio punto de probabilidad con cuatro líneas
+  abiertas. No compensa un término más; se reabre si algún parche separa
+  las líneas más de 0,1 de logit (el diagnóstico no lo vigila: `medir-sesgo.mjs`
+  en el scratch de la sesión lo medía).
+- **`avgByRank` y `patchAvgWinRate` de la ingesta** (3.7.1): siguen siendo
+  medias simples y siguen escribiéndose por compatibilidad, pero el motor
+  ya no las lee (el centro sale de `mediaDeWinrate` sobre la ventana en
+  uso). Cambiarlas a ponderadas no cambia nada en la app y tocaría la
+  ingesta y su prueba simulada por nada; se quitan cuando toque la ingesta
+  por otra razón.
 - **El modo claro** (3.7.0): el rediseño al estilo de iOS 26 va solo en
   oscuro. El amarillo `#FFD60A` que es el acento de todo (notas, nombres,
   botón primario) y los seis colores de término están elegidos para negro:
