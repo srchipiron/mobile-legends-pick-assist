@@ -1,6 +1,13 @@
 {
-  "actualizado": null,
-  "partidas": [],
-  "maestria": {},
-  "envios": []
+ "actualizado": "2026-09-25T09:06:22.198Z",
+ "partidas": [],
+ "maestria": {},
+ "envios": [
+  {
+   "cuando": "2026-09-25T09:06:22.198Z",
+   "partidas": 0,
+   "heroes": 0,
+   "incidencia": 10
+  }
+ ]
 }
