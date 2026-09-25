@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { CLAVES, leer, guardar } from './almacen.js';
-import { sanear } from '../../motor/perfil.js';
+import { sanear, sanearOlvidadas } from '../../motor/perfil.js';
 import { apuntar, olvidar, corregir } from '../../motor/registro.js';
 import { maestriaEfectiva } from '../../motor/maestria.js';
 
@@ -17,6 +17,8 @@ import { maestriaEfectiva } from '../../motor/maestria.js';
 export function usePersonal() {
   const [maestria, setMaestria] = useState(() => sanear({ mastery: leer(CLAVES.maestria, {}) }).mastery);
   const [partidas, setPartidas] = useState(() => sanear({ partidas: leer(CLAVES.partidas, []) }).partidas);
+  const [olvidadas, setOlvidadas] = useState(() => sanearOlvidadas(leer(CLAVES.olvidadas, [])));
+  const ultimasOlvidadas = useRef(olvidadas);
   const maestriaUsada = useMemo(() => maestriaEfectiva(maestria, partidas), [maestria, partidas]);
 
   // La lista de partidas en una referencia, para poder apuntar sobre la última
@@ -33,7 +35,17 @@ export function usePersonal() {
   }, []);
 
   const apuntarPartida = useCallback((entrada) => guardarPartidas(apuntar(ultimas.current, entrada)), [guardarPartidas]);
-  const olvidarPartida = useCallback((t) => guardarPartidas(olvidar(ultimas.current, t)), [guardarPartidas]);
+  const guardarOlvidadas = useCallback((siguiente) => {
+    ultimasOlvidadas.current = siguiente;
+    setOlvidadas(siguiente);
+    guardar(CLAVES.olvidadas, siguiente);
+  }, []);
+  // Quitar deja marca: sin ella, un código viejo (o la base de datos del
+  // proyecto) devolvía la partida al fundir.
+  const olvidarPartida = useCallback((t) => {
+    guardarOlvidadas(sanearOlvidadas([t, ...ultimasOlvidadas.current]));
+    guardarPartidas(olvidar(ultimas.current, t));
+  }, [guardarPartidas, guardarOlvidadas]);
   const corregirPartida = useCallback((t, gane) => guardarPartidas(corregir(ultimas.current, t, gane)), [guardarPartidas]);
 
   /**
@@ -43,7 +55,8 @@ export function usePersonal() {
   const importarPerfil = useCallback((fundido) => {
     guardarMaestria(fundido.mastery);
     guardarPartidas(fundido.partidas);
-  }, [guardarMaestria, guardarPartidas]);
+    guardarOlvidadas(sanearOlvidadas(fundido.olvidadas));
+  }, [guardarMaestria, guardarPartidas, guardarOlvidadas]);
 
-  return { maestria, maestriaUsada, partidas, guardarMaestria, guardarPartidas, apuntarPartida, olvidarPartida, corregirPartida, importarPerfil };
+  return { maestria, maestriaUsada, partidas, olvidadas, guardarMaestria, guardarPartidas, apuntarPartida, olvidarPartida, corregirPartida, importarPerfil };
 }

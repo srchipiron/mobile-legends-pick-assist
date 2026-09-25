@@ -5,7 +5,7 @@
  * vive en maestria.test.mjs.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { fundirPerfil, sanear, recogerPerfil, exportarPerfil, leerPerfil } from '../../src/motor/perfil.js';
+import { fundirPerfil, sanear, recogerPerfil, exportarPerfil, leerPerfil, sanearOlvidadas, TOPE_OLVIDADAS } from '../../src/motor/perfil.js';
 import { apuntar, olvidar, corregir, resumen } from '../../src/motor/registro.js';
 import { maestriaDesdeRegistro, tuNivel } from '../../src/motor/maestria.js';
 
@@ -123,6 +123,34 @@ test('el perfil viaja entero y no puede borrar nada al llegar', async () => {
   const otraVez = fundirPerfil(f, perfil);
   eq(otraVez.partidas.length, 14, 'importar dos veces duplica las partidas');
   eq(Object.keys(otraVez.mastery).length, Object.keys(f.mastery).length, 'importar dos veces duplica maestria');
+});
+
+test('una partida quitada a propósito no vuelve al fundir, venga la marca de donde venga, y la marca viaja en el código', async () => {
+  const a = { t: 1000, pick: 'Atlas', gane: true, recomendados: [] };
+  const b = { t: 2000, pick: 'Tigreal', gane: false, recomendados: [] };
+  // Móvil: quitó `a`. Llega un código viejo (otro dispositivo, o la base de datos) que aún la tiene.
+  const movil = { mastery: {}, partidas: [b], olvidadas: [1000] };
+  const viejo = { mastery: {}, partidas: [a, b] };
+  const f1 = fundirPerfil(movil, viejo);
+  eq(f1.partidas.length, 1, 'la partida quitada en el móvil vuelve al importar un código viejo');
+  eq(f1.partidas[0].t, 2000);
+  eq(f1.olvidadas.join(), '1000', 'la marca se pierde al fundir');
+  // Al revés: lo guardado la tiene y el que llega trae la marca (la base de datos del proyecto).
+  const f2 = fundirPerfil({ mastery: {}, partidas: [a, b] }, { mastery: {}, partidas: [b], olvidadas: [1000] });
+  eq(f2.partidas.map((p) => p.t).join(), '2000', 'la marca que llega no quita la partida guardada');
+  eq(f2.olvidadas.join(), '1000');
+  // Y una vez quitada, un tercer código sin marca tampoco la devuelve (la marca se queda).
+  eq(fundirPerfil(f2, viejo).partidas.length, 1, 'un código sin marca resucita la partida');
+  // Viaja en el código de perfil, ida y vuelta.
+  const { perfil } = await leerPerfil(await exportarPerfil(recogerPerfil({ partidas: [b], olvidadas: [1000] })));
+  eq(perfil.olvidadas.join(), '1000', 'la marca no viaja en el código');
+  // Sin marcas el código no cambia de forma (no se añade el campo).
+  ok(!('olvidadas' in recogerPerfil({ partidas: [b] })), 'un perfil sin marcas lleva el campo vacío');
+  // Saneado: números finitos, sin repetir, más recientes primero, con tope.
+  eq(sanearOlvidadas([3, '2', 3, NaN, null, 'x', true, 1]).join(), '3,2,1');
+  eq(sanearOlvidadas('basura').length, 0);
+  eq(sanearOlvidadas(Array.from({ length: TOPE_OLVIDADAS + 50 }, (_, i) => i)).length, TOPE_OLVIDADAS);
+  eq(sanear({ olvidadas: [5, 'x'] }).olvidadas.join(), '5');
 });
 
 await terminar('motor/perfil');

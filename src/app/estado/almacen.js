@@ -17,6 +17,8 @@ export const CLAVES = {
   idioma: 'roam-picker:idioma',
   // La subida automática de partidas (3.10.0): token de GitHub, incidencia y qué se subió ya.
   envio: 'roam-picker:envio',
+  // Instantes de las partidas QUITADAS a propósito (3.10.1): viajan en el código para que fundir no las resucite.
+  olvidadas: 'roam-picker:olvidadas',
 };
 
 /** Lee un valor guardado; con cualquier fallo (JSON roto, sin almacén) devuelve `porDefecto`. */

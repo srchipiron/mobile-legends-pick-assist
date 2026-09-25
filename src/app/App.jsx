@@ -68,8 +68,8 @@ export default function App() {
   // Memorizado: la hoja del perfil comprime el código en un efecto sobre
   // `datos`, y un objeto nuevo en cada render lo regeneraba cada vez.
   const datosPerfil = useMemo(
-    () => ({ mastery: personal.maestria, partidas: personal.partidas, rango: datos.rango, linea, idioma }),
-    [personal.maestria, personal.partidas, datos.rango, linea, idioma],
+    () => ({ mastery: personal.maestria, partidas: personal.partidas, olvidadas: personal.olvidadas, rango: datos.rango, linea, idioma }),
+    [personal.maestria, personal.partidas, personal.olvidadas, datos.rango, linea, idioma],
   );
   // La subida automática de partidas (3.10.0): con token, cada cambio se sube solo.
   const envio = useEnvio({ perfil: datosPerfil, t });

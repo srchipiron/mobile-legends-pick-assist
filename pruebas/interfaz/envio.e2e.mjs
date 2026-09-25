@@ -73,6 +73,19 @@ await prueba('con token, lo que hay sin subir se sube solo a los pocos segundos,
   ok(await esperar(() => peticiones.length >= 3), 'el botón no sube por la API');
   eq(await pagina.evaluate(() => window.__abiertas), 0, 'con token, el botón sigue abriendo el navegador');
   ok(await esperar(async () => /incidencia #7/.test(await pagina.locator('.sheet-body').innerText())), 'el botón no dice a qué incidencia ha subido');
+  // Quitar una partida (apuntada por error) deja marca, y la marca sube en el código:
+  // sin ella, la base de datos del proyecto se quedaba con la partida para siempre.
+  const antesDeQuitar = peticiones.length;
+  await pagina.getByRole('button', { name: 'Quitar esta partida · Tigreal' }).click(); await pagina.waitForTimeout(200);
+  eq((await leer(pagina, 'roam-picker:olvidadas'))?.join(), String(PARTIDAS[0].t), 'quitar no guarda la marca de borrado');
+  ok(await esperar(() => peticiones.length > antesDeQuitar), 'quitar una partida no sube');
+  const olvidadas = await pagina.evaluate(async (cuerpo) => {
+    const c = JSON.parse(cuerpo).body.match(/MLPA1\.[A-Za-z0-9_-]+\.[a-z0-9]+/)[0].split('.')[1];
+    const bin = Uint8Array.from(globalThis.atob(c.slice(1).replace(/-/g, '+').replace(/_/g, '/')), (ch) => ch.charCodeAt(0));
+    const texto = c[0] === 'z' ? await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text() : new TextDecoder().decode(bin);
+    return JSON.parse(texto).olvidadas ?? null;
+  }, peticiones[peticiones.length - 1].cuerpo);
+  eq(olvidadas?.join(), String(PARTIDAS[0].t), 'el código subido no lleva la marca de la partida quitada');
   ok(!errores.length, `errores de página: ${errores}`);
   await contexto.close();
 });

@@ -58,8 +58,29 @@ async function descomprimir(bytes) {
 }
 
 /** Lo que se lleva: maestría, partidas y preferencias. NO el draft a medias. */
-export function recogerPerfil({ mastery = {}, partidas = [], rango = null, linea = null, idioma = null }) {
-  return { v: 1, mastery, partidas, rango, linea, idioma, cuando: Date.now() };
+export function recogerPerfil({ mastery = {}, partidas = [], olvidadas = [], rango = null, linea = null, idioma = null }) {
+  return { v: 1, mastery, partidas, ...(olvidadas.length ? { olvidadas } : {}), rango, linea, idioma, cuando: Date.now() };
+}
+
+/**
+ * Cuántas marcas de borrado se guardan como mucho (las más recientes).
+ * Decisión de producto: el móvil guarda 500 partidas; con el doble de
+ * marcas, cualquier partida que aún pueda llegar de un código viejo tiene
+ * la suya. Cada una son unos 14 caracteres.
+ */
+export const TOPE_OLVIDADAS = 1000;
+
+/**
+ * Las partidas QUITADAS a propósito («Quitar esta partida»), por su instante.
+ * Viajan en el código para que fundir no las resucite: sin ellas, la fusión
+ * solo suma, y una partida apuntada por error y quitada en el móvil volvía
+ * al importar un código viejo y se quedaba para siempre en la base de datos
+ * del proyecto (3.10.1).
+ */
+export function sanearOlvidadas(x) {
+  const vistas = new Set();
+  for (const v of Array.isArray(x) ? x : []) { const n = Number(v); if (typeof v !== 'boolean' && v !== null && v !== '' && Number.isFinite(n)) vistas.add(n); }
+  return [...vistas].sort((a, b) => b - a).slice(0, TOPE_OLVIDADAS);
 }
 
 /** El código para copiar. */
@@ -125,7 +146,7 @@ export function sanear(perfil) {
       if (draft) limpia.draft = draft; else delete limpia.draft;
       return limpia;
     });
-  return { ...(perfil ?? {}), mastery, partidas };
+  return { ...(perfil ?? {}), mastery, partidas, olvidadas: sanearOlvidadas(perfil?.olvidadas) };
 }
 
 /**
@@ -133,6 +154,9 @@ export function sanear(perfil) {
  * partidas, héroe a héroe. Partidas: por instante, y en el empate gana la
  * copia local (que lleva la corrección). Preferencias: solo si aquí no había.
  * Hay una prueba en LAS DOS direcciones.
+ *
+ * Las partidas quitadas (`olvidadas`, las de los dos lados) no vuelven: una
+ * marca de borrado gana a la partida venga de donde venga.
  */
 export function fundirPerfil(actual, entrante) {
   entrante = sanear(entrante ?? {});
@@ -141,10 +165,13 @@ export function fundirPerfil(actual, entrante) {
     const mio = mastery[nombre];
     if (!mio || (m?.games ?? 0) > (mio.games ?? 0)) mastery[nombre] = m;
   }
+  const olvidadas = sanearOlvidadas([...(actual.olvidadas ?? []), ...(entrante.olvidadas ?? [])]);
+  const borradas = new Set(olvidadas.map(String));
   const vistas = new Set();
   const partidas = [...(actual.partidas ?? []), ...(entrante.partidas ?? [])]
     .filter((p) => {
       const k = String(p.t ?? '');
+      if (borradas.has(k)) return false;
       if (vistas.has(k)) return false;
       vistas.add(k);
       return true;
@@ -153,6 +180,7 @@ export function fundirPerfil(actual, entrante) {
   return {
     mastery,
     partidas,
+    olvidadas,
     rango: actual.rango ?? entrante.rango ?? null,
     linea: actual.linea ?? entrante.linea ?? null,
     idioma: actual.idioma ?? entrante.idioma ?? null,

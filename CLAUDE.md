@@ -1061,6 +1061,15 @@ datos vivían solo en su móvil y ninguna sesión podía leerlos.
   que el formulario ya relleno obligaba a iniciar sesión en GitHub desde el
   móvil y ese inicio de sesión, con el código dentro de la dirección,
   fallaba con un 501.
+- **Las partidas quitadas dejan marca (3.10.1)**: `olvidadas` (instantes,
+  `roam-picker:olvidadas`, tope `TOPE_OLVIDADAS` 1.000) viaja en el código
+  de perfil y en `historial/partidas.json`, y `fundirPerfil` descarta toda
+  partida marcada venga del lado que venga. Sin eso la fusión solo sumaba:
+  una partida apuntada por error y quitada en el móvil se quedaba en la
+  base de datos del proyecto (la subida automática la manda a los 3 s) y
+  volvía al importar un código viejo. Corregir un resultado ya se
+  propagaba (mismo instante, gana el móvil). Pruebas en perfil, partidas
+  y `envio.e2e`, verificadas por tres mutaciones.
 - **No se redespliega**: la app no lee `historial/partidas.json` (el bot
   no está en el `workflow_run` de `deploy.yml` a propósito). Si algún día
   la app lo enseña, hay que meterlo ahí.
@@ -1813,6 +1822,23 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   con X?») y «Otro héroe» abre «Apuntar partida» para corregirlo; medir el
   nº1 «de entonces» pediría guardar el ranking en cada toque, y con el
   Veredicto a 0 partidas no hay con qué decidir si compensa.
+
+- **Lo examinado en la iteración posterior a 3.10.0** (25 de septiembre de
+  2026; entró 3.10.1, las marcas de borrado): (1) el tamaño del código de
+  perfil contra el límite de 65.536 caracteres del cuerpo de una incidencia
+  de GitHub: medido con partidas realistas (draft entero, diez baneos,
+  estimación, maestría de los 133), 12.532 caracteres con 100 partidas,
+  29.377 con 300 y 45.987 con 500, que es el tope de `apuntar` en el
+  móvil. Cabe con margen 1,4; solo se pasaría si una importación de otro
+  dispositivo dejara más de ~700 partidas en el móvil (`fundirPerfil` no
+  recorta). Si pasa, la API responde 422, la hoja dice «GitHub ha
+  respondido con un error» y se reintenta cada 10 minutos: visible, no
+  silencioso. (2) La cola de `partidas.yml` con subidas seguidas
+  (`cancel-in-progress: false`): GitHub deja una sola corrida pendiente y
+  cancela la anterior en espera, y la que queda lleva el cuerpo del ÚLTIMO
+  evento, que es el completo; no se pierde nada. (3) Un comentario del bot
+  por cada partida subida: es ruido en la incidencia, pero cada uno es la
+  medida al día; se reabre si molesta (se podría comentar solo cada N).
 
 ## Lo que queda pendiente
 

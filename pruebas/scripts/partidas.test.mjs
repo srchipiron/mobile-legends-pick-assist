@@ -61,6 +61,22 @@ test('importar: el código se encuentra dentro de cualquier texto, se funde por 
   ok(malo.status !== 0 && !existsSync(join(dir, 'no.json')), 'sin código el script sale en verde o escribe el fichero');
 });
 
+test('importar: lo que el móvil quitó a propósito sale de la base de datos y no vuelve con un código viejo', async () => {
+  const ruta = join(dir, 'olvidadas.json');
+  const todas = partidasDe(3);
+  const codigoViejo = await exportarPerfil(recogerPerfil({ partidas: todas }));
+  eq((await importar(codigoViejo, ruta)).ahora, 3);
+  // El móvil quita la del medio (apuntada por error) y sube.
+  const r = await importar(await exportarPerfil(recogerPerfil({ partidas: [todas[0], todas[2]], olvidadas: [todas[1].t] })), ruta);
+  eq(r.ahora, 2, 'la partida quitada en el móvil sigue en la base de datos');
+  eq(r.quitadas, 1);
+  const g = JSON.parse(readFileSync(ruta, 'utf8'));
+  ok(!g.partidas.some((p) => p.t === todas[1].t), 'la partida quitada sigue en el fichero');
+  eq(g.olvidadas.join(), String(todas[1].t), 'la marca no se guarda en el repositorio');
+  // Un código viejo (sin la marca) llega después: no la resucita.
+  eq((await importar(codigoViejo, ruta)).ahora, 2, 'un código viejo devuelve la partida quitada');
+});
+
 test('medir-mias: veredicto, calibración y el modelo de hoy sobre los drafts guardados; nunca falla por pocas partidas', () => {
   eq(auc([{ p: 0.6, y: 1 }, { p: 0.4, y: 0 }]), 1);
   eq(auc([{ p: 0.6, y: 0 }, { p: 0.4, y: 1 }]), 0);

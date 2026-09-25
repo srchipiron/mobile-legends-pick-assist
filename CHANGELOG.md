@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.10.1
+
+- **Quitar una partida la quita también del proyecto.** Hasta ahora, si
+  apuntabas una partida por error y la quitabas en «Tus partidas», en el
+  móvil desaparecía pero la base de datos del proyecto se la quedaba para
+  siempre (con la subida automática, llega a los tres segundos de
+  apuntarla), y al traer un código viejo en «Tu perfil» volvía a aparecer.
+  Ahora quitarla deja una marca que viaja con tus datos: el proyecto la
+  borra y ningún código viejo la devuelve. Corregir el resultado ya se
+  propagaba bien; lo que fallaba era solo quitar.
+
 ## 3.10.0
 
 - **Tus partidas se suben solas al proyecto.** En «Tus partidas» hay un
