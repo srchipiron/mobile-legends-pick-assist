@@ -1,6 +1,45 @@
 {
- "actualizado": "2026-09-25T23:06:39.474Z",
+ "actualizado": "2026-09-25T23:32:48.520Z",
  "partidas": [
+  {
+   "t": 1790379156862,
+   "pick": "Estes",
+   "recomendados": [
+    "Gloo",
+    "Rafaela",
+    "Edith"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.567,
+   "bans": [
+    "Hirara",
+    "Minotaur",
+    "Belerick",
+    "Alice",
+    "Eudora",
+    "Khufra",
+    "Yi Sun-shin",
+    "Lukas"
+   ],
+   "draft": {
+    "enemigos": [
+     "Hanabi",
+     "Angela",
+     "Chou",
+     "Cecilion",
+     "Gusion"
+    ],
+    "aliados": [
+     "Paquito",
+     "Lesley",
+     "Pharsa",
+     "Nolan"
+    ],
+    "linea": "roam",
+    "rival": "Angela"
+   }
+  },
   {
    "t": 1790377298025,
    "pick": "Rafaela",
@@ -1847,6 +1886,12 @@
   {
    "cuando": "2026-09-25T23:06:39.474Z",
    "partidas": 79,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-25T23:32:48.520Z",
+   "partidas": 80,
    "heroes": 11,
    "incidencia": 11
   }
