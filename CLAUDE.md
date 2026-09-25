@@ -1131,7 +1131,7 @@ lento, así que la columna que importa es la de la derecha:
 |---|---|---|---|---|
 | `prepararDatos` (una vez por carga) | 44 ms | — | — | ~0,2 s |
 | `ordenarPicks` (CADA toque) | 11,4 ms | 6,0 ms | 3,6 ms | 20–60 ms |
-| `aconsejarEquipo` (cada toque) | 21,9 ms | 12,5 ms | 8,0 ms | 40–110 ms |
+| `aconsejarEquipo` (DIFERIDA desde 3.5.0) | 21,9 ms | 12,5 ms | 8,0 ms | 40–110 ms |
 | `baneosSugeridos` + `siguientesBaneos` | 0,9 ms | 0,5 ms | 0,5 ms | ~4 ms |
 | `simularFinales` (60 finales, DIFERIDA) | 78 ms | 62 ms | — | 0,3–0,5 s |
 
@@ -1143,12 +1143,13 @@ Tres cosas que se leen de ahí:
 - **La simulación es lo caro y por eso va diferida** (`useDeferredValue` en
   `useRecomendacion`), con la marca de para qué draft se hizo: sin la marca,
   el análisis cruzaba la cuota del draft anterior con el nº1 nuevo.
-- **`aconsejarEquipo` cuesta el doble que el ranking y NO va diferido**, igual
-  que en 1.x y 2.x: son cuatro rankings más, y se calculan aunque el bloque
-  venga plegado. Es el primer candidato si alguna vez el toque se nota lento,
-  pero diferirlo pide la misma marca que la simulación (si no, enseñaría el
-  consejo de un draft con el nº1 de otro) y no se tocó en 3.0 para no cambiar
-  dos cosas a la vez. Si añades algo al toque, mídelo aquí.
+- **`aconsejarEquipo` cuesta el doble que el ranking y por eso va diferido
+  desde 3.5.0** (en 3.0 no lo iba, y se dejó a propósito para no cambiar dos
+  cosas a la vez): son cuatro rankings más, y se calculan aunque el bloque
+  venga plegado. Diferirlo pidió la misma marca que la simulación
+  (`consejos.yo`: si no, enseñaría el consejo de un draft con el nº1 de
+  otro). Hoy el toque síncrono es el ranking (10 ms) más el análisis. Si
+  añades algo al toque, mídelo aquí.
 
 ## Las partidas profesionales (Liquipedia)
 
@@ -1744,6 +1745,44 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   nombres no queda camino en la interfaz para abrir el selector con los
   cinco huecos llenos, así que es defensa en profundidad.
 
+- **Lo examinado en la iteración posterior a 3.9.0 y dejado como está**
+  (25 de septiembre de 2026, sin cambio de código): (1) los baneos y la
+  maestría en la re-puntuación de `medir-mias.mjs` (`repuntuar` llama a
+  `estimarCon` sin ninguno de los dos, y la partida guarda los dos). Medido
+  con los datos del día, 1.500 drafts con los diez más baneados de Gloria
+  fuera: los baneos mueven la probabilidad una mediana de 0,09 pp con un
+  enemigo, 0,04 con tres, 0,00 con cuatro (p90 0,29 / 0,20 / 0,09 pp, máximo
+  0,82) y exactamente 0 con el draft completo, que es el caso de casi todas
+  las partidas apuntadas desde 3.9.0: solo pesan en el término «por ver». La
+  maestría se deja fuera a propósito: esa sección re-puntúa el modelo
+  PÚBLICO con los datos de hoy, y la estimación guardada (`calibracion`) ya
+  lleva la maestría del día. Si algún día se pasan los baneos, que sea por
+  coherencia, no porque cambie una cifra. (2) La pendiente de `medir-pro` a
+  1,24 ± 0,25 (857 partidas, datos del 21 de septiembre, una semana después
+  del reinicio de temporada; en la primera corrida 1,00 ± 0,28): a un error
+  típico de 1, dentro del margen de dos que vigila el diagnóstico, y es lo
+  que «Qué son los datos» anticipa tras un reinicio (σ de winrates 5 pp en
+  vez de 3,3). Se mira en las corridas de octubre; si sigue lejos de 1 con
+  el ± por debajo de 0,15, se vuelve a medir con `ajustar-modelo.mjs`. (3)
+  Preguntar cómo fue diez minutos después de COMPLETAR el draft (3.9.0): en
+  el juego el draft se completa justo antes de empezar y una partida dura
+  10–20 minutos, así que la pregunta está esperando al volver a la app; un
+  plazo más largo la retrasaría a quien vuelve pronto y uno más corto la
+  sacaría en mitad de la partida. Se reabre si se ve «Más tarde» repetido
+  (hoy no se cuenta; habría que apuntarlo antes). (4) `partidas.yml` con
+  `issues: edited`: editar una incidencia ya cerrada la reimporta y vuelve a
+  responder; la fusión es idempotente por instante (el fichero no cambia y
+  el bot no commitea) y la respuesta de más es una molestia, no un fallo. Se
+  deja: sirve para reenviar un código que llegó cortado sin abrir otra
+  incidencia. (5) Las incidencias #4 y #6 abiertas son diagnósticos manuales
+  de agosto y septiembre («Todo correcto»), no de vigilancia: el bot no las
+  toca y se cierran a mano cuando toque. (6) `guardarPartida` desde el
+  recordatorio sin pick fijado apunta al nº1 del draft COMPLETO, no al que
+  era nº1 cuando se eligió: es lo que la pregunta dice en pantalla («¿Jugaste
+  con X?») y «Otro héroe» abre «Apuntar partida» para corregirlo; medir el
+  nº1 «de entonces» pediría guardar el ranking en cada toque, y con el
+  Veredicto a 0 partidas no hay con qué decidir si compensa.
+
 ## Lo que queda pendiente
 
 - **Lo que 3.0 perdió sin querer, repuesto en 3.1.0**: la prueba de que la
@@ -1761,8 +1800,8 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   prueba —verificado por mutación: quitarlo no tumba nada, porque tras la
   recarga el hook se monta de cero y no se sabe simular aquí un navegador que
   dispare `controllerchange` varias veces en la misma vida de la página—;
-  `aconsejarEquipo` cuesta el doble que el ranking y no va diferido (ver «Lo
-  que cuesta un toque»); y no hay tipado comprobado (`tsc --checkJs` es el
+  `aconsejarEquipo` no iba diferido (se difirió en 3.5.0, ver «Lo que
+  cuesta un toque»); y no hay tipado comprobado (`tsc --checkJs` es el
   candidato razonable para la siguiente iteración, no entró en 3.0 por no
   meter un compilador nuevo en el despliegue el mismo día).
 - Ya no queda ningún héroe con tags deducidos: los 7 que faltaban (Marcel,
