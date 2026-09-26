@@ -1,6 +1,74 @@
 {
- "actualizado": "2026-09-26T20:46:52.083Z",
+ "actualizado": "2026-09-26T21:04:53.528Z",
  "partidas": [
+  {
+   "t": 1790456681099,
+   "pick": "Estes",
+   "recomendados": [
+    "Rafaela",
+    "Gloo",
+    "Floryn"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.502,
+   "bans": [
+    "Hirara",
+    "Hanzo",
+    "Yi Sun-shin",
+    "Melissa",
+    "Marcel",
+    "Belerick",
+    "Paquito",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Angela",
+     "Barats",
+     "Lesley",
+     "Suyou",
+     "Luo Yi"
+    ],
+    "aliados": [
+     "Kadita",
+     "Brody",
+     "X.Borg",
+     "Karina"
+    ],
+    "linea": "roam",
+    "rival": "Angela"
+   }
+  },
+  {
+   "t": 1790455602239,
+   "pick": "Estes",
+   "recomendados": [
+    "Lolita",
+    "Minotaur",
+    "Khaleed"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.608,
+   "draft": {
+    "enemigos": [
+     "Floryn",
+     "Chang'e",
+     "Julian",
+     "Layla",
+     "Silvanna"
+    ],
+    "aliados": [
+     "Guinevere",
+     "Kadita",
+     "Aamon",
+     "Popol and Kupa"
+    ],
+    "linea": "roam",
+    "rival": "Floryn"
+   }
+  },
   {
    "t": 1790454437516,
    "pick": "Estes",
@@ -2364,6 +2432,12 @@
   {
    "cuando": "2026-09-26T20:46:52.083Z",
    "partidas": 91,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-26T21:04:53.528Z",
+   "partidas": 93,
    "heroes": 11,
    "incidencia": 11
   }
