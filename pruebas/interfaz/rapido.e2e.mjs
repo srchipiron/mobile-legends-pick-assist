@@ -82,6 +82,31 @@ await prueba('el selector de baneos enseña tu línea primero, «Todos» los ens
   await contexto.close();
 });
 
+await prueba('las caras del selector de picks van en el orden del motor y NO se mueven al tocar', async () => {
+  // El orden (3.17.0) sale de probablesDelBando al abrir la hoja o cambiar
+  // de pestaña; mientras se toca se queda quieto (lo que se toca a
+  // contrarreloj no cambia de sitio).
+  const { contexto, pagina } = await paginaCon(navegador, url, {
+    viewport: { width: 360, height: 740 },
+    almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: ['Fanny', 'Layla'], allies: [], bans: [], enemyRoam: null, fase: 'picks' } },
+  });
+  const H = (n) => datos.porNombre.get(n);
+  const nombres = () => pagina.locator('.hero-grid .grid-nombre').allTextContents();
+  await pagina.locator('.side.enemy .slot.empty').first().click(); await pagina.waitForTimeout(300);
+  const esperado = motor.probablesDelBando(datos, { equipo: [H('Fanny'), H('Layla')], linea: 'roam', bando: 'enemigos' }).map((x) => x.name);
+  const visto = await nombres();
+  eq(visto.slice(0, 20).join(','), esperado.slice(0, 20).join(','), 'las caras de Enemigos no van en el orden del motor');
+  // Tocar la primera libre la marca en su sitio: el orden no cambia.
+  const primera = pagina.locator('.hero-grid button:not([disabled])').first();
+  await primera.click(); await pagina.waitForTimeout(250);
+  eq((await nombres()).join(','), visto.join(','), 'tocar una cara reordena la rejilla (se toca a contrarreloj)');
+  // Cambiar a tu equipo recalcula para tu equipo, sin tu línea.
+  await pagina.locator('.sheet-bandos [role=tab]').nth(1).click(); await pagina.waitForTimeout(250);
+  const aliados = motor.probablesDelBando(datos, { equipo: [], linea: 'roam', bando: 'aliados' }).map((x) => x.name);
+  eq((await nombres()).slice(0, 20).join(','), aliados.slice(0, 20).join(','), 'las caras de Tu equipo no van en el orden del motor');
+  await contexto.close();
+});
+
 await terminar('interfaz/rapido');
 await navegador.close();
 await cerrar();

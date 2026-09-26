@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.17.0
+
+- **Al meter los picks, el héroe que buscas suele estar ya a la vista.** Las
+  caras del selector van en el orden de lo más probable para ESE equipo: lo
+  más jugado, y detrás los de las líneas que ese equipo ya tiene cubiertas
+  (si el enemigo ya tiene tirador, los tiradores bajan; en tu equipo, los de
+  tu línea bajan, porque esa eres tú). Medido con tus partidas: el
+  compañero que salió de verdad estaba entre las 12 primeras caras el 45%
+  de las veces (antes el 14%) y el enemigo el 33% (antes el 22%).
+- El orden se decide al abrir la hoja o al cambiar de pestaña, y no se
+  mueve mientras tocas: nada salta de sitio debajo del dedo.
+
 ## 3.16.0
 
 - **Meter los picks es mucho más rápido: el selector ya no se cierra con

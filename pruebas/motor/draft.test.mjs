@@ -10,7 +10,7 @@ import { catalogo, h } from '../fixtures/catalogo.mjs';
 import { LINEAS, equilibrioEsperado } from '../../src/motor/catalogo.js';
 import {
   rangoActivo, prepararDatos, resolverNombres, poolDe,
-  lineasEnemigasAbiertas, rivalDeLinea, recomendar, eleccionDe, planDePicks, ordenar, winrateEnLinea,
+  lineasEnemigasAbiertas, rivalDeLinea, recomendar, eleccionDe, planDePicks, ordenar, winrateEnLinea, probablesDelBando,
 } from '../../src/motor/draft.js';
 import { elegirVentana, elegirRango, mediaDeWinrate } from '../../src/motor/ventana.js';
 import { indexarPorNombre } from '../../src/motor/nombres.js';
@@ -306,6 +306,35 @@ test('winrateEnLinea: el de ESE héroe en ESA línea, por clave normalizada; nul
   const a = ordenar(d, { linea: 'roam', enemigos }).map((c) => `${c.heroe.name}:${c.p}`).join();
   const b = ordenar(sin, { linea: 'roam', enemigos: enemigos.map((h) => sin.porNombre.get(h.name)) }).map((c) => `${c.heroe.name}:${c.p}`).join();
   eq(a, b, 'el winrate por línea ha entrado en la nota (se enseña, no puntúa)');
+});
+
+test('el orden del selector de picks: por cuota de pick, y lo de las líneas ya cogidas detrás', () => {
+  const d = prepararDatos({ catalogo, meta });
+  const pr = (x) => d.meta.stats[x.name.toLowerCase().replace(/[^a-z0-9]/g, '')]?.pickRate ?? 0;
+  const lineasDe = (x) => LINEAS.filter((l) => d.poolsPorLinea[l].some((y) => y.name === x.name));
+  // Sin nadie elegido, todas las líneas están libres: es la cuota de pick.
+  const vacio = probablesDelBando(d, {}).filter((x) => lineasDe(x).length);
+  ok(vacio.every((x, i) => i === 0 || pr(vacio[i - 1]) >= pr(x)), 'sin nadie elegido no ordena por cuota de pick');
+  eq(probablesDelBando(d, {}).length, d.heroes.length, 'deja fuera a algún héroe (se esconde en vez de ir detrás)');
+  // Tu equipo en roam: un héroe solo de roam va detrás de uno solo de otra
+  // línea en cuanto este tenga más de un 5% de su cuota (la línea está cogida: eres tú).
+  const ali = probablesDelBando(d, { bando: 'aliados', linea: 'roam' });
+  const pos = new Map(ali.map((x, i) => [x.name, i]));
+  const soloRoam = d.heroes.filter((x) => lineasDe(x).join() === 'roam');
+  const soloOtra = d.heroes.filter((x) => lineasDe(x).length === 1 && lineasDe(x)[0] !== 'roam');
+  let pares = 0;
+  for (const r of soloRoam) for (const o of soloOtra) {
+    if (pr(o) <= 0.05 * pr(r) * 1.0001) continue;
+    pares += 1;
+    ok(pos.get(o.name) < pos.get(r.name), `para tu equipo en roam, ${r.name} (solo roam) va delante de ${o.name}`);
+  }
+  ok(pares > 100, `la prueba no compara casi nada (${pares} pares)`);
+  // Con un tirador enemigo ya en oro, los tiradores solo de oro bajan.
+  const tirador = d.heroes.find((x) => lineasDe(x).join() === 'gold' && pr(x) > 0);
+  const antes = probablesDelBando(d, {}).map((x) => x.name);
+  const despues = probablesDelBando(d, { equipo: [tirador] }).map((x) => x.name);
+  const otroOro = soloOtra.filter((x) => lineasDe(x)[0] === 'gold' && x !== tirador).sort((a, b) => pr(b) - pr(a))[0];
+  ok(despues.indexOf(otroOro.name) > antes.indexOf(otroOro.name), `con ${tirador.name} en oro, ${otroOro.name} no baja`);
 });
 
 await terminar('motor/draft');

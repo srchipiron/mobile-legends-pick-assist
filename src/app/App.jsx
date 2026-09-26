@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { resolverNombres } from '../motor/draft.js';
+import { resolverNombres, probablesDelBando } from '../motor/draft.js';
 import { buscar } from '../motor/nombres.js';
 import { diagnosticar } from '../motor/diagnostico/index.js';
 import { IDIOMAS } from './i18n/index.js';
@@ -42,11 +42,22 @@ export default function App() {
 
   // 'enemigos' | 'aliados' | 'baneos' | 'maestria' | 'historial' | 'perfil' | 'linea' | 'apuntar' | { build }
   const [hoja, setHoja] = useState(null);
+  // El orden de las caras del selector de picks (3.17.0): se calcula al ABRIR
+  // la hoja o al cambiar de pestaña y no se mueve mientras se toca. Lo que se
+  // toca a contrarreloj no cambia de sitio (errores ya cometidos: los chips
+  // del siguiente baneo desplazándose).
+  const [ordenPick, setOrdenPick] = useState(null);
   const [informe, setInforme] = useState(null);
   const cerrar = () => setHoja(null);
 
   const enemigos = useMemo(() => resolverNombres(datos, draft.enemigos), [datos, draft.enemigos]);
   const aliados = useMemo(() => resolverNombres(datos, draft.aliados), [datos, draft.aliados]);
+  const abrir = (h) => {
+    if (h === 'enemigos' || h === 'aliados') {
+      setOrdenPick(probablesDelBando(datos, { equipo: h === 'aliados' ? aliados : enemigos, linea, bando: h }));
+    }
+    setHoja(h);
+  };
   const baneos = useMemo(() => resolverNombres(datos, draft.baneos), [datos, draft.baneos]);
   const miPick = useMemo(() => (draft.miPick ? datos.porNombre.get(draft.miPick) ?? null : null), [datos, draft.miPick]);
 
@@ -167,7 +178,7 @@ export default function App() {
   const selector = ['enemigos', 'aliados', 'baneos', 'yo'].includes(hoja) ? (
     <SelectorDeHeroe
       // Para tu pick: solo tu pool, en el orden del ranking.
-      heroes={hoja === 'yo' ? rec.ranking.map((c) => c.heroe) : datos.heroes}
+      heroes={hoja === 'yo' ? rec.ranking.map((c) => c.heroe) : esPicks && ordenPick ? ordenPick : datos.heroes}
       stats={datos.meta.stats}
       // Para banear, los baneados no están «cogidos»: se tocan para quitarlos.
       cogidos={hoja === 'baneos' ? cogidosSinBaneos : esPicks ? cogidosPick : cogidos}
@@ -181,10 +192,10 @@ export default function App() {
         { id: 'enemigos', etiqueta: t('app.enemigos'), n: draft.enemigos.length, max: TOPES.enemigos, activo: hoja === 'enemigos' },
         { id: 'aliados', etiqueta: t('app.tuEquipo'), n: draft.aliados.length, max: TOPES.aliados, activo: hoja === 'aliados' },
       ] : null}
-      onBando={setHoja}
+      onBando={abrir}
       pool={hoja === 'baneos' ? poolDeLinea : null}
       sugeridos={hoja === 'baneos' ? rec.proximos.map((b) => b.heroe) : []}
-      orden={hoja === 'baneos' ? 'ban' : hoja === 'yo' ? 'dado' : 'pick'}
+      orden={hoja === 'baneos' ? 'ban' : hoja === 'yo' || (esPicks && ordenPick) ? 'dado' : 'pick'}
       t={t}
     />
   ) : null;
@@ -212,7 +223,7 @@ export default function App() {
       <FasePicks
         t={t} linea={linea} rango={datos.rango} idioma={idioma} onIdioma={setIdioma} onRango={setRango}
         meta={meta} datos={datos} metaListo={metaListo} sinWinrates={sinWinrates} edadHoras={edadHoras} pro={pro}
-        draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={setHoja} onDiagnostico={lanzarDiagnostico}
+        draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
         onResultado={(gane) => guardarPartida(rec.eleccion?.heroe.name ?? draft.miPick, gane)}
         pie={pie}
       />

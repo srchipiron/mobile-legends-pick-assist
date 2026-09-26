@@ -187,6 +187,42 @@ export function aconsejar(datos, { linea, yo = null, enemigos = [], aliados = []
   });
 }
 
+/**
+ * Suelo de la cuota de un héroe cuyas líneas ya están todas ocupadas: queda
+ * detrás de los demás pero no desaparece (un reparto de líneas deducido se
+ * puede equivocar y el héroe tiene que seguir a mano en la rejilla).
+ */
+const SUELO_LINEA_CERRADA = 0.05;
+
+/**
+ * El orden de las caras en el selector de picks (3.17.0): los héroes de ese
+ * bando, del más probable al menos, según lo que se juega (cuota de pick) y
+ * qué parte de sus líneas sigue libre en ese equipo. Para tu equipo, tu
+ * línea ya está cogida (eres tú). Medido sobre los drafts reales de Javi
+ * (221 enemigos y 179 compañeros, en el orden en que los metió): el que
+ * salió de verdad cae entre las 12 primeras caras en el 33% de los enemigos
+ * y el 45% de los compañeros, frente al 22% y el 14% ordenando solo por
+ * cuota de pick; posición mediana 23 y 15 frente a 34 y 28. La
+ * disponibilidad (cuota/(1−ban), la de «por ver») ordena PEOR aquí (31% y
+ * 34%): en Gloria se pickea lo que se pickea, no lo que sobrevive al ban.
+ *
+ * @returns {Array} los héroes ordenados (copia)
+ */
+export function probablesDelBando(datos, { equipo = [], linea = null, bando = 'enemigos' } = {}) {
+  const candidatas = bando === 'aliados' && linea ? LINEAS.filter((l) => l !== linea) : LINEAS;
+  const ocupadas = new Set(lineasOcupadas(equipo, datos.lineas, datos.frecuencias, candidatas));
+  const libres = new Set(candidatas.filter((l) => !ocupadas.has(l)));
+  const suyas = Object.fromEntries(LINEAS.map((l) => [l, new Set((datos.poolsPorLinea?.[l] ?? []).map((h) => h.name))]));
+  const nota = (h) => {
+    const ls = LINEAS.filter((l) => suyas[l].has(h.name));
+    if (!ls.length) return 0;
+    const pr = buscar(datos.meta.stats, h.name)?.pickRate ?? 0;
+    return pr * (SUELO_LINEA_CERRADA + ls.filter((l) => libres.has(l)).length / ls.length);
+  };
+  const notas = new Map(datos.heroes.map((h) => [h.name, nota(h)]));
+  return [...datos.heroes].sort((a, b) => notas.get(b.name) - notas.get(a.name) || a.name.localeCompare(b.name));
+}
+
 /** A quién banear por tu equipo. */
 export function baneosSugeridos(datos, { aliados = [], enemigos = [], baneos = [] } = {}) {
   return datos.meta.stats ? sugerirBaneos(datos.heroes, { aliados, enemigos, baneos, meta: datos.meta }) : [];

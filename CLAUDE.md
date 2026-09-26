@@ -1109,9 +1109,28 @@ el tope por bando (`TOPES`); y el de baneos arranca filtrado a tu línea
 (`pool`, «Tu línea (37)» / «Todos»; buscando sale cualquiera). La pista de
 la fase de baneos lo dice. Pruebas en `rapido.e2e.mjs`, verificadas por
 tres mutaciones (cerrar al elegir, no quitar con otro toque, sin filtro).
-El siguiente paso, que pide capturas del juego de Javi para calibrarlo, es
-leer el draft de una captura de pantalla (reconocer las caras con los 133
-retratos que ya sirve la app, en el móvil, sin mandar la imagen a nadie).
+Leer el draft de una captura de pantalla se propuso y Javi lo descartó («no
+hacen falta pantallazos»): con el selector rápido le basta.
+
+**El orden de las caras (3.17.0)**, `probablesDelBando` en `draft.js`:
+cuota de pick × (0,05 + la parte de las líneas del héroe que ese equipo aún
+tiene libres, con el reparto de `lineasOcupadas`; para tu equipo, sin tu
+línea). Medido en sus drafts reales (`orden-caras.mjs` en el scratch: cada
+héroe en el orden en que lo metió, con los anteriores de su bando y sus
+baneos): el que salió cae entre las 12 primeras caras (lo que se ve sin
+bajar) el 33% de los enemigos y el 45% de los compañeros; posición mediana
+23 y 15. Cuota de pick sola (lo de antes): 22% / 14%, mediana 34 / 28.
+Variantes probadas y peores: disponibilidad (cuota/(1−ban), la de «por
+ver») en lugar de cuota, 31% / 34% (en Gloria se pickea lo que se pickea,
+no lo que sobrevive al ban); castigo fijo 0,1 o 0,3 a los de línea
+cerrada en vez de la fracción, 30–33% / 32–39%. El 0,05 es un suelo para
+que un reparto deducido equivocado no esconda a nadie (sigue en la
+rejilla, detrás), no una constante calibrada: con 0,001 da lo mismo. El
+orden se calcula en `abrir` (App.jsx) al abrir la hoja o cambiar de
+pestaña y NO en cada render: tocar un enemigo cambia las líneas libres y
+la rejilla se reordenaría bajo el dedo. Pruebas en `draft.test`
+(propiedades) y `rapido.e2e` (la rejilla sigue al motor y no se mueve al
+tocar), verificadas por tres mutaciones.
 
 ## La base de datos de tus partidas (3.8.0)
 
