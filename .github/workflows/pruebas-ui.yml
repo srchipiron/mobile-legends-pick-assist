@@ -10,6 +10,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Solo leer: compila y abre un navegador, no escribe nada. Sin este bloque
+# el token recibía los permisos por defecto del repositorio.
+permissions:
+  contents: read
+
 concurrency:
   group: pruebas-ui-${{ github.ref }}
   cancel-in-progress: true

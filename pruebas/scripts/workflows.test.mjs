@@ -245,6 +245,36 @@ test('los workflows que publican datos pasan por el guardarrail', () => {
   }
 });
 
+test('cada workflow declara sus permisos, los bots que commitean no se solapan y el despliegue escucha a los que cambian lo servido', () => {
+  // Las claves de primer nivel, leídas al principio de línea (un comentario
+  // o un `echo` no empiezan en la columna 0 con la clave).
+  const nombreDe = (texto) => (texto.match(/^name:\s*(.+?)\s*$/m)?.[1] ?? '').replace(/^['"]|['"]$/g, '');
+  const leidos = WORKFLOWS.map((f) => ({ f, w: leerWorkflow(f) }));
+  for (const { f, w } of leidos) {
+    // Sin `permissions:` el token recibe los permisos por defecto del
+    // repositorio (pasó con pruebas-ui.yml hasta 3.15.0).
+    ok(/^permissions:/m.test(w.texto), `${f}: sin bloque permissions (el token tiene los permisos por defecto)`);
+    // Un bot que hace push a main con dos corridas a la vez choca en el
+    // rebase y pierde una (pro.yml y mantenimiento.yml hasta 3.15.0).
+    const empuja = w.pasos.some((p) => mandatos(p.run).some((c) => /^git push\b/.test(c)));
+    if (empuja) ok(/^concurrency:/m.test(w.texto), `${f}: hace push sin grupo de concurrencia`);
+  }
+  // Un push con GITHUB_TOKEN no dispara `on: push`: el bot que cambia lo que
+  // la app SIRVE (public/) tiene que estar en el workflow_run de deploy.yml
+  // o lo suyo no se publica (pasó con pro.json: 304 partidas y cero en la
+  // app). Y cada nombre de la lista tiene que existir: renombrar un `name:`
+  // la rompía sin que nada fallara.
+  const deploy = leidos.find((x) => x.f === 'deploy.yml').w.texto;
+  const escucha = [...(deploy.match(/workflow_run:[\s\S]*?workflows:\s*\[([^\]]*)\]/)?.[1] ?? '').matchAll(/"([^"]+)"|'([^']+)'/g)].map((m) => m[1] ?? m[2]);
+  ok(escucha.length >= 2, `deploy.yml no escucha a ningún bot: ${escucha}`);
+  const nombres = new Set(leidos.map(({ w }) => nombreDe(w.texto)));
+  for (const n of escucha) ok(nombres.has(n), `deploy.yml escucha a «${n}», que no es el nombre de ningún workflow`);
+  for (const { f, w } of leidos) {
+    const tocaServido = w.pasos.some((p) => mandatos(p.run).some((c) => /^git add\b.*\bpublic\//.test(c)));
+    if (tocaServido) ok(escucha.includes(nombreDe(w.texto)), `${f} commitea bajo public/ y deploy.yml no lo escucha: lo suyo no se publica`);
+  }
+});
+
 test('la vigilancia arranca de verdad contra los datos del repositorio', () => {
   // Un `matchup is not defined` en diagnostico.mjs pasó `npm test`, la
   // compilación y el despliegue: el script se ejecutaba solo en el bot, y

@@ -8,6 +8,20 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.15.0
+
+- **«Merece la pena banear» avisa cuando el héroe es de tu plan A·B·C.** El
+  baneo sugerido mide lo que te quita ese héroe en el OTRO equipo, y a
+  menudo es justo el que ibas a coger: hoy en roam, dos de los cinco
+  sugeridos son tu plan A y tu plan B. La fila lo marca («tu plan A») para
+  que no te lo banees sin querer; decidir si compensa quitártelo a ti
+  también sigue siendo cosa tuya.
+- En pantallas estrechas el motivo de cada baneo sugerido va debajo del
+  nombre, y la cifra de la derecha ya no se parte en cinco renglones.
+- Los bots de partidas profesionales y de mantenimiento ya no pueden
+  pisarse con una corrida a mano, y las pruebas de interfaz corren con
+  permiso solo de lectura.
+
 ## 3.14.0
 
 - **La fase de baneos y el pie dicen de qué rango salen los números.** Desde

@@ -271,6 +271,8 @@ export default {
   'ban.mereceLaPena': 'Worth banning',
   'ban.banear': 'Ban',
   'ban.tasa': '{pct}% ban',
+  'ban.tuPlan': 'your plan {letra}',
+  'ban.tuPlanPista': 'If you ban it, you cannot play it either',
 
   'analisis.ganasCruce': 'You win the matchup: {yo} is at {pct}% against {rival}.',
   'analisis.pierdesCruce': 'You lose the matchup: {pct}% against {rival}. Play safe early.',

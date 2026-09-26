@@ -127,6 +127,26 @@ await prueba('la fase de baneos y el pie dicen de qué rango salen los números 
   await contexto.close();
 });
 
+await prueba('«Merece la pena banear» marca a los de tu plan A·B·C, con su letra, y solo a ellos', async () => {
+  // Con los datos del 26 de septiembre de 2026, en roam dos de los cinco
+  // baneos sugeridos eran tu plan A y tu plan B: banearlos es quitártelos.
+  // Se compara con el motor sobre los MISMOS datos, no con nombres de hoy.
+  const { motor, datos } = await datosServidos();
+  const sugeridos = motor.baneosSugeridos(datos, {}).map((b) => b.heroe.name);
+  for (const linea of ['roam', 'exp']) {
+    const plan = motor.planDePicks(datos, { linea }).map((x) => x.heroe.name);
+    const esperado = sugeridos.filter((n) => plan.includes(n)).map((n) => `${n}:${String.fromCharCode(65 + plan.indexOf(n))}`).sort();
+    const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { 'roam-picker:linea': linea, 'roam-picker:draft': { enemies: [], allies: [], bans: [], enemyRoam: null, fase: 'baneos' } } });
+    const filas = await pagina.locator('.bans-suggested .ban-row').evaluateAll((els) => els.map((e) => ({
+      nombre: e.querySelector('span')?.firstChild?.textContent?.trim(),
+      plan: e.querySelector('.ban-plan')?.textContent?.trim() ?? null,
+    })));
+    const visto = filas.filter((f) => f.plan).map((f) => `${f.nombre}:${f.plan.slice(-1)}`).sort();
+    eq(JSON.stringify(visto), JSON.stringify(esperado), `${linea}: los baneos sugeridos no marcan tu plan (esperado ${esperado}, visto ${visto})`);
+    await contexto.close();
+  }
+});
+
 await prueba('plurales, sin frases crudas, la probabilidad en la tarjeta y el consejo después del nº1', async () => {
   const { contexto, pagina } = await con({ enemies: ['Layla'], allies: ['Chou', 'Miya', 'Kagura'], bans: [], enemyRoam: null, fase: 'picks' });
   // La tier de mlbb.gg en la tarjeta: una letra al lado del winrate, nunca una

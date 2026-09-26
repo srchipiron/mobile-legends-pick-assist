@@ -276,6 +276,8 @@ export default {
   'ban.mereceLaPena': 'Merece la pena banear',
   'ban.banear': 'Banear',
   'ban.tasa': '{pct}% ban',
+  'ban.tuPlan': 'tu plan {letra}',
+  'ban.tuPlanPista': 'Si lo baneas, tampoco lo juegas tú',
 
   // --- análisis del draft ---
   'analisis.ganasCruce': 'Ganas el cruce: {yo} va al {pct}% contra {rival}.',

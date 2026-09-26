@@ -8,6 +8,12 @@ on:
 permissions:
   contents: write
 
+# Una corrida cada vez: una a mano solapada con la del lunes commitearían
+# las dos `pro.json` y el rebase de la segunda chocaría.
+concurrency:
+  group: pro
+  cancel-in-progress: false
+
 jobs:
   pro:
     # Tope del JOB entero: los pasos con red ya lo tenían, pero un git que

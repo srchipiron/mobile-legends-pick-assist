@@ -2023,13 +2023,19 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   concurrencia y `pro.yml` en verde con Liquipedia bloqueando: lo dice el
   diagnóstico desde 3.12.1; si el lunes 28 vuelve a pasar, los datos pro
   tendrán dos semanas. (7) Ninguna prueba ata los nombres del `workflow_run`
-  de `deploy.yml` a los bots: hoy están bien; renombrar un `name:` lo
-  rompería. (8) `pruebas-ui.yml` sin `permissions:`. (9) «Merece la pena
-  banear» y el plan A·B·C pueden nombrar al MISMO héroe (Marcel es tu plan
-  A y el segundo baneo sugerido; Rafaela, tu plan B, el primero): banear tu
-  plan es una decisión de juego (lo quitas a los dos equipos) que el modelo
-  no puntúa; candidato a marcarlo en la fila («es tu plan B») en una
-  iteración de interfaz. (10) Las caras en negro de las capturas de página
+  de `deploy.yml` a los bots. (8) `pruebas-ui.yml` sin `permissions:`. (9)
+  «Merece la pena banear» y el plan A·B·C pueden nombrar al MISMO héroe.
+  RESUELTOS en 3.15.0: la concurrencia de (6), (7) y (8) con una prueba por
+  forma sobre TODOS los workflows (permisos declarados, grupo de
+  concurrencia en todo el que hace push, cada nombre del `workflow_run`
+  existe y todo bot que commitea bajo `public/` está en él; cuatro
+  mutaciones), y (9) marcando la fila («tu plan B», `BaneosSugeridos` con
+  `plan`), sin tocar el motor: con los datos del 26 de septiembre, en roam
+  dos de los cinco sugeridos eran el plan A y el B, en jungla y exp dos, en
+  medio y oro ninguno. Quitarlos de la lista sería decidir por él (banear
+  tu plan A con 77% de ban es a veces lo sensato); la marca solo evita el
+  baneo sin querer. `pro.yml` en verde con Liquipedia bloqueando sigue
+  igual. (10) Las caras en negro de las capturas de página
   entera eran la carga diferida (`loading="lazy"`), no retratos que falten.
 
 ## Lo que queda pendiente

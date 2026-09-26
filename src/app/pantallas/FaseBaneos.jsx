@@ -43,7 +43,7 @@ export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, 
           </section>
         )}
         {/* Con los diez marcados no hay más que banear: el undécimo no existe. */}
-        <BaneosSugeridos t={t} items={baneos.length < 10 ? sugeridos : []} onBanear={onBanear} rango={rangoDatos} />
+        <BaneosSugeridos t={t} items={baneos.length < 10 ? sugeridos : []} onBanear={onBanear} rango={rangoDatos} plan={plan.map((x) => x.heroe.name)} />
         {/* Sin winrates (API caída en el primer arranque) la fase quedaba con huecos «+» y un selector alfabético sin explicación. */}
         {sinWinrates ? <div className="notice">{t('app.sinWinrates')}</div> : null}
         <AvisoLegal t={t} idioma={idioma} onIdioma={onIdioma} idiomas={IDIOMAS} />

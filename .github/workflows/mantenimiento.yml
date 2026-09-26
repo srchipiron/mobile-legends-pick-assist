@@ -13,6 +13,11 @@ permissions:
   pull-requests: write
   issues: write
 
+# Una corrida cada vez: dos a la vez empujarían la misma rama con -f.
+concurrency:
+  group: mantenimiento
+  cancel-in-progress: false
+
 jobs:
   mantener:
     # Tope del JOB entero: los pasos con red ya lo tenían, pero las pruebas,
