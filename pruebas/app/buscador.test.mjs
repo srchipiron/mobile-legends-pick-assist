@@ -21,7 +21,7 @@ test('el selector de héroes busca con los alias del motor', () => {
   const src = sinComentarios('src/app/componentes/SelectorDeHeroe.jsx');
   ok(/import\s*\{[^}]*\bfiltrarPorNombre\b[^}]*\}\s*from\s*'[^']*motor\/alias\.js'/.test(src),
     'el selector ya no importa filtrarPorNombre del motor');
-  ok(/filtrarPorNombre\(\s*heroes\s*,\s*q\s*\)/.test(src),
+  ok(/filtrarPorNombre\(\s*\w+\s*,\s*q\s*\)/.test(src),
     'el selector importa filtrarPorNombre pero ya no lo llama con lo escrito: los alias no harían nada');
 });
 

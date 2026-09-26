@@ -1085,6 +1085,34 @@ mismo aunque vaya un render por detrás. Medido antes de diferirlo: 41 ms
 con un enemigo (160–250 en un móvil), el doble que el ranking; ahora el
 toque síncrono es el ranking (10 ms) más el análisis.
 
+## Meter el draft deprisa (3.16.0)
+
+Javi: «hay veces que empieza la partida y me veo super agobiado para ir
+buscando campeones». Antes de cambiar nada se midió qué entrada mueve la
+recomendación (`valor-entradas.mjs` en el scratch de la sesión, sobre sus
+42 drafts reales con la maestría efectiva y 300 sintéticos de roam):
+
+- **Los baneos de otras líneas no cambian nada**: quitando todos los
+  baneos, el nº1 real sigue siendo el primero no baneado en el 100% de sus
+  drafts (96% en los sintéticos); lo único que hacen los de TU línea es
+  tachar al que no puedes coger (sin ellos el nº1 enseñado estaba baneado
+  en el 19% de sus drafts). De sus 4,4 baneos por partida, 1,8 eran de su
+  línea.
+- **Los compañeros sí pesan**: sin aliados el nº1 cambia en el 52% de sus
+  drafts (59% en los sintéticos), y queda fuera del top 3 real en un tercio.
+
+Así que: el selector de picks es UNA hoja para los dos equipos
+(`bandos`/`onBando` en `SelectorDeHeroe`, `hoja` pasa de `enemigos` a
+`aliados` sin desmontarse), multi-toque como el de baneos desde 1.28.0,
+otro toque quita (`quitar`), el otro bando y los baneados deshabilitados y
+el tope por bando (`TOPES`); y el de baneos arranca filtrado a tu línea
+(`pool`, «Tu línea (37)» / «Todos»; buscando sale cualquiera). La pista de
+la fase de baneos lo dice. Pruebas en `rapido.e2e.mjs`, verificadas por
+tres mutaciones (cerrar al elegir, no quitar con otro toque, sin filtro).
+El siguiente paso, que pide capturas del juego de Javi para calibrarlo, es
+leer el draft de una captura de pantalla (reconocer las caras con los 133
+retratos que ya sirve la app, en el móvil, sin mandar la imagen a nadie).
+
 ## La base de datos de tus partidas (3.8.0)
 
 `historial/partidas.json`: las partidas de Javi apuntadas con la app (con

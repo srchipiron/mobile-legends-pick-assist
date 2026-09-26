@@ -8,6 +8,21 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.16.0
+
+- **Meter los picks es mucho más rápido: el selector ya no se cierra con
+  cada héroe.** Toca un hueco, y en la misma hoja vas tocando todos los
+  enemigos que salgan; arriba cambias a «Tu equipo» y sigues con tus
+  compañeros. Otro toque sobre un héroe lo quita. «Listo» (o atrás) cierra.
+  Antes era abrir, buscar y cerrar por cada uno.
+- **El selector de baneos enseña primero los de tu línea.** Medido sobre
+  tus 42 drafts: los baneos de otras líneas no cambian tu recomendación en
+  ninguno, así que con prisa basta con marcar los de tu línea (de tus 4,4
+  baneos por partida, 1,8 lo eran). «Todos» los enseña todos, y buscando
+  sale cualquiera.
+- Lo que sí conviene meter siempre son tus compañeros: sin ellos el nº1
+  cambia en la mitad de los drafts.
+
 ## 3.15.0
 
 - **«Merece la pena banear» avisa cuando el héroe es de tu plan A·B·C.** El

@@ -5,7 +5,7 @@ import { diagnosticar } from '../motor/diagnostico/index.js';
 import { IDIOMAS } from './i18n/index.js';
 import { useAjustes } from './estado/useAjustes.js';
 import { useDatos } from './estado/useDatos.js';
-import { useDraft } from './estado/useDraft.js';
+import { useDraft, TOPES } from './estado/useDraft.js';
 import { usePersonal } from './estado/usePersonal.js';
 import { useEnvio } from './estado/useEnvio.js';
 import { useRecomendacion } from './estado/useRecomendacion.js';
@@ -66,6 +66,16 @@ export default function App() {
   const cogidos = useMemo(() => new Set([...draft.enemigos, ...draft.aliados, ...draft.baneos]), [draft.enemigos, draft.aliados, draft.baneos]);
   const cogidosSinBaneos = useMemo(() => new Set([...draft.enemigos, ...draft.aliados]), [draft.enemigos, draft.aliados]);
   const seleccionadosBaneo = useMemo(() => new Set(draft.baneos), [draft.baneos]);
+  // El selector de picks (3.16.0): una sola hoja para los dos bandos, que no
+  // se cierra al tocar. En la pestaña de un bando, sus héroes se marcan y se
+  // desmarcan; los del otro bando y los baneados no se pueden tocar.
+  const esPicks = hoja === 'enemigos' || hoja === 'aliados';
+  const seleccionadosPick = useMemo(() => new Set(hoja === 'aliados' ? draft.aliados : draft.enemigos), [hoja, draft.enemigos, draft.aliados]);
+  const cogidosPick = useMemo(
+    () => new Set([...(hoja === 'aliados' ? draft.enemigos : draft.aliados), ...draft.baneos]),
+    [hoja, draft.enemigos, draft.aliados, draft.baneos],
+  );
+  const poolDeLinea = useMemo(() => new Set(rec.pool.map((h) => h.name)), [rec.pool]);
   // Memorizado: la hoja del perfil comprime el código en un efecto sobre
   // `datos`, y un objeto nuevo en cada render lo regeneraba cada vez.
   const datosPerfil = useMemo(
@@ -77,8 +87,10 @@ export default function App() {
 
   const elegirEnSelector = (h) => {
     if (hoja === 'baneos') { draft.alternarBaneo(h); return; }
-    if (hoja === 'enemigos') draft.anadir('enemigos', h);
-    if (hoja === 'aliados') draft.anadir('aliados', h);
+    if (esPicks) {
+      if (seleccionadosPick.has(h.name)) draft.quitar(hoja, h); else draft.anadir(hoja, h);
+      return;
+    }
     if (hoja === 'yo') draft.fijarPick(h);
     cerrar();
   };
@@ -158,12 +170,19 @@ export default function App() {
       heroes={hoja === 'yo' ? rec.ranking.map((c) => c.heroe) : datos.heroes}
       stats={datos.meta.stats}
       // Para banear, los baneados no están «cogidos»: se tocan para quitarlos.
-      cogidos={hoja === 'baneos' ? cogidosSinBaneos : cogidos}
+      cogidos={hoja === 'baneos' ? cogidosSinBaneos : esPicks ? cogidosPick : cogidos}
       onElegir={elegirEnSelector}
       onCerrar={cerrar}
-      multi={hoja === 'baneos'}
-      seleccionados={hoja === 'baneos' ? seleccionadosBaneo : null}
-      max={10}
+      multi={hoja === 'baneos' || esPicks}
+      seleccionados={hoja === 'baneos' ? seleccionadosBaneo : esPicks ? seleccionadosPick : null}
+      max={esPicks ? TOPES[hoja] : 10}
+      cuenta={esPicks ? t('sheet.picksCuenta') : null}
+      bandos={esPicks ? [
+        { id: 'enemigos', etiqueta: t('app.enemigos'), n: draft.enemigos.length, max: TOPES.enemigos, activo: hoja === 'enemigos' },
+        { id: 'aliados', etiqueta: t('app.tuEquipo'), n: draft.aliados.length, max: TOPES.aliados, activo: hoja === 'aliados' },
+      ] : null}
+      onBando={setHoja}
+      pool={hoja === 'baneos' ? poolDeLinea : null}
       sugeridos={hoja === 'baneos' ? rec.proximos.map((b) => b.heroe) : []}
       orden={hoja === 'baneos' ? 'ban' : hoja === 'yo' ? 'dado' : 'pick'}
       t={t}

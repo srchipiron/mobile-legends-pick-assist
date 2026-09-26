@@ -13,6 +13,14 @@ import { tPorDefecto } from './tPorDefecto.js';
  * fase de baneos hay diez toques en medio minuto, y abrir-buscar-cerrar por
  * cada uno no daba tiempo. Los sugeridos van arriba, con orden estable.
  *
+ * Desde 3.16.0 los picks van igual: el selector de enemigos y el de tu
+ * equipo son UNO, con pestañas (`bandos`), y no se cierra al tocar. Antes
+ * cada pick era abrir, buscar y cerrar, y a Javi se le echaba encima la
+ * partida metiendo el draft. Y el de baneos enseña primero tu línea
+ * (`pool`): medido sobre sus 42 drafts, los baneos de otras líneas no
+ * cambian el nº1 en NINGUNO; los de la tuya solo tachan al que no puedes
+ * coger.
+ *
  * La búsqueda acepta el nombre que el juego usa en otros idiomas («Cíclope»)
  * y, si aun así no sale nadie, las letras en orden. Lo que se ENSEÑA es el
  * nombre en inglés, que es la clave de los datos.
@@ -20,8 +28,11 @@ import { tPorDefecto } from './tPorDefecto.js';
 export function SelectorDeHeroe({
   heroes, cogidos, stats, onElegir, onCerrar, t = tPorDefecto,
   multi = false, seleccionados = null, max = 10, sugeridos = [], orden = 'pick',
+  bandos = null, onBando = null, cuenta = null, pool = null,
 }) {
   const [q, setQ] = useState('');
+  // Con `pool` (tu línea), empieza enseñando solo esos; buscando, todos.
+  const [soloPool, setSoloPool] = useState(!!pool);
   const inputRef = useRef(null);
   // Enfocar UNA vez al abrir: con `onCerrar` en las dependencias el efecto se
   // repetía con cada baneo y el teclado volvía a salir encima de la rejilla.
@@ -39,9 +50,10 @@ export function SelectorDeHeroe({
     // jugados: el pick que necesitas suele estar entre los veinte primeros.
     const qk = nombreClave(q);
     const empieza = (h) => (qk && nombreClave(h.name).startsWith(qk) ? 1 : 0);
-    return filtrarPorNombre(heroes, q)
+    const base = pool && soloPool && !q ? heroes.filter((h) => pool.has(h.name)) : heroes;
+    return filtrarPorNombre(base, q)
       .sort((a, b) => (q ? empieza(b) - empieza(a) : 0) || criterio(b) - criterio(a) || a.name.localeCompare(b.name));
-  }, [heroes, q, stats, orden]);
+  }, [heroes, q, stats, orden, pool, soloPool]);
 
   const marcado = (h) => !!seleccionados?.has(h.name);
   const lleno = multi && seleccionados && seleccionados.size >= max;
@@ -71,7 +83,23 @@ export function SelectorDeHeroe({
         <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('app.buscar')} autoComplete="off" onKeyDown={conIntro} />
         <button className="close" onClick={onCerrar}>{multi ? t('sheet.listo') : t('app.cerrar')}</button>
       </div>
-      {multi && seleccionados && <p className="sheet-cuenta">{t('sheet.baneados', { n: seleccionados.size, max })}</p>}
+      {bandos && (
+        <div className="sheet-bandos" role="tablist">
+          {bandos.map((b) => (
+            <button key={b.id} role="tab" aria-selected={b.activo} className={`bando-${b.id} ${b.activo ? 'activo' : ''}`.trim()} onClick={() => onBando?.(b.id)}>
+              {b.etiqueta} <span className="chip-pct">{b.n}/{b.max}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {multi && seleccionados && <p className="sheet-cuenta">{cuenta ?? t('sheet.baneados', { n: seleccionados.size, max })}</p>}
+      {pool && !q && (
+        <div className="sheet-filtro" role="group">
+          <button aria-pressed={soloPool} onClick={() => setSoloPool(true)}>{t('sheet.tuLinea', { n: pool.size })}</button>
+          <button aria-pressed={!soloPool} onClick={() => setSoloPool(false)}>{t('sheet.todos')}</button>
+          {soloPool && <span className="sheet-cuenta">{t('sheet.soloTuLinea')}</span>}
+        </div>
+      )}
       {multi && !q && chips.length > 0 && (
         <div className="sheet-sugeridos">
           <span className="side-label">{t('sheet.sugeridos')}</span>

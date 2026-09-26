@@ -17,7 +17,9 @@ for (const ancho of [390, 360]) {
     });
     eq(await pagina.locator('.equipo').count(), 0, 'sin enemigos hay consejo para los compañeros');
     await pagina.locator('.side.enemy .slot.empty').first().click(); await pagina.waitForTimeout(250);
-    await elegirEnSelector(pagina, 'Layla'); await pagina.waitForTimeout(300);
+    await elegirEnSelector(pagina, 'Layla');
+    // Desde 3.16.0 el selector de picks no se cierra solo: «Listo».
+    await pagina.locator('.sheet .close').first().click(); await pagina.waitForTimeout(300);
     eq(await pagina.locator('.equipo').count(), 1, 'con una enemiga no aparece el bloque');
     ok(!(await pagina.locator('.equipo').evaluate((e) => e.open)), 'no viene plegado por defecto');
     await pagina.locator('.equipo > summary').click(); await pagina.waitForTimeout(300);
