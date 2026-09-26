@@ -45,12 +45,17 @@ jobs:
         if: github.event_name == 'issues'
         # El cuerpo va por variable de entorno y a un fichero: nunca dentro
         # del propio mandato, que es por donde entra una inyección.
+        # shell: bash trae -o pipefail. Sin él el paso devolvía el código de
+        # `tee`: un código roto salía en verde, el bot respondía «Recibido» y
+        # cerraba la incidencia sin haber guardado nada. Y 2>&1 para que el
+        # motivo del fallo (va por stderr) llegue a la respuesta.
+        shell: bash
         env:
           CUERPO: ${{ github.event.issue.body }}
           NUMERO: ${{ github.event.issue.number }}
         run: |
           printf '%s' "$CUERPO" > /tmp/cuerpo.txt
-          node scripts/importar-partidas.mjs /tmp/cuerpo.txt --incidencia "$NUMERO" | tee /tmp/importado.txt
+          node scripts/importar-partidas.mjs /tmp/cuerpo.txt --incidencia "$NUMERO" 2>&1 | tee /tmp/importado.txt
 
       - name: Medir el modelo contra tus partidas
         run: node scripts/medir-mias.mjs --json /tmp/mias.json > /tmp/informe.md

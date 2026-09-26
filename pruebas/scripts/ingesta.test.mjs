@@ -16,7 +16,7 @@ import { extraerLineas, extraerRol } from '../../scripts/ingesta/extraccion.mjs'
 import { callRoute } from '../../scripts/ingesta/descarga.mjs';
 import { idPrincipal, esIdDeHeroe, recogerPares, relationMap, pick } from '../../scripts/ingesta/relaciones.mjs';
 import { serializar } from '../../scripts/ingesta/salida.mjs';
-import { kitsRehechos } from '../../scripts/ingesta/fusion.mjs';
+import { kitsRehechos, fundirWinrateLinea } from '../../scripts/ingesta/fusion.mjs';
 
 test('el rol y la línea se leen aunque vengan hondos en la respuesta', () => {
   // Forma REAL de la API: el titulo de la linea vive en el nivel 8. El limite de
@@ -304,6 +304,19 @@ test('los heroes con el kit rehecho se avisan, y una peticion caida no inventa u
   // revisar todavia.
   eq(kitsRehechos([conKit('Desconocido', 'fisico', ['Burst'])], catalogo).length, 0,
     'avisa de un heroe que no esta en el catalogo');
+});
+
+test('el winrate por línea se funde PAR A PAR: lo de hoy manda, lo que falla hoy se conserva, lo que ya no se juega se va', () => {
+  // Hasta 3.14.0 la corrida nueva sustituía a la guardada ENTERA con que
+  // trajera un solo par: una ruta a medias borraba el resto (el fallo que ya
+  // costó filas de la matriz de cruces).
+  const heroes = [{ name: 'A', lanes: ['exp', 'jungle'] }, { name: 'B', lanes: ['roam'] }, { name: 'C', lanes: ['mid'] }];
+  const previo = { A: { exp: 0.5, jungle: 0.52, gold: 0.47 }, B: { roam: 0.49 }, Z: { mid: 0.5 } };
+  const { winrateLinea, conservados } = fundirWinrateLinea(previo, { A: { exp: 0.51 }, C: { mid: 0.53 } }, heroes);
+  eq(JSON.stringify(winrateLinea), JSON.stringify({ A: { exp: 0.51, jungle: 0.52 }, B: { roam: 0.49 }, C: { mid: 0.53 } }), `fusión: ${JSON.stringify(winrateLinea)}`);
+  eq(conservados, 2, 'no cuenta los pares conservados');
+  // Sin nada guardado es lo descargado, tal cual.
+  eq(JSON.stringify(fundirWinrateLinea(undefined, { B: { roam: 0.49 } }, heroes).winrateLinea), JSON.stringify({ B: { roam: 0.49 } }));
 });
 
 await terminar('scripts/ingesta');

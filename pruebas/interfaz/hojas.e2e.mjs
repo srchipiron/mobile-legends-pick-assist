@@ -106,6 +106,27 @@ await prueba('los chips del siguiente baneo no se mueven: el tocado se queda tac
   await contexto.close();
 });
 
+await prueba('la fase de baneos y el pie dicen de qué rango salen los números (la guarda de rango, no «tu rango»)', async () => {
+  // Tras un reinicio de temporada la fuerza, el pick y el ban salen de
+  // Mítico (ventana.js, elegirRango) y hasta 3.14.0 la fase de baneos decía
+  // «por tasa de ban en tu rango» y el pie «glory · 7 días». Se compara con
+  // la decisión del motor sobre los MISMOS datos servidos, sea cual sea hoy.
+  const ETIQUETA = { epic: 'Epic', legend: 'Legend', mythic: 'Mythic', honor: 'Honor', glory: 'Glory' };
+  const { datos } = await datosServidos();
+  const usado = ETIQUETA[datos.meta.fuerza.rango];
+  const { contexto, pagina, errores } = await con({ enemies: [], allies: [], bans: [], enemyRoam: null, fase: 'baneos' });
+  ok(!/tu rango|your rank/i.test(await pagina.locator('.app').innerText()), 'la fase de baneos sigue diciendo «tu rango»');
+  ok((await pagina.locator('.proximos .side-label').textContent()).includes(usado), `el siguiente baneo no dice que la tasa es de ${usado}`);
+  const fuertes = (await pagina.locator('.bans-suggested .inferred').allTextContents()).filter((x) => /^gana el/.test(x));
+  ok(fuertes.length > 0, 'con el draft vacío ningún baneo sugerido dice cuánto gana');
+  ok(fuertes.every((x) => x.endsWith(`en ${usado}`)), `los baneos sugeridos no dicen de qué rango es el winrate: ${fuertes[0]}`);
+  await pagina.locator('footer.pie').click(); await pagina.waitForTimeout(200);
+  const detalle = await pagina.locator('.pie-detalle').innerText();
+  ok(detalle.includes(usado) && detalle.includes(`${datos.meta.ventana.dias} días`), `el pie no dice de dónde salen los winrates (${usado}, ${datos.meta.ventana.dias} días): ${detalle.split('\n').find((l) => /Rango/.test(l))}`);
+  ok(!errores.length, `errores de página: ${errores.join(' | ')}`);
+  await contexto.close();
+});
+
 await prueba('plurales, sin frases crudas, la probabilidad en la tarjeta y el consejo después del nº1', async () => {
   const { contexto, pagina } = await con({ enemies: ['Layla'], allies: ['Chou', 'Miya', 'Kagura'], bans: [], enemyRoam: null, fase: 'picks' });
   // La tier de mlbb.gg en la tarjeta: una letra al lado del winrate, nunca una

@@ -8,6 +8,31 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.14.0
+
+- **La fase de baneos y el pie dicen de qué rango salen los números.** Desde
+  el reinicio de temporada Gloria tiene tan pocas partidas que la fuerza, el
+  pick y el ban salen de Mítico, y la fase de baneos seguía poniendo «tasa
+  de ban en tu rango» y «gana el 59% en tu rango». Ahora pone «en Mythic»
+  mientras dure, y el pie dice de qué rango y de cuántos días son los
+  winrates (antes decía «glory · 7 días» cuando eran de Mítico a 3).
+- **Si un día la descarga de Mítico viene vacía, la app sigue con Gloria.**
+  Antes se pasaba a Mítico igualmente y todos los héroes se quedaban sin
+  fuerza, con un aviso que culpaba a Gloria.
+- Al traer tus datos de otro dispositivo, si las dos copias de un héroe
+  tienen las mismas partidas se queda la que sabe desde cuándo sumar tus
+  partidas apuntadas (antes podía perderse y volver a empezar a contar).
+- **Fechar la maestría ya no esconde partidas.** Si habías apuntado con la
+  app más partidas de un héroe de las que tenías escritas a mano, la fecha
+  automática de la 3.13.1 hacía que contaran las escritas a mano. Ahora
+  cuenta la cifra mayor, como antes, y lo que apuntes después se le suma.
+  Con tus partidas de hoy no cambia nada.
+- **Si el código que mandas llega roto, el bot te lo dice** en vez de
+  responder «Recibido» y cerrar la incidencia sin guardar nada.
+- **La vigilancia ya no deja huecos en su historial** justo en los días
+  malos, y avisa si no ha podido guardar una fila. El winrate por línea ya
+  no se pierde a trozos cuando la API falla con algún héroe.
+
 ## 3.13.1
 
 - **Ya no hace falta pulsar «Guardar» en la maestría para que tus partidas

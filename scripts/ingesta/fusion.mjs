@@ -86,6 +86,30 @@ export function fundirRelaciones(relations, fresh) {
 }
 
 /**
+ * El winrate por línea (3.12.0) fundido PAR A PAR: lo descargado hoy manda,
+ * y un par que falla hoy conserva el de la corrida anterior. Hasta 3.14.0 la
+ * corrida nueva sustituía a la guardada ENTERA con que trajera un solo par,
+ * y el comparador aceptaba perder hasta un 10% cada vez: el mismo fallo de
+ * forma que ya costó filas de la matriz de cruces. Solo se conservan los
+ * pares de las líneas que el héroe juega HOY: una línea que dejó de jugar no
+ * se arrastra para siempre.
+ */
+export function fundirWinrateLinea(previo = {}, fresco = {}, heroList = []) {
+  const validas = new Set(['roam', 'jungle', 'mid', 'gold', 'exp']);
+  const salida = {};
+  let conservados = 0;
+  for (const h of heroList) {
+    for (const lane of (h.lanes ?? []).filter((l) => validas.has(l))) {
+      const nuevo = fresco?.[h.name]?.[lane];
+      const viejo = previo?.[h.name]?.[lane];
+      if (nuevo != null) (salida[h.name] ??= {})[lane] = nuevo;
+      else if (viejo != null) { (salida[h.name] ??= {})[lane] = viejo; conservados += 1; }
+    }
+  }
+  return { winrateLinea: salida, conservados };
+}
+
+/**
  * Frescas si se han descargado casi todas: con menos, lo que hay es la
  * matriz de otro día y la fecha no puede decir «hoy».
  */

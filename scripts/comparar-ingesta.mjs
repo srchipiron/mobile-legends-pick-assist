@@ -83,7 +83,9 @@ export const MARGEN = 0.9;
  * los cruces en el 39% sin que saltara nada. Objetos y builds quedan fuera:
  * varían por diseño (Moonton retira objetos, las builds cambian con el meta).
  */
-export const FIJAS = ['heroes', 'conLinea', 'conRol', 'conDano', 'conSpeciality', 'cruces', 'sinergias'];
+// `winrateLinea` (pares héroe-línea) desde 3.14.0: sin él en la lista cada
+// corrida podía perder un 10% respecto a la anterior aceptada, sin fondo.
+export const FIJAS = ['heroes', 'conLinea', 'conRol', 'conDano', 'conSpeciality', 'cruces', 'sinergias', 'winrateLinea'];
 
 /** Máximo de cada recuento fijo en las filas de historial/salud.jsonl (líneas rotas, fuera). */
 export function maximosDelHistorial(texto) {

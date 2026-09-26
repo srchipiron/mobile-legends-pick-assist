@@ -280,6 +280,12 @@ test('prepararDatos decide el RANGO de la fuerza en UN sitio, igual que elegirRa
   const vacia = prepararDatos({ catalogo, meta: { ...meta, statsByRank: { ...meta.statsByRank, glory: revuelta } }, rango: 'glory' });
   eq(vacia.meta.fuerza.rango, 'mythic', 'con Gloria sin parecerse a Mítico sigue mandando Gloria');
   ok(Math.abs(vacia.meta.mediaDelRango - mediaDeWinrate(vacia.meta.stats)) < 1e-12, 'el centro del término de héroe no es el del rango en uso');
+  // Con Mítico roto (la ingesta lo trae vacío), Gloria sigue mandando y el
+  // ranking conserva la fuerza de los 133: hasta 3.14.0 se caía a Mítico y
+  // todos se quedaban sin estadísticas.
+  const sinMitico = prepararDatos({ catalogo, meta: { ...meta, statsByRank: { ...meta.statsByRank, mythic: {} } }, rango: 'glory' });
+  eq(sinMitico.meta.fuerza.rango, 'glory', 'con Mítico vacío la fuerza sale de Mítico');
+  ok(Object.keys(sinMitico.meta.stats).length >= 100, `con Mítico vacío quedan ${Object.keys(sinMitico.meta.stats).length} héroes con fuerza`);
 });
 
 test('winrateEnLinea: el de ESE héroe en ESA línea, por clave normalizada; null si no lo hay o no es posible', () => {

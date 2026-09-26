@@ -257,4 +257,29 @@ test('fecharMaestria: pone la fecha a lo que no la tiene, respeta la que hay y n
   eq(maestriaEfectiva(f, [{ t: 1500, pick: 'Rafaela', gane: true, recomendados: [] }, { t: 500, pick: 'Rafaela', gane: true, recomendados: [] }]).rafaela.games, 565, 'tras fechar, lo apuntado después no se suma (o se suma lo de antes)');
 });
 
+test('fechar la maestría no cambia lo que cuenta: ni con pocas partidas a mano ni con previas', () => {
+  // 3.13.1 fecha sola lo escrito a mano, y con la fecha la base dejaba de
+  // ser «la fuente con más partidas»: 4 partidas a mano al 25% tapaban 40
+  // apuntadas al 75%, y las previas de un héroe fechado no contaban. La
+  // propiedad: fechar AHORA (después de todo lo apuntado) no cambia nada.
+  const azar = generador(7);
+  for (let caso = 0; caso < 200; caso++) {
+    const heroes = ['Kaja', 'Rafaela', 'X.Borg', 'Estes'];
+    const maestria = {};
+    for (const n of heroes) if (azar() < 0.7) maestria[n === 'X.Borg' && azar() < 0.5 ? 'X Borg' : n] = { games: Math.floor(azar() * 60), winRate: 0.3 + azar() * 0.4 };
+    const partidas = Array.from({ length: Math.floor(azar() * 80) }, (_, i) => ({ t: 1000 + i, pick: heroes[Math.floor(azar() * heroes.length)], gane: azar() < 0.6, recomendados: [], ...(azar() < 0.2 ? { previa: true } : {}) }));
+    const sin = maestriaEfectiva(maestria, partidas);
+    const con = maestriaEfectiva(fecharMaestria(maestria, 5000), partidas);
+    for (const k of new Set([...Object.keys(sin), ...Object.keys(con)])) {
+      ok(sin[k]?.games === con[k]?.games && Math.abs((sin[k]?.winRate ?? 0) - (con[k]?.winRate ?? 0)) < 1e-12,
+        `caso ${caso}: fechar cambia ${k} de ${JSON.stringify(sin[k])} a ${JSON.stringify(con[k])}`);
+    }
+  }
+  // El caso que lo destapó, y que lo apuntado DESPUÉS se suma encima.
+  const kaja = { Kaja: { games: 4, winRate: 0.25, desde: 5000 } };
+  const apuntadas = Array.from({ length: 40 }, (_, i) => ({ t: 1000 + i, pick: 'Kaja', gane: i % 4 !== 0, recomendados: [] }));
+  eq(maestriaEfectiva(kaja, apuntadas).kaja.games, 40, '4 partidas a mano con fecha tapan 40 apuntadas antes');
+  eq(maestriaEfectiva(kaja, [...apuntadas, { t: 6000, pick: 'Kaja', gane: true, recomendados: [] }]).kaja.games, 41, 'lo apuntado después no se suma sobre la base buena');
+});
+
 await terminar('motor/maestria');

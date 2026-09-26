@@ -79,6 +79,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   const DESCRIPCION = 'Deals 300 <font color="x">Magic Damage</font> to enemies in a line and slows them by 40% for 1.5 seconds, then heals allies';
   const golpes = {};
   let fallaCounters = false;
+  // El winrate por línea: un héroe cuya ruta falla y un desplazamiento para
+  // distinguir lo descargado hoy de lo conservado de la corrida anterior.
+  let fallaLineaDe = null; let desplazaLinea = 0;
   let fallaRecientes = false;
   let fallaDetail = false;
   let academyVacia = false;
@@ -146,9 +149,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     // `total_win_rate`, junto a la curva por duración. Distinto por héroe
     // para saber que se guarda el de cada uno.
     if ((m = ruta.match(/^\/api\/academy\/heroes\/([^/]+)\/win-rate\/timeline$/))) {
-      if (!u.searchParams.get('lane')) { res.statusCode = 422; res.end('{}'); return; }
+      if (!u.searchParams.get('lane') || m[1] === fallaLineaDe) { res.statusCode = 422; res.end('{}'); return; }
       marca(`lineas:${u.searchParams.get('lane')}`);
-      return json({ code: 0, data: { records: [{ data: { heroid: Number(m[1]), real_road: 3, big_rank: '9', total_win_rate: 0.4321 + Number(m[1]) / 1000,
+      return json({ code: 0, data: { records: [{ data: { heroid: Number(m[1]), real_road: 3, big_rank: '9', total_win_rate: 0.4321 + desplazaLinea + Number(m[1]) / 1000,
         time_win_rate: [{ time_min: 10, time_max: 12, win_rate: 0.4 }, { time_min: 20, win_rate: 0.5 }] } }], total: 1 } });
     }
     // La tier list de mlbb.gg, en el mismo servidor con otra base (--tiers).
@@ -251,6 +254,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     // antes 0 > -1 cambiaba la ruta por la vacía y la matriz entera salía
     // conservada.
     fallaCounters = false; fallaRecientes = false; fallaDetail = true; academyVacia = true; fallosCountersPendientes = 1;
+    fallaLineaDe = '2'; desplazaLinea = 0.01;
     const out3 = resolve(dir, 'ficha-caida.json');
     const r3 = await correrIngesta([
       '--base', `http://127.0.0.1:${puerto}/api`,
@@ -266,6 +270,12 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       `un fallo suelto al sondear cambió la ruta de counters por una vacía: ${d3.diagnostics.rutasMedidas?.counter}`);
     eq(d3.counters.Atlas?.Khufra, 0.5123, 'la matriz no se descargó por la ruta buena tras el fallo suelto');
     eq(d3.diagnostics.frescosRecursos?.relaciones > 100, true, `relaciones frescas: ${JSON.stringify(d3.diagnostics.frescosRecursos)}`);
+    // El winrate por línea se funde par a par (3.14.0): Atlas trae el de hoy
+    // y Khufra, cuya ruta falla, conserva el de la corrida anterior. Antes la
+    // corrida entera sustituía a la guardada y Khufra desaparecía.
+    eq(d3.winrateLinea?.Atlas?.roam, 0.4431, `Atlas no trae el winrate por línea de hoy: ${JSON.stringify(d3.winrateLinea?.Atlas)}`);
+    eq(d3.winrateLinea?.Khufra?.roam, 0.4341, `el winrate por línea de Khufra se pierde con su ruta caída: ${JSON.stringify(d3.winrateLinea?.Khufra)}`);
+    eq(d3.diagnostics.lineas?.conservados, 1, `no cuenta los pares conservados: ${JSON.stringify(d3.diagnostics.lineas)}`);
   } finally {
     srv.close();
     rmSync(dir, { recursive: true, force: true });

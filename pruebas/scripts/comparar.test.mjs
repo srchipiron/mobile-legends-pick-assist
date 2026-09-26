@@ -106,6 +106,11 @@ test('una corrida que pierde el winrate por línea no pasa el filtro (se cuentan
   // Un fichero de antes (sin el campo) no bloquea la primera corrida que lo trae.
   const viejo = { ...base }; delete viejo.winrateLinea;
   eq(comparar(base, viejo).peores.length, 0, 'la primera corrida con winrate por línea se rechaza contra un fichero que no lo tenía');
+  // Y contra el MÁXIMO del historial, no solo contra la última aceptada: sin
+  // esto cada corrida podía perder un 9% sobre la anterior, sin fondo.
+  const maximos = maximosDelHistorial('{"winrateLinea":30}');
+  eq(maximos.winrateLinea, 30, 'el historial no guarda el máximo de pares héroe-línea');
+  ok(comparar(base, base, maximos).peores.some((p) => p.clave === 'winrateLinea' && p.antes === 30), 'una corrida muy por debajo del máximo del historial pasa el filtro');
 });
 
 await terminar('scripts/comparar');

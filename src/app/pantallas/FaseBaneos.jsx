@@ -10,7 +10,7 @@ import { IDIOMAS } from '../i18n/index.js';
  * multi-toque se abre desde cualquier hueco o desde el botón grande, y el
  * único camino hacia delante es «Ir a los picks».
  */
-export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, sinWinrates, idioma, onIdioma, onAbrirSelector, onBanear, onQuitar, onAPicks, pie }) {
+export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, rangoDatos = '', sinWinrates, idioma, onIdioma, onAbrirSelector, onBanear, onQuitar, onAPicks, pie }) {
   const baneados = new Set(baneos.map((h) => h.name));
   return (
     <div className="app fase-baneos">
@@ -22,7 +22,7 @@ export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, 
         </div>
         <p className="fase-pista">{t('fase.baneosPista')}</p>
         <Bando t={t} titulo={t('app.baneados')} tipo="bans" picks={baneos} max={10} onAnadir={onAbrirSelector} onQuitar={onQuitar} />
-        <ProximosBaneos t={t} items={proximos} baneos={baneos} visibles={baneos.length < 10 ? 8 : 0} tasaDe={tasaDe} onBanear={onBanear} onQuitar={onQuitar} />
+        <ProximosBaneos t={t} items={proximos} baneos={baneos} visibles={baneos.length < 10 ? 8 : 0} tasaDe={tasaDe} rango={rangoDatos} onBanear={onBanear} onQuitar={onQuitar} />
         <button className="reset" onClick={onAbrirSelector}>{t('fase.buscarBaneo')}</button>
         <button className="reset primario" onClick={onAPicks}>{baneos.length ? t('fase.aPicks') : t('fase.sinBaneosAPicks')}</button>
         {/* Tu plan antes de que salga nadie: la mitad de las veces el plan A
@@ -43,7 +43,7 @@ export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, 
           </section>
         )}
         {/* Con los diez marcados no hay más que banear: el undécimo no existe. */}
-        <BaneosSugeridos t={t} items={baneos.length < 10 ? sugeridos : []} onBanear={onBanear} />
+        <BaneosSugeridos t={t} items={baneos.length < 10 ? sugeridos : []} onBanear={onBanear} rango={rangoDatos} />
         {/* Sin winrates (API caída en el primer arranque) la fase quedaba con huecos «+» y un selector alfabético sin explicación. */}
         {sinWinrates ? <div className="notice">{t('app.sinWinrates')}</div> : null}
         <AvisoLegal t={t} idioma={idioma} onIdioma={onIdioma} idiomas={IDIOMAS} />

@@ -144,6 +144,33 @@ test('los workflows que publican datos pasan por el guardarrail', () => {
     if (!/\|/.test(p.run)) continue;
     eq(p.shell, 'bash', 'vigilancia.yml: el paso de pruebas no tiene shell: bash (sin pipefail, npm test en rojo no abre incidencia)');
   }
+  // Y en TODOS los workflows, no solo en ese paso: la misma tubería sin
+  // pipefail vivía en partidas.yml (3.14.0), y un código roto se respondía
+  // con «Recibido» y se cerraba sin guardar nada. Una lista fija de pasos
+  // es la trampa que este proyecto ya ha pagado tres veces.
+  for (const f of WORKFLOWS) {
+    for (const p of leerWorkflow(f).pasos) {
+      if (!p.run) continue;
+      const conTuberia = p.run.split('\n').map((l) => l.replace(/(^|\s)#.*$/, '')).some((l) => /(^|[^|])\|([^|]|$)/.test(l));
+      if (conTuberia) eq(p.shell, 'bash', `${f}: el paso «${p.name ?? p._linea}» usa una tubería sin shell: bash (el código de salida sería el del último mandato)`);
+    }
+  }
+  // El diagnóstico de lo publicado corre también con las pruebas en rojo:
+  // sin eso no quedaba fila en el historial justo en las corridas malas.
+  const diag = vig.pasos.find((p) => ejecuta(p.run, /^node scripts\/diagnostico\.mjs\b/));
+  ok(diag, 'vigilancia.yml ya no ejecuta el diagnóstico de lo publicado');
+  ok(/!\s*cancelled\(\)|always\(\)/.test(diag.if ?? ''), 'vigilancia.yml: el diagnóstico de lo publicado se salta cuando fallan las pruebas (sin fila en el historial)');
+  // Un paso que hace push con continue-on-error no puede fallar en silencio:
+  // algún paso posterior mira su `outcome` (failure() no se entera).
+  for (const f of WORKFLOWS) {
+    const w = leerWorkflow(f);
+    w.pasos.forEach((p, i) => {
+      if (String(p['continue-on-error']) !== 'true' || !mandatos(p.run).some((c) => /^git push\b/.test(c))) return;
+      ok(p.id, `${f}: el paso «${p.name}» hace push con continue-on-error y sin id: nadie puede mirar si falló`);
+      const mira = new RegExp(`steps\\.${p.id}\\.outcome\\s*==\\s*'failure'`);
+      ok(w.pasos.slice(i + 1).some((q) => mira.test(q.if ?? '')), `${f}: si el push de «${p.name}» falla no se entera nadie (continue-on-error y ningún paso mira steps.${p.id}.outcome)`);
+    });
+  }
   // Cualquier paso que llame a la API lleva tope de tiempo, no solo la ingesta.
   const mant = leerWorkflow('mantenimiento.yml');
   const regenerar = mant.pasos.find((p) => ejecuta(p.run, /^node scripts\/derivar-tags\.mjs\b/));
@@ -237,6 +264,10 @@ test('la vigilancia arranca de verdad contra los datos del repositorio', () => {
   ok(fila.avisos <= distintos, `la fila de salud cuenta ${fila.avisos} avisos y el informe tiene ${distintos} distintos: suma las cinco líneas`);
   ok(/Fuente: public\/data/.test(r.stdout + r.stderr), 'el diagnóstico local no llega al final');
   ok(existsSync(salud) && /"cruces":\d+/.test(readFileSync(salud, 'utf8')), 'no deja la fila de salud con sus cifras');
+  // Cada recuento de FIJAS que el comparador mira contra el historial tiene
+  // que estar en la fila, o su máximo es siempre 0 y el trinquete no existe.
+  const enDatos = medir(leerJson('public/data/roam-meta.json'));
+  eq(fila.winrateLinea, enDatos.winrateLinea, `la fila de salud no cuenta los pares del winrate por línea como el comparador (${fila.winrateLinea} frente a ${enDatos.winrateLinea})`);
 });
 
 test('revisión línea a línea de scripts y workflows: guardas que no vigilaban, bucles verdes en rojo, fechas, tiempos', async () => {

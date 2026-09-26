@@ -15,7 +15,7 @@ import {
 } from './extraccion.mjs';
 import { fetchRelations } from './relaciones.mjs';
 import {
-  anotarFrescura, conservarFichasPrevias, fechaDeLaCorrida, fundirRelaciones,
+  anotarFrescura, conservarFichasPrevias, fechaDeLaCorrida, fundirRelaciones, fundirWinrateLinea,
   kitsRehechos, leerPrevio, relacionesPrevias,
 } from './fusion.mjs';
 import { bajarImagenes } from './imagenes.mjs';
@@ -174,7 +174,11 @@ async function main() {
   let winrateLinea = previous?.winrateLinea ?? {};
   try {
     const fresh = await fetchWinrateLinea(heroList);
-    if (Object.keys(fresh).length) winrateLinea = fresh;
+    if (Object.keys(fresh).length) {
+      const fundido = fundirWinrateLinea(previous?.winrateLinea, fresh, heroList);
+      winrateLinea = fundido.winrateLinea;
+      if (diagnostics.lineas) diagnostics.lineas.conservados = fundido.conservados;
+    }
     console.log(`  · winrate por linea: ${Object.keys(winrateLinea).length} heroes`);
   } catch (err) {
     console.warn(`  · winrate por linea: fallo (${err.message}); conservo el anterior`);

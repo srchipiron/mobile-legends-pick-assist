@@ -161,4 +161,20 @@ test('la fecha de la maestría viaja en el código y se sanea', async () => {
   eq(perfil.mastery.A.desde, 123, 'la fecha no viaja en el código de perfil');
 });
 
+test('al fundir la maestría gana la de más partidas AUNQUE la otra tenga fecha más reciente; en el empate, la que trae fecha', () => {
+  // La fecha la pone también la app sola al ver una maestría sin fecha
+  // (3.13.1), así que dice cuándo la vio ese dispositivo, no cuándo se
+  // copiaron los números del juego: «gana la más reciente» dejaba que un
+  // móvil con 10 partidas, fechado después, borrara las 3.821 del otro
+  // (lo cazó persistencia.e2e en 3.14.0). En las dos direcciones.
+  const buena = { Diggie: { games: 3821, winRate: 0.55, desde: 100 } };
+  const nueva = { Diggie: { games: 10, winRate: 0.9, desde: 200 } };
+  eq(fundirPerfil({ mastery: nueva }, { mastery: buena }).mastery.Diggie.games, 3821, 'una copia más reciente con menos partidas borra la buena');
+  eq(fundirPerfil({ mastery: buena }, { mastery: nueva }).mastery.Diggie.games, 3821, 'una copia más reciente con menos partidas borra la buena (al revés)');
+  // En el empate de partidas, la que trae fecha: si no, se perdía y la app la volvía a fechar a «ahora».
+  const sinFecha = { Diggie: { games: 3821, winRate: 0.55 } };
+  eq(fundirPerfil({ mastery: sinFecha }, { mastery: buena }).mastery.Diggie.desde, 100, 'en el empate se pierde la fecha');
+  eq(fundirPerfil({ mastery: buena }, { mastery: sinFecha }).mastery.Diggie.desde, 100, 'en el empate se pierde la fecha (al revés)');
+});
+
 await terminar('motor/perfil');

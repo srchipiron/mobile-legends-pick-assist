@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Novedades } from './Novedades.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
+import { ETIQUETAS_RANGO } from './SelectorDeRango.jsx';
 
 /** A partir de cuántas horas los datos se enseñan como «viejos» (pie y cabecera). */
 export const HORAS_DATOS_VIEJOS = 36;
@@ -11,7 +12,7 @@ export const HORAS_DATOS_VIEJOS = 36;
  * Si faltan los counters, el motivo se enseña aquí: leer el JSON en un móvil
  * no es una opción razonable.
  */
-export function Pie({ meta, generado, edadHoras, rango, cov, t = tPorDefecto }) {
+export function Pie({ meta, generado, edadHoras, rango, rangoDatos = null, diasDatos = null, cov, t = tPorDefecto }) {
   const [abierto, setAbierto] = useState(false);
   const [novedades, setNovedades] = useState(false);
   const fecha = generado ? generado.toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : null;
@@ -32,7 +33,12 @@ export function Pie({ meta, generado, edadHoras, rango, cov, t = tPorDefecto }) 
         <div className="pie-detalle">
           <div>{t('pie.datosApi', { fecha: fecha ?? t('pie.nunca') })}</div>
           <div>{t('pie.antiguedad', { horas: edadHoras != null ? `${Math.round(edadHoras)} h` : '—' })}</div>
-          <div>{t('pie.rango', { rango: rango ?? '—', dias: meta.days ?? '?' })}</div>
+          {/* La ventana y el rango que DECIDEN (ventana.js), no los de la
+              ingesta: con la guarda activa decía «glory · 7 días» y los
+              winrates eran de Mítico a 3. */}
+          {rangoDatos && rangoDatos !== rango
+            ? <div className="pie-aviso">{t('pie.rangoFuerza', { rango: ETIQUETAS_RANGO[rango] ?? rango ?? '—', usado: ETIQUETAS_RANGO[rangoDatos] ?? rangoDatos, dias: diasDatos ?? meta.days ?? '?' })}</div>
+            : <div>{t('pie.rango', { rango: ETIQUETAS_RANGO[rango] ?? rango ?? '—', dias: diasDatos ?? meta.days ?? '?' })}</div>}
           <div>{t('pie.heroesConStats', { n: meta.heroCount ?? 0 })}</div>
           <div>{t('pie.rangos', { lista: meta.ranks?.join(', ') || t('pie.ninguno') })}</div>
           {meta.diagnostics?.rangos && Object.entries(meta.diagnostics.rangos)

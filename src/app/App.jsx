@@ -15,6 +15,7 @@ import { ElegirLinea } from './pantallas/ElegirLinea.jsx';
 import { FaseBaneos } from './pantallas/FaseBaneos.jsx';
 import { FasePicks } from './pantallas/FasePicks.jsx';
 import { SelectorDeHeroe } from './componentes/SelectorDeHeroe.jsx';
+import { ETIQUETAS_RANGO } from './componentes/SelectorDeRango.jsx';
 import { Pie } from './componentes/Pie.jsx';
 import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
@@ -140,7 +141,17 @@ export default function App() {
     );
   }
 
-  const pie = <Pie t={t} meta={meta} generado={generado} edadHoras={edadHoras} rango={datos.rango} cov={rec.cov} />;
+  // De qué rango salen los winrates y las tasas de ban: el tuyo, salvo que
+  // la guarda de rango (ventana.js) haya caído a otro tras un reinicio de
+  // temporada. Donde la app dice de dónde sale un número, dice ESTE.
+  const rangoDatos = datos.meta?.fuerza?.rango ?? datos.rango;
+  const etiquetaDatos = ETIQUETAS_RANGO[rangoDatos] ?? rangoDatos ?? '';
+  const pie = (
+    <Pie
+      t={t} meta={meta} generado={generado} edadHoras={edadHoras} rango={datos.rango} cov={rec.cov}
+      rangoDatos={rangoDatos} diasDatos={datos.meta?.ventana?.dias}
+    />
+  );
   const selector = ['enemigos', 'aliados', 'baneos', 'yo'].includes(hoja) ? (
     <SelectorDeHeroe
       // Para tu pick: solo tu pool, en el orden del ranking.
@@ -164,7 +175,7 @@ export default function App() {
       <>
         <FaseBaneos
           t={t} baneos={baneos} proximos={rec.proximos} sugeridos={rec.baneosSugeridos} plan={rec.plan}
-          tasaDe={(n) => buscar(datos.meta.stats, n)?.banRate ?? null}
+          tasaDe={(n) => buscar(datos.meta.stats, n)?.banRate ?? null} rangoDatos={etiquetaDatos}
           sinWinrates={sinWinrates} idioma={idioma} onIdioma={setIdioma}
           onAbrirSelector={() => setHoja('baneos')}
           onBanear={(h) => draft.anadir('baneos', h)}

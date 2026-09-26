@@ -45,7 +45,9 @@ export function seccionDatos(inf, { datos, linea, entorno = {} }) {
   // Y de qué rango: tras un reinicio de temporada Gloria se vacía y su
   // winrate es ruido; entonces manda Mítico (ventana.js, elegirRango).
   const f = datos.meta?.fuerza;
-  if (f?.motivo) {
+  if (f?.motivo && f.rango === f.pedido) {
+    inf.check(false, '', `Fuerza de héroe: de ${f.rango}, sin poder comprobarla: ${f.motivo}`, true);
+  } else if (f?.motivo) {
     inf.check(false, '', `Fuerza de héroe: de ${f.rango} en vez de ${f.pedido} porque ${f.motivo}`, true);
   } else if (f?.coherencia != null) {
     inf.linea(`Fuerza de héroe: de ${f.rango} (coherencia con el rango de abajo r=${f.coherencia.toFixed(3)})`);
@@ -63,7 +65,10 @@ export function seccionDatos(inf, { datos, linea, entorno = {} }) {
     inf.check(!meta.diagnostics.conservado, `Última corrida con estadísticas nuevas (${(meta.diagnostics.frescos ?? []).join(', ') || 'ninguno'})`,
       `La última corrida NO descargó estadísticas de ${meta.rank ?? 'tu rango'}: se conservan las anteriores (API caída o cambiada)`, true);
   }
-  const st = Object.entries(meta.stats ?? {});
+  // Las estadísticas que DECIDEN (las de 7 días del rango de la fuerza), no
+  // las de la ingesta: con la guarda de rango activa eran las de Gloria y
+  // un Mítico roto pasaba estas comprobaciones sin mirarlo.
+  const st = Object.entries(datos.meta?.statsSemana ?? meta.stats ?? {});
   if (st.length) {
     const raros = st.filter(([, v]) => v?.winRate != null && (v.winRate < WINRATE_POSIBLE[0] || v.winRate > WINRATE_POSIBLE[1])).map(([n]) => n);
     inf.check(!raros.length, 'Winrates dentro de lo posible (35-65%)', `Winrates imposibles: ${raros.slice(0, 5).join(', ')} (¿API rota?)`, true);

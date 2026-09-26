@@ -142,7 +142,18 @@ export function maestriaEfectiva(maestria = {}, partidas = []) {
     }
   }
   // Lo apuntado después de la fecha de cada héroe fechado: se suma.
-  const despues = (partidas ?? []).filter((p) => !p?.previa && fechada.has(nombreClave(p?.pick)) && p.t > fechada.get(nombreClave(p.pick)));
+  const esDespues = (p) => !p?.previa && fechada.has(nombreClave(p?.pick)) && p.t > fechada.get(nombreClave(p.pick));
+  const despues = (partidas ?? []).filter(esDespues);
+  // La BASE de un héroe fechado es, como sin fecha, la fuente con más
+  // partidas entre lo escrito a mano y lo apuntado hasta esa fecha (con las
+  // previas). Desde 3.13.1 la app fecha sola lo escrito a mano, y sin esto
+  // 4 partidas a mano tapaban 40 apuntadas antes: la fecha no puede hacer
+  // que se pierda lo que sin fecha contaba.
+  const antes = (partidas ?? []).filter((p) => fechada.has(nombreClave(p?.pick)) && !esDespues(p));
+  for (const [nombre, m] of Object.entries(maestriaDesdeRegistro(antes))) {
+    const k = nombreClave(nombre);
+    if ((m.games ?? 0) > (salida[k].games ?? 0)) salida[k] = { ...m, desde: salida[k].desde };
+  }
   for (const [nombre, m] of Object.entries(maestriaDesdeRegistro(despues))) {
     const k = nombreClave(nombre); const base = salida[k];
     const games = base.games + m.games;

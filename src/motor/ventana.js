@@ -121,7 +121,16 @@ export function elegirRango(statsByRank = {}, rango = null) {
   const pedidas = statsByRank?.[rango]; const otras = respaldo ? statsByRank?.[respaldo] : null;
   if (!pedidas || !otras) return { rango, pedido: rango, coherencia: null, motivo: null };
   const comunes = Object.keys(pedidas).filter((k) => posible(pedidas[k]?.winRate) && posible(otras[k]?.winRate));
-  if (comunes.length < MINIMO_PARA_COMPARAR) return { rango: respaldo, pedido: rango, coherencia: null, motivo: `solo ${comunes.length} héroes con dato en ${rango}` };
+  if (comunes.length < MINIMO_PARA_COMPARAR) {
+    // Sin bastantes héroes para comparar, manda el rango que TIENE datos.
+    // Hasta 3.14.0 se caía siempre al respaldo, también cuando el roto era
+    // Mítico (vacío o sin winrates): los 133 se quedaban sin fuerza y el
+    // motivo culpaba a Gloria.
+    const validos = (s) => Object.values(s).filter((x) => posible(x?.winRate)).length;
+    const nPedidas = validos(pedidas); const nOtras = validos(otras);
+    if (nOtras > nPedidas) return { rango: respaldo, pedido: rango, coherencia: null, motivo: `solo ${nPedidas} héroes con dato en ${rango}` };
+    return { rango, pedido: rango, coherencia: null, motivo: nPedidas > nOtras ? `solo ${nOtras} héroes con dato en ${respaldo}: no se puede comprobar ${rango}` : null };
+  }
   const r = correlacion(comunes.map((k) => pedidas[k].winRate), comunes.map((k) => otras[k].winRate));
   if (r >= COHERENCIA_DE_RANGO_MINIMA) return { rango, pedido: rango, coherencia: r, motivo: null };
   return { rango: respaldo, pedido: rango, coherencia: r, motivo: `${rango} no se parece a ${respaldo} (r=${r.toFixed(2)}): pocas partidas en ${rango}, normal tras un reinicio de temporada` };

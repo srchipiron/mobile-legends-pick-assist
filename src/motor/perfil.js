@@ -158,12 +158,29 @@ export function sanear(perfil) {
  * Las partidas quitadas (`olvidadas`, las de los dos lados) no vuelven: una
  * marca de borrado gana a la partida venga de donde venga.
  */
+/**
+ * Qué copia de la maestría de UN héroe gana al fundir: la de más partidas
+ * (pegar un código viejo no puede borrar la buena), y en el empate la que
+ * trae fecha, que si no se perdía y la app la volvía a fechar a «ahora»
+ * (3.14.0). NO gana «la más reciente»: la fecha la pone también la app sola
+ * al ver una maestría sin fecha (3.13.1, `fecharMaestria`), así que dice
+ * cuándo la vio ESE dispositivo, no cuándo se copiaron los números del
+ * juego. Probado en 3.14.0: con esa regla un móvil con 10 partidas de
+ * Diggie, fechado después, borraba las 3.821 del otro.
+ */
+function ganaEntrante(mio, m) {
+  const conFecha = (x) => Number.isFinite(x?.desde) && x.desde > 0;
+  const ga = mio?.games ?? 0; const gb = m?.games ?? 0;
+  if (gb !== ga) return gb > ga;
+  return !conFecha(mio) && conFecha(m);
+}
+
 export function fundirPerfil(actual, entrante) {
   entrante = sanear(entrante ?? {});
   const mastery = { ...(actual.mastery ?? {}) };
   for (const [nombre, m] of Object.entries(entrante.mastery ?? {})) {
     const mio = mastery[nombre];
-    if (!mio || (m?.games ?? 0) > (mio.games ?? 0)) mastery[nombre] = m;
+    if (!mio || ganaEntrante(mio, m)) mastery[nombre] = m;
   }
   const olvidadas = sanearOlvidadas([...(actual.olvidadas ?? []), ...(entrante.olvidadas ?? [])]);
   const borradas = new Set(olvidadas.map(String));

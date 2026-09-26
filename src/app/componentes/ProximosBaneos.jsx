@@ -11,7 +11,7 @@ import { tPorDefecto } from './tPorDefecto.js';
  *
  * @param items  [{ heroe, banRate, factor }]
  */
-export function ProximosBaneos({ items, baneos = [], tasaDe = () => null, onBanear, onQuitar, visibles = 8, t = tPorDefecto }) {
+export function ProximosBaneos({ items, baneos = [], tasaDe = () => null, onBanear, onQuitar, visibles = 8, rango = '', t = tPorDefecto }) {
   const marcados = useMemo(() => new Set(baneos.map((h) => h.name)), [baneos]);
   const candidatos = useMemo(() => items.map((x) => x.heroe.name), [items]);
   const orden = useOrdenEstable(candidatos, marcados, visibles);
@@ -20,7 +20,7 @@ export function ProximosBaneos({ items, baneos = [], tasaDe = () => null, onBane
   if (!fila.length) return null;
   return (
     <section className="proximos">
-      <div className="side-label"><span>{t('baneos.siguientes')}</span><span>{t('baneos.segun')}</span></div>
+      <div className="side-label"><span>{t('baneos.siguientes')}</span><span>{t('baneos.segun', { rango })}</span></div>
       <div className="equipo-chips">
         {fila.map((n) => {
           const heroe = porNombre.get(n);

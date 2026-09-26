@@ -287,7 +287,12 @@ ninguna constante.
   vez hace falta guardar Mítico, su umbral es otro y se mide aparte. Los
   cruces no se degradaron (r = 0,96 con los de antes del reinicio, σ igual).
   La fila de salud lleva `fuerza` y `coherenciaRango`: la serie dice cuándo
-  vuelve Gloria.
+  vuelve Gloria. Desde 3.14.0, si no hay 20 héroes para comparar, manda el
+  rango que TIENE datos (antes se caía siempre a Mítico, también con Mítico
+  vacío: los 133 sin fuerza y el motivo culpando a Gloria), y todo lo que
+  dice «en tu rango» dice el rango de verdad (`meta.fuerza.rango`: fase de
+  baneos, pie, Meta). Las comprobaciones de valores imposibles del
+  diagnóstico miran `statsSemana`, las que deciden.
 
 Dos constantes que se midieron y se dejaron como estaban, para no volver a
 medirlas: el umbral de «tu héroe está N puntos por encima» (`>= 0.02` en
@@ -895,6 +900,35 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   drafts de roam). Antes de explicar un cambio en los datos con el juego,
   compáralo con una población más grande del MISMO periodo: si solo se
   mueve la pequeña, es muestra.
+- **La tubería sin pipefail, otra vez, en `partidas.yml`** (3.8.0 → 3.14.0) —
+  `importar-partidas.mjs ... | tee` sin `shell: bash`: un código roto salía
+  con el código de `tee`, el bot respondía «Recibido.» y CERRABA la
+  incidencia sin guardar nada, y el mensaje de error (stderr) ni llegaba a
+  la respuesta. La prueba del `tee` de la vigilancia miraba un solo paso de
+  un solo fichero. Hoy recorre TODOS los pasos de TODOS los workflows: una
+  tubería sin `shell: bash` falla. Mismo fallo, tercera lista fija.
+- **La vigilancia sin fila justo en los días malos** (hasta 3.14.0) — el
+  diagnóstico de lo publicado no llevaba `if`, así que con `npm test` en rojo
+  se saltaba: no se miraba lo publicado y no quedaba fila en
+  `salud.jsonl` (cuatro corridas del 23 al 25 de septiembre de 2026,
+  incidencia #9). Y el push de la fila llevaba `continue-on-error`, así que
+  una fila perdida dejaba el trabajo en verde sin avisar a nadie. Hoy el
+  diagnóstico corre con `!cancelled()` y los dos pasos de la incidencia
+  miran `steps.guardar.outcome`; hay prueba de las dos formas. Un paso con
+  `continue-on-error` no puede ser el que avisa de que algo se perdió.
+- **Una fecha automática que cambiaba lo que contaba** (3.13.1 → 3.14.0,
+  cazado en revisión, sin efecto en los datos de Javi) — `fecharMaestria`
+  fecha lo escrito a mano, y con fecha la base dejaba de ser «la fuente con
+  más partidas»: 4 partidas a mano tapaban 40 apuntadas antes, y las previas
+  de un héroe fechado no contaban. Hoy hay una prueba de PROPIEDAD (200
+  casos al azar): fechar después de todo lo apuntado no cambia nada. Una
+  migración automática se prueba así, contra el comportamiento de antes, no
+  con el caso que la motivó. Y su gemela, cazada antes de publicar: «al
+  fundir gana la copia con fecha más reciente» parecía arreglar las erratas
+  a la alta, y con la fecha automática dejaba que un dispositivo recién
+  abierto borrara la maestría buena del otro. Un campo que puede escribir
+  una migración no significa lo que significaba cuando solo lo escribía la
+  persona.
 - **Guardar en el almacén DENTRO de un updater de `setState`** (3.0) — React
   puede llamar a un updater más de una vez (evaluación ansiosa, modo
   estricto, reproceso de la cola), así que ahí dentro no va ningún efecto.
@@ -1415,9 +1449,12 @@ pares (solo las líneas que cada héroe juega). La ingesta lo baja de
 el `total_win_rate` que va junto a la curva por duración; objetivo `lineas`
 en `WANTED`, descubierto por la forma de la ruta como todo lo demás), una
 petición por héroe y línea con 200 ms de pausa (~35 s más de ingesta). Si
-falla, se conserva el anterior, como las builds, y `comparar-ingesta`
-cuenta los PARES héroe-línea (`winrateLinea`): una corrida que los pierda
-no se commitea. La ingesta simulada sirve la ruta con la forma real y
+falla, se conserva el anterior PAR A PAR desde 3.14.0 (`fundirWinrateLinea`,
+solo las líneas que el héroe juega hoy; antes una corrida con un solo par
+sustituía a la guardada entera), y `comparar-ingesta` cuenta los PARES
+héroe-línea (`winrateLinea`, en `FIJAS` y en la fila de salud: se compara
+también con el máximo del historial): una corrida que los pierda no se
+commitea. La ingesta simulada sirve la ruta con la forma real y
 comprueba que sale lo servido (verificado por mutación: sin la ruta en
 `CON_ID` o sin el lector, falla).
 
@@ -1622,7 +1659,14 @@ caracteres. La promesa de "tus datos no salen de tu móvil" sigue siendo cierta:
 salen porque los saca él.
 
 Al importar se FUNDE, nunca se reemplaza (`fundirPerfil`): de cada héroe gana la
-copia con más partidas y las partidas se juntan sin duplicar. Sin eso, pegar un
+copia con más partidas y las partidas se juntan sin duplicar; en el empate
+gana la que trae fecha (3.14.0). NO gana «la más reciente» aunque las dos
+tengan `desde`: se probó en 3.14.0 y la prueba de navegador lo tumbó, porque
+la fecha la pone también la app sola (`fecharMaestria`, 3.13.1) y dice cuándo
+la vio ESE dispositivo, no cuándo se copiaron los números del juego: un móvil
+con 10 partidas de Diggie fechado después borraba las 3.821 del otro. Por eso
+una errata a la alta (5640 donde era 564) no se corrige sola en
+`historial/partidas.json`; si pasa, se edita el fichero a mano. Sin eso, pegar un
 código viejo en el dispositivo bueno borraría la maestría de verdad. Hay una
 prueba que lo comprueba EN LAS DOS DIRECCIONES: la primera versión solo miraba
 la fácil y pasaba aunque se quitara el mecanismo entero.
@@ -1962,6 +2006,31 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   otro sesgo que empuja en la misma dirección y la app no sabe de fechas de
   temporada. Siguiendo la app 69% y por libre 75% en el MISMO periodo: esa
   comparación, que no tiene el sesgo del reinicio, no dice que la app ayude.
+
+- **Lo examinado en 3.14.0 y dejado como está** (26 de septiembre de 2026,
+  dos revisiones en paralelo, del código de 3.10–3.13 y de los bots): (1)
+  una partida apuntada DESPUÉS de fechar la maestría pero jugada antes (se
+  guarda la maestría con la partida ya dentro y luego se responde «Gané») se
+  cuenta dos veces: es una partida entre cientos y arreglarlo pediría guardar
+  cuándo se jugó, no cuándo se apuntó. (2) Un héroe BORRADO de la maestría en
+  el móvil se queda en `historial/partidas.json` (no hay marca de borrado
+  como `olvidadas`); se reabre si pasa. (3) `sanear` acepta un `desde` en el
+  futuro (congelaría la suma); solo con el reloj del móvil mal. (4) «N héroes
+  con datos tuyos» del diagnóstico cuenta también héroes con una sola
+  partida apuntada: es cierto, es una cuenta. (5) `partidas.yml` mira el
+  autor de la incidencia y no quién la edita: en un repositorio personal
+  solo edita el dueño. (6) `pro.yml` y `mantenimiento.yml` sin grupo de
+  concurrencia y `pro.yml` en verde con Liquipedia bloqueando: lo dice el
+  diagnóstico desde 3.12.1; si el lunes 28 vuelve a pasar, los datos pro
+  tendrán dos semanas. (7) Ninguna prueba ata los nombres del `workflow_run`
+  de `deploy.yml` a los bots: hoy están bien; renombrar un `name:` lo
+  rompería. (8) `pruebas-ui.yml` sin `permissions:`. (9) «Merece la pena
+  banear» y el plan A·B·C pueden nombrar al MISMO héroe (Marcel es tu plan
+  A y el segundo baneo sugerido; Rafaela, tu plan B, el primero): banear tu
+  plan es una decisión de juego (lo quitas a los dos equipos) que el modelo
+  no puntúa; candidato a marcarlo en la fila («es tu plan B») en una
+  iteración de interfaz. (10) Las caras en negro de las capturas de página
+  entera eran la carga diferida (`loading="lazy"`), no retratos que falten.
 
 ## Lo que queda pendiente
 

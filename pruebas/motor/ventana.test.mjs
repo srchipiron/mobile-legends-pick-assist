@@ -93,6 +93,13 @@ test('rango: Gloria manda si se parece a Mítico; si no (reinicio de temporada),
   // Sin datos de Gloria para comparar (menos de 20 héroes posibles): Mítico.
   const pocos = Object.fromEntries(Object.entries(vacia).slice(0, 10));
   eq(elegirRango({ glory: pocos, mythic: mitico }, 'glory').rango, 'mythic');
+  // Y al revés: si el que falla es MÍTICO (vacío, sin winrates o a medias),
+  // no se cae a él. Hasta 3.14.0 se caía y los 133 se quedaban sin fuerza.
+  for (const [que, roto] of [['vacío', {}], ['sin winrates', Object.fromEntries(Object.keys(mitico).map((k) => [k, { ...mitico[k], winRate: null }]))], ['a medias', Object.fromEntries(Object.entries(mitico).slice(0, 15))]]) {
+    const d = elegirRango({ glory: llena, mythic: roto }, 'glory');
+    eq(d.rango, 'glory', `con Mítico ${que} manda Mítico`);
+    ok(/mythic/.test(d.motivo ?? ''), `con Mítico ${que} no dice que no se puede comprobar: ${d.motivo}`);
+  }
   // Otros rangos, o sin Mítico descargado: el pedido, sin tocar.
   eq(elegirRango({ glory: vacia, mythic: mitico, legend: vacia }, 'mythic').rango, 'mythic');
   eq(elegirRango({ glory: vacia }, 'glory').rango, 'glory');

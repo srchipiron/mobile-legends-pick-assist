@@ -68,6 +68,13 @@ jobs:
       #    despliegue, Pages puede tardar en servir lo nuevo.
       - name: Diagnóstico de lo publicado
         id: diag
+        # También con las pruebas en rojo: sin esto el paso se saltaba, no se
+        # miraba lo publicado y no quedaba fila en el historial justo en las
+        # corridas malas (del 23 al 25 de septiembre de 2026, incidencia #9,
+        # cuatro corridas sin fila). `!cancelled()` y no `always()`: una
+        # corrida cancelada no tiene nada que decir.
+        if: ${{ !cancelled() }}
+        shell: bash
         run: |
           # Un vigilante que nunca se ha visto saltar no es un vigilante. Con
           # esta entrada se puede provocar el fallo y comprobar que abre la
@@ -106,7 +113,13 @@ jobs:
       # Se commitea SIEMPRE, tanto si el diagnostico ha pasado como si no: las
       # corridas malas son justo las que hay que poder mirar despues.
       - name: Guardar la fila en el historial
+        id: guardar
         if: always()
+        # continue-on-error para que un push perdido no se lea como «la app
+        # falla»; pero una fila perdida en silencio es lo que el bucle de
+        # abajo viene a evitar, así que los dos pasos de la incidencia miran
+        # `steps.guardar.outcome` (con continue-on-error, `failure()` no se
+        # entera).
         continue-on-error: true
         run: |
           if [ -s historial/salud.jsonl ] && ! git diff --quiet -- historial/salud.jsonl; then
@@ -128,14 +141,16 @@ jobs:
           fi
 
       - name: Abrir incidencia si algo falla
-        if: failure()
+        if: ${{ failure() || steps.guardar.outcome == 'failure' }}
         uses: actions/github-script@v9
         with:
           script: |
             // github-script v9 es ESM: aquí ya no existe require().
             const fs = await import('node:fs');
             const leer = (f) => { try { return fs.readFileSync(f, 'utf8').slice(-5000); } catch { return '(sin salida)'; } };
+            const filaPerdida = '${{ steps.guardar.outcome }}' === 'failure';
             const cuerpo = [
+              ...(filaPerdida ? ['**La fila de esta corrida NO se ha guardado en `historial/salud.jsonl`** (push rechazado tres veces). Si el diagnóstico de abajo dice que todo está bien, es solo eso.', ''] : []),
               'La vigilancia automática ha encontrado algo. Esto NO lo ha pulsado nadie:',
               'lo ha detectado la comprobación programada contra la app publicada.',
               '',
@@ -164,7 +179,7 @@ jobs:
             }
 
       - name: Cerrar la incidencia si ya está sano
-        if: success()
+        if: ${{ success() && steps.guardar.outcome != 'failure' }}
         uses: actions/github-script@v9
         with:
           script: |
