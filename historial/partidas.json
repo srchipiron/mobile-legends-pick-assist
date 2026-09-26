@@ -1,6 +1,44 @@
 {
- "actualizado": "2026-09-26T19:30:17.745Z",
+ "actualizado": "2026-09-26T20:07:03.027Z",
  "partidas": [
+  {
+   "t": 1790452013003,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Edith"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.392,
+   "bans": [
+    "Hirara",
+    "Paquito",
+    "Eudora",
+    "Hanzo",
+    "Yi Sun-shin",
+    "Estes",
+    "Angela"
+   ],
+   "draft": {
+    "enemigos": [
+     "Aulus",
+     "Zhask",
+     "Dyrroth",
+     "Lesley",
+     "Kaja"
+    ],
+    "aliados": [
+     "Kadita",
+     "Nolan",
+     "Brody",
+     "Jawhead"
+    ],
+    "linea": "roam",
+    "rival": "Kaja"
+   }
+  },
   {
    "t": 1790451000279,
    "pick": "Rafaela",
@@ -2241,6 +2279,12 @@
   {
    "cuando": "2026-09-26T19:30:17.745Z",
    "partidas": 88,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-26T20:07:03.027Z",
+   "partidas": 89,
    "heroes": 11,
    "incidencia": 11
   }
