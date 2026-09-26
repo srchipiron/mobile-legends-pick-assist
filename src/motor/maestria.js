@@ -101,17 +101,37 @@ export function maestriaDesdeRegistro(partidas = []) {
 
 /**
  * La maestría que usa el motor: la escrita a mano MÁS la de tus partidas
- * apuntadas. De cada héroe gana la fuente con más partidas (no se suman: la
- * escrita a mano ya las incluye). Claves normalizadas: 400 partidas de
- * «X.Borg» desaparecían del ranking con la clave cruda.
+ * apuntadas. Claves normalizadas: 400 partidas de «X.Borg» desaparecían del
+ * ranking con la clave cruda.
+ *
+ * Desde 3.13.0 cada héroe escrito a mano lleva `desde` (cuándo se guardó):
+ * son los números del juego A ESE DÍA, así que las partidas apuntadas con la
+ * app DESPUÉS se le SUMAN. Antes ganaba la fuente con más partidas «porque
+ * la escrita a mano ya las incluye», y eso solo era verdad si se volvía a
+ * escribir tras jugar: con 564 partidas de Rafaela a mano, las 31 apuntadas
+ * al 77% no movían nada. Las previas (del historial del juego) no se suman:
+ * el total del juego ya las lleva. Sin `desde` (guardada antes de 3.13.0)
+ * no se sabe qué incluye y sigue ganando la que tenga más partidas.
  */
 export function maestriaEfectiva(maestria = {}, partidas = []) {
   const salida = {};
+  const fechada = new Map();
   for (const [nombre, m] of Object.entries(maestria ?? {})) {
     const k = nombreClave(nombre);
-    if (!salida[k] || (m?.games ?? 0) > (salida[k].games ?? 0)) salida[k] = m;
+    if (!salida[k] || (m?.games ?? 0) > (salida[k].games ?? 0)) {
+      salida[k] = m;
+      if (Number.isFinite(m?.desde) && m.desde > 0) fechada.set(k, m.desde); else fechada.delete(k);
+    }
   }
-  for (const [nombre, m] of Object.entries(maestriaDesdeRegistro(partidas))) {
+  // Lo apuntado después de la fecha de cada héroe fechado: se suma.
+  const despues = (partidas ?? []).filter((p) => !p?.previa && fechada.has(nombreClave(p?.pick)) && p.t > fechada.get(nombreClave(p.pick)));
+  for (const [nombre, m] of Object.entries(maestriaDesdeRegistro(despues))) {
+    const k = nombreClave(nombre); const base = salida[k];
+    const games = base.games + m.games;
+    salida[k] = { ...base, games, winRate: (base.winRate * base.games + m.winRate * m.games) / games, apuntadas: m.games };
+  }
+  // Los héroes sin fecha o sin maestría a mano: como siempre, gana la fuente con más partidas.
+  for (const [nombre, m] of Object.entries(maestriaDesdeRegistro((partidas ?? []).filter((p) => !fechada.has(nombreClave(p?.pick)))))) {
     const k = nombreClave(nombre);
     if (!salida[k] || (m.games ?? 0) > (salida[k].games ?? 0)) salida[k] = m;
   }

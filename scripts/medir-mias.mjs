@@ -32,6 +32,18 @@ export function auc(pares) {
   return s / (pos.length * neg.length);
 }
 
+/**
+ * Error típico de una AUC con n1 positivos y n0 negativos (Hanley y McNeil,
+ * 1982). Sin él, una AUC de 0,38 con 27 ganadas y 7 perdidas parecía «peor
+ * que una moneda» cuando su error típico es ±0,12 (medido el 26 de
+ * septiembre de 2026 con las primeras 34 partidas con draft).
+ */
+export function errorDeAuc(a, n1, n0) {
+  if (!(n1 > 0 && n0 > 0) || a == null) return null;
+  const q1 = a / (2 - a); const q2 = (2 * a * a) / (1 + a);
+  return Math.sqrt((a * (1 - a) + (n1 - 1) * (q1 - a * a) + (n0 - 1) * (q2 - a * a)) / (n1 * n0));
+}
+
 /** El modelo de hoy sobre los drafts guardados: p para cada partida con draft y pick conocidos. */
 export function repuntuar(partidas, datos) {
   const filas = [];
@@ -68,7 +80,9 @@ export function medir(registro, datos) {
       const r = logistica(filas.map((f) => [1, logit(f.p)]), filas.map((f) => f.y));
       pendiente = { b: r.b[1], se: r.se[1] };
     }
-    salida.hoy = { n, brier, brierSE, auc: auc(filas), acierto, pendiente, mediaP: filas.reduce((a, f) => a + f.p, 0) / n, real: filas.reduce((a, f) => a + f.y, 0) / n };
+    const ganadas = filas.filter((f) => f.y).length;
+    const a = auc(filas);
+    salida.hoy = { n, brier, brierSE, auc: a, aucSE: errorDeAuc(a, ganadas, n - ganadas), acierto, pendiente, mediaP: filas.reduce((a, f) => a + f.p, 0) / n, real: filas.reduce((a, f) => a + f.y, 0) / n };
   } else {
     salida.hoy = { n: 0 };
   }
@@ -108,7 +122,9 @@ export function informe(m, { generado = null } = {}) {
   if (!h.n) L.push('- Ninguna partida lleva el draft guardado (se guarda solo desde 3.5.0).');
   else {
     L.push(`- ${h.n} drafts re-puntuados con el modelo y los datos de hoy: media prevista ${pct(h.mediaP)}, real ${pct(h.real)}, acierta el lado (≥50%) el ${pct(h.acierto)}.`);
-    L.push(`- Brier ${h.brier.toFixed(3)} ± ${(1.96 * h.brierSE).toFixed(3)} · AUC ${h.auc == null ? '—' : h.auc.toFixed(3)} (0,5 es una moneda; en pro sale 0,56–0,61).`);
+    const aucTxt = h.auc == null ? '—' : `${h.auc.toFixed(3)}${h.aucSE != null ? ` ± ${(1.96 * h.aucSE).toFixed(3)}` : ''}`;
+    const aucDice = h.auc == null || h.aucSE == null ? '' : Math.abs(h.auc - 0.5) <= 1.96 * h.aucSE ? ' Todavía no se distingue de una moneda: hacen falta más partidas, sobre todo perdidas.' : h.auc > 0.5 ? ' Ordena mejor que una moneda.' : ' Ordena PEOR que una moneda: algo está mal.';
+    L.push(`- Brier ${h.brier.toFixed(3)} ± ${(1.96 * h.brierSE).toFixed(3)} · AUC ${aucTxt} (0,5 es una moneda; en pro sale 0,56–0,61).${aucDice}`);
     if (h.pendiente) L.push(`- Pendiente sobre el log-odds: ${h.pendiente.b.toFixed(2)} ± ${h.pendiente.se.toFixed(2)} (1 = la escala vale también en tu cola; con menos de 100 partidas el ± manda).`);
   }
   if (m.porHeroe.length) {

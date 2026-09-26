@@ -153,4 +153,12 @@ test('una partida quitada a propósito no vuelve al fundir, venga la marca de do
   eq(sanear({ olvidadas: [5, 'x'] }).olvidadas.join(), '5');
 });
 
+test('la fecha de la maestría viaja en el código y se sanea', async () => {
+  const limpio = sanear({ mastery: { A: { games: 10, winRate: 0.5, desde: 123 }, B: { games: 10, winRate: 0.5, desde: 'ayer' }, C: { games: 10, winRate: 0.5, desde: -1 } } }).mastery;
+  eq(limpio.A.desde, 123, 'sanear pierde la fecha');
+  ok(!('desde' in limpio.B) && !('desde' in limpio.C), 'sanear deja pasar una fecha que no es un instante');
+  const { perfil } = await leerPerfil(await exportarPerfil(recogerPerfil({ mastery: { A: { games: 10, winRate: 0.5, desde: 123 } } })));
+  eq(perfil.mastery.A.desde, 123, 'la fecha no viaja en el código de perfil');
+});
+
 await terminar('motor/perfil');

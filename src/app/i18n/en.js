@@ -334,7 +334,7 @@ export default {
   'build.objetosEnIngles': 'Item names stay in English, like the game data.',
 
 
-  'maestria.explicacion': 'Copy matches and win rate from your in-game profile. Win rate as a percentage: 50.6. Below 20 matches it barely counts.',
+  'maestria.explicacion': 'Copy matches and win rate from your in-game profile. Win rate as a percentage: 50.6. Below 20 matches it barely counts. Matches you log with the app after saving are added on their own; when you copy the in-game numbers again, they are already included.',
   'maestria.heroe': 'Hero',
   'maestria.partidas': 'Matches',
   'maestria.winrate': 'Win rate %',

@@ -224,4 +224,24 @@ test('el motivo de maestria se mide contra TU nivel, no contra un 55% fijo', () 
     'cinco partidas ganadas disparan el motivo');
 });
 
+test('maestría con fecha: las partidas apuntadas DESPUÉS se suman; las de antes, las previas y la maestría sin fecha, no', () => {
+  const desde = 1_000_000;
+  const p = (t, gane, extra = {}) => ({ t, pick: 'Rafaela', gane, recomendados: [], ...extra });
+  const partidas = [p(desde - 5, true), p(desde + 1, true), p(desde + 2, true), p(desde + 3, false), p(desde + 4, true, { previa: true })];
+  const conFecha = maestriaEfectiva({ Rafaela: { games: 100, winRate: 0.5, desde } }, partidas).rafaela;
+  // 100 al 50% + 3 apuntadas después (2 ganadas); ni la de antes ni la previa.
+  eq(conFecha.games, 103, `suma mal las partidas: ${JSON.stringify(conFecha)}`);
+  ok(Math.abs(conFecha.winRate - (50 + 2) / 103) < 1e-12, `el winrate no es el ponderado: ${conFecha.winRate}`);
+  eq(conFecha.apuntadas, 3);
+  // Sin fecha (guardada antes de 3.13.0): como siempre, gana la fuente con más partidas.
+  eq(maestriaEfectiva({ Rafaela: { games: 100, winRate: 0.5 } }, partidas).rafaela.games, 100, 'sin fecha se suman partidas que la maestría quizá ya incluye');
+  // Sin maestría a mano: el registro entero, previas incluidas (para eso se meten).
+  eq(maestriaEfectiva({}, partidas).rafaela.games, 5);
+  // Continuo: apuntar UNA partida más mueve el winrate un poco, sin saltos (la lección de tuNivel).
+  const mas = maestriaEfectiva({ Rafaela: { games: 100, winRate: 0.5, desde } }, [...partidas, p(desde + 9, true)]).rafaela;
+  ok(mas.games === 104 && Math.abs(mas.winRate - conFecha.winRate) < 0.01, `una partida más salta: ${conFecha.winRate} → ${mas.winRate}`);
+  // Por clave normalizada, como todo: «X.Borg» a mano y «X Borg» apuntado.
+  eq(maestriaEfectiva({ 'X.Borg': { games: 10, winRate: 0.5, desde } }, [{ t: desde + 1, pick: 'X Borg', gane: true, recomendados: [] }]).xborg.games, 11, 'no casa X.Borg con X Borg');
+});
+
 await terminar('motor/maestria');

@@ -17,10 +17,17 @@ export function EditorDeMaestria({ pool, maestria, onGuardar, onCerrar, t = tPor
 
   const guardar = () => {
     const limpia = {};
+    // Guardar es decir «estos son mis números del juego HOY» (3.13.0): cada
+    // héroe lleva la fecha, y las partidas que apuntes después se le suman
+    // (motor/maestria.js). Un héroe que no has tocado y ya tenía fecha la
+    // conserva: sus números siguen siendo los de aquel día.
+    const ahora = Date.now();
     for (const [nombre, e] of Object.entries(borrador)) {
       const games = leerDecimal(e.games);
       const wr = leerDecimal(e.wr);
-      if (games > 0 && wr > 0 && wr <= 100) limpia[nombre] = { games, winRate: wr / 100 };
+      const antes = maestria?.[nombre];
+      const igual = antes && antes.games === games && Math.abs(antes.winRate - wr / 100) < 1e-9;
+      if (games > 0 && wr > 0 && wr <= 100) limpia[nombre] = { games, winRate: wr / 100, desde: igual && Number.isFinite(antes.desde) ? antes.desde : ahora };
       // Una fila con errata («50.6%», un campo vaciado a medias) no borra lo
       // que había. Borrar es dejar los dos campos vacíos.
       else if ((e.games ?? '') !== '' || (e.wr ?? '') !== '') { if (maestria?.[nombre]) limpia[nombre] = maestria[nombre]; }

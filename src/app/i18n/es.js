@@ -350,7 +350,7 @@ export default {
 
 
   // --- maestría y partidas ---
-  'maestria.explicacion': 'Copia partidas y winrate de tu perfil del juego. El winrate en porcentaje: 50,6 o 50.6. Por debajo de 20 partidas cuenta poco.',
+  'maestria.explicacion': 'Copia partidas y winrate de tu perfil del juego. El winrate en porcentaje: 50,6 o 50.6. Por debajo de 20 partidas cuenta poco. Las partidas que apuntes con la app después de guardar se suman solas; cuando vuelvas a copiar los números del juego, ya van incluidas.',
   'maestria.heroe': 'Héroe',
   'maestria.partidas': 'Partidas',
   'maestria.winrate': 'Winrate %',

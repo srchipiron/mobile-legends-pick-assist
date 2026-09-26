@@ -127,7 +127,7 @@ export function sanear(perfil) {
     for (const [nombre, v] of Object.entries(m)) {
       const games = Number(v?.games);
       if (v && typeof v === 'object' && Number.isFinite(games) && games > 0 && typeof v.winRate === 'number' && v.winRate >= 0 && v.winRate <= 1) {
-        mastery[nombre] = { games, winRate: v.winRate };
+        mastery[nombre] = { games, winRate: v.winRate, ...(Number.isFinite(v.desde) && v.desde > 0 ? { desde: v.desde } : {}) };
       }
     }
   }

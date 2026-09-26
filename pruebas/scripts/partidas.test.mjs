@@ -131,4 +131,17 @@ test('partidas.yml: solo el dueño, solo con un código dentro, cuerpo por varia
   ok(w.claves?.['permissions.issues'] === 'write' || /issues:\s*write/.test(readFileSync(join(RAIZ, '.github/workflows/partidas.yml'), 'utf8')), 'sin permiso para responder');
 });
 
+test('medir-mias: la AUC va con su margen, y con pocas partidas dice que no se distingue de una moneda', async () => {
+  const { errorDeAuc } = await import('../../scripts/medir-mias.mjs');
+  // Hanley-McNeil a 0,5 con 27 y 7: ≈ 0,12, que es lo que hace de 0,38 un empate con la moneda.
+  const se = errorDeAuc(0.5, 27, 7);
+  ok(se > 0.10 && se < 0.14, `error típico de la AUC con 27/7: ${se}`);
+  ok(errorDeAuc(0.5, 500, 500) < 0.02, 'con mil partidas el margen no se estrecha');
+  eq(errorDeAuc(0.5, 10, 0), null);
+  const texto = (a, se2) => informe({ n: 40, conApp: 40, previas: 0, ganadas: 30, wr: 0.75, veredicto: { siguiendo: 30, porLibre: 10, wrSiguiendo: 0.7, wrPorLibre: 0.8, concluyente: false, faltan: 20 }, calibracion: { n: 0 }, hoy: { n: 34, brier: 0.24, brierSE: 0.02, auc: a, aucSE: se2, acierto: 0.6, mediaP: 0.53, real: 0.79, pendiente: null }, porHeroe: [], porMes: [] });
+  ok(/AUC 0\.378 ± 0\.2\d\d/.test(texto(0.378, 0.12)) && /no se distingue de una moneda/.test(texto(0.378, 0.12)), `con ±0,12 no lo dice: ${texto(0.378, 0.12).split('\n').find((l) => /AUC/.test(l))}`);
+  ok(/mejor que una moneda/.test(texto(0.7, 0.05)), 'una AUC de 0,7 ± 0,1 no dice que ordena bien');
+  ok(/PEOR que una moneda/.test(texto(0.3, 0.05)), 'una AUC de 0,3 ± 0,1 no avisa');
+});
+
 await terminar('scripts/partidas');

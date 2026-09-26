@@ -8,6 +8,23 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.13.0
+
+- **Las partidas que apuntas con la app ya cuentan en tu maestría.** Hasta
+  ahora, si un héroe tenía maestría escrita a mano (Rafaela, 564 partidas),
+  la app se quedaba con esa cifra y las partidas apuntadas después no
+  cambiaban nada: tus 31 de Rafaela al 77% no movían la recomendación. Ahora,
+  al guardar la maestría, cada héroe recuerda el día, y las partidas que
+  apuntes a partir de entonces se le suman solas (Rafaela pasaría de 53,0%
+  a 54,3%). Cuando vuelvas a copiar los números del juego, esas partidas ya
+  van dentro y no se cuentan dos veces.
+- **Para activarlo, abre «Maestría» una vez y pulsa «Guardar»** (con tus
+  números del juego al día). La maestría guardada antes de esta versión no
+  sabe de qué día es, así que hasta entonces sigue como estaba.
+- El informe de tus partidas en el proyecto da el margen de cada cifra: la
+  «AUC 0,36» de tus primeras 34 partidas con draft es ± 0,24, o sea que
+  todavía no dice nada, ni bueno ni malo.
+
 ## 3.12.1
 
 - **El diagnóstico explica cuando las partidas profesionales no se han

@@ -33,6 +33,8 @@ await prueba('el editor de maestría escribe roam-picker:mastery y el motor la u
   const guardada = await leer(pagina, 'roam-picker:mastery');
   ok(guardada && guardada[heroe], `no se guardó la maestría de ${heroe}: ${JSON.stringify(guardada)}`);
   eq(guardada[heroe].games, 380, 'las partidas no se guardaron');
+  // Guardar fecha la maestría (3.13.0): lo apuntado después se le suma.
+  ok(Number.isFinite(guardada[heroe].desde) && Math.abs(Date.now() - guardada[heroe].desde) < 120000, `la maestría guardada no lleva la fecha de hoy: ${JSON.stringify(guardada[heroe])}`);
   ok(Math.abs(guardada[heroe].winRate - 0.575) < 1e-9, `el winrate se guardó como ${guardada[heroe].winRate}, no 0.575 (¿la coma?)`);
   // Y sobrevive a la recarga, que es lo que de verdad importa.
   await pagina.reload({ waitUntil: 'networkidle' }); await pagina.waitForTimeout(600);

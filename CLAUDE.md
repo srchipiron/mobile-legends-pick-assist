@@ -1936,6 +1936,28 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   ventanas: es la época, no el rango. No se cambia la ventana por eso; lo
   que sí entró es la guarda de rango (ver «Qué son los datos»).
 
+- **Lo que dicen las primeras 79 partidas de Javi, examinado en 3.13.0**
+  (26 de septiembre de 2026): (1) la AUC de 0,36–0,40 sobre las 34 con
+  draft NO es un fallo de `repuntuar`: la estimación guardada en su momento
+  da lo mismo sobre esas partidas (0,397) y las dos correlacionan a 0,84;
+  con 27 ganadas y 7 perdidas el error típico es ±0,12. Desde 3.13.0 el
+  informe lo dice con su margen (`errorDeAuc`, Hanley-McNeil). (2) Previsto
+  53% y ganado 75% en 63 partidas con estimación: la calibración global
+  está 22 puntos por debajo (4 errores típicos), pero un desplazamiento
+  igual para todos los candidatos NO cambia el orden, y su causa no está
+  clara: antes del reinicio del 16 de septiembre ya iba al 64,3% (42
+  partidas), después al 76,9% (39), frente a su 51,3% histórico. Puede ser
+  que juegue mejor, que tras el reinicio le toque gente de menos nivel, o
+  que apunte más las que gana. No se toca la escala ni el nivel por esto
+  («No ajustes el modelo por una partida»); con la maestría sumando lo
+  apuntado (3.13.0) su nivel ya se mueve con lo que juega. Se reabre con
+  unas 100 partidas con draft y alguna racha fuera del reinicio. (3) El
+  «+17,8 puntos, se distingue del azar» del Veredicto: cierto contra su
+  histórico, y la pantalla ya dice que no está aleatorizado; el reinicio es
+  otro sesgo que empuja en la misma dirección y la app no sabe de fechas de
+  temporada. Siguiendo la app 69% y por libre 75% en el MISMO periodo: esa
+  comparación, que no tiene el sesgo del reinicio, no dice que la app ayude.
+
 ## Lo que queda pendiente
 
 - **Lo que 3.0 perdió sin querer, repuesto en 3.1.0**: la prueba de que la
@@ -1982,10 +2004,22 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   leer. Al revisar los tags de un héroe, actualiza su `kit` con lo que dé
   `huellaDeKit()` y el aviso se apaga solo.
 - Desde 1.9.0 el registro SÍ personaliza: `maestriaEfectiva` junta la maestría
-  escrita a mano con la que sale de las partidas apuntadas, quedándose con la
-  fuente que tenga más partidas de cada héroe (no se suman: la escrita a mano ya
-  las incluye). Antes eran dos cosas que no se hablaban y apuntar partidas no
-  movía la recomendación.
+  escrita a mano con la que sale de las partidas apuntadas. Hasta 3.12 se
+  quedaba con la fuente con más partidas de cada héroe «porque la escrita a
+  mano ya las incluye», y eso solo era verdad si Javi la volvía a escribir
+  tras jugar: con sus primeras 79 partidas en el repositorio (26 de
+  septiembre de 2026), Rafaela tenía 564 a mano y 31 apuntadas al 77%, y
+  las 31 no movían nada. Desde 3.13.0 cada héroe escrito a mano lleva
+  `desde` (lo pone el editor al guardar: guardar es «estos son mis números
+  del juego hoy»; un héroe sin tocar y con fecha la conserva) y se le SUMAN
+  las partidas apuntadas después, sin las previas (el total del juego ya
+  las lleva). Sin `desde` (guardada antes) sigue ganando la que tenga más
+  partidas: no se sabe qué incluye. `sanear` y el código de perfil llevan
+  la fecha. Medido con sus datos y la fecha antes de sus partidas: Rafaela
+  53,0 → 54,3%, Minotaur 51,7 → 52,9%, y el nº1 de roam cambia en 18 de
+  300 drafts. Es continuo (una partida más no salta) y por clave
+  normalizada. Pruebas en maestria, perfil y `persistencia.e2e`,
+  verificadas por mutación.
 - Las partidas metidas del historial del juego llevan `previa: true` y quedan
   FUERA de las dos ramas de la comparación (`esPrevia`). Sin eso irían todas a
   "por libre" -no tienen `recomendados`- y meter cien partidas viejas llenaría
