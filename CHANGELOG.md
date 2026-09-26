@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.18.0
+
+- **«¿Te está funcionando?» compara ya siguiendo la app con ir por libre,
+  con su margen.** Con tus 95 partidas: siguiendo la app 69,8% (63), por
+  libre 71,9% (32), −2 puntos con un margen de ±19. Esa diferencia cabe
+  en el azar, así que todavía no se sabe cuál de las dos te va mejor, y la
+  pantalla lo dice así. El informe que te llega por GitHub decía «ya hay 30
+  y 30, se puede concluir» sin decir qué; ahora da la cifra y el margen.
+- Sigue en pie la otra comparación: contra tu winrate de siempre vas +18,5
+  puntos ± 12,3, que sí se distingue del azar (aunque no está
+  aleatorizado, y el reinicio de temporada empuja en la misma dirección).
+
 ## 3.17.0
 
 - **Al meter los picks, el héroe que buscas suele estar ya a la vista.** Las

@@ -68,9 +68,13 @@ export function seccionPartidas(inf, { partidas = [], maestria = {}, maestriaMan
     inf.linea(`Por libre: ${reg.porLibre} · ganadas ${pct(reg.wrPorLibre)}`);
   }
   // Líneas, no avisos: no hay nada que arreglar, es que aún no has jugado bastante.
-  inf.linea(reg.concluyente
-    ? `Siguiendo/por libre: hay muestra en las dos ramas (${MINIMO_PARA_CONCLUIR}+ de cada)`
-    : `Siguiendo/por libre: faltan ${reg.faltan}, y la rama "por libre" solo crece si ignoras la app a propósito`);
+  if (reg.entreRamas) {
+    const e = reg.entreRamas;
+    inf.linea(`Siguiendo menos por libre: ${e.dif >= 0 ? '+' : ''}${(e.dif * 100).toFixed(1)} puntos ± ${(e.margen * 100).toFixed(1)} (${MINIMO_PARA_CONCLUIR}+ en cada rama)`);
+    inf.linea(e.seVe ? 'Esa diferencia ya se distingue del azar (sin aleatorizar: tú eliges cuándo hacer caso)' : 'Esa diferencia cabe en el azar: todavía no se sabe cuál de las dos va mejor');
+  } else {
+    inf.linea(`Siguiendo/por libre: faltan ${reg.faltan}, y la rama "por libre" solo crece si ignoras la app a propósito`);
+  }
   if (reg.contraReferencia) {
     const c = reg.contraReferencia;
     inf.linea(`Contra tu winrate de siempre (${(c.base * 100).toFixed(1)}% en ${c.partidasBase} partidas): ${c.dif >= 0 ? '+' : ''}${(c.dif * 100).toFixed(1)} puntos ± ${(c.margen * 100).toFixed(1)}`);

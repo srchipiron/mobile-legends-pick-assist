@@ -196,6 +196,10 @@ export default {
   'veredicto.peor': 'La diferencia ya no cabe en el azar, y va en tu contra: te está yendo peor siguiendo la app que por tu cuenta.',
   'veredicto.pocas': 'Con {n} {n|partida apuntada|partidas apuntadas} todavía no hay nada que comparar. Apunta unas cuantas más siguiendo la app.',
   'veredicto.sinReferencia': 'Rellena «Tu maestría» con tus partidas del juego: sin eso no hay winrate tuyo con el que comparar.',
+  'veredicto.ramas': 'Siguiendo la app {a}% ({na}) frente a por libre {b}% ({nb}): {signo}{dif} puntos, con un margen de ±{margen}',
+  'veredicto.ramasNoSeVe': 'Esa diferencia cabe en el margen: todavía no se sabe si seguir la app te ayuda más que ir por libre.',
+  'veredicto.ramasMejor': 'La diferencia ya no cabe en el azar: te va mejor cuando sigues la app que cuando vas por libre.',
+  'veredicto.ramasPeor': 'La diferencia ya no cabe en el azar, y va en tu contra: te va mejor por libre que siguiendo la app.',
   'veredicto.trampa': 'Ojo con lo que significa: tú eliges cuándo hacer caso, así que esto no es un experimento controlado. Es la mejor señal que se puede sacar sin pedirte que ignores la app a propósito, pero no es una prueba.',
 
   // --- líneas ---

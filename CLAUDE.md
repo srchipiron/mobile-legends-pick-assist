@@ -929,6 +929,17 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   abierto borrara la maestría buena del otro. Un campo que puede escribir
   una migración no significa lo que significaba cuando solo lo escribía la
   persona.
+- **«Se puede concluir» sin decir qué** (hasta 3.18.0) — con 30 partidas
+  siguiendo la app y 30 por libre, `medir-mias` escribía «ya hay 30 y 30,
+  se puede concluir» y el diagnóstico «hay muestra en las dos ramas», sin
+  la diferencia ni el margen: con sus 95 partidas eran 69,8% frente a 71,9%,
+  −2 puntos ± 19, o sea nada. Las tres reglas del Veredicto solo se habían
+  aplicado a la comparación contra su winrate de siempre. Hoy `resumen`
+  devuelve `entreRamas` (dos proporciones con el error AGRUPADO: con Wald,
+  30/30 frente a 0/30 daba margen cero y no afirmaba la diferencia más
+  grande posible) y la pantalla, el informe y el diagnóstico la dicen con
+  su margen. Una regla de honestidad se aplica a TODAS las comparaciones
+  que se enseñan, no a la primera que se escribió.
 - **Guardar en el almacén DENTRO de un updater de `setState`** (3.0) — React
   puede llamar a un updater más de una vez (evaluación ansiosa, modo
   estricto, reproceso de la cola), así que ahí dentro no va ningún efecto.

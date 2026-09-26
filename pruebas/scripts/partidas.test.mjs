@@ -142,6 +142,12 @@ test('medir-mias: la AUC va con su margen, y con pocas partidas dice que no se d
   ok(/AUC 0\.378 ± 0\.2\d\d/.test(texto(0.378, 0.12)) && /no se distingue de una moneda/.test(texto(0.378, 0.12)), `con ±0,12 no lo dice: ${texto(0.378, 0.12).split('\n').find((l) => /AUC/.test(l))}`);
   ok(/mejor que una moneda/.test(texto(0.7, 0.05)), 'una AUC de 0,7 ± 0,1 no dice que ordena bien');
   ok(/PEOR que una moneda/.test(texto(0.3, 0.05)), 'una AUC de 0,3 ± 0,1 no avisa');
+  // Siguiendo contra por libre con 30 y 30: la diferencia CON su margen, y
+  // sin afirmar nada si cabe (hasta 3.18.0: «se puede concluir», sin más).
+  const ramas = informe({ n: 95, conApp: 95, previas: 0, ganadas: 67, wr: 0.705, veredicto: { siguiendo: 63, porLibre: 32, wrSiguiendo: 0.698, wrPorLibre: 0.719, concluyente: true, faltan: 0, entreRamas: { dif: -0.02, margen: 0.194, seVe: false } }, calibracion: { n: 0 }, hoy: { n: 0 }, porHeroe: [], porMes: [] });
+  const linea = ramas.split('\n').find((l) => /por libre:/.test(l) && /puntos/.test(l)) ?? '';
+  ok(/-2\.0 puntos ± 19\.4/.test(linea) && /No se distingue/.test(linea), `siguiendo/por libre sin margen o afirmando: ${linea}`);
+  ok(!/se puede concluir/.test(ramas), 'vuelve a decir «se puede concluir» sin decir qué');
 });
 
 await terminar('scripts/partidas');

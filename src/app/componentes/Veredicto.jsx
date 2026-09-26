@@ -19,6 +19,7 @@ export function Veredicto({ partidas, maestria, t = tPorDefecto }) {
   const r = useMemo(() => resumen(partidas, maestria), [partidas, maestria]);
   const pct = (n) => (n * 100).toFixed(1);
   const c = r.contraReferencia;
+  const e = r.entreRamas;
   return (
     <section className="veredicto">
       <p className="build-nucleo">{t('veredicto.titulo')}</p>
@@ -42,6 +43,18 @@ export function Veredicto({ partidas, maestria, t = tPorDefecto }) {
               </p>
             </>
           )}
+        </>
+      )}
+      {/* Siguiendo contra por libre (3.18.0): solo con 30 y 30, y con las
+          mismas tres reglas que la otra comparación. */}
+      {e && (
+        <>
+          <p className="veredicto-dif">
+            {t('veredicto.ramas', { a: pct(r.wrSiguiendo), na: r.siguiendo, b: pct(r.wrPorLibre), nb: r.porLibre, signo: e.dif >= 0 ? '+' : '−', dif: Math.abs(e.dif * 100).toFixed(1), margen: (e.margen * 100).toFixed(1) })}
+          </p>
+          <p className={`frase ${e.seVe ? (e.dif > 0 ? 'bien' : 'ojo') : 'duda'}`}>
+            {e.seVe ? t(e.dif > 0 ? 'veredicto.ramasMejor' : 'veredicto.ramasPeor') : t('veredicto.ramasNoSeVe')}
+          </p>
         </>
       )}
       <Calibracion partidas={partidas} t={t} />

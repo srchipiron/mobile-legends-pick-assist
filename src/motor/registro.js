@@ -159,6 +159,19 @@ export function resumen(partidas = [], maestria = {}) {
       faltan: Number.isFinite(necesarias) ? Math.max(0, necesarias - con.length) : null,
     };
   }
+  // Siguiendo contra por libre, con su margen (3.18.0). Hasta ahora, con 30 y
+  // 30, el informe decía «se puede concluir» sin decir QUÉ: con 69,8% (63)
+  // frente a 71,9% (32) la diferencia es −2 puntos y el margen ±19. Prueba de
+  // dos proporciones con el error AGRUPADO: con Wald, una rama ganada entera
+  // daría error cero (el mismo fallo que ya costó la otra comparación).
+  let entreRamas = null;
+  if (con.length >= MINIMO_PARA_CONCLUIR && sin.length >= MINIMO_PARA_CONCLUIR) {
+    const a = wrSiguiendo; const b = wr(sin);
+    const p = (a * con.length + b * sin.length) / (con.length + sin.length);
+    const se = Math.sqrt(p * (1 - p) * (1 / con.length + 1 / sin.length));
+    const dif = a - b;
+    entreRamas = { dif, margen: 1.96 * se, seVe: se > 0 && Math.abs(dif) > 1.96 * se };
+  }
   return {
     total: partidas.length,
     previas: partidas.length - conApp.length,
@@ -168,6 +181,7 @@ export function resumen(partidas = [], maestria = {}) {
     wrPorLibre: wr(sin),
     referencia,
     contraReferencia,
+    entreRamas,
     concluyente: con.length >= MINIMO_PARA_CONCLUIR && sin.length >= MINIMO_PARA_CONCLUIR,
     faltan: Math.max(0, MINIMO_PARA_CONCLUIR - con.length) + Math.max(0, MINIMO_PARA_CONCLUIR - sin.length),
   };

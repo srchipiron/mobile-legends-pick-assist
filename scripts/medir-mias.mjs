@@ -109,7 +109,12 @@ export function informe(m, { generado = null } = {}) {
   } else {
     L.push('- Contra tu winrate de siempre: hacen falta al menos 5 partidas siguiendo la app y tu maestría escrita.');
   }
-  L.push(`- Siguiendo/por libre: ${v.concluyente ? 'ya hay 30 y 30, se puede concluir' : `faltan ${v.faltan} para tener 30 y 30`}. Ojo: no está aleatorizado, tú eliges cuándo hacer caso.`);
+  if (v.entreRamas) {
+    const e = v.entreRamas;
+    L.push(`- Siguiendo menos por libre: ${pp(e.dif)} puntos ± ${(e.margen * 100).toFixed(1)}. ${e.seVe ? (e.dif > 0 ? 'Se distingue del azar: te va mejor siguiendo la app.' : 'Se distingue del azar, y en contra: te va peor siguiendo la app.') : 'No se distingue del azar: todavía no se sabe si seguir la app te ayuda más que ir por libre.'} Ojo: no está aleatorizado, tú eliges cuándo hacer caso.`);
+  } else {
+    L.push(`- Siguiendo/por libre: faltan ${v.faltan} para tener 30 y 30. Ojo: no está aleatorizado, tú eliges cuándo hacer caso.`);
+  }
   const c = m.calibracion;
   L.push('', '### ¿La probabilidad que enseñó se parece a lo que pasó?');
   if (!c.n) L.push('- Ninguna partida guarda la estimación (se guarda sola al apuntar desde 1.28).');

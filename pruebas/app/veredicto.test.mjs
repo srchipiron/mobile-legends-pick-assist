@@ -17,7 +17,7 @@
  * cita las tres reglas, así que una guarda por texto pasaría sola aunque el
  * JSX no las cumpliera. Ya ha pasado tres veces en este proyecto.
  */
-import { test, ok, terminar, leerTexto } from '../arnes.mjs';
+import { test, ok, eq, terminar, leerTexto } from '../arnes.mjs';
 import { CLAVES } from '../../src/app/i18n/index.js';
 import { resumen } from '../../src/motor/registro.js';
 
@@ -58,6 +58,33 @@ test('el motor da margen y duda con pocas partidas, que es lo que la pantalla pi
   ok(c, 'sin comparación no hay nada que pintar');
   ok(c.margen > 0, 'la comparación vuelve sin margen: la pantalla no podría enseñarlo');
   ok(!c.seVe, `con 11 partidas al ${(r.wrSiguiendo * 100).toFixed(0)}% se afirma que la app funciona (margen ±${(c.margen * 100).toFixed(0)} puntos)`);
+});
+
+test('siguiendo contra por libre: con margen en la misma frase, sin afirmar nada mientras quepa, y solo con 30 y 30', () => {
+  // Hasta 3.18.0 el informe decía «ya hay 30 y 30, se puede concluir» sin
+  // decir qué: con 69,8% (63) frente a 71,9% (32), −2 puntos ± 19.
+  const jsx = sinComentarios('src/app/componentes/Veredicto.jsx');
+  for (const clave of ['veredicto.ramas', 'veredicto.ramasNoSeVe']) {
+    ok(jsx.includes(clave), `la pantalla no usa ${clave}`);
+    ok(CLAVES.includes(clave), `${clave} no existe en los idiomas`);
+  }
+  ok(/veredicto\.ramas'[\s\S]{0,260}margen/.test(jsx), 'el margen de siguiendo/por libre no va en la misma frase que la diferencia');
+  ok(/\.seVe[\s\S]{0,200}veredicto\.ramasNoSeVe/.test(jsx), 'la comparación entre ramas no distingue «se ve» de «no se sabe»');
+  const t0 = Date.parse('2026-09-01T10:00:00Z');
+  const ramas = (nCon, gCon, nSin, gSin) => [
+    ...Array.from({ length: nCon }, (_, i) => ({ t: t0 + i, pick: 'Akai', gane: i < gCon, recomendados: ['Akai'] })),
+    ...Array.from({ length: nSin }, (_, i) => ({ t: t0 + 1e6 + i, pick: 'Akai', gane: i < gSin, recomendados: ['Tigreal'] })),
+  ];
+  const m = { Akai: { games: 400, winRate: 0.52 } };
+  eq(resumen(ramas(63, 44, 29, 21), m).entreRamas, null, 'con menos de 30 por libre ya compara');
+  const parecidas = resumen(ramas(63, 44, 32, 23), m).entreRamas;
+  ok(parecidas && parecidas.margen > 0.15 && !parecidas.seVe, `con 69,8% frente a 71,9% afirma algo: ${JSON.stringify(parecidas)}`);
+  // Una rama ganada entera no da margen cero (error agrupado, no Wald).
+  // 30 de 30 frente a 0 de 30: con Wald el error es CERO y no se afirmaría
+  // nada de la diferencia más grande posible.
+  const entera = resumen(ramas(30, 30, 30, 0), m).entreRamas;
+  ok(entera.margen > 0 && entera.seVe, `con 30/30 frente a 0/30 no se distingue o el margen sale cero: ${JSON.stringify(entera)}`);
+  ok(resumen(ramas(100, 90, 100, 40), m).entreRamas.seVe, 'con 90% frente a 40% en 100 y 100 no se distingue nada');
 });
 
 await terminar('app/veredicto');

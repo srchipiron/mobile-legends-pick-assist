@@ -196,6 +196,10 @@ export default {
   'veredicto.peor': 'The difference no longer fits in chance, and it goes against you: you are doing worse following the app than on your own.',
   'veredicto.pocas': 'With {n} logged {n|match|matches} there is nothing to compare yet. Log a few more following the app.',
   'veredicto.sinReferencia': 'Fill in “Your mastery” with your in-game matches: without it there is no win rate of yours to compare against.',
+  'veredicto.ramas': 'Following the app {a}% ({na}) against on your own {b}% ({nb}): {signo}{dif} points, with a margin of ±{margen}',
+  'veredicto.ramasNoSeVe': 'That difference fits in the margin: it is not yet known whether following the app helps you more than going on your own.',
+  'veredicto.ramasMejor': 'The difference no longer fits in chance: you do better when you follow the app than on your own.',
+  'veredicto.ramasPeor': 'The difference no longer fits in chance, and it goes against you: you do better on your own than following the app.',
   'veredicto.trampa': 'Mind what this means: you choose when to follow the app, so this is not a controlled experiment. It is the best signal available without asking you to ignore the app on purpose, but it is not proof.',
 
   'linea.roam': 'Roam',
