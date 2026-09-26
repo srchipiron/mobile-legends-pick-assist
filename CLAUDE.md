@@ -1433,7 +1433,12 @@ temporada tarda semanas en ponerse al día, y el texto lo dice («unas semanas
 de Gloria»). La primera tanda se metió a mano el 25 de septiembre de 2026
 con lo bajado de la misma ruta en la medida de 3.11.0 (y el serializador de
 la ingesta, que reescribe el fichero byte a byte igual); desde ahí la trae
-el bot.
+el bot. Comprobado el 26 de septiembre con la ingesta REAL a un temporal,
+como la corre el bot: la ruta se descubre sola, 165 pares sin errores,
+idénticos a los metidos a mano (diferencia máxima 0,00 pp: es una ventana
+larga), el comparador la acepta (`winrateLinea=165` en las dos) y la
+corrida entera tardó 11 min 15 s bajando además TODAS las imágenes desde
+cero (73 iconos, 133 retratos), que el bot ya tiene: lejos del tope de 20.
 
 ## Las imágenes
 
