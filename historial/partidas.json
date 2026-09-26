@@ -1,6 +1,35 @@
 {
- "actualizado": "2026-09-26T21:34:09.162Z",
+ "actualizado": "2026-09-26T21:55:25.370Z",
  "partidas": [
+  {
+   "t": 1790459708008,
+   "pick": "Estes",
+   "recomendados": [
+    "Gloo",
+    "Estes",
+    "Lolita"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.642,
+   "draft": {
+    "enemigos": [
+     "Angela",
+     "Cyclops",
+     "Gusion",
+     "Layla",
+     "Belerick"
+    ],
+    "aliados": [
+     "Badang",
+     "Kadita",
+     "Sun",
+     "Brody"
+    ],
+    "linea": "roam",
+    "rival": "Angela"
+   }
+  },
   {
    "t": 1790458436723,
    "pick": "Floryn",
@@ -2480,6 +2509,12 @@
   {
    "cuando": "2026-09-26T21:34:09.162Z",
    "partidas": 94,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-26T21:55:25.370Z",
+   "partidas": 95,
    "heroes": 11,
    "incidencia": 11
   }
