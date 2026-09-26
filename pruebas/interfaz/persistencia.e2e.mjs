@@ -103,6 +103,17 @@ await prueba('el rango y el idioma se recuerdan', async () => {
   await contexto.close();
 });
 
+await prueba('la maestría guardada sin fecha se fecha sola al abrir la app, y la que tenía fecha la conserva', async () => {
+  const antes = Date.now();
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:mastery': { Rafaela: { games: 564, winRate: 0.53 }, Estes: { games: 694, winRate: 0.522, desde: 12345 } } } });
+  const m = await leer(pagina, 'roam-picker:mastery');
+  ok(Number.isFinite(m?.Rafaela?.desde) && m.Rafaela.desde >= antes - 1000, `la maestría sin fecha no se ha fechado al abrir: ${JSON.stringify(m)}`);
+  eq(m.Rafaela.games, 564, 'fechar ha tocado las partidas');
+  eq(m.Estes.desde, 12345, 'ha pisado una fecha que ya había');
+  ok(!errores.length, `errores de página: ${errores}`);
+  await contexto.close();
+});
+
 await terminar('interfaz/persistencia');
 await navegador.close();
 await cerrar();

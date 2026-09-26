@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.13.1
+
+- **Ya no hace falta pulsar «Guardar» en la maestría para que tus partidas
+  cuenten.** La 3.13.0 pedía guardarla una vez; ahora la app pone la fecha
+  sola la primera vez que la ve, y desde ese momento cada partida que
+  apuntes se suma a tu maestría. Las apuntadas antes siguen sin sumarse,
+  porque no se sabe si tus números del juego ya las incluían.
+- El diagnóstico dice cuántas partidas apuntadas cuentan ya en tu maestría.
+
 ## 3.13.0
 
 - **Las partidas que apuntas con la app ya cuentan en tu maestría.** Hasta

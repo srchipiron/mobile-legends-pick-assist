@@ -100,6 +100,24 @@ export function maestriaDesdeRegistro(partidas = []) {
 }
 
 /**
+ * Pone fecha a la maestría escrita a mano que no la tiene (3.13.1). Sin
+ * fecha, las partidas apuntadas no se le suman (no se sabe qué incluye), y
+ * con 3.13.0 eso exigía abrir el editor y guardar: tras publicarla, 0 de
+ * los 11 héroes de Javi tenían fecha. Fechar con el momento en que la app la
+ * ve es seguro: lo escrito a mano no puede incluir partidas que aún no se
+ * han jugado, así que lo que se apunte DESPUÉS se suma sin contarse dos
+ * veces, y lo apuntado antes sigue sin sumarse, como hasta ahora. Devuelve
+ * la misma referencia si no hay nada que fechar.
+ */
+export function fecharMaestria(maestria = {}, ahora = Date.now()) {
+  const sinFecha = Object.entries(maestria ?? {}).filter(([, m]) => !(Number.isFinite(m?.desde) && m.desde > 0));
+  if (!sinFecha.length) return maestria;
+  const salida = { ...maestria };
+  for (const [nombre, m] of sinFecha) salida[nombre] = { ...m, desde: ahora };
+  return salida;
+}
+
+/**
  * La maestría que usa el motor: la escrita a mano MÁS la de tus partidas
  * apuntadas. Claves normalizadas: 400 partidas de «X.Borg» desaparecían del
  * ranking con la clave cruda.

@@ -1,8 +1,8 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CLAVES, leer, guardar } from './almacen.js';
 import { sanear, sanearOlvidadas } from '../../motor/perfil.js';
 import { apuntar, olvidar, corregir } from '../../motor/registro.js';
-import { maestriaEfectiva } from '../../motor/maestria.js';
+import { maestriaEfectiva, fecharMaestria } from '../../motor/maestria.js';
 
 /**
  * Lo tuyo: la maestría escrita a mano y las partidas apuntadas. Lo guardado
@@ -28,6 +28,14 @@ export function usePersonal() {
   const ultimas = useRef(partidas);
 
   const guardarMaestria = useCallback((siguiente) => { setMaestria(siguiente); guardar(CLAVES.maestria, siguiente); }, []);
+
+  // La maestría sin fecha (guardada antes de 3.13.0 o traída de un código
+  // viejo) se fecha al verla: desde ahí, lo que apuntes se le suma
+  // (motor/maestria.js, fecharMaestria). Fuera de cualquier updater.
+  useEffect(() => {
+    const fechada = fecharMaestria(maestria);
+    if (fechada !== maestria) guardarMaestria(fechada);
+  }, [maestria, guardarMaestria]);
   const guardarPartidas = useCallback((siguiente) => {
     ultimas.current = siguiente;
     setPartidas(siguiente);

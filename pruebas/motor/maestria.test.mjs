@@ -7,7 +7,7 @@
 import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
 import { catalogo, h } from '../fixtures/catalogo.mjs';
 import { buscar, nombreClave } from '../../src/motor/nombres.js';
-import { maestriaEfectiva, maestriaDesdeRegistro, notaDeMaestria, priorDeMaestria, tuNivel } from '../../src/motor/maestria.js';
+import { maestriaEfectiva, fecharMaestria, maestriaDesdeRegistro, notaDeMaestria, priorDeMaestria, tuNivel } from '../../src/motor/maestria.js';
 import { generador } from '../../src/motor/robustez.js';
 import { ordenarPicks } from '../../src/motor/ranking.js';
 import { ESCALA } from '../../src/motor/modelo.js';
@@ -242,6 +242,19 @@ test('maestría con fecha: las partidas apuntadas DESPUÉS se suman; las de ante
   ok(mas.games === 104 && Math.abs(mas.winRate - conFecha.winRate) < 0.01, `una partida más salta: ${conFecha.winRate} → ${mas.winRate}`);
   // Por clave normalizada, como todo: «X.Borg» a mano y «X Borg» apuntado.
   eq(maestriaEfectiva({ 'X.Borg': { games: 10, winRate: 0.5, desde } }, [{ t: desde + 1, pick: 'X Borg', gane: true, recomendados: [] }]).xborg.games, 11, 'no casa X.Borg con X Borg');
+});
+
+test('fecharMaestria: pone la fecha a lo que no la tiene, respeta la que hay y no toca nada si no hace falta', () => {
+  const m = { Rafaela: { games: 564, winRate: 0.53 }, Estes: { games: 694, winRate: 0.522, desde: 5 }, Raro: { games: 3, winRate: 0.5, desde: 'ayer' } };
+  const f = fecharMaestria(m, 1000);
+  eq(f.Rafaela.desde, 1000, 'la maestría sin fecha no se fecha');
+  eq(f.Estes.desde, 5, 'pisa una fecha que ya había');
+  eq(f.Raro.desde, 1000, 'una fecha que no es un instante cuenta como fecha');
+  eq(f.Rafaela.games, 564); eq(m.Rafaela.desde, undefined, 'modifica la maestría que le pasan');
+  ok(fecharMaestria(f, 2000) === f, 'con todo fechado devuelve otra referencia (el efecto guardaría en bucle)');
+  const vacia = {}; ok(fecharMaestria(vacia) === vacia, 'sin maestría devuelve otra referencia');
+  // Y el efecto que buscamos: lo apuntado DESPUÉS de fechar se suma.
+  eq(maestriaEfectiva(f, [{ t: 1500, pick: 'Rafaela', gane: true, recomendados: [] }, { t: 500, pick: 'Rafaela', gane: true, recomendados: [] }]).rafaela.games, 565, 'tras fechar, lo apuntado después no se suma (o se suma lo de antes)');
 });
 
 await terminar('motor/maestria');

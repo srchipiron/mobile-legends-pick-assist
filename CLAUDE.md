@@ -2019,7 +2019,15 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   53,0 → 54,3%, Minotaur 51,7 → 52,9%, y el nº1 de roam cambia en 18 de
   300 drafts. Es continuo (una partida más no salta) y por clave
   normalizada. Pruebas en maestria, perfil y `persistencia.e2e`,
-  verificadas por mutación.
+  verificadas por mutación. Desde 3.13.1 la maestría SIN fecha se fecha
+  sola al verla (`fecharMaestria`, un efecto en `usePersonal`, fuera de
+  cualquier updater): tras publicar 3.13.0, 0 de los 11 héroes de Javi
+  tenían fecha y la mejora no hacía nada hasta abrir el editor. Es seguro:
+  lo escrito a mano no puede incluir partidas aún no jugadas, así que lo
+  apuntado después se suma sin contarse dos veces, y lo de antes sigue
+  fuera. Devuelve la misma referencia si no hay nada que fechar (si no, el
+  efecto guardaría en bucle). El diagnóstico dice cuántas partidas
+  apuntadas cuentan ya.
 - Las partidas metidas del historial del juego llevan `previa: true` y quedan
   FUERA de las dos ramas de la comparación (`esPrevia`). Sin eso irían todas a
   "por libre" -no tienen `recomendados`- y meter cien partidas viejas llenaría

@@ -18,6 +18,11 @@ export function seccionMaestria(inf, { datos, linea, maestria = {}, entorno = {}
   if (entorno.sinDatosPersonales) inf.linea('Sin acceso: la maestría vive en el móvil');
   else inf.check(conMaestria >= 5, `${conMaestria} héroes con datos tuyos`, `Solo ${conMaestria} héroes con datos tuyos: rellena más para que la app se ajuste a ti`, true);
   if (!conMaestria) return;
+  // Cuántas partidas apuntadas ya cuentan en tu maestría (3.13.0): las de
+  // después de la fecha de cada héroe escrito a mano, más las de héroes que
+  // solo tienen partidas apuntadas.
+  const sumadas = Object.values(maestria).reduce((n, m) => n + (m?.apuntadas ?? 0), 0);
+  if (!entorno.sinDatosPersonales) inf.linea(`Partidas apuntadas sumadas a tu maestría escrita a mano: ${sumadas}`);
   // TODO nombre guardado tiene que casar con el catálogo (antes solo se
   // miraba la primera clave).
   const sinCasar = Object.keys(maestria).filter((k) => !datos.heroes.some((x) => nombreClave(x.name) === nombreClave(k)));
