@@ -1,6 +1,45 @@
 {
- "actualizado": "2026-09-26T11:48:25.884Z",
+ "actualizado": "2026-09-26T18:01:05.150Z",
  "partidas": [
+  {
+   "t": 1790445647903,
+   "pick": "Diggie",
+   "recomendados": [
+    "Diggie",
+    "Carmilla",
+    "Gloo"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.474,
+   "bans": [
+    "Hirara",
+    "Lukas",
+    "Estes",
+    "Rafaela",
+    "Yi Sun-shin",
+    "Khufra",
+    "Paquito",
+    "Marcel"
+   ],
+   "draft": {
+    "enemigos": [
+     "Brody",
+     "Minotaur",
+     "Popol and Kupa",
+     "Guinevere",
+     "Alice"
+    ],
+    "aliados": [
+     "Lapu-Lapu",
+     "Novaria",
+     "Miya",
+     "Aamon"
+    ],
+    "linea": "roam",
+    "rival": "Minotaur"
+   }
+  },
   {
    "t": 1790423287335,
    "pick": "Floryn",
@@ -2034,6 +2073,12 @@
   {
    "cuando": "2026-09-26T11:48:25.884Z",
    "partidas": 83,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-26T18:01:05.150Z",
+   "partidas": 84,
    "heroes": 11,
    "incidencia": 11
   }
