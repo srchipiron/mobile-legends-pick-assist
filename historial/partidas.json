@@ -1,6 +1,45 @@
 {
- "actualizado": "2026-09-26T09:57:50.961Z",
+ "actualizado": "2026-09-26T11:48:25.884Z",
  "partidas": [
+  {
+   "t": 1790423287335,
+   "pick": "Floryn",
+   "recomendados": [
+    "Floryn",
+    "Diggie",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.485,
+   "bans": [
+    "Hirara",
+    "Paquito",
+    "Aulus",
+    "Kalea",
+    "Marcel",
+    "Lukas",
+    "Eudora",
+    "Chou"
+   ],
+   "draft": {
+    "enemigos": [
+     "Odette",
+     "Benedetta",
+     "Barats",
+     "Rafaela",
+     "Natan"
+    ],
+    "aliados": [
+     "Selena",
+     "Yin",
+     "Clint",
+     "Minsitthar"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   }
+  },
   {
    "t": 1790381993784,
    "pick": "Rafaela",
@@ -1989,6 +2028,12 @@
   {
    "cuando": "2026-09-26T09:57:50.961Z",
    "partidas": 82,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-26T11:48:25.884Z",
+   "partidas": 83,
    "heroes": 11,
    "incidencia": 11
   }
