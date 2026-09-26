@@ -1,6 +1,43 @@
 {
- "actualizado": "2026-09-26T18:01:05.150Z",
+ "actualizado": "2026-09-26T18:32:26.402Z",
  "partidas": [
+  {
+   "t": 1790447531312,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Gloo",
+    "Rafaela",
+    "Floryn"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.604,
+   "bans": [
+    "Eudora",
+    "Melissa",
+    "Belerick",
+    "Hirara",
+    "Khufra",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Selena",
+     "Alpha",
+     "Marcel",
+     "Irithel",
+     "Nolan"
+    ],
+    "aliados": [
+     "Argus",
+     "Novaria",
+     "Miya",
+     "Lukas"
+    ],
+    "linea": "roam",
+    "rival": "Marcel"
+   }
+  },
   {
    "t": 1790445647903,
    "pick": "Diggie",
@@ -2079,6 +2116,12 @@
   {
    "cuando": "2026-09-26T18:01:05.150Z",
    "partidas": 84,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-26T18:32:26.402Z",
+   "partidas": 85,
    "heroes": 11,
    "incidencia": 11
   }
