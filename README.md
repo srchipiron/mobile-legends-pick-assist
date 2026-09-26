@@ -261,6 +261,7 @@ scripts/ingesta/          descubrimiento de rutas, descarga, extracción, relaci
 scripts/ajustar-modelo.mjs  qué coeficiente sale para cada término, con validación cruzada
 scripts/diagnostico.mjs   el diagnóstico del bot, contra lo publicado
 scripts/comprobar/        orden, css y versión
+scripts/lector/           leer los baneos de la pantalla de la tablet (Termux + adb, solo capturas)
 pruebas/                  arnés, runner, un fichero de pruebas por módulo, e2e en interfaz/
 public/data/heroes.json   catálogo de roles y tags escrito a mano (esto es el activo real)
 ```
@@ -273,3 +274,23 @@ Desde 3.8.0, «Tus partidas» → «Enviar mis partidas al proyecto» abre una
 incidencia con tu código de perfil dentro; un bot la guarda en
 `historial/partidas.json`, mide el modelo contra tus drafts y te responde
 ahí mismo. A mano: `node scripts/medir-mias.mjs`.
+
+## Leer los baneos de la tablet (prueba, 3.19.0)
+
+Se juega en la tablet y la app va en el móvil. Desde Termux, con la
+depuración inalámbrica de la tablet encendida, el móvil hace una captura
+de la pantalla del draft y reconoce los diez baneos:
+
+```bash
+pkg install nodejs android-tools git          # una vez
+adb pair IP:PUERTO_DE_VINCULAR CODIGO         # una vez por tablet («Vincular con código»)
+cd mlbb-roam-picker && git pull
+node scripts/lector/leer.mjs --tablet IP:PUERTO   # el puerto de «Dirección IP y puerto»
+```
+
+Solo hace `adb connect` y `adb exec-out screencap -p`: no toca la
+pantalla, no instala nada y no habla con Moonton (hay una prueba que falla
+si el lector usa cualquier otro mandato). Las caras de referencia están en
+`scripts/lector/caras.json`, sacadas de la rejilla del propio juego; las
+que aún salen del retrato de la API se nombran en `deLaApi`. Lo que no
+reconoce con seguridad lo dice como «?» en vez de adivinar.

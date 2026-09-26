@@ -1143,6 +1143,44 @@ la rejilla se reordenaría bajo el dedo. Pruebas en `draft.test`
 (propiedades) y `rapido.e2e` (la rejilla sigue al motor y no se mueve al
 tocar), verificadas por tres mutaciones.
 
+## Leer la pantalla del juego (3.19.0)
+
+Javi juega en la TABLET y usa la app en el MÓVIL. `scripts/lector/` lee
+los diez baneos de la pantalla del draft desde Termux, por depuración
+inalámbrica (`adb exec-out screencap -p`). Todavía es un script, no un
+botón de la app: primero hay que ver que funciona en su tablet.
+
+- **SEGURIDAD, no negociable**: su cuenta vale dinero. El lector solo hace
+  `adb connect` y `adb exec-out screencap -p`: nada de `input tap`,
+  `shell`, `install`, ni rutas `/api/user/*` de la API. Tocar la pantalla
+  por adb sería automatizar el juego (bot). La prueba de seguridad de
+  `lector.test` recorre la carpeta y falla con cualquier otro mandato
+  (verificada por mutación: un `input tap` y un `sh -c` la tumban).
+- **Caras del juego, no de la API**, medido con sus capturas: contra los
+  retratos de la API acertaba 35 de 40 (el juego ha rehecho el arte de
+  Floryn, Faramis, Kalea, Thamuz y Julian y la API no); contra caras
+  recortadas de la rejilla «Todos» del propio juego, 54 de 54 con cero
+  errores. Acierto ≥ 0,89 de correlación, mejor equivocado ≤ 0,78, y
+  `PARECIDO_MINIMO = 0.85` entre medias: por debajo dice «no sé». Un baneo
+  mal leído es peor que uno que se toca a mano.
+- `caras.json` sale de `sacar-caras.mjs` con `etiquetas.json` (cada cara
+  de sus capturas etiquetada a mano; las capturas no van al repositorio).
+  18 héroes siguen con el retrato de la API (`deLaApi`): con una o dos
+  capturas más de la rejilla se sustituyen. Todo en JavaScript puro
+  (`png.mjs` lee el PNG con zlib), porque en Termux no hay navegador ni
+  librerías de imagen: 60 ms por cara en el contenedor, ~3 s los diez en
+  un móvil.
+- **Los picks NO se leen todavía, y son lo que importa** (sin compañeros
+  el nº1 cambia en la mitad de sus drafts; los baneos de otras líneas, en
+  ninguno). Salen como dibujo grande a los lados; en la fase de skins ya
+  llevan la skin. Mientras se elige parece el dibujo por defecto (Clint de
+  vaquero en su captura), así que el camino es capturar durante los picks
+  y cruzar la hora de la captura con el draft que apunta en la app
+  (`historial/partidas.json`) para sacar caras de referencia etiquetadas
+  solas. Pendiente de sus capturas.
+- La posición de los baneos (`BANEOS` en `leer.mjs`) está medida a 2400×1504
+  y se escala con la resolución (prueba a 1600×1003).
+
 ## La base de datos de tus partidas (3.8.0)
 
 `historial/partidas.json`: las partidas de Javi apuntadas con la app (con

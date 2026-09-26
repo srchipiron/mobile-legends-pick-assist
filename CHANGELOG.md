@@ -8,6 +8,23 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.19.0
+
+- **Nuevo, en prueba: leer los baneos de la tablet desde el móvil.** Con
+  la depuración inalámbrica de la tablet encendida, `node
+  scripts/lector/leer.mjs --tablet IP:PUERTO` en Termux hace una captura
+  del draft y te dice los diez baneos. Con tus capturas acierta todos los
+  héroes que tienen cara sacada del juego (54 de 54) y lo que no reconoce
+  con seguridad lo marca con «?» en vez de adivinar. Solo hace capturas de
+  pantalla, como las tuyas a mano: no toca la tablet ni habla con Moonton.
+  Todavía no está en la app: primero hay que ver que funciona en tu
+  tablet de verdad.
+- De 18 héroes aún no hay cara del juego (Barats, Belerick, Cecilion,
+  Cyclops, Gatotkaca, Hanzo, Jawhead, Kalea, Khufra, Kimmy, Lancelot,
+  Lukas, Masha, Melissa, Ruby, Suyou, Vale y Yi Sun-shin) y se usa el
+  retrato de la API, que con el arte rehecho puede no casar: con una o dos
+  capturas más de la rejilla se completan.
+
 ## 3.18.0
 
 - **«¿Te está funcionando?» compara ya siguiendo la app con ir por libre,

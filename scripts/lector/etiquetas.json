@@ -1,0 +1,766 @@
+{
+ "nota": "Caras de la rejilla «Todos» del juego, leídas a mano de las capturas de Javi del 26-9-2026 (2400x1504). Solo la primera aparición de cada héroe entra en caras.json.",
+ "capturas": [
+  {
+   "f": "2f65d44d-image.png",
+   "caras": [
+    {
+     "nombre": "Zhask",
+     "x": 1120,
+     "y": 536,
+     "r": 84
+    },
+    {
+     "nombre": "Akai",
+     "x": 1351,
+     "y": 536,
+     "r": 84
+    },
+    {
+     "nombre": "Valir",
+     "x": 1583,
+     "y": 536,
+     "r": 84
+    },
+    {
+     "nombre": "Clint",
+     "x": 1816,
+     "y": 536,
+     "r": 84
+    },
+    {
+     "nombre": "Franco",
+     "x": 2047,
+     "y": 536,
+     "r": 84
+    },
+    {
+     "nombre": "Lolita",
+     "x": 2280,
+     "y": 536,
+     "r": 84
+    },
+    {
+     "nombre": "Grock",
+     "x": 1120,
+     "y": 821,
+     "r": 84
+    },
+    {
+     "nombre": "Kaja",
+     "x": 1351,
+     "y": 821,
+     "r": 84
+    },
+    {
+     "nombre": "Faramis",
+     "x": 1583,
+     "y": 821,
+     "r": 84
+    },
+    {
+     "nombre": "Diggie",
+     "x": 1816,
+     "y": 821,
+     "r": 84
+    },
+    {
+     "nombre": "Minotaur",
+     "x": 2047,
+     "y": 821,
+     "r": 84
+    },
+    {
+     "nombre": "Nana",
+     "x": 2280,
+     "y": 821,
+     "r": 84
+    },
+    {
+     "nombre": "Rafaela",
+     "x": 1120,
+     "y": 1106,
+     "r": 84
+    },
+    {
+     "nombre": "Angela",
+     "x": 1351,
+     "y": 1106,
+     "r": 84
+    },
+    {
+     "nombre": "Tigreal",
+     "x": 1583,
+     "y": 1106,
+     "r": 84
+    },
+    {
+     "nombre": "Eudora",
+     "x": 1816,
+     "y": 1106,
+     "r": 84
+    },
+    {
+     "nombre": "Zilong",
+     "x": 2047,
+     "y": 1106,
+     "r": 84
+    },
+    {
+     "nombre": "Layla",
+     "x": 2280,
+     "y": 1106,
+     "r": 84
+    }
+   ]
+  },
+  {
+   "f": "f22bba4b-image.png",
+   "caras": [
+    {
+     "nombre": "Bane",
+     "x": 1120,
+     "y": 344,
+     "r": 84
+    },
+    {
+     "nombre": "Mathilda",
+     "x": 1351,
+     "y": 344,
+     "r": 84
+    },
+    {
+     "nombre": "Gord",
+     "x": 1583,
+     "y": 344,
+     "r": 84
+    },
+    {
+     "nombre": "Leomord",
+     "x": 1816,
+     "y": 344,
+     "r": 84
+    },
+    {
+     "nombre": "Luo Yi",
+     "x": 2047,
+     "y": 344,
+     "r": 84
+    },
+    {
+     "nombre": "Uranus",
+     "x": 2280,
+     "y": 344,
+     "r": 84
+    },
+    {
+     "nombre": "Baxia",
+     "x": 1120,
+     "y": 630,
+     "r": 84
+    },
+    {
+     "nombre": "Balmond",
+     "x": 1351,
+     "y": 630,
+     "r": 84
+    },
+    {
+     "nombre": "Pharsa",
+     "x": 1583,
+     "y": 630,
+     "r": 84
+    },
+    {
+     "nombre": "Odette",
+     "x": 1816,
+     "y": 630,
+     "r": 84
+    },
+    {
+     "nombre": "Carmilla",
+     "x": 2047,
+     "y": 630,
+     "r": 84
+    },
+    {
+     "nombre": "Silvanna",
+     "x": 2280,
+     "y": 630,
+     "r": 84
+    },
+    {
+     "nombre": "Zhask",
+     "x": 1120,
+     "y": 914,
+     "r": 84
+    },
+    {
+     "nombre": "Akai",
+     "x": 1351,
+     "y": 914,
+     "r": 84
+    },
+    {
+     "nombre": "Valir",
+     "x": 1583,
+     "y": 914,
+     "r": 84
+    },
+    {
+     "nombre": "Clint",
+     "x": 1816,
+     "y": 914,
+     "r": 84
+    },
+    {
+     "nombre": "Franco",
+     "x": 2047,
+     "y": 914,
+     "r": 84
+    },
+    {
+     "nombre": "Lolita",
+     "x": 2280,
+     "y": 914,
+     "r": 84
+    }
+   ]
+  },
+  {
+   "f": "42334582-image.png",
+   "caras": [
+    {
+     "nombre": "Alucard",
+     "x": 1120,
+     "y": 344,
+     "r": 84
+    },
+    {
+     "nombre": "Novaria",
+     "x": 1351,
+     "y": 344,
+     "r": 84
+    },
+    {
+     "nombre": "Fredrinn",
+     "x": 1583,
+     "y": 344,
+     "r": 84
+    },
+    {
+     "nombre": "Joy",
+     "x": 1816,
+     "y": 344,
+     "r": 84
+    },
+    {
+     "nombre": "Valentina",
+     "x": 2047,
+     "y": 344,
+     "r": 84
+    },
+    {
+     "nombre": "Natan",
+     "x": 2280,
+     "y": 344,
+     "r": 84
+    },
+    {
+     "nombre": "Aamon",
+     "x": 1120,
+     "y": 630,
+     "r": 84
+    },
+    {
+     "nombre": "Gusion",
+     "x": 1351,
+     "y": 630,
+     "r": 84
+    },
+    {
+     "nombre": "Hanabi",
+     "x": 1583,
+     "y": 630,
+     "r": 84
+    },
+    {
+     "nombre": "Edith",
+     "x": 1816,
+     "y": 630,
+     "r": 84
+    },
+    {
+     "nombre": "Moskov",
+     "x": 2047,
+     "y": 630,
+     "r": 84
+    },
+    {
+     "nombre": "Lesley",
+     "x": 2280,
+     "y": 630,
+     "r": 84
+    },
+    {
+     "nombre": "Miya",
+     "x": 1120,
+     "y": 914,
+     "r": 84
+    },
+    {
+     "nombre": "Floryn",
+     "x": 1351,
+     "y": 914,
+     "r": 84
+    },
+    {
+     "nombre": "Selena",
+     "x": 1583,
+     "y": 914,
+     "r": 84
+    },
+    {
+     "nombre": "Yve",
+     "x": 1816,
+     "y": 914,
+     "r": 84
+    },
+    {
+     "nombre": "Beatrix",
+     "x": 2047,
+     "y": 914,
+     "r": 84
+    },
+    {
+     "nombre": "Esmeralda",
+     "x": 2280,
+     "y": 914,
+     "r": 84
+    }
+   ]
+  },
+  {
+   "f": "bb0c8c52-image.png",
+   "caras": [
+    {
+     "nombre": "Irithel",
+     "x": 1120,
+     "y": 353,
+     "r": 84
+    },
+    {
+     "nombre": "Hylos",
+     "x": 1351,
+     "y": 353,
+     "r": 84
+    },
+    {
+     "nombre": "Zhuxin",
+     "x": 1583,
+     "y": 353,
+     "r": 84
+    },
+    {
+     "nombre": "Chang'e",
+     "x": 1816,
+     "y": 353,
+     "r": 84
+    },
+    {
+     "nombre": "Chip",
+     "x": 2047,
+     "y": 353,
+     "r": 84
+    },
+    {
+     "nombre": "Xavier",
+     "x": 2280,
+     "y": 353,
+     "r": 84
+    },
+    {
+     "nombre": "Dyrroth",
+     "x": 1120,
+     "y": 638,
+     "r": 84
+    },
+    {
+     "nombre": "Claude",
+     "x": 1351,
+     "y": 638,
+     "r": 84
+    },
+    {
+     "nombre": "Karrie",
+     "x": 1583,
+     "y": 638,
+     "r": 84
+    },
+    {
+     "nombre": "Vexana",
+     "x": 1816,
+     "y": 638,
+     "r": 84
+    },
+    {
+     "nombre": "Aurora",
+     "x": 2047,
+     "y": 638,
+     "r": 84
+    },
+    {
+     "nombre": "Fanny",
+     "x": 2280,
+     "y": 638,
+     "r": 84
+    },
+    {
+     "nombre": "Cici",
+     "x": 1120,
+     "y": 923,
+     "r": 84
+    },
+    {
+     "nombre": "Lunox",
+     "x": 1351,
+     "y": 923,
+     "r": 84
+    },
+    {
+     "nombre": "Atlas",
+     "x": 1583,
+     "y": 923,
+     "r": 84
+    },
+    {
+     "nombre": "Johnson",
+     "x": 1816,
+     "y": 923,
+     "r": 84
+    },
+    {
+     "nombre": "Ling",
+     "x": 2047,
+     "y": 923,
+     "r": 84
+    },
+    {
+     "nombre": "Saber",
+     "x": 2280,
+     "y": 923,
+     "r": 84
+    }
+   ]
+  },
+  {
+   "f": "16f27596-image.png",
+   "caras": [
+    {
+     "nombre": "Granger",
+     "x": 1120,
+     "y": 350,
+     "r": 84
+    },
+    {
+     "nombre": "X.Borg",
+     "x": 1351,
+     "y": 350,
+     "r": 84
+    },
+    {
+     "nombre": "Sun",
+     "x": 1583,
+     "y": 350,
+     "r": 84
+    },
+    {
+     "nombre": "Popol and Kupa",
+     "x": 1816,
+     "y": 350,
+     "r": 84
+    },
+    {
+     "nombre": "Martis",
+     "x": 2047,
+     "y": 350,
+     "r": 84
+    },
+    {
+     "nombre": "Yin",
+     "x": 2280,
+     "y": 350,
+     "r": 84
+    },
+    {
+     "nombre": "Ixia",
+     "x": 1120,
+     "y": 636,
+     "r": 84
+    },
+    {
+     "nombre": "Minsitthar",
+     "x": 1351,
+     "y": 636,
+     "r": 84
+    },
+    {
+     "nombre": "Phoveus",
+     "x": 1583,
+     "y": 636,
+     "r": 84
+    },
+    {
+     "nombre": "Kagura",
+     "x": 1816,
+     "y": 636,
+     "r": 84
+    },
+    {
+     "nombre": "Hilda",
+     "x": 2047,
+     "y": 636,
+     "r": 84
+    },
+    {
+     "nombre": "Alice",
+     "x": 2280,
+     "y": 636,
+     "r": 84
+    },
+    {
+     "nombre": "Wanwan",
+     "x": 1120,
+     "y": 920,
+     "r": 84
+    },
+    {
+     "nombre": "Brody",
+     "x": 1351,
+     "y": 920,
+     "r": 84
+    },
+    {
+     "nombre": "Terizla",
+     "x": 1583,
+     "y": 920,
+     "r": 84
+    },
+    {
+     "nombre": "Zetian",
+     "x": 1816,
+     "y": 920,
+     "r": 84
+    },
+    {
+     "nombre": "Arlott",
+     "x": 2047,
+     "y": 920,
+     "r": 84
+    },
+    {
+     "nombre": "Karina",
+     "x": 2280,
+     "y": 920,
+     "r": 84
+    }
+   ]
+  },
+  {
+   "f": "5178aef1-image.png",
+   "caras": [
+    {
+     "nombre": "Badang",
+     "x": 1120,
+     "y": 319,
+     "r": 84
+    },
+    {
+     "nombre": "Aulus",
+     "x": 1351,
+     "y": 319,
+     "r": 84
+    },
+    {
+     "nombre": "Bruno",
+     "x": 1583,
+     "y": 319,
+     "r": 84
+    },
+    {
+     "nombre": "Freya",
+     "x": 1816,
+     "y": 319,
+     "r": 84
+    },
+    {
+     "nombre": "Argus",
+     "x": 2047,
+     "y": 319,
+     "r": 84
+    },
+    {
+     "nombre": "Marcel",
+     "x": 2280,
+     "y": 319,
+     "r": 84
+    },
+    {
+     "nombre": "Paquito",
+     "x": 1120,
+     "y": 604,
+     "r": 84
+    },
+    {
+     "nombre": "Khaleed",
+     "x": 1351,
+     "y": 604,
+     "r": 84
+    },
+    {
+     "nombre": "Guinevere",
+     "x": 1583,
+     "y": 604,
+     "r": 84
+    },
+    {
+     "nombre": "Lapu-Lapu",
+     "x": 1816,
+     "y": 604,
+     "r": 84
+    },
+    {
+     "nombre": "Chou",
+     "x": 2047,
+     "y": 604,
+     "r": 84
+    },
+    {
+     "nombre": "Nolan",
+     "x": 2280,
+     "y": 604,
+     "r": 84
+    },
+    {
+     "nombre": "Kadita",
+     "x": 1120,
+     "y": 889,
+     "r": 84
+    },
+    {
+     "nombre": "Obsidia",
+     "x": 1351,
+     "y": 889,
+     "r": 84
+    },
+    {
+     "nombre": "Sora",
+     "x": 1583,
+     "y": 889,
+     "r": 84
+    },
+    {
+     "nombre": "Lylia",
+     "x": 1816,
+     "y": 889,
+     "r": 84
+    },
+    {
+     "nombre": "Benedetta",
+     "x": 2047,
+     "y": 889,
+     "r": 84
+    },
+    {
+     "nombre": "Harley",
+     "x": 2280,
+     "y": 889,
+     "r": 84
+    }
+   ]
+  },
+  {
+   "f": "2ce83d08-image.png",
+   "caras": [
+    {
+     "nombre": "Hirara",
+     "x": 1120,
+     "y": 370,
+     "r": 84
+    },
+    {
+     "nombre": "Estes",
+     "x": 1351,
+     "y": 370,
+     "r": 84
+    },
+    {
+     "nombre": "Gloo",
+     "x": 1583,
+     "y": 370,
+     "r": 84
+    },
+    {
+     "nombre": "Aldous",
+     "x": 1583,
+     "y": 654,
+     "r": 84
+    },
+    {
+     "nombre": "Roger",
+     "x": 1816,
+     "y": 654,
+     "r": 84
+    },
+    {
+     "nombre": "Yu Zhong",
+     "x": 2047,
+     "y": 654,
+     "r": 84
+    },
+    {
+     "nombre": "Thamuz",
+     "x": 2280,
+     "y": 654,
+     "r": 84
+    },
+    {
+     "nombre": "Helcurt",
+     "x": 1120,
+     "y": 940,
+     "r": 84
+    },
+    {
+     "nombre": "Natalia",
+     "x": 1351,
+     "y": 940,
+     "r": 84
+    },
+    {
+     "nombre": "Julian",
+     "x": 1583,
+     "y": 940,
+     "r": 84
+    },
+    {
+     "nombre": "Hayabusa",
+     "x": 1816,
+     "y": 940,
+     "r": 84
+    },
+    {
+     "nombre": "Alpha",
+     "x": 2047,
+     "y": 940,
+     "r": 84
+    },
+    {
+     "nombre": "Harith",
+     "x": 2280,
+     "y": 940,
+     "r": 84
+    }
+   ]
+  }
+ ]
+}
