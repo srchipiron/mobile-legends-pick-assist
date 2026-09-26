@@ -1,6 +1,42 @@
 {
- "actualizado": "2026-09-26T21:04:53.528Z",
+ "actualizado": "2026-09-26T21:34:09.162Z",
  "partidas": [
+  {
+   "t": 1790458436723,
+   "pick": "Floryn",
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.607,
+   "bans": [
+    "Hirara",
+    "Belerick",
+    "Lukas",
+    "Hanzo",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Alice",
+     "Lesley",
+     "Hylos",
+     "Valentina",
+     "Silvanna"
+    ],
+    "aliados": [
+     "Esmeralda",
+     "Irithel",
+     "Kadita",
+     "Dyrroth"
+    ],
+    "linea": "roam",
+    "rival": "Hylos"
+   }
+  },
   {
    "t": 1790456681099,
    "pick": "Estes",
@@ -2438,6 +2474,12 @@
   {
    "cuando": "2026-09-26T21:04:53.528Z",
    "partidas": 93,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-26T21:34:09.162Z",
+   "partidas": 94,
    "heroes": 11,
    "incidencia": 11
   }
