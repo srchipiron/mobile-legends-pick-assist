@@ -1,6 +1,32 @@
 {
- "actualizado": "2026-09-27T19:41:46.395Z",
+ "actualizado": "2026-09-27T20:03:31.069Z",
  "partidas": [
+  {
+   "t": 1790539395087,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.629,
+   "draft": {
+    "enemigos": [
+     "Nana",
+     "Martis",
+     "Belerick"
+    ],
+    "aliados": [
+     "Kadita",
+     "Barats",
+     "Brody"
+    ],
+    "linea": "roam",
+    "rival": "Belerick"
+   }
+  },
   {
    "t": 1790538093189,
    "pick": "Estes",
@@ -2774,6 +2800,12 @@
   {
    "cuando": "2026-09-27T19:41:46.395Z",
    "partidas": 102,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-27T20:03:31.069Z",
+   "partidas": 103,
    "heroes": 11,
    "incidencia": 11
   }
