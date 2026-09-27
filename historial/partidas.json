@@ -1,6 +1,35 @@
 {
- "actualizado": "2026-09-27T18:48:02.315Z",
+ "actualizado": "2026-09-27T19:07:05.336Z",
  "partidas": [
+  {
+   "t": 1790536012923,
+   "pick": "Diggie",
+   "recomendados": [
+    "Atlas",
+    "Gloo",
+    "Carmilla"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.536,
+   "draft": {
+    "enemigos": [
+     "Leomord",
+     "Tigreal",
+     "Silvanna",
+     "Pharsa",
+     "Layla"
+    ],
+    "aliados": [
+     "Kadita",
+     "Sora",
+     "Brody",
+     "Alucard"
+    ],
+    "linea": "roam",
+    "rival": "Tigreal"
+   }
+  },
   {
    "t": 1790534868828,
    "pick": "Floryn",
@@ -2672,6 +2701,12 @@
   {
    "cuando": "2026-09-27T18:48:02.315Z",
    "partidas": 99,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-27T19:07:05.336Z",
+   "partidas": 100,
    "heroes": 11,
    "incidencia": 11
   }
