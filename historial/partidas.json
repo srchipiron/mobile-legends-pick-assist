@@ -1,6 +1,45 @@
 {
- "actualizado": "2026-09-27T18:01:09.722Z",
+ "actualizado": "2026-09-27T18:24:43.613Z",
  "partidas": [
+  {
+   "t": 1790533468175,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Marcel",
+    "Natalia",
+    "Minsitthar"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.527,
+   "bans": [
+    "Hirara",
+    "Saber",
+    "Yi Sun-shin",
+    "Miya",
+    "Hanzo",
+    "Sun",
+    "Atlas",
+    "Khufra"
+   ],
+   "draft": {
+    "enemigos": [
+     "Ixia",
+     "Pharsa",
+     "Belerick",
+     "Freya",
+     "Julian"
+    ],
+    "aliados": [
+     "Kadita",
+     "Silvanna",
+     "Brody",
+     "Gusion"
+    ],
+    "linea": "roam",
+    "rival": "Belerick"
+   }
+  },
   {
    "t": 1790532054395,
    "pick": "Estes",
@@ -2585,6 +2624,12 @@
   {
    "cuando": "2026-09-27T18:01:09.722Z",
    "partidas": 97,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-27T18:24:43.613Z",
+   "partidas": 98,
    "heroes": 11,
    "incidencia": 11
   }
