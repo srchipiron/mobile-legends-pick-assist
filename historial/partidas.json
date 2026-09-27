@@ -1,6 +1,35 @@
 {
- "actualizado": "2026-09-27T20:19:33.993Z",
+ "actualizado": "2026-09-27T20:46:34.529Z",
  "partidas": [
+  {
+   "t": 1790541976938,
+   "pick": "Estes",
+   "recomendados": [
+    "Chip",
+    "Atlas",
+    "Diggie"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.531,
+   "draft": {
+    "enemigos": [
+     "Eudora",
+     "Badang",
+     "Aulus",
+     "Yin",
+     "Ixia"
+    ],
+    "aliados": [
+     "Kadita",
+     "Brody",
+     "Masha",
+     "Lukas"
+    ],
+    "linea": "roam",
+    "rival": "Badang"
+   }
+  },
   {
    "t": 1790540357639,
    "pick": "Estes",
@@ -2841,6 +2870,12 @@
   {
    "cuando": "2026-09-27T20:19:33.993Z",
    "partidas": 104,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-27T20:46:34.529Z",
+   "partidas": 105,
    "heroes": 11,
    "incidencia": 11
   }
