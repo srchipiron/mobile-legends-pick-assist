@@ -1,6 +1,7 @@
 import { Cara } from './Imagen.jsx';
 import { idMotivo } from '../../motor/nombres.js';
 import { tPorDefecto } from './tPorDefecto.js';
+import { motivosAEnsenar } from '../motivos.js';
 
 /**
  * Qué pueden coger tus compañeros en las líneas abiertas (motor/equipo.js).
@@ -20,7 +21,7 @@ export function ConsejoEquipo({ consejos, yo, onElegir, t = tPorDefecto }) {
         const mejor = c.sugerencias[0];
         // Lo bueno delante: coger «el primero» sin mirar el signo enseñaba
         // «pierde contra Selena» como si ESA fuera la razón para cogerlo.
-        const motivos = [...(mejor?.motivos ?? [])].sort((a, b) => (b.bueno ? 1 : 0) - (a.bueno ? 1 : 0)).slice(0, 3);
+        const motivos = motivosAEnsenar(mejor?.motivos ?? []);
         return (
           <div className="equipo-linea" key={c.linea}>
             <span className="equipo-nombre">

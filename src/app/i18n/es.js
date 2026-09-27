@@ -354,7 +354,7 @@ export default {
   'build.ajusteMagica': 'De los {n} enemigos con dato, el {pct}% pega mágico y esta build no lleva defensa mágica. Plantéate {objetos}.',
   'build.ajusteFisica': 'De los {n} enemigos con dato, el {pct}% pega físico y esta build no lleva defensa física. Plantéate {objetos}.',
   'build.ajusteCuracion': '{n} {n|enemigo se cura|enemigos se curan} ({quien}) y esta build no corta la curación. Plantéate {objetos}.',
-  'build.ajusteControl': '{n} {n|enemigo tiene|enemigos tienen} control duro ({quien}) y esta build no lo acorta. Plantéate {objetos}.',
+  'build.ajusteControl': '{n} {n|enemigo encadena|enemigos encadenan} control duro ({quien}) y esta build no lo acorta. Plantéate {objetos}.',
   'build.ajusteTitulo': 'Contra este draft',
   'build.ajusteAviso': 'Esto no sale de medir builds contra este draft (ese dato no existe): sale de qué trae el equipo enemigo y de lo que dice cada objeto que hace.',
   'build.objetosEnIngles': 'Los objetos van en inglés, como en los datos del juego.',

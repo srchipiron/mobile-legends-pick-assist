@@ -28,7 +28,12 @@ for (const ancho of [390, 360]) {
     ok(lineas.some((l) => /oro|gold/i.test(l) && /contra Layla/.test(l)), `la línea de oro no dice «contra Layla»: ${lineas.join(' | ')}`);
     eq(await pagina.locator('.equipo-chips .chip').count(), 12, 'no hay tres opciones por línea');
     ok(await pagina.locator('.equipo-motivo .reasons li').count() >= 1, 'ninguna línea explica el porqué del primero');
-    ok(!(await pagina.locator('.equipo-motivo .reasons li').first().evaluate((e) => e.classList.contains('bad'))), 'el primer motivo enseñado no es positivo');
+    // El motivo positivo va DELANTE en cada línea (si lo hay). No se exige que
+    // lo haya: el 27 de septiembre de 2026 el mejor consejo de la primera
+    // línea solo tenía motivos en contra («pierde contra Layla») y la prueba,
+    // que pedía un positivo el primero, fallaba por el dato del día.
+    const listas = await pagina.locator('.equipo-motivo .reasons').evaluateAll((ls) => ls.map((l) => [...l.querySelectorAll('li')].map((li) => !li.classList.contains('bad'))));
+    ok(listas.every((l) => l.every((bueno, i) => !bueno || l.slice(0, i).every(Boolean))), `un motivo en contra va delante de uno a favor: ${JSON.stringify(listas)}`);
     ok((await anchoDePagina(pagina)) <= ancho, `desborde horizontal (${await anchoDePagina(pagina)})`);
     const nombre = (await pagina.locator('.equipo-chips .chip').first().textContent()).replace(/\d+%$/, '').trim();
     await pagina.locator('.equipo-chips .chip').first().click(); await pagina.waitForTimeout(400);

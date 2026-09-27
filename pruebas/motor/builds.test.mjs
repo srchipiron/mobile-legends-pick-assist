@@ -7,7 +7,7 @@
  * más una regla evidente del juego, así que lo que hay que vigilar es dónde
  * pone el listón de «esta build ya lleva defensa».
  */
-import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
+import { test, ok, eq, leerJson, terminar, generador } from '../arnes.mjs';
 import {
   ajusteDefensivo, ajustesDeBuild, amenazaEnemiga, buildsDe, coberturaBuilds, conEfecto, mejoresDefensas,
   DESEQUILIBRIO, ENEMIGOS_PARA_HABLAR, TOPE_AVISOS,
@@ -321,6 +321,30 @@ test('hay builds para los heroes que de verdad se recomiendan', () => {
   for (const id of primera.objetos) {
     ok(meta.equipment?.[id]?.nombre, `el objeto ${id} no tiene nombre en el catalogo`);
   }
+});
+
+test('el aviso de control habla de quien ENCADENA control, no de quien controla algo', () => {
+  // Tras leer los 133 kits (3.20.0), 101 héroes aturden, levantan o empujan
+  // con alguna habilidad: con `cc_hard` el aviso salía en el 99,6% de los
+  // drafts, o sea siempre, o sea nunca decía nada.
+  const equipment = { 3: { nombre: 'Tough Boots', magica: 18, efectos: ['cortaControl'] }, 4: { nombre: 'Hunter Strike' } };
+  const mixto = (n, tags) => ({ name: n, damage: { fisico: 3, magico: 3 }, tags });
+  const hablaDeControl = (enemigos) => ajustesDeBuild({ objetos: [4] }, equipment, enemigos).some((x) => x.clave === 'build.ajusteControl');
+  ok(!hablaDeControl([mixto('A', ['cc_hard']), mixto('B', ['cc_hard']), mixto('C', ['cc_hard'])]), 'avisa contra tres que solo controlan algo');
+  ok(hablaDeControl([mixto('A', ['cc_hard', 'cc_chain']), mixto('B', ['cc_hard', 'cc_chain'])]), 'no avisa contra dos que encadenan control');
+  // Con el catálogo real: en equipos de cinco al azar el aviso no puede salir casi siempre.
+  const rnd = generador(11);
+  let conAviso = 0;
+  const N = 2000;
+  for (let i = 0; i < N; i++) {
+    const c = [...catalogo.heroes];
+    for (let k = c.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [c[k], c[j]] = [c[j], c[k]]; }
+    const cinco = c.slice(0, 5).map((x) => mixto(x.name, x.tags));
+    if (hablaDeControl(cinco)) conAviso++;
+  }
+  // Cinco al azar de los 133 (no uno por línea): ~45% con `cc_chain`, 99% con `cc_hard`.
+  // Con equipos realistas (uno por línea, por cuota de pick) es el 33%.
+  ok(conAviso / N < 0.6, `el aviso de control sale en el ${Math.round((100 * conAviso) / N)}% de los equipos: ya no distingue nada`);
 });
 
 await terminar('motor/builds');

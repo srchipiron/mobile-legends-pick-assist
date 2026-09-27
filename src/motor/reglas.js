@@ -84,13 +84,13 @@ export const ROLE_DEFAULTS = {
  * veto 59,0%). Reejecútalo cuando crezca el catálogo o cambien las etiquetas.
  */
 export const SPECIALITY_TAGS = {
-  'Guard': ['immobile', 'peel'],
-  'Crowd Control': ['tanky', 'zone', 'cc_hard'],
-  'Initiator': ['engage', 'tanky', 'cc_hard'],
-  'Regen': ['heal'],
+  'Guard': ['peel', 'sustain'],
+  'Crowd Control': ['engage', 'cc_chain', 'tanky'],
+  'Initiator': ['engage', 'cc_chain', 'tanky'],
+  'Regen': ['tanky', 'heal'],
   'Chase': ['mobile', 'dash', 'dive'],
-  'Poke': ['poke'],
-  'Charge': ['cc_hard', 'dive'],
+  'Poke': ['immobile', 'poke'],
+  'Charge': ['dive'],
 };
 
 /**
@@ -99,11 +99,11 @@ export const SPECIALITY_TAGS = {
  * speciality; las de por rol pasan siempre.
  */
 export const ROLE_VETO = {
-  'tank': ['assassin_late', 'dash'],
-  'fighter': ['anti_dive', 'assassin_late', 'sustain', 'vision'],
-  'assassin': ['anti_dive', 'anti_mobility', 'antiheal', 'cc_chain', 'engage', 'immobile', 'peel', 'sustain', 'tanky', 'zone'],
-  'mage': ['anti_dive', 'anti_mobility', 'antiheal', 'assassin_late', 'engage', 'shield', 'sustain', 'tanky'],
-  'marksman': ['anti_mobility', 'antiheal', 'cc_chain', 'engage', 'heal', 'peel', 'shield', 'sustain', 'tanky', 'vision'],
+  'tank': ['assassin_late', 'dash', 'vision'],
+  'fighter': ['anti_dive', 'antiheal', 'assassin_late', 'sustain'],
+  'assassin': ['anti_dive', 'anti_mobility', 'antiheal', 'immobile', 'peel', 'sustain', 'tanky', 'zone'],
+  'mage': ['anti_dive', 'anti_mobility', 'antiheal', 'assassin_late', 'engage', 'sustain', 'tanky'],
+  'marksman': ['anti_mobility', 'antiheal', 'engage', 'sustain', 'tanky', 'vision'],
 };
 
 /**

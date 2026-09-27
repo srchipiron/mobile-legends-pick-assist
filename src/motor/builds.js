@@ -164,7 +164,12 @@ export function ajustesDeBuild(build, equipment, enemigos = [], linea = null) {
       peso: 2,
     });
   }
-  const controlan = enemigos.filter((e) => e?.tags?.includes('cc_hard'));
+  // Encadenan control, no «tienen control»: tras leer los 133 kits (3.20.0)
+  // 101 aturden, levantan o empujan con alguna habilidad, y con `cc_hard`
+  // el aviso saltaba en el 99,6% de los drafts (en el 76% ya antes de la
+  // revisión): un consejo que sale siempre no dice nada. Dos o más que
+  // encadenan (`cc_chain`, 37 héroes) es el 33% de los equipos rivales.
+  const controlan = enemigos.filter((e) => e?.tags?.includes('cc_chain'));
   if (cuentan(controlan) >= ENEMIGOS_PARA_HABLAR && !tiene('cortaControl')) {
     avisos.push({
       clave: 'build.ajusteControl',

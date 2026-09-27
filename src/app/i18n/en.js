@@ -339,7 +339,7 @@ export default {
   'build.ajusteMagica': 'Of the {n} enemies with data, {pct}% deal magic damage and this build has no magic defence. Consider {objetos}.',
   'build.ajusteFisica': 'Of the {n} enemies with data, {pct}% deal physical damage and this build has no physical defence. Consider {objetos}.',
   'build.ajusteCuracion': '{n} {n|enemy heals|enemies heal} ({quien}) and this build does not cut healing. Consider {objetos}.',
-  'build.ajusteControl': '{n} {n|enemy has|enemies have} hard CC ({quien}) and this build does not shorten it. Consider {objetos}.',
+  'build.ajusteControl': '{n} {n|enemy chains|enemies chain} hard CC ({quien}) and this build does not shorten it. Consider {objetos}.',
   'build.ajusteTitulo': 'Against this draft',
   'build.ajusteAviso': 'This does not come from measuring builds against this draft (no such data exists): it comes from what the enemy team brings and what each item says it does.',
   'build.objetosEnIngles': 'Item names stay in English, like the game data.',

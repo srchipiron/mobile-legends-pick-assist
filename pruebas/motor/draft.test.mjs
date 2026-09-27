@@ -10,7 +10,7 @@ import { catalogo, h } from '../fixtures/catalogo.mjs';
 import { LINEAS, equilibrioEsperado } from '../../src/motor/catalogo.js';
 import {
   rangoActivo, prepararDatos, resolverNombres, poolDe,
-  lineasEnemigasAbiertas, rivalDeLinea, recomendar, eleccionDe, planDePicks, ordenar, winrateEnLinea, probablesDelBando,
+  lineasEnemigasAbiertas, rivalDeLinea, recomendar, eleccionDe, planDePicks, ordenar, winrateEnLinea, probablesDelBando, composicionDe,
 } from '../../src/motor/draft.js';
 import { elegirVentana, elegirRango, mediaDeWinrate } from '../../src/motor/ventana.js';
 import { indexarPorNombre } from '../../src/motor/nombres.js';
@@ -226,7 +226,15 @@ test('tu pick fijado manda sobre el nº1 en lo que viene despues, y el plan de b
   const fijado = recomendar(datos, { linea: 'roam', enemigos, aliados, miPick: segundo, conSimulacion: false });
   eq(fijado.eleccion.heroe.name, segundo.name, 'la elección no es el pick fijado');
   eq(JSON.stringify(fijado.ranking.map((c) => c.heroe.name)), JSON.stringify(libre.ranking.map((c) => c.heroe.name)), 'fijar un pick cambia el ranking');
-  ok(fijado.composicion.mio.n === libre.composicion.mio.n && JSON.stringify(fijado.composicion) !== JSON.stringify(libre.composicion), 'la composición no habla del pick fijado');
+  // La composición habla del pick fijado: se comprueba con un héroe del
+  // ranking cuya composición NO coincide con la del nº1 (con los tags de
+  // 3.20.0 el nº1 y el nº2 podían cubrir lo mismo y la prueba no veía nada).
+  const deYo = (yo) => JSON.stringify(composicionDe({ aliados, enemigos, yo }));
+  const distinto = libre.ranking.map((c) => c.heroe).find((x) => deYo(x) !== deYo(libre.ranking[0].heroe));
+  ok(distinto, 'ningún candidato cambia la composición: la prueba no puede ver nada');
+  const conOtro = recomendar(datos, { linea: 'roam', enemigos, aliados, miPick: distinto, conSimulacion: false });
+  eq(JSON.stringify(conOtro.composicion), deYo(distinto), 'la composición no habla del pick fijado');
+  eq(JSON.stringify(libre.composicion), deYo(libre.ranking[0].heroe), 'sin pick fijado la composición no es la del nº1');
   ok(fijado.consejos.every((c) => c.sugerencias.every((s) => s.heroe.name !== segundo.name)), 'el consejo a los compañeros ofrece tu propio pick');
   // Un pick fijado que ya no está en el pool (otra línea) cae al nº1.
   eq(recomendar(datos, { linea: 'roam', enemigos, aliados, miPick: H('Layla'), conSimulacion: false }).eleccion.heroe.name, libre.ranking[0].heroe.name);

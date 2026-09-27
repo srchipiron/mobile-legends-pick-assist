@@ -8,6 +8,27 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.20.0
+
+- **Las etiquetas de los 133 héroes se han revisado leyendo sus habilidades
+  una a una.** Se usaron el texto oficial y las etiquetas de cada habilidad
+  que pone Moonton. Cambian 102 héroes: 46 que controlan y no estaban
+  marcados, 15 que se curan, 20 con escudo, 18 que inician peleas… y se
+  quitan las que el kit no respalda (Estes no se cura a sí mismo, Chip y
+  Franco no dan visión, Dyrroth y Ruby no cortan curación).
+- **El consejo de botas anticontrol sale solo cuando dos o más enemigos
+  ENCADENAN control.** Antes saltaba con cualquiera que controlase algo, y
+  eso es casi todo el juego: salía en uno de cada tres drafts y ya no te
+  decía nada. El de antisanación sale ahora más, porque hay más héroes que
+  se curan bien marcados.
+- **Ninguna recomendación cambia.** El ranking sale idéntico en 300 drafts
+  de prueba: la nota se decide con los datos de cruces y winrates, no con
+  estas etiquetas. Cambia lo que te dice la app: el análisis del draft
+  («a tu equipo le falta un iniciador») y los consejos de objetos.
+- Se midió si el kit predice quién gana (cuánto control, movilidad,
+  curación o escudos lleva cada equipo) sobre 1.826 partidas
+  profesionales: no lo hace, así que no entra en la nota.
+
 ## 3.19.0
 
 - **Nuevo, en prueba: leer los baneos de la tablet desde el móvil.** Con

@@ -2,24 +2,24 @@
   "_comment": "Catalogo ESTRUCTURAL escrito a mano: rol y tags. Los winrates los rellena scripts/ingest.mjs en roam-meta.json. Los heroes que la API conozca y no esten aqui se anaden solos con tags deducidos de su rol (ver ROLE_DEFAULTS en src/motor/reglas.js). `kit` es la huella (tipo de dano y speciality) del heroe CUANDO se le escribieron estos tags: si la API deja de dar esa huella, es que le han rehecho las habilidades y los tags hay que volver a mirarlos a mano. No se edita a ojo: sale de huellaDeKit(), y se actualiza al revisar los tags.",
   "schemaVersion": 2,
   "tagLegend": {
-    "engage": "puede iniciar peleas a distancia",
+    "engage": "inicia la pelea: se lanza sobre el enemigo con control duro, o lo atrapa desde lejos",
     "peel": "protege al carry (knockback, escudo, inmunidad)",
-    "cc_hard": "stun/suppress/knock-up fiable",
-    "cc_chain": "encadena varios CC seguidos",
+    "cc_hard": "alguna habilidad activa con control duro: aturdir, levantar, empujar, atraer, suprimir, congelar, provocar, inmovilizar (no ralentizar ni silenciar)",
+    "cc_chain": "dos o mas habilidades distintas con control duro",
     "antiheal": "aplica reduccion de curacion de forma natural",
-    "sustain": "cura o escuda al equipo",
+    "sustain": "cura o escuda a los aliados",
     "vision": "aporta vision o deteccion",
     "anti_dive": "castiga a quien salta sobre el backline",
     "anti_mobility": "castiga heroes de dash/blink",
     "zone": "corta el mapa o bloquea rutas",
     "tanky": "aguanta primera linea",
     "mobile": "se reposiciona rapido, buen roaming temprano",
-    "immobile": "lento, castigado por poke",
+    "immobile": "ningun desplazamiento (dash, salto, parpadeo, teletransporte); excluye dash y mobile",
     "poke": "dana a distancia sin comprometerse",
     "burst": "mata en una rotacion",
     "dive": "salta al backline",
-    "heal": "curacion propia alta",
-    "shield": "escudo propio alto",
+    "heal": "curacion propia alta y recurrente (robo de vida, vampirismo, curas de sus habilidades)",
+    "shield": "se escuda a si mismo de forma habitual",
     "hypercarry": "escala a late game",
     "assassin_late": "amenaza al backline en late",
     "dash": "depende de dashes o parpadeos para entrar y salir"
@@ -32,8 +32,9 @@
         "engage",
         "cc_chain",
         "tanky",
-        "zone",
-        "anti_mobility"
+        "anti_mobility",
+        "cc_hard",
+        "shield"
       ],
       "roam": true,
       "kit": "fisico|Crowd Control,Guard|456fc637"
@@ -46,7 +47,8 @@
         "cc_hard",
         "cc_chain",
         "tanky",
-        "zone"
+        "zone",
+        "peel"
       ],
       "roam": true,
       "kit": "magico|Crowd Control,Initiator|cd36d302"
@@ -58,8 +60,9 @@
         "tanky",
         "cc_hard",
         "zone",
-        "immobile",
-        "anti_mobility"
+        "anti_mobility",
+        "engage",
+        "cc_chain"
       ],
       "roam": true,
       "kit": "fisico|Crowd Control,Damage|1c2af326"
@@ -71,8 +74,8 @@
         "antiheal",
         "tanky",
         "mobile",
-        "cc_chain",
-        "engage"
+        "engage",
+        "cc_hard"
       ],
       "roam": true,
       "kit": "magico|Damage,Support|7fd85e50"
@@ -86,7 +89,9 @@
         "anti_dive",
         "immobile",
         "zone",
-        "heal"
+        "heal",
+        "cc_hard",
+        "cc_chain"
       ],
       "roam": true,
       "kit": "magico|Crowd Control,Regen|562a5c45"
@@ -99,7 +104,9 @@
         "cc_hard",
         "tanky",
         "peel",
-        "sustain"
+        "cc_chain",
+        "heal",
+        "immobile"
       ],
       "roam": true,
       "kit": "magico|Crowd Control,Damage|b3356db5"
@@ -111,8 +118,8 @@
         "engage",
         "cc_hard",
         "mobile",
-        "vision",
-        "zone"
+        "cc_chain",
+        "shield"
       ],
       "roam": true,
       "kit": "magico|Crowd Control,Support|441e9ee4"
@@ -125,7 +132,8 @@
         "cc_hard",
         "tanky",
         "poke",
-        "anti_dive"
+        "anti_dive",
+        "cc_chain"
       ],
       "roam": true,
       "kit": "magico|Burst,Control|b5879854"
@@ -136,9 +144,10 @@
       "tags": [
         "engage",
         "cc_hard",
-        "vision",
         "tanky",
-        "anti_mobility"
+        "anti_mobility",
+        "cc_chain",
+        "immobile"
       ],
       "roam": true,
       "kit": "fisico|Control,Initiator|aad773ea"
@@ -151,7 +160,7 @@
         "cc_hard",
         "heal",
         "engage",
-        "zone"
+        "cc_chain"
       ],
       "roam": true,
       "kit": "fisico|Chase,Damage|e7a73573"
@@ -164,7 +173,8 @@
         "cc_hard",
         "tanky",
         "anti_dive",
-        "zone"
+        "zone",
+        "cc_chain"
       ],
       "roam": true,
       "kit": "magico|Burst,Crowd Control|4d6847b3"
@@ -176,7 +186,8 @@
         "tanky",
         "cc_chain",
         "zone",
-        "anti_mobility"
+        "anti_mobility",
+        "cc_hard"
       ],
       "roam": true,
       "kit": "magico|Control,Regen|4184cc84"
@@ -189,7 +200,8 @@
         "cc_hard",
         "tanky",
         "zone",
-        "mobile"
+        "cc_chain",
+        "shield"
       ],
       "roam": true,
       "kit": "fisico|Crowd Control,Initiator|9e6d9988"
@@ -202,7 +214,9 @@
         "cc_hard",
         "tanky",
         "mobile",
-        "heal"
+        "heal",
+        "cc_chain",
+        "shield"
       ],
       "roam": true,
       "kit": "fisico|Damage,Regen|60162cee"
@@ -213,8 +227,8 @@
       "tags": [
         "tanky",
         "zone",
-        "cc_chain",
-        "immobile"
+        "immobile",
+        "cc_hard"
       ],
       "roam": true,
       "kit": "magico|Guard,Initiator|090dff22"
@@ -227,7 +241,8 @@
         "cc_hard",
         "tanky",
         "burst",
-        "mobile"
+        "mobile",
+        "cc_chain"
       ],
       "roam": true,
       "kit": "magico|Crowd Control,Support|82672f6c"
@@ -239,7 +254,10 @@
         "cc_hard",
         "engage",
         "peel",
-        "mobile"
+        "mobile",
+        "cc_chain",
+        "sustain",
+        "heal"
       ],
       "roam": true,
       "kit": "fisico|Control,Regen|9ba04e28"
@@ -252,7 +270,9 @@
         "cc_hard",
         "anti_mobility",
         "tanky",
-        "zone"
+        "zone",
+        "cc_chain",
+        "peel"
       ],
       "roam": true,
       "kit": "mixto|Crowd Control,Initiator|652b5fc9"
@@ -265,8 +285,10 @@
         "cc_hard",
         "tanky",
         "shield",
-        "immobile",
-        "zone"
+        "zone",
+        "cc_chain",
+        "sustain",
+        "engage"
       ],
       "roam": true,
       "kit": "fisico|Crowd Control,Guard|3288ee4b"
@@ -279,7 +301,8 @@
         "cc_hard",
         "tanky",
         "sustain",
-        "immobile"
+        "cc_chain",
+        "heal"
       ],
       "roam": true,
       "kit": "fisico|Crowd Control|f604206e"
@@ -305,7 +328,8 @@
         "cc_chain",
         "tanky",
         "heal",
-        "antiheal"
+        "cc_hard",
+        "mobile"
       ],
       "roam": true,
       "kit": "fisico|Crowd Control,Regen|3b607e8c"
@@ -317,8 +341,7 @@
         "tanky",
         "cc_hard",
         "zone",
-        "immobile",
-        "heal"
+        "engage"
       ],
       "roam": true,
       "kit": "fisico|Burst,Crowd Control|4f131663"
@@ -330,9 +353,7 @@
         "engage",
         "cc_hard",
         "cc_chain",
-        "tanky",
-        "immobile",
-        "zone"
+        "tanky"
       ],
       "roam": true,
       "kit": "fisico|Crowd Control|4d9623a8"
@@ -344,7 +365,7 @@
         "tanky",
         "heal",
         "mobile",
-        "zone"
+        "shield"
       ],
       "roam": true,
       "kit": "magico|Regen|08783276"
@@ -355,7 +376,6 @@
       "tags": [
         "peel",
         "sustain",
-        "shield",
         "cc_hard",
         "immobile"
       ],
@@ -370,7 +390,9 @@
         "anti_dive",
         "vision",
         "zone",
-        "immobile"
+        "immobile",
+        "cc_hard",
+        "sustain"
       ],
       "roam": true,
       "kit": "magico|Guard,Poke|3192f6e3"
@@ -380,9 +402,10 @@
       "role": "support",
       "tags": [
         "sustain",
-        "heal",
         "peel",
-        "immobile"
+        "immobile",
+        "vision",
+        "zone"
       ],
       "roam": true,
       "kit": "magico|Guard,Regen|8d275a94"
@@ -394,7 +417,8 @@
         "sustain",
         "zone",
         "cc_hard",
-        "engage"
+        "engage",
+        "peel"
       ],
       "roam": true,
       "kit": "magico|Charge,Guard|f63188ee"
@@ -406,7 +430,8 @@
         "sustain",
         "heal",
         "peel",
-        "immobile"
+        "immobile",
+        "cc_hard"
       ],
       "roam": true,
       "kit": "magico|Guard,Poke|016b1b30"
@@ -419,7 +444,8 @@
         "peel",
         "mobile",
         "shield",
-        "cc_hard"
+        "cc_hard",
+        "sustain"
       ],
       "roam": true,
       "kit": "magico|Guard,Initiator|6d113455"
@@ -432,7 +458,8 @@
         "heal",
         "peel",
         "cc_hard",
-        "mobile"
+        "mobile",
+        "vision"
       ],
       "roam": true,
       "kit": "magico|Guard,Regen|0a839a2b"
@@ -444,7 +471,9 @@
         "engage",
         "cc_hard",
         "mobile",
-        "anti_mobility"
+        "anti_mobility",
+        "cc_chain",
+        "heal"
       ],
       "roam": true,
       "kit": "magico|Charge,Initiator|ef720566"
@@ -458,7 +487,9 @@
         "mobile",
         "peel",
         "anti_mobility",
-        "dash"
+        "dash",
+        "cc_chain",
+        "shield"
       ],
       "roam": true,
       "kit": "fisico|Chase,Control|27ec69a4"
@@ -469,8 +500,7 @@
       "tags": [
         "burst",
         "mobile",
-        "dive",
-        "dash"
+        "dive"
       ],
       "kit": "magico|Chase,Magic Damage|893dd9e9"
     },
@@ -481,7 +511,8 @@
         "heal",
         "mobile",
         "hypercarry",
-        "dive"
+        "dive",
+        "cc_hard"
       ],
       "kit": "magico|Charge,Regen|5d5e790f"
     },
@@ -491,7 +522,12 @@
       "tags": [
         "burst",
         "dive",
-        "hypercarry"
+        "hypercarry",
+        "cc_hard",
+        "cc_chain",
+        "engage",
+        "vision",
+        "shield"
       ],
       "kit": "fisico|Burst,Support|e96bf5be"
     },
@@ -501,7 +537,8 @@
       "tags": [
         "heal",
         "burst",
-        "mobile"
+        "cc_hard",
+        "engage"
       ],
       "kit": "fisico|Charge,Damage|95378f09"
     },
@@ -524,7 +561,10 @@
         "burst",
         "heal",
         "mobile",
-        "dash"
+        "dash",
+        "cc_hard",
+        "cc_chain",
+        "engage"
       ],
       "kit": "fisico|Burst,Charge|d35002a6"
     },
@@ -536,7 +576,9 @@
         "dive",
         "burst",
         "mobile",
-        "dash"
+        "dash",
+        "cc_chain",
+        "heal"
       ],
       "kit": "fisico|Burst,Charge|43bffe42"
     },
@@ -547,7 +589,8 @@
         "dive",
         "burst",
         "mobile",
-        "dash"
+        "dash",
+        "cc_hard"
       ],
       "kit": "fisico|Charge,Damage|e56487d9"
     },
@@ -558,7 +601,8 @@
         "cc_hard",
         "burst",
         "poke",
-        "immobile"
+        "immobile",
+        "cc_chain"
       ],
       "kit": "magico|Crowd Control,Poke|00f52bd6"
     },
@@ -568,7 +612,10 @@
       "tags": [
         "cc_hard",
         "burst",
-        "zone"
+        "zone",
+        "cc_chain",
+        "engage",
+        "shield"
       ],
       "kit": "fisico|Burst,Charge|6b3cb138"
     },
@@ -578,7 +625,9 @@
       "tags": [
         "heal",
         "tanky",
-        "burst"
+        "burst",
+        "cc_hard",
+        "engage"
       ],
       "kit": "fisico|Damage,Regen|7f760331"
     },
@@ -588,7 +637,10 @@
       "tags": [
         "poke",
         "burst",
-        "tanky"
+        "tanky",
+        "cc_hard",
+        "heal",
+        "immobile"
       ],
       "kit": "mixto|Burst,Push|8a69fd69"
     },
@@ -599,7 +651,6 @@
         "poke",
         "burst",
         "hypercarry",
-        "immobile",
         "dash"
       ],
       "kit": "fisico|Damage,Finisher|9f3da982"
@@ -611,7 +662,6 @@
         "mobile",
         "dive",
         "burst",
-        "shield",
         "dash"
       ],
       "kit": "fisico|Burst,Chase|a57cae67"
@@ -622,7 +672,8 @@
       "tags": [
         "burst",
         "mobile",
-        "hypercarry"
+        "hypercarry",
+        "cc_hard"
       ],
       "kit": "fisico|Burst,Finisher|5df5f48a"
     },
@@ -643,7 +694,8 @@
       "tags": [
         "poke",
         "hypercarry",
-        "zone"
+        "cc_hard",
+        "immobile"
       ],
       "kit": "magico|Burst,Poke|9781ba63"
     },
@@ -653,7 +705,8 @@
       "tags": [
         "poke",
         "mobile",
-        "hypercarry"
+        "hypercarry",
+        "shield"
       ],
       "kit": "magico|Burst,Poke|aac76ffe"
     },
@@ -673,7 +726,7 @@
       "tags": [
         "poke",
         "burst",
-        "immobile"
+        "cc_hard"
       ],
       "kit": "fisico|Burst,Finisher|47d35910"
     },
@@ -683,7 +736,8 @@
       "tags": [
         "burst",
         "cc_hard",
-        "poke"
+        "poke",
+        "immobile"
       ],
       "kit": "magico|Control,Damage|a2c88e8c"
     },
@@ -692,8 +746,8 @@
       "role": "fighter",
       "tags": [
         "burst",
-        "antiheal",
-        "dive"
+        "dive",
+        "heal"
       ],
       "kit": "fisico|Burst,Charge|dad64341"
     },
@@ -705,7 +759,9 @@
         "shield",
         "tanky",
         "mobile",
-        "hypercarry"
+        "hypercarry",
+        "cc_hard",
+        "engage"
       ],
       "kit": "mixto|Mixed Damage,Regen|28c54fff"
     },
@@ -738,7 +794,10 @@
         "dive",
         "burst",
         "mobile",
-        "dash"
+        "dash",
+        "cc_hard",
+        "engage",
+        "shield"
       ],
       "kit": "fisico|Chase,Damage|2837d6e5"
     },
@@ -748,7 +807,9 @@
       "tags": [
         "poke",
         "zone",
-        "immobile"
+        "immobile",
+        "cc_hard",
+        "burst"
       ],
       "kit": "magico|Burst,Poke|317e47f8"
     },
@@ -771,7 +832,8 @@
         "burst",
         "mobile",
         "dive",
-        "dash"
+        "dash",
+        "engage"
       ],
       "kit": "magico|Burst,Magic Damage|f6c04317"
     },
@@ -792,7 +854,9 @@
       "tags": [
         "hypercarry",
         "immobile",
-        "poke"
+        "poke",
+        "shield",
+        "cc_hard"
       ],
       "kit": "fisico|Damage,Finisher|497e443b"
     },
@@ -803,7 +867,9 @@
         "burst",
         "dive",
         "mobile",
-        "dash"
+        "dash",
+        "cc_hard",
+        "heal"
       ],
       "kit": "fisico|Burst,Poke|ff3e1522"
     },
@@ -814,7 +880,9 @@
         "mobile",
         "hypercarry",
         "dive",
-        "dash"
+        "dash",
+        "shield",
+        "heal"
       ],
       "kit": "magico|Chase,Damage|4648cf31"
     },
@@ -868,7 +936,9 @@
       "tags": [
         "hypercarry",
         "immobile",
-        "zone"
+        "zone",
+        "heal",
+        "cc_hard"
       ],
       "kit": "fisico|Damage,Finisher|e6c02f21"
     },
@@ -879,7 +949,10 @@
         "cc_hard",
         "dive",
         "burst",
-        "peel"
+        "peel",
+        "cc_chain",
+        "shield",
+        "engage"
       ],
       "kit": "fisico|Burst,Charge|b396dc8d"
     },
@@ -901,7 +974,9 @@
         "burst",
         "cc_hard",
         "dive",
-        "dash"
+        "dash",
+        "heal",
+        "cc_chain"
       ],
       "kit": "magico|Chase,Magic Damage|3d4a50d9"
     },
@@ -925,7 +1000,8 @@
         "burst",
         "mobile",
         "cc_hard",
-        "dash"
+        "dash",
+        "shield"
       ],
       "kit": "magico|Finisher,Poke|395cf2df"
     },
@@ -936,7 +1012,6 @@
         "dive",
         "burst",
         "mobile",
-        "heal",
         "dash"
       ],
       "kit": "magico|Finisher,Magic Damage|a6c2be12"
@@ -957,7 +1032,10 @@
         "mobile",
         "heal",
         "engage",
-        "dash"
+        "dash",
+        "cc_hard",
+        "cc_chain",
+        "tanky"
       ],
       "kit": "fisico|Damage,Regen|aba353ba"
     },
@@ -967,7 +1045,9 @@
       "tags": [
         "poke",
         "hypercarry",
-        "immobile"
+        "immobile",
+        "cc_hard",
+        "cc_chain"
       ],
       "kit": "magico|Damage,Magic Damage|6c3e72f5"
     },
@@ -1020,7 +1100,8 @@
         "burst",
         "poke",
         "mobile",
-        "assassin_late"
+        "assassin_late",
+        "cc_hard"
       ],
       "kit": "fisico|Burst,Finisher|c8efa832"
     },
@@ -1032,7 +1113,8 @@
         "dive",
         "burst",
         "assassin_late",
-        "dash"
+        "dash",
+        "cc_hard"
       ],
       "kit": "fisico|Burst,Chase|3a936690"
     },
@@ -1044,7 +1126,8 @@
         "dive",
         "burst",
         "mobile",
-        "dash"
+        "dash",
+        "cc_hard"
       ],
       "kit": "fisico|Damage,Regen|948db1ad"
     },
@@ -1062,9 +1145,9 @@
       "name": "Luo Yi",
       "role": "mage",
       "tags": [
-        "cc_chain",
         "zone",
-        "burst"
+        "burst",
+        "cc_hard"
       ],
       "kit": "magico|Crowd Control,Support|cb36d397"
     },
@@ -1086,7 +1169,9 @@
         "cc_hard",
         "dive",
         "mobile",
-        "dash"
+        "dash",
+        "cc_chain",
+        "engage"
       ],
       "kit": "fisico|Charge,Finisher|89ec0851"
     },
@@ -1099,7 +1184,8 @@
         "mobile",
         "cc_hard",
         "engage",
-        "dash"
+        "dash",
+        "heal"
       ],
       "kit": "fisico|Damage,Push|a0a4b7e8"
     },
@@ -1109,7 +1195,9 @@
       "tags": [
         "hypercarry",
         "anti_dive",
-        "immobile"
+        "cc_hard",
+        "peel",
+        "zone"
       ],
       "kit": "mixto|Damage,Finisher|28ad44cf"
     },
@@ -1118,7 +1206,8 @@
       "role": "marksman",
       "tags": [
         "hypercarry",
-        "mobile"
+        "cc_hard",
+        "immobile"
       ],
       "kit": "fisico|Damage,Finisher|01715c7c"
     },
@@ -1128,7 +1217,8 @@
       "tags": [
         "hypercarry",
         "poke",
-        "cc_hard"
+        "cc_hard",
+        "mobile"
       ],
       "kit": "fisico|Chase,Finisher|f5c5f408"
     },
@@ -1138,7 +1228,9 @@
       "tags": [
         "cc_hard",
         "poke",
-        "peel"
+        "peel",
+        "immobile",
+        "burst"
       ],
       "kit": "magico|Burst,Poke|94c9ec67"
     },
@@ -1159,7 +1251,7 @@
       "tags": [
         "hypercarry",
         "poke",
-        "immobile"
+        "cc_hard"
       ],
       "kit": "magico|Burst,Magic Damage|33b8d823"
     },
@@ -1191,7 +1283,8 @@
       "tags": [
         "burst",
         "zone",
-        "immobile"
+        "immobile",
+        "cc_hard"
       ],
       "kit": "magico|Burst,Poke|820dc54c"
     },
@@ -1203,7 +1296,8 @@
         "cc_hard",
         "dive",
         "mobile",
-        "dash"
+        "dash",
+        "shield"
       ],
       "kit": "fisico|Chase,Damage|c9aed7ec"
     },
@@ -1214,7 +1308,7 @@
         "poke",
         "burst",
         "mobile",
-        "dash"
+        "cc_hard"
       ],
       "kit": "magico|Burst,Poke|ec053346"
     },
@@ -1224,7 +1318,8 @@
       "tags": [
         "anti_mobility",
         "tanky",
-        "heal"
+        "heal",
+        "cc_hard"
       ],
       "kit": "mixto|Damage,Regen|743e633f"
     },
@@ -1234,7 +1329,11 @@
       "tags": [
         "hypercarry",
         "poke",
-        "cc_hard"
+        "cc_hard",
+        "cc_chain",
+        "zone",
+        "shield",
+        "immobile"
       ],
       "kit": "fisico|Burst,Push|d3c06512"
     },
@@ -1256,7 +1355,8 @@
         "dive",
         "burst",
         "cc_hard",
-        "dash"
+        "dash",
+        "engage"
       ],
       "kit": "fisico|Charge,Finisher|8bfcf3e6"
     },
@@ -1267,7 +1367,10 @@
         "burst",
         "cc_hard",
         "poke",
-        "vision"
+        "vision",
+        "mobile",
+        "engage",
+        "shield"
       ],
       "kit": "magico|Finisher,Initiator|e5f73e8c"
     },
@@ -1278,7 +1381,10 @@
         "cc_hard",
         "dive",
         "burst",
-        "dash"
+        "dash",
+        "cc_chain",
+        "engage",
+        "shield"
       ],
       "kit": "magico|Initiator,Magic Damage|2b236377"
     },
@@ -1288,8 +1394,8 @@
       "tags": [
         "dive",
         "mobile",
-        "zone",
-        "hypercarry"
+        "hypercarry",
+        "heal"
       ],
       "kit": "fisico|Damage,Push|5ca2225d"
     },
@@ -1300,7 +1406,9 @@
         "mobile",
         "dive",
         "burst",
-        "dash"
+        "dash",
+        "cc_hard",
+        "engage"
       ],
       "kit": "fisico|Burst,Chase|63bcdd35"
     },
@@ -1320,7 +1428,9 @@
       "tags": [
         "poke",
         "burst",
-        "cc_chain"
+        "cc_chain",
+        "cc_hard",
+        "immobile"
       ],
       "kit": "magico|Burst,Crowd Control|33977828"
     },
@@ -1331,7 +1441,8 @@
         "poke",
         "burst",
         "mobile",
-        "dash"
+        "dash",
+        "heal"
       ],
       "kit": "mixto|Burst,Finisher|2bb2ba68"
     },
@@ -1341,8 +1452,9 @@
       "tags": [
         "cc_hard",
         "burst",
-        "zone",
-        "immobile"
+        "immobile",
+        "cc_chain",
+        "poke"
       ],
       "kit": "magico|Control,Poke|df87b7ec"
     },
@@ -1364,7 +1476,9 @@
       "tags": [
         "zone",
         "poke",
-        "tanky"
+        "tanky",
+        "cc_hard",
+        "shield"
       ],
       "kit": "fisico|Burst,Regen|c6fc1d8d"
     },
@@ -1374,7 +1488,9 @@
       "tags": [
         "poke",
         "burst",
-        "zone"
+        "zone",
+        "cc_hard",
+        "immobile"
       ],
       "kit": "magico|Burst,Damage|9b586e16"
     },
@@ -1385,7 +1501,8 @@
         "hypercarry",
         "mobile",
         "vision",
-        "dash"
+        "dash",
+        "cc_hard"
       ],
       "kit": "fisico|Chase,Finisher|8899ac64"
     },
@@ -1396,7 +1513,8 @@
         "dive",
         "burst",
         "cc_hard",
-        "dash"
+        "dash",
+        "engage"
       ],
       "kit": "fisico|Burst,Control|f7d18101"
     },
@@ -1407,7 +1525,8 @@
         "heal",
         "tanky",
         "cc_hard",
-        "engage"
+        "engage",
+        "cc_chain"
       ],
       "kit": "fisico|Damage,Regen|a155b50c"
     },
@@ -1417,7 +1536,9 @@
       "tags": [
         "poke",
         "zone",
-        "cc_chain"
+        "cc_hard",
+        "shield",
+        "immobile"
       ],
       "kit": "magico|Burst,Poke|2a63c66e"
     },
@@ -1427,7 +1548,8 @@
       "tags": [
         "poke",
         "zone",
-        "immobile"
+        "immobile",
+        "cc_hard"
       ],
       "kit": "magico|Chase,Damage|b16a1e6c"
     },
@@ -1435,9 +1557,9 @@
       "name": "Zhuxin",
       "role": "mage",
       "tags": [
-        "cc_chain",
         "zone",
-        "burst"
+        "burst",
+        "cc_hard"
       ],
       "kit": "magico|Crowd Control,Damage|77514a95"
     },
@@ -1448,7 +1570,9 @@
         "dive",
         "mobile",
         "burst",
-        "dash"
+        "dash",
+        "cc_hard",
+        "heal"
       ],
       "kit": "fisico|Chase,Damage|f566681c"
     },
@@ -1459,7 +1583,8 @@
         "mobile",
         "dive",
         "burst",
-        "dash"
+        "dash",
+        "cc_hard"
       ],
       "roam": false,
       "kit": "fisico|Chase,Finisher|690c2129"
@@ -1472,7 +1597,8 @@
         "burst",
         "dash",
         "cc_hard",
-        "tanky"
+        "tanky",
+        "mobile"
       ],
       "roam": false,
       "kit": "fisico|Burst,Charge|2cf9009b"
@@ -1485,7 +1611,8 @@
         "burst",
         "cc_hard",
         "zone",
-        "immobile"
+        "immobile",
+        "vision"
       ],
       "roam": false,
       "kit": "magico|Crowd Control,Damage|a1b9efdd"

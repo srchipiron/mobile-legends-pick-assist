@@ -947,6 +947,16 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   leer un cierre viejo, y guarda una sola vez. Funcionaba por suerte:
   `apuntar` genera el instante con `Date.now()` y dos llamadas habrían dado
   dos partidas distintas.
+- **Una prueba de navegador que exigía que el dato del día fuera bueno, otra
+  vez** (3.20.0) — `equipo.e2e` pedía que el primer motivo del consejo a
+  los compañeros fuera positivo; el 27 de septiembre de 2026 la mejor
+  opción de la primera línea solo tenía «pierde contra Layla» y fallaba
+  igual con la versión anterior. Hoy comprueba el ORDEN (ningún motivo en
+  contra delante de uno a favor) y el orden vive en una función pura
+  (`src/app/motivos.js`) con su prueba, porque con los datos de ese día
+  ninguna sugerencia mezclaba signos y la de navegador no cazaba la
+  mutación. Cuarta vez de la misma lección: una prueba sobre datos reales
+  comprueba cómo reacciona el código, no cómo viene el día.
 
 ## El modelo (2.0)
 
@@ -1142,6 +1152,54 @@ pestaña y NO en cada render: tocar un enemigo cambia las líneas libres y
 la rejilla se reordenaría bajo el dedo. Pruebas en `draft.test`
 (propiedades) y `rapido.e2e` (la rejilla sigue al motor y no se mueve al
 tocar), verificadas por tres mutaciones.
+
+## Qué hace cada héroe (3.20.0)
+
+Las etiquetas de `heroes.json` se revisaron el 27 de septiembre de 2026
+leyendo el kit ENTERO de los 133: el texto oficial de cada habilidad y sus
+etiquetas de Moonton (`skilltag`: CC, Mobility, Heal, Shield, Slow, Burst,
+AOE…), que vienen en `/api/heroes/{id}` y la ingesta ya descargaba para el
+tipo de daño. Cinco revisores en paralelo con los MISMOS criterios (ahora
+en `tagLegend`) y cita literal de la habilidad por cada cambio; las 48 dudas
+se decidieron a mano. Cambiaron 102 héroes: `cc_hard` +46, `cc_chain`
++31/−5, `shield` +20/−2, `engage` +18, `heal` +15/−3, `immobile` +11/−9,
+`zone` +3/−8… Tres cosas medidas que no conviene volver a suponer:
+
+- **El kit NO predice quién gana en pro**, ni con las etiquetas viejas ni
+  con las nuevas. Sobre el modelo actual, 22 candidatos (hueco por
+  necesidad, recuentos de habilidades CC/Mobility/Heal/Shield/Slow/Burst/AOE
+  por equipo, héroes con cada una): los que asoman a 120 días (movilidad
+  −0,18 ± 0,06; peel +0,59 ± 0,23 con las etiquetas nuevas) desaparecen a
+  400, y con 22 candidatos uno así sale por azar. Los huecos se DICEN, no
+  puntúan (como ya decía «El modelo»). `medir-kits.mjs` y `kits.json` están
+  en el scratch de la sesión.
+- **Ninguna recomendación cambió**: el ranking es idéntico en 300 drafts
+  (nombres y probabilidades), porque las reglas por etiqueta solo mandan sin
+  dato. Cambia lo que se DICE: el aviso de antisanación pasa de 15 a 37 de
+  300 drafts (más curanderos bien marcados) y el análisis se mueve poco.
+- **Una etiqueta de hecho que casi todos cumplen no sirve de aviso**: 101 de
+  133 aturden, levantan o empujan con alguna habilidad, así que el aviso de
+  botas anticontrol con `cc_hard` saltaba en el 99,6% de los equipos (en el
+  76% ya con las etiquetas viejas). Desde 3.20.0 mira `cc_chain` (dos o más
+  que encadenan: el 33% de los equipos realistas, 101 → 46 avisos en 300
+  drafts). Y «ellos no tienen control» ya no sale casi nunca: es verdad.
+
+Y una trampa en la que se cayó a medias: **`dash` NO es «tiene un
+desplazamiento»**, es «depende de dashes o parpadeos para entrar y salir»
+(la regla `antiDash` va contra eso). Los criterios de la revisión lo leyeron
+en el sentido amplio, lo pusieron a 94 héroes (Tigreal, Akai…) y la prueba
+de concentración sin datos lo cazó (Chou nº1 en el 71%); medir-reglas lo
+confirma (con el sentido amplio la cumplen 2 anti-dash, con el estricto 5).
+Se aceptaron solo las retiradas (Aamon, Pharsa: ningún desplazamiento). La
+regla `escudoPoke` se probó a quitar por lo mismo y no era la causa: se
+queda, sin efecto medible (0 de 24) y sin decidir nada con dato. Antes de
+cambiar lo que significa una etiqueta, mira qué regla la lee.
+
+`catalogo.test` comprueba la coherencia interna (`immobile` excluye `dash` y
+`mobile`, `cc_chain` y `engage` implican `cc_hard`, todo tag está en la
+leyenda; cuatro mutaciones). Las etiquetas de RELACIÓN (`anti_mobility`,
+`anti_dive`) y de escalado (`hypercarry`, `assassin_late`) no se tocaron:
+salen de datos, no del texto, y ya no deciden nada con la matriz completa.
 
 ## Leer la pantalla del juego (3.19.0)
 

@@ -10,7 +10,7 @@ import { poolDeLinea, LINEAS, tagsDeducidos, fundirCatalogo, tipoDeDano, perfilD
 import { analizarDraft } from '../../src/motor/analisis.js';
 import { evaluarDraft, ESCALA, PESO_EQUILIBRIO_DANO } from '../../src/motor/modelo.js';
 import { indexarPorNombre } from '../../src/motor/nombres.js';
-import { SPECIALITY_TAGS, ROLE_VETO, ROLE_DEFAULTS } from '../../src/motor/reglas.js';
+import { SPECIALITY_TAGS, ROLE_VETO, ROLE_DEFAULTS, SATISFIES } from '../../src/motor/reglas.js';
 import { indiceDeLineas } from '../../src/motor/lineas.js';
 
 test('el catálogo no tiene nombres repetidos', () => {
@@ -57,7 +57,9 @@ test('la speciality de Moonton suma tags al rol, sin contradecirlo', () => {
   // Suma: un support con "Crowd Control" gana control duro sobre sus tags base.
   const marcel = tagsDeducidos('support', ['Crowd Control']);
   for (const t of ROLE_DEFAULTS.support) ok(marcel.includes(t), `pierde el tag de rol ${t}`);
-  ok(marcel.includes('cc_hard'), 'no recoge el control duro de "Crowd Control"');
+  // Control duro directo o encadenado: desde 3.20.0 la tabla aprende `cc_chain` (casi
+  // todo héroe controla algo, así que `cc_hard` ya no distingue a «Crowd Control»).
+  ok(SATISFIES.cc_hard.some((t) => marcel.includes(t)), 'no recoge el control duro de "Crowd Control"');
 
   // Veto: la MISMA speciality no puede hacer tanque a una maga. Es correlacion
   // del catalogo (casi todo "Crowd Control" es tanque), no una propiedad suya,
@@ -85,7 +87,7 @@ test('un héroe con speciality entra al catálogo con ella aplicada', () => {
   ]);
   const roamer = fundido.find((x) => x.name === 'RoamerNuevo');
   ok(roamer?.roam, 'un support debe entrar al pool de roam');
-  ok(roamer.tags.includes('cc_hard') && roamer.tags.includes('heal'),
+  ok(SATISFIES.cc_hard.some((t) => roamer.tags.includes(t)) && roamer.tags.includes('heal'),
     `no aplica la speciality: ${roamer.tags.join(', ')}`);
   ok(roamer.inferred, 'debe quedar marcado como deducido');
 });
@@ -278,6 +280,23 @@ test('todos los heroes del catalogo llevan su huella de kit', () => {
     .map((h) => `${h.name}: ${h.kit} vs ${huellaDeKit(api[h.name])}`);
   ok(!descuadran.length,
     `el catalogo dice una huella y la API otra (revisa los tags y actualiza \`kit\`): ${descuadran.slice(0, 6).join(' · ')}`);
+});
+
+test('las etiquetas del catálogo son coherentes con su propia definición', () => {
+  // Revisadas leyendo el kit de los 133 (3.20.0), con criterios fijos: estas
+  // son las reglas que salen de la definición de cada etiqueta, y un tag
+  // escrito a mano que las rompa es un error de copia o un kit que cambió.
+  const t = (x, tag) => x.tags.includes(tag);
+  const leyenda = Object.keys(catalogo.tagLegend);
+  const mal = [];
+  for (const x of catalogo.heroes) {
+    if (t(x, 'immobile') && (t(x, 'dash') || t(x, 'mobile'))) mal.push(`${x.name}: immobile con dash o mobile`);
+    if (t(x, 'cc_chain') && !t(x, 'cc_hard')) mal.push(`${x.name}: encadena control sin tener control`);
+    if (t(x, 'engage') && !t(x, 'cc_hard')) mal.push(`${x.name}: inicia sin control duro`);
+    if (new Set(x.tags).size !== x.tags.length) mal.push(`${x.name}: etiqueta repetida`);
+    for (const tag of x.tags) if (!leyenda.includes(tag)) mal.push(`${x.name}: «${tag}» no está en la leyenda`);
+  }
+  ok(!mal.length, mal.join(' · '));
 });
 
 await terminar('motor/catalogo');
