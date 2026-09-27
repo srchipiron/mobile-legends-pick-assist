@@ -1,6 +1,35 @@
 {
- "actualizado": "2026-09-26T22:25:14.789Z",
+ "actualizado": "2026-09-27T18:01:09.722Z",
  "partidas": [
+  {
+   "t": 1790532054395,
+   "pick": "Estes",
+   "recomendados": [
+    "Gloo",
+    "Estes",
+    "Edith"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.594,
+   "draft": {
+    "enemigos": [
+     "Obsidia",
+     "Esmeralda",
+     "Minotaur",
+     "Odette",
+     "Hayabusa"
+    ],
+    "aliados": [
+     "Brody",
+     "Kadita",
+     "Yin",
+     "Sun"
+    ],
+    "linea": "roam",
+    "rival": "Minotaur"
+   }
+  },
   {
    "t": 1790461501092,
    "pick": "Estes",
@@ -2550,6 +2579,12 @@
   {
    "cuando": "2026-09-26T22:25:14.789Z",
    "partidas": 96,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-27T18:01:09.722Z",
+   "partidas": 97,
    "heroes": 11,
    "incidencia": 11
   }
