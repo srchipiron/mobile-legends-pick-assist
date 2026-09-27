@@ -1,6 +1,35 @@
 {
- "actualizado": "2026-09-27T20:03:31.069Z",
+ "actualizado": "2026-09-27T20:19:33.993Z",
  "partidas": [
+  {
+   "t": 1790540357639,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Rafaela",
+    "Floryn"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.621,
+   "draft": {
+    "enemigos": [
+     "Zhask",
+     "Melissa",
+     "Minotaur",
+     "Sun",
+     "Roger"
+    ],
+    "aliados": [
+     "Kadita",
+     "Martis",
+     "Barats",
+     "Brody"
+    ],
+    "linea": "roam",
+    "rival": "Minotaur"
+   }
+  },
   {
    "t": 1790539395087,
    "pick": "Rafaela",
@@ -2806,6 +2835,12 @@
   {
    "cuando": "2026-09-27T20:03:31.069Z",
    "partidas": 103,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-27T20:19:33.993Z",
+   "partidas": 104,
    "heroes": 11,
    "incidencia": 11
   }
