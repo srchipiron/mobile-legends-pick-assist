@@ -1,6 +1,42 @@
 {
- "actualizado": "2026-09-27T18:24:43.613Z",
+ "actualizado": "2026-09-27T18:48:02.315Z",
  "partidas": [
+  {
+   "t": 1790534868828,
+   "pick": "Floryn",
+   "recomendados": [
+    "Floryn",
+    "Chip",
+    "Rafaela"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.603,
+   "bans": [
+    "Hanzo",
+    "Hirara",
+    "Gusion",
+    "Lesley",
+    "Marcel",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Melissa",
+     "Cecilion",
+     "Roger",
+     "Belerick"
+    ],
+    "aliados": [
+     "Lukas",
+     "Kadita",
+     "Brody",
+     "Valentina"
+    ],
+    "linea": "roam",
+    "rival": "Belerick"
+   }
+  },
   {
    "t": 1790533468175,
    "pick": "Minotaur",
@@ -2630,6 +2666,12 @@
   {
    "cuando": "2026-09-27T18:24:43.613Z",
    "partidas": 98,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-27T18:48:02.315Z",
+   "partidas": 99,
    "heroes": 11,
    "incidencia": 11
   }
