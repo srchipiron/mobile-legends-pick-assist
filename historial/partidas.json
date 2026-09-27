@@ -1,6 +1,32 @@
 {
- "actualizado": "2026-09-27T19:07:05.336Z",
+ "actualizado": "2026-09-27T19:24:03.027Z",
  "partidas": [
+  {
+   "t": 1790537031658,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Marcel",
+    "Khufra",
+    "Gloo"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.59,
+   "draft": {
+    "enemigos": [
+     "Melissa",
+     "Gusion",
+     "Jawhead"
+    ],
+    "aliados": [
+     "Kadita",
+     "Guinevere",
+     "Brody",
+     "Yi Sun-shin"
+    ],
+    "linea": "roam"
+   }
+  },
   {
    "t": 1790536012923,
    "pick": "Diggie",
@@ -2707,6 +2733,12 @@
   {
    "cuando": "2026-09-27T19:07:05.336Z",
    "partidas": 100,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-27T19:24:03.027Z",
+   "partidas": 101,
    "heroes": 11,
    "incidencia": 11
   }
