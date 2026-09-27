@@ -1,6 +1,35 @@
 {
- "actualizado": "2026-09-27T19:24:03.027Z",
+ "actualizado": "2026-09-27T19:41:46.395Z",
  "partidas": [
+  {
+   "t": 1790538093189,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Rafaela",
+    "Gloo"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.584,
+   "draft": {
+    "enemigos": [
+     "Layla",
+     "Floryn",
+     "Gusion",
+     "Alice",
+     "Yin"
+    ],
+    "aliados": [
+     "Kadita",
+     "Popol and Kupa",
+     "Barats",
+     "Dyrroth"
+    ],
+    "linea": "roam",
+    "rival": "Floryn"
+   }
+  },
   {
    "t": 1790537031658,
    "pick": "Rafaela",
@@ -2739,6 +2768,12 @@
   {
    "cuando": "2026-09-27T19:24:03.027Z",
    "partidas": 101,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-27T19:41:46.395Z",
+   "partidas": 102,
    "heroes": 11,
    "incidencia": 11
   }
