@@ -1,6 +1,35 @@
 {
- "actualizado": "2026-09-28T16:05:13.898Z",
+ "actualizado": "2026-09-28T16:55:13.398Z",
  "partidas": [
+  {
+   "t": 1790614497178,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Rafaela",
+    "Diggie"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.495,
+   "draft": {
+    "enemigos": [
+     "Alice",
+     "Zetian",
+     "Bruno",
+     "Suyou",
+     "Khufra"
+    ],
+    "aliados": [
+     "Vexana",
+     "Barats",
+     "Miya",
+     "Hanzo"
+    ],
+    "linea": "roam",
+    "rival": "Khufra"
+   }
+  },
   {
    "t": 1790611496005,
    "pick": "Estes",
@@ -2910,6 +2939,12 @@
   {
    "cuando": "2026-09-28T16:05:13.898Z",
    "partidas": 106,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-28T16:55:13.398Z",
+   "partidas": 107,
    "heroes": 11,
    "incidencia": 11
   }
