@@ -1,6 +1,34 @@
 {
- "actualizado": "2026-09-27T20:46:34.529Z",
+ "actualizado": "2026-09-28T16:05:13.898Z",
  "partidas": [
+  {
+   "t": 1790611496005,
+   "pick": "Estes",
+   "recomendados": [
+    "Diggie",
+    "Estes",
+    "Chip"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.487,
+   "draft": {
+    "enemigos": [
+     "Masha",
+     "Kimmy",
+     "Granger",
+     "Guinevere",
+     "Saber"
+    ],
+    "aliados": [
+     "Vexana",
+     "Nolan",
+     "Barats",
+     "Moskov"
+    ],
+    "linea": "roam"
+   }
+  },
   {
    "t": 1790541976938,
    "pick": "Estes",
@@ -2876,6 +2904,12 @@
   {
    "cuando": "2026-09-27T20:46:34.529Z",
    "partidas": 105,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-28T16:05:13.898Z",
+   "partidas": 106,
    "heroes": 11,
    "incidencia": 11
   }
