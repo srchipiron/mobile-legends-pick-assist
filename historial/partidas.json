@@ -1,6 +1,35 @@
 {
- "actualizado": "2026-09-28T21:20:12.111Z",
+ "actualizado": "2026-09-28T21:37:01.606Z",
  "partidas": [
+  {
+   "t": 1790631404088,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Khufra",
+    "Marcel"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.533,
+   "draft": {
+    "enemigos": [
+     "Julian",
+     "Yu Zhong",
+     "Lesley",
+     "Kadita",
+     "Franco"
+    ],
+    "aliados": [
+     "Martis",
+     "Alice",
+     "Layla",
+     "Pharsa"
+    ],
+    "linea": "roam",
+    "rival": "Franco"
+   }
+  },
   {
    "t": 1790630394503,
    "pick": "Minotaur",
@@ -2991,6 +3020,12 @@
   {
    "cuando": "2026-09-28T21:20:12.111Z",
    "partidas": 108,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-28T21:37:01.606Z",
+   "partidas": 109,
    "heroes": 11,
    "incidencia": 11
   }
