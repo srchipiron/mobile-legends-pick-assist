@@ -1,6 +1,40 @@
 {
- "actualizado": "2026-09-28T21:37:01.606Z",
+ "actualizado": "2026-09-28T21:53:48.211Z",
  "partidas": [
+  {
+   "t": 1790632412781,
+   "pick": "Diggie",
+   "recomendados": [
+    "Diggie",
+    "Rafaela",
+    "Floryn"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.564,
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Yi Sun-shin",
+    "Paquito",
+    "Aulus"
+   ],
+   "draft": {
+    "enemigos": [
+     "Brody",
+     "Belerick",
+     "Kadita",
+     "Carmilla"
+    ],
+    "aliados": [
+     "Pharsa",
+     "Martis",
+     "Popol and Kupa"
+    ],
+    "linea": "roam",
+    "rival": "Carmilla"
+   }
+  },
   {
    "t": 1790631404088,
    "pick": "Rafaela",
@@ -3026,6 +3060,12 @@
   {
    "cuando": "2026-09-28T21:37:01.606Z",
    "partidas": 109,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-28T21:53:48.211Z",
+   "partidas": 110,
    "heroes": 11,
    "incidencia": 11
   }
