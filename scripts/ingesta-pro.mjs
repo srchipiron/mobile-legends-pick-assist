@@ -92,6 +92,7 @@ export const ALIAS = {
   nova: 'Novaria',
   mathil: 'Mathilda',
   khu: 'Khufra',
+  kag: 'Kagura', // visto el 28-9-2026: «t1h3=kag» en Kohai SEA Championship S1 y Razer Invitational SEA 2020
   fred: 'Fredrinn',
   bal: 'Balmond',
   // Vistos en el corpus de 1.532 partidas (1.41.1): descartaban 90, el 6%.

@@ -957,6 +957,14 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   ninguna sugerencia mezclaba signos y la de navegador no cazaba la
   mutación. Cuarta vez de la misma lección: una prueba sobre datos reales
   comprueba cómo reacciona el código, no cómo viene el día.
+- **Intro quitaba un héroe en el selector multi-toque** (3.16.0 → 3.21.0,
+  cazado en revisión) — `conIntro` cogía el primero de la lista que no
+  estuviera en `cogidos`, y los ya marcados del mismo bando no están ahí:
+  con Alice metida, «al» + Intro buscando a Alucard la QUITABA. En
+  multi-toque tocar es alternar; un atajo que elige tiene que saltarse a
+  los marcados. Y su gemelo: tu pick fijado no se soltaba al banearlo
+  (`anadir` sí lo hacía con enemigos) y se podía meter de compañero, así que
+  el hueco «Tú» lo enseñaba y «Gané» apuntaba al nº1.
 
 ## El modelo (2.0)
 
@@ -1201,43 +1209,53 @@ leyenda; cuatro mutaciones). Las etiquetas de RELACIÓN (`anti_mobility`,
 `anti_dive`) y de escalado (`hypercarry`, `assassin_late`) no se tocaron:
 salen de datos, no del texto, y ya no deciden nada con la matriz completa.
 
-## Leer la pantalla del juego (3.19.0)
+## Leer la pantalla del juego (3.19.0, picks en 3.21.0)
 
 Javi juega en la TABLET y usa la app en el MÓVIL. `scripts/lector/` lee
-los diez baneos de la pantalla del draft desde Termux, por depuración
-inalámbrica (`adb exec-out screencap -p`). Todavía es un script, no un
-botón de la app: primero hay que ver que funciona en su tablet.
+los diez baneos y los cinco picks ENEMIGOS de la pantalla del draft desde
+Termux, por depuración inalámbrica (`adb exec-out screencap -p`). Todavía es
+un script, no un botón de la app: primero hay que ver que funciona en su
+tablet.
 
 - **SEGURIDAD, no negociable**: su cuenta vale dinero. El lector solo hace
   `adb connect` y `adb exec-out screencap -p`: nada de `input tap`,
   `shell`, `install`, ni rutas `/api/user/*` de la API. Tocar la pantalla
   por adb sería automatizar el juego (bot). La prueba de seguridad de
-  `lector.test` recorre la carpeta y falla con cualquier otro mandato
-  (verificada por mutación: un `input tap` y un `sh -c` la tumban).
-- **Caras del juego, no de la API**, medido con sus capturas: contra los
-  retratos de la API acertaba 35 de 40 (el juego ha rehecho el arte de
-  Floryn, Faramis, Kalea, Thamuz y Julian y la API no); contra caras
-  recortadas de la rejilla «Todos» del propio juego, 54 de 54 con cero
-  errores. Acierto ≥ 0,89 de correlación, mejor equivocado ≤ 0,78, y
-  `PARECIDO_MINIMO = 0.85` entre medias: por debajo dice «no sé». Un baneo
-  mal leído es peor que uno que se toca a mano.
-- `caras.json` sale de `sacar-caras.mjs` con `etiquetas.json` (cada cara
-  de sus capturas etiquetada a mano; las capturas no van al repositorio).
-  18 héroes siguen con el retrato de la API (`deLaApi`): con una o dos
-  capturas más de la rejilla se sustituyen. Todo en JavaScript puro
-  (`png.mjs` lee el PNG con zlib), porque en Termux no hay navegador ni
-  librerías de imagen: 60 ms por cara en el contenedor, ~3 s los diez en
-  un móvil.
-- **Los picks NO se leen todavía, y son lo que importa** (sin compañeros
-  el nº1 cambia en la mitad de sus drafts; los baneos de otras líneas, en
-  ninguno). Salen como dibujo grande a los lados; en la fase de skins ya
-  llevan la skin. Mientras se elige parece el dibujo por defecto (Clint de
-  vaquero en su captura), así que el camino es capturar durante los picks
-  y cruzar la hora de la captura con el draft que apunta en la app
-  (`historial/partidas.json`) para sacar caras de referencia etiquetadas
-  solas. Pendiente de sus capturas.
-- La posición de los baneos (`BANEOS` en `leer.mjs`) está medida a 2400×1504
-  y se escala con la resolución (prueba a 1600×1003).
+  `lector.test` va por FORMA desde 3.21.0 (la de 3.19.0 buscaba texto y se
+  saltaba con un alias en el import, con `cp['execFileSync']` o partiendo
+  'input', 'tap' en dos argumentos): solo `leer.mjs` importa
+  `child_process`, exactamente `{ execFileSync }`, con dos llamadas
+  permitidas, ningún literal de mandato de adb peligroso en toda la carpeta
+  (subcarpetas incluidas). Cinco mutaciones.
+- **Las caras de referencia son la cara del juego ACTUAL que da la API**
+  (`hero.data.head`, un PNG del cliente; la ingesta la guarda como `cara`
+  junto a `retrato` desde 3.21.0, buscando el objeto que lleva `heroid`, y
+  la conserva con la ficha caída). NO el `retrato`: ese es de la web de
+  Moonton y tiene el arte VIEJO de los rehechos. Medido con sus capturas:
+  retrato de la web 35 de 40; caras recortadas de sus capturas 54 de 54
+  pero sin 18 héroes; cara del juego de la API **177 de 178, cero errores**
+  (el único «no sé», Argus a 0,75). Un acierto va de 0,75 a 0,99, el mejor
+  equivocado 0,60 (baneos y rejilla) y 0,72 (panel de picks vacío o con
+  skin): `PARECIDO_MINIMO = 0.80`. Su tercer baneo «que nadie reconocía» era
+  Masha, rehecha en 2.2.16 (0,974). `sacar-caras.mjs` rehace `caras.json`
+  de las URL de `roam-meta.json` y guarda la fuente de cada cara; el lector
+  avisa si alguna se queda atrás (héroe nuevo o rehecho). NO hay prueba de
+  que estén todas: un héroe nuevo llegaría con los datos del bot y tumbaría
+  el despliegue.
+- **Los picks enemigos**: el dibujo de la derecha es esa misma cara,
+  AMPLIADA y en ESPEJO (centro al 54,7%/48,6% del hueco, radio 34,3% del
+  alto; Clint 0,98, Khufra 0,93). La búsqueda es más ancha que en los
+  baneos (±5 pasos, escalas 0,88–1,12): cada dibujo encuadra la cara en
+  otro sitio. Solo mientras se elige: en la fase de skins no casa (máximo
+  0,66) y sale «?». Los de TU equipo no se leen: se ven con la skin de cada
+  uno (ninguno pasaba de 0,72), y la geometría de ese panel no está medida.
+- Todo en JavaScript puro (`png.mjs`: RGB/RGBA/gris/paleta, 8/16 bits,
+  entrelazado Adam7, con una imagen entrelazada REAL de la API en las
+  pruebas porque escritor y lector comparten la tabla Adam7), porque en
+  Termux no hay navegador ni librerías de imagen: ~1 s por captura en el
+  contenedor. La posición de todo está medida a 2400×1504 y se escala con
+  la resolución. `leer.mjs` se ejecuta también por un enlace o desde una
+  carpeta con espacios (antes no hacía nada y salía con 0).
 
 ## La base de datos de tus partidas (3.8.0)
 

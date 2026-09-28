@@ -44,6 +44,9 @@ export function conservarFichasPrevias(heroList, previous) {
   const retratoPrevio = Object.fromEntries(
     (previous?.heroes ?? []).filter((h) => h?.retrato).map((h) => [h.name, h.retrato]),
   );
+  const caraPrevia = Object.fromEntries(
+    (previous?.heroes ?? []).filter((h) => h?.cara).map((h) => [h.name, h.cara]),
+  );
   // Y la speciality: con la ficha caída, derivar-tags.mjs volvía a la
   // descarga a ciegas por una ruta escrita a mano, justo lo que 1.37.0 quiso
   // evitar.
@@ -56,6 +59,7 @@ export function conservarFichasPrevias(heroList, previous) {
   for (const h of heroList) {
     if (danoPrevio[h.name]) h.damage = danoPrevio[h.name];
     if (retratoPrevio[h.name]) h.retrato = retratoPrevio[h.name];
+    if (caraPrevia[h.name]) h.cara = caraPrevia[h.name];
     if (specialityPrevia[h.name]) h.speciality = specialityPrevia[h.name];
     if (kitPrevio[h.name]) h.kitTexto = kitPrevio[h.name];
   }

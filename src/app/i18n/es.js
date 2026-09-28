@@ -11,7 +11,7 @@ export default {
   'app.baneados': 'Baneados',
   'app.ajustes': 'Ajustes',
   'fase.baneos': 'Fase de baneos',
-  'fase.baneosPista': 'Con prisa, marca solo los baneos de tu línea: los demás no cambian lo que te recomiendo. Cuando acaben, pasa a los picks.',
+  'fase.baneosPista': 'Con prisa, marca primero los baneos de tu línea: los demás no cambian tu pick (sí el consejo a tus compañeros). Cuando acaben, pasa a los picks.',
   'fase.buscarBaneo': 'Buscar héroe para banear',
   'fase.aPicks': 'Ir a los picks →',
   'fase.sinBaneosAPicks': 'Sin baneos · ir a los picks →',

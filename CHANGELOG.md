@@ -8,6 +8,28 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.21.0
+
+- **Intro ya no te quita un héroe del draft.** Con Alice metida, escribir
+  «al» y dar a Intro buscando a Alucard la quitaba sin avisar. Ahora Intro
+  salta a los que ya están marcados y mete al siguiente.
+- **Tu pick fijado no se queda colgado.** Si lo baneas se suelta, igual que
+  si lo metes de enemigo. Antes el hueco «Tú» seguía enseñándolo y «Gané»
+  apuntaba la partida a otro héroe. Y en la pestaña de tu equipo ya no se
+  puede tocar: eres tú.
+- **El lector de la tablet lee también los picks del enemigo.** Además de
+  los diez baneos, mientras se elige reconoce a los cinco enemigos por su
+  dibujo. En tu captura, Clint y Khufra, sin fallos en los huecos vacíos.
+  Tus compañeros no se leen: se ven con su skin. Ahora reconoce a TODOS
+  los héroes, también a los rehechos (tu tercer baneo era Masha, con su
+  arte nuevo), porque compara con la cara del juego actual que da la API:
+  177 de 178 caras de tus capturas bien leídas y ninguna mal.
+- La pista de la fase de baneos decía que los de otras líneas no cambian
+  nada; no cambian tu pick, pero el consejo a tus compañeros sí los usa, y
+  ahora lo dice.
+- Si abres el selector antes de que lleguen los datos, la rejilla se
+  ordena sola cuando llegan (antes se quedaba en orden alfabético).
+
 ## 3.20.0
 
 - **Las etiquetas de los 133 héroes se han revisado leyendo sus habilidades

@@ -191,6 +191,24 @@ function extraerRetrato(node) {
 }
 
 /**
+ * La cara del juego ACTUAL: `head` del objeto de configuracion del heroe (el
+ * que lleva `heroid`), un PNG del cliente del juego. No es la del retrato:
+ * esa es la de la web de Moonton (`records.data.head`) y conserva el arte
+ * VIEJO de los heroes rehechos (Floryn, Faramis, Kalea...). La usa el lector
+ * de pantalla (scripts/lector): con ella acierta 173 de 178 caras de las
+ * capturas de Javi sin ningun error. Por forma, no por ruta.
+ */
+export function extraerCara(node, depth = 0) {
+  if (depth > HONDURA || node == null || typeof node !== 'object') return null;
+  if (!Array.isArray(node) && node.heroid != null && typeof node.head === 'string' && /^https?:\/\/\S+\.(png|jpe?g|webp)(\?|$)/i.test(node.head)) return node.head;
+  for (const v of Array.isArray(node) ? node : Object.values(node)) {
+    const c = extraerCara(v, depth + 1);
+    if (c) return c;
+  }
+  return null;
+}
+
+/**
  * La ficha de cada heroe: speciality y tipo de dano, de UNA sola peticion.
  *
  * Antes se pedia solo para los 7 heroes sin tags a mano. Ahora se pide para
@@ -215,6 +233,8 @@ export async function fetchFichas(heroes) {
       if (dano.fisico || dano.magico || dano.verdadero) ficha.damage = dano;
       const retrato = extraerRetrato(data);
       if (retrato) ficha.retrato = retrato;
+      const cara = extraerCara(data);
+      if (cara) ficha.cara = cara;
       const kitTexto = huellaTexto(data);
       if (kitTexto) ficha.kitTexto = kitTexto;
       if (Object.keys(ficha).length) out[h.name] = ficha;

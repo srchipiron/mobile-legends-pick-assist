@@ -107,6 +107,59 @@ await prueba('las caras del selector de picks van en el orden del motor y NO se 
   await contexto.close();
 });
 
+await prueba('Intro no quita a quien ya está marcado, y tu pick fijado ni se mete de compañero ni se queda si lo baneas', async () => {
+  // Cazado en la revisión de 3.21.0: con Alice metida, «al» + Intro buscando a
+  // Alucard la QUITABA (tocar a un marcado lo quita), sin avisar.
+  const { contexto, pagina } = await paginaCon(navegador, url, {
+    viewport: { width: 360, height: 740 },
+    almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: ['Alice'], allies: [], bans: [], enemyRoam: null, fase: 'picks', miPick: 'Rafaela', miPickDesde: Date.now() } },
+  });
+  await pagina.locator('.side.enemy .slot.empty').first().click(); await pagina.waitForTimeout(300);
+  await pagina.locator('.sheet input').fill('al'); await pagina.waitForTimeout(150);
+  await pagina.locator('.sheet input').press('Enter'); await pagina.waitForTimeout(200);
+  const d = await leer(pagina);
+  ok(d.enemies.includes('Alice'), `Intro ha quitado a Alice, que ya estaba: ${d.enemies}`);
+  eq(d.enemies.length, 2, `Intro no ha metido al siguiente que casa con «al»: ${d.enemies}`);
+  // En la pestaña de tu equipo, tu pick fijado no se puede tocar: eres tú.
+  await pagina.locator('.sheet-bandos [role=tab]').nth(1).click(); await pagina.waitForTimeout(200);
+  await pagina.locator('.sheet input').fill('Rafaela'); await pagina.waitForTimeout(150);
+  ok(await cara(pagina, 'Rafaela').isDisabled(), 'tu pick fijado se puede meter de compañero');
+  await pagina.locator('.sheet .close').first().click(); await pagina.waitForTimeout(300);
+  await contexto.close();
+  // Banearlo lo suelta, igual que meterlo de enemigo.
+  const otra = await paginaCon(navegador, url, {
+    viewport: { width: 360, height: 740 },
+    almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: [], allies: [], bans: [], enemyRoam: null, fase: 'baneos', miPick: 'Rafaela', miPickDesde: Date.now() } },
+  });
+  await otra.pagina.locator('.side.bans .slot.empty').first().click(); await otra.pagina.waitForTimeout(300);
+  await buscarYTocar(otra.pagina, 'Rafaela');
+  const d2 = await leer(otra.pagina);
+  ok(d2.bans.includes('Rafaela'), 'no se ha baneado');
+  eq(d2.miPick ?? null, null, 'banear tu pick fijado no lo suelta: el hueco «Tú» lo seguiría enseñando');
+  await otra.contexto.close();
+});
+
+await prueba('si el meta llega con la hoja de picks abierta, la rejilla se ordena al llegar', async () => {
+  // Cazado en la revisión de 3.21.0: tocar un hueco al arrancar dejaba la
+  // rejilla alfabética (todos con nota 0) hasta cerrar y reabrir la hoja.
+  let soltar;
+  const retenido = new Promise((r) => { soltar = r; });
+  const { contexto, pagina } = await paginaCon(navegador, url, {
+    viewport: { width: 360, height: 740 }, esperar: 'domcontentloaded',
+    almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: [], allies: [], bans: [], enemyRoam: null, fase: 'picks' } },
+    antes: (p) => p.route('**/data/roam-meta.json', async (ruta) => { await retenido; await ruta.continue(); }),
+  });
+  const hueco = pagina.locator('.side.enemy .slot.empty').first();
+  await hueco.waitFor({ timeout: 5000 });
+  await hueco.click(); await pagina.waitForTimeout(300);
+  soltar();
+  await pagina.waitForTimeout(1500);
+  const nombres = await pagina.locator('.hero-grid .grid-nombre').allTextContents();
+  const esperado = motor.probablesDelBando(datos, { equipo: [], linea: 'roam', bando: 'enemigos' }).map((x) => x.name);
+  eq(nombres.slice(0, 12).join(','), esperado.slice(0, 12).join(','), 'con el meta ya llegado la rejilla sigue sin el orden del motor');
+  await contexto.close();
+});
+
 await terminar('interfaz/rapido');
 await navegador.close();
 await cerrar();

@@ -10,7 +10,7 @@ export default {
   'app.baneados': 'Banned',
   'app.ajustes': 'Settings',
   'fase.baneos': 'Ban phase',
-  'fase.baneosPista': 'In a hurry, mark only the bans from your lane: the rest don’t change what I recommend. When they are done, move on to the picks.',
+  'fase.baneosPista': 'In a hurry, mark the bans from your lane first: the rest don’t change your pick (they do change the advice for your teammates). When they are done, move on to the picks.',
   'fase.buscarBaneo': 'Search a hero to ban',
   'fase.aPicks': 'Go to picks →',
   'fase.sinBaneosAPicks': 'No bans · go to picks →',

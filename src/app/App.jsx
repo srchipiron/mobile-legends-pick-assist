@@ -58,6 +58,14 @@ export default function App() {
     }
     setHoja(h);
   };
+  // Si el meta llega con la hoja de picks ya abierta (se tocó un hueco al
+  // arrancar), la rejilla se quedaba alfabética hasta reabrirla. Solo con
+  // `datos`: tocar un héroe NO reordena (lo que se toca a contrarreloj no se mueve).
+  useEffect(() => {
+    if (hoja === 'enemigos' || hoja === 'aliados') {
+      setOrdenPick(probablesDelBando(datos, { equipo: hoja === 'aliados' ? aliados : enemigos, linea, bando: hoja }));
+    }
+  }, [datos]);
   const baneos = useMemo(() => resolverNombres(datos, draft.baneos), [datos, draft.baneos]);
   const miPick = useMemo(() => (draft.miPick ? datos.porNombre.get(draft.miPick) ?? null : null), [datos, draft.miPick]);
 
@@ -83,8 +91,9 @@ export default function App() {
   const esPicks = hoja === 'enemigos' || hoja === 'aliados';
   const seleccionadosPick = useMemo(() => new Set(hoja === 'aliados' ? draft.aliados : draft.enemigos), [hoja, draft.enemigos, draft.aliados]);
   const cogidosPick = useMemo(
-    () => new Set([...(hoja === 'aliados' ? draft.enemigos : draft.aliados), ...draft.baneos]),
-    [hoja, draft.enemigos, draft.aliados, draft.baneos],
+    // Tu pick fijado no se puede meter de compañero: eres tú.
+    () => new Set([...(hoja === 'aliados' ? [...draft.enemigos, ...(draft.miPick ? [draft.miPick] : [])] : draft.aliados), ...draft.baneos]),
+    [hoja, draft.enemigos, draft.aliados, draft.baneos, draft.miPick],
   );
   const poolDeLinea = useMemo(() => new Set(rec.pool.map((h) => h.name)), [rec.pool]);
   // Memorizado: la hoja del perfil comprime el código en un efecto sobre

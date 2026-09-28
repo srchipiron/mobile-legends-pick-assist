@@ -1,24 +1,26 @@
 /**
- * Reconocer la cara redonda de un héroe (baneos y rejilla del draft) contra
- * las caras sacadas del propio juego. Puro: recibe píxeles, no lee ficheros.
+ * Reconocer la cara de un héroe (baneos, rejilla, picks) contra la cara del
+ * juego ACTUAL que da la API (`hero.data.head`, ver sacar-caras.mjs). Puro:
+ * recibe píxeles, no lee ficheros.
  *
- * Por qué así, medido el 26 de septiembre de 2026 con las capturas de Javi:
- * contra los retratos de la API acertaba 35 de 40 (el juego ha rehecho el
- * arte de Floryn, Faramis, Kalea, Thamuz y Julian y la API no); contra caras
- * recortadas del propio juego, 26 de 27, y el que falló no tenía cara del
- * juego. Una cara acertada correlaciona 0,96–0,997; la mejor equivocada,
- * 0,79 como mucho. Por eso hay un umbral (`PARECIDO_MINIMO`) y por debajo
- * se dice «no sé» en vez de adivinar: un baneo mal leído es peor que uno
- * que se toca a mano.
+ * Por qué así, medido con las capturas de Javi (26–28 de septiembre de
+ * 2026): contra el retrato de la web (arte VIEJO de los héroes rehechos)
+ * acertaba 35 de 40; contra caras recortadas de sus capturas, 54 de 54 pero
+ * sin cubrir a 18 héroes; contra la cara del juego de la API, 173 de 178 con
+ * CERO errores. Un acierto va de 0,75 a 0,99 de correlación (p10 0,89); el
+ * mejor equivocado, 0,60 en baneos y rejilla y 0,72 en el panel de picks
+ * (huecos vacíos o con skin). Por debajo de `PARECIDO_MINIMO` se dice «no
+ * sé» en vez de adivinar: un héroe mal leído es peor que uno que se toca a mano.
  */
 
 /** Lado de la rejilla a la que se reduce cada cara (G×G×3 números). */
 export const LADO = 24;
 /**
- * Por debajo, «no sé». Entre 0,79 (el mejor equivocado medido) y 0,907
- * (el acierto más bajo medido, Hirara con el aro de selección encima).
+ * Por debajo, «no sé». Por encima del peor caso sin coincidencia medido
+ * (0,72, un hueco de picks con skin) con 0,08 de margen; deja fuera un
+ * acierto de 0,75 (Argus) y recoge los de 0,82–0,83 (Zhask, Alpha).
  */
-export const PARECIDO_MINIMO = 0.85;
+export const PARECIDO_MINIMO = 0.80;
 
 /**
  * La parte que se compara: la mitad de arriba del círculo. Abajo va el
@@ -71,7 +73,7 @@ const escalar = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a
  * pinta el círculo un poco distinto). Devuelve el mejor y el segundo, con
  * `nombre: null` si el mejor no llega a PARECIDO_MINIMO.
  */
-export function reconocer(img, [cx, cy, r], caras) {
+export function reconocer(img, [cx, cy, r], caras, { pasos = 3, escalas = [0.94, 1.06] } = {}) {
   const paso = Math.max(1, Math.round(r / 16));
   const mejor = new Map();
   let donde = [0, 0], tope = -Infinity;
@@ -84,9 +86,9 @@ export function reconocer(img, [cx, cy, r], caras) {
     }
   };
   // Primero la posición a tamaño tal cual; después el tamaño alrededor de la mejor.
-  for (let dx = -3; dx <= 3; dx++) for (let dy = -3; dy <= 3; dy++) probar(dx, dy, 1);
+  for (let dx = -pasos; dx <= pasos; dx++) for (let dy = -pasos; dy <= pasos; dy++) probar(dx, dy, 1);
   const [bx, by] = donde;
-  for (const esc of [0.94, 1.06]) for (let dx = bx - 1; dx <= bx + 1; dx++) for (let dy = by - 1; dy <= by + 1; dy++) probar(dx, dy, esc);
+  for (const esc of escalas) for (let dx = bx - 1; dx <= bx + 1; dx++) for (let dy = by - 1; dy <= by + 1; dy++) probar(dx, dy, esc);
   const orden = [...mejor].sort((a, b) => b[1] - a[1]);
   const [primero, segundo] = orden;
   return {
@@ -95,6 +97,19 @@ export function reconocer(img, [cx, cy, r], caras) {
     parecido: primero?.[1] ?? 0,
     segundo: segundo ? { nombre: segundo[0], parecido: segundo[1] } : null,
   };
+}
+
+/**
+ * La misma cara en espejo: la zona que se compara es simétrica respecto al
+ * centro, así que basta con dar la vuelta a las columnas. El panel de picks
+ * enemigos enseña el dibujo reflejado.
+ */
+export function espejo(v) {
+  const out = new Float32Array(v.length);
+  for (let j = 0; j < LADO; j++) for (let i = 0; i < LADO; i++) for (let c = 0; c < 3; c++) {
+    out[(j * LADO + i) * 3 + c] = v[(j * LADO + (LADO - 1 - i)) * 3 + c];
+  }
+  return out;
 }
 
 /** Caras guardadas (base64 de LADO×LADO×3 bytes) a vectores normalizados. */

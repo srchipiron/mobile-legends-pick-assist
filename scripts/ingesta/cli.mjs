@@ -67,6 +67,7 @@ async function main() {
       if (f?.speciality) h.speciality = f.speciality;
       if (f?.damage) h.damage = f.damage;
       if (f?.retrato) h.retrato = f.retrato;
+      if (f?.cara) h.cara = f.cara;
       // La huella del texto tambien: sin esta linea se calculaba en la ficha
       // y se quedaba la conservada del repositorio (lo dijo la mutacion).
       if (f?.kitTexto) h.kitTexto = f.kitTexto;

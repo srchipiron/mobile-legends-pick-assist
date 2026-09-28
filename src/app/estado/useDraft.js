@@ -63,8 +63,8 @@ export function useDraft() {
     setDraft((d) => {
       const lista = d[bando];
       if (lista.length >= TOPES[bando] || lista.includes(heroe.name)) return d;
-      // Tu pick fijado no puede ser a la vez enemigo o baneado.
-      const sueltaPick = bando !== 'aliados' && d.miPick === heroe.name;
+      // Tu pick fijado no puede ser a la vez enemigo, compañero ni baneado.
+      const sueltaPick = d.miPick === heroe.name;
       const nuevo = { ...d, [bando]: [...lista, heroe.name], ...(sueltaPick ? { miPick: null, miPickDesde: null } : {}) };
       return { ...nuevo, completoDesde: completoDesdeDe(nuevo, ahora) };
     });
@@ -92,9 +92,14 @@ export function useDraft() {
   }), []);
 
   /** Baneos: se marca y se desmarca sin cerrar el selector. */
-  const alternarBaneo = useCallback((heroe) => setDraft((d) => (d.baneos.includes(heroe.name)
-    ? { ...d, baneos: d.baneos.filter((n) => n !== heroe.name) }
-    : (d.baneos.length < TOPES.baneos ? { ...d, baneos: [...d.baneos, heroe.name] } : d))), []);
+  const alternarBaneo = useCallback((heroe) => setDraft((d) => {
+    if (d.baneos.includes(heroe.name)) return { ...d, baneos: d.baneos.filter((n) => n !== heroe.name) };
+    if (d.baneos.length >= TOPES.baneos) return d;
+    // Banear tu pick fijado lo suelta, como meterlo de enemigo (`anadir`):
+    // si no, el hueco «Tú» seguía enseñándolo y «Gané» apuntaba al nº1.
+    const sueltaPick = d.miPick === heroe.name;
+    return { ...d, baneos: [...d.baneos, heroe.name], ...(sueltaPick ? { miPick: null, miPickDesde: null } : {}) };
+  }), []);
 
   /** Tu rival, marcado a mano (segundo toque lo desmarca). Manda sobre lo deducido. */
   const marcarRival = useCallback((heroe) => setDraft((d) => ({ ...d, rivalMarcado: d.rivalMarcado === heroe.name ? null : heroe.name })), []);

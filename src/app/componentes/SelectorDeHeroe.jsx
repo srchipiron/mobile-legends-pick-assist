@@ -28,10 +28,12 @@ import { tPorDefecto } from './tPorDefecto.js';
 export function SelectorDeHeroe({
   heroes, cogidos, stats, onElegir, onCerrar, t = tPorDefecto,
   multi = false, seleccionados = null, max = 10, sugeridos = [], orden = 'pick',
-  bandos = null, onBando = null, cuenta = null, pool = null,
+  bandos = null, onBando = null, cuenta = null, pool: poolDado = null,
 }) {
   const [q, setQ] = useState('');
-  // Con `pool` (tu línea), empieza enseñando solo esos; buscando, todos.
+  // Con `pool` (tu línea), empieza enseñando solo esos; buscando, todos. Un
+  // pool vacío (el meta aún no ha llegado) no filtra: «Tu línea (0)» no enseñaba nada.
+  const pool = poolDado?.size ? poolDado : null;
   const [soloPool, setSoloPool] = useState(!!pool);
   const inputRef = useRef(null);
   // Enfocar UNA vez al abrir: con `onCerrar` en las dependencias el efecto se
@@ -70,10 +72,12 @@ export function SelectorDeHeroe({
     if (multi) setQ('');
   };
   // Intro coge el primero de la lista: tres letras y darle es más rápido que
-  // apuntar al botón con el teclado del móvil abierto.
+  // apuntar al botón con el teclado del móvil abierto. En multi-toque se
+  // salta a los ya marcados: tocarlos los QUITA, y con Alice metida, «al» +
+  // Intro buscando a Alucard la quitaba sin avisar.
   const conIntro = (e) => {
     if (e.key !== 'Enter') return;
-    const primero = lista.find((h) => !cogidos.has(h.name));
+    const primero = lista.find((h) => !cogidos.has(h.name) && !(multi && marcado(h)));
     if (primero) elegir(primero);
   };
 

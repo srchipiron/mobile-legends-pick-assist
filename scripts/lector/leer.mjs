@@ -14,9 +14,11 @@
  * carpeta aparece cualquier otro mandato de adb.
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, realpathSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { leerPng } from './png.mjs';
-import { cargarCaras, reconocer } from './caras.mjs';
+import { cargarCaras, reconocer, espejo } from './caras.mjs';
 
 /**
  * Dónde están los diez baneos en una pantalla de 2400×1504, medido en las
@@ -40,7 +42,46 @@ export function leerBaneos(img, caras) {
   return { tuyos: leer(BANEOS.tuyos), suyos: leer(BANEOS.suyos) };
 }
 
+/**
+ * Los picks ENEMIGOS: el dibujo grande de la derecha. Medido en la captura
+ * de Javi (Clint, 28-9-2026): es la misma cara del juego que usa el lector,
+ * AMPLIADA y en ESPEJO, con el centro al 54,7% del ancho y al 48,6% del
+ * alto de cada hueco y radio el 34,3% del alto (parecido 0,98; Khufra en el
+ * segundo hueco, 0,885, con el siguiente candidato en 0,50). Solo vale
+ * mientras se elige: en la fase de skins el dibujo ya lleva la skin y no
+ * casa con nada (máximo 0,65 en su captura), y eso sale como «?», no como un
+ * nombre. Los de TU equipo no se leen: se ven con la skin que lleva cada
+ * uno (ninguno pasaba de 0,72).
+ */
+export const PICKS_ENEMIGOS = [0, 1, 2, 3, 4].map((i) => {
+  const x0 = 2020, ancho = 380, y0 = 230 + 216 * i, alto = 216;
+  return [x0 + 0.547 * ancho, y0 + 0.486 * alto, 0.343 * alto];
+});
+
+export function leerPicksEnemigos(img, caras) {
+  const enEspejo = caras.map((c) => ({ ...c, v: espejo(c.v) }));
+  // Búsqueda más ancha que en los baneos: cada dibujo encuadra la cara en un
+  // sitio (Khufra cae a unos 20 píxeles de Clint en el mismo hueco).
+  return PICKS_ENEMIGOS.map((pos) => reconocer(img, escalar(img, pos), enEspejo, { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12] }));
+}
+
 export const carasGuardadas = () => cargarCaras(JSON.parse(readFileSync(new URL('caras.json', import.meta.url))).caras);
+
+/**
+ * Si las caras de referencia se han quedado atrás de los datos (un héroe
+ * nuevo, o uno rehecho al que la API le da otra cara), lo dice: sin avisar,
+ * ese héroe saldría siempre como «?» sin que nadie supiera por qué.
+ */
+export const carasDesfasadas = (fuentes = {}, heroes = []) => heroes.filter((h) => h?.cara && fuentes[h.name] !== h.cara).map((h) => h.name);
+
+export function avisoDeCaras() {
+  try {
+    const { fuentes = {} } = JSON.parse(readFileSync(new URL('caras.json', import.meta.url)));
+    const { heroes = [] } = JSON.parse(readFileSync(new URL('../../public/data/roam-meta.json', import.meta.url)));
+    const viejas = carasDesfasadas(fuentes, heroes);
+    return viejas.length ? `Caras sin poner al día (${viejas.join(', ')}): node scripts/lector/sacar-caras.mjs` : null;
+  } catch { return null; }
+}
 
 function capturarTablet(dispositivo) {
   // `connect` no falla si ya está conectada; sin él, el primer uso tras
@@ -65,18 +106,28 @@ async function principal() {
   }
   if (guardar) writeFileSync(guardar, png);
   const img = leerPng(png);
-  const baneos = leerBaneos(img, carasGuardadas());
+  const caras = carasGuardadas();
+  const baneos = leerBaneos(img, caras);
+  const enemigos = leerPicksEnemigos(img, caras);
   if (process.argv.includes('--json')) {
     const plano = (l) => l.map((x) => x.nombre);
-    console.log(JSON.stringify({ ancho: img.ancho, alto: img.alto, tuyos: plano(baneos.tuyos), suyos: plano(baneos.suyos) }));
+    console.log(JSON.stringify({ ancho: img.ancho, alto: img.alto, tuyos: plano(baneos.tuyos), suyos: plano(baneos.suyos), enemigos: plano(enemigos) }));
     return;
   }
   const linea = (l) => l.map((x) => x.nombre ?? `? (¿${x.candidato}? ${Math.round(x.parecido * 100)}%)`).join(', ');
   console.log(`Captura ${img.ancho}×${img.alto}`);
   console.log(`Baneos de tu equipo: ${linea(baneos.tuyos)}`);
   console.log(`Baneos del enemigo:  ${linea(baneos.suyos)}`);
-  const dudas = [...baneos.tuyos, ...baneos.suyos].filter((x) => !x.nombre).length;
-  if (dudas) console.log(`${dudas} sin reconocer: hueco vacío o héroe sin cara de referencia.`);
+  console.log(`Picks del enemigo:   ${linea(enemigos)}`);
+  const dudas = [...baneos.tuyos, ...baneos.suyos, ...enemigos].filter((x) => !x.nombre).length;
+  if (dudas) console.log(`${dudas} sin reconocer: hueco vacío, todavía eligiendo, fase de skins o héroe sin cara de referencia.`);
+  const aviso = avisoDeCaras();
+  if (aviso) console.log(aviso);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) await principal();
+// Con la ruta real de los dos lados: en Termux el repositorio puede estar
+// detrás de un enlace (`~/storage/shared`) o en una carpeta con espacios, y
+// comparar la URL con `file://${argv[1]}` hacía que no pasara nada, con
+// código 0 (cazado en la revisión de 3.21.0).
+const esteFichero = realpathSync(fileURLToPath(import.meta.url));
+if (process.argv[1] && realpathSync(resolve(process.argv[1])) === esteFichero) await principal();

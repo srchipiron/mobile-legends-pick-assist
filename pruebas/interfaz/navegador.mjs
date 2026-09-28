@@ -60,9 +60,11 @@ export async function abrirNavegador() {
  * Una página nueva con el estado guardado que se pida (las claves
  * roam-picker:* de siempre), ya cargada y en reposo.
  */
-export async function paginaCon(navegador, url, { viewport = { width: 390, height: 844 }, locale = 'es-ES', almacen = {} } = {}) {
+export async function paginaCon(navegador, url, { viewport = { width: 390, height: 844 }, locale = 'es-ES', almacen = {}, antes = null, esperar = 'networkidle' } = {}) {
   const contexto = await navegador.newContext({ viewport, locale });
   const pagina = await contexto.newPage();
+  // `antes`: para interceptar peticiones (p. ej. retrasar el meta) antes de cargar.
+  if (antes) await antes(pagina);
   const errores = [];
   pagina.on('pageerror', (e) => errores.push(e.message));
   // Se siembra UNA vez por contexto, no en cada navegación: `addInitScript`
@@ -77,7 +79,7 @@ export async function paginaCon(navegador, url, { viewport = { width: 390, heigh
     } catch { /* sin sessionStorage: se siembra igual */ }
     for (const [clave, valor] of Object.entries(datos)) localStorage.setItem(clave, JSON.stringify(valor));
   }, almacen);
-  await pagina.goto(url, { waitUntil: 'networkidle' });
+  await pagina.goto(url, { waitUntil: esperar });
   await pagina.waitForTimeout(500);
   return { contexto, pagina, errores };
 }

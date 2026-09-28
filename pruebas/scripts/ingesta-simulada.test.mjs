@@ -116,10 +116,12 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       if (fallaDetail) { res.statusCode = 500; return res.end('{}'); }
       marca('detail');
       const h = heroes.find((x) => String(x.id) === m[1]) ?? heroes[0];
-      return json({ code: 0, data: { hero: { data: {
-        name: h.name, head: `http://127.0.0.1:${puerto}/img/${h.id}.jpg`, speciality: ['Guard', 'Crowd Control'],
+      // La forma real (medida el 28-9-2026): el retrato de la web fuera y la
+      // cara del juego dentro del objeto de configuración, junto a `heroid`.
+      return json({ code: 0, data: { records: [{ data: { head: `http://127.0.0.1:${puerto}/img/${h.id}.jpg`, hero: { data: {
+        heroid: h.id, name: h.name, head: `http://127.0.0.1:${puerto}/cara/${h.id}.png`, speciality: ['Guard', 'Crowd Control'],
         skill: { skilllist: [{ skilldesc: DESCRIPCION }] },
-      } } } });
+      } } } }] } });
     }
     if (/^\/api\/(academy\/)?heroes\/[^/]+\/counters$/.test(ruta) && fallaCounters) { res.statusCode = 500; return res.end('{}'); }
     if (/^\/api\/heroes\/[^/]+\/counters$/.test(ruta)) {
@@ -204,6 +206,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     ok(atlas && atlas.id === 1 && atlas.role === 'tank' && atlas.lanes.includes('roam'), `ficha de Atlas: ${JSON.stringify(atlas)}`);
     eq(atlas?.damage?.magico, 1, `tipo de daño de Atlas: ${JSON.stringify(atlas?.damage)}`);
     eq(atlas?.kitTexto, huellaTexto({ skilldesc: DESCRIPCION }), `la huella del texto no es la de la ficha SERVIDA: ${atlas?.kitTexto}`);
+    // La cara del juego (la del objeto con `heroid`), no el retrato de la web: la usa el lector de pantalla.
+    ok(atlas?.cara?.endsWith('/cara/1.png'), `la cara del juego no es la servida en hero.data.head: ${atlas?.cara}`);
+    ok(atlas?.retrato?.endsWith('/img/1.jpg'), `el retrato ya no es el de la web: ${atlas?.retrato}`);
     eq(d.counters.Atlas?.Khufra, 0.5123, `cruce Atlas→Khufra: ${JSON.stringify(d.counters.Atlas)}`);
     eq(d.counters.Atlas?.Layla, 0.53, 'no ha elegido la ruta con MÁS cruces (academy trae 4, la del esquema 2)');
     ok(/^4 pares .*academy/.test(d.diagnostics.rutasMedidas?.counter ?? ''), `rutas medidas: ${JSON.stringify(d.diagnostics.rutasMedidas)}`);
@@ -266,6 +271,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     const atlas3 = d3.heroes.find((h) => h.name === 'Atlas');
     ok(atlas3?.speciality?.includes('Guard'), `con la ficha caída la speciality no se conserva: ${JSON.stringify(atlas3?.speciality)}`);
     eq(atlas3?.kitTexto, huellaTexto({ skilldesc: DESCRIPCION }), 'con la ficha caída la huella del texto no se conserva de la corrida anterior: avisaría de un rework falso');
+    ok(atlas3?.cara?.endsWith('/cara/1.png'), `con la ficha caída la cara del juego no se conserva: ${atlas3?.cara}`);
     ok(/^2 pares /.test(d3.diagnostics.rutasMedidas?.counter ?? '') && !/academy/.test(d3.diagnostics.rutasMedidas?.counter ?? ''),
       `un fallo suelto al sondear cambió la ruta de counters por una vacía: ${d3.diagnostics.rutasMedidas?.counter}`);
     eq(d3.counters.Atlas?.Khufra, 0.5123, 'la matriz no se descargó por la ruta buena tras el fallo suelto');

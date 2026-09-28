@@ -5,14 +5,14 @@
  * de septiembre de 2026, fase de picks) y con la regla de seguridad que
  * pidió él: el lector solo hace capturas, nunca toca la tablet.
  */
-import { readFileSync, readdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync, mkdtempSync, writeFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { test, ok, eq, terminar, RAIZ, leerJson, leerTexto, generador } from '../arnes.mjs';
+import { test, ok, eq, terminar, RAIZ, leerJson, generador } from '../arnes.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
 import { LADO } from '../../scripts/lector/caras.mjs';
-import { leerBaneos, carasGuardadas, REFERENCIA } from '../../scripts/lector/leer.mjs';
+import { leerBaneos, leerPicksEnemigos, carasGuardadas, carasDesfasadas, REFERENCIA } from '../../scripts/lector/leer.mjs';
 
 test('el lector de PNG devuelve los mismos píxeles con los cinco filtros de fila', () => {
   const azar = generador(3);
@@ -26,6 +26,28 @@ test('el lector de PNG devuelve los mismos píxeles con los cinco filtros de fil
   }
   const mezcla = leerPng(escribirPng({ ancho, alto, rgba }, (y) => y % 5));
   ok(Buffer.from(mezcla.rgba).equals(Buffer.from(rgba)), 'mezclando filtros por fila los píxeles no vuelven iguales');
+  // Entrelazado Adam7 (una de las 133 caras de la API viene así), con un
+  // tamaño que no es múltiplo de 8 para que las pasadas queden desiguales.
+  const adam7 = leerPng(escribirPng({ ancho, alto, rgba }, (y) => y % 5, { entrelazado: true }));
+  ok(Buffer.from(adam7.rgba).equals(Buffer.from(rgba)), 'con entrelazado Adam7 los píxeles no vuelven iguales');
+  // Paleta con transparencia (el dibujo grande de la API es de paleta).
+  const pocos = rgba.map((v, k) => (k % 4 === 3 ? (v > 128 ? 255 : 90) : v & 0xc0));
+  for (const entrelazado of [false, true]) {
+    const pal = leerPng(escribirPng({ ancho, alto, rgba: pocos }, (y) => y % 5, { paleta: true, entrelazado }));
+    ok(Buffer.from(pal.rgba).equals(Buffer.from(pocos)), `con paleta${entrelazado ? ' y entrelazado' : ''} los píxeles no vuelven iguales`);
+  }
+});
+
+test('una imagen entrelazada REAL de la API se lee igual que en el navegador', () => {
+  // La cara de Thamuz (`hero.data.head` de la API, 28-9-2026) viene
+  // entrelazada. El escritor de las pruebas comparte la tabla Adam7 con el
+  // lector, así que un error en ella pasaría la prueba de ida y vuelta: esta
+  // no. La huella se sacó con este lector después de comprobar que da los
+  // mismos píxeles que Chromium (diferencia máxima 0 en RGB y en alfa).
+  const img = leerPng(readFileSync(join(RAIZ, 'pruebas/fixtures/juego/entrelazado.png')));
+  let h = 0x811c9dc5;
+  for (const b of img.rgba) { h ^= b; h = Math.imul(h, 0x01000193) >>> 0; }
+  eq(`${img.ancho}x${img.alto} ${h.toString(16)}`, '128x128 7baf46b4', 'la imagen entrelazada no se lee como en el navegador');
 });
 
 /** La captura entera de 2400×1504, negra salvo las dos tiras de baneos del recorte. */
@@ -39,8 +61,13 @@ function capturaDeBaneos() {
   return { ancho, alto, rgba };
 }
 
-/** Lo que había (leído a mano de la captura; el tercero no se sabe: rubio con cicatriz, sin cara del juego). */
-const VERDAD = { tuyos: ['Hirara', 'Marcel', undefined, 'Belerick', 'Eudora'], suyos: ['Saber', 'Irithel', 'Paquito', 'Aulus', 'Hirara'] };
+/**
+ * Lo que había, leído a mano de la captura. El tercero («rubio con
+ * cicatriz») no lo reconocía ni la cara de la web ni ninguna recortada: es
+ * Masha, rehecha en el parche 2.2.16; con la cara del juego de la API sale a
+ * 0,974 y el siguiente candidato a 0,71.
+ */
+const VERDAD = { tuyos: ['Hirara', 'Marcel', 'Masha', 'Belerick', 'Eudora'], suyos: ['Saber', 'Irithel', 'Paquito', 'Aulus', 'Hirara'] };
 const caras = carasGuardadas();
 
 function comprobar(leido, donde) {
@@ -51,12 +78,18 @@ function comprobar(leido, donde) {
   });
 }
 
-test('lee los nueve baneos conocidos de una captura real y no se inventa el décimo', () => {
-  const leido = leerBaneos(capturaDeBaneos(), caras);
-  comprobar(leido, 'captura real');
-  // El que no tiene cara del juego: mejor «no sé» que un nombre, salvo que diga uno con seguridad de verdad.
-  const duda = leido.tuyos[2];
-  ok(duda.nombre === null || duda.parecido >= 0.95, `al baneo sin cara le pone nombre con poca seguridad: ${duda.nombre} ${duda.parecido}`);
+test('lee los diez baneos de una captura real', () => {
+  comprobar(leerBaneos(capturaDeBaneos(), caras), 'captura real');
+});
+
+test('lee los picks del enemigo mientras se elige: Clint y Khufra, y nada en los huecos vacíos', () => {
+  // La columna derecha de la misma captura (pruebas/fixtures/juego/picks-enemigos.png):
+  // el dibujo va AMPLIADO y en ESPEJO; los huecos 3–5 son la silueta roja de «eligiendo».
+  const col = leerPng(readFileSync(join(RAIZ, 'pruebas/fixtures/juego/picks-enemigos.png')));
+  const { ancho, alto } = REFERENCIA, rgba = new Uint8Array(ancho * alto * 4);
+  for (let y = 0; y < col.alto; y++) rgba.set(col.rgba.subarray(y * col.ancho * 4, (y + 1) * col.ancho * 4), ((y + 230) * ancho + 2020) * 4);
+  const picks = leerPicksEnemigos({ ancho, alto, rgba }, caras);
+  eq(picks.map((p) => p.nombre ?? '?').join(','), 'Clint,Khufra,?,?,?', `los picks enemigos salen ${picks.map((p) => `${p.candidato} ${p.parecido.toFixed(2)}`).join(' | ')}`);
 });
 
 test('una pantalla de otra resolución se lee escalando las posiciones', () => {
@@ -95,36 +128,58 @@ test('la línea de mandatos lee un PNG y devuelve JSON con código 0', () => {
   eq(sin.status, 2, 'sin tablet ni archivo no avisa del uso');
 });
 
-test('las caras de referencia son una por héroe del catálogo, con su tamaño, y las de la API están marcadas', () => {
-  const { lado, caras: guardadas, deLaApi } = leerJson('scripts/lector/caras.json');
+test('las caras de referencia tienen su tamaño y su fuente, y el lector avisa de las que se quedan atrás', () => {
+  // NO se exige que haya cara para todo el catálogo: un héroe nuevo llegaría
+  // con los datos del bot y tumbaría el despliegue (la lección de las
+  // pruebas que exigen el dato de un día bueno). Para eso está el aviso.
+  const { lado, caras: guardadas, fuentes } = leerJson('scripts/lector/caras.json');
   eq(lado, LADO, 'caras.json está hecho con otro tamaño que el del lector');
-  const catalogo = leerJson('public/data/roam-meta.json').heroes.map((h) => h.name);
-  const nombres = Object.keys(guardadas);
-  const fuera = nombres.filter((n) => !catalogo.includes(n));
-  eq(fuera.length, 0, `caras con nombres que no son del catálogo: ${fuera}`);
-  const faltan = catalogo.filter((n) => !nombres.includes(n));
-  eq(faltan.length, 0, `héroes sin cara de referencia: ${faltan}`);
-  for (const [n, b64] of Object.entries(guardadas)) eq(Buffer.from(b64, 'base64').length, LADO * LADO * 3, `la cara de ${n} no tiene ${LADO}×${LADO}×3`);
-  ok(deLaApi.every((n) => guardadas[n]), 'deLaApi nombra a alguien sin cara');
+  for (const [n, b64] of Object.entries(guardadas)) {
+    eq(Buffer.from(b64, 'base64').length, LADO * LADO * 3, `la cara de ${n} no tiene ${LADO}×${LADO}×3`);
+    ok(fuentes?.[n], `la cara de ${n} no dice de dónde salió`);
+  }
+  const heroes = [{ name: 'A', cara: 'u1' }, { name: 'B', cara: 'u2' }, { name: 'C', cara: 'u3' }, { name: 'D' }];
+  eq(carasDesfasadas({ A: 'u1', B: 'viejo' }, heroes).join(','), 'B,C', 'no avisa de una cara rehecha (B) o de un héroe nuevo (C)');
 });
 
 test('SEGURIDAD: el lector solo conecta y hace capturas con adb; nunca toca, instala ni abre una consola en la tablet', () => {
   // Javi: «no quiero perder la cuenta». Tocar la pantalla por adb sería
   // automatizar el juego (bot) y pone la cuenta en riesgo; leer una captura no.
+  // Por FORMA, no por texto (3.21.0: la primera versión se saltaba con
+  // `import { execFileSync as x }`, con `cp['execFileSync']` o partiendo
+  // 'input', 'tap' en dos argumentos): toda la carpeta, subcarpetas incluidas.
   const carpeta = join(RAIZ, 'scripts/lector');
+  const ficheros = readdirSync(carpeta, { recursive: true }).map(String).filter((f) => /\.(c|m)?js$/.test(f));
+  const sinComentarios = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
   const PERMITIDOS = [/^\['connect', \w+\]$/, /^\['-s', \w+, 'exec-out', 'screencap', '-p'\]$/];
-  let llamadas = 0;
-  for (const f of readdirSync(carpeta).filter((x) => /\.m?js$/.test(x))) {
-    const texto = leerTexto(`scripts/lector/${f}`);
-    for (const m of texto.matchAll(/(?:execFileSync|execFile|spawnSync|spawn|execSync|exec)\s*\(\s*([^,)]+)(?:,\s*(\[[^\]]*\]))?/g)) {
-      const programa = m[1].trim();
-      ok(programa === "'adb'", `${f} lanza otro programa (${programa}): el lector solo puede hablar con adb`);
-      ok(PERMITIDOS.some((p) => p.test((m[2] ?? '').trim())), `${f} llama a adb con ${m[2]}: solo se permite connect y exec-out screencap -p`);
-      llamadas++;
-    }
-    ok(!/\binput\s+(tap|swipe|text|keyevent)|\b(install|uninstall|am start|monkey)\b/.test(texto.replace(/^\s*(\*|\/\/).*$/gm, '')), `${f} menciona un mandato que actúa sobre la tablet`);
+  const PROHIBIDOS = /['"`](input|shell|tap|swipe|keyevent|text|install|uninstall|push|am|pm|monkey|sendevent|root|reboot)['"`]/;
+  for (const f of ficheros) {
+    const texto = sinComentarios(readFileSync(join(carpeta, f), 'utf8'));
+    ok(!PROHIBIDOS.test(texto), `${f} lleva un mandato de adb que actúa sobre la tablet: ${texto.match(PROHIBIDOS)?.[0]}`);
+    if (f === 'leer.mjs') continue;
+    ok(!/child_process|\bexecFile|\bspawn|\bexecSync|\bprocess\.binding/.test(texto), `${f} puede lanzar programas: solo leer.mjs lo tiene permitido`);
   }
-  eq(llamadas, 2, `el lector hace ${llamadas} llamadas a programas y se esperaban 2 (connect y screencap)`);
+  const leer = sinComentarios(readFileSync(join(carpeta, 'leer.mjs'), 'utf8'));
+  // Una sola importación de child_process, sin alias, sin importación dinámica.
+  const importes = [...leer.matchAll(/child_process/g)].length;
+  eq(importes, 1, 'leer.mjs menciona child_process más de una vez (¿importación dinámica o require?)');
+  ok(/^import \{ execFileSync \} from 'node:child_process';$/m.test(leer), 'leer.mjs no importa exactamente { execFileSync } de node:child_process (sin alias)');
+  ok(!/\bimport\s*\(|\brequire\s*\(|\bspawn|\bexecSync|\bexec\s*\(|\bfork\s*\(/.test(leer), 'leer.mjs lanza programas por otra vía');
+  // Y execFileSync aparece exactamente en el import y en dos llamadas, las permitidas.
+  const usos = [...leer.matchAll(/\bexecFileSync\b/g)].length;
+  const llamadas = [...leer.matchAll(/execFileSync\(\s*'adb',\s*(\[[^\]]*\])/g)].map((m) => m[1]);
+  eq(usos, 3, `execFileSync aparece ${usos} veces en leer.mjs y se esperaban 3 (import, connect, screencap)`);
+  eq(llamadas.length, 2, `leer.mjs hace ${llamadas.length} llamadas a adb y se esperaban 2`);
+  for (const a of llamadas) ok(PERMITIDOS.some((p) => p.test(a)), `leer.mjs llama a adb con ${a}: solo se permite connect y exec-out screencap -p`);
+});
+
+test('la línea de mandatos funciona también por un enlace y desde una carpeta con espacios', () => {
+  // Como en Termux con ~/storage/shared: antes no hacía nada y salía con 0.
+  const tmp = mkdtempSync(join(tmpdir(), 'lector con espacio '));
+  const enlace = join(tmp, 'repo');
+  symlinkSync(RAIZ, enlace);
+  const r = spawnSync(process.execPath, [join(enlace, 'scripts/lector/leer.mjs')], { encoding: 'utf8' });
+  eq(r.status, 2, `por un enlace sale con ${r.status} y sin el mensaje de uso: ${r.stderr}`);
 });
 
 await terminar('scripts/lector');
