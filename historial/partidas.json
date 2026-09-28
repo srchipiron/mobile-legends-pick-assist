@@ -1,6 +1,35 @@
 {
- "actualizado": "2026-09-28T21:53:48.211Z",
+ "actualizado": "2026-09-28T22:12:30.325Z",
  "partidas": [
+  {
+   "t": 1790633512157,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Diggie"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.48,
+   "draft": {
+    "enemigos": [
+     "Aulus",
+     "Masha",
+     "Miya",
+     "Angela",
+     "Xavier"
+    ],
+    "aliados": [
+     "Martis",
+     "Layla",
+     "Ruby",
+     "Valir"
+    ],
+    "linea": "roam",
+    "rival": "Angela"
+   }
+  },
   {
    "t": 1790632412781,
    "pick": "Diggie",
@@ -3066,6 +3095,12 @@
   {
    "cuando": "2026-09-28T21:53:48.211Z",
    "partidas": 110,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-28T22:12:30.325Z",
+   "partidas": 111,
    "heroes": 11,
    "incidencia": 11
   }
