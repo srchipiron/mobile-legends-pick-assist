@@ -1,6 +1,46 @@
 {
- "actualizado": "2026-09-28T16:55:13.398Z",
+ "actualizado": "2026-09-28T21:20:12.111Z",
  "partidas": [
+  {
+   "t": 1790630394503,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Marcel",
+    "Khufra",
+    "Rafaela"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.55,
+   "bans": [
+    "Eudora",
+    "Belerick",
+    "Hirara",
+    "Lukas",
+    "X.Borg",
+    "Hanzo",
+    "Paquito",
+    "Floryn",
+    "Gloo"
+   ],
+   "draft": {
+    "enemigos": [
+     "Kagura",
+     "Bane",
+     "Kaja",
+     "Lesley",
+     "Fanny"
+    ],
+    "aliados": [
+     "Vexana",
+     "Aamon",
+     "Freya",
+     "Brody"
+    ],
+    "linea": "roam",
+    "rival": "Kaja"
+   }
+  },
   {
    "t": 1790614497178,
    "pick": "Estes",
@@ -2945,6 +2985,12 @@
   {
    "cuando": "2026-09-28T16:55:13.398Z",
    "partidas": 107,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-28T21:20:12.111Z",
+   "partidas": 108,
    "heroes": 11,
    "incidencia": 11
   }
