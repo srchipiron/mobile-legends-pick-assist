@@ -1,6 +1,35 @@
 {
- "actualizado": "2026-09-28T22:12:30.325Z",
+ "actualizado": "2026-09-28T22:29:41.784Z",
  "partidas": [
+  {
+   "t": 1790634568857,
+   "pick": "Cyclops",
+   "recomendados": [
+    "Kimmy",
+    "Eudora",
+    "Odette"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.46,
+   "draft": {
+    "enemigos": [
+     "Nana",
+     "Obsidia",
+     "Selena",
+     "Popol and Kupa",
+     "Esmeralda"
+    ],
+    "aliados": [
+     "Minotaur",
+     "Layla",
+     "Yi Sun-shin",
+     "Martis"
+    ],
+    "linea": "mid",
+    "rival": "Nana"
+   }
+  },
   {
    "t": 1790633512157,
    "pick": "Estes",
@@ -3101,6 +3130,12 @@
   {
    "cuando": "2026-09-28T22:12:30.325Z",
    "partidas": 111,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-28T22:29:41.784Z",
+   "partidas": 112,
    "heroes": 11,
    "incidencia": 11
   }
