@@ -86,7 +86,11 @@ test('el consejo para los compañeros cubre las líneas abiertas y responde al e
   //     «por ver» del modelo). Sin esto, cambiar `lineasAbiertas` por `[]`
   //     dentro de `aconsejarEquipo` dejaba las pruebas en verde y el consejo
   //     era el de un draft completo que nadie tiene delante.
-  const firma = (cs) => cs.map((c) => `${c.linea}:${c.sugerencias.map((s) => s.heroe.name).join('/')}`).join(' ');
+  //     Con la PROBABILIDAD de cada sugerencia, no solo con los nombres: en 5
+  //     de 40 corridas de septiembre de 2026 el top 3 salía igual con y sin
+  //     líneas abiertas (la auditoría de 3.21.1) y la prueba fallaba con un
+  //     dato legítimo; el término «por ver» mueve la nota aunque no reordene.
+  const firma = (cs) => cs.map((c) => `${c.linea}:${c.sugerencias.map((s) => `${s.heroe.name}=${s.p.toFixed(6)}`).join('/')}`).join(' ');
   for (const nombres of [['Layla'], ['Layla', 'Fanny'], ['Layla', 'Fanny', 'Pharsa']]) {
     const enemigos = nombres.map(H).filter(Boolean);
     const abiertas = lineasEnemigasAbiertas(datos, enemigos);

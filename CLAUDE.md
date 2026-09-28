@@ -965,6 +965,25 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   los marcados. Y su gemelo: tu pick fijado no se soltaba al banearlo
   (`anadir` sí lo hacía con enemigos) y se podía meter de compañero, así que
   el hueco «Tú» lo enseñaba y «Gané» apuntaba al nº1.
+- **Cinco pruebas más que exigían el dato de un día bueno** (auditoría de
+  3.21.1, pasando las pruebas del motor contra las 40 corridas de datos de
+  septiembre y simulando un héroe nuevo, un rework y un renombrado):
+  la ganancia del equilibrio de daño a 120 días con UNA semilla (las ocho
+  daban −0,26 a +1,20; hoy se exige la media de ocho a 400 días > 0, que
+  sigue cazando el signo cambiado); el consejo con y sin líneas abiertas
+  comparado por nombres (falló en 5 de 40 corridas; hoy por probabilidad);
+  la huella de kit contra la API (un rework tumbaba el despliegue; es el
+  AVISO del diagnóstico); «Winrates: faltan» como FALLO con un héroe
+  recién salido (hoy aviso si es `inferred`); y objetos exigidos por
+  nombre (hoy solo si existen, más «algún objeto con cada efecto»). Y un
+  fallo real que destapó: el cruce por reglas (héroe sin cruces) no era
+  antisimétrico, ida + vuelta sumaban hasta 1,075; hoy resta la regla del
+  otro lado. Dejadas a propósito, con su margen medido: la simulación
+  (diferencia de tasas 0,24–0,40 con la semilla de la prueba en 9 corridas,
+  umbral 0,12), 1 contra 5 (±2,5 puntos, hoy 0,94), la nº1 en la primera
+  pantalla (e2e, no bloquea) y los héroes elegidos por nombre en equipo y
+  draft (cambian de línea poco). Antes de escribir una prueba sobre
+  public/data, pásala contra las corridas guardadas: `git log` las tiene.
 
 ## El modelo (2.0)
 

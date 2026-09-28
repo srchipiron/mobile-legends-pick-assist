@@ -177,7 +177,11 @@ test('prepararDatos decide la ventana en UN sitio: la corta si viene y es cohere
   // uso, no `avgByRank` de la ingesta (media simple, 0,48 tras el reinicio
   // de temporada; ver la prueba del cableado de abajo).
   ok(Math.abs(sin.meta.mediaDelRango - mediaDeWinrate(sin.meta.stats)) < 1e-12, 'con la de 7 la media no es la ponderada de la semana');
-  ok(Math.abs(sin.meta.mediaDelRango - meta.avgByRank[sin.rango]) > 0.005, 'la media ponderada coincide con la simple de la ingesta: o la ingesta ya pondera, o el centro ha vuelto a la simple');
+  // (Hasta 3.21.1 se exigía además que la ponderada se alejara 0,005 de la
+  // simple de la ingesta: con el parche asentado la diferencia era 0,006–0,007
+  // y un parche que debilitara a los más jugados la habría tumbado con un dato
+  // legítimo. Que el centro PONDERA lo comprueba la prueba del cableado, más
+  // abajo, recalculando la media ponderada a mano.)
   // Y con los datos reales tal cual, la decision es la de elegirVentana
   // sobre las mismas entradas: la corta si es coherente, la de 7 si no.
   // NO se exige que sea la corta: el 19 de septiembre de 2026, tres dias

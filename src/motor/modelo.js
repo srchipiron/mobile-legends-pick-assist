@@ -146,8 +146,14 @@ export function terminoCruce(heroe, enemigo, counters) {
   const c = cruce(counters, heroe.name, enemigo.name);
   if (!valido(c)) {
     motivos.push(...porTag);
-    const pseudo = 0.5 + CRUCE_POR_REGLA_MAXIMA * ventaja * (signo < 0 ? -1 : 1);
-    return { valor: logit(pseudo), dato: false, cruce: null, motivos };
+    // Antisimétrico, como el cruce real (c[a][b] + c[b][a] = 1): lo que la
+    // regla le da a él contra ti se resta. Sin esto, con un héroe sin cruces
+    // (recién salido) el draft «ida» y el «vuelta» sumaban 1,006–1,0095
+    // (auditoría de 3.21.1). Si solo uno de los dos tiene regla, vale lo mismo
+    // que antes: no cambia la equivalencia de 1.x.
+    const pseudo = (v, s) => 0.5 + CRUCE_POR_REGLA_MAXIMA * v * (s < 0 ? -1 : 1);
+    const suya = ventajaPorTags(enemigo, heroe);
+    return { valor: logit(pseudo(ventaja, signo)) - logit(pseudo(suya.ventaja, suya.signo)), dato: false, cruce: null, motivos };
   }
   motivos.push(...porTag.filter((m) => (m.bueno ? c >= 0.5 : c <= 0.5)));
   if (c >= CRUCE_DESTACABLE) motivos.push({ clave: 'regla.ganaMatchup', params: { e: enemigo.name }, bueno: true, peso: 1.2 });

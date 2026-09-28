@@ -106,11 +106,33 @@ test('la estimacion de victoria: neutra sin datos, simetrica, y cae donde se mid
   ps.sort((a, b) => a - b);
   const q = (f) => ps[Math.floor(ps.length * f)];
   ok(Math.abs(q(0.5) - 0.5) < 0.06, `la mediana en drafts al azar deberia ser 50%, es ${q(0.5)}`);
+  // Y simétrica también con un héroe SIN cruces (recién salido): ahí mandan
+  // las reglas por etiqueta, y hasta 3.21.1 no eran antisimétricas.
+  {
+    const sinCruces = pools.roam[0].name;
+    const cruda = structuredClone(datos.crudo);
+    delete cruda.counters[sinCruces];
+    for (const fila of Object.values(cruda.counters)) delete fila[sinCruces];
+    const d2 = prepararDatos({ catalogo, meta: cruda });
+    const H2 = (n) => d2.porNombre.get(n);
+    for (let k = 0; k < 40; k++) {
+      const u = new Set([sinCruces]);
+      const coge = (ln) => { const c = pools[ln].filter((h) => !u.has(h.name)); const h = c[Math.floor(rnd() * c.length)]; u.add(h.name); return H2(h.name); };
+      const A = [H2(sinCruces), ...LINEAS.slice(1).map(coge)]; const E = LINEAS.map(coge);
+      const ida = estimarCon(d2, { yo: A[0], aliados: A.slice(1), enemigos: E });
+      const vuelta = estimarCon(d2, { yo: E[0], aliados: E.slice(1), enemigos: A });
+      ok(Math.abs(ida.p + vuelta.p - 1) < 1e-3, `con ${sinCruces} sin cruces no es simétrica: ${ida.p} + ${vuelta.p}`);
+    }
+  }
   // Con la escala medida (0.44) la dispersion de drafts al azar es 40/60
   // (p05/p95), no 30/70: aquello era el modelo sin calibrar. Desde 3.4.0,
   // con el equilibrio de daño dentro, 38/62 (la banda fina, con su margen
   // medido, esta en pruebas/scripts/modelo-medido.test.mjs).
-  ok(q(0.05) > 0.33 && q(0.05) < 0.47 && q(0.95) > 0.53 && q(0.95) < 0.67, `p05/p95 fuera de lo medido: ${q(0.05)} / ${q(0.95)}`);
+  // Sobre los datos del DÍA solo una cota de cordura (ni aplastada en el 50%
+  // ni disparada): la banda depende de la dispersión de los winrates del
+  // parche (0,356 una semana después del reinicio de temporada, incidencia
+  // #9) y la fina, la que vigila la escala, va sobre el meta sintético.
+  ok(q(0.05) > 0.2 && q(0.05) < 0.49 && q(0.95) > 0.51 && q(0.95) < 0.8, `p05/p95 fuera de toda cordura: ${q(0.05)} / ${q(0.95)}`);
 });
 
 test('el modelo: la nota es la probabilidad de ganar y sube con el cruce', () => {

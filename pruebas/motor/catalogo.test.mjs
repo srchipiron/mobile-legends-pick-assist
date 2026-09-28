@@ -271,15 +271,13 @@ test('todos los heroes del catalogo llevan su huella de kit', () => {
   const raras = catalogo.heroes.filter((h) => !/^(fisico|magico|mixto)\|[^|]*(\|[0-9a-f]{8})?$/.test(h.kit)).map((h) => h.name);
   ok(!raras.length, `huellas con forma rara: ${raras.slice(0, 8).join(', ')}`);
 
-  // La huella de hoy tiene que coincidir con la del catalogo, o el aviso
-  // estaria encendido de fabrica. Se comprueba contra los datos reales.
-  const meta = leerJson('public/data/roam-meta.json');
-  const api = Object.fromEntries((meta.heroes ?? []).map((h) => [h.name, h]));
-  const descuadran = catalogo.heroes
-    .filter((h) => api[h.name] && (api[h.name].speciality ?? []).length && huellaDeKit(api[h.name]) !== h.kit)
-    .map((h) => `${h.name}: ${h.kit} vs ${huellaDeKit(api[h.name])}`);
-  ok(!descuadran.length,
-    `el catalogo dice una huella y la API otra (revisa los tags y actualiza \`kit\`): ${descuadran.slice(0, 6).join(' · ')}`);
+  // Que la huella de HOY coincida con la del catálogo NO se comprueba aquí
+  // (sí hasta 3.21.0): un rework de Moonton llega con los datos del bot y
+  // esta prueba tumbaba el despliegue hasta que alguien editara heroes.json.
+  // Ese desajuste es justo el AVISO que dan el diagnóstico y
+  // mantenimiento.yml (`kitsRehechos`, con su prueba sintética en
+  // ingesta.test). Al escribir un `kit` a mano, mira que el diagnóstico no
+  // avise de ese héroe.
 });
 
 test('las etiquetas del catálogo son coherentes con su propia definición', () => {

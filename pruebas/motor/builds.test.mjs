@@ -257,7 +257,12 @@ test('lo que hace un objeto se lee de su texto, no de una lista escrita a mano',
   if (!objetos.length) return;
 
   const porNombreObjeto = Object.fromEntries(objetos.map((o) => [o.nombre, o]));
-  const tiene = (n, e) => porNombreObjeto[n]?.efectos?.includes(e);
+  // Si el objeto no existe (un parche lo quita o lo renombra, como pasó con
+  // Necklace of Durance), su caso se salta: exigirlo tumbaría el despliegue
+  // de los datos con un dato legítimo (auditoría de 3.21.1). Lo que protege
+  // al consejo es que haya ALGÚN objeto con cada efecto, y eso sí se exige.
+  const tiene = (n, e) => !porNombreObjeto[n] || porNombreObjeto[n].efectos?.includes(e);
+  const noTiene = (n, e) => !porNombreObjeto[n]?.efectos?.includes(e);
 
   // Objetos de efecto público. Si la API cambia el formato del texto, esto se
   // entera: sin efectos, los avisos contra el draft enmudecen SIN fallar.
@@ -265,7 +270,10 @@ test('lo que hace un objeto se lee de su texto, no de una lista escrita a mano',
   ok(tiene('Dominance Ice', 'antiCuracion'), 'Dominance Ice sin efecto anti-curacion');
   ok(tiene('Tough Boots', 'cortaControl'), 'Tough Boots sin efecto de acortar control');
   ok(tiene('Winter Crown', 'cortaControl'), 'Winter Crown sin efecto de acortar control');
-  ok(!tiene('Hunter Strike', 'antiCuracion'), 'Hunter Strike no corta curacion y sale como si');
+  ok(noTiene('Hunter Strike', 'antiCuracion'), 'Hunter Strike no corta curacion y sale como si');
+  for (const efecto of ['antiCuracion', 'cortaControl']) {
+    ok(objetos.some((o) => o.efectos?.includes(efecto)), `ningún objeto con ${efecto}: el aviso de la build no tendría nada que proponer`);
+  }
 
   const conEfectos = objetos.filter((o) => o.efectos?.length).length;
   ok(conEfectos >= 5, `solo ${conEfectos} objetos con efecto leido: el texto ha cambiado de forma`);
@@ -281,12 +289,14 @@ test('la defensa de cada objeto sale del texto del juego, no de su categoria', (
   // Objetos de diseno publico, con su defensa conocida. Si la API cambia el
   // formato de `equiptips`, esto se entera: sin ellos el ajuste defensivo
   // seguiria funcionando en silencio SIN proponer nunca nada.
-  ok((porNombre["Athena's Shield"]?.magica ?? 0) > 0, "Athena's Shield sin defensa magica");
-  ok(!(porNombre["Athena's Shield"]?.fisica > 0), "Athena's Shield con defensa fisica");
-  ok((porNombre['Blade Armor']?.fisica ?? 0) > 0, 'Blade Armor sin defensa fisica');
-  ok(!(porNombre['Blade Armor']?.magica > 0), 'Blade Armor con defensa magica');
-  ok((porNombre['Dominance Ice']?.magica ?? 0) > 0 && (porNombre['Dominance Ice']?.fisica ?? 0) > 0,
-    'Dominance Ice deberia dar las dos defensas');
+  // (Cada caso, solo si el objeto sigue existiendo: ver arriba.)
+  const si = (n, cond) => !porNombre[n] || cond(porNombre[n]);
+  ok(si("Athena's Shield", (o) => (o.magica ?? 0) > 0), "Athena's Shield sin defensa magica");
+  ok(si("Athena's Shield", (o) => !(o.fisica > 0)), "Athena's Shield con defensa fisica");
+  ok(si('Blade Armor', (o) => (o.fisica ?? 0) > 0), 'Blade Armor sin defensa fisica');
+  ok(si('Blade Armor', (o) => !(o.magica > 0)), 'Blade Armor con defensa magica');
+  ok(si('Dominance Ice', (o) => (o.magica ?? 0) > 0 && (o.fisica ?? 0) > 0), 'Dominance Ice deberia dar las dos defensas');
+  ok(Object.values(eq5).some((o) => o.magica > 0) && Object.values(eq5).some((o) => o.fisica > 0), 'ningún objeto con defensa mágica o física');
 
   // Y el caso que demuestra por que NO vale el tipo del objeto: Tough Boots
   // esta catalogado como "Movement" y da 18 de defensa magica.

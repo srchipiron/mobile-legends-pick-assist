@@ -90,9 +90,20 @@ test('el modelo: la escala es la medida en las partidas pro', async () => {
     const motor = terminoEquilibrio(p.equipos[0], p.equipos[1]).valor;
     ok(Math.abs(motor - PESO_EQUILIBRIO_DANO * filas[i].D) < 1e-12, `el motor suma ${motor} de equilibrio y el ajuste mide ${filas[i].D}`);
   }
-  const sinDano = validar(filas, (f) => [f.H + f.C + f.S]);
-  const ganancia = (r.cv.logL - sinDano.cv.logL) / filas.length * 1000;
-  ok(ganancia >= 0.5, `el equilibrio de daño ya no mejora la validacion cruzada (${ganancia.toFixed(2)} de logL por 1.000 partidas, minimo 0,5): mide y decide si sigue en la nota`);
+  //    Hasta 3.21 se exigia >= 0,5 a 120 dias con UNA semilla de particion,
+  //    y eso era una moneda: el 28 de septiembre de 2026 las ocho semillas
+  //    daban de -0,26 a +1,20 (la de la prueba, 0,64) porque la ventana de
+  //    120 dias se mueve sola cada dia. A 400 dias, 1,18 a 1,75; con el signo
+  //    cambiado, -5,9 a -6,4. Se exige la MEDIA de ocho semillas a 400 dias
+  //    por encima de 0: caza el signo cambiado (lo que vigila) y no tumba el
+  //    despliegue porque la ganancia de un dia baje. Si baja de verdad, lo
+  //    dice ajustar-modelo.mjs en cada corrida de pro.yml.
+  const largo = await cargar(400);
+  const filasL = largo.usables.map((p) => terminosDe(p, largo.ctx));
+  const semillas = [1, 2, 3, 4, 5, 6, 7, 8];
+  const gananciaMedia = semillas.reduce((acc, semilla) => acc + (validar(filasL, (f) => [f.H + f.C + f.S + PESO_EQUILIBRIO_DANO * f.D], { semilla }).cv.logL
+    - validar(filasL, (f) => [f.H + f.C + f.S], { semilla }).cv.logL) / filasL.length * 1000, 0) / semillas.length;
+  ok(gananciaMedia > 0, `el equilibrio de daño EMPEORA la validacion cruzada a 400 dias (${gananciaMedia.toFixed(2)} de logL por 1.000 partidas, media de 8 semillas): ¿signo cambiado en el motor?`);
 
   //    El margen de 2,5 SE es el correcto para no tumbar el despliegue por
   //    ruido, pero deja pasar mucho: con el ajuste de hoy (0.40 ± 0.13) todo

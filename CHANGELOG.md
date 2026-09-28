@@ -8,6 +8,22 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.21.1
+
+- **Un héroe nuevo ya no puede dejar la app sin datos frescos.** Cuando
+  Moonton saca un héroe, los primeros días no tiene winrate, y eso salía
+  como FALLO en las comprobaciones: se paraba la publicación de los datos
+  de cada día hasta que alguien lo arreglara. Ahora es un aviso («normal
+  los primeros días»). Lo mismo con un héroe rehecho y con un objeto que
+  Moonton quite o renombre.
+- **Un héroe recién salido, sin datos de enfrentamientos, ya no descuadra
+  la probabilidad de ganar.** Su ventaja contra ti y la tuya contra él
+  ahora se compensan como en los datos reales. Hoy no cambia ninguna
+  recomendación: todos los héroes tienen datos.
+- Se revisaron las pruebas que miran los datos del día: cinco podían
+  fallar con un dato normal (una de ellas habría fallado en 5 de las 40
+  corridas de septiembre) y bloquear las actualizaciones.
+
 ## 3.21.0
 
 - **Intro ya no te quita un héroe del draft.** Con Alice metida, escribir

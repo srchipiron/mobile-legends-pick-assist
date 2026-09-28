@@ -147,6 +147,26 @@ test('el autodiagnóstico detecta datos rotos y aprueba los buenos', () => {
   ok(roto.texto.includes('Winrate NO influye'), 'no detecta que los winrates no entran');
 });
 
+test('un héroe recién salido sin winrate es un aviso, uno conocido sin winrate es un fallo', () => {
+  // La auditoría de 3.21.1: con un héroe nuevo (sin tags escritos a mano)
+  // que la API ya pone en una línea pero aún sin estadísticas, «Winrates:
+  // faltan 1» era FALLO, `diagnostico.mjs --local` salía con 1 y `npm test`
+  // tumbaba el despliegue de los datos: un dato legítimo de cada lanzamiento.
+  const entorno = { version: 'test', rango: 'mythic', width: 412, height: 915, storage: true };
+  const stats = Object.fromEntries(heroes.map((x) => [x.name, { winRate: 0.5, pickRate: 0.02 }]));
+  const lanes = catalogo.heroes.map((x) => ({ name: x.name, role: x.role, lanes: x.roam ? ['roam'] : ['exp'] }));
+  const datosDe = (st, extra = []) => prepararDatos({ catalogo: { heroes: catalogo.heroes }, rango: 'mythic',
+    meta: { generatedAt: new Date().toISOString(), ranks: ['mythic'], days: 7, heroCount: 134, heroes: [...lanes, ...extra], stats: st, statsByRank: { mythic: st }, diagnostics: {} } });
+  const texto = (d) => diagnosticar({ linea: 'roam', maestria: {}, partidas: [], entorno, datos: d }).texto.split('\n');
+  const conNuevo = texto(datosDe(stats, [{ name: 'Heroe Recien Salido', role: 'support', lanes: ['roam'] }]));
+  ok(!conNuevo.some((l) => /^\[FALLO\].*Winrates/.test(l)), `un héroe nuevo sin winrate da FALLO: ${conNuevo.filter((l) => /Winrates/.test(l))}`);
+  ok(conNuevo.some((l) => /^\[AVISO\].*Heroe Recien Salido/.test(l)), 'no avisa del héroe nuevo sin winrate');
+  const conocido = catalogo.heroes.find((x) => x.roam).name;
+  const sinUno = Object.fromEntries(Object.entries(stats).filter(([n]) => n !== conocido));
+  const roto = texto(datosDe(sinUno));
+  ok(roto.some((l) => /^\[FALLO\].*Winrates: faltan 1/.test(l) && l.includes(conocido)), `un héroe CONOCIDO sin winrate no da fallo: ${roto.filter((l) => /Winrates/.test(l))}`);
+});
+
 test('el diagnostico lleva el draft con nombres, para poder reproducir una partida', () => {
   // Desde que los huecos ensenan la cara y no el nombre, una captura no dice
   // quien estaba enfrente: hubo que reconstruir a medias el draft de una

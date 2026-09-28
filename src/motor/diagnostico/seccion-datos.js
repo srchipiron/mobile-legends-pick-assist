@@ -97,8 +97,15 @@ export function seccionCobertura(inf, { datos, linea, entorno = {} }) {
   const pool = datos.poolsPorLinea[linea] ?? [];
   inf.seccion('COBERTURA');
   const cov = cobertura(pool, datos.meta.stats, datos.meta.counters);
-  inf.check(cov.conDatos === cov.total, `Winrates: ${cov.conDatos}/${cov.total} héroes de tu línea`,
-    `Winrates: faltan ${cov.faltan.length} (${cov.faltan.slice(0, 8).join(', ')})`);
+  // Un héroe recién salido (sin tags escritos a mano: `inferred`) no tiene
+  // winrate los primeros días, y eso es legítimo: como FALLO tumbaba
+  // `npm test` y con él el despliegue de los datos (auditoría de 3.21.1).
+  // Uno CONOCIDO sin winrate sí es una descarga rota.
+  const faltanConocidos = cov.faltan.filter((n) => !datos.porNombre.get(n)?.inferred);
+  const faltanNuevos = cov.faltan.filter((n) => datos.porNombre.get(n)?.inferred);
+  inf.check(!faltanConocidos.length, `Winrates: ${cov.conDatos}/${cov.total} héroes de tu línea`,
+    `Winrates: faltan ${faltanConocidos.length} (${faltanConocidos.slice(0, 8).join(', ')})`);
+  if (faltanNuevos.length) inf.add('AVISO', `Héroes nuevos sin winrate todavía (normal los primeros días): ${faltanNuevos.join(', ')}`);
   inf.check(cov.conCounters > 0, `Counters: ${cov.conCounters}/${cov.total} héroes de tu línea`,
     'Counters: ninguno. El motor usa reglas por tags, no partidas reales');
   if (cov.conCounters) {
