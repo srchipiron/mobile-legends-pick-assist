@@ -1,6 +1,35 @@
 {
- "actualizado": "2026-09-29T20:07:11.080Z",
+ "actualizado": "2026-09-29T20:29:11.724Z",
  "partidas": [
+  {
+   "t": 1790713734191,
+   "pick": "Diggie",
+   "recomendados": [
+    "Gloo",
+    "Rafaela",
+    "Diggie"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.479,
+   "draft": {
+    "enemigos": [
+     "Vale",
+     "Dyrroth",
+     "Yin",
+     "Floryn",
+     "Obsidia"
+    ],
+    "aliados": [
+     "Clint",
+     "Esmeralda",
+     "Vexana",
+     "Leomord"
+    ],
+    "linea": "roam",
+    "rival": "Floryn"
+   }
+  },
   {
    "t": 1790712415279,
    "pick": "Estes",
@@ -3454,6 +3483,12 @@
   {
    "cuando": "2026-09-29T20:07:11.080Z",
    "partidas": 121,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-29T20:29:11.724Z",
+   "partidas": 122,
    "heroes": 11,
    "incidencia": 11
   }
