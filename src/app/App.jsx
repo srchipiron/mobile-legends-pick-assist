@@ -33,7 +33,7 @@ import { Meta } from './componentes/Meta.jsx';
  * las acciones.
  */
 export default function App() {
-  const { t, linea, setLinea, rango, setRango, idioma, setIdioma } = useAjustes();
+  const { t, linea, setLinea, rango, setRango, idioma, setIdioma, tacto, setTacto } = useAjustes();
   const carga = useDatos(rango);
   const { datos, meta, metaListo, pro, error, generado, edadHoras, sinWinrates } = carga;
   const draft = useDraft();
@@ -215,7 +215,7 @@ export default function App() {
         <FaseBaneos
           t={t} baneos={baneos} proximos={rec.proximos} sugeridos={rec.baneosSugeridos} plan={rec.plan}
           tasaDe={(n) => buscar(datos.meta.stats, n)?.banRate ?? null} rangoDatos={etiquetaDatos}
-          sinWinrates={sinWinrates} idioma={idioma} onIdioma={setIdioma}
+          sinWinrates={sinWinrates} idioma={idioma} onIdioma={setIdioma} tacto={tacto} onTacto={setTacto}
           onAbrirSelector={() => setHoja('baneos')}
           onBanear={(h) => draft.anadir('baneos', h)}
           onQuitar={(h) => draft.quitar('baneos', h)}
@@ -230,7 +230,7 @@ export default function App() {
   return (
     <>
       <FasePicks
-        t={t} linea={linea} rango={datos.rango} idioma={idioma} onIdioma={setIdioma} onRango={setRango}
+        t={t} linea={linea} rango={datos.rango} idioma={idioma} onIdioma={setIdioma} tacto={tacto} onTacto={setTacto} onRango={setRango}
         meta={meta} datos={datos} metaListo={metaListo} sinWinrates={sinWinrates} edadHoras={edadHoras} pro={pro}
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
         onResultado={(gane) => guardarPartida(rec.eleccion?.heroe.name ?? draft.miPick, gane)}

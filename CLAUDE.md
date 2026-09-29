@@ -1729,6 +1729,57 @@ los seis colores de término están elegidos para negro y sobre blanco no
 aguantan el contraste; hacerlo pide una segunda paleta medida, no una
 consulta de medios. Está en «Candidatos descartados».
 
+## Movimiento y tacto (3.22.0)
+
+Pedido: «mejorar la UI con las últimas tendencias en diseño de apps». Lo
+que entró es lo que las apps de 2025–2026 hacen en todas partes (iOS 26,
+Material 3 Expressive) y que aquí tiene un porqué en el draft, sin tocar
+un píxel de alto de lo que decide dónde cae la nº1:
+
+- **Un solo muelle** (`--muelle` en `:root`, un resorte con amortiguación
+  0,75 muestreado en `linear()`, sube al 1,028 y se asienta). Las tarjetas
+  lo leen de ahí; un navegador sin `linear()` usa `ease`.
+- **Las tarjetas se deslizan (FLIP)**: `useDeslizar` (app/componentes)
+  mide `offsetTop`/`offsetLeft` (no incluyen transformaciones, así que una
+  animación a medias no ensucia la medida) y anima con Web Animations solo
+  las que CAMBIAN DE PUESTO; la que entra entre las ocho, con fundido.
+  GUARDA medida al escribirlo: al cargar, el ranking con solo el catálogo
+  y el de con el meta son órdenes distintos y ocho tarjetas volaban 800
+  px. Con otra línea, otro rango o el meta recién llegado (`contexto`) se
+  colocan sin animar. La transformación va en la tarjeta, que no tiene
+  descendientes `fixed` (las hojas se montan en App).
+- **Las hojas entran con `@starting-style`** (24 px y opacidad, 260 ms: poco
+  recorrido a propósito, la rejilla se toca nada más abrir) y **se cierran
+  arrastrando** desde el asa o el título (`CERRAR_PX` 80, o un tirón de
+  `CERRAR_VELOCIDAD` 0,6 px/ms; decisiones de producto, como las de iOS),
+  NUNCA desde la rejilla, un botón o un campo. Cierran con la misma
+  `onCerrar`, así que el historial se retira igual que con el botón. El
+  asa va en el relleno superior (absoluta); el relleno pasa de 16/10 a
+  24/22 px.
+- **Vibración** (`src/app/tacto.js`, 10 ms): solo desde lo que toca el dedo
+  (selector, chips de baneo, ×, nombre de la tarjeta, consejo), nunca desde
+  el estado: la limpieza de nombres al cargar cambia el draft y no vibra
+  (hay prueba). Interruptor «Vibrar al tocar» junto al idioma, solo si el
+  navegador tiene `navigator.vibrate`; se guarda en `roam-picker:tacto`
+  (clave NUEVA, sin migración: sin ella, vibra).
+- Todo se apaga con «reducir movimiento». `movimiento.e2e.mjs` lo prueba
+  con diez mutaciones (sin arrastre, arrastre desde cualquier sitio, sin
+  deslizar, sin la guarda de contexto, sin reducir movimiento, animar sin
+  cambio de puesto, sin `@starting-style`, el interruptor ignorado o sin
+  guardar, la × sin pulso). `primera-pantalla.e2e` da los mismos píxeles
+  que en 3.21.1.
+
+Examinado y NO hecho, con su porqué: la barra de búsqueda de la hoja ABAJO,
+en la zona del pulgar (como Safari en iOS 26): cambia la memoria muscular
+de Javi en mitad de partidas y con el teclado de Android abierto hay que
+medir dónde queda; se reabre si él lo pide. La API View Transitions: con
+React hay que envolver cada cambio de estado en `flushSync` y el FLIP hace
+lo mismo sin tocar el estado. Contar el número de la probabilidad al
+cambiar: un número que se mueve se lee peor con prisa. Una barra apilada
+con los términos en la tarjeta: más alto en la nº1 o menos preciso que los
+puntos. Esqueletos de carga: instalada, la app y los datos salen de la
+caché del instalador al abrir, así que no hay espera que tapar.
+
 ## Los idiomas
 
 Español e inglés, en `src/app/i18n/` (`es.js`, `en.js` y el traductor). Lo importante: **los motivos que salen en

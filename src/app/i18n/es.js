@@ -371,6 +371,8 @@ export default {
   'registro.recomendado': 'recomendado',
 
   // --- público: avisos y donaciones ---
+  'ajustes.tactoSi': 'Vibrar al tocar: sí',
+  'ajustes.tactoNo': 'Vibrar al tocar: no',
   'legal.noAfiliado': 'Proyecto de aficionado, sin relación con Moonton. Mobile Legends: Bang Bang y sus héroes son marcas de sus propietarios.',
   'legal.privacidad': 'Tus datos no salen de tu móvil: no hay cuentas, ni servidor, ni seguimiento.',
   'legal.liquipedia': 'Las partidas profesionales salen de Liquipedia (liquipedia.net/mobilelegends), con licencia CC-BY-SA 3.0.',

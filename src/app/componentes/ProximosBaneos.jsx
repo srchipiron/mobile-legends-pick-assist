@@ -1,3 +1,4 @@
+import { tic } from '../tacto.js';
 import { useMemo } from 'react';
 import { Cara } from './Imagen.jsx';
 import { useOrdenEstable } from './useOrdenEstable.js';
@@ -31,7 +32,7 @@ export function ProximosBaneos({ items, baneos = [], tasaDe = () => null, onBane
               key={n}
               className={`chip ${marcado ? 'elegido' : ''}`}
               aria-pressed={marcado}
-              onClick={() => (marcado ? onQuitar?.(heroe) : onBanear(heroe))}
+              onClick={() => { tic(); if (marcado) onQuitar?.(heroe); else onBanear(heroe); }}
               aria-label={marcado ? t('app.quitar', { nombre: n }) : t('app.marcarBaneo', { nombre: n })}
             >
               <Cara heroe={heroe} alt="" className="grid-cara" tam={22} />

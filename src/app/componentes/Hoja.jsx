@@ -39,14 +39,81 @@ export function useCerrarConAtras(onClose) {
   return hoja;
 }
 
+/** Decisión de producto (como en iOS y Android): lo que hay que bajar la hoja para que se cierre. */
+export const CERRAR_PX = 80;
+/** Un tirón rápido (px/ms) la cierra aunque sea corto. */
+export const CERRAR_VELOCIDAD = 0.6;
+const INTERACTIVO = 'input, button, a, select, textarea, label, [role=tab]';
+
+const quieto = () => !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+const animar = (el, fotogramas, opciones) => {
+  try { return el.animate(fotogramas, opciones); } catch { return null; }
+};
+
+/**
+ * Cerrar una hoja ARRASTRÁNDOLA hacia abajo (3.22.0), como las hojas de iOS
+ * y Android: desde el asa de arriba o desde el título, nunca desde un botón,
+ * un campo o la rejilla (ahí el dedo toca o desplaza, y cerrar sin querer en
+ * mitad del draft sería peor que no tener el gesto). Cierra con la misma
+ * `onCerrar` que el botón, así que la entrada del historial se retira igual.
+ */
+function useArrastrarParaCerrar(hoja, onCerrar) {
+  const cerrarRef = useRef(onCerrar);
+  cerrarRef.current = onCerrar;
+  return (e) => {
+    const el = hoja.current;
+    if (!el || !cerrarRef.current || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    const objetivo = e.target;
+    if (objetivo.closest?.('.sheet') !== el) return;
+    const enAsa = !!objetivo.closest('.sheet-asa');
+    const enTitulo = !!objetivo.closest('.sheet-head') && !objetivo.closest(INTERACTIVO);
+    if (!enAsa && !enTitulo) return;
+    const y0 = e.clientY;
+    let ultimo = { y: y0, t: e.timeStamp };
+    let previo = ultimo;
+    let dy = 0;
+    try { el.setPointerCapture(e.pointerId); } catch { /* sin captura: sigue funcionando mientras el dedo esté encima */ }
+    el.style.transition = 'none';
+    const mover = (ev) => {
+      dy = Math.max(0, ev.clientY - y0);
+      previo = ultimo; ultimo = { y: ev.clientY, t: ev.timeStamp };
+      el.style.translate = `0 ${dy}px`;
+    };
+    const soltar = (ev) => {
+      el.removeEventListener('pointermove', mover);
+      el.removeEventListener('pointerup', soltar);
+      el.removeEventListener('pointercancel', soltar);
+      const dt = Math.max(1, ultimo.t - previo.t);
+      const velocidad = (ultimo.y - previo.y) / dt;
+      const cierra = ev.type === 'pointerup' && (dy >= CERRAR_PX || (dy > 16 && velocidad >= CERRAR_VELOCIDAD));
+      el.style.transition = '';
+      el.style.translate = '';
+      if (cierra) {
+        const salida = quieto() ? null : animar(el, [{ translate: `0 ${dy}px` }, { translate: '0 100%' }], { duration: 160, easing: 'ease-in', fill: 'forwards' });
+        if (salida?.finished) salida.finished.then(() => cerrarRef.current?.(), () => cerrarRef.current?.());
+        else cerrarRef.current?.();
+      } else if (dy > 0 && !quieto()) {
+        animar(el, [{ translate: `0 ${dy}px` }, { translate: '0 0' }], { duration: 240, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+      }
+    };
+    el.addEventListener('pointermove', mover);
+    el.addEventListener('pointerup', soltar);
+    el.addEventListener('pointercancel', soltar);
+  };
+}
+
 /**
  * Una hoja a pantalla completa (diálogo modal). Toda hoja de la app pasa por
- * aquí: así todas se cierran con atrás y todas devuelven el foco.
+ * aquí: así todas se cierran con atrás y todas devuelven el foco. Desde
+ * 3.22.0 entra con un muelle (CSS, `@starting-style`) y se cierra también
+ * arrastrando el asa hacia abajo.
  */
 export function Hoja({ etiqueta, onCerrar, children, alClicar }) {
   const ref = useCerrarConAtras(onCerrar);
+  const alPulsar = useArrastrarParaCerrar(ref, onCerrar);
   return (
-    <div ref={ref} tabIndex={-1} className="sheet" role="dialog" aria-modal="true" aria-label={etiqueta} onClick={alClicar}>
+    <div ref={ref} tabIndex={-1} className="sheet" role="dialog" aria-modal="true" aria-label={etiqueta} onClick={alClicar} onPointerDown={alPulsar}>
+      {onCerrar && <div className="sheet-asa" aria-hidden="true"><span /></div>}
       {children}
     </div>
   );

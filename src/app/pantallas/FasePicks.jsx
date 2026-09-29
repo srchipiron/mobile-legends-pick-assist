@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useMemo, useRef, useState } from 'react';
 import { buscar } from '../../motor/nombres.js';
 import { winrateEnLinea } from '../../motor/draft.js';
 import { MINUTOS_PARA_RECORDAR } from '../estado/useDraft.js';
@@ -10,6 +10,7 @@ import { Composicion } from '../componentes/Composicion.jsx';
 import { SelectorDeRango } from '../componentes/SelectorDeRango.jsx';
 import { Analisis } from '../componentes/Analisis.jsx';
 import { Tarjeta } from '../componentes/Tarjeta.jsx';
+import { useDeslizar } from '../componentes/useDeslizar.js';
 import { ConsejoEquipo } from '../componentes/ConsejoEquipo.jsx';
 import { Leyenda } from '../componentes/Desglose.jsx';
 import { AvisoLegal } from '../componentes/AvisoLegal.jsx';
@@ -30,7 +31,7 @@ import { HORAS_DATOS_VIEJOS } from '../componentes/Pie.jsx';
  * @param d.abrir       abre una hoja: 'enemigos' | 'aliados' | 'yo' | 'maestria' | 'historial' | 'perfil' | 'meta' | 'linea' | 'apuntar' | { build }
  * @param d.onResultado (gane) apunta la partida con tu pick fijado, desde el recordatorio
  */
-export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, pie }) {
+export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, pie }) {
   const { enemigos, aliados, baneos } = equipo;
   const { ranking, rival, cov, pool, analisis, composicion, consejos, yo } = rec;
   const rivalAuto = rival.marcado ? null : rival.nombre;
@@ -48,6 +49,10 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, da
   // tú vas con él». El número de la tarjeta sigue siendo su puesto real.
   const fijada = miPick ? lista.find((c) => c.heroe.name === miPick.name) : null;
   const visibles = fijada ? [fijada, ...lista.filter((c) => c !== fijada)] : lista;
+  // Las tarjetas se deslizan a su puesto nuevo (3.22.0); con otra línea,
+  // otro rango o el meta recién llegado es otro ranking y no se anima.
+  const resultados = useRef(null);
+  useDeslizar(resultados, `${linea}|${rango}|${metaListo}`);
   const fueraDeMios = soloMios && hayMios && ranking[0] && !esMio(ranking[0].heroe) ? ranking[0] : null;
   // ¿Cómo fue? Diez minutos después de fijar el pick (una partida dura más),
   // al volver a la app: Gané / Perdí / Más tarde.
@@ -122,7 +127,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, da
         </div>
       </aside>
 
-      <main className="results">
+      <main className="results" ref={resultados}>
         <div className="results-head">
           <h2>{t('app.pick', { linea: t(`linea.${linea}`) })}</h2>
           {/* La cobertura solo se dice cuando falta algo: con todo cubierto
@@ -193,7 +198,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, onRango, meta, da
         ))}
 
         <Leyenda t={t} />
-        <AvisoLegal t={t} idioma={idioma} onIdioma={onIdioma} idiomas={IDIOMAS} />
+        <AvisoLegal t={t} idioma={idioma} onIdioma={onIdioma} idiomas={IDIOMAS} tacto={tacto} onTacto={onTacto} />
       </main>
       {pie}
     </div>

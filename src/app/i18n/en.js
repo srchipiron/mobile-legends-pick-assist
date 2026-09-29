@@ -354,6 +354,8 @@ export default {
   'registro.perdi': 'Lost',
   'registro.recomendado': 'recommended',
 
+  'ajustes.tactoSi': 'Vibrate on tap: on',
+  'ajustes.tactoNo': 'Vibrate on tap: off',
   'legal.noAfiliado': 'A fan project, not affiliated with Moonton. Mobile Legends: Bang Bang and its heroes are trademarks of their respective owners.',
   'legal.privacidad': 'Your data never leaves your phone: no accounts, no server, no tracking.',
   'legal.liquipedia': 'Professional match data comes from Liquipedia (liquipedia.net/mobilelegends), licensed CC-BY-SA 3.0.',

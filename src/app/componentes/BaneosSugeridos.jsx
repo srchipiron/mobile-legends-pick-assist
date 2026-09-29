@@ -1,3 +1,4 @@
+import { tic } from '../tacto.js';
 import { tPorDefecto } from './tPorDefecto.js';
 
 /**
@@ -31,7 +32,7 @@ export function BaneosSugeridos({ items, onBanear, rango = '', plan = [], t = tP
             {b.puntos > 0 && b.stat.banRate != null ? ' · ' : ''}
             {b.stat.banRate != null ? t('ban.tasa', { pct: Math.round(b.stat.banRate * 100) }) : ''}
           </span>
-          <button onClick={() => onBanear(b.heroe)} aria-label={t('app.marcarBaneo', { nombre: b.heroe.name })}>{t('ban.banear')}</button>
+          <button onClick={() => { tic(); onBanear(b.heroe); }} aria-label={t('app.marcarBaneo', { nombre: b.heroe.name })}>{t('ban.banear')}</button>
         </div>
       ))}
     </section>

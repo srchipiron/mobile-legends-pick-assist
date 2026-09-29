@@ -8,6 +8,22 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.22.0
+
+- **Las tarjetas se deslizan a su puesto nuevo en vez de saltar.** Al
+  quitar un enemigo, fijar tu pick o meter un compañero desde el consejo,
+  se ve quién sube y quién baja; la que entra entre las ocho aparece con un
+  fundido. Solo se mueven las que cambian de puesto, y nada se anima al
+  cargar ni al cambiar de línea o de rango.
+- **Las hojas suben con un pequeño muelle y se cierran arrastrando hacia
+  abajo**, desde la barrita de arriba o el título, como en iOS y Android.
+  Desde la rejilla de héroes no: ahí el dedo toca o desplaza, y cerrar sin
+  querer en mitad del draft sería peor.
+- **El móvil vibra un instante al meter o quitar un héroe** (baneos, picks,
+  la ×, «Lo cojo»), para saber que entró sin levantar la vista. Solo en
+  Android; se apaga con «Vibrar al tocar», junto al idioma, al final.
+- Con «reducir movimiento» activado en el sistema no se anima nada.
+
 ## 3.21.1
 
 - **Un héroe nuevo ya no puede dejar la app sin datos frescos.** Cuando

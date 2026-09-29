@@ -19,6 +19,8 @@ export const CLAVES = {
   envio: 'roam-picker:envio',
   // Instantes de las partidas QUITADAS a propósito (3.10.1): viajan en el código para que fundir no las resucite.
   olvidadas: 'roam-picker:olvidadas',
+  // El pulso al tocar (3.22.0): true salvo que lo apagues.
+  tacto: 'roam-picker:tacto',
 };
 
 /** Lee un valor guardado; con cualquier fallo (JSON roto, sin almacén) devuelve `porDefecto`. */

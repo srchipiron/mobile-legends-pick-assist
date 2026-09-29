@@ -1,3 +1,4 @@
+import { tic } from '../tacto.js';
 import { idMotivo } from '../../motor/nombres.js';
 import { Cara } from './Imagen.jsx';
 import { Desglose } from './Desglose.jsx';
@@ -37,7 +38,7 @@ export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLi
             primera pantalla). Segundo toque lo suelta. */}
         <h3 className="pick-name">
           {onElegir ? (
-            <button className="pick-nombre-boton" aria-pressed={elegido} title={t(elegido ? 'pick.soltar' : 'pick.loCojo', { nombre: heroe.name })} onClick={() => onElegir(heroe)}>{nombre}</button>
+            <button className="pick-nombre-boton" aria-pressed={elegido} title={t(elegido ? 'pick.soltar' : 'pick.loCojo', { nombre: heroe.name })} onClick={() => { tic(); onElegir(heroe); }}>{nombre}</button>
           ) : nombre}
         </h3>
         <Desglose puntos={candidato.puntos} t={t} />

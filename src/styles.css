@@ -57,6 +57,12 @@
   --blur: blur(24px) saturate(180%);
   --brillo: inset 0 1px 0 rgba(255, 255, 255, 0.10);
   --sombra: 0 10px 30px rgba(0, 0, 0, 0.45);
+  /* El muelle de todo lo que se mueve (3.22.0): un resorte con amortiguación
+     0,75 muestreado en 21 puntos (sube al 1,028 y se asienta), como las
+     animaciones de iOS y de Material 3 Expressive. Un navegador sin
+     `linear()` lo toma por inválido y usa `ease`. Las tarjetas lo leen de
+     aquí (useDeslizar.js): una sola definición. */
+  --muelle: linear(0, 0.084, 0.263, 0.464, 0.645, 0.789, 0.893, 0.961, 1.001, 1.021, 1.028, 1.027, 1.023, 1.017, 1.012, 1.007, 1.004, 1.002, 1, 1, 1);
 }
 
 * { box-sizing: border-box; }
@@ -300,6 +306,17 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* Con cuatro botones (Enviar, A GitHub, Copiar, Cerrar) el de Cerrar quedaba
    fuera de la pantalla en un móvil real: se envuelve. */
 .sheet-head { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; align-items: center; }
+/* El asa (3.22.0): arrastrarla hacia abajo cierra la hoja. Va en el relleno
+   de arriba (posición absoluta), así que no le quita alto a nada; solo el
+   relleno superior crece para que el dedo tenga dónde cogerla. */
+.sheet { padding-top: 24px; }
+.sheet-asa {
+  position: absolute; top: 0; left: 0; right: 0; height: 22px;
+  display: flex; justify-content: center; padding-top: 8px;
+  touch-action: none; cursor: grab;
+}
+.sheet-asa span { width: 36px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.28); }
+.sheet-head > strong { touch-action: none; }
 /* Título de la hoja como en una barra de navegación: grueso y apretado. */
 .sheet-head strong { font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
 /* Campo de texto de iOS: relleno gris translúcido, sin borde. */
@@ -665,6 +682,13 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   color: var(--muted); font-size: 12px; font-weight: 600; padding: 4px 12px;
 }
 .idiomas button.elegido { border-color: var(--gold); color: var(--gold); background: rgba(255, 214, 10, 0.10); }
+/* Idioma y vibración en la misma fila: son los dos ajustes de «cómo se siente». */
+.aviso-ajustes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.aviso-ajustes .tacto {
+  min-height: 40px; border: 1px solid var(--line); border-radius: 999px; background: var(--glass);
+  color: var(--muted); font-size: 12px; font-weight: 600; padding: 4px 12px;
+}
+.aviso-ajustes .tacto[aria-pressed="true"] { color: var(--text); }
 .donar {
   align-self: flex-start; margin-top: 4px; padding: 8px 16px;
   border: 1px solid var(--gold); border-radius: 999px;
@@ -946,7 +970,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   .pick.top .rank { font-size: 19px; }
   .desglose { margin-bottom: 4px; }
   .tools .reset { padding: 7px; font-size: 11px; min-height: 40px; }
-  .sheet { padding: 10px; }
+  .sheet { padding: 22px 10px 10px; }
   .hero-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
   .hero-grid button { min-height: 40px; padding: 8px 6px; }
 }
@@ -976,6 +1000,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   button:active { transform: scale(0.96); }
   /* La × y el ○ no: viven dentro de un hueco y al encogerse bailaban. */
   .slot .x:active, .slot .mark:active, .partida .x:active { transform: none; }
+  /* Las hojas suben con el muelle (3.22.0). Poco recorrido y poco tiempo a
+     propósito: la rejilla se toca nada más abrir, y lo que se toca a
+     contrarreloj no puede estar moviéndose bajo el dedo. Nada `fixed`
+     cuelga de una hoja, así que el `translate` no encierra a nadie. */
+  .sheet { transition: opacity 160ms ease-out, translate 260ms var(--muelle); }
+  @starting-style {
+    .sheet { opacity: 0; translate: 0 24px; }
+  }
 }
 
 /* Teléfonos de 320 px: el hueco enemigo queda en 54 px y el contenido

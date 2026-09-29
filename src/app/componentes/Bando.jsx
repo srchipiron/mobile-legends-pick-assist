@@ -1,3 +1,4 @@
+import { tic } from '../tacto.js';
 import { Cara } from './Imagen.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
 
@@ -24,7 +25,7 @@ export function Bando({ titulo, tipo, picks, max, onAnadir, onQuitar, marcado, o
           <div className="slot yo" title={t('app.tuPickDe', { nombre: yo.name })}>
             <Cara heroe={yo} className="slot-cara" tam={22} />
             <span className="slot-name">{yo.name}</span>
-            <button className="x" onClick={onQuitarYo} aria-label={t('app.soltarPick', { nombre: yo.name })}>×</button>
+            <button className="x" onClick={() => { tic(); onQuitarYo(); }} aria-label={t('app.soltarPick', { nombre: yo.name })}>×</button>
           </div>
         ) : (
           <button className="slot empty yo" onClick={onYo} aria-label={t('app.tuPick')}>{t('app.tuPick')}</button>
@@ -34,7 +35,7 @@ export function Bando({ titulo, tipo, picks, max, onAnadir, onQuitar, marcado, o
             {onMarcar ? (
               <button
                 className="mark"
-                onClick={() => onMarcar(heroe)}
+                onClick={() => { tic(); onMarcar(heroe); }}
                 aria-pressed={marcado === heroe.name}
                 aria-label={t('app.marcarRivalDe', { nombre: heroe.name })}
                 title={t('app.marcarRivalDe', { nombre: heroe.name })}
@@ -44,7 +45,7 @@ export function Bando({ titulo, tipo, picks, max, onAnadir, onQuitar, marcado, o
             ) : null}
             <Cara heroe={heroe} className="slot-cara" tam={22} />
             <span className="slot-name">{heroe.name}</span>
-            <button className="x" onClick={() => onQuitar(heroe)} aria-label={t('app.quitar', { nombre: heroe.name })}>×</button>
+            <button className="x" onClick={() => { tic(); onQuitar(heroe); }} aria-label={t('app.quitar', { nombre: heroe.name })}>×</button>
           </div>
         ) : (
           <button key={`empty-${i}`} className="slot empty" onClick={onAnadir} aria-label={t('app.anadir')}>

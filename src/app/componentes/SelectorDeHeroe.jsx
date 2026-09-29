@@ -1,3 +1,4 @@
+import { tic } from '../tacto.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { filtrarPorNombre } from '../../motor/alias.js';
 import { nombreClave, buscar } from '../../motor/nombres.js';
@@ -68,6 +69,7 @@ export function SelectorDeHeroe({
   const elegir = (h) => {
     if (cogidos.has(h.name)) return;
     if (multi && lleno && !marcado(h)) return;
+    tic();
     onElegir(h);
     if (multi) setQ('');
   };

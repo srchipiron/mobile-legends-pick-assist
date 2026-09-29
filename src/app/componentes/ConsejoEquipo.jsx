@@ -1,3 +1,4 @@
+import { tic } from '../tacto.js';
 import { Cara } from './Imagen.jsx';
 import { idMotivo } from '../../motor/nombres.js';
 import { tPorDefecto } from './tPorDefecto.js';
@@ -33,7 +34,7 @@ export function ConsejoEquipo({ consejos, yo, onElegir, t = tPorDefecto }) {
                 <button
                   key={s.heroe.name}
                   className={`chip ${i === 0 ? 'mejor' : ''}`}
-                  onClick={() => onElegir?.(s.heroe)}
+                  onClick={() => { tic(); onElegir?.(s.heroe); }}
                   aria-label={t('equipo.anadir', { nombre: s.heroe.name })}
                   title={t('equipo.anadir', { nombre: s.heroe.name })}
                 >
