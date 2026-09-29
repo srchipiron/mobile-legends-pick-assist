@@ -1,6 +1,35 @@
 {
- "actualizado": "2026-09-29T19:03:50.208Z",
+ "actualizado": "2026-09-29T19:24:20.537Z",
  "partidas": [
+  {
+   "t": 1790709841191,
+   "pick": "Diggie",
+   "recomendados": [
+    "Diggie",
+    "Gloo",
+    "Rafaela"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.626,
+   "draft": {
+    "enemigos": [
+     "Zetian",
+     "Khaleed",
+     "Clint",
+     "Alucard",
+     "Esmeralda"
+    ],
+    "aliados": [
+     "Suyou",
+     "Gord",
+     "Ixia",
+     "X.Borg"
+    ],
+    "linea": "roam",
+    "rival": "Khaleed"
+   }
+  },
   {
    "t": 1790708613786,
    "pick": "Estes",
@@ -3338,6 +3367,12 @@
   {
    "cuando": "2026-09-29T19:03:50.208Z",
    "partidas": 118,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-29T19:24:20.537Z",
+   "partidas": 119,
    "heroes": 11,
    "incidencia": 11
   }
