@@ -1,6 +1,35 @@
 {
- "actualizado": "2026-09-28T22:29:41.784Z",
+ "actualizado": "2026-09-29T16:48:05.928Z",
  "partidas": [
+  {
+   "t": 1790700465172,
+   "pick": "Diggie",
+   "recomendados": [
+    "Marcel",
+    "Lolita",
+    "Minotaur"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.512,
+   "draft": {
+    "enemigos": [
+     "Yu Zhong",
+     "Tigreal",
+     "Layla",
+     "Leomord",
+     "Chang'e"
+    ],
+    "aliados": [
+     "Cyclops",
+     "Guinevere",
+     "Gusion",
+     "Lesley"
+    ],
+    "linea": "roam",
+    "rival": "Tigreal"
+   }
+  },
   {
    "t": 1790634568857,
    "pick": "Cyclops",
@@ -3136,6 +3165,12 @@
   {
    "cuando": "2026-09-28T22:29:41.784Z",
    "partidas": 112,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-29T16:48:05.928Z",
+   "partidas": 113,
    "heroes": 11,
    "incidencia": 11
   }
