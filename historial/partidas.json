@@ -1,6 +1,35 @@
 {
- "actualizado": "2026-09-29T17:10:48.975Z",
+ "actualizado": "2026-09-29T17:39:29.939Z",
  "partidas": [
+  {
+   "t": 1790703551178,
+   "pick": "Floryn",
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Angela"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.595,
+   "draft": {
+    "enemigos": [
+     "X.Borg",
+     "Lylia",
+     "Hylos",
+     "Clint",
+     "Alice"
+    ],
+    "aliados": [
+     "Yi Sun-shin",
+     "Kadita",
+     "Sun",
+     "Karrie"
+    ],
+    "linea": "roam",
+    "rival": "Hylos"
+   }
+  },
   {
    "t": 1790701832848,
    "pick": "Gloo",
@@ -3202,6 +3231,12 @@
   {
    "cuando": "2026-09-29T17:10:48.975Z",
    "partidas": 114,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-29T17:39:29.939Z",
+   "partidas": 115,
    "heroes": 11,
    "incidencia": 11
   }
