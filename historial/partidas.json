@@ -1,6 +1,32 @@
 {
- "actualizado": "2026-09-29T18:46:32.208Z",
+ "actualizado": "2026-09-29T19:03:50.208Z",
  "partidas": [
+  {
+   "t": 1790708613786,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Gloo"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.554,
+   "draft": {
+    "enemigos": [
+     "Vale",
+     "Angela",
+     "Bruno"
+    ],
+    "aliados": [
+     "Benedetta",
+     "Brody",
+     "Nana"
+    ],
+    "linea": "roam",
+    "rival": "Angela"
+   }
+  },
   {
    "t": 1790707575107,
    "pick": "Rafaela",
@@ -3306,6 +3332,12 @@
   {
    "cuando": "2026-09-29T18:46:32.208Z",
    "partidas": 117,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-29T19:03:50.208Z",
+   "partidas": 118,
    "heroes": 11,
    "incidencia": 11
   }
