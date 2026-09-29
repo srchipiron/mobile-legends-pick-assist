@@ -1783,6 +1783,20 @@ partida (`reiniciar`) NO lo ofrece: deshacer no desapuntaría la partida. La
 foto se saca de una referencia al último draft, FUERA del updater.
 `deshacer.e2e.mjs`, seis mutaciones.
 
+**Sin teclado al abrir el selector (3.24.0)**: `SelectorDeHeroe` enfocaba el
+buscador al abrirse, y en Android eso saca el teclado: medido con el
+selector de picks, 22 caras visibles a 360×740 sin teclado y 8 con él (26
+y 12 a 390×844, 30 y 16 a 430×932, teclado de 330 px). El orden de las caras
+de 3.17.0 se midió contando «las 12 primeras, lo que se ve sin bajar». Hoy
+solo se enfoca con puntero fino (`(pointer: coarse)` no enfoca); el foco va
+a la hoja (`useCerrarConAtras`), así que atrás y Escape siguen igual. Prueba
+en `rapido.e2e` con un contexto táctil (`paginaCon({ tactil: true })`),
+verificada por mutación. Y el **icono adaptable**: el manifiesto lleva los
+dos iconos también con `purpose: 'maskable'`; `compilacion.test` lee el
+manifiesto publicado y mide que el dibujo quepa en el círculo seguro (165
+de 205 px), dos mutaciones. El contraste de todo el texto se midió en picks,
+hoja y baneos (fondo compuesto capa a capa, WCAG AA): ninguno por debajo.
+
 Examinado y NO hecho, con su porqué: la barra de búsqueda de la hoja ABAJO,
 en la zona del pulgar (como Safari en iOS 26): cambia la memoria muscular
 de Javi en mitad de partidas y con el teclado de Android abierto hay que

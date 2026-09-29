@@ -14,6 +14,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { test, ok, eq, terminar, RAIZ, leerJson, leerTexto } from '../arnes.mjs';
+import { leerPng } from '../../scripts/lector/png.mjs';
 
 const DIST = mkdtempSync(resolve(tmpdir(), 'dist-sw-'));
 execFileSync('npx', ['vite', 'build', '--outDir', DIST], {
@@ -46,6 +47,31 @@ test('las imagenes no entran en la precarga del instalador', () => {
   ok(reglas.length, 'el sw.js compilado no tiene ninguna regla de cache con expresión regular');
   for (const pedida of ['/mobile-legends-pick-assist/heroes/12.jpg', '/mobile-legends-pick-assist/objetos/1001.png']) {
     ok(reglas.some((re) => re.test(pedida)), `ninguna regla de cache del sw.js casa con ${pedida}: sin cobertura no habrá imagen`);
+  }
+});
+
+test('la app instalada tiene icono adaptable y su dibujo cabe en la zona segura de Android', () => {
+  // Sin `maskable`, Android pinta el icono cuadrado dentro de un círculo
+  // blanco. Con él, recorta a su forma (círculo, gota...) y solo garantiza
+  // el círculo central de radio 40%: lo que se salga, se corta.
+  const manifiesto = JSON.parse(readFileSync(resolve(DIST, 'manifest.webmanifest'), 'utf8'));
+  const adaptables = (manifiesto.icons ?? []).filter((i) => String(i.purpose ?? '').split(/\s+/).includes('maskable'));
+  ok(adaptables.length, 'el manifiesto publicado no tiene ningún icono maskable');
+  for (const icono of adaptables) {
+    ok(existsSync(resolve(DIST, icono.src)), `el icono ${icono.src} no se publica`);
+    const { ancho, alto, rgba } = leerPng(readFileSync(resolve(DIST, icono.src)));
+    eq(`${ancho}x${alto}`, icono.sizes, `${icono.src} no mide lo que dice el manifiesto`);
+    const px = (x, y) => rgba.subarray((y * ancho + x) * 4, (y * ancho + x) * 4 + 4);
+    const fondo = px(0, 0);
+    eq(fondo[3], 255, `${icono.src}: un icono adaptable necesita fondo opaco hasta el borde`);
+    let radio = 0;
+    for (let y = 0; y < alto; y++) {
+      for (let x = 0; x < ancho; x++) {
+        const p = px(x, y);
+        if (Math.abs(p[0] - fondo[0]) + Math.abs(p[1] - fondo[1]) + Math.abs(p[2] - fondo[2]) > 40) radio = Math.max(radio, Math.hypot(x - ancho / 2, y - alto / 2));
+      }
+    }
+    ok(radio > 0 && radio <= 0.4 * ancho, `${icono.src}: el dibujo llega a ${radio.toFixed(0)} px del centro y la zona segura es ${0.4 * ancho} px`);
   }
 });
 

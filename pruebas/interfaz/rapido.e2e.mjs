@@ -160,6 +160,24 @@ await prueba('si el meta llega con la hoja de picks abierta, la rejilla se orden
   await contexto.close();
 });
 
+await prueba('en un móvil táctil el selector NO saca el teclado (tapaba media rejilla); con ratón, el buscador sí coge el foco', async () => {
+  const almacen = { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: [], allies: [], bans: [], enemyRoam: null, fase: 'picks' } };
+  const enfocado = (pagina) => pagina.evaluate(() => ({ input: document.activeElement?.tagName === 'INPUT', enHoja: !!document.activeElement?.closest('.sheet') }));
+  for (const tactil of [true, false]) {
+    const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: 360, height: 740 }, almacen, tactil });
+    const grueso = await pagina.evaluate(() => window.matchMedia('(pointer: coarse)').matches);
+    eq(grueso, tactil, `el contexto ${tactil ? 'táctil' : 'de escritorio'} no emula el puntero que toca`);
+    const hueco = pagina.locator('.side.enemy .slot.empty').first();
+    if (tactil) await hueco.tap(); else await hueco.click();
+    await pagina.waitForTimeout(400);
+    const f = await enfocado(pagina);
+    ok(f.enHoja, `${tactil ? 'táctil' : 'escritorio'}: el foco no está dentro de la hoja`);
+    eq(f.input, !tactil, tactil ? 'en un móvil el buscador coge el foco y saca el teclado' : 'con ratón el buscador no coge el foco');
+    ok(!errores.length, `errores de página: ${errores}`);
+    await contexto.close();
+  }
+});
+
 await terminar('interfaz/rapido');
 await navegador.close();
 await cerrar();

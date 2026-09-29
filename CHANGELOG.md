@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.24.0
+
+- **Al abrir el selector de héroes ya no sale el teclado solo.** Tapaba
+  media rejilla: en un móvil de 360×740 se veían 8 caras en vez de 22, y la
+  rejilla va ordenada para que el que buscas esté entre las primeras. Para
+  buscar por nombre, toca el campo de arriba. Con ratón y teclado sigue
+  como antes.
+- **El icono de la app instalada se adapta a la forma de Android** (círculo,
+  gota…) en vez de salir cuadrado dentro de un círculo blanco.
+
 ## 3.23.0
 
 - **«Nuevo draft» y la × ya se pueden deshacer.** Tras vaciar el draft o

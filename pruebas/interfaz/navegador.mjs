@@ -60,8 +60,9 @@ export async function abrirNavegador() {
  * Una página nueva con el estado guardado que se pida (las claves
  * roam-picker:* de siempre), ya cargada y en reposo.
  */
-export async function paginaCon(navegador, url, { viewport = { width: 390, height: 844 }, locale = 'es-ES', almacen = {}, antes = null, esperar = 'networkidle' } = {}) {
-  const contexto = await navegador.newContext({ viewport, locale });
+export async function paginaCon(navegador, url, { viewport = { width: 390, height: 844 }, locale = 'es-ES', almacen = {}, antes = null, esperar = 'networkidle', tactil = false } = {}) {
+  // `tactil`: un móvil de verdad (pantalla táctil, puntero grueso), no un escritorio estrecho.
+  const contexto = await navegador.newContext({ viewport, locale, ...(tactil ? { hasTouch: true, isMobile: true } : {}) });
   const pagina = await contexto.newPage();
   // `antes`: para interceptar peticiones (p. ej. retrasar el meta) antes de cargar.
   if (antes) await antes(pagina);

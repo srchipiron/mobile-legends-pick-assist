@@ -39,7 +39,14 @@ export function SelectorDeHeroe({
   const inputRef = useRef(null);
   // Enfocar UNA vez al abrir: con `onCerrar` en las dependencias el efecto se
   // repetía con cada baneo y el teclado volvía a salir encima de la rejilla.
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  // Y SOLO con puntero fino (ratón, teclado físico): en un móvil el foco saca
+  // el teclado, que tapaba media rejilla, y la rejilla va ordenada para que
+  // el héroe caiga entre las primeras caras (3.17.0). Para buscar, un toque
+  // en el campo (3.24.0).
+  useEffect(() => {
+    if (window.matchMedia?.('(pointer: coarse)').matches) return;
+    inputRef.current?.focus();
+  }, []);
 
   const lista = useMemo(() => {
     const pickRate = (h) => buscar(stats, h.name)?.pickRate ?? -1;

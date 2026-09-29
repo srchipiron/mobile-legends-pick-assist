@@ -67,6 +67,12 @@ export default defineConfig({
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+          // Icono ADAPTABLE (3.24.0): sin `maskable`, Android mete el icono
+          // cuadrado dentro de un círculo blanco con borde. El dibujo cabe
+          // en la zona segura (radio 165 de 205 a 512 px; hay prueba) y el
+          // fondo llega al borde, así que el mismo fichero vale.
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
