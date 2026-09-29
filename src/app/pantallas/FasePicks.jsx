@@ -23,7 +23,7 @@ import { HORAS_DATOS_VIEJOS } from '../componentes/Pie.jsx';
  * después de él: encima empujaba la tarjeta nº1 fuera de la primera
  * pantalla en un móvil de 390×844.
  *
- * @param d.draft       el hook useDraft (nombres, anadir, quitar, marcarRival, setFase, reiniciar, fijarPick, posponerRecordatorio)
+ * @param d.draft       el hook useDraft (nombres, anadir, quitar, marcarRival, setFase, vaciarConDeshacer, quitarConDeshacer, fijarPick, posponerRecordatorio)
  * @param d.equipo      { enemigos, aliados, baneos } ya resueltos a héroes
  * @param d.miPick      tu pick fijado (héroe) o null
  * @param d.maestria    la maestría que ve el motor, para el filtro «mis héroes»
@@ -88,14 +88,14 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
 
         <Bando
           t={t} titulo={t('app.enemigos')} tipo="enemy" picks={enemigos} max={5}
-          onAnadir={() => abrir('enemigos')} onQuitar={(h) => draft.quitar('enemigos', h)}
+          onAnadir={() => abrir('enemigos')} onQuitar={(h) => draft.quitarConDeshacer('enemigos', h)}
           marcado={draft.rivalMarcado} onMarcar={draft.marcarRival}
           pista={rivalAuto ? t('app.tuRival', { nombre: rivalAuto }) : t('app.marcarRival')}
           automatico={rivalAuto}
         />
         <Bando
           t={t} titulo={t('app.tuEquipo')} tipo="ally" picks={aliados} max={4}
-          onAnadir={() => abrir('aliados')} onQuitar={(h) => draft.quitar('aliados', h)}
+          onAnadir={() => abrir('aliados')} onQuitar={(h) => draft.quitarConDeshacer('aliados', h)}
           yo={miPick} onYo={() => abrir('yo')} onQuitarYo={() => draft.fijarPick(miPick)}
         />
         <Composicion comp={composicion} t={t} />
@@ -122,7 +122,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
         </details>
 
         <div className="tools">
-          <button className="reset" onClick={draft.reiniciar}>{t('app.nuevoDraft')}</button>
+          <button className="reset" onClick={draft.vaciarConDeshacer}>{t('app.nuevoDraft')}</button>
           <button className="reset" disabled={!ranking.length} onClick={() => abrir('apuntar')}>{t('app.apuntar')}</button>
         </div>
       </aside>

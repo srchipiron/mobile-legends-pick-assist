@@ -669,6 +669,29 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
    escondido: es la diferencia entre informar y recomendar. */
 .build-nota { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
 
+/* ---------- «Deshacer» (3.23.0) ---------- */
+
+/* Flota abajo sobre contenido que se mueve: lleva el desenfoque en el propio
+   elemento porque NO tiene descendientes `fixed` (la trampa del pie). Está
+   por debajo de las hojas (z 20) y por encima del pie (z 5). */
+.aviso-deshacer {
+  position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 15;
+  translate: -50% 0;
+  width: max-content; max-width: calc(100vw - 24px); box-sizing: border-box;
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 4px 4px 16px; border-radius: 999px;
+  background: rgba(44, 44, 46, 0.86); border: 1px solid var(--line);
+  box-shadow: var(--brillo), var(--sombra);
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  font-size: 14px; color: var(--text);
+}
+.aviso-deshacer span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.aviso-deshacer .deshacer {
+  min-height: 40px; padding: 0 14px; border-radius: 999px;
+  color: var(--gold); font-weight: 700;
+}
+.aviso-deshacer .x { min-width: 40px; min-height: 40px; border-radius: 999px; color: var(--muted); font-size: 20px; }
+
 /* ---------- aviso público, idioma y donación ---------- */
 
 .aviso {
@@ -1008,6 +1031,10 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   @starting-style {
     .sheet { opacity: 0; translate: 0 24px; }
   }
+  .aviso-deshacer { transition: opacity 160ms ease-out, translate 260ms var(--muelle); }
+  @starting-style {
+    .aviso-deshacer { opacity: 0; translate: -50% 16px; }
+  }
 }
 
 /* Teléfonos de 320 px: el hueco enemigo queda en 54 px y el contenido
@@ -1027,4 +1054,9 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   /* Tres columnas de tarjetas: a 1.920 px dos tarjetas de 750 son un
      pasillo de aire por tarjeta; con tres caben las ocho sin desplazarse. */
   .results { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+@media (min-width: 700px) {
+  /* En pantalla ancha el pie flota abajo a la derecha: el aviso sube por encima. */
+  .aviso-deshacer { bottom: max(52px, calc(env(safe-area-inset-bottom) + 44px)); }
 }

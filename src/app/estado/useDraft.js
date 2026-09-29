@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CLAVES, leer, guardar } from './almacen.js';
 
 /** Cuántos caben en cada bando. */
 export const TOPES = { enemigos: 5, aliados: 4, baneos: 10 };
+
+/** Decisión de producto (Material recomienda 4–10 s): lo que dura el «Deshacer» tras vaciar el draft o quitar a alguien. */
+export const DESHACER_MS = 6000;
 
 /** Minutos desde que fijas tu pick hasta que la app pregunta cómo fue: una partida dura más. */
 export const MINUTOS_PARA_RECORDAR = 10;
@@ -50,8 +53,18 @@ function completoDesdeDe(d, ahora) {
   return d.completoDesde ?? ahora;
 }
 
+const VACIO = { enemigos: [], aliados: [], baneos: [], rivalMarcado: null, fase: 'baneos', miPick: null, miPickDesde: null, completoDesde: null };
+
 export function useDraft() {
   const [draft, setDraft] = useState(cargar);
+  // El último draft pintado, para sacar la foto del «Deshacer» FUERA de un
+  // updater (ahí dentro no va ningún efecto: React puede llamarlo dos veces).
+  const actual = useRef(draft);
+  actual.current = draft;
+  // «Deshacer» (3.23.0): el draft de antes y el que dejó la acción. Solo vale
+  // mientras el draft siga siendo `despues`: cualquier otro cambio lo anula
+  // (deshacer entonces se llevaría por delante lo que metiste después).
+  const [paraDeshacer, setParaDeshacer] = useState(null);
 
   useEffect(() => {
     guardar(CLAVES.draft, { enemies: draft.enemigos, allies: draft.aliados, bans: draft.baneos, enemyRoam: draft.rivalMarcado, fase: draft.fase, miPick: draft.miPick, miPickDesde: draft.miPickDesde, completoDesde: draft.completoDesde });
@@ -107,7 +120,49 @@ export function useDraft() {
   const setFase = useCallback((fase) => setDraft((d) => (d.fase === fase ? d : { ...d, fase })), []);
 
   /** Nuevo draft: todo vacío y a la fase de baneos. */
-  const reiniciar = useCallback(() => setDraft({ enemigos: [], aliados: [], baneos: [], rivalMarcado: null, fase: 'baneos', miPick: null, miPickDesde: null, completoDesde: null }), []);
+  const reiniciar = useCallback(() => setDraft(VACIO), []);
+
+  /**
+   * Lo que se hace con UN toque y se lleva por delante lo metido: el botón
+   * «Nuevo draft» (va al lado de «Apuntar partida») y la × de un hueco.
+   * Hacen lo mismo que `reiniciar` y `quitar`, y dejan un «Deshacer» durante
+   * `DESHACER_MS`. El reinicio tras apuntar una partida NO pasa por aquí: la
+   * partida ya está guardada y deshacer no la desapuntaría.
+   */
+  const vaciarConDeshacer = useCallback(() => {
+    const antes = actual.current;
+    if (antes === VACIO) return;
+    setDraft(VACIO);
+    setParaDeshacer({ antes, despues: VACIO, tipo: 'vaciado' });
+  }, []);
+
+  const quitarConDeshacer = useCallback((bando, heroe) => {
+    const antes = actual.current;
+    if (!antes[bando].includes(heroe.name)) return;
+    const nuevo = {
+      ...antes,
+      [bando]: antes[bando].filter((n) => n !== heroe.name),
+      rivalMarcado: bando === 'enemigos' && antes.rivalMarcado === heroe.name ? null : antes.rivalMarcado,
+    };
+    const despues = { ...nuevo, completoDesde: completoDesdeDe(nuevo, null) };
+    setDraft(despues);
+    setParaDeshacer({ antes, despues, tipo: 'quitado', nombre: heroe.name });
+  }, []);
+
+  const deshacible = paraDeshacer && paraDeshacer.despues === draft ? paraDeshacer : null;
+  const deshacer = useCallback(() => {
+    const d = paraDeshacer;
+    if (!d || d.despues !== actual.current) return;
+    setDraft(d.antes);
+    setParaDeshacer(null);
+  }, [paraDeshacer]);
+  const olvidarDeshacer = useCallback(() => setParaDeshacer(null), []);
+  // Pasado el plazo, el aviso se va solo.
+  useEffect(() => {
+    if (!paraDeshacer) return undefined;
+    const reloj = setTimeout(() => setParaDeshacer((d) => (d === paraDeshacer ? null : d)), DESHACER_MS);
+    return () => clearTimeout(reloj);
+  }, [paraDeshacer]);
 
   /** Fuera los nombres que el catálogo ya no conoce, y el rival si ya no está entre los enemigos. */
   const limpiarDesconocidos = useCallback((conocidos) => setDraft((d) => {
@@ -120,5 +175,5 @@ export function useDraft() {
     return { ...nuevo, completoDesde: completoDesdeDe(nuevo, null) };
   }), []);
 
-  return { ...draft, anadir, quitar, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio };
+  return { ...draft, anadir, quitar, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio, vaciarConDeshacer, quitarConDeshacer, deshacible, deshacer, olvidarDeshacer };
 }

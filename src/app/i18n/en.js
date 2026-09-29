@@ -354,6 +354,9 @@ export default {
   'registro.perdi': 'Lost',
   'registro.recomendado': 'recommended',
 
+  'deshacer.vaciado': 'Draft cleared',
+  'deshacer.quitado': '{nombre} removed',
+  'deshacer.boton': 'Undo',
   'ajustes.tactoSi': 'Vibrate on tap: on',
   'ajustes.tactoNo': 'Vibrate on tap: off',
   'legal.noAfiliado': 'A fan project, not affiliated with Moonton. Mobile Legends: Bang Bang and its heroes are trademarks of their respective owners.',

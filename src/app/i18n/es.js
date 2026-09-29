@@ -371,6 +371,9 @@ export default {
   'registro.recomendado': 'recomendado',
 
   // --- público: avisos y donaciones ---
+  'deshacer.vaciado': 'Draft vaciado',
+  'deshacer.quitado': '{nombre} quitado',
+  'deshacer.boton': 'Deshacer',
   'ajustes.tactoSi': 'Vibrar al tocar: sí',
   'ajustes.tactoNo': 'Vibrar al tocar: no',
   'legal.noAfiliado': 'Proyecto de aficionado, sin relación con Moonton. Mobile Legends: Bang Bang y sus héroes son marcas de sus propietarios.',

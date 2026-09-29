@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.23.0
+
+- **«Nuevo draft» y la × ya se pueden deshacer.** Tras vaciar el draft o
+  quitar a un héroe sale abajo un aviso con «Deshacer» durante unos
+  segundos: un toque en falso a mitad de partida ya no te obliga a meterlo
+  todo otra vez. Vuelve tal cual estaba: el orden, el rival marcado, tu
+  pick y la fase. «Nuevo draft» está justo al lado de «Apuntar partida», y
+  hasta ahora borraba todo sin preguntar.
+- El aviso se va solo, o en cuanto cambias otra cosa del draft. Al apuntar
+  una partida no sale: la partida ya está guardada.
+
 ## 3.22.0
 
 - **Las tarjetas se deslizan a su puesto nuevo en vez de saltar.** Al

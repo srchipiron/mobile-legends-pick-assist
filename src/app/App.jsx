@@ -20,6 +20,7 @@ import { Pie } from './componentes/Pie.jsx';
 import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
+import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
 import { ApuntarPartida } from './componentes/ApuntarPartida.jsx';
 import { HistorialPartidas } from './componentes/HistorialPartidas.jsx';
 import { Perfil } from './componentes/Perfil.jsx';
@@ -184,6 +185,11 @@ export default function App() {
       rangoDatos={rangoDatos} diasDatos={datos.meta?.ventana?.dias}
     />
   );
+  // «Deshacer» tras vaciar el draft o quitar con la × (3.23.0). Con una hoja
+  // abierta no se enseña: la hoja lo taparía y ahí se quita tocando otra vez.
+  const deshacer = hoja ? null : (
+    <AvisoDeshacer deshacible={draft.deshacible} onDeshacer={draft.deshacer} onCerrar={draft.olvidarDeshacer} t={t} />
+  );
   const selector = ['enemigos', 'aliados', 'baneos', 'yo'].includes(hoja) ? (
     <SelectorDeHeroe
       // Para tu pick: solo tu pool, en el orden del ranking.
@@ -223,6 +229,7 @@ export default function App() {
           pie={pie}
         />
         {selector}
+        {deshacer}
       </>
     );
   }
@@ -236,6 +243,7 @@ export default function App() {
         onResultado={(gane) => guardarPartida(rec.eleccion?.heroe.name ?? draft.miPick, gane)}
         pie={pie}
       />
+      {deshacer}
       {informe && <Diagnostico t={t} resultado={informe} onCerrar={() => setInforme(null)} />}
       {hoja?.build && (
         <Builds heroe={hoja.build} linea={linea} builds={meta?.builds} equipment={meta?.equipment} enemigos={enemigos} onCerrar={cerrar} t={t} />

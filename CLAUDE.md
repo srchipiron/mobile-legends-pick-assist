@@ -1769,6 +1769,20 @@ un píxel de alto de lo que decide dónde cae la nº1:
   guardar, la × sin pulso). `primera-pantalla.e2e` da los mismos píxeles
   que en 3.21.1.
 
+**Deshacer (3.23.0)**: «Nuevo draft» (pegado a «Apuntar partida», los dos
+del mismo tamaño) y la × vaciaban el draft sin preguntar ni vuelta atrás.
+Ahora `vaciarConDeshacer` y `quitarConDeshacer` (useDraft) guardan el draft
+de antes y el que dejan, y `AvisoDeshacer` (montado en App, `fixed`, por
+encima del pie y por debajo de las hojas; con una hoja abierta no sale)
+ofrece «Deshacer» durante `DESHACER_MS` (6 s, decisión de producto; Material
+dice 4–10). Solo vale mientras el draft siga siendo el que dejó la acción:
+cualquier otro cambio lo anula, porque deshacer entonces se llevaría lo
+nuevo. Se prefirió a un «¿Seguro?»: una confirmación cuesta un toque cada
+vez que SÍ quieres vaciar, que es casi siempre. El reinicio tras apuntar una
+partida (`reiniciar`) NO lo ofrece: deshacer no desapuntaría la partida. La
+foto se saca de una referencia al último draft, FUERA del updater.
+`deshacer.e2e.mjs`, seis mutaciones.
+
 Examinado y NO hecho, con su porqué: la barra de búsqueda de la hoja ABAJO,
 en la zona del pulgar (como Safari en iOS 26): cambia la memoria muscular
 de Javi en mitad de partidas y con el teclado de Android abierto hay que
