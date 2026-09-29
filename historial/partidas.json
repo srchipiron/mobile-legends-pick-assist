@@ -1,6 +1,35 @@
 {
- "actualizado": "2026-09-29T19:24:20.537Z",
+ "actualizado": "2026-09-29T19:51:06.491Z",
  "partidas": [
+  {
+   "t": 1790711415834,
+   "pick": "Floryn",
+   "recomendados": [
+    "Estes",
+    "Rafaela",
+    "Floryn"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.508,
+   "draft": {
+    "enemigos": [
+     "Freya",
+     "Vexana",
+     "Angela",
+     "Julian",
+     "Lesley"
+    ],
+    "aliados": [
+     "Yi Sun-shin",
+     "Minsitthar",
+     "Hayabusa",
+     "Lylia"
+    ],
+    "linea": "roam",
+    "rival": "Angela"
+   }
+  },
   {
    "t": 1790709841191,
    "pick": "Diggie",
@@ -3373,6 +3402,12 @@
   {
    "cuando": "2026-09-29T19:24:20.537Z",
    "partidas": 119,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-29T19:51:06.491Z",
+   "partidas": 120,
    "heroes": 11,
    "incidencia": 11
   }
