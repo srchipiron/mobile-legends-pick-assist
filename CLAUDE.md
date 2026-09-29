@@ -1276,6 +1276,47 @@ tablet.
   la resolución. `leer.mjs` se ejecuta también por un enlace o desde una
   carpeta con espacios (antes no hacía nada y salía con 0).
 
+**Otras formas de automatizar, investigadas el 29 de septiembre de 2026**
+(sin código todavía):
+
+- **Captura desde el navegador**: `getDisplayMedia` NO existe en Chrome
+  para Android (caniuse, Chrome 154: no soportado). La web no puede mirar
+  la pantalla del juego sola; hace falta adb o una captura.
+- **Compartir una captura a la app** (`share_target` con ficheros en el
+  manifiesto, POST multipart recogido por el service worker; Chrome
+  Android 76+, solo con la app INSTALADA): funciona en el MISMO aparato.
+  Con el juego en la tablet y la app en el móvil habría que mandar la
+  captura de uno a otro (Quick Share) y luego compartirla: más toques que
+  meter el draft a mano. Solo compensa si la app se usa en la tablet (en
+  ventana flotante o pantalla partida junto al juego). El lector es JS puro:
+  en el navegador la imagen la decodifica un `canvas` y `caras.json`
+  (~325 KB) se pediría solo al usarlo.
+- **Puente local, la más prometedora**: el lector de Termux sirve su
+  resultado por HTTP y un botón de la app («Leer del juego») lo pide con
+  `fetch`. Desde Chrome 142 (Local Network Access) una web HTTPS pública
+  puede pedir a `http://127.0.0.1` o a una IP privada tras un permiso
+  «acceder a la red local» que se da UNA vez, y esas peticiones quedan
+  exentas del bloqueo de contenido mixto. Dos variantes: (a) Termux en el
+  MÓVIL con el `adb connect` de siempre y el servidor en `127.0.0.1`
+  (solo lo ve el móvil); (b) Termux en la TABLET con adb contra sí misma
+  (`adb pair 127.0.0.1:puerto` desde Depuración inalámbrica; el
+  emparejamiento sobrevive a reinicios, el puerto de conexión cambia cada
+  vez) y el servidor en la red local, que el móvil pide por la IP de la
+  tablet. Sin comprobar todavía: que el permiso salga igual en Chrome para
+  Android (la documentación no lo dice) y qué cabeceras CORS exige.
+  Seguridad: el servidor solo DEVUELVE nombres de héroe (nunca la imagen),
+  solo acepta el origen de la app y no toca el juego; sigue siendo el
+  mismo `screencap` de solo lectura.
+- **El riesgo que no se puede medir desde aquí**: la depuración
+  inalámbrica activa en la tablet mientras se juega. MLBB tiene un aviso de
+  «aplicación de terceros detectada» (inyectores, herramientas GFX); no hay
+  constancia pública de que mire la depuración, pero tampoco de que no.
+  Leer píxeles no modifica el cliente; activarla solo para el draft y
+  quitarla después es lo prudente.
+- **Descartado**: una ruta de la API con el draft en vivo (solo las rutas
+  `/api/user/*` tras el inicio de sesión, que no se tocan) y automatizar
+  toques por adb (sería un bot).
+
 ## La base de datos de tus partidas (3.8.0)
 
 `historial/partidas.json`: las partidas de Javi apuntadas con la app (con
