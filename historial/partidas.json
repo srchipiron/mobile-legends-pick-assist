@@ -1,6 +1,31 @@
 {
- "actualizado": "2026-09-29T16:48:05.928Z",
+ "actualizado": "2026-09-29T17:10:48.975Z",
  "partidas": [
+  {
+   "t": 1790701832848,
+   "pick": "Gloo",
+   "recomendados": [
+    "Khufra",
+    "Marcel",
+    "Gloo"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.587,
+   "draft": {
+    "enemigos": [
+     "Dyrroth",
+     "Eudora",
+     "Johnson"
+    ],
+    "aliados": [
+     "Badang",
+     "Kadita"
+    ],
+    "linea": "roam",
+    "rival": "Johnson"
+   }
+  },
   {
    "t": 1790700465172,
    "pick": "Diggie",
@@ -3171,6 +3196,12 @@
   {
    "cuando": "2026-09-29T16:48:05.928Z",
    "partidas": 113,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-09-29T17:10:48.975Z",
+   "partidas": 114,
    "heroes": 11,
    "incidencia": 11
   }
