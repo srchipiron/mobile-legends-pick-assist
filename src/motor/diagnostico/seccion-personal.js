@@ -28,9 +28,15 @@ export function seccionMaestria(inf, { datos, linea, maestria = {}, entorno = {}
   const sinCasar = Object.keys(maestria).filter((k) => !datos.heroes.some((x) => nombreClave(x.name) === nombreClave(k)));
   inf.check(!sinCasar.length, 'Todos los nombres de tu maestría casan con el catálogo',
     `Nombres de tu maestría que no casan con ningún héroe: ${sinCasar.slice(0, 6).join(', ')}`);
-  const clave = Object.keys(maestria).find((k) => !sinCasar.includes(k));
+  // El ejemplo sale de un héroe de TU LÍNEA: con la línea en mid y Diggie el
+  // primero de la maestría, el puesto salía «0 -> 0» (no está en el ranking).
+  const enPool = new Set(pool.map((x) => nombreClave(x.name)));
+  const clave = Object.keys(maestria).find((k) => !sinCasar.includes(k) && enPool.has(nombreClave(k)));
   const h = clave ? datos.heroes.find((x) => nombreClave(x.name) === nombreClave(clave)) : null;
-  if (!h) return;
+  if (!h) {
+    inf.linea(`Ninguno de tus héroes con maestría juega ${linea}: en esta línea la nota es la del público`);
+    return;
+  }
   const sin = ordenarPicks(pool, { meta: datos.meta }).findIndex((r) => r.heroe.name === h.name);
   const con = ordenarPicks(pool, { meta: datos.meta, maestria }).findIndex((r) => r.heroe.name === h.name);
   const m = buscar(maestria, h.name);

@@ -131,7 +131,10 @@ export function useDraft() {
    */
   const vaciarConDeshacer = useCallback(() => {
     const antes = actual.current;
-    if (antes === VACIO) return;
+    // Sin nada que perder no hay nada que deshacer: el aviso sobre un draft
+    // ya vacío no devolvería nada (salía igual hasta 3.24.1).
+    const vacio = !antes.enemigos.length && !antes.aliados.length && !antes.baneos.length && !antes.miPick;
+    if (vacio) { if (antes.fase !== 'baneos') setDraft(VACIO); return; }
     setDraft(VACIO);
     setParaDeshacer({ antes, despues: VACIO, tipo: 'vaciado' });
   }, []);

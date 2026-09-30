@@ -105,6 +105,14 @@ test('revision linea a linea del diagnostico: nombres de maestria que no casan y
   const conZzzz = diagnosticar({ ...base, maestria: { Zzzz: { games: 500, winRate: 0.6 }, Khufra: { games: 10, winRate: 0.5 } } });
   ok(/no casan.*Zzzz/.test(conZzzz.texto), 'no dice que Zzzz no casa con el catálogo');
 
+  // 6b. El ejemplo de maestría sale de un héroe de TU línea. Con la línea
+  //     en mid y Diggie el primero, salía «puesto 0 -> 0» (fuera del ranking).
+  const fuera = diagnosticar({ ...base, maestria: { Layla: { games: 300, winRate: 0.6 }, Khufra: { games: 200, winRate: 0.58 } } }).texto;
+  ok(/Ejemplo: Khufra/.test(fuera), `el ejemplo no es un héroe del pool de roam: ${fuera.match(/Ejemplo:.*/)?.[0]}`);
+  ok(!/puesto 0 ->/.test(fuera), 'el ejemplo de maestría da «puesto 0»: el héroe no está en el ranking de la línea');
+  const ninguno = diagnosticar({ ...base, maestria: { Layla: { games: 300, winRate: 0.6 } } }).texto;
+  ok(/Ninguno de tus héroes con maestría juega roam/.test(ninguno) && !/puesto 0 ->/.test(ninguno), 'sin héroes de la línea en la maestría no lo dice');
+
   // 7. Con ≥30 partidas pro pero <30 USABLES no es un fallo del bot:
   //    medir-pro escribe siempre el resumen, también con pocas usables.
   const heroesPro = Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`H${i}`, { picks: 3 }]));

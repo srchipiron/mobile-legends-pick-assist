@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.24.1
+
+- **«Nuevo draft» con el draft vacío ya no enseña «Deshacer».** No había
+  nada que devolver.
+- **El diagnóstico ya no dice «puesto 0 -> 0» en la maestría.** Cogía de
+  ejemplo tu primer héroe aunque no jugara la línea elegida (Diggie con la
+  línea en mid); ahora coge uno de tu línea, o dice que ninguno la juega.
+
 ## 3.24.0
 
 - **Al abrir el selector de héroes ya no sale el teclado solo.** Tapaba

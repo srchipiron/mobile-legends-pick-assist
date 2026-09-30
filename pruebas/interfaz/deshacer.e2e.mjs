@@ -74,6 +74,17 @@ await prueba('el «Deshacer» se anula al cambiar otra cosa y caduca solo', asyn
   await contexto.close();
 });
 
+await prueba('vaciar un draft que ya está vacío no ofrece deshacer (no hay nada que devolver)', async () => {
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, {
+    almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: [], allies: [], bans: [], fase: 'picks' } },
+  });
+  await pagina.getByRole('button', { name: 'Nuevo draft' }).click(); await pagina.waitForTimeout(300);
+  eq((await leer(pagina)).fase, 'baneos', '«Nuevo draft» con el draft vacío no vuelve a baneos');
+  eq(await aviso(pagina).count(), 0, 'vaciar un draft vacío ofrece deshacer');
+  ok(!errores.length, `errores de página: ${errores}`);
+  await contexto.close();
+});
+
 await prueba('apuntar la partida vacía el draft SIN «Deshacer» (la partida ya está guardada)', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, {
     almacen: { ...almacen, 'roam-picker:draft': { ...DRAFT, miPickDesde: Date.now() - 11 * 60 * 1000 } },

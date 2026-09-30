@@ -965,6 +965,12 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   los marcados. Y su gemelo: tu pick fijado no se soltaba al banearlo
   (`anadir` sí lo hacía con enemigos) y se podía meter de compañero, así que
   el hueco «Tú» lo enseñaba y «Gané» apuntaba al nº1.
+- **Un ejemplo del diagnóstico fuera de la línea** (hasta 3.24.1, visto en
+  la incidencia #12) — la sección de maestría cogía el PRIMER héroe de la
+  maestría para enseñar su puesto con y sin ella; con la línea en mid y
+  Diggie el primero, el ranking de mid no lo tiene y salía «puesto 0 ->
+  0» (un `findIndex` de −1 más uno). Hoy elige uno del pool de la línea y,
+  si no hay, lo dice. Un índice que puede ser −1 no se enseña sumándole 1.
 - **Cinco pruebas más que exigían el dato de un día bueno** (auditoría de
   3.21.1, pasando las pruebas del motor contra las 40 corridas de datos de
   septiembre y simulando un héroe nuevo, un rework y un renombrado):
@@ -1822,7 +1828,8 @@ nuevo. Se prefirió a un «¿Seguro?»: una confirmación cuesta un toque cada
 vez que SÍ quieres vaciar, que es casi siempre. El reinicio tras apuntar una
 partida (`reiniciar`) NO lo ofrece: deshacer no desapuntaría la partida. La
 foto se saca de una referencia al último draft, FUERA del updater.
-`deshacer.e2e.mjs`, seis mutaciones.
+`deshacer.e2e.mjs`, seis mutaciones. Desde 3.24.1 vaciar un draft que ya
+está vacío no ofrece deshacer (salía el aviso sin nada que devolver).
 
 **Sin teclado al abrir el selector (3.24.0)**: `SelectorDeHeroe` enfocaba el
 buscador al abrirse, y en Android eso saca el teclado: medido con el
