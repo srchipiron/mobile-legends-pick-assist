@@ -1,6 +1,63 @@
 {
- "actualizado": "2026-10-01T17:48:16.249Z",
+ "actualizado": "2026-10-01T18:04:37.530Z",
  "partidas": [
+  {
+   "t": 1790877863751,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Lolita",
+    "Akai",
+    "Natalia"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.536,
+   "bans": [
+    "Atlas",
+    "Saber",
+    "Belerick",
+    "Eudora",
+    "Aulus",
+    "Khufra",
+    "Marcel",
+    "Hirara"
+   ],
+   "draft": {
+    "enemigos": [
+     "Minsitthar",
+     "Gusion",
+     "Vexana",
+     "Fredrinn",
+     "Beatrix"
+    ],
+    "aliados": [
+     "Vale",
+     "Ling",
+     "Alice",
+     "Lesley"
+    ],
+    "linea": "roam"
+   },
+   "lector": {
+    "baneos": [
+     "Atlas",
+     "Saber",
+     "Belerick",
+     "Eudora",
+     "Aulus",
+     "Khufra",
+     "Marcel",
+     "Hirara"
+    ],
+    "enemigos": [
+     "Minsitthar",
+     "Vexana",
+     "Fredrinn",
+     "Beatrix",
+     "Esmeralda"
+    ]
+   }
+  },
   {
    "t": 1790876881207,
    "pick": "Diggie",
@@ -3584,6 +3641,12 @@
   {
    "cuando": "2026-10-01T17:48:16.249Z",
    "partidas": 124,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-01T18:04:37.530Z",
+   "partidas": 125,
    "heroes": 11,
    "incidencia": 11
   }
