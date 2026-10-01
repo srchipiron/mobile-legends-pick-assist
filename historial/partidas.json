@@ -1,6 +1,87 @@
 {
- "actualizado": "2026-10-01T21:50:44.432Z",
+ "actualizado": "2026-10-01T22:10:54.904Z",
  "partidas": [
+  {
+   "t": 1790892638584,
+   "pick": "Diggie",
+   "recomendados": [
+    "Diggie",
+    "Gloo",
+    "Estes"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.482,
+   "bans": [
+    "Atlas",
+    "Eudora",
+    "Masha",
+    "Novaria",
+    "Hirara",
+    "Aulus",
+    "Marcel",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Lukas",
+     "Brody",
+     "Rafaela",
+     "Badang",
+     "Kadita"
+    ],
+    "aliados": [
+     "Miya",
+     "Gord",
+     "Cici",
+     "Suyou"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   },
+   "lector": {
+    "baneos": [
+     "Atlas",
+     "Eudora",
+     "Masha",
+     "Novaria",
+     "Hirara",
+     "Aulus",
+     "Marcel",
+     "Paquito"
+    ],
+    "enemigos": [
+     "Rafaela"
+    ],
+    "dudas": [
+     {
+      "hueco": "t3",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Esmeralda",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Chang'e",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Zetian",
+      "parecido": 0.8
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Carmilla",
+      "parecido": 0.62
+     }
+    ]
+   }
+  },
   {
    "t": 1790891430970,
    "pick": "Rafaela",
@@ -4136,6 +4217,12 @@
   {
    "cuando": "2026-10-01T21:50:44.432Z",
    "partidas": 131,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-01T22:10:54.904Z",
+   "partidas": 132,
    "heroes": 11,
    "incidencia": 11
   }
