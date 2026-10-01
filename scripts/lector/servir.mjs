@@ -32,7 +32,9 @@ import { fileURLToPath } from 'node:url';
 import { Worker } from 'node:worker_threads';
 import { leerPng } from './png.mjs';
 import { capturarTablet, encontrarTablet, leerBaneos, leerPicksEnemigos, sinRepetidos, carasGuardadas } from './leer.mjs';
-import { carasAprendidas, resumirAprendizaje } from './aprender.mjs';
+import { carasAprendidas, resumirAprendizaje, CAPTURAS_POR_CORRECCION, VERSION_APRENDIDO } from './aprender.mjs';
+
+export { CAPTURAS_POR_CORRECCION };
 import { miniaturasDe, fotogramaDe } from './miniatura.mjs';
 
 /** Decisión de producto: un puerto alto, fijo, que la app conoce. */
@@ -46,11 +48,12 @@ export const FALLOS_DE_CAPTURA = ['tablet', 'emparejar', 'captura'];
 export const FICHERO_MEMORIA = join(homedir(), '.config', 'lector', 'tablet.json');
 /** Lo aprendido de las correcciones (aprender.mjs): huecos de picks y caras de esta tablet. */
 export const FICHERO_APRENDIDO = join(homedir(), '.config', 'lector', 'aprendido.json');
-/** De cuántas capturas (las últimas de cada corrección) se aprende cada vez. */
-export const CAPTURAS_POR_CORRECCION = 3;
+/** Cuántas de las últimas capturas de una corrección se miran para elegir las `CAPTURAS_POR_CORRECCION` que sean la pantalla del draft. */
+export const CAPTURAS_A_MIRAR = 8;
 
+/** Lo aprendido, si es de la versión actual: lo de 3.27.0–3.30.0 (versión 1) se aprendió sin guardas y se descarta. */
 export function leerAprendido(fichero = FICHERO_APRENDIDO) {
-  try { const a = JSON.parse(readFileSync(fichero, 'utf8')); return a && typeof a === 'object' && a.version === 1 ? a : null; } catch { return null; }
+  try { const a = JSON.parse(readFileSync(fichero, 'utf8')); return a && typeof a === 'object' && a.version === VERSION_APRENDIDO ? a : null; } catch { return null; }
 }
 export function guardarAprendido(a, fichero = FICHERO_APRENDIDO) {
   try { mkdirSync(resolve(fichero, '..'), { recursive: true }); writeFileSync(fichero, JSON.stringify(a)); } catch { /* sin disco: se aprende otra vez la próxima */ }
@@ -139,7 +142,7 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
     const verdad = { enemigos: nombres(enemigos).slice(0, 5), baneos: nombres(baneos), cuando: new Date().toISOString() };
     const validos = (Array.isArray(ids) ? ids : []).filter((id) => /^lectura-[\w-]+$/.test(id) && existsSync(join(carpeta, `${id}.png`)));
     for (const id of validos) writeFileSync(join(carpeta, `${id}.verdad.json`), JSON.stringify(verdad));
-    const pares = validos.sort().slice(-CAPTURAS_POR_CORRECCION).map((id) => ({ id, png: join(carpeta, `${id}.png`), verdad }));
+    const pares = validos.sort().slice(-CAPTURAS_A_MIRAR).map((id) => ({ id, png: join(carpeta, `${id}.png`), verdad }));
     if (!pares.length || !verdad.enemigos.length) return { aprendido: false, motivo: 'nada que cruzar' };
     if (aprendiendo) await aprendiendo.catch(() => {});
     registrar(`Corrección recibida (${verdad.enemigos.length} enemigos, ${verdad.baneos.length} baneos): aprendiendo de ${pares.length} capturas…`);
@@ -270,6 +273,7 @@ async function principal() {
   if (tablet && !fija) memoria.ip = tablet;
   const capturar = capturaAutomatica({ fija, memoria, recordar: guardarMemoria, registrar });
   const aprendido = leerAprendido();
+  if (!aprendido && existsSync(FICHERO_APRENDIDO)) registrar('Lo aprendido con una versión anterior del lector se descarta: se aprendió sin las guardas de 3.30.1 y movía el panel de picks. Se vuelve a aprender solo.');
   if (aprendido) registrar(`Con lo aprendido de ${aprendido.capturas} capturas: ${Object.keys(aprendido.caras ?? {}).length} caras de esta tablet${aprendido.picks ? ' y los huecos de picks medidos aquí' : ''}.`);
   const servidor = crearServidor({ capturar, carpeta, registrar, aprendido });
   servidor.on('error', (e) => {

@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.30.1
+
+- Los picks enemigos vuelven a leerse. El 1 de octubre el lector «aprendió»
+  de tres capturas que no eran la pantalla del draft (con «Leer solo» se
+  captura hasta completar el draft, y el draft se completa a mano ya en la
+  carga o en la partida), movió el panel de picks entero y desde ese momento
+  todos los picks salían como «?» aunque los baneos sí. Ahora la geometría
+  medida manda (lo aprendido solo entra donde ella no lee a nadie), solo se
+  aprende de capturas donde se lee la fila de baneos y de hallazgos que caen
+  en un hueco, y lo aprendido con las versiones anteriores se descarta al
+  arrancar `lector`. No hay que tocar nada: se vuelve a aprender solo.
+
 ## 3.30.0
 
 - **El final de la partida se vigila solo, sin botones.** Con «Leer solo»

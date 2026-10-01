@@ -3,11 +3,12 @@
  * scripts/lector/servir.mjs): una captura de la pantalla del draft entra,
  * salen NOMBRES; solo para la app (y su copia local), nunca la imagen.
  */
-import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { crearServidor, capturaAutomatica, origenPermitido, PUERTO } from '../../scripts/lector/servir.mjs';
+import { crearServidor, capturaAutomatica, origenPermitido, leerAprendido, PUERTO, CAPTURAS_A_MIRAR } from '../../scripts/lector/servir.mjs';
+import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { carasGuardadas } from '../../scripts/lector/leer.mjs';
 import { PUERTO_LECTOR } from '../../src/app/lector.js';
 import { capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
@@ -110,16 +111,16 @@ test('la app distingue «no veo la tablet» y «falta emparejar» de un fallo de
   }
 });
 
-test('una corrección de la app guarda la verdad junto a la captura, aprende de las últimas y lo aprendido manda en la siguiente lectura', async () => {
+test('una corrección de la app guarda la verdad junto a la captura, aprende de las últimas y lo aprendido entra en la siguiente lectura sin tapar la geometría medida', async () => {
   const carpeta = mkdtempSync(join(tmpdir(), 'lector-aprende-'));
   const tandas = [], guardadas = [];
   // El aprendizaje de pega: devuelve unos huecos imposibles (fuera de la columna), para ver que la lectura siguiente los usa.
-  const aprender = async ({ pares, aprendido }) => { tandas.push({ pares, aprendido }); return { aprendido: { version: 1, picks: [[100, 100, 40], [100, 300, 40], [100, 500, 40], [100, 700, 40], [100, 900, 40]], caras: {}, capturas: (aprendido?.capturas ?? 0) + pares.length }, informe: [{ id: pares[0].id, aprendidos: [{ nombre: 'Clint', hueco: 0, parecido: 0.9, pos: [1, 2, 3] }], sinEncontrar: [], yaLeidos: [] }] }; };
+  const aprender = async ({ pares, aprendido }) => { tandas.push({ pares, aprendido }); return { aprendido: { version: VERSION_APRENDIDO, picks: [[100, 100, 40], [100, 300, 40], [100, 500, 40], [100, 700, 40], [100, 900, 40]], caras: {}, capturas: (aprendido?.capturas ?? 0) + pares.length }, informe: [{ id: pares[0].id, aprendidos: [{ nombre: 'Clint', hueco: 0, parecido: 0.9, pos: [1, 2, 3] }], sinEncontrar: [], yaLeidos: [] }] }; };
   await conServidor({ capturar: () => png, carpeta, aprender, guardar: (a) => guardadas.push(a) }, async (base) => {
     const cab = { Origin: 'https://srchipiron.github.io' };
     const ids = [];
-    for (let i = 0; i < 4; i++) { const l = await (await fetch(`${base}/leer`, { headers: cab })).json(); ids.push(l.id); }
-    ok(ids.every((id) => /^lectura-/.test(id)) && new Set(ids).size === 4, `las lecturas no llevan id propio: ${ids}`);
+    for (let i = 0; i < CAPTURAS_A_MIRAR + 2; i++) { const l = await (await fetch(`${base}/leer`, { headers: cab })).json(); ids.push(l.id); }
+    ok(ids.every((id) => /^lectura-/.test(id)) && new Set(ids).size === ids.length, `las lecturas no llevan id propio: ${ids}`);
     eq((await (await fetch(`${base}/leer`, { headers: cab })).json()).enemigos[0].nombre, 'Clint', 'antes de aprender no lee a Clint');
     // Sin origen (no es la app) no se escribe nada.
     const ajena = await fetch(`${base}/corregir`, { method: 'POST', body: JSON.stringify({ ids, enemigos: ['Clint'] }) });
@@ -127,22 +128,29 @@ test('una corrección de la app guarda la verdad junto a la captura, aprende de 
     const r = await (await fetch(`${base}/corregir`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [...ids, 'lectura-que-no-existe', '../../etc'], enemigos: ['Clint', 'Khufra'], baneos: ['Hirara'] }) })).json();
     ok(r.aprendido && r.aprendidos.join() === 'Clint', `la corrección no aprende: ${JSON.stringify(r)}`);
     const ficheros = readdirSync(carpeta);
-    eq(ficheros.filter((f) => f.endsWith('.verdad.json')).length, 4, `la verdad no se guarda junto a cada captura: ${ficheros}`);
+    eq(ficheros.filter((f) => f.endsWith('.verdad.json')).length, ids.length, `la verdad no se guarda junto a cada captura: ${ficheros}`);
     const verdad = JSON.parse(readFileSync(join(carpeta, `${ids[0]}.verdad.json`), 'utf8'));
     eq(verdad.enemigos.join(), 'Clint,Khufra', 'la verdad guardada no lleva los enemigos');
     eq(tandas.length, 1, 'no aprende una vez por corrección');
-    eq(tandas[0].pares.length, 3, `aprende de ${tandas[0].pares.length} capturas y no de las 3 últimas`);
-    eq(tandas[0].pares.map((p) => p.id).join(), ids.slice(1).join(), 'no aprende de las ÚLTIMAS capturas');
+    eq(tandas[0].pares.length, CAPTURAS_A_MIRAR, `mira ${tandas[0].pares.length} capturas y no las ${CAPTURAS_A_MIRAR} últimas`);
+    eq(tandas[0].pares.map((p) => p.id).join(), ids.slice(-CAPTURAS_A_MIRAR).join(), 'no mira las ÚLTIMAS capturas');
+    ok(tandas[0].pares.every((p) => p.verdad.baneos?.join() === 'Hirara'), 'la verdad que llega al aprendizaje no lleva los baneos (sin ellos no se distingue la pantalla del draft)');
     eq(guardadas.length, 1, 'lo aprendido no se guarda en disco');
-    // Con los huecos aprendidos (de pega, fuera de la columna) la lectura siguiente ya no ve a Clint: lo aprendido manda.
+    // Con unos huecos aprendidos de pega (fuera de la columna) la lectura siguiente sigue viendo a Clint: la geometría medida manda (3.30.1).
     const despues = await (await fetch(`${base}/leer`, { headers: cab })).json();
-    ok(despues.enemigos.every((e) => !e.nombre), `la lectura siguiente no usa los huecos aprendidos: ${despues.enemigos.map((e) => e.nombre)}`);
+    eq(despues.enemigos[0].nombre, 'Clint', `unos huecos aprendidos equivocados tapan la geometría medida: ${despues.enemigos.map((e) => e.nombre)}`);
     const estado = await (await fetch(`${base}/estado`)).json();
-    eq(estado.aprendido.capturas, 3, '/estado no dice de cuántas capturas ha aprendido');
+    eq(estado.aprendido.capturas, CAPTURAS_A_MIRAR, '/estado no dice de cuántas capturas ha aprendido');
     // La segunda corrección acumula sobre lo aprendido.
     await fetch(`${base}/corregir`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: ids.slice(0, 1), enemigos: ['Clint'] }) });
-    eq(tandas[1].aprendido.capturas, 3, 'la segunda tanda no parte de lo aprendido en la primera');
+    eq(tandas[1].aprendido.capturas, CAPTURAS_A_MIRAR, 'la segunda tanda no parte de lo aprendido en la primera');
   });
+  // Lo aprendido con la versión 1 (3.27.0–3.30.0, sin guardas) se descarta al arrancar; lo de la versión actual se lee.
+  const f = join(carpeta, 'aprendido.json');
+  writeFileSync(f, JSON.stringify({ version: 1, picks: [[100, 100, 40]], caras: {}, capturas: 3 }));
+  eq(leerAprendido(f), null, 'lo aprendido sin guardas (versión 1) se sigue usando');
+  writeFileSync(f, JSON.stringify({ version: VERSION_APRENDIDO, picks: null, caras: {}, capturas: 1 }));
+  eq(leerAprendido(f)?.capturas, 1, 'lo aprendido de la versión actual no se lee');
 });
 
 test('la captura reducida (temporal): dos PNG pequeños con paleta que caben en una incidencia, y solo para la app', async () => {

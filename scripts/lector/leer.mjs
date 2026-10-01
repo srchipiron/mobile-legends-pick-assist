@@ -64,12 +64,26 @@ export const PICKS_ENEMIGOS = [0, 1, 2, 3, 4].map((i) => {
  * `posiciones` y `extra` vienen de lo aprendido de las correcciones
  * (aprender.mjs, 3.27.0): los huecos medidos en ESA tablet y las caras tal
  * como las pinta su panel (ya en la orientación de la pantalla, sin espejo).
+ * La geometría MEDIDA manda (3.30.1): se lee primero con `PICKS_ENEMIGOS`
+ * y el hueco aprendido solo entra donde esa no lee a nadie. Un aprendizaje
+ * equivocado (el 1 de octubre de 2026 una tanda movió el panel entero y
+ * los picks dejaron de leerse) ya no puede tapar lo que la medida sí ve.
  */
-export function leerPicksEnemigos(img, caras, { posiciones = PICKS_ENEMIGOS, extra = [] } = {}) {
+export function leerPicksEnemigos(img, caras, { posiciones = null, extra = [] } = {}) {
   const enEspejo = [...caras.map((c) => ({ ...c, v: espejo(c.v) })), ...extra];
   // Búsqueda más ancha que en los baneos: cada dibujo encuadra la cara en un
   // sitio (Khufra cae a unos 20 píxeles de Clint en el mismo hueco).
-  return posiciones.map((pos) => reconocer(img, escalar(img, pos), enEspejo, { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12] }));
+  const opciones = { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12] };
+  const medidos = PICKS_ENEMIGOS.map((pos) => reconocer(img, escalar(img, pos), enEspejo, opciones));
+  if (!Array.isArray(posiciones)) return medidos;
+  // Un hueco aprendido que lea a alguien que la medida ya leyó está mirando al vecino.
+  const yaLeidos = new Set(medidos.map((l) => l.nombre).filter(Boolean));
+  return medidos.map((l, i) => {
+    const pos = posiciones[i];
+    if (l.nombre || !pos || Math.hypot(pos[0] - PICKS_ENEMIGOS[i][0], pos[1] - PICKS_ENEMIGOS[i][1]) < pos[2] / 4) return l;
+    const aprendido = reconocer(img, escalar(img, pos), enEspejo, opciones);
+    return aprendido.parecido > l.parecido && !yaLeidos.has(aprendido.nombre) ? aprendido : l;
+  });
 }
 
 /**

@@ -986,6 +986,14 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   apagado, y habría fallado en su móvil sin que las pruebas de aquí lo
   vieran. Antes de apoyarse en un mandato de una herramienta empaquetada
   por terceros, leer con qué opciones la compilan.
+- **Lo aprendido solo mandando sobre lo medido** (3.27.0 → 3.30.1, un
+  día en producción) — el lector leía los picks SOLO con los huecos
+  aprendidos cuando los había, y la primera tanda real los aprendió de
+  capturas que no eran el draft (ver «El lector aprende»): los picks
+  dejaron de leerse toda una tarde y en Termux parecía una lectura
+  normal. Se vio en las partidas subidas (`lector.dudas`), que es para lo
+  que viajan. Hoy la medida manda y lo aprendido solo entra donde ella
+  no lee. Un ajuste automático se añade a la referencia, no la sustituye.
 - **Cinco pruebas más que exigían el dato de un día bueno** (auditoría de
   3.21.1, pasando las pruebas del motor contra las 40 corridas de datos de
   septiembre y simulando un héroe nuevo, un rework y un renombrado):
@@ -1505,6 +1513,33 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   destapó: el `keepAliveTimeout` de Node (5 s) coincidía con el ritmo de
   «Leer solo» (5 s) y con el bucle ocupado daba ECONNRESET en una
   conexión reutilizada; hoy el lector lo pone a 65 s.
+- **La primera tanda real de aprendizaje rompió los picks (1 de octubre
+  de 2026, 3.30.1)**: a las 20:44 aprendió a Rafaela y a Selena de las
+  tres últimas capturas de un draft, y desde entonces los cinco huecos
+  de picks salían «?» con parecidos de 0,60–0,77 (antes, cinco de cinco
+  leídos) mientras los baneos seguían bien; se vio en `historial/
+  partidas.json` (`lector.dudas` y `lector.aprendizaje` de sus partidas),
+  no en Termux. La causa: con «Leer solo» se captura cada 5 s hasta
+  completar el draft, y el draft se completa A MANO (los compañeros)
+  ya en la pantalla de carga o en la partida, así que «las tres últimas»
+  no eran el draft; `buscarCara` encontró a los dos a ≥0,78 en otra
+  pantalla y el desplazamiento en bloque (mediana) se llevó el panel.
+  Desde 3.30.1: `leerPicksEnemigos` lee PRIMERO con la geometría medida
+  y el hueco aprendido solo entra donde esa no lee a nadie (y nunca con
+  un nombre que la medida ya leyó: estaría mirando al vecino); al
+  aprender, `esPantallaDeDraft` descarta la captura si no lee al menos
+  `BANEOS_PARA_APRENDER` (2) de los baneos de la verdad (la fila de
+  arriba no se mueve en picks ni en skins y no existe en la carga ni en
+  la partida; en una clásica sin baneos no se puede saber y pasa), se
+  miran las últimas `CAPTURAS_A_MIRAR` (8, decodificadas una a una) para
+  quedarse con las 3 últimas que sí son el draft, y `huecoDe` exige que
+  el hallazgo caiga a menos de medio hueco de SU hueco medido
+  (`PICKS_ENEMIGOS`, no del aprendido: así no deriva): fuera de eso no
+  se aprende ni la cara ni la posición. Lo aprendido lleva
+  `VERSION_APRENDIDO` 2 y la 1 se descarta al arrancar (Termux lo dice).
+  Seis mutaciones. Lección: lo que se aprende solo no puede mandar sobre
+  lo que se midió, y «las últimas capturas» de un proceso automático no
+  son las de la pantalla que uno tiene en la cabeza.
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

@@ -16,11 +16,23 @@
  * enseñaría al lector a confundir a dos héroes, que es peor que no aprender.
  * Lo que no se encuentra se dice, para mandar esa captura.
  *
+ * Dos guardas más desde 3.30.1, porque la primera tanda real (1 de octubre
+ * de 2026) aprendió a Rafaela y a Selena de tres capturas que NO eran la
+ * pantalla del draft (con «Leer solo» se captura cada 5 s hasta completar
+ * el draft, y el draft se completa a mano ya en la carga o en la partida),
+ * movió el panel entero y los picks dejaron de leerse hasta el final de la
+ * tarde: (1) una captura solo vale si en su fila de baneos se leen al menos
+ * `BANEOS_PARA_APRENDER` de los baneos que dice la verdad (la fila no se
+ * mueve en picks ni en skins, y en la carga y en la partida no está); (2)
+ * un hallazgo solo vale si cae a menos de medio hueco de SU hueco medido
+ * (`PICKS_ENEMIGOS`): más lejos, el hueco al que se asigna es una
+ * adivinanza, y lo aprendido no puede alejarse de la medida más que eso.
+ *
  * Puro: recibe píxeles y verdades, devuelve lo aprendido. Sin adb, sin
  * programas, sin red.
  */
 import { LADO, muestra, normalizar, espejo, guardarCara, cargarCaras, reconocer, PARECIDO_MINIMO } from './caras.mjs';
-import { PICKS_ENEMIGOS, REFERENCIA } from './leer.mjs';
+import { PICKS_ENEMIGOS, REFERENCIA, leerBaneos, leerPicksEnemigos } from './leer.mjs';
 import { nombreClave } from '../../src/motor/nombres.js';
 
 /** Un hallazgo entra si se parece al menos esto (un acierto normal va de 0,75 a 0,99; el peor equivocado medido, 0,72). */
@@ -31,6 +43,15 @@ export const MARGEN_SOBRE_OTRO = 0.03;
 export const RECORTES_POR_HEROE = 2;
 /** Dónde puede estar el panel de picks enemigos: el quinto derecho de la pantalla. */
 const PANEL = [0.80, 0.06, 1.0, 0.96];
+/** De cuántas capturas (las últimas que sean la pantalla del draft) se aprende por corrección. */
+export const CAPTURAS_POR_CORRECCION = 3;
+/** Una captura es la pantalla del draft si lee al menos estos baneos de los que dice la verdad (si la verdad trae alguno). */
+export const BANEOS_PARA_APRENDER = 2;
+/** Versión de lo aprendido: la 1 (3.27.0–3.30.0) se aprendió sin estas guardas y se descarta. */
+export const VERSION_APRENDIDO = 2;
+/** Ancho del hueco de un pick enemigo en la referencia (leer.mjs: x0 = 2020, ancho 380). */
+const ANCHO_HUECO = 380;
+const PASO_HUECO = PICKS_ENEMIGOS[1][1] - PICKS_ENEMIGOS[0][1];
 
 const producto = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
 
@@ -119,26 +140,57 @@ export function ajustarPosiciones(anteriores, hallazgos) {
 }
 
 /**
- * Aprende de varias capturas con su verdad. `pares` = [{ id, img, verdad:
- * { enemigos } }]; `caras` las de la API ([{ nombre, v }]); `aprendido` lo
- * de antes. Devuelve lo aprendido nuevo (acumulado) y un informe por captura.
+ * ¿Es esta captura la pantalla del draft? Con la verdad de los baneos: si
+ * trae `BANEOS_PARA_APRENDER` o más, en la fila de arriba tienen que leerse
+ * al menos esos. Sin baneos en la verdad (una clásica) no se puede saber y
+ * se da por buena.
  */
-export function aprenderDe(pares, { caras, aprendido = null, posicionesBase = PICKS_ENEMIGOS } = {}) {
-  const posiciones = aprendido?.picks ?? posicionesBase;
-  const nuevo = { version: 1, picks: aprendido?.picks ?? null, caras: { ...(aprendido?.caras ?? {}) }, capturas: aprendido?.capturas ?? 0 };
+export function esPantallaDeDraft(img, caras, verdad) {
+  const baneos = new Set((verdad?.baneos ?? []).map(nombreClave));
+  if (baneos.size < BANEOS_PARA_APRENDER) return true;
+  const leidos = leerBaneos(img, caras);
+  const aciertos = [...leidos.tuyos, ...leidos.suyos].filter((l) => l.nombre && baneos.has(nombreClave(l.nombre))).length;
+  return aciertos >= BANEOS_PARA_APRENDER;
+}
+
+/** Un hallazgo cae en un hueco medido si está a menos de medio hueco de él (en x y en y). Devuelve el hueco o -1. */
+export function huecoDe(pos, base = PICKS_ENEMIGOS) {
+  const hueco = base.reduce((mejor, p, i) => (Math.abs(p[1] - pos[1]) < Math.abs(base[mejor][1] - pos[1]) ? i : mejor), 0);
+  const [x, y] = base[hueco];
+  return Math.abs(pos[1] - y) <= PASO_HUECO / 2 && Math.abs(pos[0] - x) <= ANCHO_HUECO / 2 ? hueco : -1;
+}
+
+/**
+ * Aprende de varias capturas con su verdad. `pares` = [{ id, img, verdad:
+ * { enemigos, baneos } }] (`img` decodificada o una función que la
+ * decodifica, para no tener todas en memoria a la vez); `caras` las de la
+ * API ([{ nombre, v }]); `aprendido` lo de antes. De las que son la pantalla
+ * del draft se aprende de las ÚLTIMAS `maximo`. Devuelve lo aprendido nuevo
+ * (acumulado) y un informe por captura (las descartadas, con su motivo).
+ */
+export function aprenderDe(pares, { caras, aprendido = null, posicionesBase = PICKS_ENEMIGOS, maximo = CAPTURAS_POR_CORRECCION } = {}) {
+  const nuevo = { version: VERSION_APRENDIDO, picks: aprendido?.picks ?? null, caras: { ...(aprendido?.caras ?? {}) }, capturas: aprendido?.capturas ?? 0 };
   const porClave = new Map(caras.map((c) => [nombreClave(c.nombre), c]));
   const extra = carasAprendidas(aprendido);
   const enEspejo = [...caras.map((c) => ({ ...c, v: espejo(c.v) })), ...extra];
   const informe = [];
   const hallazgos = [];
-  for (const { id, img, verdad } of pares) {
+  // De atrás adelante: las últimas capturas de un draft tienen más picks.
+  const elegidas = [];
+  for (let i = pares.length - 1; i >= 0 && elegidas.length < maximo; i--) {
+    const { id, verdad } = pares[i];
     const enemigos = (verdad?.enemigos ?? []).map((n) => porClave.get(nombreClave(n))).filter(Boolean);
     if (!enemigos.length) continue;
-    // Lo que ya sale con la geometría de ahora, hueco a hueco.
-    const leidos = posiciones.map((p) => reconocer(img, aCaptura(img, p), enEspejo, { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12] }));
+    const img = typeof pares[i].img === 'function' ? pares[i].img() : pares[i].img;
+    if (!esPantallaDeDraft(img, caras, verdad)) { informe.unshift({ id, descartada: 'sinBaneos', aprendidos: [], sinEncontrar: [], yaLeidos: [] }); continue; }
+    elegidas.unshift({ id, img, verdad, enemigos });
+  }
+  for (const { id, img, enemigos } of elegidas) {
+    // Lo que ya sale con la geometría de ahora (la medida, y lo aprendido donde esa no lee), hueco a hueco.
+    const leidos = leerPicksEnemigos(img, caras, { posiciones: aprendido?.picks ?? null, extra });
     const reconocidos = new Set(leidos.map((l) => l.nombre && nombreClave(l.nombre)).filter(Boolean));
     const linea = { id, aprendidos: [], sinEncontrar: [], yaLeidos: [...reconocidos] };
-    const r0 = aCaptura(img, posiciones[0])[2];
+    const r0 = aCaptura(img, posicionesBase[0])[2];
     for (const h of enemigos) {
       const clave = nombreClave(h.nombre);
       if (reconocidos.has(clave)) continue;
@@ -148,7 +200,9 @@ export function aprenderDe(pares, { caras, aprendido = null, posicionesBase = PI
       const otros = reconocer(img, [donde.cx, donde.cy, donde.r], enEspejo.filter((c) => nombreClave(c.nombre) !== clave), { pasos: 0, escalas: [] });
       if (otros.parecido > donde.parecido - MARGEN_SOBRE_OTRO) { linea.sinEncontrar.push({ nombre: h.nombre, parecido: donde.parecido, confundible: otros.candidato }); continue; }
       const pos = aReferencia(img, donde.cx, donde.cy, donde.r);
-      const hueco = posiciones.reduce((mejor, p, i) => (Math.abs(p[1] - pos[1]) < Math.abs(posiciones[mejor][1] - pos[1]) ? i : mejor), 0);
+      // Y que caiga en un hueco medido: si no, no es el panel de picks (o no se sabe qué hueco es).
+      const hueco = huecoDe(pos, posicionesBase);
+      if (hueco < 0) { linea.sinEncontrar.push({ nombre: h.nombre, parecido: donde.parecido, fuera: pos.map(Math.round) }); continue; }
       hallazgos.push({ nombre: h.nombre, pos, hueco, parecido: donde.parecido });
       const recorte = { v: guardarCara(muestra(img, donde.cx, donde.cy, donde.r)), de: id, parecido: Math.round(donde.parecido * 1000) / 1000 };
       nuevo.caras[h.nombre] = [recorte, ...(nuevo.caras[h.nombre] ?? [])].slice(0, RECORTES_POR_HEROE);
@@ -157,7 +211,7 @@ export function aprenderDe(pares, { caras, aprendido = null, posicionesBase = PI
     nuevo.capturas += 1;
     informe.push(linea);
   }
-  if (hallazgos.length) nuevo.picks = ajustarPosiciones(posiciones, hallazgos).map((p) => p.map((v) => Math.round(v * 10) / 10));
+  if (hallazgos.length) nuevo.picks = ajustarPosiciones(aprendido?.picks ?? posicionesBase, hallazgos).map((p) => p.map((v) => Math.round(v * 10) / 10));
   return { aprendido: nuevo, informe };
 }
 
@@ -165,8 +219,9 @@ export function aprenderDe(pares, { caras, aprendido = null, posicionesBase = PI
 export function resumirAprendizaje({ aprendido, informe }) {
   const lineas = [];
   for (const l of informe) {
+    if (l.descartada) { lineas.push(`${l.id} no es la pantalla del draft (no se lee su fila de baneos): no se aprende de ella.`); continue; }
     for (const a of l.aprendidos) lineas.push(`Aprendido: ${a.nombre} en el hueco ${a.hueco + 1} de ${l.id} (parecido ${a.parecido.toFixed(2)}).`);
-    for (const s of l.sinEncontrar) lineas.push(`No encuentro a ${s.nombre} en ${l.id} (lo más parecido ${s.parecido.toFixed(2)}${s.confundible ? `, se confunde con ${s.confundible}` : ''}): manda esa captura.`);
+    for (const s of l.sinEncontrar) lineas.push(s.fuera ? `${s.nombre} se parece (${s.parecido.toFixed(2)}) en (${s.fuera[0]}, ${s.fuera[1]}) de ${l.id}, fuera de los huecos de picks: no se aprende.` : `No encuentro a ${s.nombre} en ${l.id} (lo más parecido ${s.parecido.toFixed(2)}${s.confundible ? `, se confunde con ${s.confundible}` : ''}): manda esa captura.`);
   }
   if (aprendido.picks) lineas.push(`Huecos de picks: ${aprendido.picks.map((p) => `(${Math.round(p[0])}, ${Math.round(p[1])})`).join(' ')}.`);
   return lineas;

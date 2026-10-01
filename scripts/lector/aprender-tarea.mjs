@@ -12,5 +12,6 @@ import { aprenderDe } from './aprender.mjs';
 
 const { pares, aprendido } = workerData;
 const caras = carasGuardadas();
-const resultado = aprenderDe(pares.map((p) => ({ id: p.id, img: leerPng(readFileSync(p.png)), verdad: p.verdad })), { caras, aprendido });
+// Cada captura se decodifica al mirarla (14 MB cada una en un móvil): no todas a la vez.
+const resultado = aprenderDe(pares.map((p) => ({ id: p.id, img: () => leerPng(readFileSync(p.png)), verdad: p.verdad })), { caras, aprendido });
 parentPort.postMessage(resultado);

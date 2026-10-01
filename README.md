@@ -321,7 +321,11 @@ busca a los enemigos que no reconoció por todo el panel de picks, aprende
 dónde caen los huecos en tu tablet y la cara que pinta tu pantalla
 (`~/.config/lector/aprendido.json`), y en la siguiente partida lee con
 eso. Lo que no encuentra con seguridad lo dice en Termux para que mandes
-esa captura.
+esa captura. Desde 3.30.1 lo aprendido no puede tapar la geometría medida
+(se lee primero con ella y el hueco aprendido solo entra donde esa no lee
+a nadie), solo se aprende de capturas que son la pantalla del draft (se
+lee su fila de baneos) y de hallazgos que caen en un hueco; lo aprendido
+con versiones anteriores se descarta al arrancar.
 
 Solo hace `adb connect` y `adb exec-out screencap -p`: no toca la
 pantalla, no instala nada y no habla con Moonton (hay una prueba que falla
