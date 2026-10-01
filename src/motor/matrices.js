@@ -30,6 +30,15 @@ export const CRUCE_MALO = 0.4846;
 
 /** Lo mismo para las parejas, con SU distribución: p90 = 0.5100 (8.778 parejas). */
 export const PAREJA_DESTACABLE = 0.51;
+/**
+ * Dónde tiene que caer un motivo «ganas el cruce» / «combina bien» para
+ * decir algo: en la COLA de su distribución, entre el 4% y el 20% de los
+ * pares (calibrado al 10%, p90). Es lo que vigila el diagnóstico con los
+ * datos del día (3.30.1): un día ruidoso (parche, reinicio) abre la
+ * distribución y el motivo sale en uno de cada cuatro pares; eso se avisa,
+ * no bloquea el despliegue.
+ */
+export const COLA_DEL_MOTIVO = [0.04, 0.20];
 
 /** Winrate de A contra B, mirando también el sentido contrario (1 − c[b][a]). */
 export function cruce(counters, a, b) {

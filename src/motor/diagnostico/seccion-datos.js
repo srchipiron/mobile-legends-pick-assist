@@ -1,5 +1,5 @@
 import { nombreClave } from '../nombres.js';
-import { cruce, cobertura, densidadCounters } from '../matrices.js';
+import { cruce, sinergia, cobertura, densidadCounters, CRUCE_DESTACABLE, PAREJA_DESTACABLE, COLA_DEL_MOTIVO } from '../matrices.js';
 import { coberturaBuilds } from '../builds.js';
 import { WINRATE_POSIBLE } from '../ventana.js';
 
@@ -184,8 +184,43 @@ export function medirRuido(datos) {
   };
 }
 
+/**
+ * En qué parte de los pares del día sale cada motivo con dato: «ganas el
+ * cruce» (cruce ≥ `CRUCE_DESTACABLE`) y «combina bien» (pareja ≥
+ * `PAREJA_DESTACABLE`). Calibrados al p90 de un parche asentado; un día
+ * ruidoso los saca de la cola (1 de octubre de 2026: las parejas al 27%).
+ *
+ * @returns {{ cruces: number, parejas: number } | null}  null sin cien pares
+ */
+export function medirColas(meta) {
+  const nombres = Object.keys(meta?.stats ?? {});
+  const parte = (m, f, umbral) => {
+    if (!m) return null;
+    let n = 0, encima = 0;
+    for (let i = 0; i < nombres.length; i++) for (let j = i + 1; j < nombres.length; j++) {
+      const x = f(m, nombres[i], nombres[j]);
+      if (x == null) continue;
+      n += 1;
+      if (x >= umbral) encima += 1;
+    }
+    return n >= 100 ? encima / n : null;
+  };
+  const cruces = parte(meta?.counters, cruce, CRUCE_DESTACABLE);
+  const parejas = parte(meta?.synergies, sinergia, PAREJA_DESTACABLE);
+  return cruces == null && parejas == null ? null : { cruces, parejas };
+}
+
 /** Salud estadística de los datos. No va en las pruebas a propósito: mira los DATOS, que cambian dos veces al día. */
 export function seccionSalud(inf, { datos }) {
+  const colas = medirColas(datos.meta);
+  if (colas) {
+    const [desde, hasta] = COLA_DEL_MOTIVO;
+    const pct = (x) => (x == null ? 'sin dato' : `${(x * 100).toFixed(1)}%`);
+    const enCola = (x) => x == null || (x >= desde && x <= hasta);
+    inf.linea(`Motivos con dato: «ganas el cruce» en el ${pct(colas.cruces)} de los cruces, «combina bien» en el ${pct(colas.parejas)} de las parejas (calibrados al 10%)`);
+    inf.check(enCola(colas.cruces) && enCola(colas.parejas), 'Los motivos con dato salen en la cola de la distribución',
+      `Los motivos con dato se salen de la cola (cruces ${pct(colas.cruces)}, parejas ${pct(colas.parejas)}; calibrados entre el ${desde * 100}% y el ${hasta * 100}%): el dato de hoy es más disperso que el del parche con el que se calibraron los umbrales, y el motivo dice menos`, true);
+  }
   const r = medirRuido(datos);
   if (!r) return;
   inf.linea(`Ruido: los héroes raros dispersan ${r.razon.toFixed(2)}x lo que los populares (muestreo puro daría ${r.siFueraRuido.toFixed(2)}x)`);

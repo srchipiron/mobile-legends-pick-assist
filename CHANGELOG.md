@@ -19,6 +19,12 @@ correcciones.
   aprende de capturas donde se lee la fila de baneos y de hallazgos que caen
   en un hueco, y lo aprendido con las versiones anteriores se descarta al
   arrancar `lector`. No hay que tocar nada: se vuelve a aprender solo.
+- Un día de datos ruidosos ya no bloquea publicar la app. Esa misma noche
+  las parejas llegaron más dispersas y «combina bien» salía en el 27% de los
+  pares en vez de en el 10% calibrado; una prueba lo exigía sobre los datos
+  del día y habría parado este arreglo. Ahora la prueba mira la distribución
+  calibrada y el Diagnóstico avisa (con la cifra) cuando los motivos con dato
+  se salen de la cola: el motivo dice menos ese día, pero la app sigue.
 
 ## 3.30.0
 

@@ -12,7 +12,9 @@ import { indexarPorNombre } from '../../src/motor/nombres.js';
 import {
   cobertura, cruce, sinergia, CRUCE_DESTACABLE, CRUCE_MALO, PAREJA_DESTACABLE,
 } from '../../src/motor/matrices.js';
-import { mediaDeSinergia } from '../../src/motor/matrices.js';
+import { mediaDeSinergia, COLA_DEL_MOTIVO } from '../../src/motor/matrices.js';
+import { metaSintetica } from '../fixtures/meta-sintetico.mjs';
+import { medirColas } from '../../src/motor/diagnostico/seccion-datos.js';
 import { terminoPareja } from '../../src/motor/modelo.js';
 
 /** Todos los .js de src/motor, subcarpetas incluidas (diagnostico/). */
@@ -50,11 +52,17 @@ test('la sinergia se lee en los dos sentidos, como los counters', () => {
 });
 
 test('el umbral de "ganas el cruce" sale de la distribucion, no de una intuicion', () => {
-  const meta = leerJson('public/data/roam-meta.json');
-  const C = indexarPorNombre(meta.counters, 2);
-  const nombres = (meta.heroes ?? []).map((x) => x.name);
-  // Sin heroes no se puede calibrar nada, y eso es un FALLO, no un pase.
-  ok(nombres.length >= 100, `roam-meta.json trae ${nombres.length} heroes: la calibracion del umbral no se puede comprobar`);
+  // Se comprueba sobre el meta SINTÉTICO, que reproduce la distribución con
+  // la que se calibraron los umbrales (p90/p10 0,5154/0,4846 en los cruces,
+  // 0,51 en las parejas): hasta 3.30.1 se exigía sobre los datos del día y
+  // el 1 de octubre de 2026 (parejas más dispersas: «combina bien» en el
+  // 27,4% de los pares) tumbó el despliegue de un arreglo que no tocaba
+  // el motor. La cifra del día la vigila el diagnóstico (aviso) y aquí solo
+  // se escribe en el registro.
+  const sintetico = metaSintetica();
+  const C = indexarPorNombre(sintetico.counters, 2);
+  const nombres = sintetico.heroes.map((x) => x.name);
+  ok(nombres.length >= 100, `el meta sintético trae ${nombres.length} heroes: la calibracion del umbral no se puede comprobar`);
 
   const v = [];
   for (const a of nombres) for (const b of nombres) {
@@ -64,14 +72,15 @@ test('el umbral de "ganas el cruce" sale de la distribucion, no de una intuicion
   }
   const porEncima = v.filter((x) => x >= CRUCE_DESTACABLE).length / v.length;
   const porDebajo = v.filter((x) => x <= CRUCE_MALO).length / v.length;
+  const [desde, hasta] = COLA_DEL_MOTIVO;
 
   // El umbral tiene que caer en la COLA de la distribucion real, no donde a
   // uno le suene bien. Estuvo en 0.53, que es el percentil 99: el motivo
   // respaldado por datos salia en el 1,6% de los cruces y en su lugar se leian
   // los de los tags, que es lo que la app tenia peor fundado.
-  ok(porEncima > 0.04 && porEncima < 0.20,
+  ok(porEncima > desde && porEncima < hasta,
     `"ganas el cruce" sale en el ${(porEncima * 100).toFixed(1)}% de los cruces: no esta en la cola`);
-  ok(porDebajo > 0.04 && porDebajo < 0.20,
+  ok(porDebajo > desde && porDebajo < hasta,
     `"pierdes el cruce" sale en el ${(porDebajo * 100).toFixed(1)}% de los cruces: no esta en la cola`);
   // Y simetricos: no hay razon para avisar mas de lo malo que de lo bueno.
   ok(Math.abs(porEncima - porDebajo) < 0.03, 'los dos umbrales no cubren la misma cola');
@@ -79,7 +88,7 @@ test('el umbral de "ganas el cruce" sale de la distribucion, no de una intuicion
   // Las PAREJAS tienen su propia distribucion y no valen los numeros de los
   // cruces: p90 = 0.5100 frente a 0.5154. Tambien estuvo en 0.53, que aqui es
   // el percentil 99: "combina bien con X" salia en el 1,3% de las parejas.
-  const S = indexarPorNombre(meta.synergies, 2);
+  const S = indexarPorNombre(sintetico.synergies, 2);
   const par = [];
   for (let i = 0; i < nombres.length; i++) {
     for (let j = i + 1; j < nombres.length; j++) {
@@ -88,10 +97,18 @@ test('el umbral de "ganas el cruce" sale de la distribucion, no de una intuicion
     }
   }
   const buenas = par.filter((x) => x >= PAREJA_DESTACABLE).length / par.length;
-  ok(buenas > 0.04 && buenas < 0.20,
+  ok(buenas > desde && buenas < hasta,
     `"combina bien" sale en el ${(buenas * 100).toFixed(1)}% de las parejas: no esta en la cola`);
   ok(PAREJA_DESTACABLE !== CRUCE_DESTACABLE,
     'las parejas usan el umbral de los cruces: son distribuciones distintas');
+
+  // Y la medida de hoy, la misma que enseña el diagnóstico, al registro: se
+  // mueve con el dato (27,4% de parejas el 1 de octubre de 2026), no se exige.
+  const meta = leerJson('public/data/roam-meta.json');
+  ok((meta.heroes ?? []).length >= 100, `roam-meta.json trae ${(meta.heroes ?? []).length} heroes`);
+  const hoy = medirColas({ stats: meta.stats, counters: indexarPorNombre(meta.counters, 2), synergies: indexarPorNombre(meta.synergies, 2) });
+  const pct = (x) => (x == null ? 'sin dato' : `${(x * 100).toFixed(1)}%`);
+  console.log(`  motivos con dato hoy: «ganas el cruce» ${pct(hoy?.cruces)} · «combina bien» ${pct(hoy?.parejas)} (calibrados entre el ${desde * 100}% y el ${hasta * 100}%)`);
 });
 
 test('ningun 0.53 escrito a mano suelto en el motor', () => {

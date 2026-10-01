@@ -11,6 +11,9 @@ import { catalogo, heroes, poolRoam, crearRnd, h } from '../fixtures/catalogo.mj
 import { prepararDatos } from '../../src/motor/draft.js';
 import { diagnosticar, titular } from '../../src/motor/diagnostico/index.js';
 import { ESCALA } from '../../src/motor/modelo.js';
+import { metaSintetica } from '../fixtures/meta-sintetico.mjs';
+import { medirColas } from '../../src/motor/diagnostico/seccion-datos.js';
+import { COLA_DEL_MOTIVO } from '../../src/motor/matrices.js';
 
 test('el diagnostico detecta datos imposibles y caidas frente a su propio historial', () => {
   const entorno = { version: '1.0', buildTime: null, rango: 'glory', width: 412, height: 915, standalone: false, storage: true, sw: 'activo', sinDatosPersonales: true };
@@ -118,6 +121,23 @@ test('revision linea a linea del diagnostico: nombres de maestria que no casan y
   const heroesPro = Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`H${i}`, { picks: 3 }]));
   const pocasUsables = diagnosticar({ ...base, maestria: {}, pro: { generatedAt: new Date().toISOString(), torneos: 3, sinMapear: {}, heroes: heroesPro, partidas: 40, medicion: { usables: 20, terminos: {} } } });
   ok(!/\[FALLO\].*medici/.test(pocasUsables.texto), 'FALLO falso con 20 usables de 40 partidas');
+});
+
+test('el diagnóstico avisa cuando los motivos con dato se salen de la cola (un día ruidoso), y calla con la distribución calibrada (3.30.1)', () => {
+  const entorno = { version: 'test', rango: 'glory', width: 412, height: 915, storage: true };
+  const base = { linea: 'roam', maestria: {}, partidas: [], entorno };
+  const asentado = metaSintetica();
+  const datosDe = (meta) => prepararDatos({ catalogo: { heroes: catalogo.heroes }, meta, rango: 'glory' });
+  const calmado = diagnosticar({ ...base, datos: datosDe(asentado) }).texto;
+  ok(/Motivos con dato: «ganas el cruce» en el \d+\.\d% de los cruces, «combina bien» en el \d+\.\d% de las parejas/.test(calmado), `no enseña en qué parte de los pares sale cada motivo: ${calmado.match(/Motivos con dato.*/)?.[0]}`);
+  ok(!/\[AVISO\].*se salen de la cola/.test(calmado), 'avisa con la distribución con la que se calibraron los umbrales');
+  const colas = medirColas(datosDe(asentado).meta);
+  ok(colas && colas.cruces > COLA_DEL_MOTIVO[0] && colas.cruces < COLA_DEL_MOTIVO[1] && colas.parejas > COLA_DEL_MOTIVO[0] && colas.parejas < COLA_DEL_MOTIVO[1], `con el meta sintético los motivos no caen en la cola: ${JSON.stringify(colas)}`);
+  // Las parejas tres veces más dispersas (el 1 de octubre de 2026 «combina bien» salía en el 27% de los pares): aviso, no fallo.
+  const ruidoso = { ...asentado, synergies: Object.fromEntries(Object.entries(asentado.synergies).map(([a, fila]) => [a, Object.fromEntries(Object.entries(fila).map(([b, v]) => [b, 0.495 + (v - 0.495) * 3]))])) };
+  const avisado = diagnosticar({ ...base, datos: datosDe(ruidoso) });
+  ok(/\[AVISO\].*se salen de la cola.*parejas (2|3)\d\.\d%/.test(avisado.texto), `con las parejas tres veces más dispersas no avisa: ${avisado.texto.match(/.*cola.*/)?.[0]}`);
+  ok(!/\[FALLO\].*cola/.test(avisado.texto), 'un día ruidoso es un FALLO: bloquearía el despliegue por el dato');
 });
 
 test('el autodiagnóstico detecta datos rotos y aprueba los buenos', () => {

@@ -994,6 +994,19 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   normal. Se vio en las partidas subidas (`lector.dudas`), que es para lo
   que viajan. Hoy la medida manda y lo aprendido solo entra donde ella
   no lee. Un ajuste automático se añade a la referencia, no la sustituye.
+- **La sexta prueba que exigía el dato de un día bueno** (3.30.1, la
+  misma noche que lo anterior) — `matrices.test` pedía que «combina
+  bien» (pareja ≥ 0,51) saliera en el 4–20% de las parejas DEL DÍA; la
+  corrida de las 21:56 del 1 de octubre de 2026 trajo las parejas más
+  dispersas (σ 0,030 → 0,037, p90 0,5152 → 0,5269; «combina bien» en el
+  27,4%, cruces al 18,3% con tope en 20) y la prueba tumbó el despliegue
+  de un arreglo que no tocaba el motor. Hoy se exige sobre
+  `meta-sintetico` (la distribución con la que se calibraron los
+  umbrales), la cifra del día va al registro y `seccionSalud` del
+  diagnóstico AVISA con ella (`medirColas`, `COLA_DEL_MOTIVO`): un día
+  ruidoso se dice, no bloquea. Queda por decidir si el umbral debería
+  ser un percentil del día en vez de un número fijo (motor: se propone,
+  no se hace solo); mientras tanto, ese día el motivo dice menos.
 - **Cinco pruebas más que exigían el dato de un día bueno** (auditoría de
   3.21.1, pasando las pruebas del motor contra las 40 corridas de datos de
   septiembre y simulando un héroe nuevo, un rework y un renombrado):
