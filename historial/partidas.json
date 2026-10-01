@@ -1,6 +1,90 @@
 {
- "actualizado": "2026-10-01T21:09:04.727Z",
+ "actualizado": "2026-10-01T21:33:18.577Z",
  "partidas": [
+  {
+   "t": 1790890380522,
+   "pick": "Chip",
+   "recomendados": [
+    "Edith",
+    "Chip",
+    "Carmilla"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.606,
+   "bans": [
+    "Belerick",
+    "Hirara",
+    "Eudora",
+    "Gloo",
+    "Yi Sun-shin",
+    "Aulus",
+    "Lukas",
+    "Granger",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Vale",
+     "Rafaela",
+     "Dyrroth",
+     "Selena",
+     "Hanabi"
+    ],
+    "aliados": [
+     "Masha",
+     "Clint",
+     "Novaria",
+     "Suyou"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   },
+   "lector": {
+    "baneos": [
+     "Belerick",
+     "Hirara",
+     "Eudora",
+     "Gloo",
+     "Yi Sun-shin",
+     "Aulus",
+     "Lukas",
+     "Granger",
+     "Paquito"
+    ],
+    "enemigos": [
+     "Bruno",
+     "Joy"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Zetian",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Guinevere",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Carmilla",
+      "parecido": 0.58
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Bane",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Atlas",
+      "parecido": 0.62
+     }
+    ]
+   }
+  },
   {
    "t": 1790888927416,
    "pick": "Minotaur",
@@ -3956,6 +4040,12 @@
   {
    "cuando": "2026-10-01T21:09:04.727Z",
    "partidas": 129,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-01T21:33:18.577Z",
+   "partidas": 130,
    "heroes": 11,
    "incidencia": 11
   }
