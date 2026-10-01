@@ -1,6 +1,95 @@
 {
- "actualizado": "2026-10-01T22:34:10.679Z",
+ "actualizado": "2026-10-01T23:02:59.981Z",
  "partidas": [
+  {
+   "t": 1790895762902,
+   "pick": "Chip",
+   "recomendados": [
+    "Chip",
+    "Diggie",
+    "Estes"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.544,
+   "bans": [
+    "Hirara",
+    "Aulus",
+    "Natalia",
+    "Atlas",
+    "Belerick",
+    "Minotaur",
+    "Lukas",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Rafaela",
+     "Eudora",
+     "Gloo",
+     "Lesley",
+     "Aamon"
+    ],
+    "aliados": [
+     "Clint",
+     "Odette",
+     "Novaria",
+     "Leomord"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Aulus",
+     "Natalia",
+     "Atlas",
+     "Belerick",
+     "Minotaur",
+     "Lukas",
+     "Paquito"
+    ],
+    "enemigos": [
+     "Lesley",
+     "Aamon"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Natan",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Estes",
+      "parecido": 0.57
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Carmilla",
+      "parecido": 0.52
+     }
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Eudora",
+      "Gloo",
+      "Eudora",
+      "Gloo",
+      "Eudora",
+      "Gloo"
+     ],
+     "sinEncontrar": [
+      "Rafaela",
+      "Aamon",
+      "Rafaela",
+      "Aamon",
+      "Rafaela"
+     ]
+    }
+   }
+  },
   {
    "t": 1790894036528,
    "pick": "Diggie",
@@ -4318,6 +4407,12 @@
   {
    "cuando": "2026-10-01T22:34:10.679Z",
    "partidas": 133,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-01T23:02:59.981Z",
+   "partidas": 134,
    "heroes": 11,
    "incidencia": 11
   }
