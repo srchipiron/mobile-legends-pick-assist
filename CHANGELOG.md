@@ -8,6 +8,25 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.26.0
+
+- **El lector de la tablet se arranca con una palabra, `lector`, y
+  encuentra la tablet solo.** Ya no hay que mirar el puerto de «Dirección
+  IP y puerto» ni escribirlo en Termux: el lector pregunta a la wifi qué
+  tablet tiene la depuración inalámbrica encendida, recuerda la última que
+  funcionó y, si el puerto ha cambiado, la vuelve a buscar sin que toques
+  nada. La primera vez se ejecuta `bash scripts/lector/lector.sh` desde la
+  carpeta del proyecto; desde entonces basta con escribir `lector` (o
+  tocar el acceso directo «Lector» si tienes Termux:Widget).
+- `lector` cierra solo un lector anterior que se hubiera quedado abierto.
+  Era lo que pasaba en la primera prueba real: el viejo seguía contestando
+  a la app con el puerto que ya no valía y salía «no llega a la tablet»
+  hicieras lo que hicieras.
+- Los avisos del botón «Leer del juego» distinguen tres cosas: la tablet
+  no está en la wifi (enciende su depuración inalámbrica), falta
+  emparejarla con el móvil (una sola vez, con el código) o adb no consigue
+  la captura. Cada uno dice qué hacer.
+
 ## 3.25.0
 
 - **Botón «Leer del juego»: la app mete sola los baneos y los picks

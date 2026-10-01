@@ -1,6 +1,7 @@
 /**
  * Lee los baneos de la pantalla del draft de la tablet, desde Termux.
  *
+ *   node scripts/lector/leer.mjs --buscar                      (la encuentra sola)
  *   node scripts/lector/leer.mjs --tablet 192.168.68.112:PUERTO
  *   node scripts/lector/leer.mjs --archivo captura.png        (sin tablet)
  *
@@ -19,6 +20,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { leerPng } from './png.mjs';
 import { cargarCaras, reconocer, espejo } from './caras.mjs';
+import { buscarPorMdns, escanearPuertos } from './tablet.mjs';
 
 /**
  * Dónde están los diez baneos en una pantalla de 2400×1504, medido en las
@@ -83,23 +85,83 @@ export function avisoDeCaras() {
   } catch { return null; }
 }
 
+/**
+ * `adb connect` y lo que contesta («connected to», «already connected»,
+ * «failed to authenticate» si falta emparejar, «failed to connect» si ahí
+ * no hay nadie). No lanza: lo que diga adb se devuelve como texto.
+ */
+export function conectarTablet(dispositivo, { ms = 15000 } = {}) {
+  try {
+    return execFileSync('adb', ['connect', dispositivo], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: ms });
+  } catch (e) {
+    return `${e.stdout ?? ''}${e.stderr ?? ''}${e.message ?? ''}`;
+  }
+}
+
 export function capturarTablet(dispositivo) {
   // `connect` no falla si ya está conectada; sin él, el primer uso tras
   // encender la depuración no encuentra la tablet.
-  execFileSync('adb', ['connect', dispositivo], { stdio: 'ignore', timeout: 15000 });
+  conectarTablet(dispositivo);
   return execFileSync('adb', ['-s', dispositivo, 'exec-out', 'screencap', '-p'], { maxBuffer: 64 * 1024 * 1024, timeout: 20000 });
+}
+
+const fallo = (tipo, mensaje) => Object.assign(new Error(mensaje), { tipo });
+
+/**
+ * Encontrar la tablet sin que nadie escriba el puerto (3.26.0). Por orden:
+ * la última que funcionó (`memoria`: ip y puerto; si la tablet no apagó la
+ * depuración, sigue valiendo), las que anuncia la wifi por mDNS y, si nadie
+ * contesta pero se sabe la IP, los puertos abiertos de esa IP. Cada
+ * candidata se comprueba con `adb connect`: solo se devuelve una que
+ * conecte. «failed to authenticate» es que falta emparejar, y se dice
+ * distinto de «no la veo».
+ */
+export async function encontrarTablet({ memoria = {}, registrar = () => {}, probar = (d) => conectarTablet(d, { ms: 6000 }), buscar = buscarPorMdns, escanear = escanearPuertos, maxPuertos = 8 } = {}) {
+  const vistas = new Set();
+  let faltaEmparejar = false;
+  const intentar = (c) => {
+    const clave = `${c.ip}:${c.puerto}`;
+    if (vistas.has(clave)) return false;
+    vistas.add(clave);
+    const dicho = String(probar(clave));
+    if (/connected to/i.test(dicho)) return true;
+    if (/authenticate/i.test(dicho)) faltaEmparejar = true;
+    registrar(`${clave} (${c.via}): ${dicho.trim().split('\n')[0]}`);
+    return false;
+  };
+  if (memoria.ip && memoria.puerto) {
+    const c = { ip: memoria.ip, puerto: Number(memoria.puerto), via: 'memoria' };
+    if (intentar(c)) return c;
+  }
+  const anunciadas = await buscar();
+  for (const t of anunciadas) { const c = { ...t, via: 'wifi' }; if (intentar(c)) return c; }
+  const ip = memoria.ip ?? anunciadas[0]?.ip;
+  if (ip) {
+    registrar(`Nadie contesta por mDNS: busco el puerto de la depuración en ${ip}…`);
+    const puertos = (await escanear(ip)).slice(0, maxPuertos);
+    for (const puerto of puertos) { const c = { ip, puerto, via: 'puertos' }; if (intentar(c)) return c; }
+  }
+  if (faltaEmparejar) throw fallo('emparejar', 'La tablet no deja entrar al móvil: hay que emparejarlos una vez (adb pair).');
+  throw fallo('tablet', ip ? `No encuentro la tablet en ${ip}: ¿está encendida la depuración inalámbrica?` : 'No veo ninguna tablet con la depuración inalámbrica encendida en esta wifi.');
 }
 
 async function principal() {
   const arg = (n) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : null; };
-  const tablet = arg('--tablet'), archivo = arg('--archivo'), guardar = arg('--guardar');
-  if (!tablet && !archivo) {
-    console.error('Uso: node scripts/lector/leer.mjs --tablet IP:PUERTO   (o --archivo captura.png)');
+  let tablet = arg('--tablet');
+  const archivo = arg('--archivo'), guardar = arg('--guardar');
+  if (!tablet && !archivo && !process.argv.includes('--buscar')) {
+    console.error('Uso: node scripts/lector/leer.mjs --tablet IP:PUERTO   (o --buscar, o --archivo captura.png)');
     process.exit(2);
   }
   let png;
-  try { png = archivo ? readFileSync(archivo) : capturarTablet(tablet); }
-  catch (e) {
+  try {
+    if (!archivo && (!tablet || !tablet.includes(':'))) {
+      const t = await encontrarTablet({ memoria: tablet ? { ip: tablet } : {}, registrar: (m) => console.error(m) });
+      tablet = `${t.ip}:${t.puerto}`;
+      console.error(`Tablet: ${tablet} (${t.via})`);
+    }
+    png = archivo ? readFileSync(archivo) : capturarTablet(tablet);
+  } catch (e) {
     console.error(`No se pudo hacer la captura: ${e.message.split('\n')[0]}`);
     console.error('¿Está la depuración inalámbrica encendida y el puerto es el de «Dirección IP y puerto» (no el de vincular)?');
     process.exit(1);

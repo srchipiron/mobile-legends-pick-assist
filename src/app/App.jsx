@@ -21,7 +21,7 @@ import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
-import { pedirLectura, nombresDeLectura } from './lector.js';
+import { pedirLectura, nombresDeLectura, FALLOS_DEL_LECTOR } from './lector.js';
 import { ApuntarPartida } from './componentes/ApuntarPartida.jsx';
 import { HistorialPartidas } from './componentes/HistorialPartidas.jsx';
 import { Perfil } from './componentes/Perfil.jsx';
@@ -182,7 +182,7 @@ export default function App() {
       const algo = nombres.baneos.length + nombres.enemigos.length;
       setLector({ estado: 'libre', aviso: n.baneos || n.enemigos ? null : (algo ? 'yaEstaba' : 'nada') });
     } catch (e) {
-      setLector({ estado: 'libre', aviso: ['sinPuente', 'plazo', 'captura'].includes(e?.tipo) ? e.tipo : 'error' });
+      setLector({ estado: 'libre', aviso: FALLOS_DEL_LECTOR.includes(e?.tipo) ? e.tipo : 'error' });
     }
   };
 

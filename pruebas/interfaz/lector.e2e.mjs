@@ -91,7 +91,7 @@ await prueba('si el lector no llega a la tablet, o no está abierto, lo dice con
   ({ contexto, pagina } = await paginaCon(navegador, url, { almacen }));
   await boton(pagina).click();
   await pagina.locator('.lector-aviso').waitFor({ timeout: 15000 });
-  ok(/servir\.mjs/.test(await pagina.locator('.lector-aviso').innerText()), 'sin lector abierto no dice cómo abrirlo');
+  ok(/escribe: lector/.test(await pagina.locator('.lector-aviso').innerText()), 'sin lector abierto no dice cómo abrirlo (el mandato «lector»)');
   await contexto.close();
 });
 

@@ -275,32 +275,37 @@ incidencia con tu código de perfil dentro; un bot la guarda en
 `historial/partidas.json`, mide el modelo contra tus drafts y te responde
 ahí mismo. A mano: `node scripts/medir-mias.mjs`.
 
-## Leer el draft de la tablet (prueba, 3.19.0 / 3.21.0)
+## Leer el draft de la tablet (3.19.0 / 3.21.0 / 3.25.0 / 3.26.0)
 
 Se juega en la tablet y la app va en el móvil. Desde Termux, con la
 depuración inalámbrica de la tablet encendida, el móvil hace una captura
 de la pantalla del draft y reconoce los diez baneos y, mientras se elige,
-los cinco picks del enemigo:
+los cinco picks del enemigo. Puesta en marcha, UNA vez:
 
 ```bash
-pkg install nodejs android-tools git          # una vez
-adb pair IP:PUERTO_DE_VINCULAR CODIGO         # una vez por tablet («Vincular con código»)
-cd mobile-legends-pick-assist && git pull
-node scripts/lector/leer.mjs --tablet IP:PUERTO   # el puerto de «Dirección IP y puerto»
+pkg install nodejs android-tools git
+git clone https://github.com/srchipiron/mobile-legends-pick-assist.git
+cd mobile-legends-pick-assist
+adb pair IP:PUERTO_DE_VINCULAR      # en la tablet: «Vincular dispositivo con código»; pide el código
+bash scripts/lector/lector.sh       # arranca, y se instala como mandato «lector»
 ```
 
-**Con el botón de la app (3.25.0)**: en vez de `leer.mjs`, deja abierto en
-Termux
+Desde entonces, cada vez que vayas a jugar: enciende la depuración
+inalámbrica de la tablet, escribe `lector` en Termux (o toca el acceso
+directo «Lector» si tienes Termux:Widget; con Termux:Boot arranca solo al
+encender el móvil) y toca «Leer del juego» en la app (fase de baneos, o
+junto a «Nuevo draft» en la de picks). El lector encuentra la tablet solo:
+pregunta a la wifi (mDNS, lo mismo que hace `adb mdns services`, que el adb
+de Termux no trae), recuerda la última que funcionó y, si nadie contesta,
+busca el puerto de la depuración en la IP conocida. No hay que mirar ni
+escribir el puerto de «Dirección IP y puerto», que cambia cada vez.
+`lector` trae lo último del repositorio, cierra un lector anterior que se
+hubiera quedado abierto y guarda cada captura en `~/capturas` con lo que
+se leyó, para afinar con las que salgan mal. A mano, sin la app:
+`node scripts/lector/leer.mjs --buscar` (o `--tablet IP:PUERTO`).
 
-```bash
-node scripts/lector/servir.mjs --tablet IP:PUERTO
-```
-
-y toca «Leer del juego» en la app (fase de baneos, o junto a «Nuevo draft»
-en la de picks). La primera vez Chrome pide permiso para «acceder a la red
-local»: es el lector, en el propio móvil (solo escucha en `127.0.0.1`).
-`--guardar-capturas ~/storage/downloads/lecturas` guarda cada captura con lo
-que se leyó, para mandar las que salgan mal.
+Si Chrome pregunta si la app puede «acceder a la red local», es el lector,
+en el propio móvil (solo escucha en `127.0.0.1`): hay que permitirlo.
 
 Solo hace `adb connect` y `adb exec-out screencap -p`: no toca la
 pantalla, no instala nada y no habla con Moonton (hay una prueba que falla

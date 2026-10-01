@@ -971,6 +971,21 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   Diggie el primero, el ranking de mid no lo tiene y salía «puesto 0 ->
   0» (un `findIndex` de −1 más uno). Hoy elige uno del pool de la línea y,
   si no hay, lo dice. Un índice que puede ser −1 no se enseña sumándole 1.
+- **Un servidor viejo contestando con un dato caducado** (3.25.0 → 3.26.0,
+  primera prueba real del lector) — el puerto de la depuración
+  inalámbrica cambia cada vez que se enciende; el lector lo recibía por
+  argumento y el que se quedó abierto en otra sesión de Termux seguía
+  contestando a la app con el puerto viejo mientras el nuevo moría con
+  «puerto en uso». Para quien lo usa era «no llega a la tablet» hiciera
+  lo que hiciera. Hoy el lector encuentra la tablet solo y la vuelve a
+  buscar cuando falla, y `lector` mata al anterior antes de arrancar.
+  Un dato que cambia por su cuenta no se pide por argumento: se descubre.
+- **Dar por hecho que el adb de Termux es el de Google** (3.26.0, cazado
+  antes de publicar) — la primera idea fue `adb mdns services`; el paquete
+  `android-tools` de Termux se compila de nmeum/android-tools con el mDNS
+  apagado, y habría fallado en su móvil sin que las pruebas de aquí lo
+  vieran. Antes de apoyarse en un mandato de una herramienta empaquetada
+  por terceros, leer con qué opciones la compilan.
 - **Cinco pruebas más que exigían el dato de un día bueno** (auditoría de
   3.21.1, pasando las pruebas del motor contra las 40 corridas de datos de
   septiembre y simulando un héroe nuevo, un rework y un renombrado):
@@ -1317,6 +1332,55 @@ quedaba COLGADA: una comprobación fallaba antes de cerrar el servidor de
 prueba y el proceso de Node no terminaba nunca; hoy el cierre va en
 `finally` y otra vez al final. Un servidor abierto en una prueba se cierra
 pase lo que pase, o un fallo se convierte en una corrida que no acaba.
+
+**La primera prueba real y lo que enseñó (1 de octubre de 2026, 3.26.0)**.
+Javi lo montó en su móvil con la tablet en `192.168.5.161`. Lo que pasó,
+por orden, y lo que se cambió por cada cosa:
+
+- La app llegó al lector a la primera: Chrome para Android dejó pasar la
+  petición de la web publicada a `http://127.0.0.1:47323` (no dijo si
+  hubo aviso de permiso; la petición entró). Lo que no se podía medir
+  desde aquí, medido.
+- `adb` daba «device offline» hasta hacer `adb pair` una vez; después
+  `adb devices` decía `device` y la captura salió a 2400×1504 (la
+  resolución medida). Con la tablet fuera del draft todo sale «?», que
+  es lo esperado.
+- **El puerto de «Dirección IP y puerto» cambió TRES veces en una tarde**
+  (43593, 34995, 45199: cada vez que se apaga y enciende la depuración
+  inalámbrica) y Javi lo escribía a mano en Termux cada vez, «un coñazo»
+  e «incomodísimo». Y **el lector viejo seguía vivo en otra sesión de
+  Termux** contestando a la app con el puerto que ya no valía: «El puerto
+  47323 ya está en uso» y en la app «no llega a la tablet» hiciera lo que
+  hiciera. Un servidor que se queda atrás con un dato caducado es peor
+  que ninguno.
+- Por eso 3.26.0: **el lector encuentra la tablet solo** (`encontrarTablet`
+  en leer.mjs, `scripts/lector/tablet.mjs`): primero la última que
+  funcionó (`~/.config/lector/tablet.json`, ip y puerto), luego las que
+  anuncia la wifi por mDNS (`_adb-tls-connect._tcp`, con el bit QU para
+  que la respuesta llegue unicast aunque el wifi filtre multicast: es lo
+  que hace `adb mdns services`, pero **el adb de Termux viene compilado
+  SIN mDNS**, `ANDROID_TOOLS_ADB_ENABLE_MDNS` apagado en nmeum/android-tools,
+  así que la pregunta DNS de 45 bytes se manda desde Node), y si nadie
+  contesta pero se sabe la IP, los puertos abiertos del rango efímero de
+  Android (32768–60999, donde cayeron los cuatro vistos; 28.000 puertos en
+  ~2 s en local, más en wifi); cada candidata se comprueba con
+  `adb connect` y «failed to authenticate» se distingue como «falta
+  emparejar». `capturaAutomatica` (servir.mjs) la busca al arrancar
+  (`preparar()`, una sola búsqueda compartida con el primer toque) y, si
+  una captura falla, la olvida y la busca otra vez antes de rendirse. La
+  app recibe tres fallos de captura distintos (`tablet`, `emparejar`,
+  `captura`), cada uno con qué hacer. Y `scripts/lector/lector.sh`
+  (mandato `lector`, se instala solo; acceso directo para Termux:Widget y
+  arranque con Termux:Boot si están) hace lo que había que escribir: se
+  pone en el repositorio, `git pull`, mata el lector anterior y arranca
+  este guardando capturas en `~/capturas`. La prueba de seguridad mira
+  también los `.sh`: no llaman a adb. Catorce mutaciones. Sin comprobar
+  en su móvil todavía: que el mDNS conteste desde Termux (si no, entra
+  el escaneo con la IP recordada: la primera vez hay que decírsela con
+  `lector --tablet 192.168.5.161`, o con el puerto, y ya se recuerda).
+- Para probar sin clasificatoria: en su versión Personalizado solo deja
+  meter IA en coliseo y clásica, no en selección de draft; la clásica
+  tiene picks (sin baneos) y vale para medir esa mitad.
 
 **Otras formas de automatizar, investigadas el 29 de septiembre de 2026**
 (el puente local entró en 3.25.0):

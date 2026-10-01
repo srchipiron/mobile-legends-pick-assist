@@ -5,14 +5,16 @@
  * de septiembre de 2026, fase de picks) y con la regla de seguridad que
  * pidió él: el lector solo hace capturas, nunca toca la tablet.
  */
-import { readFileSync, readdirSync, mkdtempSync, writeFileSync, symlinkSync } from 'node:fs';
+import { readFileSync, readdirSync, mkdtempSync, mkdirSync, writeFileSync, symlinkSync, existsSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createServer } from 'node:net';
 import { spawnSync } from 'node:child_process';
 import { test, ok, eq, terminar, RAIZ, leerJson, generador } from '../arnes.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
 import { LADO } from '../../scripts/lector/caras.mjs';
-import { leerBaneos, leerPicksEnemigos, carasGuardadas, carasDesfasadas, REFERENCIA } from '../../scripts/lector/leer.mjs';
+import { leerBaneos, leerPicksEnemigos, carasGuardadas, carasDesfasadas, encontrarTablet, REFERENCIA } from '../../scripts/lector/leer.mjs';
+import { preguntaMdns, tabletsDeRespuesta, buscarPorMdns, escanearPuertos, SERVICIO } from '../../scripts/lector/tablet.mjs';
 
 test('el lector de PNG devuelve los mismos píxeles con los cinco filtros de fila', () => {
   const azar = generador(3);
@@ -149,7 +151,8 @@ test('SEGURIDAD: el lector solo conecta y hace capturas con adb; nunca toca, ins
   // `import { execFileSync as x }`, con `cp['execFileSync']` o partiendo
   // 'input', 'tap' en dos argumentos): toda la carpeta, subcarpetas incluidas.
   const carpeta = join(RAIZ, 'scripts/lector');
-  const ficheros = readdirSync(carpeta, { recursive: true }).map(String).filter((f) => /\.(c|m)?js$/.test(f));
+  const todos = readdirSync(carpeta, { recursive: true }).map(String);
+  const ficheros = todos.filter((f) => /\.(c|m)?js$/.test(f));
   const sinComentarios = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
   const PERMITIDOS = [/^\['connect', \w+\]$/, /^\['-s', \w+, 'exec-out', 'screencap', '-p'\]$/];
   const PROHIBIDOS = /['"`](input|shell|tap|swipe|keyevent|text|install|uninstall|push|am|pm|monkey|sendevent|root|reboot)['"`]/;
@@ -158,6 +161,11 @@ test('SEGURIDAD: el lector solo conecta y hace capturas con adb; nunca toca, ins
     ok(!PROHIBIDOS.test(texto), `${f} lleva un mandato de adb que actúa sobre la tablet: ${texto.match(PROHIBIDOS)?.[0]}`);
     if (f === 'leer.mjs') continue;
     ok(!/child_process|\bexecFile|\bspawn|\bexecSync|\bprocess\.binding/.test(texto), `${f} puede lanzar programas: solo leer.mjs lo tiene permitido`);
+  }
+  // Los guiones de shell (lector.sh, 3.26.0) no llaman a adb: ni una vez.
+  for (const f of todos.filter((g) => /\.sh$/.test(g))) {
+    const texto = readFileSync(join(carpeta, f), 'utf8').replace(/^\s*#.*$/gm, '');
+    ok(!/\badb\b/.test(texto), `${f} llama a adb: la captura solo la hace leer.mjs`);
   }
   const leer = sinComentarios(readFileSync(join(carpeta, 'leer.mjs'), 'utf8'));
   // Una sola importación de child_process, sin alias, sin importación dinámica.
@@ -171,6 +179,88 @@ test('SEGURIDAD: el lector solo conecta y hace capturas con adb; nunca toca, ins
   eq(usos, 3, `execFileSync aparece ${usos} veces en leer.mjs y se esperaban 3 (import, connect, screencap)`);
   eq(llamadas.length, 2, `leer.mjs hace ${llamadas.length} llamadas a adb y se esperaban 2`);
   for (const a of llamadas) ok(PERMITIDOS.some((p) => p.test(a)), `leer.mjs llama a adb con ${a}: solo se permite connect y exec-out screencap -p`);
+});
+
+/** Una respuesta mDNS como la de Android: PTR, y en los adicionales el SRV (con el nombre comprimido) y el A. */
+function respuestaMdns({ instancia = 'adb-PDNP06J000015130-eiqLkn', ip = '192.168.5.161', puerto = 45199, conA = true } = {}) {
+  const nombre = (n) => Buffer.concat([...n.split('.').map((p) => Buffer.concat([Buffer.from([p.length]), Buffer.from(p)])), Buffer.from([0])]);
+  const u16 = (v) => Buffer.from([v >> 8, v & 255]);
+  const registro = (n, tipo, rdata) => Buffer.concat([n, u16(tipo), u16(1), Buffer.from([0, 0, 0, 120]), u16(rdata.length), rdata]);
+  const cabecera = Buffer.concat([u16(0), u16(0x8400), u16(0), u16(1), u16(0), u16(conA ? 2 : 1)]);
+  const servicio = nombre(SERVICIO);
+  const ptr = registro(servicio, 12, nombre(`${instancia}.${SERVICIO}`));
+  const dondeInstancia = cabecera.length + servicio.length + 10; // el rdata del PTR
+  const puntero = Buffer.from([0xc0 | (dondeInstancia >> 8), dondeInstancia & 255]);
+  const srv = registro(puntero, 33, Buffer.concat([u16(0), u16(0), u16(puerto), nombre('Tablet-de-Javi.local')]));
+  const a = registro(nombre('Tablet-de-Javi.local'), 1, Buffer.from(ip.split('.').map(Number)));
+  return Buffer.concat([cabecera, ptr, srv, ...(conA ? [a] : [])]);
+}
+
+test('la tablet se encuentra sola: la pregunta mDNS pide respuesta unicast y la respuesta de Android se lee entera', async () => {
+  const pregunta = preguntaMdns();
+  eq(pregunta.readUInt16BE(4), 1, 'la pregunta no lleva una pregunta');
+  eq(pregunta.readUInt16BE(pregunta.length - 2), 0x8001, 'la pregunta no pide respuesta unicast (bit QU): con el multicast filtrado no llegaría nada');
+  eq(pregunta.readUInt16BE(pregunta.length - 4), 12, 'la pregunta no es por un PTR');
+  const [t] = tabletsDeRespuesta(respuestaMdns());
+  eq(`${t?.ip}:${t?.puerto} ${t?.nombre}`, '192.168.5.161:45199 adb-PDNP06J000015130-eiqLkn', `la respuesta no se lee: ${JSON.stringify(t)}`);
+  // Sin el registro A, vale la IP de quien contesta.
+  eq(tabletsDeRespuesta(respuestaMdns({ conA: false }), '192.168.5.7')[0]?.ip, '192.168.5.7', 'sin registro A no usa la IP de quien contesta');
+  eq(tabletsDeRespuesta(Buffer.from([1, 2, 3])).length, 0, 'una respuesta rota da tablets');
+  eq(tabletsDeRespuesta(respuestaMdns(), null, '_otro._tcp.local').length, 0, 'un servicio que no es adb cuenta como tablet');
+  // Sin nadie que conteste, vuelve vacío pasado el plazo, sin lanzar.
+  const t0 = Date.now();
+  eq((await buscarPorMdns({ ms: 150 })).length, 0, 'sin tablet en la red encuentra algo');
+  ok(Date.now() - t0 < 1500, 'la búsqueda sin respuesta no acaba al plazo');
+  // El escaneo de puertos encuentra uno abierto en el rango.
+  const servidor = createServer();
+  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  const abierto = servidor.address().port;
+  try {
+    const puertos = await escanearPuertos('127.0.0.1', { desde: abierto - 200, hasta: abierto + 200, ms: 500 });
+    eq(puertos.join(), String(abierto), `el escaneo da ${puertos} y el puerto abierto es ${abierto}`);
+  } finally { servidor.close(); }
+});
+
+test('encontrarTablet prueba por orden: la última que funcionó, la anunciada en la wifi, los puertos abiertos; y distingue «falta emparejar»', async () => {
+  const dicho = [];
+  const probar = (respuestas) => (d) => { dicho.push(d); return respuestas[d] ?? `failed to connect to '${d}'`; };
+  // 1) La de la última vez sigue valiendo: no se pregunta a la wifi.
+  let preguntas = 0;
+  let t = await encontrarTablet({ memoria: { ip: '10.0.0.5', puerto: 40000 }, probar: probar({ '10.0.0.5:40000': 'already connected to 10.0.0.5:40000' }), buscar: async () => { preguntas += 1; return []; }, escanear: async () => [] });
+  eq(`${t.ip}:${t.puerto} ${t.via}`, '10.0.0.5:40000 memoria');
+  eq(preguntas, 0, 'con la última tablet válida pregunta a la wifi igualmente');
+  // 2) La de la última vez ya no vale (puerto cambiado): la anunciada por mDNS.
+  t = await encontrarTablet({ memoria: { ip: '10.0.0.5', puerto: 40000 }, probar: probar({ '10.0.0.5:41111': 'connected to 10.0.0.5:41111' }), buscar: async () => [{ ip: '10.0.0.5', puerto: 41111, nombre: 'adb-x' }], escanear: async () => [] });
+  eq(`${t.puerto} ${t.via}`, '41111 wifi', 'no coge la anunciada en la wifi');
+  // 3) Nadie contesta por mDNS: los puertos abiertos de la IP conocida, por orden, saltando los que no son adb.
+  let escaneada = null;
+  t = await encontrarTablet({ memoria: { ip: '10.0.0.5', puerto: 40000 }, probar: probar({ '10.0.0.5:42222': 'connected to 10.0.0.5:42222' }), buscar: async () => [], escanear: async (ip) => { escaneada = ip; return [33333, 42222, 50000]; } });
+  eq(`${escaneada} ${t.puerto} ${t.via}`, '10.0.0.5 42222 puertos', 'no encuentra el puerto escaneando');
+  ok(!dicho.includes('10.0.0.5:50000'), 'sigue probando puertos después de encontrarla');
+  // 4) Sin IP conocida y sin anuncio no escanea nada y lo dice.
+  escaneada = null;
+  let e = await encontrarTablet({ memoria: {}, probar: probar({}), buscar: async () => [], escanear: async (ip) => { escaneada = ip; return []; } }).catch((x) => x);
+  eq(`${e.tipo} ${escaneada}`, 'tablet null', `sin saber la IP ${e.tipo}, escanea ${escaneada}`);
+  // 5) «failed to authenticate» es que falta emparejar, no que no esté.
+  e = await encontrarTablet({ memoria: { ip: '10.0.0.5', puerto: 40000 }, probar: probar({ '10.0.0.5:40000': "failed to authenticate to 10.0.0.5:40000" }), buscar: async () => [], escanear: async () => [] }).catch((x) => x);
+  eq(e.tipo, 'emparejar', `falta emparejar y dice ${e.tipo}`);
+});
+
+test('«lector» (lector.sh) se instala solo, cierra el lector anterior, trae lo último y arranca el servidor guardando capturas', () => {
+  // Con node, git y pkill de pega: la prueba no toca la red ni mata nada.
+  const tmp = mkdtempSync(join(tmpdir(), 'lector-sh-'));
+  const bin = join(tmp, 'bin'), home = join(tmp, 'home'), prefix = join(tmp, 'prefix');
+  mkdirSync(bin); mkdirSync(join(home, '.termux'), { recursive: true }); mkdirSync(join(prefix, 'bin'), { recursive: true });
+  for (const c of ['node', 'git', 'pkill']) { writeFileSync(join(bin, c), `#!/bin/sh\necho "${c} $*"\n`); chmodSync(join(bin, c), 0o755); }
+  const env = { ...process.env, HOME: home, PREFIX: prefix, PATH: `${bin}:${process.env.PATH}` };
+  const r = spawnSync('bash', [join(RAIZ, 'scripts/lector/lector.sh'), '--puerto', '1'], { encoding: 'utf8', env });
+  eq(r.status, 0, `lector.sh sale con ${r.status}: ${r.stderr}`);
+  ok(/git pull --ff-only/.test(r.stdout), 'no trae lo último del repositorio');
+  ok(/pkill -f scripts\/lector\/servir\.mjs/.test(r.stdout), 'no cierra un lector anterior (contestaría a la app con el puerto viejo)');
+  ok(new RegExp(`node .*scripts/lector/servir\\.mjs --guardar-capturas ${home}/capturas --puerto 1`).test(r.stdout), `no arranca el servidor como toca: ${r.stdout}`);
+  ok(!/--tablet/.test(r.stdout), 'pasa un --tablet: la gracia es que la busque sola');
+  ok(existsSync(join(prefix, 'bin', 'lector')) && existsSync(join(home, '.shortcuts', 'Lector')), 'no se instala como mandato «lector» y acceso directo del widget');
+  ok(/^#!/.test(readFileSync(join(prefix, 'bin', 'lector'), 'utf8')), 'el mandato instalado no es un guion');
 });
 
 test('la línea de mandatos funciona también por un enlace y desde una carpeta con espacios', () => {

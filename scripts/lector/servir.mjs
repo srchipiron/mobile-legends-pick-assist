@@ -1,12 +1,17 @@
 /**
  * El puente entre el lector y la app (3.25.0): en Termux, en el MÓVIL,
  *
+ *   lector                                   (scripts/lector/lector.sh, 3.26.0)
+ *   node scripts/lector/servir.mjs           (busca la tablet sola)
  *   node scripts/lector/servir.mjs --tablet 192.168.68.112:PUERTO
  *
  * y en la app, el botón «Leer del juego». Cada toque hace UNA captura de la
  * tablet (la misma de `leer.mjs`), reconoce baneos y picks enemigos y
  * devuelve los NOMBRES; la imagen no sale de Termux.
  *
+ * - Sin `--tablet` la encuentra sola (`encontrarTablet`: la última que
+ *   funcionó, mDNS, puertos abiertos) y la vuelve a buscar si deja de
+ *   contestar: el puerto cambia cada vez que se enciende la depuración.
  * - Escucha solo en 127.0.0.1: desde otro aparato no se puede llamar.
  * - Solo responde con datos a la app publicada (y a una copia local para
  *   las pruebas); a cualquier otra web le dice que no.
@@ -20,17 +25,61 @@
  * Moonton. Este fichero no lanza programas: la captura es la de `leer.mjs`.
  */
 import { createServer } from 'node:http';
-import { mkdirSync, writeFileSync, realpathSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, realpathSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { leerPng } from './png.mjs';
-import { capturarTablet, leerBaneos, leerPicksEnemigos, carasGuardadas } from './leer.mjs';
+import { capturarTablet, encontrarTablet, leerBaneos, leerPicksEnemigos, carasGuardadas } from './leer.mjs';
 
 /** Decisión de producto: un puerto alto, fijo, que la app conoce. */
 export const PUERTO = 47323;
 /** La app publicada. Una copia servida desde el propio móvil también vale (pruebas). */
 export const ORIGENES = ['https://srchipiron.github.io'];
 export const VERSION_PUENTE = 1;
+/** Fallos de captura que la app distingue: la tablet no está, falta emparejar, o adb no consigue la captura. */
+export const FALLOS_DE_CAPTURA = ['tablet', 'emparejar', 'captura'];
+/** Dónde se recuerda la última tablet que funcionó (ip y puerto). */
+export const FICHERO_MEMORIA = join(homedir(), '.config', 'lector', 'tablet.json');
+
+export function leerMemoria(fichero = FICHERO_MEMORIA) {
+  try { const m = JSON.parse(readFileSync(fichero, 'utf8')); return m && typeof m === 'object' ? m : {}; } catch { return {}; }
+}
+export function guardarMemoria(m, fichero = FICHERO_MEMORIA) {
+  try { mkdirSync(resolve(fichero, '..'), { recursive: true }); writeFileSync(fichero, JSON.stringify({ ip: m.ip, puerto: m.puerto, nombre: m.nombre ?? null })); } catch { /* sin disco: se busca la próxima vez */ }
+}
+
+/**
+ * La captura con la tablet encontrada sola: la primera vez (o tras
+ * `preparar()`, al arrancar) la busca; si una captura falla, la olvida y la
+ * busca otra vez antes de rendirse, porque el puerto habrá cambiado. Con
+ * `fija` (`--tablet IP:PUERTO`) no busca nada. Lo que encuentra se guarda
+ * en `memoria` para la próxima vez.
+ */
+export function capturaAutomatica({ fija = null, memoria = {}, recordar = () => {}, encontrar = encontrarTablet, capturar = capturarTablet, registrar = () => {} }) {
+  let tablet = fija, buscando = null;
+  const localizar = () => {
+    buscando ??= encontrar({ memoria, registrar }).then((c) => {
+      tablet = `${c.ip}:${c.puerto}`;
+      Object.assign(memoria, { ip: c.ip, puerto: c.puerto, nombre: c.nombre ?? memoria.nombre ?? null });
+      recordar(memoria);
+      registrar(`Tablet: ${tablet} (${c.via === 'memoria' ? 'la de la última vez' : c.via === 'wifi' ? 'anunciada en la wifi' : 'por sus puertos'}).`);
+      return tablet;
+    }).finally(() => { buscando = null; });
+    return buscando;
+  };
+  const ahora = async (segunda = false) => {
+    if (!tablet) await localizar();
+    try { return capturar(tablet); } catch (e) {
+      if (fija || segunda) throw e;
+      registrar(`La tablet no contesta en ${tablet}: la busco otra vez.`);
+      tablet = null;
+      return ahora(true);
+    }
+  };
+  ahora.preparar = () => { if (!tablet) localizar().catch((e) => registrar(e.message)); };
+  return ahora;
+}
 
 export const origenPermitido = (o) => !!o && (ORIGENES.includes(o) || /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(o));
 
@@ -50,7 +99,7 @@ export function leerCaptura(png, caras) {
  */
 export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = null, registrar = () => {} }) {
   let n = 0;
-  return createServer((req, res) => {
+  return createServer(async (req, res) => {
     const origen = req.headers.origin;
     const cabeceras = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', Vary: 'Origin' };
     if (origen) {
@@ -73,9 +122,9 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
     if (req.method === 'GET' && ruta === '/leer') {
       const t0 = Date.now();
       let png;
-      try { png = capturar(); } catch (e) {
+      try { png = await capturar(); } catch (e) {
         registrar(`No se pudo hacer la captura: ${String(e.message).split('\n')[0]}`);
-        res.writeHead(502, cabeceras).end(JSON.stringify({ error: 'captura' }));
+        res.writeHead(502, cabeceras).end(JSON.stringify({ error: FALLOS_DE_CAPTURA.includes(e?.tipo) ? e.tipo : 'captura' }));
         return;
       }
       try {
@@ -104,19 +153,26 @@ async function principal() {
   const tablet = arg('--tablet');
   const puerto = Number(arg('--puerto') ?? PUERTO);
   const carpeta = arg('--guardar-capturas');
-  if (!tablet) {
-    console.error('Uso: node scripts/lector/servir.mjs --tablet IP:PUERTO   [--guardar-capturas carpeta]');
+  if (process.argv.includes('--ayuda') || process.argv.includes('--help')) {
+    console.error('Uso: node scripts/lector/servir.mjs [--tablet IP:PUERTO | --tablet IP] [--guardar-capturas carpeta]');
     process.exit(2);
   }
   if (carpeta) mkdirSync(carpeta, { recursive: true });
-  const servidor = crearServidor({ capturar: () => capturarTablet(tablet), carpeta, registrar: (m) => console.log(m) });
+  const registrar = (m) => console.log(m);
+  // `--tablet IP:PUERTO` la fija; `--tablet IP` solo dice dónde buscar.
+  const fija = tablet?.includes(':') ? tablet : null;
+  const memoria = leerMemoria();
+  if (tablet && !fija) memoria.ip = tablet;
+  const capturar = capturaAutomatica({ fija, memoria, recordar: guardarMemoria, registrar });
+  const servidor = crearServidor({ capturar, carpeta, registrar });
   servidor.on('error', (e) => {
-    console.error(e.code === 'EADDRINUSE' ? `El puerto ${puerto} ya está en uso: ¿hay otro lector abierto?` : e.message);
+    console.error(e.code === 'EADDRINUSE' ? `El puerto ${puerto} ya está en uso: hay otro lector abierto. Ciérralo, o arranca con «lector», que lo cierra solo.` : e.message);
     process.exit(1);
   });
   servidor.listen(puerto, '127.0.0.1', () => {
-    console.log(`Lector esperando en http://127.0.0.1:${puerto} (tablet ${tablet}).`);
+    console.log(`Lector esperando en http://127.0.0.1:${puerto}${fija ? ` (tablet ${fija})` : ''}.`);
     console.log('Abre la app y toca «Leer del juego». Ctrl+C para parar, y apaga la depuración inalámbrica al acabar.');
+    if (!fija) capturar.preparar();
   });
 }
 

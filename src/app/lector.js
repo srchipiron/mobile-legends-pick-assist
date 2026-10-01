@@ -14,7 +14,12 @@ export const URL_LECTOR = `http://127.0.0.1:${PUERTO_LECTOR}`;
 /** Decisión de producto: la captura por wifi más el reconocimiento tardan 2–4 s; 20 s es «no está». */
 export const PLAZO_LECTOR_MS = 20000;
 
-/** Un fallo con su tipo: `sinPuente` (no está abierto o falta el permiso), `plazo`, `captura` (adb no llega a la tablet) o `error`. */
+/**
+ * Un fallo con su tipo: `sinPuente` (no está abierto o falta el permiso),
+ * `plazo`, `tablet` (el lector no la ve en la wifi), `emparejar` (la tablet
+ * no deja entrar al móvil), `captura` (adb no consigue la captura) o `error`.
+ */
+export const FALLOS_DEL_LECTOR = ['sinPuente', 'plazo', 'tablet', 'emparejar', 'captura', 'error'];
 const fallo = (tipo) => Object.assign(new Error(tipo), { tipo });
 
 /** Pide una lectura al lector. Devuelve lo que manda (`tuyos`, `suyos`, `enemigos`) o lanza un fallo con tipo. */
@@ -31,7 +36,7 @@ export async function pedirLectura({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_M
   }
   let cuerpo = null;
   try { cuerpo = await respuesta.json(); } catch { /* cuerpo vacío */ }
-  if (!respuesta.ok) throw fallo(cuerpo?.error === 'captura' ? 'captura' : 'error');
+  if (!respuesta.ok) throw fallo(['tablet', 'emparejar', 'captura'].includes(cuerpo?.error) ? cuerpo.error : 'error');
   if (!cuerpo || !Array.isArray(cuerpo.enemigos)) throw fallo('error');
   return cuerpo;
 }
