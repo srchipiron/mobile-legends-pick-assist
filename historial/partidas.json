@@ -1,6 +1,95 @@
 {
- "actualizado": "2026-10-01T22:10:54.904Z",
+ "actualizado": "2026-10-01T22:34:10.679Z",
  "partidas": [
+  {
+   "t": 1790894036528,
+   "pick": "Diggie",
+   "recomendados": [
+    "Edith",
+    "Chip",
+    "Diggie"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.68,
+   "bans": [
+    "Hirara",
+    "Eudora",
+    "Lukas",
+    "Marcel",
+    "Saber",
+    "Belerick",
+    "Yi Sun-shin",
+    "Khufra",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Aulus",
+     "Franco",
+     "Claude",
+     "Arlott",
+     "Gusion"
+    ],
+    "aliados": [
+     "Cyclops",
+     "Lesley",
+     "Masha",
+     "Suyou"
+    ],
+    "linea": "roam",
+    "rival": "Franco"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Eudora",
+     "Lukas",
+     "Marcel",
+     "Saber",
+     "Belerick",
+     "Yi Sun-shin",
+     "Khufra",
+     "Paquito"
+    ],
+    "enemigos": [],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Fanny",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Brody",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Natalia",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Wanwan",
+      "parecido": 0.71
+     }
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Aulus",
+      "Aulus",
+      "Aulus"
+     ]
+    }
+   }
+  },
   {
    "t": 1790892638584,
    "pick": "Diggie",
@@ -4223,6 +4312,12 @@
   {
    "cuando": "2026-10-01T22:10:54.904Z",
    "partidas": 132,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-01T22:34:10.679Z",
+   "partidas": 133,
    "heroes": 11,
    "incidencia": 11
   }
