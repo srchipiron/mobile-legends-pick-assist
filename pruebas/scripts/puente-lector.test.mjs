@@ -87,6 +87,15 @@ test('la captura automática busca la tablet sola, la recuerda y la vuelve a bus
   eq(buscadaAntes, 1, `preparar() y el primer toque buscan ${buscadaAntes} veces (una sola búsqueda compartida)`);
 });
 
+test('un hueco sin reconocer dice en Termux a qué se quedó más cerca', async () => {
+  const lineas = [];
+  await conServidor({ capturar: () => capturaCompletaPng({ conPicks: false }), registrar: (m) => lineas.push(m) }, async (base) => {
+    await fetch(`${base}/leer`, { headers: { Origin: 'https://srchipiron.github.io' } });
+  });
+  const linea = lineas.find((l) => /^Lectura 1/.test(l)) ?? '';
+  ok(/enemigos \?\([A-Za-z.' -]+ 0\.\d\d\)/.test(linea), `la línea de Termux no dice el candidato y el parecido de un «?»: ${linea}`);
+});
+
 test('la app distingue «no veo la tablet» y «falta emparejar» de un fallo de captura', async () => {
   for (const tipo of ['tablet', 'emparejar']) {
     await conServidor({ capturar: async () => { throw Object.assign(new Error(tipo), { tipo }); } }, async (base) => {

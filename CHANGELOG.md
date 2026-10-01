@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.26.1
+
+- **Cuando el lector no reconoce un hueco, dice en Termux a qué se quedó
+  más cerca** («?(Clint 0.41)»): con eso se afina sin tener que abrir las
+  capturas. En la primera partida real los diez baneos salieron bien y
+  ningún pick enemigo, y las líneas de Termux no decían por qué.
+- `lector` guarda las capturas en Descargas (`capturas/`) si Termux tiene
+  acceso al almacenamiento (`termux-setup-storage`), para poder mandar una
+  desde la galería; si no, en su carpeta de siempre.
+
 ## 3.26.0
 
 - **El lector de la tablet se arranca con una palabra, `lector`, y

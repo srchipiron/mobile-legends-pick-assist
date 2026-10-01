@@ -135,7 +135,8 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
           writeFileSync(`${base}.png`, png);
           writeFileSync(`${base}.json`, JSON.stringify(lectura, null, 1));
         }
-        const nombres = (l) => l.map((x) => x.nombre ?? '?').join(', ');
+        // Un «?» dice a qué se quedó más cerca: con eso se afina sin pedir la captura.
+        const nombres = (l) => l.map((x) => x.nombre ?? (x.candidato ? `?(${x.candidato} ${x.parecido.toFixed(2)})` : '?')).join(', ');
         registrar(`Lectura ${n} (${lectura.ms} ms): baneos ${nombres([...lectura.tuyos, ...lectura.suyos])} · enemigos ${nombres(lectura.enemigos)}`);
         res.writeHead(200, cabeceras).end(JSON.stringify(lectura));
       } catch (e) {

@@ -42,5 +42,9 @@ git pull --ff-only -q 2>/dev/null || echo "Sin red para actualizar: sigo con lo 
 # Un lector anterior contestaría a la app en lugar de este.
 pkill -f 'scripts/lector/servir.mjs' 2>/dev/null && sleep 1
 
-mkdir -p "$HOME/capturas"
-exec node "$AQUI/servir.mjs" --guardar-capturas "$HOME/capturas" "$@"
+# Las capturas, donde el móvil las enseña en la galería si Termux tiene
+# acceso al almacenamiento (termux-setup-storage); si no, en casa.
+CAPTURAS="$HOME/capturas"
+[ -d "$HOME/storage/downloads" ] && CAPTURAS="$HOME/storage/downloads/capturas"
+mkdir -p "$CAPTURAS"
+exec node "$AQUI/servir.mjs" --guardar-capturas "$CAPTURAS" "$@"

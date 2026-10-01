@@ -210,14 +210,17 @@ test('la tablet se encuentra sola: la pregunta mDNS pide respuesta unicast y la 
   // Sin nadie que conteste, vuelve vacío pasado el plazo, sin lanzar.
   const t0 = Date.now();
   eq((await buscarPorMdns({ ms: 150 })).length, 0, 'sin tablet en la red encuentra algo');
-  ok(Date.now() - t0 < 1500, 'la búsqueda sin respuesta no acaba al plazo');
+  // Las pruebas corren a la vez y las de lector.sh bloquean el bucle con spawnSync: el margen es ancho a propósito.
+  ok(Date.now() - t0 < 10000, 'la búsqueda sin respuesta no acaba al plazo');
   // El escaneo de puertos encuentra uno abierto en el rango.
   const servidor = createServer();
   await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
   const abierto = servidor.address().port;
   try {
     const puertos = await escanearPuertos('127.0.0.1', { desde: abierto - 200, hasta: abierto + 200, ms: 500 });
-    eq(puertos.join(), String(abierto), `el escaneo da ${puertos} y el puerto abierto es ${abierto}`);
+    // En la máquina puede haber otros puertos abiertos en ese rango: el nuestro tiene que estar, y uno cerrado no.
+    ok(puertos.includes(abierto), `el escaneo da ${puertos} y el puerto abierto es ${abierto}`);
+    ok(puertos.length <= 5, `el escaneo da abiertos de más: ${puertos}`);
   } finally { servidor.close(); }
 });
 
@@ -261,6 +264,11 @@ test('«lector» (lector.sh) se instala solo, cierra el lector anterior, trae lo
   ok(!/--tablet/.test(r.stdout), 'pasa un --tablet: la gracia es que la busque sola');
   ok(existsSync(join(prefix, 'bin', 'lector')) && existsSync(join(home, '.shortcuts', 'Lector')), 'no se instala como mandato «lector» y acceso directo del widget');
   ok(/^#!/.test(readFileSync(join(prefix, 'bin', 'lector'), 'utf8')), 'el mandato instalado no es un guion');
+  // Con acceso al almacenamiento, las capturas van a Descargas (se ven en la galería y se pueden mandar).
+  mkdirSync(join(home, 'storage', 'downloads'), { recursive: true });
+  const r2 = spawnSync('bash', [join(RAIZ, 'scripts/lector/lector.sh')], { encoding: 'utf8', env });
+  ok(new RegExp(`--guardar-capturas ${home}/storage/downloads/capturas`).test(r2.stdout), `con ~/storage no guarda en Descargas: ${r2.stdout}`);
+  ok(existsSync(join(home, 'storage', 'downloads', 'capturas')), 'no crea la carpeta de capturas en Descargas');
 });
 
 test('la línea de mandatos funciona también por un enlace y desde una carpeta con espacios', () => {
