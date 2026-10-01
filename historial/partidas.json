@@ -1,6 +1,62 @@
 {
- "actualizado": "2026-10-01T18:38:59.410Z",
+ "actualizado": "2026-10-01T18:53:33.133Z",
  "partidas": [
+  {
+   "t": 1790880793943,
+   "pick": "Diggie",
+   "recomendados": [
+    "Rafaela",
+    "Estes",
+    "Diggie"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.495,
+   "bans": [
+    "Hirara",
+    "Belerick",
+    "Thamuz",
+    "Khufra",
+    "Gloo",
+    "Aulus",
+    "Eudora",
+    "Marcel",
+    "Lukas",
+    "Masha"
+   ],
+   "draft": {
+    "enemigos": [
+     "Karrie",
+     "Kadita",
+     "Julian",
+     "Yu Zhong",
+     "Floryn"
+    ],
+    "aliados": [
+     "Alucard",
+     "Layla",
+     "Nana",
+     "Sora"
+    ],
+    "linea": "roam",
+    "rival": "Floryn"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Belerick",
+     "Thamuz",
+     "Khufra",
+     "Gloo",
+     "Aulus",
+     "Eudora",
+     "Marcel",
+     "Lukas",
+     "Masha"
+    ],
+    "enemigos": []
+   }
+  },
   {
    "t": 1790879923795,
    "pick": "Diggie",
@@ -3710,6 +3766,12 @@
   {
    "cuando": "2026-10-01T18:38:59.410Z",
    "partidas": 126,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-01T18:53:33.133Z",
+   "partidas": 127,
    "heroes": 11,
    "incidencia": 11
   }
