@@ -1,6 +1,84 @@
 {
- "actualizado": "2026-10-01T20:45:06.578Z",
+ "actualizado": "2026-10-01T21:09:04.727Z",
  "partidas": [
+  {
+   "t": 1790888927416,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Minotaur",
+    "Saber",
+    "Khaleed"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.642,
+   "bans": [
+    "Khufra",
+    "Aulus",
+    "Paquito",
+    "Gloo",
+    "Lukas",
+    "Yi Sun-shin",
+    "Hirara",
+    "Kadita",
+    "Marcel"
+   ],
+   "draft": {
+    "enemigos": [
+     "Zetian",
+     "Yu Zhong",
+     "Brody",
+     "Tigreal",
+     "Fanny"
+    ],
+    "aliados": [
+     "Vexana",
+     "Carmilla",
+     "Lesley"
+    ],
+    "linea": "roam",
+    "rival": "Tigreal"
+   },
+   "lector": {
+    "baneos": [
+     "Khufra",
+     "Aulus",
+     "Paquito",
+     "Gloo",
+     "Lukas",
+     "Yi Sun-shin",
+     "Hirara",
+     "Kadita",
+     "Marcel"
+    ],
+    "enemigos": [
+     "Wanwan",
+     "Natalia"
+    ],
+    "dudas": [
+     {
+      "hueco": "e2",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Fredrinn",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Fredrinn",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.7
+     }
+    ]
+   }
+  },
   {
    "t": 1790887487048,
    "pick": "Diggie",
@@ -3872,6 +3950,12 @@
   {
    "cuando": "2026-10-01T20:45:06.578Z",
    "partidas": 128,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-01T21:09:04.727Z",
+   "partidas": 129,
    "heroes": 11,
    "incidencia": 11
   }
