@@ -72,6 +72,19 @@ export function leerPicksEnemigos(img, caras, { posiciones = PICKS_ENEMIGOS, ext
   return posiciones.map((pos) => reconocer(img, escalar(img, pos), enEspejo, { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12] }));
 }
 
+/**
+ * El mismo héroe no puede estar dos veces en los huecos de UN equipo (sus
+ * cinco baneos, los cinco picks): si dos leen el mismo nombre, uno está
+ * mal. Se queda el que más se parece y el otro pasa a «?» con su candidato.
+ * OJO: los dos equipos SÍ pueden banear al mismo héroe (Hirara en la
+ * captura real; Belerick y Atlas en la primera tarde): no se cruza entre lados.
+ */
+export function sinRepetidos(lecturas) {
+  const mejor = new Map();
+  for (const l of lecturas) if (l.nombre && !(mejor.get(l.nombre)?.parecido >= l.parecido)) mejor.set(l.nombre, l);
+  return lecturas.map((l) => (l.nombre && mejor.get(l.nombre) !== l ? { ...l, nombre: null, repetido: true } : l));
+}
+
 export const carasGuardadas = () => cargarCaras(JSON.parse(readFileSync(new URL('caras.json', import.meta.url))).caras);
 
 /**

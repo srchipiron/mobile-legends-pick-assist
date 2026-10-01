@@ -1426,6 +1426,15 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   captura y los enemigos finales). Catorce mutaciones; la decimotercera
   («leer sin las caras aprendidas») pasaba con solo desplazamiento y pidió
   el caso del rework.
+- **La primera tarde entera con 3.26.0 (27 lecturas, cuatro drafts)**: los
+  picks enemigos SÍ se leen mientras se elige (Minsitthar, Vexana,
+  Fredrinn, Beatrix en un draft; Fredrinn y Clint en otro); el primer
+  draft con todo «?» era cuestión de cuándo se tocaba (sin picks aún, o en
+  skins). Y los DOS equipos pueden banear al mismo héroe (Belerick en los
+  huecos 5 y 6, Atlas en el 4 y el 6, como Hirara en la captura de la
+  prueba): `sinRepetidos` (3.27.1) solo quita repetidos DENTRO de los
+  cinco de un equipo, nunca entre lados; la primera versión los cruzaba y
+  la prueba con la captura real la tumbó.
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

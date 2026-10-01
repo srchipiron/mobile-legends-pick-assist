@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.27.1
+
+- **Un mismo héroe leído dos veces entre los cinco baneos de un equipo (o
+  entre los cinco picks enemigos) ya no entra dos veces**: uno de los dos
+  huecos está mal leído, se queda el que más se parece y el otro sale como
+  «?» con su candidato en Termux. Los DOS equipos sí pueden banear al
+  mismo héroe, y eso se respeta: en la primera tarde real pasó con
+  Belerick y con Atlas.
+
 ## 3.27.0
 
 - **El lector aprende de tus correcciones.** Cuando el draft está completo

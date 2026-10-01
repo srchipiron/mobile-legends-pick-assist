@@ -31,7 +31,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Worker } from 'node:worker_threads';
 import { leerPng } from './png.mjs';
-import { capturarTablet, encontrarTablet, leerBaneos, leerPicksEnemigos, carasGuardadas } from './leer.mjs';
+import { capturarTablet, encontrarTablet, leerBaneos, leerPicksEnemigos, sinRepetidos, carasGuardadas } from './leer.mjs';
 import { carasAprendidas, resumirAprendizaje } from './aprender.mjs';
 
 /** Decisión de producto: un puerto alto, fijo, que la app conoce. */
@@ -112,8 +112,11 @@ const plano = (r) => ({ nombre: r.nombre ?? null, candidato: r.candidato ?? null
 export function leerCaptura(png, caras, aprendido = null) {
   const img = leerPng(png);
   const baneos = leerBaneos(img, caras);
-  const enemigos = leerPicksEnemigos(img, caras, { posiciones: aprendido?.picks ?? undefined, extra: carasAprendidas(aprendido) });
-  return { ancho: img.ancho, alto: img.alto, tuyos: baneos.tuyos.map(plano), suyos: baneos.suyos.map(plano), enemigos: enemigos.map(plano) };
+  const enemigos = sinRepetidos(leerPicksEnemigos(img, caras, { posiciones: aprendido?.picks ?? undefined, extra: carasAprendidas(aprendido) }));
+  // Un equipo no banea dos veces al mismo héroe; los DOS equipos sí pueden
+  // banear al mismo (Hirara en la captura real, Belerick y Atlas en la
+  // primera tarde): se quita el repetido dentro de cada lado, no entre lados.
+  return { ancho: img.ancho, alto: img.alto, tuyos: sinRepetidos(baneos.tuyos).map(plano), suyos: sinRepetidos(baneos.suyos).map(plano), enemigos: enemigos.map(plano) };
 }
 
 /**

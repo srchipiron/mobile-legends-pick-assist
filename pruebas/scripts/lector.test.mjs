@@ -13,7 +13,7 @@ import { spawnSync } from 'node:child_process';
 import { test, ok, eq, terminar, RAIZ, leerJson, generador } from '../arnes.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
 import { LADO } from '../../scripts/lector/caras.mjs';
-import { leerBaneos, leerPicksEnemigos, carasGuardadas, carasDesfasadas, encontrarTablet, REFERENCIA } from '../../scripts/lector/leer.mjs';
+import { leerBaneos, leerPicksEnemigos, carasGuardadas, carasDesfasadas, encontrarTablet, sinRepetidos, REFERENCIA } from '../../scripts/lector/leer.mjs';
 import { preguntaMdns, tabletsDeRespuesta, buscarPorMdns, escanearPuertos, SERVICIO } from '../../scripts/lector/tablet.mjs';
 
 test('el lector de PNG devuelve los mismos píxeles con los cinco filtros de fila', () => {
@@ -269,6 +269,17 @@ test('«lector» (lector.sh) se instala solo, cierra el lector anterior, trae lo
   const r2 = spawnSync('bash', [join(RAIZ, 'scripts/lector/lector.sh')], { encoding: 'utf8', env });
   ok(new RegExp(`--guardar-capturas ${home}/storage/downloads/capturas`).test(r2.stdout), `con ~/storage no guarda en Descargas: ${r2.stdout}`);
   ok(existsSync(join(home, 'storage', 'downloads', 'capturas')), 'no crea la carpeta de capturas en Descargas');
+});
+
+test('el mismo héroe leído en dos huecos de una fila: se queda el que más se parece, el otro pasa a «?»', () => {
+  // Dentro de los cinco de un equipo dos iguales no pueden ser (entre equipos sí: Hirara en la captura real).
+  const l = sinRepetidos([
+    { nombre: 'Belerick', candidato: 'Belerick', parecido: 0.91 }, { nombre: 'Eudora', candidato: 'Eudora', parecido: 0.95 },
+    { nombre: 'Belerick', candidato: 'Belerick', parecido: 0.84 }, { nombre: null, candidato: 'Saber', parecido: 0.6 },
+  ]);
+  eq(l.map((x) => x.nombre ?? '?').join(), 'Belerick,Eudora,?,?', `no quita el repetido que menos se parece: ${l.map((x) => x.nombre)}`);
+  eq(`${l[2].candidato} ${l[2].repetido}`, 'Belerick true', 'el hueco quitado no conserva su candidato ni dice que era un repetido');
+  eq(sinRepetidos([{ nombre: 'A', parecido: 0.9 }, { nombre: 'B', parecido: 0.9 }]).filter((x) => x.nombre).length, 2, 'quita huecos distintos');
 });
 
 test('la línea de mandatos funciona también por un enlace y desde una carpeta con espacios', () => {
