@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CLAVES, leer, guardar } from './almacen.js';
 import { useAhora } from './useAhora.js';
 import { recogerPerfil, exportarPerfil } from '../../motor/perfil.js';
-import { subirIncidencia } from '../github.js';
+import { subirIncidencia, comentarIncidencia } from '../github.js';
 import { huellaDe, sanearEnvio, tocaSubir, ESPERA_MS } from '../envio.js';
 
 /**
@@ -54,6 +54,19 @@ export function useEnvio({ perfil, t }) {
     }
   }, [t, cambiar]);
 
+  /**
+   * Una incidencia NUEVA con un cuerpo y, si lo hay, un comentario (3.29.0,
+   * temporal: la pantalla de resultado reducida). El token no sale de aquí.
+   */
+  const subirAparte = useCallback(async ({ titulo, cuerpo, comentario = null, etiquetas = [] }) => {
+    const { estado: e } = ultimo.current;
+    if (!e.token) return { error: 'sinToken' };
+    const r = await subirIncidencia({ numero: null, titulo, cuerpo, etiquetas }, e.token);
+    if (r.error) return r;
+    if (comentario && r.numero) await comentarIncidencia({ numero: r.numero, cuerpo: comentario }, e.token);
+    return r;
+  }, []);
+
   /** Activar (con el token) o quitar (null). Quitarlo conserva la incidencia: al volver a activarlo sigue en la misma. */
   const guardarToken = useCallback((token) => {
     const limpio = typeof token === 'string' && token.trim() ? token.trim() : null;
@@ -73,6 +86,6 @@ export function useEnvio({ perfil, t }) {
   const pendiente = !!estado.token && (perfil.partidas?.length ?? 0) > 0 && huella !== estado.huella;
   return {
     activo: !!estado.token, incidencia: estado.incidencia, url: estado.url, cuando: estado.cuando, error: estado.error,
-    enCurso, pendiente, enviar, guardarToken,
+    enCurso, pendiente, enviar, guardarToken, subirAparte,
   };
 }

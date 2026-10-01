@@ -3,7 +3,7 @@
  * repositorio sale de la dirección de Pages y el cuerpo va codificado.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { repositorioDe, urlDeIncidencia, TOPE_URL, subirIncidencia, tokenPlausible, API_GITHUB } from '../../src/app/github.js';
+import { repositorioDe, urlDeIncidencia, TOPE_URL, subirIncidencia, comentarIncidencia, tokenPlausible, API_GITHUB } from '../../src/app/github.js';
 
 test('el repositorio se deduce de la dirección de Pages', () => {
   const pages = repositorioDe({ hostname: 'srchipiron.github.io', pathname: '/mobile-legends-pick-assist/' });
@@ -69,6 +69,16 @@ test('subir por la API: la incidencia borrada abre otra; 401 es token, 403/404 a
   const f = fetchFalso([{ status: 500 }]);
   eq((await subirIncidencia({ titulo: 't', cuerpo: 'c' }, TOKEN, { location: PAGES, fetch: f.fetch })).error, 'otro');
   ok(tokenPlausible(TOKEN) && !tokenPlausible('') && !tokenPlausible('corto') && !tokenPlausible('con espacio dentro 0123456789'), 'la forma del token no se comprueba');
+});
+
+test('un comentario en una incidencia va por POST a /comments con el token solo en la cabecera', async () => {
+  const { fetch, pedidas } = fetchFalso([{ status: 201, datos: { html_url: 'https://github.com/x/y/issues/12#c1' } }, { status: 401 }]);
+  const r = await comentarIncidencia({ numero: 12, cuerpo: 'hola' }, TOKEN, { location: PAGES, fetch });
+  eq(r.url, 'https://github.com/x/y/issues/12#c1', `no devuelve la dirección del comentario: ${JSON.stringify(r)}`);
+  eq(`${pedidas[0].method} ${pedidas[0].url}`, `POST ${API_GITHUB}/repos/srchipiron/mobile-legends-pick-assist/issues/12/comments`);
+  eq(JSON.parse(pedidas[0].body).body, 'hola');
+  ok(!pedidas[0].url.includes(TOKEN) && !pedidas[0].body.includes(TOKEN) && pedidas[0].headers.Authorization === `Bearer ${TOKEN}`, 'el token viaja fuera de la cabecera');
+  eq((await comentarIncidencia({ numero: 12, cuerpo: 'x' }, TOKEN, { location: PAGES, fetch })).error, 'token', 'un 401 no es «token»');
 });
 
 await terminar('app/github');

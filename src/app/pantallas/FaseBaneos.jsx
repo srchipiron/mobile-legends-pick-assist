@@ -11,7 +11,7 @@ import { IDIOMAS } from '../i18n/index.js';
  * multi-toque se abre desde cualquier hueco o desde el botón grande, y el
  * único camino hacia delante es «Ir a los picks».
  */
-export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, rangoDatos = '', sinWinrates, idioma, onIdioma, tacto, onTacto, onAbrirSelector, onBanear, onQuitar, onAPicks, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, pie }) {
+export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, rangoDatos = '', sinWinrates, idioma, onIdioma, tacto, onTacto, onAbrirSelector, onBanear, onQuitar, onAPicks, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, pantalla = null, onPantalla = null, pie }) {
   const baneados = new Set(baneos.map((h) => h.name));
   return (
     <div className="app fase-baneos">
@@ -24,7 +24,7 @@ export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, 
         <p className="fase-pista">{t('fase.baneosPista')}</p>
         <Bando t={t} titulo={t('app.baneados')} tipo="bans" picks={baneos} max={10} onAnadir={onAbrirSelector} onQuitar={onQuitar} />
         <ProximosBaneos t={t} items={proximos} baneos={baneos} visibles={baneos.length < 10 ? 8 : 0} tasaDe={tasaDe} rango={rangoDatos} onBanear={onBanear} onQuitar={onQuitar} />
-        {onLeer && <BotonLector estado={lector?.estado} aviso={lector?.aviso} ultimo={lector?.ultimo} auto={lectorAuto} onAuto={onLectorAuto} onLeer={onLeer} t={t} />}
+        {onLeer && <BotonLector estado={lector?.estado} aviso={lector?.aviso} ultimo={lector?.ultimo} auto={lectorAuto} onAuto={onLectorAuto} onLeer={onLeer} pantalla={pantalla} onPantalla={onPantalla} t={t} />}
         <button className="reset" onClick={onAbrirSelector}>{t('fase.buscarBaneo')}</button>
         <button className="reset primario" onClick={onAPicks}>{baneos.length ? t('fase.aPicks') : t('fase.sinBaneosAPicks')}</button>
         {/* Tu plan antes de que salga nadie: la mitad de las veces el plan A

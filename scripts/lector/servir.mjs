@@ -33,6 +33,7 @@ import { Worker } from 'node:worker_threads';
 import { leerPng } from './png.mjs';
 import { capturarTablet, encontrarTablet, leerBaneos, leerPicksEnemigos, sinRepetidos, carasGuardadas } from './leer.mjs';
 import { carasAprendidas, resumirAprendizaje } from './aprender.mjs';
+import { miniaturasDe } from './miniatura.mjs';
 
 /** Decisión de producto: un puerto alto, fijo, que la app conoce. */
 export const PUERTO = 47323;
@@ -169,6 +170,29 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
     const ruta = new URL(req.url, 'http://127.0.0.1').pathname;
     if (req.method === 'GET' && ruta === '/estado') {
       res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, version: VERSION_PUENTE, aprendido: { capturas: aprendido?.capturas ?? 0, caras: Object.keys(aprendido?.caras ?? {}).length, picks: !!aprendido?.picks } }));
+      return;
+    }
+    if (req.method === 'GET' && ruta === '/captura') {
+      // Una captura REDUCIDA para mandar al proyecto (3.29.0, temporal: la
+      // pantalla de resultado, para medir dónde está el cartel). Solo a la
+      // app, y es lo único que sale como imagen: pequeña y con paleta.
+      if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
+      let png;
+      try { png = await capturar(); } catch (e) {
+        res.writeHead(502, cabeceras).end(JSON.stringify({ error: FALLOS_DE_CAPTURA.includes(e?.tipo) ? e.tipo : 'captura' }));
+        return;
+      }
+      try {
+        const img = leerPng(png);
+        const id = `resultado-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+        if (carpeta) writeFileSync(join(carpeta, `${id}.png`), png);
+        const mini = miniaturasDe(img);
+        registrar(`Captura reducida ${id} (${img.ancho}×${img.alto}): ${mini.miniatura.length + mini.tira.length} caracteres.`);
+        res.writeHead(200, cabeceras).end(JSON.stringify({ id, ancho: img.ancho, alto: img.alto, ...mini }));
+      } catch (e) {
+        registrar(`La captura no se pudo reducir: ${e.message}`);
+        res.writeHead(500, cabeceras).end(JSON.stringify({ error: 'formato' }));
+      }
       return;
     }
     if (req.method === 'POST' && ruta === '/corregir') {

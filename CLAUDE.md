@@ -1467,6 +1467,29 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   Pruebas: `app/lector.test`, `registro.test`, `partidas.test` (informe) y
   `lector.e2e` (lee sin tocar nada, el «Deshacer» sobrevive a una lectura
   vacía, el interruptor se recuerda). Siete mutaciones.
+- **Apuntar el resultado solo, y el botón TEMPORAL de 3.29.0**: Javi
+  preguntó si el lector puede leer VICTORIA/DERROTA de la tablet. Se
+  puede, pero la pantalla de resultado no está medida (ninguna captura
+  suya). En vez de pedirle capturas a mano, 3.29.0 pone bajo «Leer del
+  juego» un desplegable «Mandar la pantalla de resultado al proyecto»
+  (solo con el token de subida): `GET /captura` en el lector (solo con
+  Origin, guarda la captura entera como `resultado-<id>.png` en la
+  carpeta) devuelve dos PNG REDUCIDOS en base64 (`scripts/lector/
+  miniatura.mjs`: pantalla entera a 320 px y la franja de arriba, el 28%
+  del alto, a 640 px; cajas promediadas, paleta 6×7×6 = 252 colores, y si
+  no cabe en `TOPE_BASE64` 60.000 caracteres se parte el ancho por la
+  mitad), y la app (`pedirCaptura`, `cuerpoDePantalla`, `subirAparte` en
+  useEnvio) abre una incidencia nueva con etiqueta `pantalla` con la
+  miniatura en el cuerpo y la franja en un comentario, como texto: la API
+  no admite adjuntos y un mensaje admite 65.536 caracteres. Es la ÚNICA
+  vez que una imagen sale del lector, reducida y a petición de Javi, a su
+  repositorio público: la pantalla de resultado lleva los nombres de los
+  diez jugadores. Para leerla desde una sesión: `issue_read`, decodificar
+  el base64 a PNG y mirarlo con Read. Con una ganada y una perdida se mide
+  el cartel (dónde, qué color, en qué otras pantallas sale) y entra el
+  modo de leer el resultado (mirar la tablet cada 30 s desde el minuto 8,
+  no antes: una captura en una teamfight puede dar un tirón). **Cuando
+  esté medido, el botón y la ruta se quitan.**
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

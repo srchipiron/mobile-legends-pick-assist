@@ -61,6 +61,14 @@ async function pedir(metodo, ruta, token, cuerpo, fetchImpl) {
   return { error: 'otro', estado: r.status };
 }
 
+/** Un comentario en una incidencia existente. Devuelve { url } o { error }. */
+export async function comentarIncidencia({ numero, cuerpo }, token, { location = globalThis.location, fetch = globalThis.fetch } = {}) {
+  const { duenno, repo } = repositorioDe(location);
+  const r = await pedir('POST', `/repos/${duenno}/${repo}/issues/${numero}/comments`, token, { body: cuerpo }, fetch);
+  if (r.error) return { error: r.error, estado: r.estado };
+  return { url: r.datos?.html_url ?? null };
+}
+
 /**
  * Sube el código a una incidencia: edita la de siempre (`numero`) y, si ya
  * no existe o todavía no hay ninguna, abre una nueva con sus etiquetas. El

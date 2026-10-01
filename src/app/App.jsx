@@ -21,7 +21,7 @@ import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
-import { pedirLectura, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS } from './lector.js';
+import { pedirLectura, pedirCaptura, cuerpoDePantalla, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS } from './lector.js';
 import { draftCompleto } from './estado/useDraft.js';
 import { ApuntarPartida } from './componentes/ApuntarPartida.jsx';
 import { HistorialPartidas } from './componentes/HistorialPartidas.jsx';
@@ -214,6 +214,21 @@ export default function App() {
     }
   };
 
+  // Mandar la pantalla de resultado al proyecto (3.29.0, TEMPORAL: para medir
+  // dónde está el cartel de victoria/derrota y poder apuntar la partida sola).
+  const [pantalla, setPantalla] = useState(null);
+  const mandarPantalla = async (resultado) => {
+    if (pantalla?.estado === 'enviando') return;
+    setPantalla({ estado: 'enviando' });
+    try {
+      const captura = await pedirCaptura();
+      const r = await envio.subirAparte({ ...cuerpoDePantalla({ resultado, captura, version: __APP_VERSION__ }), etiquetas: ['pantalla'] });
+      setPantalla(r.error ? { estado: 'error', tipo: r.error } : { estado: 'ok', numero: r.numero });
+    } catch (e) {
+      setPantalla({ estado: 'error', tipo: FALLOS_DEL_LECTOR.includes(e?.tipo) ? e.tipo : 'error' });
+    }
+  };
+
   // Leyendo solo (3.28.0): mientras el draft no esté completo, la app a la
   // vista y sin hoja abierta, se pide una lectura cada pocos segundos. Con
   // el draft vacío, más despacio: es buscar si ha empezado uno.
@@ -297,7 +312,7 @@ export default function App() {
           onBanear={(h) => draft.anadir('baneos', h)}
           onQuitar={(h) => draft.quitar('baneos', h)}
           onAPicks={() => draft.setFase('picks')}
-          lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
+          lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} pantalla={pantalla} onPantalla={envio.activo ? mandarPantalla : null} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
           pie={pie}
         />
         {selector}
@@ -313,7 +328,7 @@ export default function App() {
         meta={meta} datos={datos} metaListo={metaListo} sinWinrates={sinWinrates} edadHoras={edadHoras} pro={pro}
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
         onResultado={(gane) => guardarPartida(rec.eleccion?.heroe.name ?? draft.miPick, gane)}
-        lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
+        lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} pantalla={pantalla} onPantalla={envio.activo ? mandarPantalla : null}
         pie={pie}
       />
       {deshacer}

@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.29.0
+
+- **Botón temporal para mandar la pantalla de resultado al proyecto.** Bajo
+  «Leer del juego», «Mandar la pantalla de resultado al proyecto»: con la
+  pantalla de VICTORIA o DERROTA en la tablet, tocas «gané» o «perdí» y el
+  lector hace una captura reducida (pantalla entera a 320 px y la franja de
+  arriba a 640 px, 252 colores) que se sube como texto a una incidencia con
+  tu token. Con una ganada y una perdida se mide dónde está el cartel y la
+  app podrá apuntar la partida sola. Después, el botón se quita. Solo sale
+  con el token de subida puesto.
+
 ## 3.28.0
 
 - **«Leer solo»: la app lee la tablet por su cuenta, sin tocar nada.** Un

@@ -94,6 +94,41 @@ export async function corregirLectura({ ids = [], enemigos = [], baneos = [], ba
 }
 
 /**
+ * Una captura reducida de la tablet (3.29.0, temporal): la pantalla de
+ * resultado, para mandarla al proyecto y medir dónde está el cartel.
+ * Devuelve { id, miniatura, tira } (PNG en base64) o lanza un fallo con tipo.
+ */
+export async function pedirCaptura({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+  const corte = new AbortController();
+  const reloj = setTimeout(() => corte.abort(), plazoMs);
+  let respuesta;
+  try {
+    respuesta = await pedir(`${base}/captura`, { cache: 'no-store', signal: corte.signal });
+  } catch {
+    throw fallo(corte.signal.aborted ? 'plazo' : 'sinPuente');
+  } finally {
+    clearTimeout(reloj);
+  }
+  let cuerpo = null;
+  try { cuerpo = await respuesta.json(); } catch { /* cuerpo vacío */ }
+  if (!respuesta.ok) throw fallo(['tablet', 'emparejar', 'captura'].includes(cuerpo?.error) ? cuerpo.error : 'error');
+  if (!cuerpo || typeof cuerpo.miniatura !== 'string' || typeof cuerpo.tira !== 'string') throw fallo('error');
+  return cuerpo;
+}
+
+/** El cuerpo de la incidencia con la pantalla de resultado: texto, para que quepa en una incidencia. */
+const VALLA = '```';
+export function cuerpoDePantalla({ resultado, captura, version = '' }) {
+  const etiqueta = resultado === 'gane' ? 'ganada' : 'perdida';
+  const cabecera = `Pantalla de resultado (${etiqueta}) · ${captura.ancho}×${captura.alto} · app ${version} · ${captura.id}`;
+  return {
+    titulo: `Pantalla de resultado: ${etiqueta}`,
+    cuerpo: `${cabecera}\n\nPantalla entera a 320 px (PNG, base64):\n\n${VALLA}\n${captura.miniatura}\n${VALLA}`,
+    comentario: `Franja de arriba (PNG, base64):\n\n${VALLA}\n${captura.tira}\n${VALLA}`,
+  };
+}
+
+/**
  * Los nombres que el lector reconoció, con la grafía del catálogo (el
  * lector usa la de sus caras de referencia: «X.Borg» frente a «X Borg»).
  * Lo que sale como «?» (hueco vacío, eligiendo, skin) no se mete.

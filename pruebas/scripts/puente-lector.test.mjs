@@ -11,6 +11,8 @@ import { crearServidor, capturaAutomatica, origenPermitido, PUERTO } from '../..
 import { carasGuardadas } from '../../scripts/lector/leer.mjs';
 import { PUERTO_LECTOR } from '../../src/app/lector.js';
 import { capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
+import { leerPng } from '../../scripts/lector/png.mjs';
+import { miniaturasDe, pngQueQuepa, reducir, cuantizar, TOPE_BASE64 } from '../../scripts/lector/miniatura.mjs';
 
 const caras = carasGuardadas();
 const png = capturaCompletaPng();
@@ -140,6 +142,37 @@ test('una corrección de la app guarda la verdad junto a la captura, aprende de 
     // La segunda corrección acumula sobre lo aprendido.
     await fetch(`${base}/corregir`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: ids.slice(0, 1), enemigos: ['Clint'] }) });
     eq(tandas[1].aprendido.capturas, 3, 'la segunda tanda no parte de lo aprendido en la primera');
+  });
+});
+
+test('la captura reducida (temporal): dos PNG pequeños con paleta que caben en una incidencia, y solo para la app', async () => {
+  const colores = (img) => new Set(Array.from({ length: img.ancho * img.alto }, (_, i) => img.rgba.subarray(i * 4, i * 4 + 3).join())).size;
+  // Una pantalla «de foto» (ruido con degradado): el peor caso para comprimir.
+  const ancho = 2400, alto = 1504, rgba = new Uint8Array(ancho * alto * 4);
+  let s = 11; for (let i = 0; i < rgba.length; i += 4) { s = (s * 1103515245 + 12345) >>> 0; rgba[i] = (s >>> 24) ^ (i % 251); rgba[i + 1] = ((i / 4 / ancho) * 0.17) & 255; rgba[i + 2] = (s >>> 8) & 255; rgba[i + 3] = 255; }
+  const m = miniaturasDe({ ancho, alto, rgba });
+  for (const [nombre, b64, anchoMax] of [['miniatura', m.miniatura, 320], ['tira', m.tira, 640]]) {
+    ok(b64.length <= TOPE_BASE64, `${nombre} no cabe: ${b64.length} caracteres`);
+    const img = leerPng(Buffer.from(b64, 'base64'));
+    ok(img.ancho <= anchoMax && img.ancho >= 40, `${nombre} mide ${img.ancho} px de ancho`);
+    ok(colores(img) <= 256, `${nombre} tiene más de 256 colores`);
+  }
+  ok(leerPng(Buffer.from(m.tira, 'base64')).alto < leerPng(Buffer.from(m.miniatura, 'base64')).alto, 'la tira no es la franja de arriba (a 640 px entera sería el doble de alta que la miniatura)');
+  // Si no cabe en el tope, se reduce el ancho a la mitad hasta que quepa.
+  const corto = pngQueQuepa({ ancho, alto, rgba }, { ancho: 320, tope: 2500 });
+  ok(corto.length <= 2500 && leerPng(Buffer.from(corto, 'base64')).ancho < 320, `con un tope de 2.500 no reduce: ${corto.length} caracteres`);
+  // Reducir promedia (un cuadro blanco sobre negro sale gris en la mitad) y cuantizar deja 6 niveles de rojo.
+  const g = { ancho: 4, alto: 2, rgba: new Uint8Array([255, 255, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255]) };
+  const r = reducir(g, { ancho: 2 });
+  eq(`${r.ancho}x${r.alto} ${r.rgba[0]} ${r.rgba[4]}`, '2x1 127 0', `reducir no promedia: ${Array.from(r.rgba)}`);
+  const q = cuantizar({ ancho: 1, alto: 1, rgba: new Uint8Array([100, 100, 100, 255]) });
+  eq(q.rgba[0], 102, `cuantizar no lleva 100 al nivel 2 de 6 (102): ${q.rgba[0]}`);
+  // La ruta: a la app sí, sin origen no, y lo que vuelve se lee.
+  await conServidor({ capturar: () => png }, async (base) => {
+    eq((await fetch(`${base}/captura`)).status, 403, 'una captura sin origen se entrega');
+    const r2 = await (await fetch(`${base}/captura`, { headers: { Origin: 'https://srchipiron.github.io' } })).json();
+    ok(/^resultado-/.test(r2.id) && r2.ancho === 2400, `la captura no lleva id ni tamaño: ${JSON.stringify(r2).slice(0, 80)}`);
+    eq(leerPng(Buffer.from(r2.miniatura, 'base64')).ancho, 320, 'la miniatura no mide 320 px');
   });
 });
 

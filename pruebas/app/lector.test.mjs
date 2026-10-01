@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { pedirLectura, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS } from '../../src/app/lector.js';
+import { pedirLectura, pedirCaptura, cuerpoDePantalla, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -63,6 +63,20 @@ test('leyendo solo: cuándo toca y cuándo no, y las dudas compactas de una lect
   });
   eq(JSON.stringify(dudas), JSON.stringify([{ hueco: 't2', candidato: 'Belerick', parecido: 0.71 }, { hueco: 'e1', candidato: 'Clint', parecido: 0.6 }]), `las dudas no son las esperadas: ${JSON.stringify(dudas)}`);
   eq(dudasDeLectura(null).length, 0, 'una lectura vacía da dudas');
+});
+
+test('la pantalla de resultado (temporal): se pide al lector y va como texto en una incidencia que cabe', async () => {
+  const captura = { id: 'resultado-1', ancho: 2400, alto: 1504, miniatura: 'A'.repeat(6000), tira: 'B'.repeat(11000) };
+  const c = await pedirCaptura({ pedir: async (url) => { ok(/\/captura$/.test(url), `pide a ${url}`); return new Response(JSON.stringify(captura), { status: 200 }); } });
+  eq(c.id, 'resultado-1', 'no devuelve la captura');
+  const tipo = async (pedir) => { try { await pedirCaptura({ pedir, plazoMs: 1000 }); return 'ok'; } catch (e) { return e.tipo; } };
+  eq(await tipo(() => Promise.reject(new TypeError('Failed to fetch'))), 'sinPuente');
+  eq(await tipo(() => Promise.resolve(new Response(JSON.stringify({ error: 'tablet' }), { status: 502 }))), 'tablet');
+  eq(await tipo(() => Promise.resolve(new Response(JSON.stringify({ id: 'x' }), { status: 200 }))), 'error', 'una respuesta sin imágenes no es «error»');
+  const p = cuerpoDePantalla({ resultado: 'gane', captura, version: '3.29.0' });
+  ok(/ganada/.test(p.titulo) && /ganada/.test(p.cuerpo) && p.cuerpo.includes(captura.miniatura) && p.comentario.includes(captura.tira), 'el cuerpo no lleva el resultado y las imágenes');
+  ok(/perdida/.test(cuerpoDePantalla({ resultado: 'perdi', captura }).titulo), 'una perdida no se distingue');
+  ok(p.cuerpo.length < 65536 && p.comentario.length < 65536, 'no cabe en una incidencia');
 });
 
 await terminar('app/lector');
