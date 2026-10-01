@@ -104,7 +104,9 @@ export async function corregirLectura({ ids = [], enemigos = [], baneos = [], ba
  */
 export const DESDE_FINAL_MIN = 8;
 export const HASTA_FINAL_MIN = 25;
-export const INTERVALO_FINAL_MS = 30000;
+export const INTERVALO_FINAL_MS = 10000;
+/** Cuánto dura el «Deshacer» de una partida apuntada sola (3.32.0): más que el de un toque, porque nadie lo esperaba. */
+export const DESHACER_APUNTADA_MS = 20000;
 export const MAX_FOTOGRAMAS = 8;
 
 export const tocaVigilarFinal = ({ auto, visible = true, completoDesde, ahora }) => {
@@ -114,6 +116,25 @@ export const tocaVigilarFinal = ({ auto, visible = true, completoDesde, ahora })
 };
 
 /** Un fotograma del lector: `{ cambio }` o `{ cambio: true, id, miniatura, tira }`. Lanza con tipo si no hay lector. */
+/**
+ * Lo que contestó Javi (o lo que se apuntó solo) con los fotogramas de esa
+ * partida, para que el lector aprenda la palabra de la tabla (3.32.0).
+ * Nunca lanza; sin fotogramas no pide nada.
+ */
+export async function ensenarResultado({ ids = [], gane, base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+  if (!ids.length || typeof gane !== 'boolean') return null;
+  const corte = new AbortController();
+  const reloj = setTimeout(() => corte.abort(), plazoMs);
+  try {
+    const r = await pedir(`${base}/resultado`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, gane }), cache: 'no-store', signal: corte.signal });
+    return r.ok ? await r.json().catch(() => null) : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(reloj);
+  }
+}
+
 export async function pedirFotograma({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), plazoMs);

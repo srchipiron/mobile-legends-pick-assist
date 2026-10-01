@@ -6,9 +6,11 @@
 import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test, ok, eq, terminar } from '../arnes.mjs';
-import { crearServidor, capturaAutomatica, origenPermitido, leerAprendido, PUERTO, CAPTURAS_A_MIRAR } from '../../scripts/lector/servir.mjs';
+import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { crearServidor, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, PUERTO, CAPTURAS_A_MIRAR } from '../../scripts/lector/servir.mjs';
+import { guardarResultados } from '../../scripts/lector/resultado.mjs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
+import { escribirPng } from '../../scripts/lector/png.mjs';
 import { carasGuardadas } from '../../scripts/lector/leer.mjs';
 import { PUERTO_LECTOR } from '../../src/app/lector.js';
 import { capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
@@ -210,6 +212,42 @@ test('los fotogramas del final de partida (temporal): solo vuelven con imágenes
     const c = await (await fetch(`${base}/captura?fotograma=1`, { headers: cab })).json();
     ok(c.cambio === true && c.tira, 'una pantalla distinta no cuenta como cambio');
   });
+});
+
+test('el final de partida: la tabla con «DEFEAT» viene con el resultado, lo contestado se aprende, y sin origen nada (3.32.0)', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'lector-resultado-'));
+  // Una pantalla entera (2400×1504) con la franja real de la derrota (320×56) ampliada arriba: al reducirla sale la misma franja.
+  const tira = leerPng(readFileSync(join(RAIZ, 'pruebas/fixtures/juego/finales/tabla-derrota.png')));
+  const ancho = 2400, alto = 1504, esc = ancho / tira.ancho, rgba = new Uint8Array(ancho * alto * 4);
+  for (let y = 0; y < Math.round(tira.alto * esc); y++) for (let x = 0; x < ancho; x++) rgba.set(tira.rgba.subarray((Math.floor(y / esc) * tira.ancho + Math.floor(x / esc)) * 4, (Math.floor(y / esc) * tira.ancho + Math.floor(x / esc)) * 4 + 4), (y * ancho + x) * 4);
+  const pngTabla = escribirPng({ ancho, alto, rgba });
+  const guardados = [];
+  let cual = pngTabla;
+  await conServidor({ capturar: () => cual, carpeta, guardarResultadosDe: (r) => guardados.push(r) }, async (base) => {
+    const cab = { Origin: 'https://srchipiron.github.io' };
+    const f1 = await (await fetch(`${base}/captura?fotograma=1`, { headers: cab })).json();
+    ok(f1.cambio && f1.tabla === true && f1.resultado === 'perdi' && f1.resultadoParecido >= 0.85, `la tabla de la derrota no viene con su resultado: ${JSON.stringify({ cambio: f1.cambio, tabla: f1.tabla, resultado: f1.resultado, p: f1.resultadoParecido })}`);
+    // Otra pantalla (la del draft): cambio, pero ni tabla ni resultado.
+    cual = png;
+    const f2 = await (await fetch(`${base}/captura?fotograma=1`, { headers: cab })).json();
+    ok(f2.cambio && f2.tabla === false && f2.resultado === null, `la pantalla del draft pasa por tabla o da resultado: ${JSON.stringify({ tabla: f2.tabla, resultado: f2.resultado })}`);
+    // Lo contestado se aprende de los fotogramas de la partida (solo de la tabla) y se guarda; sin origen, 403.
+    const sin = await fetch(`${base}/resultado`, { method: 'POST', body: JSON.stringify({ ids: [f1.id], gane: false }) });
+    eq(sin.status, 403, 'un resultado sin origen se acepta');
+    const r = await (await fetch(`${base}/resultado`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [f1.id, f2.id, '../x', 'fotograma-no-existe'], gane: false }) })).json();
+    ok(r.aprendidos === 1 && r.perdi === 2 && r.tablas === 2 && guardados.length === 1, `no aprende de la tabla (y solo de ella): ${JSON.stringify(r)} guardados ${guardados.length}`);
+    const estado = await (await fetch(`${base}/estado`)).json();
+    ok(estado.resultados?.perdi === 2 && estado.resultados?.gane === 0, `/estado no dice las plantillas de resultado: ${JSON.stringify(estado.resultados)}`);
+    // Contestar lo contrario sobre la misma tabla quita las plantillas de derrota que se le parecen y enseña la victoria.
+    const c = await (await fetch(`${base}/resultado`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [f1.id], gane: true }) })).json();
+    ok(c.aprendidos === 1 && c.contradichas === 2 && c.perdi === 0 && c.gane === 1, `una contestación contraria no corrige: ${JSON.stringify(c)}`);
+  });
+  // Lo aprendido se lee del disco con la versión actual y se descarta si está roto.
+  const fichero = join(carpeta, 'resultados.json');
+  writeFileSync(fichero, JSON.stringify({ version: 999 }));
+  eq(leerResultados(fichero), null, 'unos resultados de otra versión se usan');
+  writeFileSync(fichero, JSON.stringify(guardarResultados(plantillasDeSerie())));
+  eq(leerResultados(fichero)?.perdi.length, 1, 'los resultados guardados no se leen');
 });
 
 await terminar('scripts/puente-lector');

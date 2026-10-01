@@ -314,6 +314,12 @@ mete lo que salga; con una hoja abierta o el draft completo se para sola.
 Lo que el lector lee, duda y aprende va con la partida apuntada, que ya
 se sube sola al proyecto: el bot lo resume y el Diagnóstico lo enseña.
 
+**Apunta el resultado solo (3.32.0)**: desde el minuto 8 mira la tablet
+cada 10 s y, cuando ve la tabla de resultado con «VICTORY» o «DEFEAT»,
+apunta la partida (con «Deshacer» 20 s). Reconoce «DEFEAT» de serie;
+«VICTORY» lo aprende de tu primera victoria con la tabla a la vista, y cada
+Gané/Perdí que contestes le enseña (`~/.config/lector/resultados.json`).
+
 **Lee también tu equipo (3.31.0)**: las cinco filas del panel de la
 izquierda, con sus skins, y cuál eres tú (tu nombre va en amarillo). Los
 otros cuatro entran como compañeros y el tuyo queda fijado como «Lo cojo»

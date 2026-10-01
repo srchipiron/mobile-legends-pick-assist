@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { pedirLectura, pedirFotograma, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, TOPE_MENSAJE } from '../../src/app/lector.js';
+import { pedirLectura, pedirFotograma, ensenarResultado, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -84,11 +84,18 @@ test('el final de la partida (temporal): cuándo se vigila, qué fotograma se pi
   ok(!tocaVigilarFinal({ auto: false, completoDesde: t0, ahora: min(10) }), 'vigila con el modo apagado');
   ok(!tocaVigilarFinal({ auto: true, completoDesde: null, ahora: min(10) }), 'vigila sin draft completo');
   ok(!tocaVigilarFinal({ auto: true, visible: false, completoDesde: t0, ahora: min(10) }), 'vigila con la app escondida');
-  ok(INTERVALO_FINAL_MS >= 20000 && DESDE_FINAL_MIN >= 5 && HASTA_FINAL_MIN > DESDE_FINAL_MIN, 'los plazos no son los de una partida (10–20 min) con capturas espaciadas');
+  ok(INTERVALO_FINAL_MS >= 5000 && INTERVALO_FINAL_MS <= 15000 && DESDE_FINAL_MIN >= 5 && HASTA_FINAL_MIN > DESDE_FINAL_MIN, 'los plazos no son los de una partida (10–20 min) con capturas cada pocos segundos (la tabla de resultado dura poco en pantalla)');
   // La petición: con cambio trae las imágenes; sin cambio, solo que no cambió.
   const con = await pedirFotograma({ pedir: async (url) => { ok(/\/captura\?fotograma=1$/.test(url), `pide a ${url}`); return new Response(JSON.stringify({ id: 'fotograma-1', cambio: true, miniatura: 'AAA', tira: 'BBB' }), { status: 200 }); } });
   eq(`${con.cambio} ${con.id}`, 'true fotograma-1');
   eq((await pedirFotograma({ pedir: async () => new Response(JSON.stringify({ id: 'x', cambio: false }), { status: 200 }) })).cambio, false);
+  // El resultado leído de la tabla llega tal cual (3.32.0), y lo contestado vuelve al lector con los fotogramas.
+  eq((await pedirFotograma({ pedir: async () => new Response(JSON.stringify({ id: 'fotograma-2', cambio: true, miniatura: 'A', tira: 'B', tabla: true, resultado: 'gane', resultadoParecido: 0.91 }), { status: 200 }) })).resultado, 'gane', 'el resultado leído no llega a la app');
+  const ensenadas = [];
+  const e = await ensenarResultado({ ids: ['fotograma-1', 'fotograma-2'], gane: true, pedir: async (url, o) => { ensenadas.push({ url, o }); return new Response(JSON.stringify({ aprendidos: 1 }), { status: 200 }); } });
+  ok(e?.aprendidos === 1 && /\/resultado$/.test(ensenadas[0].url) && ensenadas[0].o.method === 'POST' && JSON.parse(ensenadas[0].o.body).gane === true && JSON.parse(ensenadas[0].o.body).ids.length === 2, `el resultado no se enseña al lector: ${JSON.stringify(ensenadas)}`);
+  eq(await ensenarResultado({ ids: [], gane: true, pedir: async () => { throw new Error('no debía pedir'); } }), null, 'sin fotogramas pide igual');
+  eq(await ensenarResultado({ ids: ['fotograma-1'], gane: false, pedir: async () => { throw new Error('sin lector'); } }), null, 'sin lector lanza');
   const tipo = async (pedir) => { try { await pedirFotograma({ pedir, plazoMs: 1000 }); return 'ok'; } catch (e) { return e.tipo; } };
   eq(await tipo(() => Promise.reject(new TypeError('Failed to fetch'))), 'sinPuente');
   eq(await tipo(() => Promise.resolve(new Response(JSON.stringify({ error: 'tablet' }), { status: 502 }))), 'tablet');

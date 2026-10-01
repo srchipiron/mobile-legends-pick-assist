@@ -1565,6 +1565,42 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   destapó: el `keepAliveTimeout` de Node (5 s) coincidía con el ritmo de
   «Leer solo» (5 s) y con el bucle ocupado daba ECONNRESET en una
   conexión reutilizada; hoy el lector lo pone a 65 s.
+- **El resultado se lee de la tabla y la partida se apunta sola (3.32.0)**,
+  con los cuatro fotogramas que subió la vigilancia de 3.30.0 el 1 de
+  octubre de 2026 (incidencias #14–#17, franjas de arriba a 320 px): el
+  final pasa por VARIAS pantallas (la tabla «28 DEFEAT 25», azul, con las
+  palabras en inglés aunque el juego vaya en español; la de estrellas de
+  rango; la de estadísticas «Primera Fase de Bloqueo»), y a 30 s se cazaba
+  una cualquiera: `INTERVALO_FINAL_MS` baja a 10 s. `scripts/lector/
+  resultado.mjs` (puro): la PALABRA va en x 33–67%, y 3–12% de la pantalla
+  (`ZONA_PALABRA`, en fracciones de la franja); entre pantallas distintas
+  esa zona correlaciona 0,36–0,64, la misma franja desplazada 1 px 0,87 y
+  2 px 0,78 → búsqueda ±`DESPLAZAMIENTO` 2 px y `RESULTADO_MINIMO` 0,85
+  con `MARGEN_RESULTADO` 0,10 sobre el otro resultado. La PUERTA es
+  `esTabla`: la cabecera SIN la palabra (`vectorCabecera`) tiene que
+  parecerse a una tabla conocida a `TABLA_MINIMA` 0,70 (las otras tres
+  pantallas dan −0,04, 0,46 y 0,37); sin ella, la de estadísticas de una
+  derrota se aprendería como derrota y daría por perdida la victoria
+  siguiente. Solo se reconoce y solo se APRENDE en la tabla. De serie va
+  la derrota de #15 (`scripts/lector/tabla-derrota.png`, 320×56 con lo de
+  debajo de la cabecera tapado: nombres de otros jugadores); la victoria
+  llega con `POST /resultado` (ids de fotogramas + `gane`, lo que Javi
+  contesta o lo que se apuntó solo), que quita las plantillas del OTRO
+  resultado que se parezcan (una contestación contraria corrige) y guarda
+  `~/.config/lector/resultados.json` (`VERSION_RESULTADOS`). La app: el
+  fotograma trae `tabla`, `resultado` y `resultadoParecido`; con
+  `resultado`, `apuntarSola` apunta UNA vez por draft (`apuntadaSola`,
+  `origen: 'lector'` en la partida, que `apuntar` y `sanear` conservan)
+  con `AvisoDeshacer` de tipo `apuntada` durante `DESHACER_APUNTADA_MS`
+  (20 s: nadie lo esperaba) que olvida la partida y devuelve el draft
+  (`draft.foto()` / `restaurar`). Lo que NO está medido: una segunda
+  tabla real (otros marcadores, otro reloj) contra la cabecera de serie,
+  y la de VICTORIA; si `esTabla` queda corto, no pasa nada automático y
+  Javi sigue contestando (fallo seguro); si se aprende algo mal, su
+  siguiente Gané/Perdí lo quita. Cinco mutaciones en el módulo; el
+  apuntado automático no tiene prueba de navegador (son 8 minutos de
+  reloj). La vigilancia de 3.30.0 (subir fotogramas al proyecto) sigue:
+  es como se mide esto.
 - **La primera tanda real de aprendizaje rompió los picks (1 de octubre
   de 2026, 3.30.1)**: a las 20:44 aprendió a Rafaela y a Selena de las
   tres últimas capturas de un draft, y desde entonces los cinco huecos

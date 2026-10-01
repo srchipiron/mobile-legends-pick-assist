@@ -139,6 +139,7 @@ export function sanear(perfil) {
       limpia.gane = p.gane === true;
       limpia.recomendados = Array.isArray(p.recomendados) ? p.recomendados.filter((r) => typeof r === 'string') : [];
       if (p.previa !== true) delete limpia.previa;
+      if (p.origen !== 'lector') delete limpia.origen;
       if (!(typeof p.estimacion === 'number' && p.estimacion > 0 && p.estimacion < 1)) delete limpia.estimacion;
       const limpios = Array.isArray(p.bans) ? p.bans.filter((b) => typeof b === 'string' && b).slice(0, 10) : [];
       if (limpios.length) limpia.bans = limpios; else delete limpia.bans;

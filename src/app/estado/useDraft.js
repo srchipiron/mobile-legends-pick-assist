@@ -227,6 +227,9 @@ export function useDraft() {
     setParaDeshacer(null);
   }, [paraDeshacer]);
   const olvidarDeshacer = useCallback(() => setParaDeshacer(null), []);
+  /** El draft tal cual está (para devolverlo con `restaurar` si una partida apuntada sola no era) (3.32.0). */
+  const foto = useCallback(() => actual.current, []);
+  const restaurar = useCallback((d) => { if (d && typeof d === 'object') setDraft(d); }, []);
   // Pasado el plazo, el aviso se va solo.
   useEffect(() => {
     if (!paraDeshacer) return undefined;
@@ -245,5 +248,5 @@ export function useDraft() {
     return { ...nuevo, completoDesde: completoDesdeDe(nuevo, null) };
   }), []);
 
-  return { ...draft, anadir, quitar, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio, vaciarConDeshacer, quitarConDeshacer, aplicarLectura, anotarAprendizaje, deshacible, deshacer, olvidarDeshacer };
+  return { ...draft, anadir, quitar, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio, vaciarConDeshacer, quitarConDeshacer, aplicarLectura, anotarAprendizaje, deshacible, deshacer, olvidarDeshacer, foto, restaurar };
 }

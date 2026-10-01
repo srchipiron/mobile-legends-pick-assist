@@ -21,7 +21,7 @@ import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
-import { pedirLectura, pedirFotograma, cuerpoDeFotogramas, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, MAX_FOTOGRAMAS, DESDE_FINAL_MIN } from './lector.js';
+import { pedirLectura, pedirFotograma, ensenarResultado, cuerpoDeFotogramas, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, MAX_FOTOGRAMAS, DESDE_FINAL_MIN, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto } from './estado/useDraft.js';
 import { useAhora } from './estado/useAhora.js';
 import { ApuntarPartida } from './componentes/ApuntarPartida.jsx';
@@ -139,24 +139,6 @@ export default function App() {
   const fotogramas = useRef([]);
   const vigilando = useRef(false);
   const ahora = useAhora();
-  useEffect(() => {
-    if (!tocaVigilarFinal({ auto: lectorAuto, completoDesde: draft.completoDesde, ahora: Date.now() })) return undefined;
-    const tic = async () => {
-      if (vigilando.current || leyendoAhora.current || document.visibilityState !== 'visible') return;
-      if (!tocaVigilarFinal({ auto: lectorAuto, completoDesde: draft.completoDesde, ahora: Date.now() })) return;
-      vigilando.current = true;
-      try {
-        const f = await pedirFotograma();
-        if (f.cambio && fotogramas.current.length < MAX_FOTOGRAMAS) {
-          fotogramas.current.push({ id: f.id, minuto: Math.round((Date.now() - draft.completoDesde) / 60000), miniatura: f.miniatura, tira: f.tira });
-        }
-      } catch { /* sin lector o sin tablet: se vuelve a intentar en el siguiente tic */ }
-      finally { vigilando.current = false; }
-    };
-    const reloj = setInterval(tic, INTERVALO_FINAL_MS);
-    tic();
-    return () => clearInterval(reloj);
-  }, [lectorAuto, draft.completoDesde, ahora]);
   /** Sube lo vigilado (si hay) y lo olvida. Sin token no sube: se descarta. */
   const volcarFotogramas = (resultado = null) => {
     const lista = fotogramas.current;
@@ -175,10 +157,11 @@ export default function App() {
    * Apunta la partida con la estimación que había delante para ESE héroe y
    * el draft entero (es lo que la hace medible después), y limpia el draft.
    */
-  const guardarPartida = (pick, gane) => {
+  const guardarPartida = (pick, gane, { t = null, origen = null } = {}) => {
     const heroe = datos.porNombre.get(pick);
     const est = heroe ? rec.estimacionCon(heroe) : null;
     personal.apuntarPartida({
+      ...(t ? { t } : {}), ...(origen ? { origen } : {}),
       pick, gane, rango: datos.rango,
       recomendados: rec.ranking.slice(0, 3).map((r) => r.heroe.name),
       ...(est ? { estimacion: est.p } : {}),
@@ -190,11 +173,61 @@ export default function App() {
     });
     // Y al lector, lo que había de verdad, para que aprenda (3.27.0).
     corregirLectura({ ids: draft.lectura?.ids ?? [], enemigos: draft.enemigos, baneos: draft.baneos });
+    // Y el resultado con sus fotogramas, para que aprenda la palabra de la tabla (3.32.0): antes de volcarlos.
+    ensenarResultado({ ids: fotogramas.current.map((f) => f.id), gane });
     // Los fotogramas del final, con el resultado (3.30.0): antes de reiniciar.
     volcarFotogramas(gane ? 'gane' : 'perdi');
     cerrar();
     draft.reiniciar();
   };
+
+  // Apuntada sola (3.32.0): una por draft, y con vuelta atrás durante un rato
+  // (olvida la partida y devuelve el draft tal cual estaba).
+  const apuntadaSola = useRef(null);
+  const [apuntada, setApuntada] = useState(null);
+  const apuntarSola = (gane) => {
+    const antes = draft.foto();
+    const t = Date.now();
+    const pick = rec.eleccion?.heroe.name ?? draft.miPick;
+    if (!pick) return;
+    guardarPartida(pick, gane, { t, origen: 'lector' });
+    setApuntada({ t, gane, antes });
+  };
+  useEffect(() => {
+    if (!apuntada) return undefined;
+    const reloj = setTimeout(() => setApuntada((a) => (a === apuntada ? null : a)), DESHACER_APUNTADA_MS);
+    return () => clearTimeout(reloj);
+  }, [apuntada]);
+  const deshacerApuntada = () => {
+    if (!apuntada) return;
+    personal.olvidarPartida(apuntada.t);
+    draft.restaurar(apuntada.antes);
+    setApuntada(null);
+  };
+  // Vigilar el final de la partida (3.30.0): va DESPUÉS de apuntarSola y guardarPartida, que usa.
+  useEffect(() => {
+    if (!tocaVigilarFinal({ auto: lectorAuto, completoDesde: draft.completoDesde, ahora: Date.now() })) return undefined;
+    const tic = async () => {
+      if (vigilando.current || leyendoAhora.current || document.visibilityState !== 'visible') return;
+      if (!tocaVigilarFinal({ auto: lectorAuto, completoDesde: draft.completoDesde, ahora: Date.now() })) return;
+      vigilando.current = true;
+      try {
+        const f = await pedirFotograma();
+        if (f.cambio && fotogramas.current.length < MAX_FOTOGRAMAS) {
+          fotogramas.current.push({ id: f.id, minuto: Math.round((Date.now() - draft.completoDesde) / 60000), miniatura: f.miniatura, tira: f.tira });
+        }
+        // La tabla de resultado con una palabra conocida (3.32.0): la partida se apunta SOLA, con «Deshacer».
+        if (f.cambio && (f.resultado === 'gane' || f.resultado === 'perdi') && apuntadaSola.current !== draft.completoDesde) {
+          apuntadaSola.current = draft.completoDesde;
+          apuntarSola(f.resultado === 'gane');
+        }
+      } catch { /* sin lector o sin tablet: se vuelve a intentar en el siguiente tic */ }
+      finally { vigilando.current = false; }
+    };
+    const reloj = setInterval(tic, INTERVALO_FINAL_MS);
+    tic();
+    return () => clearInterval(reloj);
+  }, [lectorAuto, draft.completoDesde, ahora]);
 
   // Con el draft completo (cinco enemigos), el lector ya puede cruzar sus
   // capturas con lo que hay; al apuntar la partida se le vuelve a mandar
@@ -304,7 +337,9 @@ export default function App() {
   );
   // «Deshacer» tras vaciar el draft o quitar con la × (3.23.0). Con una hoja
   // abierta no se enseña: la hoja lo taparía y ahí se quita tocando otra vez.
-  const deshacer = hoja ? null : (
+  const deshacer = hoja ? null : apuntada && !draft.deshacible ? (
+    <AvisoDeshacer deshacible={{ tipo: 'apuntada', gane: apuntada.gane }} onDeshacer={deshacerApuntada} onCerrar={() => setApuntada(null)} t={t} />
+  ) : (
     <AvisoDeshacer deshacible={draft.deshacible} onDeshacer={draft.deshacer} onCerrar={draft.olvidarDeshacer} t={t} />
   );
   const selector = ['enemigos', 'aliados', 'baneos', 'yo'].includes(hoja) ? (

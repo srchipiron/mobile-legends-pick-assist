@@ -27,6 +27,9 @@ test('perfiles y registro: fundir por instante, sanear lo que llega y maestria p
   eq(Object.keys(roto.mastery).length, 0, 'las letras de un string entran como heroes');
   eq(roto.partidas.length, 0, 'un string entra como partidas');
   const raro = sanear({ mastery: { A: { games: 10, winRate: 0.6 }, B: { games: 0, winRate: 0.5 }, C: { games: 5, winRate: 7 }, D: 'x' }, partidas: [{ t: 1, pick: 'A', gane: true, recomendados: 'ABC' }, { pick: 'B' }, null] });
+  // El origen «lector» de una partida apuntada sola se conserva (3.32.0); otro origen, no.
+  const conOrigen = sanear({ mastery: {}, partidas: [{ t: 2, pick: 'A', gane: true, recomendados: [], origen: 'lector' }, { t: 3, pick: 'A', gane: false, recomendados: [], origen: 'otro' }] });
+  ok(conOrigen.partidas[0].origen === 'lector' && !('origen' in conOrigen.partidas[1]), `el origen de la partida no se sanea bien: ${JSON.stringify(conOrigen.partidas.map((p) => p.origen))}`);
   eq(Object.keys(raro.mastery).join(','), 'A', `maestria saneada: ${Object.keys(raro.mastery)}`);
   eq(raro.partidas.length, 1, 'una partida sin instante o nula pasa el filtro');
   ok(Array.isArray(raro.partidas[0].recomendados), 'recomendados no es una lista');

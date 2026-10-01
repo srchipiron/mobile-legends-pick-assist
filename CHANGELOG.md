@@ -8,6 +8,20 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.32.0
+
+- El resultado de la partida se apunta solo. Con «Leer solo», desde el minuto
+  8 la app mira la tablet cada 10 s (antes 30: la tabla de resultado dura
+  poco en pantalla y se escapaba) y cuando ve la tabla con «VICTORY» o
+  «DEFEAT» apunta la partida sin que toques nada, con «Deshacer» durante 20
+  segundos por si no era. Sale de tus cuatro pantallas de final del 1 de
+  octubre: la palabra va centrada arriba y la cabecera de la tabla es igual
+  en victoria y derrota, así que la app solo decide en esa pantalla y nunca
+  en la de rango o la de estadísticas. De serie reconoce «DEFEAT»; «VICTORY»
+  lo aprende de tu primera partida ganada en la que se vea la tabla (hasta
+  entonces esa te la sigue preguntando), y cada Gané/Perdí que contestes
+  le enseña; una plantilla que contradiga lo que contestas se quita sola.
+
 ## 3.31.0
 
 - El lector lee también a TUS compañeros y cuál eres tú. Con tu captura de la

@@ -114,6 +114,8 @@ export function apuntar(partidas, entrada, tope = 500) {
     ...(typeof entrada.estimacion === 'number' && entrada.estimacion > 0 && entrada.estimacion < 1
       ? { estimacion: Math.round(entrada.estimacion * 1000) / 1000 } : {}),
     ...(entrada.previa ? { previa: true } : {}),
+    // Apuntada SOLA por el lector del resultado (3.32.0): se mide aparte.
+    ...(entrada.origen === 'lector' ? { origen: 'lector' } : {}),
     ...(Array.isArray(entrada.bans) && entrada.bans.some((b) => typeof b === 'string' && b)
       ? { bans: entrada.bans.filter((b) => typeof b === 'string' && b).slice(0, 10) } : {}),
     ...(sanearDraft(entrada.draft) ? { draft: sanearDraft(entrada.draft) } : {}),

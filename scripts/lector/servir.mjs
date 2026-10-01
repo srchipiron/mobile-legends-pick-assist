@@ -36,6 +36,7 @@ import { carasAprendidas, resumirAprendizaje, CAPTURAS_POR_CORRECCION, VERSION_A
 
 export { CAPTURAS_POR_CORRECCION };
 import { miniaturasDe, fotogramaDe } from './miniatura.mjs';
+import { tiraDe, reconocerResultado, aprenderResultado, plantillasIniciales, cargarResultados, guardarResultados, VERSION_RESULTADOS } from './resultado.mjs';
 
 /** Decisión de producto: un puerto alto, fijo, que la app conoce. */
 export const PUERTO = 47323;
@@ -48,6 +49,22 @@ export const FALLOS_DE_CAPTURA = ['tablet', 'emparejar', 'captura'];
 export const FICHERO_MEMORIA = join(homedir(), '.config', 'lector', 'tablet.json');
 /** Lo aprendido de las correcciones (aprender.mjs): huecos de picks y caras de esta tablet. */
 export const FICHERO_APRENDIDO = join(homedir(), '.config', 'lector', 'aprendido.json');
+/** Las plantillas de VICTORIA / DERROTA aprendidas de lo que contesta Javi (resultado.mjs, 3.32.0). */
+export const FICHERO_RESULTADOS = join(homedir(), '.config', 'lector', 'resultados.json');
+/** Las de serie: la tabla de una derrota (incidencia #15, nombres tapados). */
+export const plantillasDeSerie = () => plantillasIniciales(leerPng(readFileSync(new URL('tabla-derrota.png', import.meta.url))));
+export function leerResultados(fichero = FICHERO_RESULTADOS) {
+  try {
+    const r = JSON.parse(readFileSync(fichero, 'utf8'));
+    if (!r || r.version !== VERSION_RESULTADOS) return null;
+    const c = cargarResultados(r);
+    return c.tablas.length ? c : null;
+  } catch { return null; }
+}
+export function guardarResultadosEn(r, fichero = FICHERO_RESULTADOS) {
+  try { mkdirSync(resolve(fichero, '..'), { recursive: true }); writeFileSync(fichero, JSON.stringify(guardarResultados(r))); } catch { /* sin disco: se aprende otra vez */ }
+}
+
 /** Cuántas de las últimas capturas de una corrección se miran para elegir las `CAPTURAS_POR_CORRECCION` que sean la pantalla del draft. */
 export const CAPTURAS_A_MIRAR = 8;
 
@@ -139,8 +156,9 @@ export function leerCaptura(png, caras, aprendido = null) {
  * El servidor, con la captura inyectada: en Termux es `capturarTablet`, en
  * las pruebas una captura de fichero.
  */
-export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido }) {
+export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn }) {
   let n = 0, aprendiendo = null, fotogramaAnterior = null;
+  resultados = resultados ?? plantillasDeSerie();
   const leerCuerpo = (req) => new Promise((resolver) => {
     const trozos = [];
     req.on('data', (t) => { trozos.push(t); if (trozos.reduce((s, x) => s + x.length, 0) > 65536) req.destroy(); });
@@ -184,7 +202,7 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
     }
     const ruta = new URL(req.url, 'http://127.0.0.1').pathname;
     if (req.method === 'GET' && ruta === '/estado') {
-      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, version: VERSION_PUENTE, aprendido: { capturas: aprendido?.capturas ?? 0, caras: Object.keys(aprendido?.caras ?? {}).length, picks: !!aprendido?.picks } }));
+      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, version: VERSION_PUENTE, aprendido: { capturas: aprendido?.capturas ?? 0, caras: Object.keys(aprendido?.caras ?? {}).length, picks: !!aprendido?.picks }, resultados: { gane: resultados.gane.length, perdi: resultados.perdi.length, tablas: resultados.tablas.length } }));
       return;
     }
     if (req.method === 'GET' && ruta === '/captura') {
@@ -206,8 +224,10 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
           const f = fotogramaDe(img, fotogramaAnterior);
           fotogramaAnterior = f.pequena;
           if (f.cambio && carpeta) writeFileSync(join(carpeta, `${id}.png`), png);
-          if (f.cambio) registrar(`Fotograma ${id}: la pantalla ha cambiado (${f.miniatura.length + f.tira.length} caracteres).`);
-          res.writeHead(200, cabeceras).end(JSON.stringify({ id, ancho: img.ancho, alto: img.alto, cambio: f.cambio, ...(f.cambio ? { miniatura: f.miniatura, tira: f.tira } : {}) }));
+          // Y si es la tabla de resultado con una palabra conocida, el resultado (3.32.0).
+          const leido = f.cambio ? reconocerResultado(tiraDe(img), resultados) : null;
+          if (f.cambio) registrar(`Fotograma ${id}: la pantalla ha cambiado (${f.miniatura.length + f.tira.length} caracteres)${leido?.tabla ? ` · tabla de resultado: ${leido.resultado ?? 'palabra sin plantilla'} (${leido.parecido.toFixed(2)})` : ''}.`);
+          res.writeHead(200, cabeceras).end(JSON.stringify({ id, ancho: img.ancho, alto: img.alto, cambio: f.cambio, ...(f.cambio ? { miniatura: f.miniatura, tira: f.tira, tabla: leido.tabla, resultado: leido.resultado, resultadoParecido: Math.round(leido.parecido * 1000) / 1000 } : {}) }));
           return;
         }
         if (carpeta) writeFileSync(join(carpeta, `${id}.png`), png);
@@ -218,6 +238,24 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
         registrar(`La captura no se pudo reducir: ${e.message}`);
         res.writeHead(500, cabeceras).end(JSON.stringify({ error: 'formato' }));
       }
+      return;
+    }
+    if (req.method === 'POST' && ruta === '/resultado') {
+      // Lo que contestó Javi (Gané / Perdí) con los fotogramas de esa partida (3.32.0): se aprende la palabra de la tabla.
+      if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
+      const cuerpo = await leerCuerpo(req);
+      if (!cuerpo || typeof cuerpo.gane !== 'boolean' || !carpeta) { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'falta gane o carpeta' })); return; }
+      const ids = (Array.isArray(cuerpo.ids) ? cuerpo.ids : []).filter((id) => /^fotograma-[\w-]+$/.test(id) && existsSync(join(carpeta, `${id}.png`))).slice(-8);
+      let aprendidos = 0, contradichas = 0;
+      for (const id of ids) {
+        try {
+          const r = aprenderResultado(tiraDe(leerPng(readFileSync(join(carpeta, `${id}.png`)))), cuerpo.gane, resultados, { id });
+          if (r.aprendido) { aprendidos += 1; contradichas += r.contradichas; resultados = r.resultados; }
+        } catch (e) { registrar(`No se pudo aprender el resultado de ${id}: ${e.message}`); }
+      }
+      if (aprendidos) guardarResultadosDe(resultados);
+      registrar(`Resultado contestado (${cuerpo.gane ? 'ganada' : 'perdida'}): ${aprendidos} tabla(s) aprendida(s) de ${ids.length} fotogramas${contradichas ? `, ${contradichas} plantilla(s) contraria(s) quitada(s)` : ''}. Plantillas: ${resultados.gane.length} de victoria, ${resultados.perdi.length} de derrota.`);
+      res.writeHead(200, cabeceras).end(JSON.stringify({ aprendidos, contradichas, gane: resultados.gane.length, perdi: resultados.perdi.length, tablas: resultados.tablas.length }));
       return;
     }
     if (req.method === 'POST' && ruta === '/corregir') {
@@ -287,7 +325,9 @@ async function principal() {
   const aprendido = leerAprendido();
   if (!aprendido && existsSync(FICHERO_APRENDIDO)) registrar('Lo aprendido con una versión anterior del lector se descarta: se aprendió sin las guardas de 3.30.1 y movía el panel de picks. Se vuelve a aprender solo.');
   if (aprendido) registrar(`Con lo aprendido de ${aprendido.capturas} capturas: ${Object.keys(aprendido.caras ?? {}).length} caras de esta tablet${aprendido.picks ? ' y los huecos de picks medidos aquí' : ''}.`);
-  const servidor = crearServidor({ capturar, carpeta, registrar, aprendido });
+  const resultados = leerResultados();
+  registrar(resultados ? `Resultados: ${resultados.gane.length} plantillas de victoria y ${resultados.perdi.length} de derrota aprendidas de tus partidas.` : 'Resultados: solo la derrota de serie; la victoria se aprende de tu primera partida ganada en la que se vea la tabla.');
+  const servidor = crearServidor({ capturar, carpeta, registrar, aprendido, resultados });
   servidor.on('error', (e) => {
     console.error(e.code === 'EADDRINUSE' ? `El puerto ${puerto} ya está en uso: hay otro lector abierto. Ciérralo, o arranca con «lector», que lo cierra solo.` : e.message);
     process.exit(1);

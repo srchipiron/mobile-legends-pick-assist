@@ -287,6 +287,9 @@ test('cada partida apuntada guarda el draft que tenias delante, saneado', () => 
 });
 
 test('lo que leyó el lector viaja con la partida, saneado, y se mide contra el draft final', () => {
+  // Una partida apuntada SOLA por el lector del resultado lleva su origen (3.32.0); cualquier otro valor se descarta.
+  eq(apuntar([], { pick: 'Estes', gane: true, origen: 'lector' })[0].origen, 'lector', 'el origen del lector no se guarda');
+  ok(!('origen' in apuntar([], { pick: 'Estes', gane: true, origen: 'otro' })[0]), 'un origen inventado se guarda');
   eq(sanearLectura(null), null, 'una lectura vacía no es null');
   eq(sanearLectura({ baneos: [], enemigos: ['  '] }), null, 'una lectura sin nombres no es null');
   // Tu equipo y tu fila (3.31.0) viajan, y las dudas de tu equipo (a1–a5) también.
