@@ -1,6 +1,100 @@
 {
- "actualizado": "2026-10-01T18:53:33.133Z",
+ "actualizado": "2026-10-01T20:45:06.578Z",
  "partidas": [
+  {
+   "t": 1790887487048,
+   "pick": "Diggie",
+   "recomendados": [
+    "Diggie",
+    "Chip",
+    "Estes"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.418,
+   "bans": [
+    "Masha",
+    "Marcel",
+    "Lukas",
+    "Hirara",
+    "Atlas",
+    "Belerick",
+    "Khufra",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Rafaela",
+     "Aulus",
+     "Selena",
+     "Beatrix",
+     "Joy"
+    ],
+    "aliados": [
+     "Paquito",
+     "Zetian",
+     "Ixia",
+     "Alucard"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   },
+   "lector": {
+    "baneos": [
+     "Masha",
+     "Marcel",
+     "Lukas",
+     "Hirara",
+     "Atlas",
+     "Belerick",
+     "Khufra",
+     "Eudora"
+    ],
+    "enemigos": [
+     "Beatrix"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Lancelot",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Bruno",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Selena",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Saber",
+      "parecido": 0.62
+     }
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Rafaela",
+      "Selena",
+      "Rafaela",
+      "Selena",
+      "Rafaela",
+      "Selena"
+     ],
+     "sinEncontrar": [
+      "Aulus",
+      "Joy",
+      "Aulus",
+      "Joy",
+      "Aulus",
+      "Joy"
+     ]
+    }
+   }
+  },
   {
    "t": 1790880793943,
    "pick": "Diggie",
@@ -3772,6 +3866,12 @@
   {
    "cuando": "2026-10-01T18:53:33.133Z",
    "partidas": 127,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-01T20:45:06.578Z",
+   "partidas": 128,
    "heroes": 11,
    "incidencia": 11
   }
