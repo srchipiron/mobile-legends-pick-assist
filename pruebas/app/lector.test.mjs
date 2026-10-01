@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { pedirLectura, nombresDeLectura } from '../../src/app/lector.js';
+import { pedirLectura, nombresDeLectura, corregirLectura } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -29,6 +29,23 @@ test('cada fallo del lector tiene su tipo', async () => {
   eq(await tipo(() => Promise.resolve(new Response('no es json', { status: 200 }))), 'error', 'una respuesta rota no dice «error»');
   const bien = await pedirLectura({ pedir: () => Promise.resolve(new Response(JSON.stringify({ tuyos: [], suyos: [], enemigos: [{ nombre: 'Clint' }] }))) });
   ok(bien.enemigos[0].nombre === 'Clint', 'una lectura buena no se devuelve');
+});
+
+test('la corrección devuelve al lector los ids de sus capturas con lo que había de verdad, y no molesta si no hay lector', async () => {
+  const pedidas = [];
+  const pedir = async (url, opciones) => { pedidas.push({ url, opciones }); return new Response(JSON.stringify({ aprendido: true }), { status: 200 }); };
+  const r = await corregirLectura({ ids: ['lectura-1', 'lectura-2'], enemigos: ['Clint', 'Khufra'], baneos: ['Hirara'], pedir });
+  ok(r?.aprendido, 'no devuelve lo que contesta el lector');
+  eq(pedidas.length, 1, 'no manda la corrección');
+  ok(/\/corregir$/.test(pedidas[0].url) && pedidas[0].opciones.method === 'POST', 'no es un POST a /corregir');
+  const cuerpo = JSON.parse(pedidas[0].opciones.body);
+  eq(`${cuerpo.ids.join()}|${cuerpo.enemigos.join()}|${cuerpo.baneos.join()}`, 'lectura-1,lectura-2|Clint,Khufra|Hirara', `el cuerpo no lleva ids, enemigos y baneos: ${pedidas[0].opciones.body}`);
+  // Sin ids (no se leyó nada) o sin enemigos no hay nada que cruzar: ni una petición.
+  await corregirLectura({ ids: [], enemigos: ['Clint'], pedir });
+  await corregirLectura({ ids: ['lectura-1'], enemigos: [], pedir });
+  eq(pedidas.length, 1, 'manda correcciones sin ids o sin enemigos');
+  // Sin lector no lanza.
+  eq(await corregirLectura({ ids: ['lectura-1'], enemigos: ['Clint'], pedir: () => Promise.reject(new TypeError('Failed to fetch')) }), null, 'sin lector lanza o devuelve algo');
 });
 
 await terminar('app/lector');

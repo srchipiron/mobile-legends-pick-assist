@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { resolverNombres, probablesDelBando } from '../motor/draft.js';
 import { buscar } from '../motor/nombres.js';
 import { diagnosticar } from '../motor/diagnostico/index.js';
@@ -21,7 +21,7 @@ import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
-import { pedirLectura, nombresDeLectura, FALLOS_DEL_LECTOR } from './lector.js';
+import { pedirLectura, nombresDeLectura, corregirLectura, FALLOS_DEL_LECTOR } from './lector.js';
 import { ApuntarPartida } from './componentes/ApuntarPartida.jsx';
 import { HistorialPartidas } from './componentes/HistorialPartidas.jsx';
 import { Perfil } from './componentes/Perfil.jsx';
@@ -139,11 +139,24 @@ export default function App() {
       bans: draft.baneos,
       draft: { linea, enemigos: draft.enemigos, aliados: draft.aliados, rival: rec.rival.nombre },
       // Lo que leyó el lector de la tablet: para medir cuánto acierta (3.25.0).
-      ...(draft.lectura ? { lector: draft.lectura } : {}),
+      // Sin los ids de sus capturas, que son del móvil.
+      ...(draft.lectura ? { lector: { baneos: draft.lectura.baneos, enemigos: draft.lectura.enemigos } } : {}),
     });
+    // Y al lector, lo que había de verdad, para que aprenda (3.27.0).
+    corregirLectura({ ids: draft.lectura?.ids ?? [], enemigos: draft.enemigos, baneos: draft.baneos });
     cerrar();
     draft.reiniciar();
   };
+
+  // Con el draft completo (cinco enemigos), el lector ya puede cruzar sus
+  // capturas con lo que hay; al apuntar la partida se le vuelve a mandar
+  // por si se corrigió algo después.
+  const corregido = useRef(null);
+  useEffect(() => {
+    if (!draft.completoDesde || corregido.current === draft.completoDesde || !draft.lectura?.ids?.length) return;
+    corregido.current = draft.completoDesde;
+    corregirLectura({ ids: draft.lectura.ids, enemigos: draft.enemigos, baneos: draft.baneos });
+  }, [draft.completoDesde, draft.lectura, draft.enemigos, draft.baneos]);
 
   /** Trae los datos de otro dispositivo: vienen fundidos, así que solo guarda. */
   const traerPerfil = (fundido) => {
@@ -177,8 +190,9 @@ export default function App() {
     if (lector.estado === 'leyendo') return;
     setLector({ estado: 'leyendo', aviso: null });
     try {
-      const nombres = nombresDeLectura(await pedirLectura(), datos.heroes);
-      const n = draft.aplicarLectura(nombres);
+      const lectura = await pedirLectura();
+      const nombres = nombresDeLectura(lectura, datos.heroes);
+      const n = draft.aplicarLectura({ ...nombres, id: typeof lectura.id === 'string' ? lectura.id : null });
       const algo = nombres.baneos.length + nombres.enemigos.length;
       setLector({ estado: 'libre', aviso: n.baneos || n.enemigos ? null : (algo ? 'yaEstaba' : 'nada') });
     } catch (e) {

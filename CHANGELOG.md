@@ -8,6 +8,22 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.27.0
+
+- **El lector aprende de tus correcciones.** Cuando el draft está completo
+  y al apuntar la partida, la app le devuelve al lector lo que había de
+  verdad (los enemigos y baneos finales, con lo que corregiste a mano) y
+  él lo cruza con sus capturas: busca a cada enemigo que no reconoció por
+  todo el panel de picks, aprende dónde caen los huecos en TU tablet y
+  guarda la cara tal como la pinta tu pantalla. En la siguiente partida
+  lee con eso. Lo que no encuentra con seguridad no lo aprende (un recorte
+  equivocado le enseñaría a confundir a dos héroes) y lo dice en Termux:
+  «No encuentro a X en la captura Y: manda esa captura».
+- Todo pasa en el móvil: la verdad se guarda junto a cada captura
+  (`capturas/lectura-….verdad.json`) y lo aprendido en
+  `~/.config/lector/aprendido.json`. El aprendizaje corre aparte, así que
+  el botón «Leer del juego» sigue contestando mientras tanto.
+
 ## 3.26.1
 
 - **Cuando el lector no reconoce un hueco, dice en Termux a qué se quedó

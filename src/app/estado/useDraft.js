@@ -164,7 +164,7 @@ export function useDraft() {
    * está en otro sitio (un enemigo baneado, un compañero) no se toca. Con
    * enemigos nuevos el draft pasa a picks. Todo de una vez, con Deshacer.
    */
-  const aplicarLectura = useCallback(({ baneos = [], enemigos = [] }) => {
+  const aplicarLectura = useCallback(({ baneos = [], enemigos = [], id = null }) => {
     const antes = actual.current;
     const ahora = Date.now();
     const nuevosBaneos = [...antes.baneos];
@@ -177,7 +177,7 @@ export function useDraft() {
       if (nuevosEnemigos.length < TOPES.enemigos && !nuevosEnemigos.includes(n) && !nuevosBaneos.includes(n) && !antes.aliados.includes(n)) { nuevosEnemigos.push(n); nE += 1; }
     }
     const union = (a = [], b = []) => [...new Set([...a, ...b])];
-    const lectura = sanearLectura({ baneos: union(antes.lectura?.baneos, baneos), enemigos: union(antes.lectura?.enemigos, enemigos) });
+    const lectura = sanearLectura({ baneos: union(antes.lectura?.baneos, baneos), enemigos: union(antes.lectura?.enemigos, enemigos), ids: union(antes.lectura?.ids, id ? [id] : []) });
     const sueltaPick = antes.miPick && (nuevosBaneos.includes(antes.miPick) || nuevosEnemigos.includes(antes.miPick));
     const nuevo = {
       ...antes, baneos: nuevosBaneos, enemigos: nuevosEnemigos, lectura,

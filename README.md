@@ -307,6 +307,15 @@ se leyó, para afinar con las que salgan mal. A mano, sin la app:
 Si Chrome pregunta si la app puede «acceder a la red local», es el lector,
 en el propio móvil (solo escucha en `127.0.0.1`): hay que permitirlo.
 
+**Aprende de tus correcciones (3.27.0)**: lo que corrijas a mano en el
+draft vuelve al lector cuando el draft está completo y al apuntar la
+partida (`POST /corregir`, solo desde la app). Con la captura y esa verdad
+busca a los enemigos que no reconoció por todo el panel de picks, aprende
+dónde caen los huecos en tu tablet y la cara que pinta tu pantalla
+(`~/.config/lector/aprendido.json`), y en la siguiente partida lee con
+eso. Lo que no encuentra con seguridad lo dice en Termux para que mandes
+esa captura.
+
 Solo hace `adb connect` y `adb exec-out screencap -p`: no toca la
 pantalla, no instala nada y no habla con Moonton (hay una prueba que falla
 si el lector usa cualquier otro mandato). Las caras de referencia

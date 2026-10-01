@@ -37,7 +37,11 @@ export function sanearLectura(lectura) {
   if (!lectura || typeof lectura !== 'object' || Array.isArray(lectura)) return null;
   const nombres = (lista, max) => (Array.isArray(lista) ? lista.filter((n) => typeof n === 'string' && n.trim()).map((n) => n.trim()).slice(0, max) : []);
   const salida = { baneos: nombres(lectura.baneos, 10), enemigos: nombres(lectura.enemigos, 5) };
-  return salida.baneos.length || salida.enemigos.length ? salida : null;
+  // Los ids de las capturas del lector (3.27.0): con ellos la app le devuelve
+  // lo que había de verdad, para que aprenda. Solo viven en el draft.
+  const ids = Array.isArray(lectura.ids) ? lectura.ids.filter((x) => typeof x === 'string' && /^lectura-[\w-]{1,60}$/.test(x)).slice(-20) : [];
+  if (ids.length) salida.ids = ids;
+  return salida.baneos.length || salida.enemigos.length || ids.length ? salida : null;
 }
 
 /**

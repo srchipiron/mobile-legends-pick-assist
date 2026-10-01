@@ -60,11 +60,16 @@ export const PICKS_ENEMIGOS = [0, 1, 2, 3, 4].map((i) => {
   return [x0 + 0.547 * ancho, y0 + 0.486 * alto, 0.343 * alto];
 });
 
-export function leerPicksEnemigos(img, caras) {
-  const enEspejo = caras.map((c) => ({ ...c, v: espejo(c.v) }));
+/**
+ * `posiciones` y `extra` vienen de lo aprendido de las correcciones
+ * (aprender.mjs, 3.27.0): los huecos medidos en ESA tablet y las caras tal
+ * como las pinta su panel (ya en la orientación de la pantalla, sin espejo).
+ */
+export function leerPicksEnemigos(img, caras, { posiciones = PICKS_ENEMIGOS, extra = [] } = {}) {
+  const enEspejo = [...caras.map((c) => ({ ...c, v: espejo(c.v) })), ...extra];
   // Búsqueda más ancha que en los baneos: cada dibujo encuadra la cara en un
   // sitio (Khufra cae a unos 20 píxeles de Clint en el mismo hueco).
-  return PICKS_ENEMIGOS.map((pos) => reconocer(img, escalar(img, pos), enEspejo, { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12] }));
+  return posiciones.map((pos) => reconocer(img, escalar(img, pos), enEspejo, { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12] }));
 }
 
 export const carasGuardadas = () => cargarCaras(JSON.parse(readFileSync(new URL('caras.json', import.meta.url))).caras);

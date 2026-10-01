@@ -42,6 +42,26 @@ export async function pedirLectura({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_M
 }
 
 /**
+ * Devuelve al lector lo que había de verdad (3.27.0): con los ids de sus
+ * capturas y los enemigos y baneos finales (corregidos a mano), cruza el
+ * pantallazo con la verdad y aprende dónde están los huecos en esa tablet
+ * y qué cara pinta. Nunca lanza: si el lector no está, no pasa nada.
+ */
+export async function corregirLectura({ ids = [], enemigos = [], baneos = [], base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+  if (!ids.length || !enemigos.length) return null;
+  const corte = new AbortController();
+  const reloj = setTimeout(() => corte.abort(), plazoMs);
+  try {
+    const r = await pedir(`${base}/corregir`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, enemigos, baneos }), cache: 'no-store', signal: corte.signal });
+    return r.ok ? await r.json().catch(() => null) : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(reloj);
+  }
+}
+
+/**
  * Los nombres que el lector reconoció, con la grafía del catálogo (el
  * lector usa la de sus caras de referencia: «X.Borg» frente a «X Borg»).
  * Lo que sale como «?» (hueco vacío, eligiendo, skin) no se mete.

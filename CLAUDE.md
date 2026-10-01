@@ -1382,6 +1382,58 @@ por orden, y lo que se cambió por cada cosa:
   meter IA en coliseo y clásica, no en selección de draft; la clásica
   tiene picks (sin baneos) y vale para medir esa mitad.
 
+**El lector aprende de las correcciones (3.27.0)**, pedido por Javi tras la
+primera partida («que el programa cruce el pantallazo con los picks que yo
+voy corrigiendo a mano y aprenda»). Cómo va:
+
+- Cada lectura lleva `id` (el nombre de su captura en la carpeta) y el
+  draft los guarda en `lectura.ids` (`sanearLectura`, hasta 20; NO viajan
+  en la partida ni en el perfil: son ficheros del móvil). Cuando el draft
+  se completa (`completoDesde`, una vez por draft) y al apuntar la
+  partida, `corregirLectura` (src/app/lector.js) hace `POST /corregir`
+  con ids, enemigos y baneos finales; nunca lanza y sin ids o sin enemigos
+  no pide nada.
+- `servir.mjs` guarda la verdad junto a cada captura nombrada
+  (`<id>.verdad.json`, solo ids con forma `lectura-…` que existan en la
+  carpeta: nada de rutas), aprende de las ÚLTIMAS `CAPTURAS_POR_CORRECCION`
+  (3: las últimas de un draft tienen más picks) en un hilo aparte
+  (`aprender-tarea.mjs`, `worker_threads`: unas decenas de segundos por
+  captura en un móvil y el botón tiene que seguir contestando), una tanda
+  a la vez, y guarda `~/.config/lector/aprendido.json` (`version`, `picks`,
+  `caras`, `capturas`). Sin cabecera `Origin` no se escribe nada.
+- `aprender.mjs` (puro): para cada enemigo de la verdad que la geometría
+  de ahora NO lee, `buscarCara` recorre el quinto derecho de la pantalla
+  (rejilla a r/4, cinco tamaños, cara tal cual y en espejo a la vez,
+  afinando alrededor de las 8 mejores cimas: con una sola cima el máximo
+  grueso de otro héroe tapaba al bueno y Khufra se quedaba en 0,75) y
+  entra si llega a `APRENDER_MINIMO = 0.78` (por encima del peor
+  equivocado medido, 0,72) y ningún otro héroe se le parece a menos de
+  `MARGEN_SOBRE_OTRO` en ese sitio. De cada hallazgo salen un recorte
+  (`caras[nombre]`, los dos últimos, en la orientación de la pantalla:
+  `leerPicksEnemigos` los suma SIN espejo) y la posición;
+  `ajustarPosiciones` desplaza el panel ENTERO (mediana) y conserva el
+  espacio entre huecos: con dos hallazgos vecinos una recta amplificaba
+  20 px de error a 60 en el quinto hueco y lo perdía (medido); solo con
+  tres huecos distintos se reajusta, acotado al ±10%. Medido con la
+  captura real y la columna movida 60×90 px: antes «?,?,?,?,?», después
+  Clint y Khufra; Layla (no está) no se aprende y se pide su captura.
+- Pruebas: `aprender.test` (desplazamiento, solo-cara-aprendida con la
+  cara de la API cambiada como en un rework, umbral, posiciones, el hilo
+  de verdad), `puente-lector.test` (`/corregir`: verdad en disco, últimas
+  tres, lo aprendido manda en la siguiente lectura y se acumula, 403 sin
+  origen), `app/lector.test`, `registro.test` (ids saneados) y
+  `lector.e2e` (al apuntar, el lector recibe la corrección con el id de la
+  captura y los enemigos finales). Catorce mutaciones; la decimotercera
+  («leer sin las caras aprendidas») pasaba con solo desplazamiento y pidió
+  el caso del rework.
+- Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
+  enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
+  enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el
+  panel pinta algo que no se parece en nada a la cara de la API (todos
+  los «?» por debajo de 0,78), el aprendizaje no arranca y hay que mirar
+  UNA captura a mano: la geometría se mide ahí y desde entonces las caras
+  se aprenden solas. Los baneos no aprenden: salen bien.
+
 **Otras formas de automatizar, investigadas el 29 de septiembre de 2026**
 (el puente local entró en 3.25.0):
 

@@ -3,6 +3,9 @@
  * scripts/lector/servir.mjs): una captura de la pantalla del draft entra,
  * salen NOMBRES; solo para la app (y su copia local), nunca la imagen.
  */
+import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { crearServidor, capturaAutomatica, origenPermitido, PUERTO } from '../../scripts/lector/servir.mjs';
 import { carasGuardadas } from '../../scripts/lector/leer.mjs';
@@ -103,6 +106,41 @@ test('la app distingue «no veo la tablet» y «falta emparejar» de un fallo de
       eq(`${r.status} ${(await r.json()).error}`, `502 ${tipo}`, `un fallo «${tipo}» no llega a la app como tal`);
     });
   }
+});
+
+test('una corrección de la app guarda la verdad junto a la captura, aprende de las últimas y lo aprendido manda en la siguiente lectura', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'lector-aprende-'));
+  const tandas = [], guardadas = [];
+  // El aprendizaje de pega: devuelve unos huecos imposibles (fuera de la columna), para ver que la lectura siguiente los usa.
+  const aprender = async ({ pares, aprendido }) => { tandas.push({ pares, aprendido }); return { aprendido: { version: 1, picks: [[100, 100, 40], [100, 300, 40], [100, 500, 40], [100, 700, 40], [100, 900, 40]], caras: {}, capturas: (aprendido?.capturas ?? 0) + pares.length }, informe: [{ id: pares[0].id, aprendidos: [{ nombre: 'Clint', hueco: 0, parecido: 0.9, pos: [1, 2, 3] }], sinEncontrar: [], yaLeidos: [] }] }; };
+  await conServidor({ capturar: () => png, carpeta, aprender, guardar: (a) => guardadas.push(a) }, async (base) => {
+    const cab = { Origin: 'https://srchipiron.github.io' };
+    const ids = [];
+    for (let i = 0; i < 4; i++) { const l = await (await fetch(`${base}/leer`, { headers: cab })).json(); ids.push(l.id); }
+    ok(ids.every((id) => /^lectura-/.test(id)) && new Set(ids).size === 4, `las lecturas no llevan id propio: ${ids}`);
+    eq((await (await fetch(`${base}/leer`, { headers: cab })).json()).enemigos[0].nombre, 'Clint', 'antes de aprender no lee a Clint');
+    // Sin origen (no es la app) no se escribe nada.
+    const ajena = await fetch(`${base}/corregir`, { method: 'POST', body: JSON.stringify({ ids, enemigos: ['Clint'] }) });
+    eq(ajena.status, 403, 'una corrección sin origen se acepta');
+    const r = await (await fetch(`${base}/corregir`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [...ids, 'lectura-que-no-existe', '../../etc'], enemigos: ['Clint', 'Khufra'], baneos: ['Hirara'] }) })).json();
+    ok(r.aprendido && r.aprendidos.join() === 'Clint', `la corrección no aprende: ${JSON.stringify(r)}`);
+    const ficheros = readdirSync(carpeta);
+    eq(ficheros.filter((f) => f.endsWith('.verdad.json')).length, 4, `la verdad no se guarda junto a cada captura: ${ficheros}`);
+    const verdad = JSON.parse(readFileSync(join(carpeta, `${ids[0]}.verdad.json`), 'utf8'));
+    eq(verdad.enemigos.join(), 'Clint,Khufra', 'la verdad guardada no lleva los enemigos');
+    eq(tandas.length, 1, 'no aprende una vez por corrección');
+    eq(tandas[0].pares.length, 3, `aprende de ${tandas[0].pares.length} capturas y no de las 3 últimas`);
+    eq(tandas[0].pares.map((p) => p.id).join(), ids.slice(1).join(), 'no aprende de las ÚLTIMAS capturas');
+    eq(guardadas.length, 1, 'lo aprendido no se guarda en disco');
+    // Con los huecos aprendidos (de pega, fuera de la columna) la lectura siguiente ya no ve a Clint: lo aprendido manda.
+    const despues = await (await fetch(`${base}/leer`, { headers: cab })).json();
+    ok(despues.enemigos.every((e) => !e.nombre), `la lectura siguiente no usa los huecos aprendidos: ${despues.enemigos.map((e) => e.nombre)}`);
+    const estado = await (await fetch(`${base}/estado`)).json();
+    eq(estado.aprendido.capturas, 3, '/estado no dice de cuántas capturas ha aprendido');
+    // La segunda corrección acumula sobre lo aprendido.
+    await fetch(`${base}/corregir`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: ids.slice(0, 1), enemigos: ['Clint'] }) });
+    eq(tandas[1].aprendido.capturas, 3, 'la segunda tanda no parte de lo aprendido en la primera');
+  });
 });
 
 await terminar('scripts/puente-lector');

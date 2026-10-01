@@ -307,4 +307,11 @@ test('lo que leyó el lector viaja con la partida, saneado, y se mide contra el 
   eq(aciertosDelLector([]).acierto, null, 'sin lecturas el acierto no es null');
 });
 
+test('la lectura guarda los ids de las capturas del lector (solo los válidos) para devolverle la verdad', () => {
+  const l = sanearLectura({ baneos: [], enemigos: ['Clint'], ids: ['lectura-2026-10-01T18-02-11-123Z-3', '../../etc/passwd', 7, 'lectura-x'] });
+  eq(l.ids.join(), 'lectura-2026-10-01T18-02-11-123Z-3,lectura-x', `los ids no se sanean: ${l?.ids}`);
+  ok(sanearLectura({ ids: ['lectura-1'] })?.ids?.length === 1, 'una lectura solo con ids (nada reconocido) se pierde');
+  ok(!('ids' in sanearLectura({ enemigos: ['Clint'] })), 'sin ids aparece el campo');
+});
+
 await terminar('motor/registro');

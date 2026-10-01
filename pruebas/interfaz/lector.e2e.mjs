@@ -5,6 +5,9 @@
  * deshace de un toque, viaja con la partida apuntada y, si el lector no
  * está o no llega a la tablet, lo dice.
  */
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from './navegador.mjs';
 import { crearServidor, PUERTO } from '../../scripts/lector/servir.mjs';
 import { capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
@@ -14,7 +17,10 @@ const navegador = await abrirNavegador();
 const png = capturaCompletaPng();
 
 let capturar = () => png;
-const puente = crearServidor({ capturar: () => capturar() });
+// Las correcciones que la app devuelve al lector (3.27.0), con el aprendizaje de pega.
+const correcciones = [];
+const aprender = async ({ pares }) => { correcciones.push(pares); return { aprendido: { version: 1, picks: null, caras: {}, capturas: pares.length }, informe: [] }; };
+const puente = crearServidor({ capturar: () => capturar(), carpeta: mkdtempSync(join(tmpdir(), 'lector-e2e-')), aprender, guardar: () => {} });
 const abrirPuente = () => new Promise((r) => puente.listen(PUERTO, '127.0.0.1', r));
 const cerrarPuente = () => new Promise((r) => { puente.closeAllConnections?.(); puente.close(r); });
 
@@ -66,11 +72,18 @@ await prueba('lo leído viaja con la partida apuntada, para medir al lector', as
   });
   await boton(pagina).click();
   await pagina.locator('.aviso-deshacer').waitFor({ timeout: 15000 });
-  await pagina.locator('.recordatorio .gane').click(); await pagina.waitForTimeout(400);
+  const d = await leer(pagina);
+  ok(d.lectura?.ids?.length === 1 && /^lectura-/.test(d.lectura.ids[0]), `el draft no guarda el id de la captura: ${JSON.stringify(d.lectura)}`);
+  await pagina.locator('.recordatorio .gane').click(); await pagina.waitForTimeout(600);
   const [partida] = await leer(pagina, 'roam-picker:partidas');
   ok(partida?.lector, 'la partida apuntada no lleva lo que leyó el lector');
   eq(partida.lector.enemigos.join(), VERDAD.enemigos.join(), 'la partida no lleva los enemigos leídos');
   ok(partida.lector.baneos.includes('Masha'), 'la partida no lleva los baneos leídos');
+  ok(!partida.lector.ids, 'la partida lleva los ids de las capturas, que son del móvil');
+  // Y el lector recibe la verdad para aprender: la captura de este draft con los enemigos finales.
+  eq(correcciones.length, 1, `al apuntar, el lector recibe ${correcciones.length} correcciones`);
+  eq(correcciones[0][0].id, d.lectura.ids[0], 'la corrección no nombra la captura de este draft');
+  eq(correcciones[0][0].verdad.enemigos.join(), VERDAD.enemigos.join(), 'la corrección no lleva los enemigos finales');
   ok(!errores.length, `errores de página: ${errores}`);
   await contexto.close();
 });
