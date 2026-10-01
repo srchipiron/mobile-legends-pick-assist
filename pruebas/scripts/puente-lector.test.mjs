@@ -12,7 +12,7 @@ import { carasGuardadas } from '../../scripts/lector/leer.mjs';
 import { PUERTO_LECTOR } from '../../src/app/lector.js';
 import { capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
 import { leerPng } from '../../scripts/lector/png.mjs';
-import { miniaturasDe, pngQueQuepa, reducir, cuantizar, TOPE_BASE64 } from '../../scripts/lector/miniatura.mjs';
+import { miniaturasDe, pngQueQuepa, reducir, cuantizar, fotogramaDe, diferencia, TOPE_BASE64, CAMBIO_MINIMO } from '../../scripts/lector/miniatura.mjs';
 
 const caras = carasGuardadas();
 const png = capturaCompletaPng();
@@ -173,6 +173,32 @@ test('la captura reducida (temporal): dos PNG pequeños con paleta que caben en 
     const r2 = await (await fetch(`${base}/captura`, { headers: { Origin: 'https://srchipiron.github.io' } })).json();
     ok(/^resultado-/.test(r2.id) && r2.ancho === 2400, `la captura no lleva id ni tamaño: ${JSON.stringify(r2).slice(0, 80)}`);
     eq(leerPng(Buffer.from(r2.miniatura, 'base64')).ancho, 320, 'la miniatura no mide 320 px');
+  });
+});
+
+test('los fotogramas del final de partida (temporal): solo vuelven con imágenes cuando la pantalla cambia', async () => {
+  const negra = { ancho: 2400, alto: 1504, rgba: new Uint8Array(2400 * 1504 * 4).fill(0) };
+  for (let k = 3; k < negra.rgba.length; k += 4) negra.rgba[k] = 255;
+  const clara = { ancho: 2400, alto: 1504, rgba: new Uint8Array(2400 * 1504 * 4).fill(200) };
+  const f1 = fotogramaDe(negra, null);
+  ok(f1.cambio && f1.miniatura && f1.tira, 'el primer fotograma no trae imágenes');
+  const f2 = fotogramaDe(negra, f1.pequena);
+  ok(!f2.cambio && !f2.miniatura, 'la misma pantalla cuenta como cambio');
+  const f3 = fotogramaDe(clara, f2.pequena);
+  ok(f3.cambio && leerPng(Buffer.from(f3.miniatura, 'base64')).ancho === 160 && leerPng(Buffer.from(f3.tira, 'base64')).ancho === 320, 'otra pantalla no trae las dos imágenes a 160 y 320 px');
+  ok(diferencia(f1.pequena, f1.pequena) === 0 && diferencia(f1.pequena, f3.pequena) > CAMBIO_MINIMO && diferencia(f1.pequena, null) === 255, 'la diferencia no mide lo que debe');
+  // La ruta: el lector recuerda el fotograma anterior entre peticiones.
+  const { escribirPng } = await import('../../scripts/lector/png.mjs');
+  let actual = png;
+  await conServidor({ capturar: () => actual }, async (base) => {
+    const cab = { Origin: 'https://srchipiron.github.io' };
+    const a = await (await fetch(`${base}/captura?fotograma=1`, { headers: cab })).json();
+    ok(a.cambio === true && /^fotograma-/.test(a.id) && a.miniatura, `el primer fotograma no cambia o no lleva id: ${JSON.stringify(a).slice(0, 80)}`);
+    const b = await (await fetch(`${base}/captura?fotograma=1`, { headers: cab })).json();
+    ok(b.cambio === false && !b.miniatura, 'la misma captura vuelve con imágenes');
+    actual = escribirPng(clara);
+    const c = await (await fetch(`${base}/captura?fotograma=1`, { headers: cab })).json();
+    ok(c.cambio === true && c.tira, 'una pantalla distinta no cuenta como cambio');
   });
 });
 

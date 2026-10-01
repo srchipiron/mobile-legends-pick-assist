@@ -32,7 +32,7 @@ import { HORAS_DATOS_VIEJOS } from '../componentes/Pie.jsx';
  * @param d.abrir       abre una hoja: 'enemigos' | 'aliados' | 'yo' | 'maestria' | 'historial' | 'perfil' | 'meta' | 'linea' | 'apuntar' | { build }
  * @param d.onResultado (gane) apunta la partida con tu pick fijado, desde el recordatorio
  */
-export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, pantalla = null, onPantalla = null, pie }) {
+export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, pie }) {
   const { enemigos, aliados, baneos } = equipo;
   const { ranking, rival, cov, pool, analisis, composicion, consejos, yo } = rec;
   const rivalAuto = rival.marcado ? null : rival.nombre;
@@ -125,7 +125,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
         <div className="tools">
           <button className="reset" onClick={draft.vaciarConDeshacer}>{t('app.nuevoDraft')}</button>
           <button className="reset" disabled={!ranking.length} onClick={() => abrir('apuntar')}>{t('app.apuntar')}</button>
-          {onLeer && <BotonLector estado={lector?.estado} aviso={lector?.aviso} ultimo={lector?.ultimo} auto={lectorAuto} onAuto={onLectorAuto} onLeer={onLeer} pantalla={pantalla} onPantalla={onPantalla} t={t} />}
+          {onLeer && <BotonLector estado={lector?.estado} aviso={lector?.aviso} ultimo={lector?.ultimo} auto={lectorAuto} onAuto={onLectorAuto} onLeer={onLeer} t={t} />}
         </div>
       </aside>
 

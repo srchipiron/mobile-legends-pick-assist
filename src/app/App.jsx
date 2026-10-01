@@ -21,8 +21,9 @@ import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
-import { pedirLectura, pedirCaptura, cuerpoDePantalla, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS } from './lector.js';
+import { pedirLectura, pedirFotograma, cuerpoDeFotogramas, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, MAX_FOTOGRAMAS, DESDE_FINAL_MIN } from './lector.js';
 import { draftCompleto } from './estado/useDraft.js';
+import { useAhora } from './estado/useAhora.js';
 import { ApuntarPartida } from './componentes/ApuntarPartida.jsx';
 import { HistorialPartidas } from './componentes/HistorialPartidas.jsx';
 import { Perfil } from './componentes/Perfil.jsx';
@@ -126,6 +127,50 @@ export default function App() {
     cerrar();
   };
 
+  // Los refs del lector (3.25.0+): si está leyendo ahora y cuándo fue la última.
+  const leyendoAhora = useRef(false);
+  const ultimaLectura = useRef(0);
+  // El final de la partida (3.30.0, TEMPORAL hasta que el cartel de
+  // victoria/derrota esté medido): con «Leer solo», desde el minuto 8 tras
+  // completar el draft se pide un fotograma cada 30 s; el lector solo
+  // devuelve los que cambian de pantalla (juego → resultado → vestíbulo).
+  // Se guardan aquí y se suben solos al proyecto al apuntar la partida o al
+  // empezar otro draft, para medir el cartel sin que nadie toque nada.
+  const fotogramas = useRef([]);
+  const vigilando = useRef(false);
+  const ahora = useAhora();
+  useEffect(() => {
+    if (!tocaVigilarFinal({ auto: lectorAuto, completoDesde: draft.completoDesde, ahora: Date.now() })) return undefined;
+    const tic = async () => {
+      if (vigilando.current || leyendoAhora.current || document.visibilityState !== 'visible') return;
+      if (!tocaVigilarFinal({ auto: lectorAuto, completoDesde: draft.completoDesde, ahora: Date.now() })) return;
+      vigilando.current = true;
+      try {
+        const f = await pedirFotograma();
+        if (f.cambio && fotogramas.current.length < MAX_FOTOGRAMAS) {
+          fotogramas.current.push({ id: f.id, minuto: Math.round((Date.now() - draft.completoDesde) / 60000), miniatura: f.miniatura, tira: f.tira });
+        }
+      } catch { /* sin lector o sin tablet: se vuelve a intentar en el siguiente tic */ }
+      finally { vigilando.current = false; }
+    };
+    const reloj = setInterval(tic, INTERVALO_FINAL_MS);
+    tic();
+    return () => clearInterval(reloj);
+  }, [lectorAuto, draft.completoDesde, ahora]);
+  /** Sube lo vigilado (si hay) y lo olvida. Sin token no sube: se descarta. */
+  const volcarFotogramas = (resultado = null) => {
+    const lista = fotogramas.current;
+    fotogramas.current = [];
+    if (!lista.length || !envio.activo) return;
+    envio.subirAparte({ ...cuerpoDeFotogramas({ fotogramas: lista, resultado, version: __APP_VERSION__ }), etiquetas: ['pantalla'] });
+  };
+  // Al dejar de estar completo el draft (nuevo draft, vaciar) se vuelcan sin resultado.
+  const completoAntes = useRef(draft.completoDesde);
+  useEffect(() => {
+    if (completoAntes.current && !draft.completoDesde) volcarFotogramas(null);
+    completoAntes.current = draft.completoDesde;
+  }, [draft.completoDesde]);
+
   /**
    * Apunta la partida con la estimación que había delante para ESE héroe y
    * el draft entero (es lo que la hace medible después), y limpia el draft.
@@ -145,6 +190,8 @@ export default function App() {
     });
     // Y al lector, lo que había de verdad, para que aprenda (3.27.0).
     corregirLectura({ ids: draft.lectura?.ids ?? [], enemigos: draft.enemigos, baneos: draft.baneos });
+    // Los fotogramas del final, con el resultado (3.30.0): antes de reiniciar.
+    volcarFotogramas(gane ? 'gane' : 'perdi');
     cerrar();
     draft.reiniciar();
   };
@@ -192,8 +239,6 @@ export default function App() {
    * (con Deshacer). Leyendo solo (`silencioso`), un fallo o una lectura
    * vacía no sacan aviso: se repite en unos segundos; queda en `ultimo`.
    */
-  const leyendoAhora = useRef(false);
-  const ultimaLectura = useRef(0);
   const leerDelJuego = async ({ silencioso = false } = {}) => {
     if (leyendoAhora.current) return;
     leyendoAhora.current = true;
@@ -211,21 +256,6 @@ export default function App() {
       setLector({ estado: 'libre', aviso: silencioso ? null : tipo, ultimo: { cuando: Date.now(), ok: false, tipo } });
     } finally {
       leyendoAhora.current = false;
-    }
-  };
-
-  // Mandar la pantalla de resultado al proyecto (3.29.0, TEMPORAL: para medir
-  // dónde está el cartel de victoria/derrota y poder apuntar la partida sola).
-  const [pantalla, setPantalla] = useState(null);
-  const mandarPantalla = async (resultado) => {
-    if (pantalla?.estado === 'enviando') return;
-    setPantalla({ estado: 'enviando' });
-    try {
-      const captura = await pedirCaptura();
-      const r = await envio.subirAparte({ ...cuerpoDePantalla({ resultado, captura, version: __APP_VERSION__ }), etiquetas: ['pantalla'] });
-      setPantalla(r.error ? { estado: 'error', tipo: r.error } : { estado: 'ok', numero: r.numero });
-    } catch (e) {
-      setPantalla({ estado: 'error', tipo: FALLOS_DEL_LECTOR.includes(e?.tipo) ? e.tipo : 'error' });
     }
   };
 
@@ -312,7 +342,7 @@ export default function App() {
           onBanear={(h) => draft.anadir('baneos', h)}
           onQuitar={(h) => draft.quitar('baneos', h)}
           onAPicks={() => draft.setFase('picks')}
-          lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} pantalla={pantalla} onPantalla={envio.activo ? mandarPantalla : null} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
+          lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
           pie={pie}
         />
         {selector}
@@ -328,7 +358,7 @@ export default function App() {
         meta={meta} datos={datos} metaListo={metaListo} sinWinrates={sinWinrates} edadHoras={edadHoras} pro={pro}
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
         onResultado={(gane) => guardarPartida(rec.eleccion?.heroe.name ?? draft.miPick, gane)}
-        lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} pantalla={pantalla} onPantalla={envio.activo ? mandarPantalla : null}
+        lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
         pie={pie}
       />
       {deshacer}

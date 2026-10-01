@@ -94,16 +94,31 @@ export async function corregirLectura({ ids = [], enemigos = [], baneos = [], ba
 }
 
 /**
- * Una captura reducida de la tablet (3.29.0, temporal): la pantalla de
- * resultado, para mandarla al proyecto y medir dónde está el cartel.
- * Devuelve { id, miniatura, tira } (PNG en base64) o lanza un fallo con tipo.
+ * Vigilar el final de la partida (3.30.0): desde `DESDE_FINAL_MIN` minutos
+ * después de completar el draft (antes es jugar, y una captura en una
+ * teamfight puede dar un tirón en la tablet) hasta `HASTA_FINAL_MIN`, un
+ * fotograma cada `INTERVALO_FINAL_MS`. Decisiones de producto: una partida
+ * dura 10–20 minutos; con 30 s la pantalla de resultado (que se queda hasta
+ * que se toca) no se escapa.
  */
-export async function pedirCaptura({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+export const DESDE_FINAL_MIN = 8;
+export const HASTA_FINAL_MIN = 25;
+export const INTERVALO_FINAL_MS = 30000;
+export const MAX_FOTOGRAMAS = 8;
+
+export const tocaVigilarFinal = ({ auto, visible = true, completoDesde, ahora }) => {
+  if (!auto || !visible || !completoDesde) return false;
+  const min = (ahora - completoDesde) / 60000;
+  return min >= DESDE_FINAL_MIN && min <= HASTA_FINAL_MIN;
+};
+
+/** Un fotograma del lector: `{ cambio }` o `{ cambio: true, id, miniatura, tira }`. Lanza con tipo si no hay lector. */
+export async function pedirFotograma({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), plazoMs);
   let respuesta;
   try {
-    respuesta = await pedir(`${base}/captura`, { cache: 'no-store', signal: corte.signal });
+    respuesta = await pedir(`${base}/captura?fotograma=1`, { cache: 'no-store', signal: corte.signal });
   } catch {
     throw fallo(corte.signal.aborted ? 'plazo' : 'sinPuente');
   } finally {
@@ -112,20 +127,33 @@ export async function pedirCaptura({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_M
   let cuerpo = null;
   try { cuerpo = await respuesta.json(); } catch { /* cuerpo vacío */ }
   if (!respuesta.ok) throw fallo(['tablet', 'emparejar', 'captura'].includes(cuerpo?.error) ? cuerpo.error : 'error');
-  if (!cuerpo || typeof cuerpo.miniatura !== 'string' || typeof cuerpo.tira !== 'string') throw fallo('error');
+  if (!cuerpo || typeof cuerpo.cambio !== 'boolean') throw fallo('error');
   return cuerpo;
 }
 
-/** El cuerpo de la incidencia con la pantalla de resultado: texto, para que quepa en una incidencia. */
+/**
+ * La incidencia con los fotogramas del final de una partida: las
+ * miniaturas en el cuerpo y las franjas de arriba en un comentario, como
+ * texto, sin pasarse de lo que admite un mensaje (`TOPE_MENSAJE`).
+ */
+export const TOPE_MENSAJE = 60000;
 const VALLA = '```';
-export function cuerpoDePantalla({ resultado, captura, version = '' }) {
-  const etiqueta = resultado === 'gane' ? 'ganada' : 'perdida';
-  const cabecera = `Pantalla de resultado (${etiqueta}) · ${captura.ancho}×${captura.alto} · app ${version} · ${captura.id}`;
-  return {
-    titulo: `Pantalla de resultado: ${etiqueta}`,
-    cuerpo: `${cabecera}\n\nPantalla entera a 320 px (PNG, base64):\n\n${VALLA}\n${captura.miniatura}\n${VALLA}`,
-    comentario: `Franja de arriba (PNG, base64):\n\n${VALLA}\n${captura.tira}\n${VALLA}`,
-  };
+export function cuerpoDeFotogramas({ fotogramas, resultado = null, version = '' }) {
+  const etiqueta = resultado === 'gane' ? 'ganada' : resultado === 'perdi' ? 'perdida' : 'sin apuntar';
+  const lineas = [`Fotogramas del final de una partida (${etiqueta}) · app ${version} · ${fotogramas.length} pantallas distintas desde el minuto ${DESDE_FINAL_MIN}.`, ''];
+  let cuerpo = lineas.join('\n');
+  for (const f of fotogramas) {
+    const trozo = `\n\n${f.id} · minuto ${f.minuto} · pantalla entera a 160 px (PNG, base64):\n\n${VALLA}\n${f.miniatura}\n${VALLA}`;
+    if (cuerpo.length + trozo.length > TOPE_MENSAJE) break;
+    cuerpo += trozo;
+  }
+  let comentario = 'Franjas de arriba a 320 px (PNG, base64):';
+  for (const f of fotogramas) {
+    const trozo = `\n\n${f.id} · minuto ${f.minuto}:\n\n${VALLA}\n${f.tira}\n${VALLA}`;
+    if (comentario.length + trozo.length > TOPE_MENSAJE) break;
+    comentario += trozo;
+  }
+  return { titulo: `Final de partida (${etiqueta}): ${fotogramas.length} pantallas`, cuerpo, comentario };
 }
 
 /**

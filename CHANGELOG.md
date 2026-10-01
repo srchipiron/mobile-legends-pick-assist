@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.30.0
+
+- **El final de la partida se vigila solo, sin botones.** Con «Leer solo»
+  encendido y el draft completo, desde el minuto 8 la app mira la tablet
+  cada 30 segundos y se queda solo con las pantallas que cambian (el juego,
+  el cartel de VICTORIA o DERROTA, el vestíbulo). Al apuntar la partida, o
+  al empezar otro draft, las sube al proyecto por su cuenta, reducidas y
+  como texto en una incidencia, con tu token. Con eso se mide dónde está el
+  cartel y después la app apuntará el resultado sola. Los botones de 3.29.0
+  para mandar la pantalla a mano desaparecen: no hay que tocar nada.
+
 ## 3.29.0
 
 - **Botón temporal para mandar la pantalla de resultado al proyecto.** Bajo

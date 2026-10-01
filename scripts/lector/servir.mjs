@@ -33,7 +33,7 @@ import { Worker } from 'node:worker_threads';
 import { leerPng } from './png.mjs';
 import { capturarTablet, encontrarTablet, leerBaneos, leerPicksEnemigos, sinRepetidos, carasGuardadas } from './leer.mjs';
 import { carasAprendidas, resumirAprendizaje } from './aprender.mjs';
-import { miniaturasDe } from './miniatura.mjs';
+import { miniaturasDe, fotogramaDe } from './miniatura.mjs';
 
 /** Decisión de producto: un puerto alto, fijo, que la app conoce. */
 export const PUERTO = 47323;
@@ -125,7 +125,7 @@ export function leerCaptura(png, caras, aprendido = null) {
  * las pruebas una captura de fichero.
  */
 export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido }) {
-  let n = 0, aprendiendo = null;
+  let n = 0, aprendiendo = null, fotogramaAnterior = null;
   const leerCuerpo = (req) => new Promise((resolver) => {
     const trozos = [];
     req.on('data', (t) => { trozos.push(t); if (trozos.reduce((s, x) => s + x.length, 0) > 65536) req.destroy(); });
@@ -152,7 +152,7 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
     const r = await aprendiendo;
     return { aprendido: true, aprendidos: r.informe.flatMap((l) => l.aprendidos.map((a) => a.nombre)), sinEncontrar: r.informe.flatMap((l) => l.sinEncontrar.map((x) => x.nombre)) };
   };
-  return createServer(async (req, res) => {
+  const servidor = createServer(async (req, res) => {
     const origen = req.headers.origin;
     const cabeceras = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', Vary: 'Origin' };
     if (origen) {
@@ -184,7 +184,17 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
       }
       try {
         const img = leerPng(png);
-        const id = `resultado-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+        const esFotograma = new URL(req.url, 'http://127.0.0.1').searchParams.has('fotograma');
+        const id = `${esFotograma ? 'fotograma' : 'resultado'}-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+        if (esFotograma) {
+          // Un fotograma del final de partida (3.30.0): solo cuenta si la pantalla ha cambiado.
+          const f = fotogramaDe(img, fotogramaAnterior);
+          fotogramaAnterior = f.pequena;
+          if (f.cambio && carpeta) writeFileSync(join(carpeta, `${id}.png`), png);
+          if (f.cambio) registrar(`Fotograma ${id}: la pantalla ha cambiado (${f.miniatura.length + f.tira.length} caracteres).`);
+          res.writeHead(200, cabeceras).end(JSON.stringify({ id, ancho: img.ancho, alto: img.alto, cambio: f.cambio, ...(f.cambio ? { miniatura: f.miniatura, tira: f.tira } : {}) }));
+          return;
+        }
         if (carpeta) writeFileSync(join(carpeta, `${id}.png`), png);
         const mini = miniaturasDe(img);
         registrar(`Captura reducida ${id} (${img.ancho}×${img.alto}): ${mini.miniatura.length + mini.tira.length} caracteres.`);
@@ -236,6 +246,11 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
     }
     res.writeHead(404, cabeceras).end(JSON.stringify({ error: 'no existe' }));
   });
+  // La app leyendo sola pide cada 5 s y reutiliza la conexión; con el cierre
+  // de Node a los 5 s de inactividad, cada toque caía justo cuando el lector
+  // cerraba el socket (ECONNRESET, visto en las pruebas con el bucle ocupado).
+  servidor.keepAliveTimeout = 65000;
+  return servidor;
 }
 
 async function principal() {

@@ -13,6 +13,11 @@ import { escribirPng } from './png.mjs';
 
 export const ANCHO_MINIATURA = 320;
 export const ANCHO_TIRA = 640;
+/** Los fotogramas del final de partida (3.30.0): más pequeños, van varios en un mensaje. */
+export const ANCHO_FOTOGRAMA = 160;
+export const ANCHO_TIRA_FOTOGRAMA = 320;
+/** Dos fotogramas son «la misma pantalla» si su miniatura difiere menos que esto por canal (de 255). */
+export const CAMBIO_MINIMO = 12;
 /** La franja de arriba donde va el cartel: el 28% del alto. */
 export const ALTO_TIRA = 0.28;
 const NIVELES = [6, 7, 6];
@@ -62,6 +67,30 @@ export function pngQueQuepa(img, { ancho, region = [0, 0, 1, 1], tope = TOPE_BAS
     if (b64.length <= tope) return b64;
   }
   return aPng(reducir(img, { ancho: 40, region })).toString('base64');
+}
+
+/** Cuánto difieren dos imágenes del mismo tamaño: media del valor absoluto por canal (0–255). */
+export function diferencia(a, b) {
+  if (!a || !b || a.ancho !== b.ancho || a.alto !== b.alto) return 255;
+  let s = 0, n = 0;
+  for (let k = 0; k < a.rgba.length; k += 4) { s += Math.abs(a.rgba[k] - b.rgba[k]) + Math.abs(a.rgba[k + 1] - b.rgba[k + 1]) + Math.abs(a.rgba[k + 2] - b.rgba[k + 2]); n += 3; }
+  return n ? s / n : 255;
+}
+
+/**
+ * Un fotograma del final de partida: la miniatura pequeña, y si cambia
+ * respecto al anterior (otra pantalla), también la franja de arriba. Devuelve
+ * { pequena, cambio, miniatura?, tira? } con `pequena` para comparar la siguiente.
+ */
+export function fotogramaDe(img, anterior = null) {
+  const pequena = reducir(img, { ancho: ANCHO_FOTOGRAMA });
+  const cambio = diferencia(pequena, anterior) >= CAMBIO_MINIMO;
+  if (!cambio) return { pequena, cambio };
+  return {
+    pequena, cambio,
+    miniatura: aPng(pequena).toString('base64'),
+    tira: pngQueQuepa(img, { ancho: ANCHO_TIRA_FOTOGRAMA, region: [0, 0, 1, ALTO_TIRA], tope: 20000 }),
+  };
 }
 
 /** Las dos imágenes pequeñas de una captura, como PNG en base64. */

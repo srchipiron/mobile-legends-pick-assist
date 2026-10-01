@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { pedirLectura, pedirCaptura, cuerpoDePantalla, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS } from '../../src/app/lector.js';
+import { pedirLectura, pedirFotograma, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -65,18 +65,31 @@ test('leyendo solo: cuándo toca y cuándo no, y las dudas compactas de una lect
   eq(dudasDeLectura(null).length, 0, 'una lectura vacía da dudas');
 });
 
-test('la pantalla de resultado (temporal): se pide al lector y va como texto en una incidencia que cabe', async () => {
-  const captura = { id: 'resultado-1', ancho: 2400, alto: 1504, miniatura: 'A'.repeat(6000), tira: 'B'.repeat(11000) };
-  const c = await pedirCaptura({ pedir: async (url) => { ok(/\/captura$/.test(url), `pide a ${url}`); return new Response(JSON.stringify(captura), { status: 200 }); } });
-  eq(c.id, 'resultado-1', 'no devuelve la captura');
-  const tipo = async (pedir) => { try { await pedirCaptura({ pedir, plazoMs: 1000 }); return 'ok'; } catch (e) { return e.tipo; } };
+test('el final de la partida (temporal): cuándo se vigila, qué fotograma se pide y cómo se suben sin pasarse del mensaje', async () => {
+  const t0 = 1_700_000_000_000, min = (m) => t0 + m * 60000;
+  ok(!tocaVigilarFinal({ auto: true, completoDesde: t0, ahora: min(DESDE_FINAL_MIN - 1) }), 'vigila antes del minuto de empezar (una captura en una teamfight da un tirón)');
+  ok(tocaVigilarFinal({ auto: true, completoDesde: t0, ahora: min(DESDE_FINAL_MIN) }), 'no vigila desde el minuto de empezar');
+  ok(tocaVigilarFinal({ auto: true, completoDesde: t0, ahora: min(HASTA_FINAL_MIN) }), 'no vigila hasta el minuto de parar');
+  ok(!tocaVigilarFinal({ auto: true, completoDesde: t0, ahora: min(HASTA_FINAL_MIN + 1) }), 'sigue vigilando pasado el tope');
+  ok(!tocaVigilarFinal({ auto: false, completoDesde: t0, ahora: min(10) }), 'vigila con el modo apagado');
+  ok(!tocaVigilarFinal({ auto: true, completoDesde: null, ahora: min(10) }), 'vigila sin draft completo');
+  ok(!tocaVigilarFinal({ auto: true, visible: false, completoDesde: t0, ahora: min(10) }), 'vigila con la app escondida');
+  ok(INTERVALO_FINAL_MS >= 20000 && DESDE_FINAL_MIN >= 5 && HASTA_FINAL_MIN > DESDE_FINAL_MIN, 'los plazos no son los de una partida (10–20 min) con capturas espaciadas');
+  // La petición: con cambio trae las imágenes; sin cambio, solo que no cambió.
+  const con = await pedirFotograma({ pedir: async (url) => { ok(/\/captura\?fotograma=1$/.test(url), `pide a ${url}`); return new Response(JSON.stringify({ id: 'fotograma-1', cambio: true, miniatura: 'AAA', tira: 'BBB' }), { status: 200 }); } });
+  eq(`${con.cambio} ${con.id}`, 'true fotograma-1');
+  eq((await pedirFotograma({ pedir: async () => new Response(JSON.stringify({ id: 'x', cambio: false }), { status: 200 }) })).cambio, false);
+  const tipo = async (pedir) => { try { await pedirFotograma({ pedir, plazoMs: 1000 }); return 'ok'; } catch (e) { return e.tipo; } };
   eq(await tipo(() => Promise.reject(new TypeError('Failed to fetch'))), 'sinPuente');
   eq(await tipo(() => Promise.resolve(new Response(JSON.stringify({ error: 'tablet' }), { status: 502 }))), 'tablet');
-  eq(await tipo(() => Promise.resolve(new Response(JSON.stringify({ id: 'x' }), { status: 200 }))), 'error', 'una respuesta sin imágenes no es «error»');
-  const p = cuerpoDePantalla({ resultado: 'gane', captura, version: '3.29.0' });
-  ok(/ganada/.test(p.titulo) && /ganada/.test(p.cuerpo) && p.cuerpo.includes(captura.miniatura) && p.comentario.includes(captura.tira), 'el cuerpo no lleva el resultado y las imágenes');
-  ok(/perdida/.test(cuerpoDePantalla({ resultado: 'perdi', captura }).titulo), 'una perdida no se distingue');
-  ok(p.cuerpo.length < 65536 && p.comentario.length < 65536, 'no cabe en una incidencia');
+  eq(await tipo(() => Promise.resolve(new Response(JSON.stringify({ id: 'x' }), { status: 200 }))), 'error', 'una respuesta sin «cambio» no es «error»');
+  // La incidencia: resultado, minuto e imágenes; y con muchas, se corta antes de pasarse del mensaje.
+  const fotos = Array.from({ length: 8 }, (_, i) => ({ id: `fotograma-${i}`, minuto: 8 + i, miniatura: 'M'.repeat(9000), tira: 'T'.repeat(19000) }));
+  const c = cuerpoDeFotogramas({ fotogramas: fotos, resultado: 'gane', version: '3.30.0' });
+  ok(/ganada/.test(c.titulo) && /8 pantallas/.test(c.titulo), `el título no dice el resultado y cuántas: ${c.titulo}`);
+  ok(c.cuerpo.includes('fotograma-0') && c.cuerpo.includes('minuto 8') && c.cuerpo.length <= TOPE_MENSAJE, `el cuerpo se pasa o no lleva el primero: ${c.cuerpo.length}`);
+  ok(c.comentario.includes('fotograma-0') && c.comentario.length <= TOPE_MENSAJE && !c.comentario.includes('fotograma-7'), `el comentario se pasa o no corta: ${c.comentario.length}`);
+  ok(/sin apuntar/.test(cuerpoDeFotogramas({ fotogramas: fotos.slice(0, 1) }).titulo), 'sin resultado no lo dice');
 });
 
 await terminar('app/lector');

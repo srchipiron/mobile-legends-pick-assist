@@ -1467,29 +1467,44 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   Pruebas: `app/lector.test`, `registro.test`, `partidas.test` (informe) y
   `lector.e2e` (lee sin tocar nada, el «Deshacer» sobrevive a una lectura
   vacía, el interruptor se recuerda). Siete mutaciones.
-- **Apuntar el resultado solo, y el botón TEMPORAL de 3.29.0**: Javi
-  preguntó si el lector puede leer VICTORIA/DERROTA de la tablet. Se
-  puede, pero la pantalla de resultado no está medida (ninguna captura
-  suya). En vez de pedirle capturas a mano, 3.29.0 pone bajo «Leer del
-  juego» un desplegable «Mandar la pantalla de resultado al proyecto»
-  (solo con el token de subida): `GET /captura` en el lector (solo con
-  Origin, guarda la captura entera como `resultado-<id>.png` en la
-  carpeta) devuelve dos PNG REDUCIDOS en base64 (`scripts/lector/
-  miniatura.mjs`: pantalla entera a 320 px y la franja de arriba, el 28%
-  del alto, a 640 px; cajas promediadas, paleta 6×7×6 = 252 colores, y si
-  no cabe en `TOPE_BASE64` 60.000 caracteres se parte el ancho por la
-  mitad), y la app (`pedirCaptura`, `cuerpoDePantalla`, `subirAparte` en
-  useEnvio) abre una incidencia nueva con etiqueta `pantalla` con la
-  miniatura en el cuerpo y la franja en un comentario, como texto: la API
-  no admite adjuntos y un mensaje admite 65.536 caracteres. Es la ÚNICA
-  vez que una imagen sale del lector, reducida y a petición de Javi, a su
-  repositorio público: la pantalla de resultado lleva los nombres de los
-  diez jugadores. Para leerla desde una sesión: `issue_read`, decodificar
-  el base64 a PNG y mirarlo con Read. Con una ganada y una perdida se mide
-  el cartel (dónde, qué color, en qué otras pantallas sale) y entra el
-  modo de leer el resultado (mirar la tablet cada 30 s desde el minuto 8,
-  no antes: una captura en una teamfight puede dar un tirón). **Cuando
-  esté medido, el botón y la ruta se quitan.**
+- **Apuntar el resultado solo: la vigilancia TEMPORAL del final de la
+  partida (3.29.0 → 3.30.0)**. Javi preguntó si el lector puede leer
+  VICTORIA/DERROTA de la tablet. Se puede, pero esa pantalla no está
+  medida (ninguna captura suya). 3.29.0 puso dos botones para mandar la
+  pantalla a mano y Javi los rechazó el mismo día («intenta siempre
+  automatizar todo, que yo no tenga que hacer nada»): en 3.30.0 no hay
+  botones. Con «Leer solo» y el draft completo, desde `DESDE_FINAL_MIN`
+  (8: antes es jugar, y una captura en una teamfight puede dar un tirón en
+  la tablet) hasta `HASTA_FINAL_MIN` (25) la app pide cada
+  `INTERVALO_FINAL_MS` (30 s) `GET /captura?fotograma=1`; el lector
+  (`fotogramaDe` en `scripts/lector/miniatura.mjs`) reduce a 160 px,
+  compara con el fotograma anterior (`diferencia`, media por canal;
+  `CAMBIO_MINIMO` 12 de 255) y solo cuando la pantalla CAMBIA devuelve la
+  miniatura y la franja de arriba (28% del alto, a 320 px, tope 20.000
+  caracteres) y guarda la captura entera como `fotograma-<id>.png`. La
+  app las acumula (`MAX_FOTOGRAMAS` 8, en un ref) y las vuelca
+  (`volcarFotogramas`) al apuntar la partida, con el resultado, o al
+  dejar de estar completo el draft (nuevo draft), sin él: una incidencia
+  nueva con etiqueta `pantalla` (`cuerpoDeFotogramas`: miniaturas en el
+  cuerpo, franjas en un comentario, cada mensaje bajo `TOPE_MENSAJE`
+  60.000; `subirAparte` en useEnvio, con el token que no sale de ahí).
+  Es lo ÚNICO que sale del lector como imagen: reducido, a petición de
+  Javi, a su repositorio público, y la pantalla de resultado lleva los
+  nombres de los diez jugadores. Las miniaturas van en base64 como TEXTO
+  porque la API no admite adjuntos y un mensaje admite 65.536
+  caracteres; paleta 6×7×6 (252 colores) y cajas promediadas
+  (`reducir`, `cuantizar`, `pngQueQuepa` parte el ancho hasta caber).
+  Para leerlas desde una sesión: `issue_read`, decodificar a PNG y
+  mirarlas con Read. Con una ganada y una perdida se mide el cartel
+  (dónde, color, en qué otras pantallas sale) y entra el lector del
+  resultado; entonces esta vigilancia y la ruta se quitan. Pruebas:
+  `puente-lector.test` (cambio/no cambio, la ruta recuerda el anterior,
+  tamaños, 403 sin origen) y `app/lector.test` (cuándo se vigila, la
+  petición, el cuerpo que cabe); el volcado al apuntar no tiene prueba
+  de navegador (son 8 minutos de reloj). Siete mutaciones. Y un fallo que
+  destapó: el `keepAliveTimeout` de Node (5 s) coincidía con el ritmo de
+  «Leer solo» (5 s) y con el bucle ocupado daba ECONNRESET en una
+  conexión reutilizada; hoy el lector lo pone a 65 s.
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el
