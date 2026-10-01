@@ -1,6 +1,90 @@
 {
- "actualizado": "2026-10-01T21:33:18.577Z",
+ "actualizado": "2026-10-01T21:50:44.432Z",
  "partidas": [
+  {
+   "t": 1790891430970,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Angela",
+    "Floryn"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.625,
+   "bans": [
+    "Eudora",
+    "Hirara",
+    "Belerick",
+    "Paquito",
+    "Aulus",
+    "Gloo",
+    "Minotaur"
+   ],
+   "draft": {
+    "enemigos": [
+     "Odette",
+     "Sun",
+     "Johnson",
+     "Layla",
+     "Helcurt"
+    ],
+    "aliados": [
+     "Kadita",
+     "Barats",
+     "Lesley",
+     "Leomord"
+    ],
+    "linea": "roam",
+    "rival": "Johnson"
+   },
+   "lector": {
+    "baneos": [
+     "Eudora",
+     "Hirara",
+     "Belerick",
+     "Paquito",
+     "Aulus",
+     "Gloo",
+     "Minotaur"
+    ],
+    "enemigos": [
+     "Miya"
+    ],
+    "dudas": [
+     {
+      "hueco": "t4",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Esmeralda",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Joy",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Zetian",
+      "parecido": 0.6
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Esmeralda",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Zetian",
+      "parecido": 0.61
+     }
+    ]
+   }
+  },
   {
    "t": 1790890380522,
    "pick": "Chip",
@@ -4046,6 +4130,12 @@
   {
    "cuando": "2026-10-01T21:33:18.577Z",
    "partidas": 130,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-01T21:50:44.432Z",
+   "partidas": 131,
    "heroes": 11,
    "incidencia": 11
   }
