@@ -31,7 +31,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Worker } from 'node:worker_threads';
 import { leerPng } from './png.mjs';
-import { capturarTablet, encontrarTablet, leerBaneos, leerPicksEnemigos, sinRepetidos, carasGuardadas } from './leer.mjs';
+import { capturarTablet, encontrarTablet, leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, sinRepetidos, carasGuardadas } from './leer.mjs';
 import { carasAprendidas, resumirAprendizaje, CAPTURAS_POR_CORRECCION, VERSION_APRENDIDO } from './aprender.mjs';
 
 export { CAPTURAS_POR_CORRECCION };
@@ -112,15 +112,27 @@ export const origenPermitido = (o) => !!o && (ORIGENES.includes(o) || /^http:\/\
 
 const plano = (r) => ({ nombre: r.nombre ?? null, candidato: r.candidato ?? null, parecido: Math.round((r.parecido ?? 0) * 1000) / 1000 });
 
-/** Lo que se lee de una captura (PNG): baneos de los dos lados y picks enemigos, con lo aprendido de esta tablet si lo hay. */
+/**
+ * Lo que se lee de una captura (PNG): baneos de los dos lados, picks
+ * enemigos (con lo aprendido de esta tablet si lo hay) y, desde 3.31.0, TU
+ * equipo: las cinco filas de la izquierda (`aliados`) y cuál eres tú
+ * (`tuyo`: el nombre de la fila con tu nombre en amarillo, o null si no se
+ * distingue; `tuyoFila` dice cuál, de 0 a 4, o −1).
+ */
 export function leerCaptura(png, caras, aprendido = null) {
   const img = leerPng(png);
   const baneos = leerBaneos(img, caras);
   const enemigos = sinRepetidos(leerPicksEnemigos(img, caras, { posiciones: aprendido?.picks ?? undefined, extra: carasAprendidas(aprendido) }));
+  const aliados = sinRepetidos(leerAliados(img, caras));
+  const tuyoFila = filaPropia(img);
   // Un equipo no banea dos veces al mismo héroe; los DOS equipos sí pueden
   // banear al mismo (Hirara en la captura real, Belerick y Atlas en la
   // primera tarde): se quita el repetido dentro de cada lado, no entre lados.
-  return { ancho: img.ancho, alto: img.alto, tuyos: sinRepetidos(baneos.tuyos).map(plano), suyos: sinRepetidos(baneos.suyos).map(plano), enemigos: enemigos.map(plano) };
+  return {
+    ancho: img.ancho, alto: img.alto,
+    tuyos: sinRepetidos(baneos.tuyos).map(plano), suyos: sinRepetidos(baneos.suyos).map(plano), enemigos: enemigos.map(plano),
+    aliados: aliados.map(plano), tuyoFila, tuyo: tuyoFila >= 0 ? (aliados[tuyoFila].nombre ?? null) : null,
+  };
 }
 
 /**
@@ -239,7 +251,7 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
         }
         // Un «?» dice a qué se quedó más cerca: con eso se afina sin pedir la captura.
         const nombres = (l) => l.map((x) => x.nombre ?? (x.candidato ? `?(${x.candidato} ${x.parecido.toFixed(2)})` : '?')).join(', ');
-        registrar(`Lectura ${n} (${lectura.ms} ms): baneos ${nombres([...lectura.tuyos, ...lectura.suyos])} · enemigos ${nombres(lectura.enemigos)}`);
+        registrar(`Lectura ${n} (${lectura.ms} ms): baneos ${nombres([...lectura.tuyos, ...lectura.suyos])} · enemigos ${nombres(lectura.enemigos)} · tu equipo ${nombres(lectura.aliados)} · tú ${lectura.tuyo ?? (lectura.tuyoFila >= 0 ? '?' : 'sin fila amarilla')}`);
         res.writeHead(200, cabeceras).end(JSON.stringify(lectura));
       } catch (e) {
         registrar(`La captura no se pudo leer: ${e.message}`);

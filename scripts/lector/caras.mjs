@@ -73,8 +73,8 @@ const escalar = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a
  * pinta el círculo un poco distinto). Devuelve el mejor y el segundo, con
  * `nombre: null` si el mejor no llega a PARECIDO_MINIMO.
  */
-export function reconocer(img, [cx, cy, r], caras, { pasos = 3, escalas = [0.94, 1.06] } = {}) {
-  const paso = Math.max(1, Math.round(r / 16));
+export function reconocer(img, [cx, cy, r], caras, { pasos = 3, escalas = [0.94, 1.06], finura = 16 } = {}) {
+  const paso = Math.max(1, Math.round(r / finura));
   const mejor = new Map();
   let donde = [0, 0], tope = -Infinity;
   const probar = (dx, dy, esc) => {

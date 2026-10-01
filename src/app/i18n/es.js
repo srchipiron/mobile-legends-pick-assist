@@ -373,7 +373,8 @@ export default {
   // --- público: avisos y donaciones ---
   'deshacer.vaciado': 'Draft vaciado',
   'deshacer.quitado': '{nombre} quitado',
-  'deshacer.leido': '{b} {b|baneo|baneos} y {e} {e|enemigo|enemigos} leídos del juego',
+  'deshacer.leido': '{b} {b|baneo|baneos}, {e} {e|enemigo|enemigos} y {a} {a|compañero|compañeros} leídos del juego.',
+  'deshacer.leidoTuyo': 'Tú: {nombre}.',
   'lector.boton': 'Leer del juego',
   'lector.leyendo': 'Leyendo…',
   'lector.sinPuente': 'No encuentro el lector. Abre Termux y escribe: lector. Si Chrome pregunta por la red local, permítelo.',

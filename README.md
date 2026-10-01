@@ -314,6 +314,13 @@ mete lo que salga; con una hoja abierta o el draft completo se para sola.
 Lo que el lector lee, duda y aprende va con la partida apuntada, que ya
 se sube sola al proyecto: el bot lo resume y el Diagnóstico lo enseña.
 
+**Lee también tu equipo (3.31.0)**: las cinco filas del panel de la
+izquierda, con sus skins, y cuál eres tú (tu nombre va en amarillo). Los
+otros cuatro entran como compañeros y el tuyo queda fijado como «Lo cojo»
+(uno fijado a mano se respeta). Si no distingue tu fila, no mete a nadie.
+Los picks enemigos se comparan tal cual y en espejo: el juego dibuja a unos
+reflejados y a otros no.
+
 **Aprende de tus correcciones (3.27.0)**: lo que corrijas a mano en el
 draft vuelve al lector cuando el draft está completo y al apuntar la
 partida (`POST /corregir`, solo desde la app). Con la captura y esa verdad

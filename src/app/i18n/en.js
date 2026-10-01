@@ -356,7 +356,8 @@ export default {
 
   'deshacer.vaciado': 'Draft cleared',
   'deshacer.quitado': '{nombre} removed',
-  'deshacer.leido': '{b} {b|ban|bans} and {e} {e|enemy|enemies} read from the game',
+  'deshacer.leido': '{b} {b|ban|bans}, {e} {e|enemy|enemies} and {a} {a|teammate|teammates} read from the game.',
+  'deshacer.leidoTuyo': 'You: {nombre}.',
   'lector.boton': 'Read from game',
   'lector.leyendo': 'Reading…',
   'lector.sinPuente': "Can't find the reader. Open Termux and type: lector. If Chrome asks about the local network, allow it.",

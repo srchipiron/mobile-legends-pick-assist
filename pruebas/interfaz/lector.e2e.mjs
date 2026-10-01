@@ -38,11 +38,19 @@ await prueba('«Leer del juego» mete los baneos y los picks enemigos de la tabl
   const baneosEsperados = [...new Set([...VERDAD.tuyos, ...VERDAD.suyos])];
   eq([...d.bans].sort().join(), [...baneosEsperados].sort().join(), 'los baneos no son los de la tablet (o Hirara, repetida, se quita)');
   eq(d.enemies.join(), VERDAD.enemigos.join(), 'los picks enemigos no son los de la tablet');
+  // Tu equipo (3.31.0): las otras cuatro filas de compañeros y tu fila (nombre en amarillo) como pick fijado.
+  // (El montaje junta dos capturas: Clint es pick enemigo en una y compañero en la otra, y un enemigo no entra de compañero.)
+  const companeros = VERDAD.aliados.filter((n) => n !== VERDAD.tuyo && !VERDAD.enemigos.includes(n));
+  eq(d.allies.join(), companeros.join(), `los compañeros no son los de la tablet (o entras tú): ${d.allies}`);
+  eq(d.miPick, VERDAD.tuyo, `tu fila no queda fijada como tu pick: ${d.miPick}`);
+  ok(d.miPickLeido === true && Number.isFinite(d.miPickDesde), 'el pick leído no se marca como leído con su instante');
+  ok(/Estes/.test(await pagina.locator('.slot.yo').getAttribute('title')), 'el hueco «Tú» no enseña a Estes');
   eq(d.fase, 'picks', 'con enemigos leídos el draft no pasa a picks');
-  ok(/9 baneos y 2 enemigos/.test(await pagina.locator('.aviso-deshacer').innerText()), `el aviso no dice lo leído: ${await pagina.locator('.aviso-deshacer').innerText()}`);
+  ok(/9 baneos, 2 enemigos y 3 compañeros/.test(await pagina.locator('.aviso-deshacer').innerText()) && /Tú: Estes/.test(await pagina.locator('.aviso-deshacer').innerText()), `el aviso no dice lo leído: ${await pagina.locator('.aviso-deshacer').innerText()}`);
   await pagina.locator('.aviso-deshacer').getByRole('button', { name: 'Deshacer' }).click(); await pagina.waitForTimeout(300);
   const vuelta = await leer(pagina);
-  eq(vuelta.bans.length + vuelta.enemies.length, 0, 'deshacer no devuelve el draft de antes de leer');
+  eq(vuelta.bans.length + vuelta.enemies.length + vuelta.allies.length, 0, 'deshacer no devuelve el draft de antes de leer');
+  eq(vuelta.miPick ?? null, null, 'deshacer no suelta el pick leído');
   eq(vuelta.fase, 'baneos', 'deshacer no vuelve a la fase de baneos');
   ok(!errores.length, `errores de página: ${errores}`);
   await contexto.close();
@@ -55,7 +63,7 @@ await prueba('leer no quita nada ni repite: lo que ya había se queda, y una seg
   await boton(pagina).click();
   await pagina.locator('.aviso-deshacer').waitFor({ timeout: 15000 });
   const d = await leer(pagina);
-  ok(d.bans.includes('Fanny') && d.enemies.includes('Layla') && d.allies.join() === 'Chou', 'leer quita lo que ya había');
+  ok(d.bans.includes('Fanny') && d.enemies.includes('Layla') && d.allies[0] === 'Chou', 'leer quita lo que ya había');
   eq(d.bans.filter((b) => b === 'Saber').length, 1, 'un baneo ya puesto sale dos veces');
   eq(d.bans.length, 10, `no llena los diez baneos sin pasarse: ${d.bans}`);
   await pagina.locator('.aviso-deshacer .x').click();
@@ -74,10 +82,14 @@ await prueba('lo leído viaja con la partida apuntada, para medir al lector', as
   await pagina.locator('.aviso-deshacer').waitFor({ timeout: 15000 });
   const d = await leer(pagina);
   ok(d.lectura?.ids?.length === 1 && /^lectura-/.test(d.lectura.ids[0]), `el draft no guarda el id de la captura: ${JSON.stringify(d.lectura)}`);
+  // Un pick fijado A MANO no lo cambia la lectura, y con cuatro compañeros ya metidos no entra ninguno más.
+  eq(d.miPick, 'Rafaela', `la lectura pisa el pick fijado a mano: ${d.miPick}`);
+  eq(d.allies.join(), 'Chou,Miya,Eudora,Lukas', `la lectura toca los compañeros metidos a mano: ${d.allies}`);
   await pagina.locator('.recordatorio .gane').click(); await pagina.waitForTimeout(600);
   const [partida] = await leer(pagina, 'roam-picker:partidas');
   ok(partida?.lector, 'la partida apuntada no lleva lo que leyó el lector');
   eq(partida.lector.enemigos.join(), VERDAD.enemigos.join(), 'la partida no lleva los enemigos leídos');
+  ok(partida.lector.aliados?.join() === VERDAD.aliados.filter((n) => n !== VERDAD.tuyo).join() && partida.lector.tuyo === VERDAD.tuyo, `la partida no lleva tu equipo leído: ${JSON.stringify(partida.lector)}`);
   ok(partida.lector.baneos.includes('Masha'), 'la partida no lleva los baneos leídos');
   ok(!partida.lector.ids, 'la partida lleva los ids de las capturas, que son del móvil');
   // Y las dudas: los tres huecos de picks vacíos («eligiendo») con su candidato.

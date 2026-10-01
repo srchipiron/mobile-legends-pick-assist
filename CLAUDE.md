@@ -994,6 +994,12 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   normal. Se vio en las partidas subidas (`lector.dudas`), que es para lo
   que viajan. Hoy la medida manda y lo aprendido solo entra donde ella
   no lee. Un ajuste automático se añade a la referencia, no la sustituye.
+- **La cara comparada solo en espejo** (3.21.0 → 3.31.0) — se midió con
+  dos picks (Clint y Khufra, reflejados) y se dio por hecho que el panel
+  reflejaba a todos; Rafaela, Eudora y Gloo van sin reflejar en la misma
+  pantalla y salían «?» siempre, y de rebote «tu equipo no se lee» (0,72)
+  era falso: con las dos orientaciones se lee entero. Una geometría medida
+  en dos ejemplos no está medida: mide con una pantalla LLENA.
 - **La sexta prueba que exigía el dato de un día bueno** (3.30.1, la
   misma noche que lo anterior) — `matrices.test` pedía que «combina
   bien» (pareja ≥ 0,51) saliera en el 4–20% de las parejas DEL DÍA; la
@@ -1311,6 +1317,39 @@ sus partidas.
   otro sitio. Solo mientras se elige: en la fase de skins no casa (máximo
   0,66) y sale «?». Los de TU equipo no se leen: se ven con la skin de cada
   uno (ninguno pasaba de 0,72), y la geometría de ese panel no está medida.
+- **Tal cual Y en espejo (3.31.0)**: en la captura de Javi del 1 de octubre
+  de 2026 (fase de picks, 2400×1504, la primera entera que mandó) Rafaela,
+  Eudora y Gloo iban SIN reflejar y Lesley y Aamon reflejados, en la misma
+  pantalla. Comparando solo en espejo (3.21.0–3.30.1) salían 2 de 5; con
+  `ambasOrientaciones`, 4 de 5 (Gloo a 0,80 por un pelo: su cara cae 47
+  px por encima del centro del hueco y la búsqueda alcanza ±23) y en los
+  tres huecos vacíos de la captura de Clint lo más parecido queda en 0,74.
+  Buena parte de los «?» de la tarde del 1 de octubre eran esto, no solo
+  el aprendizaje torcido. `picks-enemigos-2.png` es ese recorte.
+- **TU equipo también se lee (3.31.0)**, y con las skins: `ALIADOS` en
+  leer.mjs, cinco filas de 216 px desde y = 228 con la cara alrededor de
+  (165, 321 + 216·i), r ≈ 72, pero cada skin la encuadra en otro sitio (x
+  124–173, r 67–98), así que `leerAliados` busca ±5 pasos de r/8 (misma
+  llegada que ±8 de r/16 por la mitad de tiempo: 1,3 s aquí frente a
+  2,6; a r/6 con ±4 se pierden dos) y hasta 1,25 de escala. Medido en esa
+  captura con las dos orientaciones: Clint 0,92, Guinevere 0,92, Novaria
+  0,87, Leomord 0,94, Estes 0,89; en 3.21.0 «ninguno pasaba de 0,72»
+  porque se comparaba solo en espejo. **Tu fila es la del nombre en
+  amarillo** (`filaPropia`, `NOMBRES_ALIADOS`, `fraccionAmarilla`): en su
+  captura el 10,7% de la caja de la quinta fila frente al 0,7–1,7% de las
+  otras; se exige `AMARILLO_MINIMO` 0,05 y el doble que cualquier otra
+  fila, si no, −1 y la app NO mete a nadie como compañero (uno de ellos
+  serías tú). El lector devuelve `aliados`, `tuyoFila` y `tuyo`;
+  `nombresDeLectura` saca los compañeros de las otras cuatro filas y
+  `aplicarLectura` fija tu pick (`miPickLeido` en el draft: una lectura
+  posterior puede cambiarlo, uno fijado a mano no se toca) y lo quita de
+  los compañeros. `aliados.png` es el recorte de ese panel con los
+  nombres de los otros jugadores tapados; el amarillo de la prueba es
+  sintético (trazos al 12%). Cuatro mutaciones en el lector (solo
+  espejo, sin mínimo de amarillo, sin «el doble que el resto», alcance
+  corto) y dos en el navegador. La lectura entera pasa de ~1,2 a ~3,1 s
+  aquí (baneos 0,55, enemigos 1,2, equipo 1,3): en el móvil, 12–18 s por
+  lectura leyendo solo; se espacian solas.
 - Todo en JavaScript puro (`png.mjs`: RGB/RGBA/gris/paleta, 8/16 bits,
   entrelazado Adam7, con una imagen entrelazada REAL de la API en las
   pruebas porque escritor y lector comparten la tabla Adam7), porque en

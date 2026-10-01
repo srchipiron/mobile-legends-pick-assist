@@ -44,6 +44,8 @@ test('una lectura devuelve los nombres de la captura, con la cabecera para la ap
     eq(l.tuyos.map((x) => x.nombre).join(), VERDAD.tuyos.join(), 'los baneos de tu equipo no salen');
     eq(l.suyos.map((x) => x.nombre).join(), VERDAD.suyos.join(), 'los baneos del enemigo no salen');
     eq(l.enemigos.map((x) => x.nombre ?? '?').join(), 'Clint,Khufra,?,?,?', 'los picks enemigos no salen');
+    eq(l.aliados.map((x) => x.nombre ?? '?').join(), VERDAD.aliados.join(), `tu equipo no sale: ${l.aliados.map((x) => x.nombre)}`);
+    ok(l.tuyoFila === VERDAD.tuyoFila && l.tuyo === VERDAD.tuyo, `tu fila no sale: ${l.tuyoFila} ${l.tuyo}`);
     ok(!JSON.stringify(l).includes('rgba') && JSON.stringify(l).length < 4000, 'la respuesta lleva la imagen o algo más que nombres');
   });
 });

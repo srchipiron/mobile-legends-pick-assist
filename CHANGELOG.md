@@ -8,6 +8,23 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.31.0
+
+- El lector lee también a TUS compañeros y cuál eres tú. Con tu captura de la
+  fase de picks del 1 de octubre se midió el panel de la izquierda: las
+  cinco filas se leen con sus skins (Clint, Guinevere, Novaria, Leomord y
+  Estes, entre 0,87 y 0,94) y tu fila es la del nombre en amarillo. Los
+  otros cuatro entran como compañeros y el tuyo queda fijado como «Lo cojo»
+  (si lo fijaste a mano, se respeta); así el draft se completa solo y la
+  pregunta de cómo fue llega sola. Si el lector no distingue tu fila, no
+  mete a nadie: uno de ellos serías tú.
+- Los picks enemigos que el juego dibuja sin reflejar ya se leen. Rafaela,
+  Eudora y Gloo iban sin espejo y Lesley y Aamon en espejo en la misma
+  pantalla; el lector solo comparaba en espejo y los tres primeros salían
+  siempre «?». Ahora compara de las dos formas: en tu captura pasa de 2 a 4
+  de 5 (Gloo se queda a 0,80 por un pelo) sin inventar nadie en los huecos
+  vacíos. Cada lectura tarda algo más (tres paneles en vez de dos).
+
 ## 3.30.1
 
 - Los picks enemigos vuelven a leerse. El 1 de octubre el lector «aprendió»

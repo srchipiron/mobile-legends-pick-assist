@@ -25,6 +25,10 @@ function cargar() {
     // cómo fue la partida.
     miPick: typeof d.miPick === 'string' ? d.miPick : null,
     miPickDesde: Number.isFinite(d.miPickDesde) ? d.miPickDesde : null,
+    // Si lo fijó el lector (3.31.0, tu fila del panel del juego): entonces
+    // una lectura posterior puede cambiarlo (cambiaste de héroe); uno fijado
+    // a mano, no.
+    miPickLeido: d.miPickLeido === true,
     // Desde cuándo el draft está COMPLETO (cinco enemigos y cuatro aliados):
     // sin pick fijado, es lo que dispara la pregunta de cómo fue (3.9.0).
     completoDesde: Number.isFinite(d.completoDesde) && lista(d.enemies).length >= TOPES.enemigos && lista(d.allies).length >= TOPES.aliados ? d.completoDesde : null,
@@ -57,7 +61,7 @@ function completoDesdeDe(d, ahora) {
   return d.completoDesde ?? ahora;
 }
 
-const VACIO = { enemigos: [], aliados: [], baneos: [], rivalMarcado: null, fase: 'baneos', miPick: null, miPickDesde: null, completoDesde: null, lectura: null };
+const VACIO = { enemigos: [], aliados: [], baneos: [], rivalMarcado: null, fase: 'baneos', miPick: null, miPickDesde: null, miPickLeido: false, completoDesde: null, lectura: null };
 
 export function useDraft() {
   const [draft, setDraft] = useState(cargar);
@@ -71,7 +75,7 @@ export function useDraft() {
   const [paraDeshacer, setParaDeshacer] = useState(null);
 
   useEffect(() => {
-    guardar(CLAVES.draft, { enemies: draft.enemigos, allies: draft.aliados, bans: draft.baneos, enemyRoam: draft.rivalMarcado, fase: draft.fase, miPick: draft.miPick, miPickDesde: draft.miPickDesde, completoDesde: draft.completoDesde, ...(draft.lectura ? { lectura: draft.lectura } : {}) });
+    guardar(CLAVES.draft, { enemies: draft.enemigos, allies: draft.aliados, bans: draft.baneos, enemyRoam: draft.rivalMarcado, fase: draft.fase, miPick: draft.miPick, miPickDesde: draft.miPickDesde, ...(draft.miPickLeido ? { miPickLeido: true } : {}), completoDesde: draft.completoDesde, ...(draft.lectura ? { lectura: draft.lectura } : {}) });
   }, [draft]);
 
   const anadir = useCallback((bando, heroe) => {
@@ -90,7 +94,7 @@ export function useDraft() {
   /** «Lo cojo»: fija tu pick (segundo toque en el mismo lo suelta). El instante se calcula FUERA del updater. */
   const fijarPick = useCallback((heroe) => {
     const ahora = Date.now();
-    setDraft((d) => (d.miPick === heroe.name ? { ...d, miPick: null, miPickDesde: null } : { ...d, miPick: heroe.name, miPickDesde: ahora }));
+    setDraft((d) => (d.miPick === heroe.name ? { ...d, miPick: null, miPickDesde: null, miPickLeido: false } : { ...d, miPick: heroe.name, miPickDesde: ahora, miPickLeido: false }));
   }, []);
 
   /** «Más tarde»: la pregunta de cómo fue vuelve dentro de otros MINUTOS_PARA_RECORDAR. */
@@ -164,35 +168,48 @@ export function useDraft() {
    * está en otro sitio (un enemigo baneado, un compañero) no se toca. Con
    * enemigos nuevos el draft pasa a picks. Todo de una vez, con Deshacer.
    */
-  const aplicarLectura = useCallback(({ baneos = [], enemigos = [], id = null, dudas = null }) => {
+  const aplicarLectura = useCallback(({ baneos = [], enemigos = [], aliados = [], tuyo = null, id = null, dudas = null }) => {
     const antes = actual.current;
     const ahora = Date.now();
     const nuevosBaneos = [...antes.baneos];
     const nuevosEnemigos = [...antes.enemigos];
-    let nB = 0, nE = 0;
+    const nuevosAliados = [...antes.aliados];
+    let nB = 0, nE = 0, nA = 0;
     for (const n of baneos) {
-      if (nuevosBaneos.length < TOPES.baneos && !nuevosBaneos.includes(n) && !nuevosEnemigos.includes(n) && !antes.aliados.includes(n)) { nuevosBaneos.push(n); nB += 1; }
+      if (nuevosBaneos.length < TOPES.baneos && !nuevosBaneos.includes(n) && !nuevosEnemigos.includes(n) && !nuevosAliados.includes(n)) { nuevosBaneos.push(n); nB += 1; }
     }
     for (const n of enemigos) {
-      if (nuevosEnemigos.length < TOPES.enemigos && !nuevosEnemigos.includes(n) && !nuevosBaneos.includes(n) && !antes.aliados.includes(n)) { nuevosEnemigos.push(n); nE += 1; }
+      if (nuevosEnemigos.length < TOPES.enemigos && !nuevosEnemigos.includes(n) && !nuevosBaneos.includes(n) && !nuevosAliados.includes(n)) { nuevosEnemigos.push(n); nE += 1; }
+    }
+    // Tu pick (3.31.0): la fila del juego con tu nombre en amarillo. Se fija
+    // si no hay pick fijado o si el que hay lo fijó también el lector
+    // (cambiaste de héroe mientras elegías); uno fijado a mano se respeta.
+    const puedeFijar = tuyo && !nuevosEnemigos.includes(tuyo) && !nuevosBaneos.includes(tuyo) && (!antes.miPick || antes.miPickLeido) && antes.miPick !== tuyo;
+    const miPick = puedeFijar ? tuyo : antes.miPick;
+    // Tus compañeros (3.31.0): las otras cuatro filas; nunca tu pick.
+    for (const n of aliados) {
+      if (n !== miPick && nuevosAliados.length < TOPES.aliados && !nuevosAliados.includes(n) && !nuevosEnemigos.includes(n) && !nuevosBaneos.includes(n)) { nuevosAliados.push(n); nA += 1; }
     }
     const union = (a = [], b = []) => [...new Set([...a, ...b])];
     // Las dudas son las de la ÚLTIMA lectura (la más completa), no la unión.
-    const lectura = sanearLectura({ baneos: union(antes.lectura?.baneos, baneos), enemigos: union(antes.lectura?.enemigos, enemigos), ids: union(antes.lectura?.ids, id ? [id] : []), dudas: dudas ?? antes.lectura?.dudas, aprendizaje: antes.lectura?.aprendizaje });
-    const sueltaPick = antes.miPick && (nuevosBaneos.includes(antes.miPick) || nuevosEnemigos.includes(antes.miPick));
+    const lectura = sanearLectura({ baneos: union(antes.lectura?.baneos, baneos), enemigos: union(antes.lectura?.enemigos, enemigos), aliados: union(antes.lectura?.aliados, aliados), tuyo: tuyo ?? antes.lectura?.tuyo, ids: union(antes.lectura?.ids, id ? [id] : []), dudas: dudas ?? antes.lectura?.dudas, aprendizaje: antes.lectura?.aprendizaje });
+    const sueltaPick = miPick && (nuevosBaneos.includes(miPick) || nuevosEnemigos.includes(miPick));
     const nuevo = {
       ...antes, baneos: nuevosBaneos, enemigos: nuevosEnemigos, lectura,
-      fase: nE ? 'picks' : antes.fase,
-      ...(sueltaPick ? { miPick: null, miPickDesde: null } : {}),
+      // Tu pick recién fijado no puede seguir de compañero (lo metiste a mano, o lo leyó una fila que ya no es la tuya).
+      aliados: puedeFijar ? nuevosAliados.filter((n) => n !== miPick) : nuevosAliados,
+      fase: nE || nA ? 'picks' : antes.fase,
+      ...(sueltaPick ? { miPick: null, miPickDesde: null, miPickLeido: false } : puedeFijar ? { miPick, miPickDesde: ahora, miPickLeido: true } : {}),
     };
     const despues = { ...nuevo, completoDesde: completoDesdeDe(nuevo, ahora) };
     setDraft(despues);
-    if (nB || nE) setParaDeshacer({ antes, despues, tipo: 'leido', baneos: nB, enemigos: nE });
+    const fijado = !!puedeFijar && !sueltaPick;
+    if (nB || nE || nA || fijado) setParaDeshacer({ antes, despues, tipo: 'leido', baneos: nB, enemigos: nE, aliados: nA, tuyo: fijado ? miPick : null });
     // Una lectura que no añade nada (leyendo solo, cada pocos segundos) solo
     // apunta su id y sus dudas: el «Deshacer» de la lectura anterior sigue
     // valiendo, apuntando al draft nuevo.
     else setParaDeshacer((p) => (p && p.despues === antes ? { ...p, despues } : p));
-    return { baneos: nB, enemigos: nE };
+    return { baneos: nB, enemigos: nE, aliados: nA, tuyo: fijado ? miPick : null };
   }, []);
 
   /** Lo que el lector aprendió (o no encontró) al corregirle: va con la partida. */

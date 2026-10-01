@@ -289,6 +289,11 @@ test('cada partida apuntada guarda el draft que tenias delante, saneado', () => 
 test('lo que leyó el lector viaja con la partida, saneado, y se mide contra el draft final', () => {
   eq(sanearLectura(null), null, 'una lectura vacía no es null');
   eq(sanearLectura({ baneos: [], enemigos: ['  '] }), null, 'una lectura sin nombres no es null');
+  // Tu equipo y tu fila (3.31.0) viajan, y las dudas de tu equipo (a1–a5) también.
+  const conEquipo = sanearLectura({ baneos: [], enemigos: [], aliados: ['Clint', 'Guinevere', 7, ' Novaria '], tuyo: ' Estes ', dudas: [{ hueco: 'a3', candidato: 'Tigreal', parecido: 0.63 }, { hueco: 'z1', candidato: 'X', parecido: 0.5 }] });
+  eq(conEquipo?.aliados?.join(), 'Clint,Guinevere,Novaria', `los compañeros leídos no se guardan: ${JSON.stringify(conEquipo)}`);
+  eq(conEquipo?.tuyo, 'Estes', 'tu pick leído no se guarda');
+  eq(conEquipo?.dudas?.map((d) => d.hueco).join(), 'a3', `las dudas de tu equipo no se guardan (o entra un hueco inventado): ${JSON.stringify(conEquipo?.dudas)}`);
   const larga = sanearLectura({ baneos: Array.from({ length: 14 }, (_, i) => `H${i}`), enemigos: ['A', 'B', 'C', 'D', 'E', 'F', 7] });
   eq(`${larga.baneos.length}/${larga.enemigos.length}`, '10/5', 'la lectura no se recorta a 10 baneos y 5 enemigos');
   const [p] = apuntar([], { pick: 'Khufra', gane: true, bans: ['Hirara'], draft: { enemigos: ['Clint'] }, lector: { baneos: ['Hirara'], enemigos: ['Clint', 'Lunox'] } });
@@ -305,6 +310,10 @@ test('lo que leyó el lector viaja con la partida, saneado, y se mide contra el 
   eq(`${a.partidas} ${a.leidos} ${a.acertados}`, '2 6 5', `el acierto del lector sale ${a.partidas} ${a.leidos} ${a.acertados}`);
   eq(JSON.stringify(a.fallos), JSON.stringify({ Lunox: 1 }), 'los fallos del lector no dicen cuáles');
   eq(aciertosDelLector([]).acierto, null, 'sin lecturas el acierto no es null');
+  // Los compañeros y tu pick leídos cuentan contra el draft final y tu pick (3.31.0).
+  const equipo = aciertosDelLector([{ pick: 'Estes', draft: { enemigos: ['Clint'], aliados: ['Guinevere', 'Novaria'] }, lector: { baneos: [], enemigos: ['Clint'], aliados: ['Guinevere', 'Leomord'], tuyo: 'Estes' } }]);
+  eq(`${equipo.leidos}/${equipo.acertados}`, '4/3', `compañeros y pick leídos no se miden: ${JSON.stringify(equipo)}`);
+  eq(equipo.fallos.Leomord, 1, 'un compañero leído que no acabó en el draft no cuenta como fallo');
 });
 
 test('la lectura guarda los ids de las capturas del lector (solo los válidos) para devolverle la verdad', () => {

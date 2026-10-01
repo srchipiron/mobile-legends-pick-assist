@@ -16,6 +16,16 @@ test('mete los nombres reconocidos con la grafía del catálogo, sin repetir y s
   eq(n.baneos.join(), 'Hirara,X Borg', `los baneos salen ${n.baneos}`);
   eq(n.enemigos.join(), 'Clint', `los enemigos salen ${n.enemigos}`);
   eq(nombresDeLectura(null, heroes).baneos.length, 0, 'una lectura vacía mete algo');
+  // Tu equipo (3.31.0): las otras cuatro filas son compañeros y la tuya (amarilla) es tu pick; sin saber cuál es la tuya, nadie.
+  const filas = [{ nombre: 'Clint' }, { nombre: 'Hirara' }, { nombre: null, candidato: 'Saber' }, { nombre: 'X.Borg' }, { nombre: 'Clint' }];
+  const con = nombresDeLectura({ aliados: filas, tuyoFila: 1 }, heroes);
+  eq(con.aliados.join(), 'Clint,X Borg', `los compañeros salen ${con.aliados}`);
+  eq(con.tuyo, 'Hirara', `tu pick sale ${con.tuyo}`);
+  const sinFila = nombresDeLectura({ aliados: filas, tuyoFila: -1 }, heroes);
+  ok(sinFila.aliados.length === 0 && sinFila.tuyo === null, 'sin saber qué fila es la tuya mete compañeros (uno de ellos serías tú)');
+  const filaVacia = nombresDeLectura({ aliados: filas, tuyoFila: 2 }, heroes);
+  ok(filaVacia.tuyo === null && filaVacia.aliados.join() === 'Clint,Hirara,X Borg', `con tu fila sin reconocer los otros no entran: ${filaVacia.aliados} / ${filaVacia.tuyo}`);
+  ok(dudasDeLectura({ aliados: filas }).some((d) => d.hueco === 'a3' && d.candidato === 'Saber'), 'las dudas no cubren tu equipo (a1–a5)');
 });
 
 test('cada fallo del lector tiene su tipo', async () => {

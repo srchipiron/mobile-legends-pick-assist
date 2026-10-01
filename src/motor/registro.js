@@ -37,6 +37,10 @@ export function sanearLectura(lectura) {
   if (!lectura || typeof lectura !== 'object' || Array.isArray(lectura)) return null;
   const nombres = (lista, max) => (Array.isArray(lista) ? lista.filter((n) => typeof n === 'string' && n.trim()).map((n) => n.trim()).slice(0, max) : []);
   const salida = { baneos: nombres(lectura.baneos, 10), enemigos: nombres(lectura.enemigos, 5) };
+  // Tu equipo y tu fila (3.31.0).
+  const aliados = nombres(lectura.aliados, 5);
+  if (aliados.length) salida.aliados = aliados;
+  if (typeof lectura.tuyo === 'string' && lectura.tuyo.trim()) salida.tuyo = lectura.tuyo.trim().slice(0, 40);
   // Los ids de las capturas del lector (3.27.0): con ellos la app le devuelve
   // lo que había de verdad, para que aprenda. Solo viven en el draft.
   const ids = Array.isArray(lectura.ids) ? lectura.ids.filter((x) => typeof x === 'string' && /^lectura-[\w-]{1,60}$/.test(x)).slice(-20) : [];
@@ -44,7 +48,7 @@ export function sanearLectura(lectura) {
   // Lo que no reconoció en la última lectura (3.28.0): hueco, candidato y
   // parecido. Y lo que aprendió de la corrección. Viajan con la partida.
   const dudas = Array.isArray(lectura.dudas) ? lectura.dudas
-    .filter((d) => d && typeof d === 'object' && /^[tse][1-5]$/.test(d.hueco) && typeof d.candidato === 'string' && d.candidato.trim() && Number.isFinite(Number(d.parecido)))
+    .filter((d) => d && typeof d === 'object' && /^[tsea][1-5]$/.test(d.hueco) && typeof d.candidato === 'string' && d.candidato.trim() && Number.isFinite(Number(d.parecido)))
     .map((d) => ({ hueco: d.hueco, candidato: d.candidato.trim().slice(0, 40), parecido: Math.max(0, Math.min(1, Math.round(Number(d.parecido) * 100) / 100)) })).slice(0, 15) : [];
   if (dudas.length) salida.dudas = dudas;
   const a = lectura.aprendizaje;
@@ -52,7 +56,7 @@ export function sanearLectura(lectura) {
     const aprendizaje = { aprendidos: nombres(a.aprendidos, 10), sinEncontrar: nombres(a.sinEncontrar, 10) };
     if (aprendizaje.aprendidos.length || aprendizaje.sinEncontrar.length) salida.aprendizaje = aprendizaje;
   }
-  return salida.baneos.length || salida.enemigos.length || ids.length || dudas.length || salida.aprendizaje ? salida : null;
+  return salida.baneos.length || salida.enemigos.length || salida.aliados || salida.tuyo || ids.length || dudas.length || salida.aprendizaje ? salida : null;
 }
 
 /**
@@ -67,8 +71,8 @@ export function aciertosDelLector(partidas = []) {
   let leidos = 0, acertados = 0;
   for (const p of con) {
     const l = sanearLectura(p.lector);
-    const finales = new Set([...(p.bans ?? []), ...(p.draft?.enemigos ?? [])].map(nombreClave));
-    for (const n of [...l.baneos, ...l.enemigos]) {
+    const finales = new Set([...(p.bans ?? []), ...(p.draft?.enemigos ?? []), ...(p.draft?.aliados ?? []), ...(p.pick ? [p.pick] : [])].map(nombreClave));
+    for (const n of [...l.baneos, ...l.enemigos, ...(l.aliados ?? []), ...(l.tuyo ? [l.tuyo] : [])]) {
       leidos += 1;
       if (finales.has(nombreClave(n))) acertados += 1;
       else fallos[n] = (fallos[n] ?? 0) + 1;

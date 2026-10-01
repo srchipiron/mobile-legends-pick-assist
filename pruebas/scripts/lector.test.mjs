@@ -13,8 +13,9 @@ import { spawnSync } from 'node:child_process';
 import { test, ok, eq, terminar, RAIZ, leerJson, generador } from '../arnes.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
 import { LADO } from '../../scripts/lector/caras.mjs';
-import { leerBaneos, leerPicksEnemigos, carasGuardadas, carasDesfasadas, encontrarTablet, sinRepetidos, REFERENCIA } from '../../scripts/lector/leer.mjs';
+import { leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, carasGuardadas, carasDesfasadas, encontrarTablet, sinRepetidos, REFERENCIA } from '../../scripts/lector/leer.mjs';
 import { preguntaMdns, tabletsDeRespuesta, buscarPorMdns, escanearPuertos, SERVICIO } from '../../scripts/lector/tablet.mjs';
+import { capturaCompleta, VERDAD as VERDAD_JUEGO } from '../fixtures/juego/captura.mjs';
 
 test('el lector de PNG devuelve los mismos píxeles con los cinco filtros de fila', () => {
   const azar = generador(3);
@@ -92,6 +93,28 @@ test('lee los picks del enemigo mientras se elige: Clint y Khufra, y nada en los
   for (let y = 0; y < col.alto; y++) rgba.set(col.rgba.subarray(y * col.ancho * 4, (y + 1) * col.ancho * 4), ((y + 230) * ancho + 2020) * 4);
   const picks = leerPicksEnemigos({ ancho, alto, rgba }, caras);
   eq(picks.map((p) => p.nombre ?? '?').join(','), 'Clint,Khufra,?,?,?', `los picks enemigos salen ${picks.map((p) => `${p.candidato} ${p.parecido.toFixed(2)}`).join(' | ')}`);
+});
+
+test('los picks enemigos se leen tal cual y en espejo: en la captura del 1 de octubre tres de cinco no van reflejados (3.31.0)', () => {
+  const img = capturaCompleta({ columna: 2 });
+  const l = leerPicksEnemigos(img, caras);
+  eq(l.map((x) => x.nombre ?? '?').join(), 'Rafaela,Eudora,?,Lesley,Aamon', `lee ${l.map((x) => `${x.nombre ?? '?'}(${x.parecido.toFixed(2)})`).join(' ')}`);
+  ok(l[2].candidato === 'Gloo' && l[2].parecido > 0.6, `el tercer hueco (Gloo, sin espejo, a 0,80 por un pelo) no se queda cerca: ${l[2].candidato} ${l[2].parecido.toFixed(2)}`);
+});
+
+test('TU equipo se lee con sus skins y la fila con el nombre en amarillo es la tuya (3.31.0)', () => {
+  const img = capturaCompleta();
+  const a = leerAliados(img, caras);
+  eq(a.map((x) => x.nombre ?? '?').join(), VERDAD_JUEGO.aliados.join(), `lee ${a.map((x) => `${x.nombre ?? '?'}(${x.parecido.toFixed(2)})`).join(' ')}`);
+  ok(a.every((x) => x.parecido >= 0.85), `algún aliado por debajo de 0,85: ${a.map((x) => x.parecido.toFixed(2))}`);
+  eq(filaPropia(img), VERDAD_JUEGO.tuyoFila, 'no reconoce la fila con el nombre en amarillo');
+  eq(filaPropia(capturaCompleta({ filaAmarilla: 1 })), 1, 'la fila amarilla no se reconoce en otra posición');
+  eq(filaPropia(capturaCompleta({ filaAmarilla: -1 })), -1, 'sin nombre en amarillo dice que una fila es la tuya');
+  eq(filaPropia(capturaCompleta({ filasAmarillas: [1, 4] })), -1, 'con dos filas en amarillo (no se distingue) elige una');
+  // Sin el panel de tu equipo (otra pantalla) no lee a nadie ni inventa tu fila.
+  const sinEquipo = capturaCompleta({ conAliados: false });
+  ok(leerAliados(sinEquipo, caras).every((x) => !x.nombre), 'con el panel vacío inventa compañeros');
+  eq(filaPropia(sinEquipo), -1, 'con el panel vacío inventa tu fila');
 });
 
 test('una pantalla de otra resolución se lee escalando las posiciones', () => {

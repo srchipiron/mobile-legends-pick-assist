@@ -186,7 +186,7 @@ export default function App() {
       draft: { linea, enemigos: draft.enemigos, aliados: draft.aliados, rival: rec.rival.nombre },
       // Lo que leyó el lector de la tablet: para medir cuánto acierta (3.25.0).
       // Sin los ids de sus capturas, que son del móvil.
-      ...(draft.lectura ? { lector: { baneos: draft.lectura.baneos, enemigos: draft.lectura.enemigos, ...(draft.lectura.dudas ? { dudas: draft.lectura.dudas } : {}), ...(draft.lectura.aprendizaje ? { aprendizaje: draft.lectura.aprendizaje } : {}) } } : {}),
+      ...(draft.lectura ? { lector: { baneos: draft.lectura.baneos, enemigos: draft.lectura.enemigos, ...(draft.lectura.aliados ? { aliados: draft.lectura.aliados } : {}), ...(draft.lectura.tuyo ? { tuyo: draft.lectura.tuyo } : {}), ...(draft.lectura.dudas ? { dudas: draft.lectura.dudas } : {}), ...(draft.lectura.aprendizaje ? { aprendizaje: draft.lectura.aprendizaje } : {}) } } : {}),
     });
     // Y al lector, lo que había de verdad, para que aprenda (3.27.0).
     corregirLectura({ ids: draft.lectura?.ids ?? [], enemigos: draft.enemigos, baneos: draft.baneos });
@@ -248,9 +248,10 @@ export default function App() {
       const lectura = await pedirLectura();
       const nombres = nombresDeLectura(lectura, datos.heroes);
       const n = draft.aplicarLectura({ ...nombres, id: typeof lectura.id === 'string' ? lectura.id : null, dudas: dudasDeLectura(lectura) });
-      const algo = nombres.baneos.length + nombres.enemigos.length;
-      const aviso = n.baneos || n.enemigos ? null : (algo ? 'yaEstaba' : 'nada');
-      setLector({ estado: 'libre', aviso: silencioso ? null : aviso, ultimo: { cuando: Date.now(), ok: true, nuevos: n.baneos + n.enemigos } });
+      const algo = nombres.baneos.length + nombres.enemigos.length + nombres.aliados.length + (nombres.tuyo ? 1 : 0);
+      const nuevos = n.baneos + n.enemigos + n.aliados + (n.tuyo ? 1 : 0);
+      const aviso = nuevos ? null : (algo ? 'yaEstaba' : 'nada');
+      setLector({ estado: 'libre', aviso: silencioso ? null : aviso, ultimo: { cuando: Date.now(), ok: true, nuevos } });
     } catch (e) {
       const tipo = FALLOS_DEL_LECTOR.includes(e?.tipo) ? e.tipo : 'error';
       setLector({ estado: 'libre', aviso: silencioso ? null : tipo, ultimo: { cuando: Date.now(), ok: false, tipo } });

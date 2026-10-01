@@ -33,11 +33,12 @@ export const tocaLeerSolo = ({ auto, visible = true, hoja = null, completo = fal
 /**
  * Lo que el lector no reconoció en una lectura, compacto, para guardarlo
  * con la partida: hueco (t1–t5 baneos tuyos, s1–s5 suyos, e1–e5 picks
- * enemigos), a quién se parecía más y cuánto. Es lo que dice qué afinar.
+ * enemigos, a1–a5 tu equipo), a quién se parecía más y cuánto. Es lo que
+ * dice qué afinar.
  */
 export function dudasDeLectura(lectura) {
   const dudas = [];
-  for (const [lado, letra] of [['tuyos', 't'], ['suyos', 's'], ['enemigos', 'e']]) {
+  for (const [lado, letra] of [['tuyos', 't'], ['suyos', 's'], ['enemigos', 'e'], ['aliados', 'a']]) {
     (Array.isArray(lectura?.[lado]) ? lectura[lado] : []).forEach((x, i) => {
       if (!x || x.nombre || !x.candidato) return;
       dudas.push({ hueco: `${letra}${i + 1}`, candidato: String(x.candidato).slice(0, 40), parecido: Math.round((Number(x.parecido) || 0) * 100) / 100 });
@@ -163,11 +164,19 @@ export function cuerpoDeFotogramas({ fotogramas, resultado = null, version = '' 
  */
 export function nombresDeLectura(lectura, heroes = []) {
   const porClave = new Map(heroes.map((h) => [nombreClave(h.name), h.name]));
-  const resolver = (lista) => (Array.isArray(lista) ? lista : [])
-    .map((x) => (x?.nombre ? porClave.get(nombreClave(x.nombre)) : null))
-    .filter(Boolean);
+  const uno = (x) => (x?.nombre ? porClave.get(nombreClave(x.nombre)) ?? null : null);
+  const resolver = (lista) => (Array.isArray(lista) ? lista : []).map(uno).filter(Boolean);
+  // Tu equipo (3.31.0): las cinco filas del panel de la izquierda, y una es
+  // la tuya (`tuyoFila`, la del nombre en amarillo). Si el lector no
+  // distingue cuál, no entra ningún compañero: uno de ellos serías tú.
+  const filas = Array.isArray(lectura?.aliados) ? lectura.aliados : [];
+  const tuyoFila = Number.isInteger(lectura?.tuyoFila) && lectura.tuyoFila >= 0 && lectura.tuyoFila < filas.length ? lectura.tuyoFila : -1;
+  const tuyo = tuyoFila >= 0 ? uno(filas[tuyoFila]) : null;
+  const aliados = tuyoFila >= 0 ? [...new Set(resolver(filas.filter((_, i) => i !== tuyoFila)))].filter((n) => n !== tuyo) : [];
   return {
     baneos: [...new Set([...resolver(lectura?.tuyos), ...resolver(lectura?.suyos)])],
     enemigos: [...new Set(resolver(lectura?.enemigos))],
+    aliados,
+    tuyo,
   };
 }
