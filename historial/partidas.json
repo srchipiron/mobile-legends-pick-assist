@@ -1,6 +1,60 @@
 {
- "actualizado": "2026-10-01T10:35:26.948Z",
+ "actualizado": "2026-10-01T17:48:16.249Z",
  "partidas": [
+  {
+   "t": 1790876881207,
+   "pick": "Diggie",
+   "recomendados": [
+    "Lolita",
+    "Khufra",
+    "Edith"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.497,
+   "bans": [
+    "Hirara",
+    "Eudora",
+    "Marcel",
+    "Masha",
+    "Paquito",
+    "Dyrroth",
+    "Aulus",
+    "Lukas",
+    "Gloo"
+   ],
+   "draft": {
+    "enemigos": [
+     "Ruby",
+     "Suyou",
+     "Floryn",
+     "Moskov",
+     "Kagura"
+    ],
+    "aliados": [
+     "Sun",
+     "Aamon",
+     "Kadita",
+     "Popol and Kupa"
+    ],
+    "linea": "roam",
+    "rival": "Floryn"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Eudora",
+     "Marcel",
+     "Masha",
+     "Paquito",
+     "Dyrroth",
+     "Aulus",
+     "Lukas",
+     "Gloo"
+    ],
+    "enemigos": []
+   }
+  },
   {
    "t": 1790810871829,
    "pick": "Estes",
@@ -3524,6 +3578,12 @@
   {
    "cuando": "2026-10-01T10:35:26.948Z",
    "partidas": 123,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-01T17:48:16.249Z",
+   "partidas": 124,
    "heroes": 11,
    "incidencia": 11
   }
