@@ -1238,9 +1238,10 @@ salen de datos, no del texto, y ya no deciden nada con la matriz completa.
 
 Javi juega en la TABLET y usa la app en el MÓVIL. `scripts/lector/` lee
 los diez baneos y los cinco picks ENEMIGOS de la pantalla del draft desde
-Termux, por depuración inalámbrica (`adb exec-out screencap -p`). Todavía es
-un script, no un botón de la app: primero hay que ver que funciona en su
-tablet.
+Termux, por depuración inalámbrica (`adb exec-out screencap -p`). Desde
+3.25.0 también desde un botón de la app (ver «El botón "Leer del juego"»
+abajo), a petición de Javi antes de probarlo en su tablet: se aprende de
+sus partidas.
 
 - **SEGURIDAD, no negociable**: su cuenta vale dinero. El lector solo hace
   `adb connect` y `adb exec-out screencap -p`: nada de `input tap`,
@@ -1282,8 +1283,43 @@ tablet.
   la resolución. `leer.mjs` se ejecuta también por un enlace o desde una
   carpeta con espacios (antes no hacía nada y salía con 0).
 
+**El botón «Leer del juego» (3.25.0)**, la variante (a) del puente local de
+abajo: `scripts/lector/servir.mjs` en Termux, en el MÓVIL, escucha SOLO en
+`127.0.0.1:47323` (`PUERTO`, el mismo que `PUERTO_LECTOR` de
+`src/app/lector.js`; hay prueba), hace la misma captura de `leer.mjs`
+(`capturarTablet`, exportada: servir.mjs no lanza programas, la prueba de
+seguridad lo sigue exigiendo para toda la carpeta) y devuelve NOMBRES, nunca
+la imagen. Solo contesta con datos a la app publicada y a su copia local
+(`origenPermitido`); a otra web, 403 sin cabecera CORS; la comprobación
+previa lleva `Access-Control-Allow-Private-Network`. En la app,
+`pedirLectura` (tipos de fallo `sinPuente`/`plazo`/`captura`/`error`, cada
+uno con su frase de qué hacer) y `nombresDeLectura` (grafía del catálogo,
+sin «?») alimentan `aplicarLectura` (useDraft), que SOLO AÑADE (la captura
+real trae a Hirara en los dos lados: con `alternarBaneo` el segundo la
+quitaba), no toca lo que está en otro bando, pasa a picks si entran
+enemigos y deja «Deshacer» (`tipo: 'leido'`). **El aprendizaje**: el draft
+guarda `lectura` (unión de lo leído, en `roam-picker:draft`) y la partida
+apuntada la lleva como `lector` (`sanearLectura` en registro.js, también en
+`sanear` del perfil); `aciertosDelLector` mide de lo leído cuánto seguía en
+el draft al apuntar, y qué nombres hubo que quitar (`fallos`): sale en
+`medir-mias.mjs` (la respuesta del bot) y en el diagnóstico. Con eso se
+decide qué afinar (caras, posiciones, `PARECIDO_MINIMO`) con datos de su
+tablet, no a ojo; `--guardar-capturas` deja las capturas que falten para
+reproducirlo. NO medible desde aquí: el permiso de red local en Chrome para
+Android (la prueba de navegador corre de 127.0.0.1 a 127.0.0.1, sin
+permiso). Si al primer uso dice «No encuentro el lector» con Termux
+abierto, es eso. Pruebas: `puente-lector.test` (servidor), `app/lector.test`,
+`registro.test` y `lector.e2e` (la app con el servidor de verdad en su
+puerto y la captura real compuesta en `pruebas/fixtures/juego/captura.mjs`),
+verificadas por ocho mutaciones. Los tres botones de `.tools` caben en una
+fila a 320 px (`flex-basis` 84 px). Al mutar, la prueba de navegador se
+quedaba COLGADA: una comprobación fallaba antes de cerrar el servidor de
+prueba y el proceso de Node no terminaba nunca; hoy el cierre va en
+`finally` y otra vez al final. Un servidor abierto en una prueba se cierra
+pase lo que pase, o un fallo se convierte en una corrida que no acaba.
+
 **Otras formas de automatizar, investigadas el 29 de septiembre de 2026**
-(sin código todavía):
+(el puente local entró en 3.25.0):
 
 - **Captura desde el navegador**: `getDisplayMedia` NO existe en Chrome
   para Android (caniuse, Chrome 154: no soportado). La web no puede mirar

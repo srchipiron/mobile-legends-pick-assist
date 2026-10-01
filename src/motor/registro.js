@@ -6,7 +6,7 @@ import { maestriaEfectiva, winrateDeReferencia } from './maestria.js';
  * probabilidad que estimaba, los baneos y si ganaste. Es lo único que puede
  * decir si acertar el pick que recomienda la app hace ganar más.
  *
- * Una partida apuntada: `{ t, pick, gane, rango, recomendados, estimacion?, bans?, draft?, previa? }`.
+ * Una partida apuntada: `{ t, pick, gane, rango, recomendados, estimacion?, bans?, draft?, lector?, previa? }`.
  * El instante `t` ES su identidad: por ahí se quita, se corrige y se
  * deduplica al fundir perfiles.
  *
@@ -25,6 +25,41 @@ export function sanearDraft(draft) {
   if (typeof draft.linea === 'string' && draft.linea) salida.linea = draft.linea;
   if (typeof draft.rival === 'string' && draft.rival && salida.enemigos.includes(draft.rival)) salida.rival = draft.rival;
   return salida.enemigos.length || salida.aliados.length || salida.linea ? salida : null;
+}
+
+/**
+ * Lo que leyó el lector de la tablet en esa partida (3.25.0): `{ baneos,
+ * enemigos }`, nombres. Se guarda con la partida para MEDIR el lector contra
+ * lo que acabó en el draft (`aciertosDelLector`): lo que Javi corrigió a
+ * mano es justo lo que el lector leyó mal.
+ */
+export function sanearLectura(lectura) {
+  if (!lectura || typeof lectura !== 'object' || Array.isArray(lectura)) return null;
+  const nombres = (lista, max) => (Array.isArray(lista) ? lista.filter((n) => typeof n === 'string' && n.trim()).map((n) => n.trim()).slice(0, max) : []);
+  const salida = { baneos: nombres(lectura.baneos, 10), enemigos: nombres(lectura.enemigos, 5) };
+  return salida.baneos.length || salida.enemigos.length ? salida : null;
+}
+
+/**
+ * ¿Cuánto acierta el lector? De lo que puso en el draft, cuánto seguía ahí
+ * al apuntar la partida: un nombre leído que no está en los baneos ni en
+ * los enemigos finales es uno que Javi tuvo que quitar. `fallos` dice
+ * cuáles, para afinar el reconocimiento con esos héroes.
+ */
+export function aciertosDelLector(partidas = []) {
+  const con = (partidas ?? []).filter((p) => sanearLectura(p?.lector));
+  const fallos = {};
+  let leidos = 0, acertados = 0;
+  for (const p of con) {
+    const l = sanearLectura(p.lector);
+    const finales = new Set([...(p.bans ?? []), ...(p.draft?.enemigos ?? [])].map(nombreClave));
+    for (const n of [...l.baneos, ...l.enemigos]) {
+      leidos += 1;
+      if (finales.has(nombreClave(n))) acertados += 1;
+      else fallos[n] = (fallos[n] ?? 0) + 1;
+    }
+  }
+  return { partidas: con.length, leidos, acertados, acierto: leidos ? acertados / leidos : null, fallos };
 }
 
 /** Partidas mínimas de cada rama antes de que los números signifiquen algo. */
@@ -54,6 +89,7 @@ export function apuntar(partidas, entrada, tope = 500) {
     ...(Array.isArray(entrada.bans) && entrada.bans.some((b) => typeof b === 'string' && b)
       ? { bans: entrada.bans.filter((b) => typeof b === 'string' && b).slice(0, 10) } : {}),
     ...(sanearDraft(entrada.draft) ? { draft: sanearDraft(entrada.draft) } : {}),
+    ...(sanearLectura(entrada.lector) ? { lector: sanearLectura(entrada.lector) } : {}),
   };
   if (!limpia.pick) return partidas;
   return [limpia, ...(partidas ?? [])].sort((a, b) => (b.t ?? 0) - (a.t ?? 0)).slice(0, tope);

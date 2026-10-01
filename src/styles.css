@@ -372,7 +372,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* Se envuelve. Sin esto los cinco botones se salian del ancho y "Tu perfil"
    quedaba fuera de la pantalla, sin forma de llegar a el desde el movil. */
 .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-.tools .reset { margin-top: 0; flex: 1 1 108px; min-height: 40px; }
+.tools .reset { margin-top: 0; flex: 1 1 84px; min-height: 40px; }
 
 .inferred { font-size: 11px; color: var(--muted); margin-left: 6px; }
 /* Dentro del titular, que no herede el peso del display. */
@@ -668,6 +668,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* El aviso de que el winrate de una build no es causal. Va junto al dato, no
    escondido: es la diferencia entre informar y recomendar. */
 .build-nota { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+/* ---------- «Leer del juego» (3.25.0) ---------- */
+
+.lector-aviso {
+  flex-basis: 100%; margin: 6px 0 0; padding: 8px 12px; border-radius: var(--r-sm);
+  background: rgba(255, 69, 58, 0.10); border: 1px solid rgba(255, 69, 58, 0.35);
+  font-size: 12px; line-height: 1.4; color: var(--text); overflow-wrap: anywhere;
+}
 
 /* ---------- «Deshacer» (3.23.0) ---------- */
 

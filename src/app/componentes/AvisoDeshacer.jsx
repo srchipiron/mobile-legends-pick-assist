@@ -13,7 +13,9 @@ import { tPorDefecto } from './tPorDefecto.js';
  */
 export function AvisoDeshacer({ deshacible, onDeshacer, onCerrar, t = tPorDefecto }) {
   if (!deshacible) return null;
-  const texto = deshacible.tipo === 'quitado' ? t('deshacer.quitado', { nombre: deshacible.nombre }) : t('deshacer.vaciado');
+  const texto = deshacible.tipo === 'quitado' ? t('deshacer.quitado', { nombre: deshacible.nombre })
+    : deshacible.tipo === 'leido' ? t('deshacer.leido', { b: deshacible.baneos, e: deshacible.enemigos })
+      : t('deshacer.vaciado');
   return (
     <div className="aviso-deshacer" role="status">
       <span>{texto}</span>

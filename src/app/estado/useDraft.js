@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CLAVES, leer, guardar } from './almacen.js';
+import { sanearLectura } from '../../motor/registro.js';
 
 /** Cuántos caben en cada bando. */
 export const TOPES = { enemigos: 5, aliados: 4, baneos: 10 };
@@ -31,6 +32,9 @@ function cargar() {
     // guardado antes de que existiera (sin `fase`) sigue donde estaba: con
     // picks metidos, en picks; vacío, en baneos.
     fase: d.fase === 'baneos' || d.fase === 'picks' ? d.fase : ((d.enemies?.length || d.allies?.length) ? 'picks' : 'baneos'),
+    // Lo que leyó el lector de la tablet en este draft (3.25.0): va con la
+    // partida al apuntarla, para medir cuánto acierta.
+    lectura: sanearLectura(d.lectura),
   };
 }
 
@@ -53,7 +57,7 @@ function completoDesdeDe(d, ahora) {
   return d.completoDesde ?? ahora;
 }
 
-const VACIO = { enemigos: [], aliados: [], baneos: [], rivalMarcado: null, fase: 'baneos', miPick: null, miPickDesde: null, completoDesde: null };
+const VACIO = { enemigos: [], aliados: [], baneos: [], rivalMarcado: null, fase: 'baneos', miPick: null, miPickDesde: null, completoDesde: null, lectura: null };
 
 export function useDraft() {
   const [draft, setDraft] = useState(cargar);
@@ -67,7 +71,7 @@ export function useDraft() {
   const [paraDeshacer, setParaDeshacer] = useState(null);
 
   useEffect(() => {
-    guardar(CLAVES.draft, { enemies: draft.enemigos, allies: draft.aliados, bans: draft.baneos, enemyRoam: draft.rivalMarcado, fase: draft.fase, miPick: draft.miPick, miPickDesde: draft.miPickDesde, completoDesde: draft.completoDesde });
+    guardar(CLAVES.draft, { enemies: draft.enemigos, allies: draft.aliados, bans: draft.baneos, enemyRoam: draft.rivalMarcado, fase: draft.fase, miPick: draft.miPick, miPickDesde: draft.miPickDesde, completoDesde: draft.completoDesde, ...(draft.lectura ? { lectura: draft.lectura } : {}) });
   }, [draft]);
 
   const anadir = useCallback((bando, heroe) => {
@@ -152,6 +156,40 @@ export function useDraft() {
     setParaDeshacer({ antes, despues, tipo: 'quitado', nombre: heroe.name });
   }, []);
 
+  /**
+   * Lo que leyó el lector de la tablet (3.25.0), ya con los nombres del
+   * catálogo. SOLO AÑADE: lo que ya estaba se queda (aunque el lector no lo
+   * vea) y nada se alterna (la captura real trae a Hirara en los dos lados
+   * de los baneos, y con `alternarBaneo` el segundo lo quitaba). Lo que ya
+   * está en otro sitio (un enemigo baneado, un compañero) no se toca. Con
+   * enemigos nuevos el draft pasa a picks. Todo de una vez, con Deshacer.
+   */
+  const aplicarLectura = useCallback(({ baneos = [], enemigos = [] }) => {
+    const antes = actual.current;
+    const ahora = Date.now();
+    const nuevosBaneos = [...antes.baneos];
+    const nuevosEnemigos = [...antes.enemigos];
+    let nB = 0, nE = 0;
+    for (const n of baneos) {
+      if (nuevosBaneos.length < TOPES.baneos && !nuevosBaneos.includes(n) && !nuevosEnemigos.includes(n) && !antes.aliados.includes(n)) { nuevosBaneos.push(n); nB += 1; }
+    }
+    for (const n of enemigos) {
+      if (nuevosEnemigos.length < TOPES.enemigos && !nuevosEnemigos.includes(n) && !nuevosBaneos.includes(n) && !antes.aliados.includes(n)) { nuevosEnemigos.push(n); nE += 1; }
+    }
+    const union = (a = [], b = []) => [...new Set([...a, ...b])];
+    const lectura = sanearLectura({ baneos: union(antes.lectura?.baneos, baneos), enemigos: union(antes.lectura?.enemigos, enemigos) });
+    const sueltaPick = antes.miPick && (nuevosBaneos.includes(antes.miPick) || nuevosEnemigos.includes(antes.miPick));
+    const nuevo = {
+      ...antes, baneos: nuevosBaneos, enemigos: nuevosEnemigos, lectura,
+      fase: nE ? 'picks' : antes.fase,
+      ...(sueltaPick ? { miPick: null, miPickDesde: null } : {}),
+    };
+    const despues = { ...nuevo, completoDesde: completoDesdeDe(nuevo, ahora) };
+    setDraft(despues);
+    if (nB || nE) setParaDeshacer({ antes, despues, tipo: 'leido', baneos: nB, enemigos: nE });
+    return { baneos: nB, enemigos: nE };
+  }, []);
+
   const deshacible = paraDeshacer && paraDeshacer.despues === draft ? paraDeshacer : null;
   const deshacer = useCallback(() => {
     const d = paraDeshacer;
@@ -178,5 +216,5 @@ export function useDraft() {
     return { ...nuevo, completoDesde: completoDesdeDe(nuevo, null) };
   }), []);
 
-  return { ...draft, anadir, quitar, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio, vaciarConDeshacer, quitarConDeshacer, deshacible, deshacer, olvidarDeshacer };
+  return { ...draft, anadir, quitar, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio, vaciarConDeshacer, quitarConDeshacer, aplicarLectura, deshacible, deshacer, olvidarDeshacer };
 }

@@ -83,7 +83,7 @@ export function avisoDeCaras() {
   } catch { return null; }
 }
 
-function capturarTablet(dispositivo) {
+export function capturarTablet(dispositivo) {
   // `connect` no falla si ya está conectada; sin él, el primer uso tras
   // encender la depuración no encuentra la tablet.
   execFileSync('adb', ['connect', dispositivo], { stdio: 'ignore', timeout: 15000 });

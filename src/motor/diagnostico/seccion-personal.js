@@ -1,7 +1,7 @@
 import { nombreClave, buscar } from '../nombres.js';
 import { ordenarPicks } from '../ranking.js';
 import { notaDeMaestria } from '../maestria.js';
-import { resumen, calibracion, MINIMO_PARA_CONCLUIR } from '../registro.js';
+import { resumen, calibracion, aciertosDelLector, MINIMO_PARA_CONCLUIR } from '../registro.js';
 
 /**
  * Lo tuyo: la maestría y las partidas apuntadas. En la vigilancia automática
@@ -55,6 +55,8 @@ export function seccionPartidas(inf, { partidas = [], maestria = {}, maestriaMan
   if (!sin) {
     const conBaneos = (partidas ?? []).filter((p) => Array.isArray(p.bans) && p.bans.length).length;
     inf.linea(`Partidas con baneos apuntados: ${conBaneos} de ${(partidas ?? []).length} (co-ocurrencia de baneos de tu rango)`);
+    const lec = aciertosDelLector(partidas);
+    if (lec.partidas) inf.linea(`Lector de la tablet: ${lec.partidas} partidas · ${lec.acertados} de ${lec.leidos} nombres seguían al apuntar (${Math.round(lec.acierto * 100)}%)${Object.keys(lec.fallos).length ? ` · quitados: ${Object.entries(lec.fallos).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([n, k]) => `${n} ${k}`).join(', ')}` : ''}`);
     const cal = calibracion(partidas);
     if (cal.n) {
       inf.linea(`Estimación vs realidad: ${cal.n} partidas · previsto ${pct(cal.prevista)} · ganadas ${pct(cal.real)} · Brier ${cal.brier.toFixed(3)} (moneda 0.250)`);

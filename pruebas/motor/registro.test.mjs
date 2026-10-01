@@ -7,7 +7,7 @@
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { sanear } from '../../src/motor/perfil.js';
-import { sanearDraft, apuntar, olvidar, corregir, calibracion, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
+import { sanearDraft, sanearLectura, aciertosDelLector, apuntar, olvidar, corregir, calibracion, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
 import { maestriaDesdeRegistro, maestriaEfectiva, winrateDeReferencia } from '../../src/motor/maestria.js';
 import { nombreClave } from '../../src/motor/nombres.js';
 import { generador } from '../../src/motor/robustez.js';
@@ -284,6 +284,27 @@ test('cada partida apuntada guarda el draft que tenias delante, saneado', () => 
   const { partidas } = sanear({ partidas: [p, { ...p, t: p.t + 1, draft: { enemigos: 'no' } }] });
   eq(JSON.stringify(partidas[0].draft), JSON.stringify(p.draft), 'el saneado del perfil pierde el draft');
   ok(!('draft' in partidas[1]), 'el saneado del perfil deja un draft roto');
+});
+
+test('lo que leyó el lector viaja con la partida, saneado, y se mide contra el draft final', () => {
+  eq(sanearLectura(null), null, 'una lectura vacía no es null');
+  eq(sanearLectura({ baneos: [], enemigos: ['  '] }), null, 'una lectura sin nombres no es null');
+  const larga = sanearLectura({ baneos: Array.from({ length: 14 }, (_, i) => `H${i}`), enemigos: ['A', 'B', 'C', 'D', 'E', 'F', 7] });
+  eq(`${larga.baneos.length}/${larga.enemigos.length}`, '10/5', 'la lectura no se recorta a 10 baneos y 5 enemigos');
+  const [p] = apuntar([], { pick: 'Khufra', gane: true, bans: ['Hirara'], draft: { enemigos: ['Clint'] }, lector: { baneos: ['Hirara'], enemigos: ['Clint', 'Lunox'] } });
+  eq(JSON.stringify(p.lector), JSON.stringify({ baneos: ['Hirara'], enemigos: ['Clint', 'Lunox'] }), 'apuntar pierde lo que leyó el lector');
+  // El perfil saneado (móvil, código, repositorio) conserva la lectura y tira una rota.
+  const { partidas } = sanear({ partidas: [p, { ...p, t: p.t + 1, lector: 'basura' }] });
+  ok(partidas[0].lector && !('lector' in partidas[1]), 'el saneado del perfil pierde la lectura o deja una rota');
+  // Acierto: de lo que leyó, cuánto seguía al apuntar. Lunox no estaba: fallo.
+  const a = aciertosDelLector([
+    p,
+    { t: 2, pick: 'X', bans: ['Saber', 'X.Borg'], draft: { enemigos: ['Clint', 'Khufra'] }, lector: { baneos: ['Saber', 'X Borg'], enemigos: ['Khufra'] } },
+    { t: 3, pick: 'Y', draft: { enemigos: [] } },
+  ]);
+  eq(`${a.partidas} ${a.leidos} ${a.acertados}`, '2 6 5', `el acierto del lector sale ${a.partidas} ${a.leidos} ${a.acertados}`);
+  eq(JSON.stringify(a.fallos), JSON.stringify({ Lunox: 1 }), 'los fallos del lector no dicen cuáles');
+  eq(aciertosDelLector([]).acierto, null, 'sin lecturas el acierto no es null');
 });
 
 await terminar('motor/registro');

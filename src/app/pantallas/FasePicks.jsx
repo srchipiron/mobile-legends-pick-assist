@@ -11,6 +11,7 @@ import { SelectorDeRango } from '../componentes/SelectorDeRango.jsx';
 import { Analisis } from '../componentes/Analisis.jsx';
 import { Tarjeta } from '../componentes/Tarjeta.jsx';
 import { useDeslizar } from '../componentes/useDeslizar.js';
+import { BotonLector } from '../componentes/BotonLector.jsx';
 import { ConsejoEquipo } from '../componentes/ConsejoEquipo.jsx';
 import { Leyenda } from '../componentes/Desglose.jsx';
 import { AvisoLegal } from '../componentes/AvisoLegal.jsx';
@@ -31,7 +32,7 @@ import { HORAS_DATOS_VIEJOS } from '../componentes/Pie.jsx';
  * @param d.abrir       abre una hoja: 'enemigos' | 'aliados' | 'yo' | 'maestria' | 'historial' | 'perfil' | 'meta' | 'linea' | 'apuntar' | { build }
  * @param d.onResultado (gane) apunta la partida con tu pick fijado, desde el recordatorio
  */
-export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, pie }) {
+export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, lector = null, onLeer = null, pie }) {
   const { enemigos, aliados, baneos } = equipo;
   const { ranking, rival, cov, pool, analisis, composicion, consejos, yo } = rec;
   const rivalAuto = rival.marcado ? null : rival.nombre;
@@ -124,6 +125,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
         <div className="tools">
           <button className="reset" onClick={draft.vaciarConDeshacer}>{t('app.nuevoDraft')}</button>
           <button className="reset" disabled={!ranking.length} onClick={() => abrir('apuntar')}>{t('app.apuntar')}</button>
+          {onLeer && <BotonLector estado={lector?.estado} aviso={lector?.aviso} onLeer={onLeer} t={t} />}
         </div>
       </aside>
 

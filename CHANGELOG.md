@@ -8,6 +8,24 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.25.0
+
+- **Botón «Leer del juego»: la app mete sola los baneos y los picks
+  enemigos que hay en la pantalla de la tablet.** Funciona con el lector de
+  Termux abierto en el móvil (`node scripts/lector/servir.mjs --tablet
+  IP:PUERTO`); la primera vez Chrome pregunta si la app puede acceder a la
+  red local: hay que permitirlo. Está en la fase de baneos y junto a «Nuevo
+  draft» en la de picks.
+- Solo añade: lo que ya habías metido se queda, y si algo sale mal, un
+  toque en «Deshacer» lo devuelve todo. Si el lector no está abierto o no
+  llega a la tablet, la app dice qué hacer.
+- **El lector aprende de tus partidas.** Lo que leyó se guarda con la
+  partida al apuntarla; comparándolo con el draft final se ve cuánto
+  acierta y con qué héroes falla (en el diagnóstico y en la respuesta del
+  bot a tus partidas).
+- La seguridad no cambia: solo hace capturas de pantalla, no toca el juego,
+  y lo que llega a la app son nombres de héroe, nunca la imagen.
+
 ## 3.24.1
 
 - **«Nuevo draft» con el draft vacío ya no enseña «Deshacer».** No había

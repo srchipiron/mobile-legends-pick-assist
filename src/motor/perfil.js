@@ -12,7 +12,7 @@
  * dispositivo bueno no borra nada.
  */
 
-import { sanearDraft } from './registro.js';
+import { sanearDraft, sanearLectura } from './registro.js';
 
 const MARCA = 'MLPA1';
 
@@ -144,6 +144,8 @@ export function sanear(perfil) {
       if (limpios.length) limpia.bans = limpios; else delete limpia.bans;
       const draft = sanearDraft(p.draft);
       if (draft) limpia.draft = draft; else delete limpia.draft;
+      const lector = sanearLectura(p.lector);
+      if (lector) limpia.lector = lector; else delete limpia.lector;
       return limpia;
     });
   return { ...(perfil ?? {}), mastery, partidas, olvidadas: sanearOlvidadas(perfil?.olvidadas) };

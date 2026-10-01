@@ -21,6 +21,7 @@ import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
+import { pedirLectura, nombresDeLectura } from './lector.js';
 import { ApuntarPartida } from './componentes/ApuntarPartida.jsx';
 import { HistorialPartidas } from './componentes/HistorialPartidas.jsx';
 import { Perfil } from './componentes/Perfil.jsx';
@@ -49,6 +50,14 @@ export default function App() {
   // del siguiente baneo desplazándose).
   const [ordenPick, setOrdenPick] = useState(null);
   const [informe, setInforme] = useState(null);
+  // «Leer del juego» (3.25.0): leyendo o no, y qué decir si algo falla.
+  const [lector, setLector] = useState({ estado: 'libre', aviso: null });
+  // El aviso de un fallo se va solo: lo que se lee con prisa no se queda tapando.
+  useEffect(() => {
+    if (!lector.aviso) return undefined;
+    const reloj = setTimeout(() => setLector((l) => (l.aviso ? { ...l, aviso: null } : l)), 12000);
+    return () => clearTimeout(reloj);
+  }, [lector.aviso]);
   const cerrar = () => setHoja(null);
 
   const enemigos = useMemo(() => resolverNombres(datos, draft.enemigos), [datos, draft.enemigos]);
@@ -129,6 +138,8 @@ export default function App() {
       ...(est ? { estimacion: est.p } : {}),
       bans: draft.baneos,
       draft: { linea, enemigos: draft.enemigos, aliados: draft.aliados, rival: rec.rival.nombre },
+      // Lo que leyó el lector de la tablet: para medir cuánto acierta (3.25.0).
+      ...(draft.lectura ? { lector: draft.lectura } : {}),
     });
     cerrar();
     draft.reiniciar();
@@ -158,6 +169,20 @@ export default function App() {
     } catch (err) {
       // Que el diagnóstico falle no debe dejar la app en blanco: el propio error es información útil.
       setInforme({ texto: `El diagnóstico ha fallado:\n${err?.stack ?? err}`, fallos: 1, avisos: 0 });
+    }
+  };
+
+  /** Pide al lector de Termux lo que hay en la tablet y lo mete en el draft (con Deshacer). */
+  const leerDelJuego = async () => {
+    if (lector.estado === 'leyendo') return;
+    setLector({ estado: 'leyendo', aviso: null });
+    try {
+      const nombres = nombresDeLectura(await pedirLectura(), datos.heroes);
+      const n = draft.aplicarLectura(nombres);
+      const algo = nombres.baneos.length + nombres.enemigos.length;
+      setLector({ estado: 'libre', aviso: n.baneos || n.enemigos ? null : (algo ? 'yaEstaba' : 'nada') });
+    } catch (e) {
+      setLector({ estado: 'libre', aviso: ['sinPuente', 'plazo', 'captura'].includes(e?.tipo) ? e.tipo : 'error' });
     }
   };
 
@@ -226,6 +251,7 @@ export default function App() {
           onBanear={(h) => draft.anadir('baneos', h)}
           onQuitar={(h) => draft.quitar('baneos', h)}
           onAPicks={() => draft.setFase('picks')}
+          lector={lector} onLeer={leerDelJuego}
           pie={pie}
         />
         {selector}
@@ -241,6 +267,7 @@ export default function App() {
         meta={meta} datos={datos} metaListo={metaListo} sinWinrates={sinWinrates} edadHoras={edadHoras} pro={pro}
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
         onResultado={(gane) => guardarPartida(rec.eleccion?.heroe.name ?? draft.miPick, gane)}
+        lector={lector} onLeer={leerDelJuego}
         pie={pie}
       />
       {deshacer}

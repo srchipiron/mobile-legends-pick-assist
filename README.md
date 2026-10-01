@@ -289,6 +289,19 @@ cd mobile-legends-pick-assist && git pull
 node scripts/lector/leer.mjs --tablet IP:PUERTO   # el puerto de «Dirección IP y puerto»
 ```
 
+**Con el botón de la app (3.25.0)**: en vez de `leer.mjs`, deja abierto en
+Termux
+
+```bash
+node scripts/lector/servir.mjs --tablet IP:PUERTO
+```
+
+y toca «Leer del juego» en la app (fase de baneos, o junto a «Nuevo draft»
+en la de picks). La primera vez Chrome pide permiso para «acceder a la red
+local»: es el lector, en el propio móvil (solo escucha en `127.0.0.1`).
+`--guardar-capturas ~/storage/downloads/lecturas` guarda cada captura con lo
+que se leyó, para mandar las que salgan mal.
+
 Solo hace `adb connect` y `adb exec-out screencap -p`: no toca la
 pantalla, no instala nada y no habla con Moonton (hay una prueba que falla
 si el lector usa cualquier otro mandato). Las caras de referencia
