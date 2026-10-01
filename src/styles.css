@@ -676,6 +676,9 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   background: rgba(255, 69, 58, 0.10); border: 1px solid rgba(255, 69, 58, 0.35);
   font-size: 12px; line-height: 1.4; color: var(--text); overflow-wrap: anywhere;
 }
+/* «Leer solo» (3.28.0): el interruptor y, debajo, qué pasó con la última lectura. */
+.lector-auto[aria-pressed="true"] { border-color: rgba(255, 214, 10, 0.55); background: rgba(255, 214, 10, 0.12); color: var(--text); }
+.lector-estado { flex-basis: 100%; margin: 4px 0 0; font-size: 11px; line-height: 1.4; color: var(--muted); overflow-wrap: anywhere; }
 
 /* ---------- «Deshacer» (3.23.0) ---------- */
 

@@ -56,7 +56,8 @@ export function seccionPartidas(inf, { partidas = [], maestria = {}, maestriaMan
     const conBaneos = (partidas ?? []).filter((p) => Array.isArray(p.bans) && p.bans.length).length;
     inf.linea(`Partidas con baneos apuntados: ${conBaneos} de ${(partidas ?? []).length} (co-ocurrencia de baneos de tu rango)`);
     const lec = aciertosDelLector(partidas);
-    if (lec.partidas) inf.linea(`Lector de la tablet: ${lec.partidas} partidas · ${lec.acertados} de ${lec.leidos} nombres seguían al apuntar (${Math.round(lec.acierto * 100)}%)${Object.keys(lec.fallos).length ? ` · quitados: ${Object.entries(lec.fallos).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([n, k]) => `${n} ${k}`).join(', ')}` : ''}`);
+    const top = (o) => Object.entries(o ?? {}).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([n, k]) => `${n} ${k}`).join(', ');
+    if (lec.partidas) inf.linea(`Lector de la tablet: ${lec.partidas} partidas · ${lec.acertados} de ${lec.leidos} nombres seguían al apuntar (${Math.round(lec.acierto * 100)}%)${Object.keys(lec.fallos).length ? ` · quitados: ${top(lec.fallos)}` : ''}${Object.keys(lec.dudas ?? {}).length ? ` · dudas: ${top(lec.dudas)}` : ''}${Object.keys(lec.aprendidos ?? {}).length ? ` · aprendidos: ${top(lec.aprendidos)}` : ''}${Object.keys(lec.sinEncontrar ?? {}).length ? ` · sin encontrar: ${top(lec.sinEncontrar)}` : ''}`);
     const cal = calibracion(partidas);
     if (cal.n) {
       inf.linea(`Estimación vs realidad: ${cal.n} partidas · previsto ${pct(cal.prevista)} · ganadas ${pct(cal.real)} · Brier ${cal.brier.toFixed(3)} (moneda 0.250)`);

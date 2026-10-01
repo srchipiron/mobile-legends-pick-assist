@@ -142,6 +142,10 @@ export function informe(m, { generado = null } = {}) {
     L.push(`- ${lec.partidas} partidas leídas: ${lec.acertados} de ${lec.leidos} nombres seguían en el draft al apuntarla (${pct(lec.acierto)}).`);
     const fallos = Object.entries(lec.fallos).sort((a, b) => b[1] - a[1]);
     if (fallos.length) L.push(`- Leídos y quitados después: ${fallos.slice(0, 8).map(([n, k]) => `${n} (${k})`).join(', ')}.`);
+    const lista = (o) => Object.entries(o ?? {}).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([n, k]) => `${n} (${k})`).join(', ');
+    if (Object.keys(lec.dudas ?? {}).length) L.push(`- Huecos sin reconocer, a quién se parecían más: ${lista(lec.dudas)}.`);
+    if (Object.keys(lec.aprendidos ?? {}).length) L.push(`- Aprendidos de las correcciones: ${lista(lec.aprendidos)}.`);
+    if (Object.keys(lec.sinEncontrar ?? {}).length) L.push(`- Sin encontrar en la captura al corregir (hace falta verla): ${lista(lec.sinEncontrar)}.`);
   }
   if (m.porHeroe.length) {
     L.push('', '### Por héroe (con la app)', '', '| Héroe | Partidas | Ganadas | % |', '|---|---:|---:|---:|');

@@ -314,4 +314,17 @@ test('la lectura guarda los ids de las capturas del lector (solo los válidos) p
   ok(!('ids' in sanearLectura({ enemigos: ['Clint'] })), 'sin ids aparece el campo');
 });
 
+test('la lectura guarda las dudas (hueco, candidato, parecido) y lo aprendido, saneados, y el agregado los cuenta por nombre', () => {
+  const l = sanearLectura({ enemigos: ['Clint'], dudas: [{ hueco: 'e2', candidato: 'Belerick', parecido: 0.713 }, { hueco: 'x9', candidato: 'Nadie', parecido: 0.5 }, { hueco: 't1', candidato: '', parecido: 0.5 }, { hueco: 's3', candidato: 'Saber', parecido: 7 }], aprendizaje: { aprendidos: ['Clint', 7], sinEncontrar: ['Layla'] } });
+  eq(JSON.stringify(l.dudas), JSON.stringify([{ hueco: 'e2', candidato: 'Belerick', parecido: 0.71 }, { hueco: 's3', candidato: 'Saber', parecido: 1 }]), `las dudas no se sanean: ${JSON.stringify(l.dudas)}`);
+  eq(JSON.stringify(l.aprendizaje), JSON.stringify({ aprendidos: ['Clint'], sinEncontrar: ['Layla'] }), 'lo aprendido no se sanea');
+  ok(!('dudas' in sanearLectura({ enemigos: ['Clint'] })) && !('aprendizaje' in sanearLectura({ enemigos: ['Clint'] })), 'sin dudas ni aprendizaje aparecen los campos');
+  const partidas = [
+    { t: 1, pick: 'A', gane: true, bans: ['Hirara'], draft: { enemigos: ['Clint'] }, lector: { enemigos: ['Clint'], dudas: [{ hueco: 'e2', candidato: 'Belerick', parecido: 0.7 }], aprendizaje: { aprendidos: ['Clint'], sinEncontrar: ['Layla'] } } },
+    { t: 2, pick: 'A', gane: true, bans: [], draft: { enemigos: ['Clint'] }, lector: { enemigos: ['Clint'], dudas: [{ hueco: 'e3', candidato: 'Belerick', parecido: 0.6 }, { hueco: 'e4', candidato: 'Saber', parecido: 0.6 }], aprendizaje: { sinEncontrar: ['Layla'] } } },
+  ];
+  const a = aciertosDelLector(partidas);
+  eq(`${a.dudas.Belerick} ${a.dudas.Saber} ${a.aprendidos.Clint} ${a.sinEncontrar.Layla}`, '2 1 1 2', `el agregado no cuenta dudas y aprendizaje: ${JSON.stringify(a)}`);
+});
+
 await terminar('motor/registro');

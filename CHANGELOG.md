@@ -8,6 +8,21 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.28.0
+
+- **«Leer solo»: la app lee la tablet por su cuenta, sin tocar nada.** Un
+  interruptor junto a «Leer del juego» (se recuerda). Encendido, mientras
+  tengas la app delante y el draft a medias, pide una lectura cada 5
+  segundos (cada 12 con el draft vacío, buscando si ha empezado uno) y mete
+  lo que vaya saliendo; con una hoja abierta o con el draft completo se
+  para sola. Debajo dice qué pasó con la última lectura. Tú juegas y
+  corriges lo que falte; el resto se hace solo.
+- **Lo que el lector lee, duda y aprende viaja con la partida apuntada**, y
+  esa partida ya se sube sola al proyecto: cada hueco sin reconocer con a
+  quién se parecía más, y lo aprendido o no encontrado al corregir. El
+  bot lo resume en su respuesta y el Diagnóstico lo enseña. No hay que
+  copiar nada de Termux.
+
 ## 3.27.1
 
 - **Un mismo héroe leído dos veces entre los cinco baneos de un equipo (o

@@ -13,6 +13,38 @@ export const PUERTO_LECTOR = 47323;
 export const URL_LECTOR = `http://127.0.0.1:${PUERTO_LECTOR}`;
 /** Decisión de producto: la captura por wifi más el reconocimiento tardan 2–4 s; 20 s es «no está». */
 export const PLAZO_LECTOR_MS = 20000;
+/**
+ * Leyendo solo (3.28.0): cada cuánto se pide una lectura. Con el draft en
+ * marcha, cada 5 s (una lectura tarda 4–6 s en el móvil: va una tras otra
+ * sin acumularse); con el draft vacío, cada 12 s, que es buscar si ha
+ * empezado uno sin tener la tablet haciendo capturas sin parar.
+ */
+export const INTERVALO_AUTO_MS = 5000;
+export const INTERVALO_AUTO_VACIO_MS = 12000;
+
+/**
+ * ¿Toca leer solo ahora? Con el modo encendido, la app a la vista, sin una
+ * hoja abierta (el draft se está tocando a mano) y el draft sin completar:
+ * con los cinco enemigos y los cuatro compañeros ya no hay nada que leer, y
+ * seguir haciendo capturas durante la partida sería gastar por nada.
+ */
+export const tocaLeerSolo = ({ auto, visible = true, hoja = null, completo = false, leyendo = false }) => !!auto && visible && !hoja && !completo && !leyendo;
+
+/**
+ * Lo que el lector no reconoció en una lectura, compacto, para guardarlo
+ * con la partida: hueco (t1–t5 baneos tuyos, s1–s5 suyos, e1–e5 picks
+ * enemigos), a quién se parecía más y cuánto. Es lo que dice qué afinar.
+ */
+export function dudasDeLectura(lectura) {
+  const dudas = [];
+  for (const [lado, letra] of [['tuyos', 't'], ['suyos', 's'], ['enemigos', 'e']]) {
+    (Array.isArray(lectura?.[lado]) ? lectura[lado] : []).forEach((x, i) => {
+      if (!x || x.nombre || !x.candidato) return;
+      dudas.push({ hueco: `${letra}${i + 1}`, candidato: String(x.candidato).slice(0, 40), parecido: Math.round((Number(x.parecido) || 0) * 100) / 100 });
+    });
+  }
+  return dudas;
+}
 
 /**
  * Un fallo con su tipo: `sinPuente` (no está abierto o falta el permiso),

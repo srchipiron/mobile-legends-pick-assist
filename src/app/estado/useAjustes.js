@@ -14,6 +14,9 @@ export function useAjustes() {
   const [linea, setLinea] = useState(() => leer(CLAVES.linea, null));
   const [idioma, setIdioma] = useState(() => leer(CLAVES.idioma, null) ?? idiomaPorDefecto());
   const [tacto, setTacto] = useState(() => leer(CLAVES.tacto, true) !== false);
+  // El lector leyendo solo (3.28.0): apagado hasta que se enciende una vez. Sin
+  // lector, encendido solo costaría una petición fallida cada pocos segundos.
+  const [lectorAuto, setLectorAuto] = useState(() => leer(CLAVES.lectorAuto, false) === true);
   const t = useMemo(() => crearT(idioma), [idioma]);
 
   useEffect(() => { if (rango) guardar(CLAVES.rango, rango); }, [rango]);
@@ -21,6 +24,7 @@ export function useAjustes() {
   useEffect(() => { guardar(CLAVES.idioma, idioma); }, [idioma]);
   useEffect(() => { document.documentElement.lang = idioma; }, [idioma]);
   useEffect(() => { activarTacto(tacto); guardar(CLAVES.tacto, tacto); }, [tacto]);
+  useEffect(() => { guardar(CLAVES.lectorAuto, lectorAuto); }, [lectorAuto]);
 
-  return { rango, setRango, linea, setLinea, idioma, setIdioma, tacto, setTacto, t };
+  return { rango, setRango, linea, setLinea, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto, t };
 }

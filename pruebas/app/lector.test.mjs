@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { pedirLectura, nombresDeLectura, corregirLectura } from '../../src/app/lector.js';
+import { pedirLectura, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -46,6 +46,23 @@ test('la corrección devuelve al lector los ids de sus capturas con lo que habí
   eq(pedidas.length, 1, 'manda correcciones sin ids o sin enemigos');
   // Sin lector no lanza.
   eq(await corregirLectura({ ids: ['lectura-1'], enemigos: ['Clint'], pedir: () => Promise.reject(new TypeError('Failed to fetch')) }), null, 'sin lector lanza o devuelve algo');
+});
+
+test('leyendo solo: cuándo toca y cuándo no, y las dudas compactas de una lectura', () => {
+  ok(tocaLeerSolo({ auto: true }), 'con el modo encendido y nada en contra no lee');
+  ok(!tocaLeerSolo({ auto: false }), 'con el modo apagado lee');
+  ok(!tocaLeerSolo({ auto: true, visible: false }), 'con la app escondida lee (gasta capturas sin nadie mirando)');
+  ok(!tocaLeerSolo({ auto: true, hoja: 'enemigos' }), 'con una hoja abierta lee (se está tocando a mano)');
+  ok(!tocaLeerSolo({ auto: true, completo: true }), 'con el draft completo sigue leyendo durante la partida');
+  ok(!tocaLeerSolo({ auto: true, leyendo: true }), 'lee mientras otra lectura está en marcha');
+  ok(INTERVALO_AUTO_MS >= 4000 && INTERVALO_AUTO_VACIO_MS > INTERVALO_AUTO_MS, 'los intervalos no respetan lo que tarda una lectura (4–6 s) ni van más despacio con el draft vacío');
+  const dudas = dudasDeLectura({
+    tuyos: [{ nombre: 'Hirara', candidato: 'Hirara', parecido: 0.95 }, { nombre: null, candidato: 'Belerick', parecido: 0.713 }],
+    suyos: [{ nombre: null, candidato: null, parecido: 0 }],
+    enemigos: [{ nombre: null, candidato: 'Clint', parecido: 0.6 }, { nombre: 'Khufra', candidato: 'Khufra', parecido: 0.9 }],
+  });
+  eq(JSON.stringify(dudas), JSON.stringify([{ hueco: 't2', candidato: 'Belerick', parecido: 0.71 }, { hueco: 'e1', candidato: 'Clint', parecido: 0.6 }]), `las dudas no son las esperadas: ${JSON.stringify(dudas)}`);
+  eq(dudasDeLectura(null).length, 0, 'una lectura vacía da dudas');
 });
 
 await terminar('app/lector');

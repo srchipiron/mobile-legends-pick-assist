@@ -307,6 +307,13 @@ se leyó, para afinar con las que salgan mal. A mano, sin la app:
 Si Chrome pregunta si la app puede «acceder a la red local», es el lector,
 en el propio móvil (solo escucha en `127.0.0.1`): hay que permitirlo.
 
+**Leer solo (3.28.0)**: el interruptor «Leer solo: sí» junto a «Leer del
+juego» (se recuerda). Encendido, mientras la app esté a la vista y el
+draft a medias, pide una lectura cada 5 s (cada 12 con el draft vacío) y
+mete lo que salga; con una hoja abierta o el draft completo se para sola.
+Lo que el lector lee, duda y aprende va con la partida apuntada, que ya
+se sube sola al proyecto: el bot lo resume y el Diagnóstico lo enseña.
+
 **Aprende de tus correcciones (3.27.0)**: lo que corrijas a mano en el
 draft vuelve al lector cuando el draft está completo y al apuntar la
 partida (`POST /corregir`, solo desde la app). Con la captura y esa verdad

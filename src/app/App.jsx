@@ -21,7 +21,8 @@ import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
-import { pedirLectura, nombresDeLectura, corregirLectura, FALLOS_DEL_LECTOR } from './lector.js';
+import { pedirLectura, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS } from './lector.js';
+import { draftCompleto } from './estado/useDraft.js';
 import { ApuntarPartida } from './componentes/ApuntarPartida.jsx';
 import { HistorialPartidas } from './componentes/HistorialPartidas.jsx';
 import { Perfil } from './componentes/Perfil.jsx';
@@ -35,7 +36,7 @@ import { Meta } from './componentes/Meta.jsx';
  * las acciones.
  */
 export default function App() {
-  const { t, linea, setLinea, rango, setRango, idioma, setIdioma, tacto, setTacto } = useAjustes();
+  const { t, linea, setLinea, rango, setRango, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto } = useAjustes();
   const carga = useDatos(rango);
   const { datos, meta, metaListo, pro, error, generado, edadHoras, sinWinrates } = carga;
   const draft = useDraft();
@@ -51,7 +52,7 @@ export default function App() {
   const [ordenPick, setOrdenPick] = useState(null);
   const [informe, setInforme] = useState(null);
   // «Leer del juego» (3.25.0): leyendo o no, y qué decir si algo falla.
-  const [lector, setLector] = useState({ estado: 'libre', aviso: null });
+  const [lector, setLector] = useState({ estado: 'libre', aviso: null, ultimo: null });
   // El aviso de un fallo se va solo: lo que se lee con prisa no se queda tapando.
   useEffect(() => {
     if (!lector.aviso) return undefined;
@@ -140,7 +141,7 @@ export default function App() {
       draft: { linea, enemigos: draft.enemigos, aliados: draft.aliados, rival: rec.rival.nombre },
       // Lo que leyó el lector de la tablet: para medir cuánto acierta (3.25.0).
       // Sin los ids de sus capturas, que son del móvil.
-      ...(draft.lectura ? { lector: { baneos: draft.lectura.baneos, enemigos: draft.lectura.enemigos } } : {}),
+      ...(draft.lectura ? { lector: { baneos: draft.lectura.baneos, enemigos: draft.lectura.enemigos, ...(draft.lectura.dudas ? { dudas: draft.lectura.dudas } : {}), ...(draft.lectura.aprendizaje ? { aprendizaje: draft.lectura.aprendizaje } : {}) } } : {}),
     });
     // Y al lector, lo que había de verdad, para que aprenda (3.27.0).
     corregirLectura({ ids: draft.lectura?.ids ?? [], enemigos: draft.enemigos, baneos: draft.baneos });
@@ -155,7 +156,8 @@ export default function App() {
   useEffect(() => {
     if (!draft.completoDesde || corregido.current === draft.completoDesde || !draft.lectura?.ids?.length) return;
     corregido.current = draft.completoDesde;
-    corregirLectura({ ids: draft.lectura.ids, enemigos: draft.enemigos, baneos: draft.baneos });
+    corregirLectura({ ids: draft.lectura.ids, enemigos: draft.enemigos, baneos: draft.baneos })
+      .then((r) => { if (r?.aprendido) draft.anotarAprendizaje({ aprendidos: r.aprendidos, sinEncontrar: r.sinEncontrar }); });
   }, [draft.completoDesde, draft.lectura, draft.enemigos, draft.baneos]);
 
   /** Trae los datos de otro dispositivo: vienen fundidos, así que solo guarda. */
@@ -185,20 +187,50 @@ export default function App() {
     }
   };
 
-  /** Pide al lector de Termux lo que hay en la tablet y lo mete en el draft (con Deshacer). */
-  const leerDelJuego = async () => {
-    if (lector.estado === 'leyendo') return;
-    setLector({ estado: 'leyendo', aviso: null });
+  /**
+   * Pide al lector de Termux lo que hay en la tablet y lo mete en el draft
+   * (con Deshacer). Leyendo solo (`silencioso`), un fallo o una lectura
+   * vacía no sacan aviso: se repite en unos segundos; queda en `ultimo`.
+   */
+  const leyendoAhora = useRef(false);
+  const ultimaLectura = useRef(0);
+  const leerDelJuego = async ({ silencioso = false } = {}) => {
+    if (leyendoAhora.current) return;
+    leyendoAhora.current = true;
+    ultimaLectura.current = Date.now();
+    setLector((l) => ({ ...l, estado: 'leyendo', aviso: silencioso ? l.aviso : null }));
     try {
       const lectura = await pedirLectura();
       const nombres = nombresDeLectura(lectura, datos.heroes);
-      const n = draft.aplicarLectura({ ...nombres, id: typeof lectura.id === 'string' ? lectura.id : null });
+      const n = draft.aplicarLectura({ ...nombres, id: typeof lectura.id === 'string' ? lectura.id : null, dudas: dudasDeLectura(lectura) });
       const algo = nombres.baneos.length + nombres.enemigos.length;
-      setLector({ estado: 'libre', aviso: n.baneos || n.enemigos ? null : (algo ? 'yaEstaba' : 'nada') });
+      const aviso = n.baneos || n.enemigos ? null : (algo ? 'yaEstaba' : 'nada');
+      setLector({ estado: 'libre', aviso: silencioso ? null : aviso, ultimo: { cuando: Date.now(), ok: true, nuevos: n.baneos + n.enemigos } });
     } catch (e) {
-      setLector({ estado: 'libre', aviso: FALLOS_DEL_LECTOR.includes(e?.tipo) ? e.tipo : 'error' });
+      const tipo = FALLOS_DEL_LECTOR.includes(e?.tipo) ? e.tipo : 'error';
+      setLector({ estado: 'libre', aviso: silencioso ? null : tipo, ultimo: { cuando: Date.now(), ok: false, tipo } });
+    } finally {
+      leyendoAhora.current = false;
     }
   };
+
+  // Leyendo solo (3.28.0): mientras el draft no esté completo, la app a la
+  // vista y sin hoja abierta, se pide una lectura cada pocos segundos. Con
+  // el draft vacío, más despacio: es buscar si ha empezado uno.
+  const completo = draftCompleto(draft);
+  const vacio = !draft.enemigos.length && !draft.aliados.length && !draft.baneos.length;
+  // Hasta que no hay catálogo los nombres leídos no resuelven a nadie: se espera.
+  const conCatalogo = !!carga.catalogo && datos.heroes.length > 0;
+  useEffect(() => {
+    if (!conCatalogo || !tocaLeerSolo({ auto: lectorAuto, hoja, completo })) return undefined;
+    const tic = () => { if (tocaLeerSolo({ auto: lectorAuto, visible: document.visibilityState === 'visible', hoja, completo, leyendo: leyendoAhora.current })) leerDelJuego({ silencioso: true }); };
+    // Al (re)arrancar, una lectura ya, salvo que acabe de haber una: la
+    // primera lectura cambia el draft de vacío a lleno y eso rearma esto.
+    if (Date.now() - ultimaLectura.current >= INTERVALO_AUTO_MS) tic();
+    const reloj = setInterval(tic, vacio ? INTERVALO_AUTO_VACIO_MS : INTERVALO_AUTO_MS);
+    return () => clearInterval(reloj);
+    // leerDelJuego cambia en cada render; lo que decide si se lee es lo de aquí.
+  }, [conCatalogo, lectorAuto, hoja, completo, vacio]);
 
   if (error) return <div className="results"><p className="notice">{t('app.errorDatos', { error })}</p></div>;
   if (!carga.catalogo) return <div className="results"><p className="empty-state">{t('app.cargando')}</p></div>;
@@ -265,7 +297,7 @@ export default function App() {
           onBanear={(h) => draft.anadir('baneos', h)}
           onQuitar={(h) => draft.quitar('baneos', h)}
           onAPicks={() => draft.setFase('picks')}
-          lector={lector} onLeer={leerDelJuego}
+          lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
           pie={pie}
         />
         {selector}
@@ -281,7 +313,7 @@ export default function App() {
         meta={meta} datos={datos} metaListo={metaListo} sinWinrates={sinWinrates} edadHoras={edadHoras} pro={pro}
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
         onResultado={(gane) => guardarPartida(rec.eleccion?.heroe.name ?? draft.miPick, gane)}
-        lector={lector} onLeer={leerDelJuego}
+        lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
         pie={pie}
       />
       {deshacer}

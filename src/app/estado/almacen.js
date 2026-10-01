@@ -21,6 +21,8 @@ export const CLAVES = {
   olvidadas: 'roam-picker:olvidadas',
   // El pulso al tocar (3.22.0): true salvo que lo apagues.
   tacto: 'roam-picker:tacto',
+  // El lector de la tablet leyendo solo (3.28.0): false salvo que lo enciendas.
+  lectorAuto: 'roam-picker:lector-auto',
 };
 
 /** Lee un valor guardado; con cualquier fallo (JSON roto, sin almacén) devuelve `porDefecto`. */

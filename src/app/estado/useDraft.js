@@ -164,7 +164,7 @@ export function useDraft() {
    * está en otro sitio (un enemigo baneado, un compañero) no se toca. Con
    * enemigos nuevos el draft pasa a picks. Todo de una vez, con Deshacer.
    */
-  const aplicarLectura = useCallback(({ baneos = [], enemigos = [], id = null }) => {
+  const aplicarLectura = useCallback(({ baneos = [], enemigos = [], id = null, dudas = null }) => {
     const antes = actual.current;
     const ahora = Date.now();
     const nuevosBaneos = [...antes.baneos];
@@ -177,7 +177,8 @@ export function useDraft() {
       if (nuevosEnemigos.length < TOPES.enemigos && !nuevosEnemigos.includes(n) && !nuevosBaneos.includes(n) && !antes.aliados.includes(n)) { nuevosEnemigos.push(n); nE += 1; }
     }
     const union = (a = [], b = []) => [...new Set([...a, ...b])];
-    const lectura = sanearLectura({ baneos: union(antes.lectura?.baneos, baneos), enemigos: union(antes.lectura?.enemigos, enemigos), ids: union(antes.lectura?.ids, id ? [id] : []) });
+    // Las dudas son las de la ÚLTIMA lectura (la más completa), no la unión.
+    const lectura = sanearLectura({ baneos: union(antes.lectura?.baneos, baneos), enemigos: union(antes.lectura?.enemigos, enemigos), ids: union(antes.lectura?.ids, id ? [id] : []), dudas: dudas ?? antes.lectura?.dudas, aprendizaje: antes.lectura?.aprendizaje });
     const sueltaPick = antes.miPick && (nuevosBaneos.includes(antes.miPick) || nuevosEnemigos.includes(antes.miPick));
     const nuevo = {
       ...antes, baneos: nuevosBaneos, enemigos: nuevosEnemigos, lectura,
@@ -187,7 +188,18 @@ export function useDraft() {
     const despues = { ...nuevo, completoDesde: completoDesdeDe(nuevo, ahora) };
     setDraft(despues);
     if (nB || nE) setParaDeshacer({ antes, despues, tipo: 'leido', baneos: nB, enemigos: nE });
+    // Una lectura que no añade nada (leyendo solo, cada pocos segundos) solo
+    // apunta su id y sus dudas: el «Deshacer» de la lectura anterior sigue
+    // valiendo, apuntando al draft nuevo.
+    else setParaDeshacer((p) => (p && p.despues === antes ? { ...p, despues } : p));
     return { baneos: nB, enemigos: nE };
+  }, []);
+
+  /** Lo que el lector aprendió (o no encontró) al corregirle: va con la partida. */
+  const anotarAprendizaje = useCallback((aprendizaje) => {
+    const antes = actual.current;
+    const lectura = sanearLectura({ ...(antes.lectura ?? {}), aprendizaje });
+    if (lectura) setDraft({ ...antes, lectura });
   }, []);
 
   const deshacible = paraDeshacer && paraDeshacer.despues === draft ? paraDeshacer : null;
@@ -216,5 +228,5 @@ export function useDraft() {
     return { ...nuevo, completoDesde: completoDesdeDe(nuevo, null) };
   }), []);
 
-  return { ...draft, anadir, quitar, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio, vaciarConDeshacer, quitarConDeshacer, aplicarLectura, deshacible, deshacer, olvidarDeshacer };
+  return { ...draft, anadir, quitar, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio, vaciarConDeshacer, quitarConDeshacer, aplicarLectura, anotarAprendizaje, deshacible, deshacer, olvidarDeshacer };
 }

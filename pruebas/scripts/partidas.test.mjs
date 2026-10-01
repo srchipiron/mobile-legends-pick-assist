@@ -84,7 +84,8 @@ test('medir-mias: veredicto, calibración y el modelo de hoy sobre los drafts gu
   const vacio = medir({ partidas: [], maestria: {} }, null);
   eq(vacio.n, 0);
   ok(/Todavía no hay partidas/.test(informe(vacio)), 'con cero partidas no lo dice');
-  const registro = { partidas: [...partidasDe(24), { t: 1, pick: 'Tigreal', gane: true, previa: true, recomendados: [] }], maestria: { Tigreal: { games: 500, winRate: 0.53 } } };
+  const conLector = partidasDe(24).map((p, i) => (i < 2 ? { ...p, lector: { enemigos: ['Layla'], dudas: [{ hueco: 'e2', candidato: 'Belerick', parecido: 0.7 }], aprendizaje: { aprendidos: ['Fanny'], sinEncontrar: ['Pharsa'] } } } : p));
+  const registro = { partidas: [...conLector, { t: 1, pick: 'Tigreal', gane: true, previa: true, recomendados: [] }], maestria: { Tigreal: { games: 500, winRate: 0.53 } } };
   const r = spawnSync(process.execPath, ['-e', `
     import('${RAIZ}/scripts/medir-mias.mjs').then(async ({ medir, informe }) => {
       const { readFileSync } = await import('node:fs');
@@ -105,7 +106,7 @@ test('medir-mias: veredicto, calibración y el modelo de hoy sobre los drafts gu
   ok(m.pendiente && Number.isFinite(m.pendiente.b) && m.pendiente.se > 0, 'sin pendiente con 24 partidas');
   eq(m.cal, 24); eq(m.heroes, 2); ok(m.meses >= 1);
   const texto = resto.join('\n');
-  for (const s of ['¿Sirve seguir a la app?', 'Brier', 'AUC', '### Por héroe', '### Por mes', '| Tigreal |']) ok(texto.includes(s), `el informe no lleva «${s}»`);
+  for (const s of ['¿Sirve seguir a la app?', 'Brier', 'AUC', '### Por héroe', '### Por mes', '| Tigreal |', '### El lector de la tablet', 'Belerick (2)', 'Aprendidos de las correcciones: Fanny (2)', 'Sin encontrar en la captura al corregir (hace falta verla): Pharsa (2)']) ok(texto.includes(s), `el informe no lleva «${s}»`);
   // Y el script entero contra el fichero del repositorio, con código de salida 0.
   const cli = spawnSync(process.execPath, ['scripts/medir-mias.mjs', '--json', join(dir, 'mias.json')], { cwd: RAIZ, encoding: 'utf8' });
   eq(cli.status, 0, `medir-mias.mjs falla: ${cli.stderr}`);

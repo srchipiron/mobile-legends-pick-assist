@@ -80,10 +80,33 @@ await prueba('lo leído viaja con la partida apuntada, para medir al lector', as
   eq(partida.lector.enemigos.join(), VERDAD.enemigos.join(), 'la partida no lleva los enemigos leídos');
   ok(partida.lector.baneos.includes('Masha'), 'la partida no lleva los baneos leídos');
   ok(!partida.lector.ids, 'la partida lleva los ids de las capturas, que son del móvil');
+  // Y las dudas: los tres huecos de picks vacíos («eligiendo») con su candidato.
+  ok(partida.lector.dudas?.some((x) => /^e[3-5]$/.test(x.hueco) && x.candidato), `la partida no lleva las dudas del lector: ${JSON.stringify(partida.lector.dudas)}`);
   // Y el lector recibe la verdad para aprender: la captura de este draft con los enemigos finales.
   eq(correcciones.length, 1, `al apuntar, el lector recibe ${correcciones.length} correcciones`);
   eq(correcciones[0][0].id, d.lectura.ids[0], 'la corrección no nombra la captura de este draft');
   eq(correcciones[0][0].verdad.enemigos.join(), VERDAD.enemigos.join(), 'la corrección no lleva los enemigos finales');
+  ok(!errores.length, `errores de página: ${errores}`);
+  await contexto.close();
+});
+
+await prueba('«Leer solo»: con el modo encendido la app lee sin tocar nada, lo dice debajo, y el interruptor se recuerda', async () => {
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:lector-auto': true } });
+  // Sin tocar «Leer del juego»: en unos segundos el draft tiene lo de la tablet.
+  let d = null;
+  for (let i = 0; i < 60 && !d?.enemies?.length; i++) { await pagina.waitForTimeout(250); d = await leer(pagina); }
+  eq(d?.enemies?.join(), VERDAD.enemigos.join(), `leyendo solo no mete los picks enemigos: ${JSON.stringify(d)}`);
+  // Una lectura más que no añade nada (la siguiente, o un toque) no se lleva el «Deshacer» de la que sí añadió.
+  eq(await pagina.locator('.aviso-deshacer').count(), 1, 'la lectura no deja «Deshacer»');
+  await boton(pagina).click(); await pagina.waitForTimeout(2500);
+  eq(await pagina.locator('.aviso-deshacer').count(), 1, 'una lectura sin nada nuevo se lleva el «Deshacer» de la anterior');
+  eq(await pagina.locator('.lector-auto').getAttribute('aria-pressed'), 'true', 'el interruptor no está encendido');
+  ok(/última lectura bien/.test(await pagina.locator('.lector-estado').innerText()), `no dice qué pasó con la última lectura: ${await pagina.locator('.lector-estado').innerText()}`);
+  // Apagarlo se recuerda al recargar.
+  await pagina.locator('.lector-auto').click(); await pagina.waitForTimeout(200);
+  eq(await pagina.evaluate(() => localStorage.getItem('roam-picker:lector-auto')), 'false', 'apagarlo no se guarda');
+  await pagina.reload({ waitUntil: 'networkidle' }); await pagina.waitForTimeout(400);
+  eq(await pagina.locator('.lector-auto').getAttribute('aria-pressed'), 'false', 'el interruptor no se recuerda apagado');
   ok(!errores.length, `errores de página: ${errores}`);
   await contexto.close();
 });

@@ -41,7 +41,18 @@ export function sanearLectura(lectura) {
   // lo que había de verdad, para que aprenda. Solo viven en el draft.
   const ids = Array.isArray(lectura.ids) ? lectura.ids.filter((x) => typeof x === 'string' && /^lectura-[\w-]{1,60}$/.test(x)).slice(-20) : [];
   if (ids.length) salida.ids = ids;
-  return salida.baneos.length || salida.enemigos.length || ids.length ? salida : null;
+  // Lo que no reconoció en la última lectura (3.28.0): hueco, candidato y
+  // parecido. Y lo que aprendió de la corrección. Viajan con la partida.
+  const dudas = Array.isArray(lectura.dudas) ? lectura.dudas
+    .filter((d) => d && typeof d === 'object' && /^[tse][1-5]$/.test(d.hueco) && typeof d.candidato === 'string' && d.candidato.trim() && Number.isFinite(Number(d.parecido)))
+    .map((d) => ({ hueco: d.hueco, candidato: d.candidato.trim().slice(0, 40), parecido: Math.max(0, Math.min(1, Math.round(Number(d.parecido) * 100) / 100)) })).slice(0, 15) : [];
+  if (dudas.length) salida.dudas = dudas;
+  const a = lectura.aprendizaje;
+  if (a && typeof a === 'object') {
+    const aprendizaje = { aprendidos: nombres(a.aprendidos, 10), sinEncontrar: nombres(a.sinEncontrar, 10) };
+    if (aprendizaje.aprendidos.length || aprendizaje.sinEncontrar.length) salida.aprendizaje = aprendizaje;
+  }
+  return salida.baneos.length || salida.enemigos.length || ids.length || dudas.length || salida.aprendizaje ? salida : null;
 }
 
 /**
@@ -63,7 +74,16 @@ export function aciertosDelLector(partidas = []) {
       else fallos[n] = (fallos[n] ?? 0) + 1;
     }
   }
-  return { partidas: con.length, leidos, acertados, acierto: leidos ? acertados / leidos : null, fallos };
+  // Lo que dudó (3.28.0): a quién se parecía cada hueco sin reconocer, y qué
+  // aprendió o no encontró al corregir. Agregado por nombre.
+  const dudas = {}, aprendidos = {}, sinEncontrar = {};
+  for (const p of con) {
+    const l = sanearLectura(p.lector);
+    for (const d of l.dudas ?? []) dudas[d.candidato] = (dudas[d.candidato] ?? 0) + 1;
+    for (const n of l.aprendizaje?.aprendidos ?? []) aprendidos[n] = (aprendidos[n] ?? 0) + 1;
+    for (const n of l.aprendizaje?.sinEncontrar ?? []) sinEncontrar[n] = (sinEncontrar[n] ?? 0) + 1;
+  }
+  return { partidas: con.length, leidos, acertados, acierto: leidos ? acertados / leidos : null, fallos, dudas, aprendidos, sinEncontrar };
 }
 
 /** Partidas mínimas de cada rama antes de que los números signifiquen algo. */

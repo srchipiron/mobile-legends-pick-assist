@@ -1435,6 +1435,38 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   prueba): `sinRepetidos` (3.27.1) solo quita repetidos DENTRO de los
   cinco de un equipo, nunca entre lados; la primera versión los cruzaba y
   la prueba con la captura real la tumbó.
+- **Leer solo (3.28.0)**, pedido por Javi («quiero preocuparme de jugar y
+  que todo lo demás se haga solo, solo teniendo la app abierta»):
+  `lectorAuto` en `useAjustes` (`roam-picker:lector-auto`, clave NUEVA,
+  apagado por defecto: encendido para todo el mundo haría una petición
+  fallida a 127.0.0.1 cada pocos segundos y, en Chrome, el aviso de red
+  local a quien no tiene lector). `tocaLeerSolo` (src/app/lector.js, con
+  prueba) decide: modo encendido, app a la vista (`visibilityState`), sin
+  hoja abierta (se está tocando a mano) y draft sin completar (con cinco
+  enemigos y cuatro compañeros ya no hay nada que leer y seguir
+  capturando durante la partida gasta por nada). `INTERVALO_AUTO_MS` 5 s
+  (una lectura tarda 4–6 s en el móvil: va una tras otra sin acumularse) y
+  `INTERVALO_AUTO_VACIO_MS` 12 s con el draft vacío (buscar si ha empezado
+  uno), decisiones de producto. El efecto espera al catálogo (sin él los
+  nombres no resuelven a nadie: la primera versión leía antes y la prueba
+  lo cazó) y no repite una lectura si acaba de haber una (`ultimaLectura`:
+  la primera lectura cambia el draft de vacío a lleno y rearma el efecto).
+  Leyendo solo los fallos no sacan aviso: quedan en `lector.ultimo` y la
+  línea `.lector-estado` dice qué pasó con la última lectura. Y una
+  lectura que no añade nada NO se lleva el «Deshacer» de la anterior
+  (`aplicarLectura` lo reapunta al draft nuevo): cada 5 s habría anulado
+  el deshacer antes de poder tocarlo. **Lo leído viaja con la partida**:
+  `lectura.dudas` (los huecos sin reconocer de la ÚLTIMA lectura, con
+  candidato y parecido; `dudasDeLectura`) y `lectura.aprendizaje` (lo que
+  contestó `/corregir` al completar el draft; `anotarAprendizaje`), ambos
+  saneados en `sanearLectura` y agregados por nombre en
+  `aciertosDelLector` (`dudas`, `aprendidos`, `sinEncontrar`): salen en
+  `medir-mias.mjs` (la respuesta del bot a cada subida) y en el
+  diagnóstico. Así no hay que copiar nada de Termux: las partidas se suben
+  solas (3.10.0) y cualquier sesión puede leer `historial/partidas.json`.
+  Pruebas: `app/lector.test`, `registro.test`, `partidas.test` (informe) y
+  `lector.e2e` (lee sin tocar nada, el «Deshacer» sobrevive a una lectura
+  vacía, el interruptor se recuerda). Siete mutaciones.
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el
