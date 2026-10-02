@@ -1,6 +1,102 @@
 {
- "actualizado": "2026-10-02T19:23:32.214Z",
+ "actualizado": "2026-10-02T19:50:18.364Z",
  "partidas": [
+  {
+   "t": 1790970596628,
+   "pick": "Gloo",
+   "recomendados": [
+    "Khaleed",
+    "Estes",
+    "Khufra"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.524,
+   "bans": [
+    "Aulus",
+    "Hirara",
+    "Masha",
+    "Sun",
+    "Clint",
+    "Layla",
+    "Paquito",
+    "Marcel",
+    "Lukas",
+    "Barats"
+   ],
+   "draft": {
+    "enemigos": [
+     "Popol and Kupa",
+     "Hanabi",
+     "Eudora",
+     "Grock",
+     "Harley"
+    ],
+    "aliados": [
+     "Kimmy",
+     "Nana",
+     "Yu Zhong",
+     "Nolan"
+    ],
+    "linea": "roam",
+    "rival": "Grock"
+   },
+   "lector": {
+    "baneos": [
+     "Aulus",
+     "Hirara",
+     "Masha",
+     "Sun",
+     "Clint",
+     "Layla",
+     "Paquito",
+     "Marcel",
+     "Lukas",
+     "Eudora"
+    ],
+    "enemigos": [
+     "Popol and Kupa",
+     "Hanabi",
+     "Eudora",
+     "Harley",
+     "Cyclops"
+    ],
+    "aliados": [
+     "Kimmy",
+     "Nolan",
+     "Vale",
+     "Masha",
+     "Miya"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Saber",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Saber",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Natalia",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Gord",
+      "parecido": 0.67
+     }
+    ]
+   }
+  },
   {
    "t": 1790968996212,
    "pick": "Minotaur",
@@ -5260,6 +5356,12 @@
   {
    "cuando": "2026-10-02T19:23:32.214Z",
    "partidas": 141,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-02T19:50:18.364Z",
+   "partidas": 142,
    "heroes": 11,
    "incidencia": 11
   }
