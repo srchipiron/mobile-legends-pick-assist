@@ -1,6 +1,115 @@
 {
- "actualizado": "2026-10-02T20:44:16.944Z",
+ "actualizado": "2026-10-02T21:25:33.185Z",
  "partidas": [
+  {
+   "t": 1790976314750,
+   "pick": "Gloo",
+   "recomendados": [
+    "Floryn",
+    "Gloo",
+    "Rafaela"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.545,
+   "bans": [
+    "Hirara",
+    "Eudora",
+    "Ling",
+    "Marcel",
+    "Belerick",
+    "Gusion",
+    "Melissa",
+    "Masha"
+   ],
+   "draft": {
+    "enemigos": [
+     "Gord",
+     "Wanwan",
+     "Hanabi",
+     "Kagura",
+     "Carmilla"
+    ],
+    "aliados": [
+     "Layla",
+     "Cici",
+     "Popol and Kupa",
+     "Guinevere"
+    ],
+    "linea": "roam",
+    "rival": "Carmilla"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Eudora",
+     "Ling",
+     "Marcel",
+     "Belerick",
+     "Gusion",
+     "Melissa",
+     "Masha"
+    ],
+    "enemigos": [
+     "Gord",
+     "Wanwan",
+     "Hanabi",
+     "Kagura",
+     "Carmilla"
+    ],
+    "aliados": [
+     "Layla",
+     "Cici",
+     "Popol and Kupa",
+     "Guinevere"
+    ],
+    "dudas": [
+     {
+      "hueco": "e3",
+      "candidato": "Alice",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Atlas",
+      "parecido": 0.6
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Natalia",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Harith",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Fredrinn",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Bruno",
+      "parecido": 0.67
+     }
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Wanwan",
+      "Wanwan"
+     ],
+     "sinEncontrar": [
+      "Gord",
+      "Gord",
+      "Gord",
+      "Kagura",
+      "Carmilla"
+     ]
+    }
+   }
+  },
   {
    "t": 1790973843192,
    "pick": "Gloo",
@@ -5700,6 +5809,12 @@
   {
    "cuando": "2026-10-02T20:44:16.944Z",
    "partidas": 145,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-02T21:25:33.185Z",
+   "partidas": 146,
    "heroes": 11,
    "incidencia": 11
   }
