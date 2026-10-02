@@ -1,6 +1,122 @@
 {
- "actualizado": "2026-10-02T10:19:39.359Z",
+ "actualizado": "2026-10-02T11:11:01.916Z",
  "partidas": [
+  {
+   "t": 1790939445811,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Marcel",
+    "Badang",
+    "Khufra"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.565,
+   "bans": [
+    "Floryn",
+    "Masha",
+    "Hirara",
+    "Minotaur",
+    "Gloo",
+    "Belerick",
+    "Hanzo",
+    "Estes"
+   ],
+   "draft": {
+    "enemigos": [
+     "Obsidia",
+     "Nana",
+     "Akai",
+     "Atlas",
+     "Minsitthar"
+    ],
+    "aliados": [
+     "Cyclops",
+     "Esmeralda",
+     "Irithel",
+     "Harley"
+    ],
+    "linea": "roam"
+   },
+   "lector": {
+    "baneos": [
+     "Floryn",
+     "Masha",
+     "Hirara",
+     "Minotaur",
+     "Gloo",
+     "Belerick",
+     "Hanzo",
+     "Estes"
+    ],
+    "enemigos": [
+     "Obsidia",
+     "Nana",
+     "Yu Zhong",
+     "Akai",
+     "Atlas"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Cyclops",
+     "Esmeralda",
+     "Miya",
+     "Granger"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Claude",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Kagura",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Fredrinn",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Fredrinn",
+      "parecido": 0.59
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Valir",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Bruno",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Zetian",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Bane",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Joy",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Natalia",
+      "parecido": 0.71
+     }
+    ]
+   }
+  },
   {
    "t": 1790936364987,
    "pick": "Minotaur",
@@ -4619,6 +4735,12 @@
   {
    "cuando": "2026-10-02T10:19:39.359Z",
    "partidas": 136,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-02T11:11:01.916Z",
+   "partidas": 137,
    "heroes": 11,
    "incidencia": 11
   }
