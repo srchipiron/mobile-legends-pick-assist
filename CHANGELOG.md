@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.34.0
+
+- Las capturas de la tablet ya no llenan el móvil: van en casa de Termux
+  (no en la galería ni en Descargas) y el lector borra solas las de hace
+  más de tres horas y las que pasan de 40 lecturas o 24 fotogramas, que es
+  lo único que necesita para aprender. La carpeta de Descargas de antes se
+  quita al arrancar `lector`.
+
 ## 3.33.1
 
 - La tablet fijada con `lector --tablet IP:PUERTO` se recuerda en cuanto

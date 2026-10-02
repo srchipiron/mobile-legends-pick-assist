@@ -1639,6 +1639,18 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   última por una referencia (`apuntarSolaAhora`) y solo marca si apuntó.
   Un efecto con pocas dependencias que llama a una función del render
   tiene que llamarla por referencia a la última.
+- **Las capturas llenando el móvil** (3.26.0 → 3.34.0, «se me está
+  llenando el móvil de fotos de partidas») — `lector.sh` las guardaba en
+  `~/storage/downloads/capturas` para que salieran en la galería y se
+  pudieran mandar, y «Leer solo» hace 12 por minuto a 3–4 MB cada una:
+  cientos de MB por tarde, y en la galería. Hoy van a `~/capturas` (casa de
+  Termux, fuera de la galería), `podarCapturas` borra al guardar cada una
+  las de más de `RETENCION_CAPTURAS_MS` (3 h) y las que pasan de
+  `MAX_CAPTURAS` por tipo (40 lecturas, 24 fotogramas, 8 resultados: lo
+  que el aprendizaje llega a mirar), sin tocar nada que no sea una captura
+  del lector, y `lector` quita la carpeta de Descargas al arrancar. Todo
+  lo que un proceso automático escribe en disco lleva su límite desde el
+  primer día, o el primer día que se usa de verdad lo llena.
 - **La primera tanda real de aprendizaje rompió los picks (1 de octubre
   de 2026, 3.30.1)**: a las 20:44 aprendió a Rafaela y a Selena de las
   tres últimas capturas de un draft, y desde entonces los cinco huecos

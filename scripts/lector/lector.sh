@@ -71,9 +71,12 @@ fi
 # Un lector anterior contestaría a la app en lugar de este.
 pkill -f 'scripts/lector/servir.mjs' 2>/dev/null && sleep 1
 
-# Las capturas, donde el móvil las enseña en la galería si Termux tiene
-# acceso al almacenamiento (termux-setup-storage); si no, en casa.
+# Las capturas van en casa de Termux, NO en la galería del móvil, y el lector
+# borra solas las de hace más de unas horas (3.34.0: «se me está llenando el
+# móvil de fotos de partidas»). La carpeta de Descargas de antes se quita.
 CAPTURAS="$HOME/capturas"
-[ -d "$HOME/storage/downloads" ] && CAPTURAS="$HOME/storage/downloads/capturas"
+if [ -d "$HOME/storage/downloads/capturas" ]; then
+  rm -rf "$HOME/storage/downloads/capturas" && echo "Quitadas las capturas de Descargas: ya no se guardan en la galería."
+fi
 mkdir -p "$CAPTURAS"
 exec node "$AQUI/servir.mjs" --guardar-capturas "$CAPTURAS" "$@"

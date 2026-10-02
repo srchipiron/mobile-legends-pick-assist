@@ -301,7 +301,9 @@ busca el puerto de la depuración en la IP conocida. No hay que mirar ni
 escribir el puerto de «Dirección IP y puerto», que cambia cada vez.
 `lector` trae lo último del repositorio, cierra un lector anterior que se
 hubiera quedado abierto y guarda cada captura en `~/capturas` con lo que
-se leyó, para afinar con las que salgan mal. A mano, sin la app:
+se leyó, para aprender de las correcciones; se borran solas a las tres
+horas (y nunca hay más de 40 lecturas), así que no llenan el móvil ni
+salen en la galería. A mano, sin la app:
 `node scripts/lector/leer.mjs --buscar` (o `--tablet IP:PUERTO`).
 
 Si Chrome pregunta si la app puede «acceder a la red local», es el lector,

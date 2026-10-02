@@ -3,11 +3,11 @@
  * scripts/lector/servir.mjs): una captura de la pantalla del draft entra,
  * salen NOMBRES; solo para la app (y su copia local), nunca la imagen.
  */
-import { mkdtempSync, readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync, existsSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { crearServidor, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA } from '../../scripts/lector/servir.mjs';
+import { crearServidor, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS } from '../../scripts/lector/servir.mjs';
 import { guardarResultados } from '../../scripts/lector/resultado.mjs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { carasGuardadas } from '../../scripts/lector/leer.mjs';
@@ -29,6 +29,35 @@ async function conServidor(opciones, fn) {
   const base = `http://127.0.0.1:${servidor.address().port}`;
   try { return await fn(base); } finally { servidor.close(); }
 }
+
+test('las capturas se borran solas: las de hace más de unas horas y las que pasan del tope por tipo, y nada más (3.34.0)', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'lector-poda-'));
+  const t0 = Date.parse('2026-10-02T10:00:00Z');
+  const fecha = (ms) => new Date(ms).toISOString().replace(/[:.]/g, '-');
+  const escribir = (nombre, hace) => { writeFileSync(join(carpeta, nombre), 'x'); utimesSync(join(carpeta, nombre), new Date(t0 - hace), new Date(t0 - hace)); };
+  // Una vieja (con su json y su verdad), una reciente, un fotograma viejo y ficheros ajenos.
+  const vieja = `lectura-${fecha(t0 - RETENCION_CAPTURAS_MS - 60000)}-1`, reciente = `lectura-${fecha(t0 - 60000)}-2`;
+  for (const ext of ['png', 'json', 'verdad.json']) escribir(`${vieja}.${ext}`, RETENCION_CAPTURAS_MS + 60000);
+  escribir(`${reciente}.png`, 60000);
+  escribir(`fotograma-${fecha(t0 - RETENCION_CAPTURAS_MS - 1000)}.png`, RETENCION_CAPTURAS_MS + 1000);
+  escribir('otra-cosa.png', RETENCION_CAPTURAS_MS * 10); escribir('aprendido.json', RETENCION_CAPTURAS_MS * 10);
+  eq(podarCapturas(carpeta, { ahora: t0 }), 4, 'no borra justo las viejas (lectura con sus dos ficheros y el fotograma)');
+  eq(readdirSync(carpeta).sort().join(), ['aprendido.json', 'otra-cosa.png', `${reciente}.png`].sort().join(), `borra lo que no debe o deja lo viejo: ${readdirSync(carpeta)}`);
+  // El tope por tipo: con más lecturas de las que caben, se van las más viejas aunque sean de hace un minuto.
+  for (let i = 0; i < MAX_CAPTURAS.lectura + 5; i++) escribir(`lectura-${fecha(t0 - 30000 + i * 10)}-${i + 3}.png`, 30000 - i * 10);
+  podarCapturas(carpeta, { ahora: t0 });
+  const lecturas = readdirSync(carpeta).filter((n) => n.startsWith('lectura-')).sort();
+  eq(lecturas.length, MAX_CAPTURAS.lectura, `no respeta el tope de lecturas: ${lecturas.length}`);
+  ok(!lecturas.includes(`${reciente}.png`) && lecturas[lecturas.length - 1].endsWith(`-${MAX_CAPTURAS.lectura + 7}.png`), 'con el tope no se van las más viejas');
+  eq(readdirSync(carpeta).filter((n) => !n.startsWith('lectura-')).sort().join(), 'aprendido.json,otra-cosa.png', 'el tope toca ficheros ajenos');
+  // Y el servidor poda al guardar cada captura.
+  escribir(`fotograma-${fecha(t0 - RETENCION_CAPTURAS_MS * 2)}.png`, RETENCION_CAPTURAS_MS * 2);
+  await conServidor({ capturar: () => png, carpeta }, async (base) => {
+    await (await fetch(`${base}/leer`)).json();
+    ok(!readdirSync(carpeta).some((n) => n.startsWith('fotograma-')), 'al guardar una lectura no borra el fotograma viejo');
+    ok(readdirSync(carpeta).some((n) => /^lectura-.*\.png$/.test(n) && !lecturas.includes(n)), 'la lectura nueva no se guarda');
+  });
+});
 
 test('el puerto del lector es el que pide la app', () => {
   eq(PUERTO, PUERTO_LECTOR, 'servir.mjs escucha en un puerto y la app llama a otro');

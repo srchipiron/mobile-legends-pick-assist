@@ -28,7 +28,7 @@
  * Moonton. Este fichero no lanza programas: la captura es la de `leer.mjs`.
  */
 import { createServer } from 'node:http';
-import { mkdirSync, writeFileSync, readFileSync, existsSync, realpathSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, readdirSync, statSync, unlinkSync, existsSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -70,6 +70,42 @@ export function guardarResultadosEn(r, fichero = FICHERO_RESULTADOS) {
 
 /** Cuántas de las últimas capturas de una corrección se miran para elegir las `CAPTURAS_POR_CORRECCION` que sean la pantalla del draft. */
 export const CAPTURAS_A_MIRAR = 8;
+
+/**
+ * Las capturas se borran solas (3.34.0, «se me está llenando el móvil de
+ * fotos»): cada una pesa 3–4 MB a 2400×1504 y leyendo solo salen 12 por
+ * minuto. Solo hacen falta un rato: las de un draft, para aprender de la
+ * corrección al completarlo y al apuntar (las últimas `CAPTURAS_A_MIRAR`);
+ * los fotogramas del final, para aprender la tabla al apuntar. Se queda lo
+ * de las últimas `RETENCION_CAPTURAS_MS` (3 h: una partida con su cola) y
+ * nunca más de `MAX_CAPTURAS` por tipo (40 lecturas son los últimos ~3
+ * minutos de un draft, de sobra para las 8 que se miran). Lo que no es una
+ * captura del lector no se toca.
+ */
+export const RETENCION_CAPTURAS_MS = 3 * 3600000;
+export const MAX_CAPTURAS = { lectura: 40, fotograma: 24, resultado: 8 };
+const FICHERO_DE_CAPTURA = /^(lectura|fotograma|resultado)-[\w-]+?\.(png|json|verdad\.json)$/;
+const idDeCaptura = (n) => n.replace(/\.(png|json|verdad\.json)$/, '');
+export function podarCapturas(carpeta, { ahora = Date.now(), retencionMs = RETENCION_CAPTURAS_MS, maximos = MAX_CAPTURAS } = {}) {
+  let nombres;
+  try { nombres = readdirSync(carpeta); } catch { return 0; }
+  let borrados = 0;
+  for (const tipo of Object.keys(maximos)) {
+    const ficheros = nombres.filter((n) => FICHERO_DE_CAPTURA.test(n) && n.startsWith(`${tipo}-`));
+    // Los ids llevan la hora en el nombre: ordenados, los primeros son los más viejos.
+    const ids = [...new Set(ficheros.map(idDeCaptura))].sort();
+    const sobran = new Set(ids.slice(0, Math.max(0, ids.length - maximos[tipo])));
+    for (const n of ficheros) {
+      const ruta = join(carpeta, n);
+      try {
+        if (!sobran.has(idDeCaptura(n)) && ahora - statSync(ruta).mtimeMs <= retencionMs) continue;
+        unlinkSync(ruta);
+        borrados += 1;
+      } catch { /* ya no está */ }
+    }
+  }
+  return borrados;
+}
 
 /**
  * La vigilancia del final de la partida vive AQUÍ desde 3.33.0: la app avisa
@@ -190,6 +226,12 @@ export function leerCaptura(png, caras, aprendido = null) {
 export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia = VIGILANCIA, ahora = () => Date.now() }) {
   let n = 0, aprendiendo = null;
   resultados = resultados ?? plantillasDeSerie();
+  /** Guarda una captura y borra las que ya no hacen falta (3.34.0). */
+  const guardarCaptura = (nombre, contenido) => {
+    if (!carpeta) return;
+    writeFileSync(join(carpeta, nombre), contenido);
+    podarCapturas(carpeta, { ahora: ahora() });
+  };
   // El final de la partida que se está vigilando (3.33.0): uno a la vez, el del último draft completado.
   let final = null, capturandoFinal = false, relojFinal = null;
   const hora = (t) => new Date(t).toISOString().slice(11, 19);
@@ -219,7 +261,7 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
       final.anterior = f.pequena;
       if (!f.cambio) return;
       const id = `fotograma-${new Date(t).toISOString().replace(/[:.]/g, '-')}`;
-      if (carpeta) writeFileSync(join(carpeta, `${id}.png`), png);
+      guardarCaptura(`${id}.png`, png);
       const leido = reconocerResultado(tiraDe(img), resultados);
       const foto = { id, minuto: Math.round((t - final.desde) / 60000), miniatura: f.miniatura, tira: f.tira, tabla: leido.tabla, resultado: leido.resultado, resultadoParecido: Math.round(leido.parecido * 1000) / 1000 };
       // Hasta `maxFotogramas` pantallas distintas; la de la tabla viaja siempre (sustituye a la última).
@@ -318,7 +360,7 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
       try {
         const img = leerPng(png);
         const id = `resultado-${new Date().toISOString().replace(/[:.]/g, '-')}`;
-        if (carpeta) writeFileSync(join(carpeta, `${id}.png`), png);
+        guardarCaptura(`${id}.png`, png);
         const mini = miniaturasDe(img);
         registrar(`Captura reducida ${id} (${img.ancho}×${img.alto}): ${mini.miniatura.length + mini.tira.length} caracteres.`);
         res.writeHead(200, cabeceras).end(JSON.stringify({ id, ancho: img.ancho, alto: img.alto, ...mini }));
@@ -372,8 +414,8 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
         const id = `lectura-${new Date().toISOString().replace(/[:.]/g, '-')}-${n}`;
         const lectura = { version: VERSION_PUENTE, id, ...leerCaptura(png, caras, aprendido), ms: Date.now() - t0 };
         if (carpeta) {
-          writeFileSync(join(carpeta, `${id}.png`), png);
           writeFileSync(join(carpeta, `${id}.json`), JSON.stringify(lectura, null, 1));
+          guardarCaptura(`${id}.png`, png);
         }
         // Un «?» dice a qué se quedó más cerca: con eso se afina sin pedir la captura.
         const nombres = (l) => l.map((x) => x.nombre ?? (x.candidato ? `?(${x.candidato} ${x.parecido.toFixed(2)})` : '?')).join(', ');
@@ -406,6 +448,10 @@ async function principal() {
   }
   if (carpeta) mkdirSync(carpeta, { recursive: true });
   const registrar = (m) => console.log(m);
+  if (carpeta) {
+    const borradas = podarCapturas(carpeta);
+    if (borradas) registrar(`Borradas ${borradas} capturas antiguas de ${carpeta} (se guardan solo unas horas).`);
+  }
   // `--tablet IP:PUERTO` la fija; `--tablet IP` solo dice dónde buscar.
   const fija = tablet?.includes(':') ? tablet : null;
   const memoria = leerMemoria();

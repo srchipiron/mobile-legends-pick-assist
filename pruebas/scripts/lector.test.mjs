@@ -298,11 +298,12 @@ test('«lector» (lector.sh) se instala solo, cierra el lector anterior, trae lo
   // Un argumento «--actualizado» (el relanzamiento tras git pull) no llega al servidor.
   const r4 = spawnSync('bash', [join(RAIZ, 'scripts/lector/lector.sh'), '--actualizado', '--puerto', '2'], { encoding: 'utf8', env });
   ok(/servir\.mjs --guardar-capturas .* --puerto 2$/m.test(r4.stdout) && !/--actualizado/.test(r4.stdout) && !/git pull/.test(r4.stdout), `tras relanzarse vuelve a hacer pull o pasa --actualizado al servidor: ${r4.stdout}`);
-  // Con acceso al almacenamiento, las capturas van a Descargas (se ven en la galería y se pueden mandar).
-  mkdirSync(join(home, 'storage', 'downloads'), { recursive: true });
+  // Con acceso al almacenamiento las capturas NO van a Descargas (3.34.0: llenaban la galería), y las que había allí se quitan.
+  mkdirSync(join(home, 'storage', 'downloads', 'capturas'), { recursive: true });
+  writeFileSync(join(home, 'storage', 'downloads', 'capturas', 'lectura-vieja.png'), 'x');
   const r2 = spawnSync('bash', [join(RAIZ, 'scripts/lector/lector.sh')], { encoding: 'utf8', env });
-  ok(new RegExp(`--guardar-capturas ${home}/storage/downloads/capturas`).test(r2.stdout), `con ~/storage no guarda en Descargas: ${r2.stdout}`);
-  ok(existsSync(join(home, 'storage', 'downloads', 'capturas')), 'no crea la carpeta de capturas en Descargas');
+  ok(new RegExp(`--guardar-capturas ${home}/capturas`).test(r2.stdout), `con ~/storage guarda en Descargas: ${r2.stdout}`);
+  ok(!existsSync(join(home, 'storage', 'downloads', 'capturas')) && /Quitadas las capturas de Descargas/.test(r2.stdout), 'no quita las capturas antiguas de Descargas');
 });
 
 test('el mismo héroe leído en dos huecos de una fila: se queda el que más se parece, el otro pasa a «?»', () => {
