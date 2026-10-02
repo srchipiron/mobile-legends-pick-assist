@@ -3,24 +3,27 @@
  * verdad (scripts/lector/servir.mjs) en su puerto y una captura real de la
  * tablet de Javi en vez de adb. Mete los baneos y los picks enemigos, se
  * deshace de un toque, viaja con la partida apuntada y, si el lector no
- * está o no llega a la tablet, lo dice.
+ * está o no llega a la tablet, lo dice. Y el final (3.33.0): con el draft
+ * completo el lector vigila por su cuenta y la partida se apunta sola.
  */
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from './navegador.mjs';
-import { crearServidor, PUERTO } from '../../scripts/lector/servir.mjs';
-import { capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
+import { crearServidor, PUERTO, VIGILANCIA } from '../../scripts/lector/servir.mjs';
+import { capturaCompletaPng, pantallaDeFinal, VERDAD } from '../fixtures/juego/captura.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
 const png = capturaCompletaPng();
+const pngTabla = pantallaDeFinal();
 
 let capturar = () => png;
 // Las correcciones que la app devuelve al lector (3.27.0), con el aprendizaje de pega.
 const correcciones = [];
 const aprender = async ({ pares }) => { correcciones.push(pares); return { aprendido: { version: 1, picks: null, caras: {}, capturas: pares.length }, informe: [] }; };
-const puente = crearServidor({ capturar: () => capturar(), carpeta: mkdtempSync(join(tmpdir(), 'lector-e2e-')), aprender, guardar: () => {} });
+// La vigilancia del final con los plazos encogidos (desde el minuto 0, una captura cada 200 ms): lo demás, como en producción.
+const puente = crearServidor({ capturar: () => capturar(), carpeta: mkdtempSync(join(tmpdir(), 'lector-e2e-')), aprender, guardar: () => {}, guardarResultadosDe: () => {}, vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 200 } });
 const abrirPuente = () => new Promise((r) => puente.listen(PUERTO, '127.0.0.1', r));
 const cerrarPuente = () => new Promise((r) => { puente.closeAllConnections?.(); puente.close(r); });
 
@@ -120,6 +123,37 @@ await prueba('«Leer solo»: con el modo encendido la app lee sin tocar nada, lo
   await pagina.reload({ waitUntil: 'networkidle' }); await pagina.waitForTimeout(400);
   eq(await pagina.locator('.lector-auto').getAttribute('aria-pressed'), 'false', 'el interruptor no se recuerda apagado');
   ok(!errores.length, `errores de página: ${errores}`);
+  await contexto.close();
+});
+
+await prueba('con «Leer solo» y el draft completo, el lector vigila el final por su cuenta y la partida se apunta sola, con «Deshacer» (3.33.0)', async () => {
+  // La tablet enseña la tabla de la derrota (incidencia #15); la app NO pide capturas: avisa y recoge.
+  capturar = () => pngTabla;
+  const completoDesde = Date.now() - 9 * 60 * 1000;
+  const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], enemyRoam: null, fase: 'picks', completoDesde };
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:lector-auto': true, 'roam-picker:draft': draft } });
+  // El lector recibe el aviso con el instante del draft completo y en los INTERVALO_FINAL_MS siguientes la app recoge el resultado.
+  let partidas = [];
+  for (let i = 0; i < 100 && !partidas.length; i++) { await pagina.waitForTimeout(250); partidas = (await leer(pagina, 'roam-picker:partidas')) ?? []; }
+  eq(partidas.length, 1, 'la partida no se apunta sola con la tabla a la vista');
+  const [p] = partidas;
+  ok(p.origen === 'lector' && p.gane === false && p.draft?.enemigos?.length === 5 && p.pick, `la partida apuntada sola no es la del draft, perdida y del lector: ${JSON.stringify({ origen: p.origen, gane: p.gane, pick: p.pick, enemigos: p.draft?.enemigos })}`);
+  ok(Math.abs(p.t - Date.now()) < 60000, 'la partida no va fechada cuando el lector vio la tabla');
+  const aviso = pagina.locator('.aviso-deshacer');
+  ok(/apuntada sola/.test(await aviso.innerText()) && /[Pp]erdida/.test(await aviso.innerText()), `el aviso no dice que se apuntó sola y cómo: ${await aviso.innerText()}`);
+  eq((await leer(pagina)).enemies.length, 0, 'el draft no se reinicia al apuntar');
+  // Lo apuntado solo vuelve al lector como enseñanza (la tabla contestada «perdida» se suma a la de serie).
+  let estado = null;
+  for (let i = 0; i < 20 && estado?.resultados?.perdi !== 2; i++) { await pagina.waitForTimeout(250); estado = await (await fetch(`http://127.0.0.1:${PUERTO}/estado`)).json(); }
+  eq(estado?.resultados?.perdi, 2, `el lector no aprende de la partida apuntada sola: ${JSON.stringify(estado?.resultados)}`);
+  // «Deshacer» olvida la partida y devuelve el draft, y no se vuelve a apuntar sola.
+  await aviso.getByRole('button', { name: 'Deshacer' }).click(); await pagina.waitForTimeout(500);
+  eq(((await leer(pagina, 'roam-picker:partidas')) ?? []).length, 0, 'deshacer no olvida la partida');
+  eq((await leer(pagina)).enemies.join(), draft.enemies.join(), 'deshacer no devuelve el draft');
+  await pagina.waitForTimeout(1500);
+  eq(((await leer(pagina, 'roam-picker:partidas')) ?? []).length, 0, 'tras deshacer se vuelve a apuntar sola');
+  ok(!errores.length, `errores de página: ${errores}`);
+  capturar = () => png;
   await contexto.close();
 });
 

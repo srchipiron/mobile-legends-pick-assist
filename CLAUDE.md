@@ -1606,10 +1606,39 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   tabla real (otros marcadores, otro reloj) contra la cabecera de serie,
   y la de VICTORIA; si `esTabla` queda corto, no pasa nada automático y
   Javi sigue contestando (fallo seguro); si se aprende algo mal, su
-  siguiente Gané/Perdí lo quita. Cinco mutaciones en el módulo; el
-  apuntado automático no tiene prueba de navegador (son 8 minutos de
-  reloj). La vigilancia de 3.30.0 (subir fotogramas al proyecto) sigue:
-  es como se mide esto.
+  siguiente Gané/Perdí lo quita. Cinco mutaciones en el módulo. La
+  vigilancia de 3.30.0 (subir fotogramas al proyecto) sigue: es como se
+  mide esto. Desde 3.33.0 el apuntado automático SÍ tiene prueba de
+  navegador (`lector.e2e`, con los plazos del lector encogidos).
+- **La vigilancia del final, en la app, que no está a la vista mientras
+  se juega** (3.30.0 → 3.33.0, tres partidas el 2 de octubre de 2026) —
+  la app pedía un fotograma cada 10 s SOLO con la pestaña visible
+  (`visibilityState`), y Javi juega en la tablet con el móvil en el
+  bolsillo: las incidencias #18–#20 traían 1–2 pantallas por partida, las
+  de los momentos en que miraba el móvil (la de rango, la de MVP con
+  «VICTORY» arriba a la izquierda, una en partida, la de estadísticas),
+  nunca la tabla; las tres partidas se apuntaron a mano (`origen`
+  ausente) y él creía que «ya diferencia entre ganada y perdida». Desde
+  3.33.0 vigila el LECTOR (`VIGILANCIA` y `/vigilar`, `/final` en
+  servir.mjs): la app le manda `completoDesde` nada más completar el
+  draft (y cada vez que `/final` no es de este draft: así sobrevive a un
+  reinicio del lector) y él captura por su cuenta del minuto 8 al 25,
+  guarda hasta 8 pantallas distintas (la de la tabla siempre) y el
+  resultado con su instante (`resultadoEn`, que es la fecha de la
+  partida apuntada sola: la app puede recogerla horas después). La app
+  solo recoge (`pedirFinal`, `fundirFinal`: solo lo de ESTE draft, sin
+  repetir ids) cada 10 s mientras está a la vista. El reloj es el mismo
+  (los dos en el móvil), así que `desde` se compara tal cual. Lección:
+  lo que tiene que pasar mientras el móvil está en el bolsillo no puede
+  depender de una pestaña del navegador; va en el proceso que sigue
+  despierto (Termux con `termux-wake-lock`, que lector.sh ya pedía). Y
+  la prueba de navegador nueva cazó un segundo fallo que 3.32.0 ya tenía:
+  el `tic` del efecto llamaba a la `apuntarSola` del render en que se
+  creó, con el `rec` de antes de llegar el meta (sin nº1, `pick` nulo),
+  y marcaba el draft como apuntado sin apuntar nada. Hoy llama a la
+  última por una referencia (`apuntarSolaAhora`) y solo marca si apuntó.
+  Un efecto con pocas dependencias que llama a una función del render
+  tiene que llamarla por referencia a la última.
 - **La primera tanda real de aprendizaje rompió los picks (1 de octubre
   de 2026, 3.30.1)**: a las 20:44 aprendió a Rafaela y a Selena de las
   tres últimas capturas de un draft, y desde entonces los cinco huecos

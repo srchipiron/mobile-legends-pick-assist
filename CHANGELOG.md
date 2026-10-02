@@ -8,6 +8,22 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.33.0
+
+- El final de la partida lo vigila el lector de Termux por su cuenta, no la
+  app: con «Leer solo», al completar el draft la app le avisa y él mira la
+  tablet del minuto 8 al 25 (una captura cada 10 s) aunque el móvil esté en
+  el bolsillo con la pantalla apagada; cuando vuelves a abrir la app,
+  recoge lo que vio y, si vio la tabla de resultado, apunta la partida
+  (fechada cuando acabó) con «Deshacer». Hasta ahora era la app la que
+  pedía las capturas y solo con la pestaña a la vista: en las tres
+  partidas del 2 de octubre los únicos fotogramas eran de los momentos en
+  que se miraba el móvil (rango, MVP, en partida) y la tabla no se vio
+  nunca, así que nada se apuntó solo.
+- «No veo la tablet» dice ahora qué hacer en una wifi ajena (la del
+  trabajo puede aislar los aparatos: compartir internet desde el móvil) y
+  cómo decirle al lector dónde está (`lector --tablet IP:PUERTO`).
+
 ## 3.32.1
 
 - El acceso directo «Lector» de Termux:Widget vuelve a funcionar. Android

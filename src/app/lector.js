@@ -95,12 +95,16 @@ export async function corregirLectura({ ids = [], enemigos = [], baneos = [], ba
 }
 
 /**
- * Vigilar el final de la partida (3.30.0): desde `DESDE_FINAL_MIN` minutos
- * después de completar el draft (antes es jugar, y una captura en una
- * teamfight puede dar un tirón en la tablet) hasta `HASTA_FINAL_MIN`, un
- * fotograma cada `INTERVALO_FINAL_MS`. Decisiones de producto: una partida
- * dura 10–20 minutos; con 30 s la pantalla de resultado (que se queda hasta
- * que se toca) no se escapa.
+ * Vigilar el final de la partida (3.30.0; desde 3.33.0 la vigila el LECTOR):
+ * desde `DESDE_FINAL_MIN` minutos después de completar el draft (antes es
+ * jugar, y una captura en una teamfight puede dar un tirón en la tablet)
+ * hasta `HASTA_FINAL_MIN`, una captura cada `INTERVALO_FINAL_MS`. Decisiones
+ * de producto: una partida dura 10–20 minutos y la tabla de resultado pasa
+ * en segundos. Los captura el lector en Termux, que sigue despierto con el
+ * móvil en el bolsillo: la app solo le avisa de cuándo se completó el draft
+ * (`avisarVigilancia`) y recoge lo vigilado (`pedirFinal`) cada
+ * `INTERVALO_FINAL_MS` mientras está a la vista. Mismos números que
+ * `VIGILANCIA` en servir.mjs (hay prueba).
  */
 export const DESDE_FINAL_MIN = 8;
 export const HASTA_FINAL_MIN = 25;
@@ -109,13 +113,67 @@ export const INTERVALO_FINAL_MS = 10000;
 export const DESHACER_APUNTADA_MS = 20000;
 export const MAX_FOTOGRAMAS = 8;
 
-export const tocaVigilarFinal = ({ auto, visible = true, completoDesde, ahora }) => {
-  if (!auto || !visible || !completoDesde) return false;
-  const min = (ahora - completoDesde) / 60000;
-  return min >= DESDE_FINAL_MIN && min <= HASTA_FINAL_MIN;
-};
+/** ¿Toca preguntar al lector por el final? Con el modo encendido, la app a la vista y el draft completo: el reloj lo lleva el lector. */
+export const tocaVigilarFinal = ({ auto, visible = true, completoDesde }) => !!auto && visible && !!completoDesde;
 
-/** Un fotograma del lector: `{ cambio }` o `{ cambio: true, id, miniatura, tira }`. Lanza con tipo si no hay lector. */
+/**
+ * Avisa al lector de que el draft se completó en `desde` (reloj del móvil,
+ * el mismo que el suyo): desde entonces vigila el final por su cuenta.
+ * Devuelve lo vigilado hasta ahora, o null si no hay lector. Nunca lanza.
+ */
+export async function avisarVigilancia({ desde, base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+  if (!Number.isFinite(desde)) return null;
+  const corte = new AbortController();
+  const reloj = setTimeout(() => corte.abort(), plazoMs);
+  try {
+    const r = await pedir(`${base}/vigilar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ desde }), cache: 'no-store', signal: corte.signal });
+    const cuerpo = r.ok ? await r.json().catch(() => null) : null;
+    return cuerpo && Array.isArray(cuerpo.fotogramas) ? cuerpo : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(reloj);
+  }
+}
+
+/** Lo vigilado por el lector: `{ desde, activa, resultado, resultadoId, resultadoEn, fotogramas }`. Lanza con tipo si no hay lector. */
+export async function pedirFinal({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+  const corte = new AbortController();
+  const reloj = setTimeout(() => corte.abort(), plazoMs);
+  let respuesta;
+  try {
+    respuesta = await pedir(`${base}/final`, { cache: 'no-store', signal: corte.signal });
+  } catch {
+    throw fallo(corte.signal.aborted ? 'plazo' : 'sinPuente');
+  } finally {
+    clearTimeout(reloj);
+  }
+  let cuerpo = null;
+  try { cuerpo = await respuesta.json(); } catch { /* cuerpo vacío */ }
+  if (!respuesta.ok || !cuerpo || !Array.isArray(cuerpo.fotogramas)) throw fallo('error');
+  return cuerpo;
+}
+
+/**
+ * Funde lo vigilado por el lector con los fotogramas que la app ya tiene:
+ * solo si es de ESTE draft (`desde` igual a `completoDesde`; si no, es de
+ * otro o el lector se reinició), sin repetir ids y sin pasar de `maximo`.
+ * `resultado` es 'gane' o 'perdi' cuando el lector vio la tabla, con
+ * `resultadoEn` (cuándo la vio: el instante de la partida apuntada sola).
+ */
+export function fundirFinal(actuales, final, { completoDesde, maximo = MAX_FOTOGRAMAS }) {
+  if (!final || !Number.isFinite(completoDesde) || final.desde !== completoDesde) return { suyo: false, fotogramas: actuales, resultado: null, resultadoEn: null };
+  const ids = new Set(actuales.map((f) => f.id));
+  const fotogramas = [...actuales];
+  for (const f of Array.isArray(final.fotogramas) ? final.fotogramas : []) {
+    if (!f || typeof f.id !== 'string' || ids.has(f.id) || fotogramas.length >= maximo) continue;
+    fotogramas.push({ id: f.id, minuto: f.minuto, miniatura: f.miniatura, tira: f.tira });
+    ids.add(f.id);
+  }
+  const resultado = final.resultado === 'gane' || final.resultado === 'perdi' ? final.resultado : null;
+  return { suyo: true, fotogramas, resultado, resultadoEn: resultado && Number.isFinite(final.resultadoEn) ? final.resultadoEn : null };
+}
+
 /**
  * Lo que contestó Javi (o lo que se apuntó solo) con los fotogramas de esa
  * partida, para que el lector aprenda la palabra de la tabla (3.32.0).
@@ -133,24 +191,6 @@ export async function ensenarResultado({ ids = [], gane, base = URL_LECTOR, plaz
   } finally {
     clearTimeout(reloj);
   }
-}
-
-export async function pedirFotograma({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
-  const corte = new AbortController();
-  const reloj = setTimeout(() => corte.abort(), plazoMs);
-  let respuesta;
-  try {
-    respuesta = await pedir(`${base}/captura?fotograma=1`, { cache: 'no-store', signal: corte.signal });
-  } catch {
-    throw fallo(corte.signal.aborted ? 'plazo' : 'sinPuente');
-  } finally {
-    clearTimeout(reloj);
-  }
-  let cuerpo = null;
-  try { cuerpo = await respuesta.json(); } catch { /* cuerpo vacío */ }
-  if (!respuesta.ok) throw fallo(['tablet', 'emparejar', 'captura'].includes(cuerpo?.error) ? cuerpo.error : 'error');
-  if (!cuerpo || typeof cuerpo.cambio !== 'boolean') throw fallo('error');
-  return cuerpo;
 }
 
 /**

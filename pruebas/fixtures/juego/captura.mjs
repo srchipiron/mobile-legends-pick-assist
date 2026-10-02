@@ -51,3 +51,18 @@ export function capturaCompleta({ conPicks = true, columna = 1, conAliados = tru
 }
 
 export const capturaCompletaPng = (opciones) => escribirPng(capturaCompleta(opciones));
+
+/**
+ * Una pantalla ENTERA (2400×1504) con una franja real del final de partida
+ * (320 px de ancho, `finales/*.png`) ampliada arriba: al reducirla el lector
+ * saca la misma franja. Por defecto, la tabla de la derrota (incidencia #15).
+ */
+export function pantallaDeFinal(fichero = 'finales/tabla-derrota.png') {
+  const tira = leerPng(readFileSync(aqui(fichero)));
+  const ancho = 2400, alto = 1504, esc = ancho / tira.ancho, rgba = new Uint8Array(ancho * alto * 4);
+  for (let y = 0; y < Math.round(tira.alto * esc); y++) for (let x = 0; x < ancho; x++) {
+    const i = (Math.floor(y / esc) * tira.ancho + Math.floor(x / esc)) * 4;
+    rgba.set(tira.rgba.subarray(i, i + 4), (y * ancho + x) * 4);
+  }
+  return escribirPng({ ancho, alto, rgba });
+}

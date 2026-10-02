@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { pedirLectura, pedirFotograma, ensenarResultado, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, TOPE_MENSAJE } from '../../src/app/lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -75,31 +75,41 @@ test('leyendo solo: cuándo toca y cuándo no, y las dudas compactas de una lect
   eq(dudasDeLectura(null).length, 0, 'una lectura vacía da dudas');
 });
 
-test('el final de la partida (temporal): cuándo se vigila, qué fotograma se pide y cómo se suben sin pasarse del mensaje', async () => {
-  const t0 = 1_700_000_000_000, min = (m) => t0 + m * 60000;
-  ok(!tocaVigilarFinal({ auto: true, completoDesde: t0, ahora: min(DESDE_FINAL_MIN - 1) }), 'vigila antes del minuto de empezar (una captura en una teamfight da un tirón)');
-  ok(tocaVigilarFinal({ auto: true, completoDesde: t0, ahora: min(DESDE_FINAL_MIN) }), 'no vigila desde el minuto de empezar');
-  ok(tocaVigilarFinal({ auto: true, completoDesde: t0, ahora: min(HASTA_FINAL_MIN) }), 'no vigila hasta el minuto de parar');
-  ok(!tocaVigilarFinal({ auto: true, completoDesde: t0, ahora: min(HASTA_FINAL_MIN + 1) }), 'sigue vigilando pasado el tope');
-  ok(!tocaVigilarFinal({ auto: false, completoDesde: t0, ahora: min(10) }), 'vigila con el modo apagado');
-  ok(!tocaVigilarFinal({ auto: true, completoDesde: null, ahora: min(10) }), 'vigila sin draft completo');
-  ok(!tocaVigilarFinal({ auto: true, visible: false, completoDesde: t0, ahora: min(10) }), 'vigila con la app escondida');
+test('el final de la partida: cuándo se pregunta al lector, cómo se le avisa, qué se recoge y cómo se sube sin pasarse del mensaje', async () => {
+  const t0 = 1_700_000_000_000;
+  ok(tocaVigilarFinal({ auto: true, completoDesde: t0 }), 'con el modo encendido y el draft completo no pregunta');
+  ok(!tocaVigilarFinal({ auto: false, completoDesde: t0 }), 'pregunta con el modo apagado');
+  ok(!tocaVigilarFinal({ auto: true, completoDesde: null }), 'pregunta sin draft completo');
+  ok(!tocaVigilarFinal({ auto: true, visible: false, completoDesde: t0 }), 'pregunta con la app escondida');
   ok(INTERVALO_FINAL_MS >= 5000 && INTERVALO_FINAL_MS <= 15000 && DESDE_FINAL_MIN >= 5 && HASTA_FINAL_MIN > DESDE_FINAL_MIN, 'los plazos no son los de una partida (10–20 min) con capturas cada pocos segundos (la tabla de resultado dura poco en pantalla)');
-  // La petición: con cambio trae las imágenes; sin cambio, solo que no cambió.
-  const con = await pedirFotograma({ pedir: async (url) => { ok(/\/captura\?fotograma=1$/.test(url), `pide a ${url}`); return new Response(JSON.stringify({ id: 'fotograma-1', cambio: true, miniatura: 'AAA', tira: 'BBB' }), { status: 200 }); } });
-  eq(`${con.cambio} ${con.id}`, 'true fotograma-1');
-  eq((await pedirFotograma({ pedir: async () => new Response(JSON.stringify({ id: 'x', cambio: false }), { status: 200 }) })).cambio, false);
-  // El resultado leído de la tabla llega tal cual (3.32.0), y lo contestado vuelve al lector con los fotogramas.
-  eq((await pedirFotograma({ pedir: async () => new Response(JSON.stringify({ id: 'fotograma-2', cambio: true, miniatura: 'A', tira: 'B', tabla: true, resultado: 'gane', resultadoParecido: 0.91 }), { status: 200 }) })).resultado, 'gane', 'el resultado leído no llega a la app');
+  // El aviso: POST /vigilar con el instante del draft completo; devuelve lo vigilado, y sin lector (o sin instante) null, sin lanzar.
+  const avisos = [];
+  const a = await avisarVigilancia({ desde: t0, pedir: async (url, o) => { avisos.push({ url, o }); return new Response(JSON.stringify({ desde: t0, activa: true, resultado: null, fotogramas: [] }), { status: 200 }); } });
+  ok(a?.desde === t0 && /\/vigilar$/.test(avisos[0].url) && avisos[0].o.method === 'POST' && JSON.parse(avisos[0].o.body).desde === t0, `el aviso no llega como debe: ${JSON.stringify(avisos)}`);
+  eq(await avisarVigilancia({ desde: t0, pedir: async () => { throw new Error('sin lector'); } }), null, 'sin lector lanza');
+  eq(await avisarVigilancia({ desde: null, pedir: async () => { throw new Error('no debía pedir'); } }), null, 'sin instante pide igual');
+  // Lo vigilado: GET /final, tal cual; una respuesta sin fotogramas es «error».
+  const con = await pedirFinal({ pedir: async (url) => { ok(/\/final$/.test(url), `pide a ${url}`); return new Response(JSON.stringify({ desde: t0, activa: false, resultado: 'gane', resultadoId: 'fotograma-2', resultadoEn: t0 + 900000, fotogramas: [{ id: 'fotograma-2', minuto: 15, miniatura: 'A', tira: 'B', tabla: true, resultado: 'gane' }] }), { status: 200 }); } });
+  eq(`${con.desde} ${con.resultado} ${con.fotogramas.length}`, `${t0} gane 1`, 'lo vigilado no llega tal cual');
+  // Fundir: solo lo de ESTE draft, sin repetir ids, sin pasar del tope, y el resultado con su instante.
+  const final = { desde: t0, resultado: 'gane', resultadoEn: t0 + 900000, fotogramas: Array.from({ length: MAX_FOTOGRAMAS + 2 }, (_, i) => ({ id: `fotograma-${i}`, minuto: 8 + i, miniatura: 'M', tira: 'T', tabla: i === 3, resultado: i === 3 ? 'gane' : null })) };
+  const otro = fundirFinal([{ id: 'fotograma-0', minuto: 8, miniatura: 'M', tira: 'T' }], final, { completoDesde: t0 + 1 });
+  ok(otro.suyo === false && otro.resultado === null && otro.fotogramas.length === 1, `lo de otro draft se toma por este: ${JSON.stringify(otro)}`);
+  const mio = fundirFinal([{ id: 'fotograma-0', minuto: 8, miniatura: 'M', tira: 'T' }], final, { completoDesde: t0 });
+  ok(mio.suyo && mio.resultado === 'gane' && mio.resultadoEn === t0 + 900000, `el resultado no llega con su instante: ${JSON.stringify({ suyo: mio.suyo, resultado: mio.resultado, en: mio.resultadoEn })}`);
+  eq(mio.fotogramas.map((f) => f.id).join(), Array.from({ length: MAX_FOTOGRAMAS }, (_, i) => `fotograma-${i}`).join(), 'repite ids o se pasa del tope de fotogramas');
+  ok(!('tabla' in mio.fotogramas[1]), 'el fotograma guarda más de lo que se sube');
+  eq(fundirFinal([], { desde: t0, resultado: 'empate', fotogramas: [] }, { completoDesde: t0 }).resultado, null, 'un resultado que no es gane/perdi se toma por bueno');
+  eq(fundirFinal([], null, { completoDesde: t0 }).suyo, false, 'sin respuesta se toma por de este draft');
   const ensenadas = [];
   const e = await ensenarResultado({ ids: ['fotograma-1', 'fotograma-2'], gane: true, pedir: async (url, o) => { ensenadas.push({ url, o }); return new Response(JSON.stringify({ aprendidos: 1 }), { status: 200 }); } });
   ok(e?.aprendidos === 1 && /\/resultado$/.test(ensenadas[0].url) && ensenadas[0].o.method === 'POST' && JSON.parse(ensenadas[0].o.body).gane === true && JSON.parse(ensenadas[0].o.body).ids.length === 2, `el resultado no se enseña al lector: ${JSON.stringify(ensenadas)}`);
   eq(await ensenarResultado({ ids: [], gane: true, pedir: async () => { throw new Error('no debía pedir'); } }), null, 'sin fotogramas pide igual');
   eq(await ensenarResultado({ ids: ['fotograma-1'], gane: false, pedir: async () => { throw new Error('sin lector'); } }), null, 'sin lector lanza');
-  const tipo = async (pedir) => { try { await pedirFotograma({ pedir, plazoMs: 1000 }); return 'ok'; } catch (e) { return e.tipo; } };
+  const tipo = async (pedir) => { try { await pedirFinal({ pedir, plazoMs: 1000 }); return 'ok'; } catch (e) { return e.tipo; } };
   eq(await tipo(() => Promise.reject(new TypeError('Failed to fetch'))), 'sinPuente');
-  eq(await tipo(() => Promise.resolve(new Response(JSON.stringify({ error: 'tablet' }), { status: 502 }))), 'tablet');
-  eq(await tipo(() => Promise.resolve(new Response(JSON.stringify({ id: 'x' }), { status: 200 }))), 'error', 'una respuesta sin «cambio» no es «error»');
+  eq(await tipo(() => Promise.resolve(new Response(JSON.stringify({ error: 'origen no permitido' }), { status: 403 }))), 'error');
+  eq(await tipo(() => Promise.resolve(new Response(JSON.stringify({ desde: null }), { status: 200 }))), 'error', 'una respuesta sin fotogramas no es «error»');
   // La incidencia: resultado, minuto e imágenes; y con muchas, se corta antes de pasarse del mensaje.
   const fotos = Array.from({ length: 8 }, (_, i) => ({ id: `fotograma-${i}`, minuto: 8 + i, miniatura: 'M'.repeat(9000), tira: 'T'.repeat(19000) }));
   const c = cuerpoDeFotogramas({ fotogramas: fotos, resultado: 'gane', version: '3.30.0' });

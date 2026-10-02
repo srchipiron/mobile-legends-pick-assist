@@ -21,7 +21,7 @@ import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
-import { pedirLectura, pedirFotograma, ensenarResultado, cuerpoDeFotogramas, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, MAX_FOTOGRAMAS, DESDE_FINAL_MIN, DESHACER_APUNTADA_MS } from './lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, cuerpoDeFotogramas, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto } from './estado/useDraft.js';
 import { useAhora } from './estado/useAhora.js';
 import { ApuntarPartida } from './componentes/ApuntarPartida.jsx';
@@ -130,12 +130,13 @@ export default function App() {
   // Los refs del lector (3.25.0+): si está leyendo ahora y cuándo fue la última.
   const leyendoAhora = useRef(false);
   const ultimaLectura = useRef(0);
-  // El final de la partida (3.30.0, TEMPORAL hasta que el cartel de
-  // victoria/derrota esté medido): con «Leer solo», desde el minuto 8 tras
-  // completar el draft se pide un fotograma cada 30 s; el lector solo
-  // devuelve los que cambian de pantalla (juego → resultado → vestíbulo).
-  // Se guardan aquí y se suben solos al proyecto al apuntar la partida o al
-  // empezar otro draft, para medir el cartel sin que nadie toque nada.
+  // El final de la partida (3.30.0): con «Leer solo», al completar el draft
+  // se avisa al lector y ÉL captura (3.33.0: la app no está a la vista
+  // mientras se juega en la tablet) del minuto 8 al 25, quedándose con las
+  // pantallas que cambian (juego → resultado → vestíbulo) y leyendo la tabla
+  // de resultado. Aquí se recogen cuando la app vuelve a estar a la vista,
+  // se apunta la partida si vio el resultado (3.32.0) y los fotogramas se
+  // suben solos al proyecto al apuntar o al empezar otro draft, para medir.
   const fotogramas = useRef([]);
   const vigilando = useRef(false);
   const ahora = useAhora();
@@ -185,14 +186,21 @@ export default function App() {
   // (olvida la partida y devuelve el draft tal cual estaba).
   const apuntadaSola = useRef(null);
   const [apuntada, setApuntada] = useState(null);
-  const apuntarSola = (gane) => {
+  const apuntarSola = (gane, t = Date.now()) => {
     const antes = draft.foto();
-    const t = Date.now();
     const pick = rec.eleccion?.heroe.name ?? draft.miPick;
-    if (!pick) return;
+    if (!pick) return false;
     guardarPartida(pick, gane, { t, origen: 'lector' });
     setApuntada({ t, gane, antes });
+    return true;
   };
+  // El tic de abajo vive en un efecto que no se rehace con cada render: tiene
+  // que llamar a la ÚLTIMA apuntarSola (con el ranking de ahora), no a la del
+  // render en que se creó, cuando el meta aún no había llegado y no había
+  // nº1 (cazado en la prueba de navegador de 3.33.0: el resultado llegaba y
+  // no se apuntaba nada).
+  const apuntarSolaAhora = useRef(apuntarSola);
+  apuntarSolaAhora.current = apuntarSola;
   useEffect(() => {
     if (!apuntada) return undefined;
     const reloj = setTimeout(() => setApuntada((a) => (a === apuntada ? null : a)), DESHACER_APUNTADA_MS);
@@ -204,24 +212,22 @@ export default function App() {
     draft.restaurar(apuntada.antes);
     setApuntada(null);
   };
-  // Vigilar el final de la partida (3.30.0): va DESPUÉS de apuntarSola y guardarPartida, que usa.
+  // Recoger el final de la partida que vigila el lector (3.33.0): va DESPUÉS de apuntarSola y guardarPartida, que usa.
   useEffect(() => {
-    if (!tocaVigilarFinal({ auto: lectorAuto, completoDesde: draft.completoDesde, ahora: Date.now() })) return undefined;
+    if (!tocaVigilarFinal({ auto: lectorAuto, completoDesde: draft.completoDesde })) return undefined;
     const tic = async () => {
-      if (vigilando.current || leyendoAhora.current || document.visibilityState !== 'visible') return;
-      if (!tocaVigilarFinal({ auto: lectorAuto, completoDesde: draft.completoDesde, ahora: Date.now() })) return;
+      if (vigilando.current || document.visibilityState !== 'visible') return;
       vigilando.current = true;
       try {
-        const f = await pedirFotograma();
-        if (f.cambio && fotogramas.current.length < MAX_FOTOGRAMAS) {
-          fotogramas.current.push({ id: f.id, minuto: Math.round((Date.now() - draft.completoDesde) / 60000), miniatura: f.miniatura, tira: f.tira });
-        }
-        // La tabla de resultado con una palabra conocida (3.32.0): la partida se apunta SOLA, con «Deshacer».
-        if (f.cambio && (f.resultado === 'gane' || f.resultado === 'perdi') && apuntadaSola.current !== draft.completoDesde) {
-          apuntadaSola.current = draft.completoDesde;
-          apuntarSola(f.resultado === 'gane');
-        }
-      } catch { /* sin lector o sin tablet: se vuelve a intentar en el siguiente tic */ }
+        let f = await pedirFinal();
+        // El lector no sabe de este draft (acaba de completarse, o se reinició): se le avisa, y contesta con lo que tenga.
+        if (f.desde !== draft.completoDesde) f = (await avisarVigilancia({ desde: draft.completoDesde })) ?? f;
+        const { suyo, fotogramas: lista, resultado, resultadoEn } = fundirFinal(fotogramas.current, f, { completoDesde: draft.completoDesde });
+        if (!suyo) return;
+        fotogramas.current = lista;
+        // La tabla de resultado con una palabra conocida (3.32.0): la partida se apunta SOLA, con «Deshacer», fechada cuando el lector vio la tabla.
+        if (resultado && apuntadaSola.current !== draft.completoDesde && apuntarSolaAhora.current(resultado === 'gane', resultadoEn ?? Date.now())) apuntadaSola.current = draft.completoDesde;
+      } catch { /* sin lector: se vuelve a intentar en el siguiente tic */ }
       finally { vigilando.current = false; }
     };
     const reloj = setInterval(tic, INTERVALO_FINAL_MS);

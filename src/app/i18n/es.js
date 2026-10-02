@@ -382,7 +382,7 @@ export default {
   'lector.leyendo': 'Leyendo…',
   'lector.sinPuente': 'No encuentro el lector. Abre Termux y escribe: lector. Si Chrome pregunta por la red local, permítelo.',
   'lector.plazo': 'El lector no ha contestado a tiempo: ¿están la tablet y el móvil en la misma wifi?',
-  'lector.tablet': 'No veo la tablet en la wifi: enciende su depuración inalámbrica (Opciones de desarrollador) y que esté en la misma wifi que el móvil.',
+  'lector.tablet': 'No veo la tablet en la wifi: enciende su depuración inalámbrica (Opciones de desarrollador) y que esté en la misma wifi que el móvil (no con datos). En una wifi ajena (trabajo) puede que los aparatos no se vean entre sí: comparte internet desde el móvil, o dile dónde está en Termux: lector --tablet IP:PUERTO.',
   'lector.emparejar': 'La tablet no deja entrar al móvil: hay que emparejarlos una vez. En la tablet, «Vincular dispositivo con código»; en Termux, adb pair IP:PUERTO con ese código.',
   'lector.captura': 'El lector ve la tablet pero no consigue la captura: apaga y enciende la depuración inalámbrica de la tablet y vuelve a tocar.',
   'lector.error': 'El lector ha contestado algo que no entiendo: actualiza el repositorio en Termux (git pull) y vuelve a abrirlo.',

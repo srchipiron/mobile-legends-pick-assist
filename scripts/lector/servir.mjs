@@ -21,6 +21,9 @@
  * `--guardar-capturas carpeta` deja cada captura y lo que se leyó de ella,
  * para afinar el lector con las que salgan mal.
  *
+ * Y desde 3.33.0 VIGILA EL FINAL de la partida por su cuenta (`/vigilar`,
+ * `/final`): Termux sigue despierto con el móvil en el bolsillo; la app no.
+ *
  * SEGURIDAD: como `leer.mjs`, no toca la pantalla de la tablet ni habla con
  * Moonton. Este fichero no lanza programas: la captura es la de `leer.mjs`.
  */
@@ -67,6 +70,22 @@ export function guardarResultadosEn(r, fichero = FICHERO_RESULTADOS) {
 
 /** Cuántas de las últimas capturas de una corrección se miran para elegir las `CAPTURAS_POR_CORRECCION` que sean la pantalla del draft. */
 export const CAPTURAS_A_MIRAR = 8;
+
+/**
+ * La vigilancia del final de la partida vive AQUÍ desde 3.33.0: la app avisa
+ * de cuándo se completó el draft (`POST /vigilar { desde }`) y el lector, que
+ * en Termux sigue despierto con el móvil en el bolsillo, captura por su
+ * cuenta cada `intervaloMs` desde el minuto `desdeMin` hasta el `hastaMin`,
+ * se queda con los fotogramas en que la pantalla cambia (hasta
+ * `maxFotogramas`; el de la tabla siempre) y reconoce el resultado; la app
+ * lo recoge (`GET /final`) cuando vuelve a estar a la vista. Hasta 3.32.1 era
+ * la app la que pedía fotogramas, y solo con la pestaña visible: en las tres
+ * partidas del 2 de octubre de 2026 los únicos fotogramas eran de cuando
+ * Javi miraba el móvil (rango, MVP, en partida) y la tabla no se vio nunca.
+ * Los mismos números que `src/app/lector.js` (hay prueba); el reloj es el
+ * del móvil en los dos lados, así que `desde` se compara tal cual.
+ */
+export const VIGILANCIA = { desdeMin: 8, hastaMin: 25, intervaloMs: 10000, maxFotogramas: 8 };
 
 /** Lo aprendido, si es de la versión actual: lo de 3.27.0–3.30.0 (versión 1) se aprendió sin guardas y se descarta. */
 export function leerAprendido(fichero = FICHERO_APRENDIDO) {
@@ -156,9 +175,61 @@ export function leerCaptura(png, caras, aprendido = null) {
  * El servidor, con la captura inyectada: en Termux es `capturarTablet`, en
  * las pruebas una captura de fichero.
  */
-export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn }) {
-  let n = 0, aprendiendo = null, fotogramaAnterior = null;
+export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia = VIGILANCIA, ahora = () => Date.now() }) {
+  let n = 0, aprendiendo = null;
   resultados = resultados ?? plantillasDeSerie();
+  // El final de la partida que se está vigilando (3.33.0): uno a la vez, el del último draft completado.
+  let final = null, capturandoFinal = false, relojFinal = null;
+  const hora = (t) => new Date(t).toISOString().slice(11, 19);
+  const pararVigilancia = () => { if (relojFinal) clearInterval(relojFinal); relojFinal = null; if (final) final.activa = false; };
+  const estadoFinal = () => (final
+    ? { desde: final.desde, activa: final.activa, resultado: final.resultado, resultadoId: final.resultadoId, resultadoEn: final.resultadoEn, fotogramas: final.fotogramas }
+    : { desde: null, activa: false, resultado: null, resultadoId: null, resultadoEn: null, fotogramas: [] });
+  const vigilarTic = async () => {
+    if (!final || !final.activa || capturandoFinal) return;
+    const t = ahora();
+    if (t > final.hasta) {
+      pararVigilancia();
+      registrar(`Vigilancia del final acabada a los ${vigilancia.hastaMin} minutos: ${final.fotogramas.length} pantallas distintas${final.resultado ? `, resultado ${final.resultado === 'gane' ? 'ganada' : 'perdida'}` : ', sin ver la tabla de resultado'}.`);
+      return;
+    }
+    if (t < final.desde + vigilancia.desdeMin * 60000) return;
+    capturandoFinal = true;
+    try {
+      let png;
+      try { png = await capturar(); } catch (e) {
+        final.fallos += 1;
+        if (final.fallos === 1) registrar(`Vigilando el final no consigo la captura (${String(e.message).split('\n')[0]}): sigo intentándolo.`);
+        return;
+      }
+      const img = leerPng(png);
+      const f = fotogramaDe(img, final.anterior);
+      final.anterior = f.pequena;
+      if (!f.cambio) return;
+      const id = `fotograma-${new Date(t).toISOString().replace(/[:.]/g, '-')}`;
+      if (carpeta) writeFileSync(join(carpeta, `${id}.png`), png);
+      const leido = reconocerResultado(tiraDe(img), resultados);
+      const foto = { id, minuto: Math.round((t - final.desde) / 60000), miniatura: f.miniatura, tira: f.tira, tabla: leido.tabla, resultado: leido.resultado, resultadoParecido: Math.round(leido.parecido * 1000) / 1000 };
+      // Hasta `maxFotogramas` pantallas distintas; la de la tabla viaja siempre (sustituye a la última).
+      if (final.fotogramas.length < vigilancia.maxFotogramas) final.fotogramas.push(foto);
+      else if (leido.resultado) final.fotogramas[final.fotogramas.length - 1] = foto;
+      if (leido.resultado && !final.resultado) Object.assign(final, { resultado: leido.resultado, resultadoId: id, resultadoEn: t });
+      registrar(`Fotograma ${id} (minuto ${foto.minuto}): la pantalla ha cambiado${leido.tabla ? ` · tabla de resultado: ${leido.resultado ? (leido.resultado === 'gane' ? 'VICTORIA' : 'DERROTA') : 'palabra sin plantilla'} (${leido.parecido.toFixed(2)})` : ''}.`);
+    } catch (e) {
+      registrar(`Un fotograma del final no se pudo leer: ${e.message}`);
+    } finally { capturandoFinal = false; }
+  };
+  /** Empieza (o sigue, si es el mismo draft) a vigilar el final del draft completado en `desde`. */
+  const vigilar = (desde) => {
+    if (final?.desde === desde) return final;
+    pararVigilancia();
+    final = { desde, hasta: desde + vigilancia.hastaMin * 60000, activa: true, fotogramas: [], resultado: null, resultadoId: null, resultadoEn: null, anterior: null, fallos: 0 };
+    if (ahora() > final.hasta) { final.activa = false; return final; }
+    relojFinal = setInterval(vigilarTic, vigilancia.intervaloMs);
+    relojFinal.unref?.();
+    registrar(`Draft completo a las ${hora(desde)}: vigilo el final de la partida del minuto ${vigilancia.desdeMin} al ${vigilancia.hastaMin}, una captura cada ${vigilancia.intervaloMs / 1000} s.`);
+    return final;
+  };
   const leerCuerpo = (req) => new Promise((resolver) => {
     const trozos = [];
     req.on('data', (t) => { trozos.push(t); if (trozos.reduce((s, x) => s + x.length, 0) > 65536) req.destroy(); });
@@ -205,6 +276,23 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
       res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, version: VERSION_PUENTE, aprendido: { capturas: aprendido?.capturas ?? 0, caras: Object.keys(aprendido?.caras ?? {}).length, picks: !!aprendido?.picks }, resultados: { gane: resultados.gane.length, perdi: resultados.perdi.length, tablas: resultados.tablas.length } }));
       return;
     }
+    if (req.method === 'POST' && ruta === '/vigilar') {
+      // El draft se ha completado (3.33.0): desde ahora el lector vigila el final por su cuenta. Solo a la app.
+      if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
+      const cuerpo = await leerCuerpo(req);
+      const desde = Number(cuerpo?.desde), t = ahora();
+      // Un instante del reloj del móvil, reciente: ni futuro ni de hace más de un día.
+      if (!Number.isFinite(desde) || desde > t + 60000 || desde < t - 24 * 3600000) { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'desde' })); return; }
+      vigilar(desde);
+      res.writeHead(200, cabeceras).end(JSON.stringify(estadoFinal()));
+      return;
+    }
+    if (req.method === 'GET' && ruta === '/final') {
+      // Lo vigilado hasta ahora: fotogramas (reducidos) y resultado, si lo hay. Solo a la app: lleva imágenes.
+      if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
+      res.writeHead(200, cabeceras).end(JSON.stringify(estadoFinal()));
+      return;
+    }
     if (req.method === 'GET' && ruta === '/captura') {
       // Una captura REDUCIDA para mandar al proyecto (3.29.0, temporal: la
       // pantalla de resultado, para medir dónde está el cartel). Solo a la
@@ -217,19 +305,7 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
       }
       try {
         const img = leerPng(png);
-        const esFotograma = new URL(req.url, 'http://127.0.0.1').searchParams.has('fotograma');
-        const id = `${esFotograma ? 'fotograma' : 'resultado'}-${new Date().toISOString().replace(/[:.]/g, '-')}`;
-        if (esFotograma) {
-          // Un fotograma del final de partida (3.30.0): solo cuenta si la pantalla ha cambiado.
-          const f = fotogramaDe(img, fotogramaAnterior);
-          fotogramaAnterior = f.pequena;
-          if (f.cambio && carpeta) writeFileSync(join(carpeta, `${id}.png`), png);
-          // Y si es la tabla de resultado con una palabra conocida, el resultado (3.32.0).
-          const leido = f.cambio ? reconocerResultado(tiraDe(img), resultados) : null;
-          if (f.cambio) registrar(`Fotograma ${id}: la pantalla ha cambiado (${f.miniatura.length + f.tira.length} caracteres)${leido?.tabla ? ` · tabla de resultado: ${leido.resultado ?? 'palabra sin plantilla'} (${leido.parecido.toFixed(2)})` : ''}.`);
-          res.writeHead(200, cabeceras).end(JSON.stringify({ id, ancho: img.ancho, alto: img.alto, cambio: f.cambio, ...(f.cambio ? { miniatura: f.miniatura, tira: f.tira, tabla: leido.tabla, resultado: leido.resultado, resultadoParecido: Math.round(leido.parecido * 1000) / 1000 } : {}) }));
-          return;
-        }
+        const id = `resultado-${new Date().toISOString().replace(/[:.]/g, '-')}`;
         if (carpeta) writeFileSync(join(carpeta, `${id}.png`), png);
         const mini = miniaturasDe(img);
         registrar(`Captura reducida ${id} (${img.ancho}×${img.alto}): ${mini.miniatura.length + mini.tira.length} caracteres.`);
@@ -303,6 +379,7 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
   // de Node a los 5 s de inactividad, cada toque caía justo cuando el lector
   // cerraba el socket (ECONNRESET, visto en las pruebas con el bucle ocupado).
   servidor.keepAliveTimeout = 65000;
+  servidor.on('close', pararVigilancia);
   return servidor;
 }
 

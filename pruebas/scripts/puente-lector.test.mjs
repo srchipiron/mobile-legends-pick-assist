@@ -3,22 +3,25 @@
  * scripts/lector/servir.mjs): una captura de la pantalla del draft entra,
  * salen NOMBRES; solo para la app (y su copia local), nunca la imagen.
  */
-import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { crearServidor, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, PUERTO, CAPTURAS_A_MIRAR } from '../../scripts/lector/servir.mjs';
+import { test, ok, eq, terminar } from '../arnes.mjs';
+import { crearServidor, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA } from '../../scripts/lector/servir.mjs';
 import { guardarResultados } from '../../scripts/lector/resultado.mjs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
-import { escribirPng } from '../../scripts/lector/png.mjs';
 import { carasGuardadas } from '../../scripts/lector/leer.mjs';
-import { PUERTO_LECTOR } from '../../src/app/lector.js';
-import { capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
+import { PUERTO_LECTOR, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS } from '../../src/app/lector.js';
+import { capturaCompletaPng, pantallaDeFinal, VERDAD } from '../fixtures/juego/captura.mjs';
 import { leerPng } from '../../scripts/lector/png.mjs';
 import { miniaturasDe, pngQueQuepa, reducir, cuantizar, fotogramaDe, diferencia, TOPE_BASE64, CAMBIO_MINIMO } from '../../scripts/lector/miniatura.mjs';
 
 const caras = carasGuardadas();
 const png = capturaCompletaPng();
+const pngTabla = pantallaDeFinal();
+const cab = { Origin: 'https://srchipiron.github.io' };
+/** Espera (hasta `ms`) a que `cond` sea verdad. */
+const hasta = async (cond, ms = 10000) => { const t0 = Date.now(); while (!(await cond()) && Date.now() - t0 < ms) await new Promise((r) => setTimeout(r, 20)); return cond(); };
 
 async function conServidor(opciones, fn) {
   const servidor = crearServidor({ caras, ...opciones });
@@ -188,7 +191,66 @@ test('la captura reducida (temporal): dos PNG pequeños con paleta que caben en 
   });
 });
 
-test('los fotogramas del final de partida (temporal): solo vuelven con imágenes cuando la pantalla cambia', async () => {
+test('la vigilancia del final (3.33.0): mismos plazos que la app, y el lector captura por su cuenta del minuto de empezar al de parar', async () => {
+  eq(`${VIGILANCIA.desdeMin} ${VIGILANCIA.hastaMin} ${VIGILANCIA.intervaloMs} ${VIGILANCIA.maxFotogramas}`, `${DESDE_FINAL_MIN} ${HASTA_FINAL_MIN} ${INTERVALO_FINAL_MS} ${MAX_FOTOGRAMAS}`, 'el lector y la app no vigilan con los mismos números');
+  const rapida = { ...VIGILANCIA, desdeMin: 0, intervaloMs: 15 };
+  let capturas = 0, cual = png;
+  const capturar = () => { capturas += 1; return cual; };
+  const carpeta = mkdtempSync(join(tmpdir(), 'lector-final-'));
+  await conServidor({ capturar, carpeta, vigilancia: rapida }, async (base) => {
+    // Sin avisar, no vigila nada; sin origen no se acepta el aviso; y un instante absurdo tampoco.
+    await new Promise((r) => setTimeout(r, 80));
+    eq(capturas, 0, 'captura sin que la app avise');
+    eq((await fetch(`${base}/vigilar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ desde: Date.now() }) })).status, 403, 'un aviso sin origen se acepta');
+    eq((await fetch(`${base}/final`)).status, 403, 'lo vigilado se da sin origen');
+    eq((await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde: 'ayer' }) })).status, 400, 'un instante que no es número se acepta');
+    eq((await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde: Date.now() + 3600000 }) })).status, 400, 'un instante futuro se acepta');
+    const vacio = await (await fetch(`${base}/final`, { headers: cab })).json();
+    ok(vacio.desde === null && vacio.activa === false && vacio.fotogramas.length === 0, `sin aviso /final no está vacío: ${JSON.stringify(vacio)}`);
+    // El aviso: desde entonces captura sola, y se queda con las pantallas que cambian.
+    const desde = Date.now() - 60000;
+    const v = await (await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde }) })).json();
+    ok(v.desde === desde && v.activa === true && v.fotogramas.length === 0 && v.resultado === null, `el aviso no arranca la vigilancia: ${JSON.stringify(v)}`);
+    // Cada captura se decodifica entera (~1 s aquí): dos seguidas prueban que el bucle sigue solo.
+    ok(await hasta(() => capturas >= 2), 'el lector no captura por su cuenta tras el aviso');
+    let f = await (await fetch(`${base}/final`, { headers: cab })).json();
+    ok(f.fotogramas.length === 1 && /^fotograma-/.test(f.fotogramas[0].id) && f.fotogramas[0].miniatura && f.fotogramas[0].tira && f.fotogramas[0].tabla === false && f.fotogramas[0].resultado === null && f.fotogramas[0].minuto === 1, `la misma pantalla cuenta más de una vez o el fotograma no lleva lo suyo: ${JSON.stringify(f.fotogramas.map((x) => ({ ...x, miniatura: x.miniatura?.length, tira: x.tira?.length })))}`);
+    ok(existsSync(join(carpeta, `${f.fotogramas[0].id}.png`)), 'la captura entera no se guarda en la carpeta');
+    // La tabla de resultado: segundo fotograma, con el resultado y cuándo se vio.
+    cual = pngTabla;
+    ok(await hasta(async () => (await (await fetch(`${base}/final`, { headers: cab })).json()).resultado === 'perdi'), 'la tabla de la derrota no da el resultado');
+    f = await (await fetch(`${base}/final`, { headers: cab })).json();
+    ok(f.fotogramas.length === 2 && f.fotogramas[1].tabla === true && f.fotogramas[1].resultado === 'perdi' && f.resultadoId === f.fotogramas[1].id && Number.isFinite(f.resultadoEn) && f.resultadoEn >= desde, `el resultado no va con su fotograma e instante: ${JSON.stringify({ ...f, fotogramas: f.fotogramas.map((x) => x.id) })}`);
+    // El mismo aviso otra vez (la app vuelve a la vista) no reinicia nada; otro draft, sí.
+    const otra = await (await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde }) })).json();
+    eq(otra.fotogramas.length, 2, 'repetir el aviso del mismo draft borra lo vigilado');
+    const nuevo = await (await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde: desde + 1000 }) })).json();
+    ok(nuevo.desde === desde + 1000 && nuevo.fotogramas.length === 0 && nuevo.resultado === null, 'otro draft no empieza de cero');
+  });
+  // Antes del minuto de empezar no captura, y pasado el de parar se para (y cerrar el servidor también).
+  capturas = 0;
+  await conServidor({ capturar, vigilancia: { ...rapida, desdeMin: 30 } }, async (base) => {
+    await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde: Date.now() }) });
+    await new Promise((r) => setTimeout(r, 120));
+    eq(capturas, 0, 'captura antes del minuto de empezar (una captura en una teamfight da un tirón)');
+  });
+  await conServidor({ capturar, vigilancia: rapida }, async (base) => {
+    const tarde = await (await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde: Date.now() - (rapida.hastaMin + 1) * 60000 }) })).json();
+    await new Promise((r) => setTimeout(r, 120));
+    ok(tarde.activa === false && capturas === 0, `sigue vigilando pasado el tope: activa ${tarde.activa}, ${capturas} capturas`);
+    const desde = Date.now() - rapida.hastaMin * 60000 + 150;
+    await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde }) });
+    ok(await hasta(async () => (await (await fetch(`${base}/final`, { headers: cab })).json()).activa === false), 'al llegar al tope no se para');
+    const n = capturas;
+    await new Promise((r) => setTimeout(r, 100));
+    eq(capturas, n, 'parada, sigue capturando');
+  });
+  const n = capturas;
+  await new Promise((r) => setTimeout(r, 100));
+  eq(capturas, n, 'con el servidor cerrado sigue capturando');
+});
+
+test('los fotogramas del final de partida: solo cuentan cuando la pantalla cambia', async () => {
   const negra = { ancho: 2400, alto: 1504, rgba: new Uint8Array(2400 * 1504 * 4).fill(0) };
   for (let k = 3; k < negra.rgba.length; k += 4) negra.rgba[k] = 255;
   const clara = { ancho: 2400, alto: 1504, rgba: new Uint8Array(2400 * 1504 * 4).fill(200) };
@@ -199,38 +261,22 @@ test('los fotogramas del final de partida (temporal): solo vuelven con imágenes
   const f3 = fotogramaDe(clara, f2.pequena);
   ok(f3.cambio && leerPng(Buffer.from(f3.miniatura, 'base64')).ancho === 160 && leerPng(Buffer.from(f3.tira, 'base64')).ancho === 320, 'otra pantalla no trae las dos imágenes a 160 y 320 px');
   ok(diferencia(f1.pequena, f1.pequena) === 0 && diferencia(f1.pequena, f3.pequena) > CAMBIO_MINIMO && diferencia(f1.pequena, null) === 255, 'la diferencia no mide lo que debe');
-  // La ruta: el lector recuerda el fotograma anterior entre peticiones.
-  const { escribirPng } = await import('../../scripts/lector/png.mjs');
-  let actual = png;
-  await conServidor({ capturar: () => actual }, async (base) => {
-    const cab = { Origin: 'https://srchipiron.github.io' };
-    const a = await (await fetch(`${base}/captura?fotograma=1`, { headers: cab })).json();
-    ok(a.cambio === true && /^fotograma-/.test(a.id) && a.miniatura, `el primer fotograma no cambia o no lleva id: ${JSON.stringify(a).slice(0, 80)}`);
-    const b = await (await fetch(`${base}/captura?fotograma=1`, { headers: cab })).json();
-    ok(b.cambio === false && !b.miniatura, 'la misma captura vuelve con imágenes');
-    actual = escribirPng(clara);
-    const c = await (await fetch(`${base}/captura?fotograma=1`, { headers: cab })).json();
-    ok(c.cambio === true && c.tira, 'una pantalla distinta no cuenta como cambio');
-  });
 });
 
 test('el final de partida: la tabla con «DEFEAT» viene con el resultado, lo contestado se aprende, y sin origen nada (3.32.0)', async () => {
   const carpeta = mkdtempSync(join(tmpdir(), 'lector-resultado-'));
-  // Una pantalla entera (2400×1504) con la franja real de la derrota (320×56) ampliada arriba: al reducirla sale la misma franja.
-  const tira = leerPng(readFileSync(join(RAIZ, 'pruebas/fixtures/juego/finales/tabla-derrota.png')));
-  const ancho = 2400, alto = 1504, esc = ancho / tira.ancho, rgba = new Uint8Array(ancho * alto * 4);
-  for (let y = 0; y < Math.round(tira.alto * esc); y++) for (let x = 0; x < ancho; x++) rgba.set(tira.rgba.subarray((Math.floor(y / esc) * tira.ancho + Math.floor(x / esc)) * 4, (Math.floor(y / esc) * tira.ancho + Math.floor(x / esc)) * 4 + 4), (y * ancho + x) * 4);
-  const pngTabla = escribirPng({ ancho, alto, rgba });
   const guardados = [];
   let cual = pngTabla;
-  await conServidor({ capturar: () => cual, carpeta, guardarResultadosDe: (r) => guardados.push(r) }, async (base) => {
-    const cab = { Origin: 'https://srchipiron.github.io' };
-    const f1 = await (await fetch(`${base}/captura?fotograma=1`, { headers: cab })).json();
-    ok(f1.cambio && f1.tabla === true && f1.resultado === 'perdi' && f1.resultadoParecido >= 0.85, `la tabla de la derrota no viene con su resultado: ${JSON.stringify({ cambio: f1.cambio, tabla: f1.tabla, resultado: f1.resultado, p: f1.resultadoParecido })}`);
+  await conServidor({ capturar: () => cual, carpeta, guardarResultadosDe: (r) => guardados.push(r), vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 15 } }, async (base) => {
+    await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde: Date.now() }) });
+    ok(await hasta(async () => (await (await fetch(`${base}/final`, { headers: cab })).json()).fotogramas.length >= 1), 'no llega el primer fotograma');
+    const [f1] = (await (await fetch(`${base}/final`, { headers: cab })).json()).fotogramas;
+    ok(f1.tabla === true && f1.resultado === 'perdi' && f1.resultadoParecido >= 0.85, `la tabla de la derrota no viene con su resultado: ${JSON.stringify({ tabla: f1.tabla, resultado: f1.resultado, p: f1.resultadoParecido })}`);
     // Otra pantalla (la del draft): cambio, pero ni tabla ni resultado.
     cual = png;
-    const f2 = await (await fetch(`${base}/captura?fotograma=1`, { headers: cab })).json();
-    ok(f2.cambio && f2.tabla === false && f2.resultado === null, `la pantalla del draft pasa por tabla o da resultado: ${JSON.stringify({ tabla: f2.tabla, resultado: f2.resultado })}`);
+    ok(await hasta(async () => (await (await fetch(`${base}/final`, { headers: cab })).json()).fotogramas.length >= 2), 'no llega el segundo fotograma');
+    const f2 = (await (await fetch(`${base}/final`, { headers: cab })).json()).fotogramas[1];
+    ok(f2.tabla === false && f2.resultado === null, `la pantalla del draft pasa por tabla o da resultado: ${JSON.stringify({ tabla: f2.tabla, resultado: f2.resultado })}`);
     // Lo contestado se aprende de los fotogramas de la partida (solo de la tabla) y se guarda; sin origen, 403.
     const sin = await fetch(`${base}/resultado`, { method: 'POST', body: JSON.stringify({ ids: [f1.id], gane: false }) });
     eq(sin.status, 403, 'un resultado sin origen se acepta');

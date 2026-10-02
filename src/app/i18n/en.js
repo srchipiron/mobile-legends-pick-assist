@@ -365,7 +365,7 @@ export default {
   'lector.leyendo': 'Reading…',
   'lector.sinPuente': "Can't find the reader. Open Termux and type: lector. If Chrome asks about the local network, allow it.",
   'lector.plazo': "The reader didn't answer in time: are the tablet and the phone on the same wifi?",
-  'lector.tablet': "Can't see the tablet on the wifi: turn on its wireless debugging (Developer options) and keep it on the same wifi as the phone.",
+  'lector.tablet': "Can't see the tablet on the wifi: turn on its wireless debugging (Developer options) and keep it on the same wifi as the phone (not mobile data). On someone else's wifi (work) devices may not see each other: share the phone's internet, or tell the reader where it is in Termux: lector --tablet IP:PORT.",
   'lector.emparejar': 'The tablet does not let the phone in: pair them once. On the tablet, «Pair device with pairing code»; in Termux, adb pair IP:PORT with that code.',
   'lector.captura': 'The reader sees the tablet but cannot take the screenshot: turn wireless debugging off and on again on the tablet and tap again.',
   'lector.error': 'The reader sent something I do not understand: update the repository in Termux (git pull) and start it again.',
