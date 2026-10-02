@@ -1,6 +1,122 @@
 {
- "actualizado": "2026-10-02T18:05:30.858Z",
+ "actualizado": "2026-10-02T18:29:46.681Z",
  "partidas": [
+  {
+   "t": 1790965767811,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Khaleed",
+    "Tigreal",
+    "Badang"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.605,
+   "bans": [
+    "Khufra",
+    "Hirara",
+    "Lukas",
+    "Aulus",
+    "Masha",
+    "Marcel",
+    "Kaja",
+    "Paquito",
+    "Hanzo"
+   ],
+   "draft": {
+    "enemigos": [
+     "Saber",
+     "Lapu-Lapu",
+     "Lylia",
+     "Franco",
+     "Ixia"
+    ],
+    "aliados": [
+     "Valir",
+     "Edith",
+     "Clint",
+     "Aamon"
+    ],
+    "linea": "roam",
+    "rival": "Franco"
+   },
+   "lector": {
+    "baneos": [
+     "Khufra",
+     "Hirara",
+     "Lukas",
+     "Aulus",
+     "Masha",
+     "Marcel",
+     "Kaja",
+     "Paquito",
+     "Hanzo"
+    ],
+    "enemigos": [
+     "Saber",
+     "Lapu-Lapu",
+     "Lylia",
+     "Layla",
+     "Wanwan"
+    ],
+    "aliados": [
+     "Valir",
+     "Edith",
+     "Clint",
+     "Harley"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Gord",
+      "parecido": 0.6
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Lapu-Lapu",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Bruno",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Hirara",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Esmeralda",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Silvanna",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Barats",
+      "parecido": 0.52
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Bruno",
+      "parecido": 0.72
+     }
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Ixia",
+      "Ixia",
+      "Ixia"
+     ]
+    }
+   }
+  },
   {
    "t": 1790964316715,
    "pick": "Estes",
@@ -4892,6 +5008,12 @@
   {
    "cuando": "2026-10-02T18:05:30.858Z",
    "partidas": 138,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-02T18:29:46.681Z",
+   "partidas": 139,
    "heroes": 11,
    "incidencia": 11
   }
