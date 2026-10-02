@@ -1,6 +1,111 @@
 {
- "actualizado": "2026-10-02T18:29:46.681Z",
+ "actualizado": "2026-10-02T18:50:54.010Z",
  "partidas": [
+  {
+   "t": 1790967040371,
+   "pick": "Estes",
+   "recomendados": [
+    "Khaleed",
+    "Hilda",
+    "Badang"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.61,
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Eudora",
+    "Minotaur",
+    "Gusion",
+    "Khufra",
+    "Gloo",
+    "Lukas"
+   ],
+   "draft": {
+    "enemigos": [
+     "Franco",
+     "Hanzo",
+     "Novaria",
+     "X.Borg",
+     "Miya"
+    ],
+    "aliados": [
+     "Paquito",
+     "Melissa",
+     "Zetian",
+     "Aamon"
+    ],
+    "linea": "roam",
+    "rival": "Franco"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Marcel",
+     "Eudora",
+     "Minotaur",
+     "Gusion",
+     "Khufra",
+     "Gloo",
+     "Lukas"
+    ],
+    "enemigos": [
+     "Joy",
+     "Franco"
+    ],
+    "aliados": [
+     "Paquito"
+    ],
+    "dudas": [
+     {
+      "hueco": "s3",
+      "candidato": "Bane",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Saber",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Gord",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Saber",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Saber",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Ixia",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Granger",
+      "parecido": 0.63
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Carmilla",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Chang'e",
+      "parecido": 0.72
+     }
+    ]
+   }
+  },
   {
    "t": 1790965767811,
    "pick": "Minotaur",
@@ -5014,6 +5119,12 @@
   {
    "cuando": "2026-10-02T18:29:46.681Z",
    "partidas": 139,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-02T18:50:54.010Z",
+   "partidas": 140,
    "heroes": 11,
    "incidencia": 11
   }
