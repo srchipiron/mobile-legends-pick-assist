@@ -1,6 +1,99 @@
 {
- "actualizado": "2026-10-02T09:38:25.422Z",
+ "actualizado": "2026-10-02T10:19:39.359Z",
  "partidas": [
+  {
+   "t": 1790936364987,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Badang",
+    "Minotaur",
+    "Franco"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.577,
+   "bans": [
+    "Hirara",
+    "Saber",
+    "Masha",
+    "Marcel",
+    "Lukas",
+    "Floryn",
+    "Yi Sun-shin",
+    "Yu Zhong",
+    "Belerick"
+   ],
+   "draft": {
+    "enemigos": [
+     "Valir",
+     "Freya",
+     "Hayabusa",
+     "Sun",
+     "Layla"
+    ],
+    "aliados": [
+     "Xavier",
+     "Aulus",
+     "Eudora",
+     "Gloo"
+    ],
+    "linea": "roam"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Saber",
+     "Masha",
+     "Marcel",
+     "Lukas",
+     "Floryn",
+     "Yi Sun-shin",
+     "Yu Zhong",
+     "Belerick"
+    ],
+    "enemigos": [
+     "Gord",
+     "Valir",
+     "Freya",
+     "Sun",
+     "Layla"
+    ],
+    "aliados": [
+     "Xavier",
+     "Eudora"
+    ],
+    "dudas": [
+     {
+      "hueco": "e3",
+      "candidato": "Zhuxin",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Aulus",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Wanwan",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Gord",
+      "parecido": 0.68
+     }
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Hayabusa",
+      "Hayabusa",
+      "Hayabusa"
+     ],
+     "sinEncontrar": []
+    }
+   }
+  },
   {
    "t": 1790933883370,
    "pick": "Rafaela",
@@ -4520,6 +4613,12 @@
   {
    "cuando": "2026-10-02T09:38:25.422Z",
    "partidas": 135,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-02T10:19:39.359Z",
+   "partidas": 136,
    "heroes": 11,
    "incidencia": 11
   }
