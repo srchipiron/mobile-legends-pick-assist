@@ -287,6 +287,17 @@ test('«lector» (lector.sh) se instala solo, cierra el lector anterior, trae lo
   ok(!/--tablet/.test(r.stdout), 'pasa un --tablet: la gracia es que la busque sola');
   ok(existsSync(join(prefix, 'bin', 'lector')) && existsSync(join(home, '.shortcuts', 'Lector')), 'no se instala como mandato «lector» y acceso directo del widget');
   ok(/^#!/.test(readFileSync(join(prefix, 'bin', 'lector'), 'utf8')), 'el mandato instalado no es un guion');
+  // Los envoltorios llevan el bash de Termux con su ruta entera (3.32.1): el widget y Termux:Boot los lanzan sin el entorno de Termux y ahí /usr/bin/env no existe.
+  symlinkSync('/bin/bash', join(prefix, 'bin', 'bash'));
+  writeFileSync(join(home, '.shortcuts', 'Lector'), '#!/usr/bin/env bash\nexec "/viejo/lector.sh" "$@"\n');
+  const r3 = spawnSync('bash', [join(RAIZ, 'scripts/lector/lector.sh')], { encoding: 'utf8', env });
+  const atajo = readFileSync(join(home, '.shortcuts', 'Lector'), 'utf8');
+  ok(atajo.startsWith(`#!${prefix}/bin/bash\n`) && atajo.includes(`exec "${prefix}/bin/bash" "`), `el acceso directo no usa el bash de Termux con su ruta entera: ${atajo}`);
+  ok(!/\/viejo\//.test(atajo) && /Acceso directo «Lector»/.test(r3.stdout), 'un acceso directo viejo no se reescribe');
+  ok(readFileSync(join(prefix, 'bin', 'lector'), 'utf8').startsWith(`#!${prefix}/bin/bash\n`), 'el mandato «lector» no usa el bash de Termux');
+  // Un argumento «--actualizado» (el relanzamiento tras git pull) no llega al servidor.
+  const r4 = spawnSync('bash', [join(RAIZ, 'scripts/lector/lector.sh'), '--actualizado', '--puerto', '2'], { encoding: 'utf8', env });
+  ok(/servir\.mjs --guardar-capturas .* --puerto 2$/m.test(r4.stdout) && !/--actualizado/.test(r4.stdout) && !/git pull/.test(r4.stdout), `tras relanzarse vuelve a hacer pull o pasa --actualizado al servidor: ${r4.stdout}`);
   // Con acceso al almacenamiento, las capturas van a Descargas (se ven en la galería y se pueden mandar).
   mkdirSync(join(home, 'storage', 'downloads'), { recursive: true });
   const r2 = spawnSync('bash', [join(RAIZ, 'scripts/lector/lector.sh')], { encoding: 'utf8', env });

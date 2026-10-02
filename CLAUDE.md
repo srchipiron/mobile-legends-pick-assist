@@ -994,6 +994,15 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   normal. Se vio en las partidas subidas (`lector.dudas`), que es para lo
   que viajan. Hoy la medida manda y lo aprendido solo entra donde ella
   no lee. Un ajuste automático se añade a la referencia, no la sustituye.
+- **`#!/usr/bin/env bash` en un acceso directo de Termux:Widget** (3.26.0 →
+  3.32.1) — el widget y Termux:Boot lanzan el guion SIN el entorno de Termux
+  (sin `termux-exec` precargado), y en Android `/usr/bin/env` no existe:
+  «env: …/.shortcuts/Lector: No such file or directory» al tocar el widget.
+  Los envoltorios llevan ahora `#!$PREFIX/bin/bash` y `exec "$PREFIX/bin/
+  bash" lector.sh`, se reescriben siempre (un envoltorio viejo se arregla
+  solo) y `lector` se relanza a sí mismo si `git pull` lo cambió
+  (`--actualizado`, una vez). Lo que arranca Android por su cuenta no tiene
+  el PATH de Termux: rutas enteras.
 - **La cara comparada solo en espejo** (3.21.0 → 3.31.0) — se midió con
   dos picks (Clint y Khufra, reflejados) y se dio por hecho que el panel
   reflejaba a todos; Rafaela, Eudora y Gloo van sin reflejar en la misma

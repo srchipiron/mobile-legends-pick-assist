@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.32.1
+
+- El acceso directo «Lector» de Termux:Widget vuelve a funcionar. Android
+  decía «env: …/Lector: No such file or directory»: el widget lanza el
+  guion sin el entorno de Termux y ahí `/usr/bin/env` no existe. Ahora los
+  accesos directos (widget, arranque con Termux:Boot y el mandato `lector`)
+  llevan el bash de Termux con su ruta entera y se reescriben solos al
+  arrancar `lector`. Y si `lector` se actualiza al arrancar, se relanza ya
+  con la versión nueva en esa misma corrida.
+
 ## 3.32.0
 
 - El resultado de la partida se apunta solo. Con «Leer solo», desde el minuto
