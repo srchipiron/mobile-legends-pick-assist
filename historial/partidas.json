@@ -1,6 +1,135 @@
 {
- "actualizado": "2026-10-02T18:50:54.010Z",
+ "actualizado": "2026-10-02T19:23:32.214Z",
  "partidas": [
+  {
+   "t": 1790968996212,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Khufra",
+    "Minsitthar",
+    "Rafaela"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.628,
+   "bans": [
+    "Marcel",
+    "Hirara",
+    "Barats",
+    "Aulus",
+    "Esmeralda",
+    "Paquito",
+    "Lukas",
+    "Belerick",
+    "Estes",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Angela",
+     "Lunox",
+     "Dyrroth",
+     "Karrie",
+     "Saber"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Edith",
+     "Selena",
+     "Hayabusa"
+    ],
+    "linea": "roam",
+    "rival": "Angela"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Hirara",
+     "Barats",
+     "Aulus",
+     "Esmeralda",
+     "Paquito",
+     "Lukas",
+     "Belerick",
+     "Estes",
+     "Eudora"
+    ],
+    "enemigos": [
+     "Angela",
+     "Lunox",
+     "Dyrroth"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Edith",
+     "Hayabusa"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Floryn",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Natalia",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Aurora",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Chang'e",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Claude",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Claude",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Rafaela",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Baxia",
+      "parecido": 0.57
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Barats",
+      "parecido": 0.52
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Carmilla",
+      "parecido": 0.74
+     }
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Karrie",
+      "Karrie",
+      "Karrie"
+     ],
+     "sinEncontrar": [
+      "Saber",
+      "Saber",
+      "Saber"
+     ]
+    }
+   }
+  },
   {
    "t": 1790967040371,
    "pick": "Estes",
@@ -5125,6 +5254,12 @@
   {
    "cuando": "2026-10-02T18:50:54.010Z",
    "partidas": 140,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-02T19:23:32.214Z",
+   "partidas": 141,
    "heroes": 11,
    "incidencia": 11
   }
