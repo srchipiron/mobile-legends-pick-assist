@@ -117,7 +117,9 @@ export function guardarMemoria(m, fichero = FICHERO_MEMORIA) {
  * `preparar()`, al arrancar) la busca; si una captura falla, la olvida y la
  * busca otra vez antes de rendirse, porque el puerto habrá cambiado. Con
  * `fija` (`--tablet IP:PUERTO`) no busca nada. Lo que encuentra se guarda
- * en `memoria` para la próxima vez.
+ * en `memoria` para la próxima vez; también la fijada, en cuanto una captura
+ * sale (3.33.1: si no, el siguiente `lector` a secas volvía a buscar en la IP
+ * de antes, que es lo que le pasó a Javi en otra wifi).
  */
 export function capturaAutomatica({ fija = null, memoria = {}, recordar = () => {}, encontrar = encontrarTablet, capturar = capturarTablet, registrar = () => {} }) {
   let tablet = fija, buscando = null;
@@ -131,9 +133,19 @@ export function capturaAutomatica({ fija = null, memoria = {}, recordar = () => 
     }).finally(() => { buscando = null; });
     return buscando;
   };
+  let fijaRecordada = false;
   const ahora = async (segunda = false) => {
     if (!tablet) await localizar();
-    try { return capturar(tablet); } catch (e) {
+    try {
+      const png = capturar(tablet);
+      if (fija && !fijaRecordada) {
+        fijaRecordada = true;
+        const [ip, puerto] = fija.split(':');
+        Object.assign(memoria, { ip, puerto: Number(puerto) });
+        recordar(memoria);
+      }
+      return png;
+    } catch (e) {
       if (fija || segunda) throw e;
       registrar(`La tablet no contesta en ${tablet}: la busco otra vez.`);
       tablet = null;

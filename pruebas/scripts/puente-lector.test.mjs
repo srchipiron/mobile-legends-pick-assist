@@ -92,6 +92,11 @@ test('la captura automática busca la tablet sola, la recuerda y la vuelve a bus
   const fija = capturaAutomatica({ fija: '10.0.0.9:1', encontrar: async () => { throw new Error('no debía buscar'); }, capturar: () => { throw new Error('device offline'); } });
   const e = await fija().catch((x) => x);
   eq(e.message, 'device offline', `con --tablet fija hace otra cosa: ${e.message}`);
+  // Y la fijada que SÍ funciona se recuerda (una vez) para el siguiente arranque sin --tablet (3.33.1).
+  const memoriaFija = { ip: '10.0.0.1', puerto: 5 }, recordadasFija = [];
+  const fijaBuena = capturaAutomatica({ fija: '10.0.0.9:2', memoria: memoriaFija, recordar: (m) => recordadasFija.push({ ...m }), encontrar: async () => { throw new Error('no debía buscar'); }, capturar: () => png });
+  await fijaBuena(); await fijaBuena();
+  eq(`${memoriaFija.ip}:${memoriaFija.puerto} ${recordadasFija.length}`, '10.0.0.9:2 1', 'la tablet fijada que funciona no se recuerda (o se guarda en cada captura)');
   // `preparar()` la busca al arrancar y el primer toque no espera a nada.
   let buscadaAntes = 0;
   const caliente = capturaAutomatica({ encontrar: async () => { buscadaAntes += 1; return { ip: '10.0.0.5', puerto: 1, via: 'memoria' }; }, capturar: () => png });

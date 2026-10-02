@@ -8,6 +8,12 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.33.1
+
+- La tablet fijada con `lector --tablet IP:PUERTO` se recuerda en cuanto
+  sale una captura: el siguiente `lector` a secas ya busca ahí, y no en la
+  IP de la vez anterior (lo que pasaba en otra wifi).
+
 ## 3.33.0
 
 - El final de la partida lo vigila el lector de Termux por su cuenta, no la
