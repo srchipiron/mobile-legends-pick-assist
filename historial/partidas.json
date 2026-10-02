@@ -1,6 +1,120 @@
 {
- "actualizado": "2026-10-02T20:06:35.471Z",
+ "actualizado": "2026-10-02T20:22:37.709Z",
  "partidas": [
+  {
+   "t": 1790972544491,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Carmilla",
+    "Diggie"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.568,
+   "bans": [
+    "Cici",
+    "Belerick",
+    "Hirara",
+    "Paquito",
+    "Masha",
+    "Lukas",
+    "Gloo",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Sun",
+     "Dyrroth",
+     "Badang",
+     "Cecilion",
+     "Clint"
+    ],
+    "aliados": [
+     "Lylia",
+     "Aulus",
+     "Yu Zhong",
+     "Wanwan"
+    ],
+    "linea": "roam",
+    "rival": "Badang"
+   },
+   "lector": {
+    "baneos": [
+     "Cici",
+     "Belerick",
+     "Hirara",
+     "Paquito",
+     "Masha",
+     "Lukas",
+     "Gloo",
+     "Eudora"
+    ],
+    "enemigos": [
+     "Sun",
+     "Dyrroth",
+     "Badang",
+     "Cecilion",
+     "Clint"
+    ],
+    "aliados": [
+     "Lylia",
+     "Wanwan"
+    ],
+    "dudas": [
+     {
+      "hueco": "s4",
+      "candidato": "Bane",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Zetian",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Fredrinn",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Fredrinn",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Floryn",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Chang'e",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Chip",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Zhuxin",
+      "parecido": 0.62
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Joy",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Alice",
+      "parecido": 0.61
+     }
+    ]
+   }
+  },
   {
    "t": 1790971573818,
    "pick": "Rafaela",
@@ -5475,6 +5589,12 @@
   {
    "cuando": "2026-10-02T20:06:35.471Z",
    "partidas": 143,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-02T20:22:37.709Z",
+   "partidas": 144,
    "heroes": 11,
    "incidencia": 11
   }
