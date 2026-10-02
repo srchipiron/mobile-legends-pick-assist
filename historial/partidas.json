@@ -1,6 +1,105 @@
 {
- "actualizado": "2026-10-02T20:22:37.709Z",
+ "actualizado": "2026-10-02T20:44:16.944Z",
  "partidas": [
+  {
+   "t": 1790973843192,
+   "pick": "Gloo",
+   "recomendados": [
+    "Gloo",
+    "Mathilda",
+    "Khufra"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.412,
+   "bans": [
+    "Eudora",
+    "Paquito",
+    "Hirara",
+    "Masha",
+    "Lesley",
+    "Saber",
+    "Angela",
+    "Diggie"
+   ],
+   "draft": {
+    "enemigos": [
+     "Vale",
+     "Argus",
+     "Yi Sun-shin",
+     "Akai",
+     "Wanwan"
+    ],
+    "aliados": [
+     "Hanabi",
+     "Kadita",
+     "Natalia",
+     "Fredrinn"
+    ],
+    "linea": "roam",
+    "rival": "Akai"
+   },
+   "lector": {
+    "baneos": [
+     "Eudora",
+     "Paquito",
+     "Hirara",
+     "Masha",
+     "Lesley",
+     "Saber",
+     "Angela",
+     "Diggie"
+    ],
+    "enemigos": [
+     "Vale",
+     "Yi Sun-shin",
+     "Akai",
+     "Wanwan"
+    ],
+    "aliados": [
+     "Natalia",
+     "Fredrinn"
+    ],
+    "dudas": [
+     {
+      "hueco": "e2",
+      "candidato": "Fredrinn",
+      "parecido": 0.57
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Zetian",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Wanwan",
+      "parecido": 0.8
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Gloo",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Fredrinn",
+      "parecido": 0.8
+     }
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Wanwan",
+      "Wanwan"
+     ],
+     "sinEncontrar": [
+      "Argus",
+      "Argus",
+      "Argus"
+     ]
+    }
+   }
+  },
   {
    "t": 1790972544491,
    "pick": "Rafaela",
@@ -5595,6 +5694,12 @@
   {
    "cuando": "2026-10-02T20:22:37.709Z",
    "partidas": 144,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-02T20:44:16.944Z",
+   "partidas": 145,
    "heroes": 11,
    "incidencia": 11
   }
