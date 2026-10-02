@@ -1,6 +1,113 @@
 {
- "actualizado": "2026-10-02T19:50:18.364Z",
+ "actualizado": "2026-10-02T20:06:35.471Z",
  "partidas": [
+  {
+   "t": 1790971573818,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Gloo",
+    "Lolita"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.481,
+   "bans": [
+    "Eudora",
+    "Aulus",
+    "Nolan",
+    "Barats",
+    "Paquito",
+    "X.Borg",
+    "Estes",
+    "Hirara",
+    "Lukas"
+   ],
+   "draft": {
+    "enemigos": [
+     "Harley",
+     "Cyclops",
+     "Beatrix",
+     "Freya",
+     "Wanwan"
+    ],
+    "aliados": [
+     "Vale",
+     "Masha",
+     "Miya",
+     "Saber"
+    ],
+    "linea": "roam"
+   },
+   "lector": {
+    "baneos": [
+     "Eudora",
+     "Aulus",
+     "Nolan",
+     "Barats",
+     "Paquito",
+     "X.Borg",
+     "Estes",
+     "Hirara",
+     "Lukas"
+    ],
+    "enemigos": [
+     "Harley",
+     "Cyclops",
+     "Beatrix",
+     "Freya",
+     "Wanwan"
+    ],
+    "aliados": [
+     "Vale",
+     "Masha",
+     "Miya",
+     "Saber"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Cecilion",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Chip",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Wanwan",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Fredrinn",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Fredrinn",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Zetian",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Baxia",
+      "parecido": 0.61
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Joy",
+      "parecido": 0.78
+     }
+    ]
+   }
+  },
   {
    "t": 1790970596628,
    "pick": "Gloo",
@@ -5362,6 +5469,12 @@
   {
    "cuando": "2026-10-02T19:50:18.364Z",
    "partidas": 142,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-02T20:06:35.471Z",
+   "partidas": 143,
    "heroes": 11,
    "incidencia": 11
   }
