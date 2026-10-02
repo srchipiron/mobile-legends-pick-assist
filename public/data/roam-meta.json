@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T21:56:31.374Z",
+  "generatedAt": "2026-10-02T11:13:48.195Z",
   "rank": "glory",
   "ranks": [
     "epic",
@@ -2979,9 +2979,9 @@
     "failed": [],
     "imagenes": {
       "objetos": {
-        "bajados": 2,
+        "bajados": 0,
         "fallos": 0,
-        "yaEstaban": 75
+        "yaEstaban": 77
       },
       "heroes": {
         "bajados": 0,
