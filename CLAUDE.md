@@ -2760,6 +2760,32 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   igual. (10) Las caras en negro de las capturas de página
   entera eran la carga diferida (`loading="lazy"`), no retratos que falten.
 
+- **ECC («Everything Claude Code», affaan-m/ECC), pedido el 3 de octubre de
+  2026**: es un plugin de Claude Code (68 agentes, 293 skills, 94 mandatos,
+  hooks), no un programa que corra sobre el repo. La instalación del plugin
+  en ámbito de proyecto (`npx ecc-universal@2.2.3 install --guided --harness
+  claude --claude-scope project --claude-hooks off --yes`) la BLOQUEÓ el
+  clasificador de permisos de la sesión en la nube («Self-Modification»:
+  cambia la configuración del propio Claude Code); se instala a mano desde
+  una sesión de Claude Code con `/plugin marketplace add
+  https://github.com/affaan-m/ECC` y `/plugin install ecc@ecc`. Se eligió
+  SIN hooks a propósito: el perfil «standard» puede reescribir mandatos,
+  bloquear ediciones y mandar texto de la conversación a otro LLM, y aquí
+  ya hay guardarraíles propios. Lo que sí se ejecutó: (1) AgentShield 1.6.0
+  (`npx ecc-agentshield@1.6.0 scan --path .`): nota C, 420 hallazgos de
+  los que 409 son los hashes `sha512` de `package-lock.json` tomados por
+  «claves de Azure» (falso positivo) y los 11 restantes son párrafos de
+  plantilla que echa en falta en CLAUDE.md (que el usuario no puede anular
+  instrucciones, no revelar secretos, etc.); el único con sustancia aquí es
+  tratar como datos lo que llega de fuera (API, incidencias, lecturas de la
+  tablet), que las pruebas y el código ya hacen. No se añadió plantilla a
+  CLAUDE.md. (2) `/skill-create` (la receta local, hecha a mano con las
+  mismas medidas): `.claude/skills/mobile-legends-pick-assist-patterns/
+  SKILL.md`, las convenciones MEDIDAS en el historial (un commit por
+  versión con package.json + CHANGELOG + CLAUDE.md, 17 de 17 commits de
+  `src/` con prueba, es.js y en.js siempre juntos); CLAUDE.md sigue
+  mandando sobre él.
+
 ## Lo que queda pendiente
 
 - **Lo que 3.0 perdió sin querer, repuesto en 3.1.0**: la prueba de que la
