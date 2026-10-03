@@ -1,6 +1,121 @@
 {
- "actualizado": "2026-10-03T19:16:51.447Z",
+ "actualizado": "2026-10-03T19:36:08.156Z",
  "partidas": [
+  {
+   "t": 1791056156908,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Diggie",
+    "Floryn"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.529,
+   "bans": [
+    "Hirara",
+    "Aulus",
+    "Lukas",
+    "Masha",
+    "Gloo",
+    "Yi Sun-shin",
+    "Lesley",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Hanabi",
+     "Rafaela",
+     "Aamon",
+     "Angela",
+     "Terizla"
+    ],
+    "aliados": [
+     "Xavier",
+     "Leomord",
+     "Esmeralda",
+     "Brody"
+    ],
+    "linea": "roam"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Aulus",
+     "Lukas",
+     "Masha",
+     "Gloo",
+     "Yi Sun-shin",
+     "Lesley",
+     "Paquito"
+    ],
+    "enemigos": [
+     "Joy",
+     "Hanabi",
+     "Selena",
+     "Minsitthar",
+     "Rafaela"
+    ],
+    "aliados": [
+     "Xavier",
+     "Leomord",
+     "Esmeralda"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Zetian",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Joy",
+      "parecido": 0.8
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Angela",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Fredrinn",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Wanwan",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Joy",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Ixia",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Wanwan",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Natalia",
+      "parecido": 0.67
+     }
+    ]
+   }
+  },
   {
    "t": 1791055000395,
    "pick": "Rafaela",
@@ -6034,6 +6149,12 @@
   {
    "cuando": "2026-10-03T19:16:51.447Z",
    "partidas": 148,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-03T19:36:08.156Z",
+   "partidas": 149,
    "heroes": 11,
    "incidencia": 11
   }
