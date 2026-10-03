@@ -76,6 +76,10 @@ export function prepararDatos({ catalogo = null, meta = null, rango = null } = {
     statsSemana: semana,
     ventana,
     fuerza,
+    // De qué rango salen cruces y parejas (3.35.0): lo decide la INGESTA con
+    // la misma guarda que `fuerza` (ventana.js, elegirRangoDeRelaciones),
+    // porque guardar las dos matrices doblaría lo que baja el móvil.
+    relaciones: meta?.relaciones ?? null,
     // El winrate de cada héroe EN CADA LÍNEA (3.12.0), por clave normalizada.
     // Se ENSEÑA, no puntúa: medido en 3.11.0, no mejora la predicción sobre
     // el global de la misma ventana. Su ventana es de ~15–30 días del rango

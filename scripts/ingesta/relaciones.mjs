@@ -169,7 +169,7 @@ export function heroeDelRegistro(data) {
  * media, y distinguirlos por su tamaño fallaba: un delta de +0.25 se tomaba por
  * un winrate del 25%. Ahora se mira QUÉ campo vino, que es lo que lo determina.
  */
-export async function fetchRelations(roamNames, stats, heroList) {
+export async function fetchRelations(roamNames, stats, heroList, rango = RANK) {
   const counters = {};
   const synergies = {};
 
@@ -209,7 +209,7 @@ export async function fetchRelations(roamNames, stats, heroList) {
     else diagnostics.relations.porNombre++;
     try {
       // size grande: por defecto la API pagina de 20 en 20 y se perdian cruces.
-      const values = { days: DAYS, past_days: DAYS, rank: RANK, rank_id: RANK, lang: 'en', size: 200, index: 1 };
+      const values = { days: DAYS, past_days: DAYS, rank: rango, rank_id: rango, lang: 'en', size: 200, index: 1 };
       const [c, s] = await Promise.all([
         // Sin ruta en el esquema no se prueba a ciegas: acababa llamando a
         // dominios muertos y llenando el diagnóstico de errores de Vercel que

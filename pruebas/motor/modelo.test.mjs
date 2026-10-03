@@ -5,10 +5,10 @@
  */
 import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
 import { catalogo, h, crearRnd } from '../fixtures/catalogo.mjs';
-import { indexarPorNombre, nombreClave } from '../../src/motor/nombres.js';
+import { indexarPorNombre, nombreClave, idMotivo } from '../../src/motor/nombres.js';
 import { terminoHeroe, terminoCruce, terminoPareja, evaluarDraft, logit, ESCALA, SUB_MAX, equilibrioDe, terminoEquilibrio, esperanzaCruces, disponibilidad, PESO_EQUILIBRIO_DANO } from '../../src/motor/modelo.js';
 import { COUNTER_RULES } from '../../src/motor/reglas.js';
-import { mediaDeSinergia } from '../../src/motor/matrices.js';
+import { mediaDeSinergia, CRUCE_FUERTE, CRUCE_FUERTE_EN_CONTRA } from '../../src/motor/matrices.js';
 import { LINEAS } from '../../src/motor/catalogo.js';
 import { prepararDatos, estimarCon, ordenar } from '../../src/motor/draft.js';
 import { generador } from '../../src/motor/robustez.js';
@@ -308,6 +308,14 @@ test('los motivos que se ensenan estan respaldados por el dato', () => {
   ok(gana.motivos.some((r) => r.bueno && r.clave.startsWith('regla.') && r.clave !== 'regla.ganaMatchup'),
     'con el cruce a favor deberia explicar POR QUE, no solo el numero');
   ok(gana.motivos.some((r) => r.clave === 'regla.ganaMatchup'), 'no dice que gana el cruce');
+  // Entre el p90 y el p95, el chip de la tarjeta lo dice con matiz (3.35.0),
+  // y cuenta como el MISMO motivo al quitar comunes y repetidos.
+  const chip = (v) => terminoCruce(yo, enemigo, indexarPorNombre({ Khufra: { Fanny: v } }, 2)).motivos.map((r) => r.clave).filter((k) => /Matchup/.test(k));
+  eq(chip(CRUCE_FUERTE_EN_CONTRA + 1e-4).join(), 'regla.pierdeMatchupPoco');
+  eq(chip(CRUCE_FUERTE_EN_CONTRA - 1e-4).join(), 'regla.pierdeMatchup');
+  eq(chip(CRUCE_FUERTE - 1e-4).join(), 'regla.ganaMatchupPoco');
+  eq(chip(CRUCE_FUERTE + 1e-4).join(), 'regla.ganaMatchup');
+  eq(idMotivo({ clave: 'regla.pierdeMatchupPoco', params: { e: 'Fanny' } }), idMotivo({ clave: 'regla.pierdeMatchup', params: { e: 'Fanny' } }));
 
   // 3. SIN dato del cruce la regla es lo unico que hay, y para eso esta: no se
   //    puede exigir que el dato la respalde porque no existe.

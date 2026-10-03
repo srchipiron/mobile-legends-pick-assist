@@ -50,4 +50,6 @@ export const mismoHeroe = (a, b) => nombreClave(a) === nombreClave(b);
  * motivos sobre enemigos distintos se tomarían por el mismo y se filtrarían
  * mal. De esto dependen el filtro de motivos comunes y el dedupe.
  */
-export const idMotivo = (m) => `${m.clave}|${m.params?.e ?? m.params?.a ?? ''}`;
+// «Poco» es el mismo motivo dicho con matiz (3.35.0, CRUCE_FUERTE): cuenta
+// como el mismo al quitar los comunes y al quitar repetidos.
+export const idMotivo = (m) => `${m.clave.replace(/Poco$/, '')}|${m.params?.e ?? m.params?.a ?? ''}`;

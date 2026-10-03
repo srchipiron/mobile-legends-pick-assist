@@ -7,7 +7,7 @@
 import { writeFile, readFile, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import {
-  DAYS, DIAS_RECIENTES, HEROES, ICONOS, OUT, RANK, RANKS, RETRATOS, diagnostics, estado, sleep,
+  CELDAS_MINIMAS, DAYS, DIAS_RECIENTES, HEROES, ICONOS, OUT, RANK, RANKS, RETRATOS, diagnostics, estado, sleep,
 } from './contexto.mjs';
 import { discoverRoutes, elegirRutaConMasDatos } from './descubrimiento.mjs';
 import {
@@ -27,6 +27,7 @@ import { serializar } from './salida.mjs';
 // catalogo escrito a mano.
 import { nombreClave as normName } from '../../src/motor/nombres.js';
 import { fundirCatalogo as mergeCatalog } from '../../src/motor/catalogo.js';
+import { elegirRangoDeRelaciones, RANGO_DE_RESPALDO } from '../../src/motor/ventana.js';
 
 export { parseArgs } from './contexto.mjs';
 
@@ -216,12 +217,31 @@ async function main() {
 
   const relations = relacionesPrevias(previous);
   let relacionesFrescas = 0;
+  // De qué rango salen cruces y parejas (3.35.0): el pedido, salvo que tras
+  // un reinicio de temporada no se parezca al de respaldo (ventana.js).
+  let relacionesRango = { rango: RANK, pedido: RANK, coherencia: null, motivo: null };
   try {
-    const fresh = await fetchRelations(nombresPedir, stats, heroList);
-    relacionesFrescas = fundirRelaciones(relations, fresh);
+    const fresh = await fetchRelations(nombresPedir, stats, heroList, RANK);
+    let elegidas = fresh;
+    const respaldo = RANGO_DE_RESPALDO[RANK];
+    if (respaldo) {
+      const diagPedido = diagnostics.relations;
+      try {
+        const otras = await fetchRelations(nombresPedir, stats, heroList, respaldo);
+        relacionesRango = elegirRangoDeRelaciones({ pedidas: fresh, respaldo: otras, rango: RANK, ...(CELDAS_MINIMAS != null ? { minimo: CELDAS_MINIMAS } : {}) });
+        if (relacionesRango.rango === respaldo) elegidas = otras; else diagnostics.relations = diagPedido;
+      } catch (err) {
+        diagnostics.relations = diagPedido;
+        relacionesRango = { ...relacionesRango, motivo: `no se pudo bajar ${respaldo} para comprobar ${RANK}: ${err.message}` };
+      }
+      const c = relacionesRango.coherencia;
+      console.log(`  · cruces y parejas de ${relacionesRango.rango}${c ? ` (r con ${respaldo}: cruces ${c.counters?.toFixed(2) ?? '-'}, parejas ${c.synergies?.toFixed(2) ?? '-'})` : ''}${relacionesRango.motivo ? `: ${relacionesRango.motivo}` : ''}`);
+    }
+    relacionesFrescas = fundirRelaciones(relations, elegidas);
     console.log(`  · relaciones: ${relacionesFrescas} héroes nuevos de ${nombresPedir.length} · ${Object.keys(relations.counters).length} con fila`);
   } catch (err) {
     console.warn(`  · relaciones: fallo (${err.message}); conservo las anteriores`);
+    relacionesRango = previous?.relaciones ?? relacionesRango;
   }
   const matrizNueva = anotarFrescura(relacionesFrescas, nombresPedir.length);
 
@@ -253,6 +273,8 @@ async function main() {
   const out = {
     generatedAt,
     rank: RANK,
+    // De qué rango salen cruces y parejas, y por qué (3.35.0).
+    relaciones: relacionesRango,
     ranks: Object.keys(statsByRank),
     days: DAYS,
     patchAvgWinRate: avgOf(stats),

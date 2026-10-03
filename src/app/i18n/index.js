@@ -37,7 +37,10 @@ export function crearT(idioma) {
     const plantilla = dic[clave] ?? TEXTOS.es[clave] ?? clave;
     if (!params) return plantilla;
     return plantilla
-      .replace(/\{(\w+)\|([^|}]*)\|([^}]*)\}/g, (_, k, uno, varios) => (Number(params[k]) === 1 ? uno : varios))
+      // Cada rama admite huecos dentro («{n|1 nombre|{n} nombres}»): sin eso
+      // la regla cortaba en la primera llave y salía el texto crudo en
+      // pantalla (3.35.0, «Leyendo solo: … ({n nombres nuevos})»).
+      .replace(/\{(\w+)\|((?:[^|{}]|\{\w+\})*)\|((?:[^{}]|\{\w+\})*)\}/g, (_, k, uno, varios) => (Number(params[k]) === 1 ? uno : varios))
       .replace(/\{(\w+)\}/g, (_, k) => {
         const v = params[k];
         if (Array.isArray(v)) {

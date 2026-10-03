@@ -175,6 +175,18 @@ test('el autodiagnóstico detecta datos rotos y aprueba los buenos', () => {
   ok(roto.texto.includes('Winrate NO influye'), 'no detecta que los winrates no entran');
 });
 
+test('el diagnóstico dice de qué rango salen cruces y parejas, y avisa si no es el pedido (3.35.0)', () => {
+  const entorno = { version: 'test', rango: 'glory', width: 412, height: 915, storage: true };
+  const stats = Object.fromEntries(heroes.map((x, i) => [x.name, { winRate: 0.47 + (i % 7) / 100, pickRate: 0.02 }]));
+  const meta = (relaciones) => ({ generatedAt: new Date().toISOString(), ranks: ['glory'], rank: 'glory', days: 7, heroCount: 133, stats, statsByRank: { glory: stats }, diagnostics: {}, relaciones });
+  const texto = (relaciones) => diagnosticar({ linea: 'roam', maestria: {}, partidas: [], entorno, datos: prepararDatos({ catalogo: { heroes: catalogo.heroes }, meta: meta(relaciones), rango: 'glory' }) }).texto.split('\n').filter((l) => /Cruces y parejas/.test(l));
+  const mitico = texto({ rango: 'mythic', pedido: 'glory', coherencia: { counters: 0.64, synergies: 0.43 }, motivo: 'no se parecen' });
+  ok(mitico.length === 1 && /^\[AVISO/.test(mitico[0]) && /de mythic en vez de glory/.test(mitico[0]), `no avisa de los cruces de Mítico: ${mitico}`);
+  const gloria = texto({ rango: 'glory', pedido: 'glory', coherencia: { counters: 0.91, synergies: 0.87 }, motivo: null });
+  ok(gloria.length === 1 && !/^\[(AVISO|FALLO)/.test(gloria[0]) && /de glory.*cruces r=0\.910/.test(gloria[0]), `con Gloria coherente no lo dice tal cual: ${gloria}`);
+  eq(texto(undefined).length, 0, 'sin el campo (datos de antes) inventa un rango');
+});
+
 test('un héroe recién salido sin winrate es un aviso, uno conocido sin winrate es un fallo', () => {
   // La auditoría de 3.21.1: con un héroe nuevo (sin tags escritos a mano)
   // que la API ya pone en una línea pero aún sin estadísticas, «Winrates:

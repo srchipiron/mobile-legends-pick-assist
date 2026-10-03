@@ -1,5 +1,5 @@
 import { nombreClave, buscar } from './nombres.js';
-import { cruce, CRUCE_MALO } from './matrices.js';
+import { cruce, CRUCE_MALO, CRUCE_FUERTE_EN_CONTRA } from './matrices.js';
 import { perfilDeDano, tapaElHueco } from './catalogo.js';
 import { esPickCiego } from './ranking.js';
 import { CUOTA_ROBUSTA } from './robustez.js';
@@ -23,6 +23,8 @@ import { TEAM_NEEDS, SATISFIES } from './reglas.js';
  * umbral propio: sale de `CRUCE_MALO`, y hay una prueba de que sigue así.
  */
 const CRUCE_CLARO = 0.5 - CRUCE_MALO;
+// Desde dónde se dice sin «por poco» (p95/p05, matrices.js).
+const CRUCE_FIRME = 0.5 - CRUCE_FUERTE_EN_CONTRA;
 
 /**
  * Desde cuántos puntos de probabilidad el nº1 «le saca» al nº2 y se dice
@@ -93,9 +95,10 @@ export function analizarDraft({
     const par = cruce(meta.counters, heroe.name, rivalDeLinea);
     if (par != null && Math.abs(par - 0.5) >= CRUCE_CLARO) {
       const pct = Math.round(par * 100);
+      const poco = Math.abs(par - 0.5) < CRUCE_FIRME ? 'Poco' : '';
       salida.push(par > 0.5
-        ? { tono: 'bien', clave: 'analisis.ganasCruce', params: { yo: heroe.name, pct, rival: rivalDeLinea } }
-        : { tono: 'ojo', clave: 'analisis.pierdesCruce', params: { pct, rival: rivalDeLinea } });
+        ? { tono: 'bien', clave: `analisis.ganasCruce${poco}`, params: { yo: heroe.name, pct, rival: rivalDeLinea } }
+        : { tono: 'ojo', clave: `analisis.pierdesCruce${poco}`, params: { pct, rival: rivalDeLinea } });
     } else {
       const mio = buscar(meta.stats, heroe.name)?.winRate;
       const suyo = buscar(meta.stats, rivalDeLinea)?.winRate;
@@ -117,7 +120,8 @@ export function analizarDraft({
       .filter((x) => x.v != null && x.v < 0.5 - CRUCE_CLARO)
       .sort((a, b) => a.v - b.v)[0];
     if (peor && peor.e.name !== rivalDeLinea) {
-      salida.push({ tono: 'ojo', clave: 'analisis.cuidadoCon', params: { e: peor.e.name, pct: Math.round(peor.v * 100) } });
+      const poco = peor.v > 0.5 - CRUCE_FIRME ? 'Poco' : '';
+      salida.push({ tono: 'ojo', clave: `analisis.cuidadoCon${poco}`, params: { e: peor.e.name, pct: Math.round(peor.v * 100) } });
     }
   }
 

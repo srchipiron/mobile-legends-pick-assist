@@ -113,6 +113,9 @@ enseña igual, que es justo para lo que está. Y el umbral de «ganas el cruce»
 salió de medir la distribución (p90/p10 = 0.5154/0.4846), no de suponer que un
 53% es ventaja: 0.53 era el percentil 99 y por eso el motivo bien fundado casi
 nunca salía. Medido en 2.000 tarjetas: motivos con dato del 14,5% al 50,4%.
+Desde 3.35.0, entre ese p90 y el p95 (0,5208/0,4792, `CRUCE_FUERTE`) el
+motivo y el análisis lo dicen «por poco» (claves `…Poco`, mismo
+`idMotivo`): un 48,4% salía «pierdes el cruce: 48%».
 
 ## La estructura (3.0)
 
@@ -285,7 +288,8 @@ ninguna constante.
   dato, como la guarda de la ventana. Mítico–Leyenda va a 0,97 asentado y
   bajó a 0,77 del 18 al 20 (Mítico también se vació un poco): si alguna
   vez hace falta guardar Mítico, su umbral es otro y se mide aparte. Los
-  cruces no se degradaron (r = 0,96 con los de antes del reinicio, σ igual).
+  cruces no se degradaron (r = 0,96 con los de antes del reinicio, σ igual)
+  ESE día; hacia el 28 sí, ver el punto siguiente.
   La fila de salud lleva `fuerza` y `coherenciaRango`: la serie dice cuándo
   vuelve Gloria. Desde 3.14.0, si no hay 20 héroes para comparar, manda el
   rango que TIENE datos (antes se caía siempre a Mítico, también con Mítico
@@ -293,6 +297,30 @@ ninguna constante.
   dice «en tu rango» dice el rango de verdad (`meta.fuerza.rango`: fase de
   baneos, pie, Meta). Las comprobaciones de valores imposibles del
   diagnóstico miran `statsSemana`, las que deciden.
+- **Cruces y parejas también se vacían en Gloria, y más tarde** (3.35.0,
+  `elegirRangoDeRelaciones` en `ventana.js`, aplicada en la INGESTA). La
+  ruta de cruces y la de parejas no tienen parámetro de días (solo
+  `rank`), así que acumulan la temporada y tardan más en degradarse que la
+  fuerza: la σ de los cruces de Gloria fue 0,0128 estable del 30 de agosto
+  al 27 de septiembre de 2026 y saltó a 0,018–0,020 del 1 al 3 de octubre
+  (parejas, 0,020 → 0,033–0,037). Medido el 3 de octubre sobre las 17.556
+  celdas: cruces de Gloria de hoy contra los de Mítico de hoy r = 0,64 y
+  contra los de Gloria del 20 de septiembre 0,62, mientras Mítico de hoy y
+  Gloria del 20 van a 0,91 (parejas: 0,43 / 0,39 / 0,87); la razón de
+  ruido entre cuartiles de pick (sana 1,16) es 1,93 en Gloria y 1,53 en
+  Mítico, y la σ de Mítico (0,0133 / 0,0222) es la de Gloria asentada.
+  Efecto en roam (300 drafts): el nº1 cambia en 98, y el de antes queda
+  entre los tres de Mítico en 259. Por eso la ingesta baja también las de
+  `RANGO_DE_RESPALDO` y, si la PEOR de las dos matrices no se parece a
+  `COHERENCIA_DE_RANGO_MINIMA` (con `CELDAS_PARA_COMPARAR` = 500 celdas en
+  común como mínimo; si no, se queda la pedida y lo dice), guarda las de
+  Mítico; `relaciones` en `roam-meta.json` dice de dónde salen (lo lee el
+  diagnóstico, la hoja Meta y la fila de salud: `relaciones`,
+  `coherenciaCruces`, `coherenciaParejas`). Se decide en la ingesta y no en
+  la app porque guardar las dos matrices doblaría lo que baja el móvil. El
+  umbral es el de la fuerza: no hay serie con la que calibrar otro, y lo
+  medido (0,91 sano, 0,64 roto) cae a los dos lados. Cuesta 266
+  peticiones más por corrida.
 
 Dos constantes que se midieron y se dejaron como estaban, para no volver a
 medirlas: el umbral de «tu héroe está N puntos por encima» (`>= 0.02` en
@@ -1041,6 +1069,23 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   pantalla (e2e, no bloquea) y los héroes elegidos por nombre en equipo y
   draft (cambian de línea poco). Antes de escribir una prueba sobre
   public/data, pásala contra las corridas guardadas: `git log` las tiene.
+
+- **La guarda de rango solo en la fuerza, con su gemela suelta en las
+  matrices** (3.11.0 → 3.35.0) — cuando Gloria se vació tras el reinicio
+  de temporada, 3.11.0 pasó la FUERZA de los héroes a Mítico y dejó cruces
+  y parejas en Gloria, «porque no se degradaron» (r = 0,96 el 25 de
+  septiembre). Era verdad ese día: esas rutas acumulan la temporada y
+  tardan más en vaciarse. Hacia el 28 dejaron de valer (r = 0,64 con
+  Mítico, 0,62 con la propia Gloria de antes) y nada lo vigilaba; Javi lo
+  notó como «picks muy raros últimamente» (Diggie «pierde» contra Minotaur
+  con parejas a −8). Una guarda que se pone a una fuente se pone a todas
+  las que comparten población, y «no se ha degradado» se vigila, no se
+  comprueba una vez.
+- **Un plural con un hueco dentro** (3.28.0 → 3.35.0) — «{n|1 nombre
+  nuevo|{n} nombres nuevos}» salía crudo en pantalla porque la regla del
+  plural de `crearT` cortaba en la primera llave. Hoy admite huecos en cada
+  rama y una prueba recorre TODAS las claves de los dos idiomas con 1 y con
+  2: ninguna deja llaves.
 
 ## El modelo (2.0)
 

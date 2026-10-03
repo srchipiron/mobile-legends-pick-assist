@@ -163,6 +163,11 @@ if (rutaHistorial) {
     // De qué rango sale la fuerza (3.11.0): Mítico mientras Gloria está vacía tras un reinicio.
     fuerza: datos.meta.fuerza?.rango ?? null,
     coherenciaRango: datos.meta.fuerza?.coherencia != null ? Number(datos.meta.fuerza.coherencia.toFixed(3)) : null,
+    // Y de qué rango cruces y parejas (3.35.0), con su coherencia: la serie
+    // dice cuándo vuelven a Gloria.
+    relaciones: datos.meta.relaciones?.rango ?? null,
+    coherenciaCruces: datos.meta.relaciones?.coherencia?.counters != null ? Number(datos.meta.relaciones.coherencia.counters.toFixed(3)) : null,
+    coherenciaParejas: datos.meta.relaciones?.coherencia?.synergies != null ? Number(datos.meta.relaciones.coherencia.synergies.toFixed(3)) : null,
   };
   await mkdir(dirname(resolve(ROOT, rutaHistorial)), { recursive: true });
   await appendFile(resolve(ROOT, rutaHistorial), `${JSON.stringify(fila)}\n`);

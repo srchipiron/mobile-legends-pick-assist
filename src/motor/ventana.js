@@ -109,7 +109,7 @@ export function elegirVentana(semana = {}, recientes = null, dias = 3) {
 export const COHERENCIA_DE_RANGO_MINIMA = 0.8;
 
 /** El rango que se consulta cuando Gloria no aguanta. */
-const RANGO_DE_RESPALDO = { glory: 'mythic' };
+export const RANGO_DE_RESPALDO = { glory: 'mythic' };
 
 /**
  * @param {Record<string, Record<string, {winRate:number}>>} statsByRank  las de 7 días por rango, ya indexadas
@@ -134,6 +134,52 @@ export function elegirRango(statsByRank = {}, rango = null) {
   const r = correlacion(comunes.map((k) => pedidas[k].winRate), comunes.map((k) => otras[k].winRate));
   if (r >= COHERENCIA_DE_RANGO_MINIMA) return { rango, pedido: rango, coherencia: r, motivo: null };
   return { rango: respaldo, pedido: rango, coherencia: r, motivo: `${rango} no se parece a ${respaldo} (r=${r.toFixed(2)}): pocas partidas en ${rango}, normal tras un reinicio de temporada` };
+}
+
+/**
+ * La MISMA guarda para cruces y parejas (3.35.0), que hasta entonces salían
+ * siempre de Gloria aunque la fuerza ya hubiera caído a Mítico: el gemelo
+ * del fallo de 3.11.0 en otro componente. La ruta de cruces de la API no
+ * deja elegir días (solo rango), y su ventana tardó doce días en vaciarse
+ * tras el reinicio del 16 de septiembre de 2026: σ de los cruces 0,0128
+ * estable del 30 de agosto al 27 de septiembre y 0,0181–0,0201 del 1 al 3 de
+ * octubre; σ de las parejas 0,020 → 0,033–0,037. Medido el 3 de octubre con
+ * las 17.556 celdas de cada rango: cruces de Gloria hoy frente a los de
+ * Gloria asentada (20 de septiembre) r = 0,62, los de Mítico hoy frente a
+ * esa misma Gloria asentada r = 0,905; parejas 0,39 frente a 0,87; Gloria
+ * hoy frente a Mítico hoy 0,64 (cruces) y 0,43 (parejas). Y es muestra, no
+ * juego: la fila de un héroe poco jugado es 1,93 veces más dispersa que la
+ * de uno muy jugado en Gloria (1,16 asentada), 1,53 en Mítico. Se reutiliza
+ * `COHERENCIA_DE_RANGO_MINIMA`: 0,8 queda entre lo malo de hoy (0,43–0,64)
+ * y la peor cota de lo bueno (0,87, que además lleva dos semanas de deriva
+ * del meta dentro). Decide la PEOR de las dos matrices y las dos van del
+ * mismo rango: un cruce de Mítico con parejas de Gloria no es ninguna
+ * población. La decide la ingesta (bajar las dos matrices de los dos rangos
+ * y guardar las dos doblaría el fichero que se descarga en el móvil) y la
+ * marca en `relaciones` de roam-meta.json, que el diagnóstico enseña.
+ */
+export const CELDAS_PARA_COMPARAR = 500;
+export function elegirRangoDeRelaciones({ pedidas = null, respaldo = null, rango = null, minimo = CELDAS_PARA_COMPARAR } = {}) {
+  const rangoRespaldo = RANGO_DE_RESPALDO[rango];
+  const base = { rango, pedido: rango, coherencia: null, motivo: null };
+  if (!rangoRespaldo || !pedidas || !respaldo) return base;
+  const coherencia = {};
+  for (const m of ['counters', 'synergies']) {
+    const xs = []; const ys = [];
+    for (const [heroe, fila] of Object.entries(pedidas[m] ?? {})) {
+      const otra = respaldo[m]?.[heroe];
+      if (!otra) continue;
+      for (const [rival, v] of Object.entries(fila ?? {})) {
+        if (Number.isFinite(v) && Number.isFinite(otra[rival])) { xs.push(v); ys.push(otra[rival]); }
+      }
+    }
+    coherencia[m] = xs.length >= minimo ? correlacion(xs, ys) : null;
+  }
+  const medidas = Object.values(coherencia).filter((x) => x != null);
+  if (!medidas.length) return { ...base, coherencia, motivo: `pocos cruces en común con ${rangoRespaldo} para comprobar ${rango}` };
+  const peor = Math.min(...medidas);
+  if (peor >= COHERENCIA_DE_RANGO_MINIMA) return { ...base, coherencia };
+  return { rango: rangoRespaldo, pedido: rango, coherencia, motivo: `los cruces y parejas de ${rango} no se parecen a los de ${rangoRespaldo} (r=${peor.toFixed(2)}): pocas partidas en ${rango}, normal unos días después de un reinicio de temporada` };
 }
 
 /** Media del winrate de un conjunto de estadísticas, como la calcula la ingesta (`avgOf`). */

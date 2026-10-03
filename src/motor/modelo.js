@@ -1,5 +1,5 @@
 import { nombreClave, buscar } from './nombres.js';
-import { cruce, sinergia, mediaDeSinergia, valido, CRUCE_DESTACABLE, CRUCE_MALO, PAREJA_DESTACABLE } from './matrices.js';
+import { cruce, sinergia, mediaDeSinergia, valido, CRUCE_DESTACABLE, CRUCE_MALO, CRUCE_FUERTE, CRUCE_FUERTE_EN_CONTRA, PAREJA_DESTACABLE } from './matrices.js';
 import { PRECISION_DEDUCIDA, hayQueProtegerlo, tipoDeDano } from './catalogo.js';
 import { tuNivel, priorDeMaestria } from './maestria.js';
 import { COUNTER_RULES } from './reglas.js';
@@ -156,8 +156,8 @@ export function terminoCruce(heroe, enemigo, counters) {
     return { valor: logit(pseudo(ventaja, signo)) - logit(pseudo(suya.ventaja, suya.signo)), dato: false, cruce: null, motivos };
   }
   motivos.push(...porTag.filter((m) => (m.bueno ? c >= 0.5 : c <= 0.5)));
-  if (c >= CRUCE_DESTACABLE) motivos.push({ clave: 'regla.ganaMatchup', params: { e: enemigo.name }, bueno: true, peso: 1.2 });
-  if (c <= CRUCE_MALO) motivos.push({ clave: 'regla.pierdeMatchup', params: { e: enemigo.name }, bueno: false, peso: 1.3 });
+  if (c >= CRUCE_DESTACABLE) motivos.push({ clave: c >= CRUCE_FUERTE ? 'regla.ganaMatchup' : 'regla.ganaMatchupPoco', params: { e: enemigo.name }, bueno: true, peso: 1.2 });
+  if (c <= CRUCE_MALO) motivos.push({ clave: c <= CRUCE_FUERTE_EN_CONTRA ? 'regla.pierdeMatchup' : 'regla.pierdeMatchupPoco', params: { e: enemigo.name }, bueno: false, peso: 1.3 });
   return { valor: logit(c), dato: true, cruce: c, motivos };
 }
 

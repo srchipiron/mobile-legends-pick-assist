@@ -52,6 +52,19 @@ export function seccionDatos(inf, { datos, linea, entorno = {} }) {
   } else if (f?.coherencia != null) {
     inf.linea(`Fuerza de héroe: de ${f.rango} (coherencia con el rango de abajo r=${f.coherencia.toFixed(3)})`);
   }
+  // Y de qué rango salen cruces y parejas (3.35.0): la ingesta aplica la
+  // misma guarda a las matrices (ventana.js, elegirRangoDeRelaciones), que
+  // la ruta no tiene ventana de días y tras un reinicio Gloria se llena de
+  // ruido. Sin el campo (datos de antes de 3.35.0), del rango de la ingesta.
+  const rel = meta.relaciones;
+  const coh = rel?.coherencia ? Object.entries(rel.coherencia).filter(([, x]) => x != null).map(([m, x]) => `${m === 'counters' ? 'cruces' : 'parejas'} r=${x.toFixed(3)}`).join(', ') : '';
+  if (rel?.motivo && rel.rango === rel.pedido) {
+    inf.check(false, '', `Cruces y parejas: de ${rel.rango}, sin poder comprobarlos: ${rel.motivo}`, true);
+  } else if (rel?.motivo) {
+    inf.check(false, '', `Cruces y parejas: de ${rel.rango} en vez de ${rel.pedido} porque ${rel.motivo}`, true);
+  } else if (rel) {
+    inf.linea(`Cruces y parejas: de ${rel.rango}${coh ? ` (coherencia con el rango de abajo: ${coh})` : ''}`);
+  }
   const v = datos.meta?.ventana;
   if (v?.dias === 7 && meta.recientes) {
     inf.check(false, '', `Fuerza de héroe: ventana de 7 días porque la de ${meta.recientes.dias} no vale: ${v.motivo}`, true);

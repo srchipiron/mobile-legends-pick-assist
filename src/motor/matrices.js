@@ -28,6 +28,17 @@ export const valido = (p) => typeof p === 'number' && p > 0.02 && p < 0.98;
 export const CRUCE_DESTACABLE = 0.5154;
 export const CRUCE_MALO = 0.4846;
 
+/**
+ * Desde qué cruce se dice sin matices: el p95/p05 de los mismos 17.556
+ * cruces con la matriz asentada (Gloria del 20 de septiembre de 2026,
+ * 0,5208/0,4792; Mítico del 3 de octubre, 0,5216/0,4784). Entre el p90 y el
+ * p95 el cruce se dice, pero «por poco» (3.35.0): un 48,4% redondeado salía
+ * «pierdes el cruce: 48%», que suena a mucho más de lo que es (1,6 puntos;
+ * la σ de los cruces es 1,3). Decide QUÉ SE DICE, no la nota.
+ */
+export const CRUCE_FUERTE = 0.5208;
+export const CRUCE_FUERTE_EN_CONTRA = 0.4792;
+
 /** Lo mismo para las parejas, con SU distribución: p90 = 0.5100 (8.778 parejas). */
 export const PAREJA_DESTACABLE = 0.51;
 /**

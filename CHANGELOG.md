@@ -8,6 +8,24 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.35.0
+
+- Los cruces y las parejas salen de Mítico mientras Gloria no tenga
+  partidas: era la causa de los picks raros de estos días. Desde el reinicio
+  de temporada del 16 de septiembre la fuerza de cada héroe ya salía de
+  Mítico, pero quién gana a quién y quién combina con quién se seguían
+  leyendo de Gloria, y hacia el 28 de septiembre Gloria se quedó con tan
+  pocas partidas que esas tablas eran casi todo ruido (se parecían a las de
+  Gloria de antes del reinicio menos que las de Mítico de hoy). Ahora cada
+  descarga compara las dos y usa Mítico mientras Gloria no se le parezca;
+  vuelve sola a Gloria cuando se rellene. La hoja «Meta» lo dice.
+- «Pierdes el cruce» ya no sale por un punto y medio: entre el 48% y el 52%
+  la frase dice «algo en contra» o «algo a favor», «por poco», y la etiqueta
+  de la tarjeta «algo peor contra…». Sin matiz solo cuando es de verdad
+  claro (el 5% de cruces más extremos).
+- Arreglado el texto de «Leer solo» que salía con llaves: «última lectura
+  bien (2 nombres nuevos)».
+
 ## 3.34.0
 
 - Las capturas de la tablet ya no llenan el móvil: van en casa de Termux

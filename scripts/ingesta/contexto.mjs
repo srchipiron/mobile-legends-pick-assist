@@ -42,6 +42,10 @@ export const PREVIO = typeof args.previo === 'string' ? resolve(ROOT, args.previ
 // en serio, asi que sus counters son los mas informativos.
 export const RANK = typeof args.rank === 'string' ? args.rank : 'glory';
 export const DAYS = Number.isFinite(Number(args.days)) && Number(args.days) > 0 ? Number(args.days) : 7;
+// `--celdas-para-comparar`: solo para la ingesta simulada, que tiene tres
+// héroes y no llega a las celdas con las que la guarda de cruces y parejas
+// se fía (src/motor/ventana.js, `elegirRangoDeRelaciones`).
+export const CELDAS_MINIMAS = Number.isFinite(Number(args['celdas-para-comparar'])) ? Number(args['celdas-para-comparar']) : null;
 // La ventana CORTA, solo para las estadisticas por heroe: una media de 7 dias
 // tarda una semana en recoger un parche. 3 y no 1 porque esta medido con la
 // misma ruta y la misma poblacion (src/motor/ventana.js): a 3 dias el ruido

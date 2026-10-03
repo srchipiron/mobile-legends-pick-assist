@@ -6,7 +6,7 @@
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { nombreClave, indexarPorNombre } from '../../src/motor/nombres.js';
 import { analizarDraft } from '../../src/motor/analisis.js';
-import { CRUCE_MALO } from '../../src/motor/matrices.js';
+import { CRUCE_MALO, CRUCE_FUERTE_EN_CONTRA } from '../../src/motor/matrices.js';
 
 test('el analisis dice si el pick aguanta lo que falta, y se calla con el draft completo', () => {
   const yo = { name: 'Khufra', tags: [], roam: true };
@@ -107,7 +107,7 @@ test('el analisis avisa del peor cruce del draft cuando el dato lo dice', () => 
     ranking, enemigos: [malo, neutro], aliados: [], empate: [],
     meta: { counters: indexarPorNombre({ Minotaur: { Ixia: CRUCE_MALO - 0.002, Vale: 0.505 } }, 2) },
   });
-  ok(avisa.some((f) => f.clave === 'analisis.cuidadoCon' && f.params?.e === 'Ixia'),
+  ok(avisa.some((f) => f.clave.startsWith('analisis.cuidadoCon') && f.params?.e === 'Ixia'),
     `no avisa de un cruce en el 10% peor: ${JSON.stringify(avisa)}`);
 
   // Y uno normal, no: si avisara de todo, dejaria de leerse.
@@ -115,7 +115,7 @@ test('el analisis avisa del peor cruce del draft cuando el dato lo dice', () => 
     ranking, enemigos: [neutro], aliados: [], empate: [],
     meta: { counters: indexarPorNombre({ Minotaur: { Vale: 0.497 } }, 2) },
   });
-  ok(!calla.some((f) => f.clave === 'analisis.cuidadoCon'),
+  ok(!calla.some((f) => f.clave.startsWith('analisis.cuidadoCon')),
     'avisa de un cruce que esta dentro de lo normal');
 
   // El umbral es el MISMO que usa el motor para las tarjetas: si se separan,
@@ -131,7 +131,7 @@ test('el analisis avisa del peor cruce del draft cuando el dato lo dice', () => 
     ranking, enemigos: [e], aliados: [], empate: [],
     meta: { counters: indexarPorNombre({ Minotaur: { [e.name]: v } }, 2) },
   });
-  const avisaDe = (v) => conCruce(v, malo).some((f) => f.clave === 'analisis.cuidadoCon');
+  const avisaDe = (v) => conCruce(v, malo).some((f) => f.clave.startsWith('analisis.cuidadoCon'));
   ok(avisaDe(CRUCE_MALO - EPS), `el analisis no avisa justo por debajo de CRUCE_MALO (${CRUCE_MALO}): su umbral es otro`);
   ok(!avisaDe(CRUCE_MALO + EPS), `el analisis avisa justo por encima de CRUCE_MALO (${CRUCE_MALO}): su umbral es otro`);
 
@@ -141,9 +141,20 @@ test('el analisis avisa del peor cruce del draft cuando el dato lo dice', () => 
     ranking, enemigos: [malo], aliados: [], empate: [], rivalDeLinea: malo.name,
     meta: { counters: indexarPorNombre({ Minotaur: { [malo.name]: v } }, 2) },
   });
-  const ganaDe = (v) => contraRival(v).some((f) => f.clave === 'analisis.ganasCruce');
+  const ganaDe = (v) => contraRival(v).some((f) => f.clave.startsWith('analisis.ganasCruce'));
   ok(ganaDe(1 - CRUCE_MALO + EPS), `el analisis no dice «ganas el cruce» justo por encima de ${1 - CRUCE_MALO}: su umbral es otro`);
   ok(!ganaDe(1 - CRUCE_MALO - EPS), `el analisis dice «ganas el cruce» justo por debajo de ${1 - CRUCE_MALO}: su umbral es otro`);
+
+  // «Por poco» entre el p90 y el p95 (3.35.0): un 48,4% salía «pierdes el
+  // cruce: 48%». Sin matiz solo desde CRUCE_FUERTE_EN_CONTRA, en los dos
+  // lados y en las dos frases.
+  const claveDe = (fs, prefijo) => fs.find((f) => f.clave.startsWith(prefijo))?.clave;
+  eq(claveDe(conCruce(CRUCE_FUERTE_EN_CONTRA + EPS, malo), 'analisis.cuidadoCon'), 'analisis.cuidadoConPoco');
+  eq(claveDe(conCruce(CRUCE_FUERTE_EN_CONTRA - EPS, malo), 'analisis.cuidadoCon'), 'analisis.cuidadoCon');
+  eq(claveDe(contraRival(CRUCE_FUERTE_EN_CONTRA + EPS), 'analisis.pierdesCruce'), 'analisis.pierdesCrucePoco');
+  eq(claveDe(contraRival(CRUCE_FUERTE_EN_CONTRA - EPS), 'analisis.pierdesCruce'), 'analisis.pierdesCruce');
+  eq(claveDe(contraRival(1 - CRUCE_FUERTE_EN_CONTRA - EPS), 'analisis.ganasCruce'), 'analisis.ganasCrucePoco');
+  eq(claveDe(contraRival(1 - CRUCE_FUERTE_EN_CONTRA + EPS), 'analisis.ganasCruce'), 'analisis.ganasCruce');
 });
 
 test('un pick fijado que no es el nº1: sin la frase de robustez, y se dice cuanto le falta', () => {

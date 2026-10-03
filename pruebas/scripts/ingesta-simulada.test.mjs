@@ -47,10 +47,12 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   // Aquí una API local sirve un esquema OpenAPI y respuestas con la FORMA de
   // la real, y se comprueba que lo que sale es lo que sirvió la API simulada,
   // no lo conservado.
-  const pares = (n) => ({ data: { sub_hero: [
+  // `signo` −1: los cruces de Gloria «ruidosos» tras un reinicio de
+  // temporada (3.35.0), lo contrario de los de Mítico (r = −1).
+  const pares = (n, signo = 1) => ({ data: { sub_hero: [
     { hero_name: 'Khufra', increase_win_rate: 0.0123 }, { hero_name: 'Tigreal', increase_win_rate: -0.02 },
     { hero_name: 'Alice', increase_win_rate: 0.01 }, { hero_name: 'Layla', increase_win_rate: 0.03 },
-  ].slice(0, n) } });
+  ].slice(0, n).map((p) => ({ ...p, increase_win_rate: signo * p.increase_win_rate })) } });
   const imagen = (firma) => Buffer.concat([firma, Buffer.alloc(300)]);
   const PNG = imagen(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
   const JPG = imagen(Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
@@ -86,6 +88,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   let fallaDetail = false;
   let academyVacia = false;
   let fallosCountersPendientes = 0;
+  let gloriaRuidosa = false;
   const srv = createServer((req, res) => {
     const u = new URL(req.url, 'http://x');
     const ruta = u.pathname;
@@ -128,8 +131,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       if (fallosCountersPendientes > 0) { fallosCountersPendientes -= 1; res.statusCode = 500; return res.end('{}'); }
       marca('counters'); return json(pares(2));
     }
-    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta)) { marca('academy'); return json(academyVacia ? { data: { sub_hero: [] } } : pares(4)); }
-    if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta)) { marca('compat'); return json(pares(3)); }
+    const signoDelRango = gloriaRuidosa && u.searchParams.get('rank') === 'glory' ? -1 : 1;
+    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta)) { marca('academy'); marca(`academy:${u.searchParams.get('rank')}`); return json(academyVacia ? { data: { sub_hero: [] } } : pares(4, signoDelRango)); }
+    if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta)) { marca('compat'); marca(`compat:${u.searchParams.get('rank')}`); return json(pares(3, signoDelRango)); }
     if (ruta === '/api/equipment/expanded') {
       marca('equipo');
       return json({ code: 0, data: { records: [{ data: {
@@ -182,7 +186,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
 
     // Cada endpoint que la ingesta conoce se ha llamado. Si uno deja de
     // llamarse, la app se queda con el dato conservado sin que nadie lo vea.
-    for (const k of ['esquema', 'rank:mythic', 'rank:glory', 'rank3:glory', 'position', 'detail', 'counters', 'academy', 'compat', 'equipo', 'equipoCorto', 'builds:roam', 'lineas:roam', 'img', 'tiers', 'tier']) {
+    for (const k of ['esquema', 'rank:mythic', 'rank:glory', 'rank3:glory', 'position', 'detail', 'counters', 'academy', 'academy:glory', 'academy:mythic', 'compat', 'compat:glory', 'compat:mythic', 'equipo', 'equipoCorto', 'builds:roam', 'lineas:roam', 'img', 'tiers', 'tier']) {
       ok(golpes[k] > 0, `la ingesta no ha llamado a ${k}: ${JSON.stringify(golpes)}`);
     }
 
@@ -282,6 +286,40 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(d3.winrateLinea?.Atlas?.roam, 0.4431, `Atlas no trae el winrate por línea de hoy: ${JSON.stringify(d3.winrateLinea?.Atlas)}`);
     eq(d3.winrateLinea?.Khufra?.roam, 0.4341, `el winrate por línea de Khufra se pierde con su ruta caída: ${JSON.stringify(d3.winrateLinea?.Khufra)}`);
     eq(d3.diagnostics.lineas?.conservados, 1, `no cuenta los pares conservados: ${JSON.stringify(d3.diagnostics.lineas)}`);
+
+    // La guarda de rango de cruces y parejas (3.35.0). En la primera corrida
+    // Gloria y Mítico sirven lo mismo: los cruces (una fila por héroe del
+    // catálogo) llegan al mínimo y casan; las parejas (tres) no llegan y no
+    // cuentan. Se queda Gloria, sin motivo.
+    ok(d.relaciones?.rango === 'glory' && d.relaciones?.coherencia?.counters > 0.99 && d.relaciones?.coherencia?.synergies === null && !d.relaciones?.motivo,
+      `la primera corrida no se queda Gloria con los cruces comparados: ${JSON.stringify(d.relaciones)}`);
+    // Cuarta corrida: Gloria «ruidosa» (lo contrario de Mítico) y el mínimo de
+    // celdas bajado a lo que tiene la simulación: cruces y parejas salen de
+    // Mítico, los dos del mismo rango, y lo marca.
+    fallaDetail = false; academyVacia = false; fallaLineaDe = null; gloriaRuidosa = true;
+    const out4 = resolve(dir, 'gloria-ruidosa.json');
+    const r4 = await correrIngesta([
+      '--base', `http://127.0.0.1:${puerto}/api`,
+      '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out4, '--celdas-para-comparar', '1', '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
+      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
+    ]);
+    eq(r4.status, 0, `la corrida con Gloria ruidosa no acaba bien: ${(r4.stdout + r4.stderr).slice(-400)}`);
+    const d4 = JSON.parse(readFileSync(out4, 'utf8'));
+    eq(d4.relaciones?.rango, 'mythic', `con Gloria incoherente los cruces no salen de Mítico: ${JSON.stringify(d4.relaciones)}`);
+    ok(d4.relaciones?.coherencia?.counters < 0.8 && /no se parecen/.test(d4.relaciones?.motivo ?? ''), `no dice la coherencia ni el porqué: ${JSON.stringify(d4.relaciones)}`);
+    eq(d4.counters.Atlas?.Khufra, 0.5123, `el cruce guardado no es el de Mítico (0.5123; el de Gloria ruidosa sería 0.4877): ${JSON.stringify(d4.counters.Atlas)}`);
+    eq(d4.synergies.Atlas?.Tigreal, 0.48, `la pareja guardada no es la de Mítico (0.48; la de Gloria sería 0.52): ${JSON.stringify(d4.synergies.Atlas)}`);
+    // Y con Gloria coherente (sirve lo mismo que Mítico), se queda Gloria.
+    gloriaRuidosa = false;
+    const out5 = resolve(dir, 'gloria-buena.json');
+    const r5 = await correrIngesta([
+      '--base', `http://127.0.0.1:${puerto}/api`,
+      '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out5, '--celdas-para-comparar', '1', '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
+      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
+    ]);
+    eq(r5.status, 0, `la corrida con Gloria coherente no acaba bien: ${(r5.stdout + r5.stderr).slice(-400)}`);
+    const d5 = JSON.parse(readFileSync(out5, 'utf8'));
+    ok(d5.relaciones?.rango === 'glory' && d5.relaciones?.coherencia?.counters > 0.99 && !d5.relaciones?.motivo, `con Gloria coherente no se queda Gloria: ${JSON.stringify(d5.relaciones)}`);
   } finally {
     srv.close();
     rmSync(dir, { recursive: true, force: true });

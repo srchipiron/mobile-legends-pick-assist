@@ -71,6 +71,26 @@ test('los parámetros y los plurales se sustituyen en los dos idiomas', () => {
   }
 });
 
+test('ningún texto deja llaves ni barras en pantalla, con cualquier cantidad (3.35.0)', () => {
+  // Recorre TODAS las claves de los dos idiomas: cada hueco con 1 y con 2.
+  // «{n|1 nombre nuevo|{n} nombres nuevos}» salía crudo porque la regla del
+  // plural no admitía un hueco dentro de una rama.
+  for (const idioma of IDIOMAS) {
+    const t = crearT(idioma);
+    for (const [clave, plantilla] of Object.entries(DICCIONARIOS[idioma])) {
+      const huecos = [...plantilla.matchAll(/\{(\w+)/g)].map((m) => m[1]);
+      if (!huecos.length) continue;
+      for (const n of [1, 2]) {
+        const frase = t(clave, Object.fromEntries(huecos.map((k) => [k, n])));
+        ok(!/[{}]/.test(frase) && !/\w\|\w/.test(frase), `${idioma} ${clave} con ${n} sale crudo: ${frase}`);
+      }
+    }
+  }
+  const t = crearT('es');
+  eq(t('lector.autoLeido', { n: 1 }), 'Leyendo solo: última lectura bien (1 nombre nuevo).');
+  eq(t('lector.autoLeido', { n: 3 }), 'Leyendo solo: última lectura bien (3 nombres nuevos).');
+});
+
 test('una clave que no existe se devuelve tal cual, y el idioma por defecto es uno soportado', () => {
   eq(crearT('es')('no.existe.esta'), 'no.existe.esta');
   ok(IDIOMAS.includes(idiomaPorDefecto()), 'el idioma por defecto no es uno de los soportados');

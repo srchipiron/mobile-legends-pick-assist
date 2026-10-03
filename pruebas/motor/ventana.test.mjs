@@ -5,7 +5,7 @@
  * (héroes al 0% y al 100%, r = 0,09), que es la forma real de fallar.
  */
 import { test, ok, eq, casi, terminar } from '../arnes.mjs';
-import { elegirVentana, elegirRango, mediaDeWinrate, COHERENCIA_MINIMA, COHERENCIA_DE_RANGO_MINIMA, WINRATE_POSIBLE } from '../../src/motor/ventana.js';
+import { elegirVentana, elegirRango, elegirRangoDeRelaciones, mediaDeWinrate, COHERENCIA_MINIMA, COHERENCIA_DE_RANGO_MINIMA, CELDAS_PARA_COMPARAR, WINRATE_POSIBLE } from '../../src/motor/ventana.js';
 
 /** 40 héroes con winrates repartidos entre 0,44 y 0,56, como los de verdad. */
 const semana = Object.fromEntries(Array.from({ length: 40 }, (_, i) => [`h${i}`, { winRate: 0.44 + (i % 13) / 100, pickRate: 0.01, banRate: 0.1, heroId: i }]));
@@ -106,6 +106,64 @@ test('rango: Gloria manda si se parece a Mítico; si no (reinicio de temporada),
   eq(elegirRango({}, 'glory').rango, 'glory');
   // El umbral está entre lo medido: 0,86–0,90 con Gloria llena, 0,63–0,67 vacía.
   ok(COHERENCIA_DE_RANGO_MINIMA > 0.67 && COHERENCIA_DE_RANGO_MINIMA < 0.86, `umbral fuera de lo medido: ${COHERENCIA_DE_RANGO_MINIMA}`);
+});
+
+/**
+ * Una matriz de 30×30 (870 celdas) con valores repartidos alrededor de 0,5.
+ * `ruido` añade, celda a celda, una parte que no tiene nada que ver con la
+ * otra matriz: con 0 es la misma, con mucho es ruido de muestra.
+ */
+function matriz(semilla = 0, ruido = 0) {
+  const m = {};
+  for (let i = 0; i < 30; i += 1) {
+    m[`h${i}`] = {};
+    for (let j = 0; j < 30; j += 1) {
+      if (i === j) continue;
+      const base = ((i * 7 + j * 13) % 23 - 11) / 500;
+      const otro = ruido * (((i * 31 + j * 17 + semilla * 5) % 29 - 14) / 500);
+      m[`h${i}`][`h${j}`] = 0.5 + base + otro;
+    }
+  }
+  return m;
+}
+
+test('cruces y parejas: Gloria manda si casa con Mítico; si no, salen de Mítico y se dice por qué', () => {
+  const mitico = { counters: matriz(), synergies: matriz(1) };
+  // Coherente (la misma estructura con un poco de ruido): Gloria.
+  const buena = { counters: matriz(0, 0.3), synergies: matriz(1, 0.3) };
+  const a = elegirRangoDeRelaciones({ pedidas: buena, respaldo: mitico, rango: 'glory' });
+  eq(a.rango, 'glory');
+  ok(a.coherencia.counters > 0.8 && a.coherencia.synergies > 0.8 && !a.motivo, JSON.stringify(a));
+  // Ruido de muestra (como Gloria el 1-3 de octubre de 2026, r = 0,64/0,43): Mítico.
+  const ruidosa = { counters: matriz(2, 3), synergies: matriz(3, 3) };
+  const b = elegirRangoDeRelaciones({ pedidas: ruidosa, respaldo: mitico, rango: 'glory' });
+  eq(b.rango, 'mythic');
+  eq(b.pedido, 'glory');
+  ok(/no se parecen/.test(b.motivo) && b.coherencia.counters < 0.8, JSON.stringify(b));
+  // Decide la PEOR de las dos matrices: cruces buenos y parejas ruidosas
+  // (las parejas tienen menos partidas y se degradan antes) también es Mítico.
+  const mixta = { counters: matriz(0, 0.3), synergies: matriz(3, 3) };
+  const c = elegirRangoDeRelaciones({ pedidas: mixta, respaldo: mitico, rango: 'glory' });
+  eq(c.rango, 'mythic', `con las parejas ruidosas se queda Gloria: ${JSON.stringify(c)}`);
+  const c2 = elegirRangoDeRelaciones({ pedidas: { counters: matriz(2, 3), synergies: matriz(1, 0.3) }, respaldo: mitico, rango: 'glory' });
+  eq(c2.rango, 'mythic', `con los cruces ruidosos se queda Gloria: ${JSON.stringify(c2)}`);
+});
+
+test('cruces y parejas: sin respaldo, sin datos o con pocas celdas en común se queda lo pedido', () => {
+  const mitico = { counters: matriz(), synergies: matriz(1) };
+  const ruidosa = { counters: matriz(2, 3), synergies: matriz(3, 3) };
+  // Mítico no tiene rango de respaldo: se queda Mítico aunque no case con nada.
+  eq(elegirRangoDeRelaciones({ pedidas: ruidosa, respaldo: mitico, rango: 'mythic' }).rango, 'mythic');
+  // La corrida de respaldo falló: lo pedido.
+  eq(elegirRangoDeRelaciones({ pedidas: ruidosa, respaldo: null, rango: 'glory' }).rango, 'glory');
+  // Pocas celdas en común: no se puede decidir, se queda lo pedido y se dice.
+  const recorte = (m) => ({ h0: m.h0 });
+  const d = elegirRangoDeRelaciones({ pedidas: { counters: recorte(ruidosa.counters), synergies: recorte(ruidosa.synergies) }, respaldo: mitico, rango: 'glory' });
+  eq(d.rango, 'glory');
+  ok(/pocos cruces/.test(d.motivo) && d.coherencia.counters === null, JSON.stringify(d));
+  // El mínimo es una muestra de verdad, no un puñado (870 celdas aquí > 500;
+  // la matriz real tiene 17.556).
+  ok(CELDAS_PARA_COMPARAR >= 200 && CELDAS_PARA_COMPARAR <= 870, `mínimo de celdas raro: ${CELDAS_PARA_COMPARAR}`);
 });
 
 await terminar('motor/ventana');
