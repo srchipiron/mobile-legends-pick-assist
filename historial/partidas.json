@@ -1,6 +1,88 @@
 {
- "actualizado": "2026-10-03T18:57:17.324Z",
+ "actualizado": "2026-10-03T19:16:51.447Z",
  "partidas": [
+  {
+   "t": 1791055000395,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Edith",
+    "Rafaela",
+    "Gloo"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.593,
+   "bans": [
+    "Hirara",
+    "Lukas",
+    "Aulus",
+    "Marcel",
+    "Fanny",
+    "Paquito",
+    "Khufra",
+    "Yi Sun-shin",
+    "Hanzo"
+   ],
+   "draft": {
+    "enemigos": [
+     "Carmilla",
+     "Selena",
+     "Wanwan",
+     "Aamon",
+     "Yu Zhong"
+    ],
+    "aliados": [
+     "Masha",
+     "Xavier",
+     "Clint",
+     "Fredrinn"
+    ],
+    "linea": "roam",
+    "rival": "Carmilla"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Lukas",
+     "Aulus",
+     "Marcel",
+     "Fanny",
+     "Paquito",
+     "Khufra",
+     "Yi Sun-shin",
+     "Hanzo"
+    ],
+    "enemigos": [
+     "Joy",
+     "Carmilla",
+     "Selena",
+     "Wanwan",
+     "Aamon"
+    ],
+    "aliados": [
+     "Masha",
+     "Xavier",
+     "Clint",
+     "Fredrinn"
+    ],
+    "dudas": [
+     {
+      "hueco": "a5",
+      "candidato": "Gord",
+      "parecido": 0.76
+     }
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Aamon",
+      "Yu Zhong",
+      "Aamon",
+      "Yu Zhong"
+     ]
+    }
+   }
+  },
   {
    "t": 1791053825065,
    "pick": "Estes",
@@ -5946,6 +6028,12 @@
   {
    "cuando": "2026-10-03T18:57:17.324Z",
    "partidas": 147,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-03T19:16:51.447Z",
+   "partidas": 148,
    "heroes": 11,
    "incidencia": 11
   }
