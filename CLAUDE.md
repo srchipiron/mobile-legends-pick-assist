@@ -2768,8 +2768,17 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   clasificador de permisos de la sesión en la nube («Self-Modification»:
   cambia la configuración del propio Claude Code); se instala a mano desde
   una sesión de Claude Code con `/plugin marketplace add
-  https://github.com/affaan-m/ECC` y `/plugin install ecc@ecc`. Se eligió
-  SIN hooks a propósito: el perfil «standard» puede reescribir mandatos,
+  https://github.com/affaan-m/ECC` y `/plugin install ecc@ecc` (desde
+  el móvil, «/plugin isn't available in this environment»). Por eso desde
+  el mismo día va DECLARADO en `.claude/settings.json`
+  (`extraKnownMarketplaces` + `enabledPlugins`), que cada sesión carga al
+  arrancar, con `env.ECC_HOOKS_ENABLED = "false"`: el interruptor general
+  de ECC (su `hook-flags.js`), comprobado ejecutando sus propios
+  hooks en una casa vacía (encendido escriben y dejan cinco ficheros;
+  apagado, nada). `pruebas/scripts/claude-config.test.mjs` falla si ECC
+  queda activado con los hooks encendidos o apunta a otro repositorio
+  (tres mutaciones). El marketplace NO va fijado a una versión: sigue la
+  rama principal de ECC. Se eligió SIN hooks a propósito: el perfil «standard» puede reescribir mandatos,
   bloquear ediciones y mandar texto de la conversación a otro LLM, y aquí
   ya hay guardarraíles propios. Lo que sí se ejecutó: (1) AgentShield 1.6.0
   (`npx ecc-agentshield@1.6.0 scan --path .`): nota C, 420 hallazgos de
