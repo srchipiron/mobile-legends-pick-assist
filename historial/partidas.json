@@ -1,6 +1,131 @@
 {
- "actualizado": "2026-10-02T21:25:33.185Z",
+ "actualizado": "2026-10-03T18:57:17.324Z",
  "partidas": [
+  {
+   "t": 1791053825065,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Rafaela",
+    "Belerick"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.596,
+   "bans": [
+    "Hirara",
+    "Lukas",
+    "Aulus",
+    "Khufra",
+    "Eudora",
+    "Masha",
+    "Gloo",
+    "Marcel"
+   ],
+   "draft": {
+    "enemigos": [
+     "Novaria",
+     "Tigreal",
+     "Argus",
+     "Hanabi",
+     "Alucard"
+    ],
+    "aliados": [
+     "Paquito",
+     "Xavier",
+     "Miya",
+     "Fredrinn"
+    ],
+    "linea": "roam",
+    "rival": "Tigreal"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Lukas",
+     "Aulus",
+     "Khufra",
+     "Eudora",
+     "Masha",
+     "Gloo",
+     "Marcel"
+    ],
+    "enemigos": [
+     "Novaria",
+     "Tigreal",
+     "Hanabi",
+     "Alucard"
+    ],
+    "aliados": [
+     "Ling",
+     "Paquito",
+     "Lesley",
+     "Xavier",
+     "Miya"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Kagura",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Nolan",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Fredrinn",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Wanwan",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Nolan",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Wanwan",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Zetian",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Fredrinn",
+      "parecido": 0.71
+     }
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Argus",
+      "Argus",
+      "Argus"
+     ]
+    }
+   }
+  },
   {
    "t": 1790976314750,
    "pick": "Gloo",
@@ -5815,6 +5940,12 @@
   {
    "cuando": "2026-10-02T21:25:33.185Z",
    "partidas": 146,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-03T18:57:17.324Z",
+   "partidas": 147,
    "heroes": 11,
    "incidencia": 11
   }
