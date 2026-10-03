@@ -1,6 +1,95 @@
 {
- "actualizado": "2026-10-03T21:01:07.657Z",
+ "actualizado": "2026-10-03T21:23:31.641Z",
  "partidas": [
+  {
+   "t": 1791062597303,
+   "pick": "Angela",
+   "recomendados": [
+    "Khaleed",
+    "Angela",
+    "Lolita"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.554,
+   "bans": [
+    "Paquito",
+    "Aulus",
+    "Eudora",
+    "Lukas",
+    "Marcel",
+    "Hanzo",
+    "Alice",
+    "Estes"
+   ],
+   "draft": {
+    "enemigos": [
+     "Lancelot",
+     "Layla",
+     "Yi Sun-shin",
+     "Vale",
+     "Atlas"
+    ],
+    "aliados": [
+     "Hirara",
+     "Kadita",
+     "Clint",
+     "Edith"
+    ],
+    "linea": "roam",
+    "rival": "Atlas"
+   },
+   "lector": {
+    "baneos": [
+     "Paquito",
+     "Aulus",
+     "Eudora",
+     "Lukas",
+     "Marcel",
+     "Hanzo",
+     "Alice",
+     "Estes"
+    ],
+    "enemigos": [
+     "Layla",
+     "Yi Sun-shin",
+     "Zetian",
+     "Vale",
+     "Atlas"
+    ],
+    "aliados": [
+     "Hirara",
+     "Clint",
+     "Edith"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Zetian",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Gord",
+      "parecido": 0.76
+     }
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Lancelot",
+      "Atlas",
+      "Lancelot",
+      "Lancelot"
+     ]
+    }
+   }
+  },
   {
    "t": 1791061253666,
    "pick": "Minotaur",
@@ -6405,6 +6494,12 @@
   {
    "cuando": "2026-10-03T21:01:07.657Z",
    "partidas": 151,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-03T21:23:31.641Z",
+   "partidas": 152,
    "heroes": 11,
    "incidencia": 11
   }
