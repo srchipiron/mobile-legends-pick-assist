@@ -1,6 +1,120 @@
 {
- "actualizado": "2026-10-03T19:52:54.072Z",
+ "actualizado": "2026-10-03T21:01:07.657Z",
  "partidas": [
+  {
+   "t": 1791061253666,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Diggie"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.48,
+   "bans": [
+    "Hirara",
+    "Lukas",
+    "Eudora",
+    "Gloo",
+    "Nolan",
+    "Paquito",
+    "Aulus",
+    "Marcel",
+    "Kagura",
+    "Alice"
+   ],
+   "draft": {
+    "enemigos": [
+     "Rafaela",
+     "Sun",
+     "Lesley",
+     "Vale",
+     "Leomord"
+    ],
+    "aliados": [
+     "Kadita",
+     "Kimmy",
+     "Lancelot",
+     "Ruby"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Lukas",
+     "Eudora",
+     "Gloo",
+     "Nolan",
+     "Paquito",
+     "Aulus",
+     "Marcel",
+     "Kagura",
+     "Alice"
+    ],
+    "enemigos": [
+     "Rafaela",
+     "Sun",
+     "Wanwan",
+     "Lesley",
+     "Vale"
+    ],
+    "aliados": [
+     "Kimmy",
+     "Lancelot",
+     "Hirara"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Saber",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Beatrix",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Saber",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Beatrix",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Moskov",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Granger",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Claude",
+      "parecido": 0.62
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Gord",
+      "parecido": 0.66
+     }
+    ]
+   }
+  },
   {
    "t": 1791057160299,
    "pick": "Rafaela",
@@ -6285,6 +6399,12 @@
   {
    "cuando": "2026-10-03T19:52:54.072Z",
    "partidas": 150,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-03T21:01:07.657Z",
+   "partidas": 151,
    "heroes": 11,
    "incidencia": 11
   }
