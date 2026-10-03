@@ -1,7 +1,7 @@
 import { useDeferredValue, useMemo } from 'react';
 import {
   poolDe, lineasEnemigasAbiertas, rivalDeLinea, contextoDe, simular, composicionDe, aconsejar,
-  baneosSugeridos, siguientesBaneos, estimarCon, eleccionDe, planDePicks,
+  baneosSugeridos, siguientesBaneos, estimarCon, eleccionDe, planDePicks, planear,
 } from '../../motor/draft.js';
 import { ordenarPicks, empatados } from '../../motor/ranking.js';
 import { analizarDraft } from '../../motor/analisis.js';
@@ -74,8 +74,12 @@ export function useRecomendacion({ datos, linea, enemigos, aliados, baneos, riva
     [datos, baneos, enemigos, aliados, coocurrencia],
   );
 
+  // El plan de partida del héroe del que se habla (3.36.0): el de la hoja
+  // se calcula al abrirla para cualquier tarjeta; este va al diagnóstico.
+  const partida = useMemo(() => planear(datos, { yo, aliados, enemigos }), [datos, yo, aliados, enemigos]);
+
   /** La probabilidad con UN héroe concreto (el que apuntas, aunque no sea el nº1). */
   const estimacionCon = (heroe) => ranking.find((r) => r.heroe === heroe) ?? estimarCon(datos, { yo: heroe, enemigos, aliados, baneos, maestria });
 
-  return { pool, cov, lineasAbiertas, rival, ranking, empate, eleccion, yo, robustez, composicion, consejos, analisis, plan, baneosSugeridos: sugeridos, proximos, estimacionCon };
+  return { pool, cov, lineasAbiertas, rival, ranking, empate, eleccion, yo, robustez, composicion, consejos, analisis, plan, partida, baneosSugeridos: sugeridos, proximos, estimacionCon };
 }

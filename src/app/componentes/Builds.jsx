@@ -3,6 +3,7 @@ import { buildsDe, objetosDe, ajustesDeBuild } from '../../motor/builds.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Icono } from './Imagen.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
+import { PlanDePartida } from './PlanDePartida.jsx';
 
 /**
  * Los objetos de un héroe en una línea. Dos bloques que NO valen lo mismo:
@@ -10,7 +11,7 @@ import { tPorDefecto } from './tPorDefecto.js';
  * ajuste por el draft (un CONSEJO: de qué pega cada enemigo más cuánta
  * defensa da cada objeto, con su aviso).
  */
-export function Builds({ heroe, linea, builds, equipment, enemigos, onCerrar, t = tPorDefecto }) {
+export function Builds({ heroe, linea, builds, equipment, enemigos, plan = null, onCerrar, t = tPorDefecto }) {
   const lista = useMemo(() => buildsDe(builds, heroe, linea), [builds, heroe, linea]);
   const principal = lista[0] ?? null;
   const ajustes = useMemo(() => (principal ? ajustesDeBuild(principal, equipment, enemigos, linea) : []), [principal, equipment, enemigos, linea]);
@@ -34,6 +35,7 @@ export function Builds({ heroe, linea, builds, equipment, enemigos, onCerrar, t 
         <button className="close" onClick={onCerrar}>{t('app.cerrar')}</button>
       </CabeceraDeHoja>
       <div className="build-cuerpo">
+        {plan && <PlanDePartida plan={plan} yo={heroe} t={t} />}
         {!principal && <p className="build-vacio">{t('build.sinBuild')}</p>}
         {principal && (
           <>

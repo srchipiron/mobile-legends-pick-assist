@@ -72,6 +72,8 @@ async function main() {
       // La huella del texto tambien: sin esta linea se calculaba en la ficha
       // y se quedaba la conservada del repositorio (lo dijo la mutacion).
       if (f?.kitTexto) h.kitTexto = f.kitTexto;
+      // Lo que hace cada habilidad (3.36.0): el plan de partida lo lee.
+      if (f?.habilidades) h.habilidades = f.habilidades;
     }
     diagnostics.speciality.ok = Object.values(fichas).filter((f) => f.speciality).length;
     diagnostics.dano.ok = Object.values(fichas).filter((f) => f.damage).length;

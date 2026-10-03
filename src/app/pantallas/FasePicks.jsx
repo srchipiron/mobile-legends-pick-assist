@@ -109,7 +109,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
           </div>
           <div className="side">
             <div className="side-label"><span>{t('app.rango')}</span></div>
-            <SelectorDeRango t={t} rangos={meta?.ranks} valor={rango} onCambiar={onRango} rangoDeCruces={meta?.rank} />
+            <SelectorDeRango t={t} rangos={meta?.ranks} valor={rango} onCambiar={onRango} rangoDeCruces={meta?.relaciones?.rango ?? meta?.rank} />
           </div>
           {/* Lo que se toca UNA VEZ vive aquí dentro; fuera quedan los dos botones que se usan con una partida delante. */}
           <div className="tools">

@@ -1870,6 +1870,53 @@ del rango que aún no están marcados, para tocar en vez de escribir. Es la
   perdiendo lo ganado. Sin historial el factor es 1 y no hay escalón. Los
   baneos van dentro del perfil exportado (son parte de `partidas`).
 
+## El plan de partida (3.36.0)
+
+`src/motor/plan.js`, por `planear` en `draft.js` (y `partida` en
+`recomendar`). Pedido por Javi: «consejos sobre cómo jugar ese personaje en
+esa partida en concreto, como focus a tal… que sirva también como
+instrucciones para el equipo, así puedo dar consejos mientras juego en el
+chat de voz». Va ARRIBA de la hoja de objetos (el botón de cada tarjeta
+pasa a «Plan y objetos»): ni un píxel más en la tarjeta nº1. Lo que
+conviene no olvidar:
+
+- **Es consejo, no nota.** No cambia el ranking ni la probabilidad, y
+  ninguna frase está medida contra partidas (en pro el kit no predice
+  quién gana: «Qué hace cada héroe»). Lo medido son los NOMBRES: «focus a
+  X» es el enemigo blando (sin `tanky`) con más término de héroe más
+  cruces contra los vuestros, lo mismo que suma `evaluarDraft` visto desde
+  su lado; tu peor y mejor cruce salen con los cortes p05/p95
+  (`CRUCE_FUERTE`), no con el p10/p90: una orden por voz es una
+  afirmación; las parejas, con `PAREJA_DESTACABLE`.
+- **Las habilidades las trae la ingesta** (`extraerHabilidades`, campo
+  `habilidades` de cada héroe en `roam-meta.json`, ~7 KB): de las
+  etiquetas de Moonton de cada habilidad (`skilltag`: CC, AOE, Remove CC,
+  CC Immune, Invincible, Death Immunity) y, para «quita controles», también
+  del texto: medido el 3 de octubre de 2026, la etiqueta marca 5 de las 11
+  que lo hacen (Argus, X.Borg, Masha, Akai, Joy y Nana solo lo dicen en el
+  texto). `aliados` solo si además limpia y el texto habla de aliados
+  (Diggie). NO se identifica la ulti: por CD máximo fallaba en 11 de 111
+  héroes de cuatro habilidades (CD nulo en las de cargas) y los que se
+  transforman llegan a 20 habilidades; se nombra la habilidad por su
+  efecto y su nombre en inglés. Se conserva con la ficha caída, como
+  `speciality`, y `comparar-ingesta` cuenta `conHabilidades`.
+- **Medido en 300 drafts de roam completos** (5 contra 4): focus en el
+  100%, «quédate con» 58%, «busca a» 53%, «rota con» 44%, «separaos» 37%,
+  antisanación 31%, «abres tú» 30%, «proteged a» 27%, intocable 25%,
+  «evita» 17%, cerrar pronto 6%, guardar la limpieza (Diggie) 5%, aguantad
+  3%; ningún plan vacío. Cazado ahí: «quédate con Fanny» (asesina con
+  `assassin_late`): a quien se protege es al tirador inmóvil y nunca a
+  quien salta (`dive`).
+- Los umbrales de «escaláis mejor» (`DIFERENCIA_DE_ESCALADO` = 2) y de
+  «todo físico/mágico» (tres o más, ninguno del otro ni mixto) y los topes
+  (`MAX_EQUIPO` 5, `MAX_TUYO` 4) son decisiones de producto.
+- «Copiar para el chat» copia lo del equipo en una línea (` · `).
+- Pruebas: `motor/plan.test` (fixture determinista, 20 mutaciones),
+  `scripts/ingesta.test` (formas reales de la API) e `ingesta-simulada`
+  (servidas y conservadas), `interfaz/plan.e2e` (abre la hoja, focus a un
+  enemigo blando, copia, nada fuera a 320 px; tres mutaciones). El
+  diagnóstico enseña el plan del nº1 con sus claves.
+
 ## El consejo para los compañeros
 
 Desde 1.34.0, `src/motor/equipo.js`. Con algún enemigo a la vista, para cada

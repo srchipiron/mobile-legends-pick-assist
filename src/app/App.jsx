@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { resolverNombres, probablesDelBando } from '../motor/draft.js';
+import { resolverNombres, probablesDelBando, planear } from '../motor/draft.js';
 import { buscar } from '../motor/nombres.js';
 import { diagnosticar } from '../motor/diagnostico/index.js';
 import { IDIOMAS } from './i18n/index.js';
@@ -260,7 +260,7 @@ export default function App() {
         datos, linea,
         maestria: personal.maestriaUsada, maestriaManual: personal.maestria, partidas: personal.partidas,
         draft: {
-          enemigos, aliados, baneos, rival: rec.rival, ranking: rec.ranking, analisis: rec.analisis, miPick: draft.miPick,
+          enemigos, aliados, baneos, rival: rec.rival, ranking: rec.ranking, analisis: rec.analisis, partida: rec.partida, miPick: draft.miPick,
           robustez: rec.robustez, composicion: rec.composicion,
           estimaciones: rec.ranking.slice(0, 3).map((r) => ({ yo: r.heroe.name, p: r.p, puntos: r.puntos, terminos: r.terminos, vistos: aliados.length + enemigos.length + 1 })),
         },
@@ -406,7 +406,7 @@ export default function App() {
       {deshacer}
       {informe && <Diagnostico t={t} resultado={informe} onCerrar={() => setInforme(null)} />}
       {hoja?.build && (
-        <Builds heroe={hoja.build} linea={linea} builds={meta?.builds} equipment={meta?.equipment} enemigos={enemigos} onCerrar={cerrar} t={t} />
+        <Builds heroe={hoja.build} linea={linea} builds={meta?.builds} equipment={meta?.equipment} enemigos={enemigos} plan={planear(datos, { yo: hoja.build, aliados, enemigos })} onCerrar={cerrar} t={t} />
       )}
       {hoja === 'linea' && (
         <ElegirLinea valor={linea} onElegir={(l) => { setLinea(l); cerrar(); }} onCerrar={cerrar} t={t} />

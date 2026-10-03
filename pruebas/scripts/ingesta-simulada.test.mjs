@@ -123,7 +123,13 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       // cara del juego dentro del objeto de configuración, junto a `heroid`.
       return json({ code: 0, data: { records: [{ data: { head: `http://127.0.0.1:${puerto}/img/${h.id}.jpg`, hero: { data: {
         heroid: h.id, name: h.name, head: `http://127.0.0.1:${puerto}/cara/${h.id}.png`, speciality: ['Guard', 'Crowd Control'],
-        skill: { skilllist: [{ skilldesc: DESCRIPCION }] },
+        // Las habilidades con sus etiquetas de Moonton (3.36.0): una de
+        // control en área por etiqueta y una que limpia a los aliados por
+        // TEXTO (corto, para no mover la huella del kit).
+        skill: { skilllist: [
+          { skillname: 'Fatal Links', skilldesc: DESCRIPCION, skilltag: [{ tagname: 'CC' }, { tagname: 'AOE' }] },
+          { skillname: 'Time Journey', skilldesc: 'Removes all debuffs on allies.', skilltag: [{ tagname: 'Speed Up' }] },
+        ] },
       } } } }] } });
     }
     if (/^\/api\/(academy\/)?heroes\/[^/]+\/counters$/.test(ruta) && fallaCounters) { res.statusCode = 500; return res.end('{}'); }
@@ -210,6 +216,8 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     ok(atlas && atlas.id === 1 && atlas.role === 'tank' && atlas.lanes.includes('roam'), `ficha de Atlas: ${JSON.stringify(atlas)}`);
     eq(atlas?.damage?.magico, 1, `tipo de daño de Atlas: ${JSON.stringify(atlas?.damage)}`);
     eq(atlas?.kitTexto, huellaTexto({ skilldesc: DESCRIPCION }), `la huella del texto no es la de la ficha SERVIDA: ${atlas?.kitTexto}`);
+    eq(JSON.stringify(atlas?.habilidades), JSON.stringify([{ n: 'Fatal Links', e: ['area', 'cc'] }, { n: 'Time Journey', e: ['aliados', 'limpia'] }]),
+      `las habilidades no son las de la ficha SERVIDA: ${JSON.stringify(atlas?.habilidades)}`);
     // La cara del juego (la del objeto con `heroid`), no el retrato de la web: la usa el lector de pantalla.
     ok(atlas?.cara?.endsWith('/cara/1.png'), `la cara del juego no es la servida en hero.data.head: ${atlas?.cara}`);
     ok(atlas?.retrato?.endsWith('/img/1.jpg'), `el retrato ya no es el de la web: ${atlas?.retrato}`);
@@ -275,6 +283,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     const atlas3 = d3.heroes.find((h) => h.name === 'Atlas');
     ok(atlas3?.speciality?.includes('Guard'), `con la ficha caída la speciality no se conserva: ${JSON.stringify(atlas3?.speciality)}`);
     eq(atlas3?.kitTexto, huellaTexto({ skilldesc: DESCRIPCION }), 'con la ficha caída la huella del texto no se conserva de la corrida anterior: avisaría de un rework falso');
+    eq(atlas3?.habilidades?.length, 2, `con la ficha caída las habilidades no se conservan: ${JSON.stringify(atlas3?.habilidades)}`);
     ok(atlas3?.cara?.endsWith('/cara/1.png'), `con la ficha caída la cara del juego no se conserva: ${atlas3?.cara}`);
     ok(/^2 pares /.test(d3.diagnostics.rutasMedidas?.counter ?? '') && !/academy/.test(d3.diagnostics.rutasMedidas?.counter ?? ''),
       `un fallo suelto al sondear cambió la ruta de counters por una vacía: ${d3.diagnostics.rutasMedidas?.counter}`);

@@ -153,6 +153,48 @@ export function extraerTextos(node, out = [], depth = 0) {
   return out;
 }
 
+/**
+ * Qué hace cada habilidad que importa para jugar el draft (3.36.0, el plan
+ * de partida): control duro, en área, quitar controles (a sí mismo o a los
+ * aliados) y volverse intocable. Sale de las etiquetas de Moonton de cada
+ * habilidad (`skilltag`: CC, AOE, Remove CC, CC Immune, Invincible, Death
+ * Immunity) y, para quitar controles, también del texto («removes all
+ * debuffs»): medido el 3 de octubre de 2026 sobre los 133, la etiqueta solo
+ * marca 5 de las 11 que lo hacen (Argus, X.Borg, Masha, Akai, Joy y Nana
+ * lo dicen en el texto y no en la etiqueta). Solo las habilidades con algo
+ * de eso, una vez cada una (los héroes que se transforman repiten nombres).
+ * Por FORMA: cualquier objeto con `skillname` y `skilldesc`.
+ */
+const ETIQUETA_EFECTO = { CC: 'cc', AOE: 'area', 'Remove CC': 'limpia', 'CC Immune': 'limpia', Invincible: 'inmortal', 'Death Immunity': 'inmortal' };
+const LIMPIA_TEXTO = /remov\w* (?:all )?(?:debuffs|negative effects|control effects)|purif|cleans/i;
+const ALIADOS_TEXTO = /allied heroes|allies|teammates/i;
+export function extraerHabilidades(node) {
+  const vistas = new Map();
+  const rec = (n, depth = 0) => {
+    if (depth > HONDURA || n == null || typeof n !== 'object') return;
+    if (typeof n.skillname === 'string' && typeof n.skilldesc === 'string') {
+      const nombre = n.skillname.trim();
+      const texto = n.skilldesc.replace(/<[^>]*>/g, ' ');
+      const efectos = new Set();
+      for (const g of Array.isArray(n.skilltag) ? n.skilltag : []) {
+        const e = ETIQUETA_EFECTO[String(g?.tagname ?? '').trim()];
+        if (e) efectos.add(e);
+      }
+      if (LIMPIA_TEXTO.test(texto)) efectos.add('limpia');
+      if (efectos.has('limpia') && ALIADOS_TEXTO.test(texto)) efectos.add('aliados');
+      if (nombre && (efectos.has('cc') || efectos.has('limpia') || efectos.has('inmortal'))) {
+        const previa = vistas.get(nombre) ?? new Set();
+        for (const e of efectos) previa.add(e);
+        vistas.set(nombre, previa);
+      }
+      return;
+    }
+    for (const v of Array.isArray(n) ? n : Object.values(n)) rec(v, depth + 1);
+  };
+  rec(node);
+  return [...vistas].map(([n, e]) => ({ n, e: [...e].sort() }));
+}
+
 /** FNV-1a de 32 bits, en hexadecimal: sin dependencias y estable entre corridas. */
 export function huellaTexto(node) {
   const textos = [...new Set(extraerTextos(node))].sort().join('|');
@@ -237,6 +279,8 @@ export async function fetchFichas(heroes) {
       if (cara) ficha.cara = cara;
       const kitTexto = huellaTexto(data);
       if (kitTexto) ficha.kitTexto = kitTexto;
+      const habilidades = extraerHabilidades(data);
+      if (habilidades.length) ficha.habilidades = habilidades;
       if (Object.keys(ficha).length) out[h.name] = ficha;
     } catch (err) {
       if (diagnostics.speciality.errores.length < 4) {

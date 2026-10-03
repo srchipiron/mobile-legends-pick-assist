@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T22:14:43.611Z",
+  "generatedAt": "2026-10-03T22:42:12.789Z",
   "rank": "glory",
   "relaciones": {
     "rango": "mythic",
@@ -72,7 +72,22 @@
         "Chase",
         "Finisher"
       ],
-      "kitTexto": "690c2129"
+      "kitTexto": "690c2129",
+      "habilidades": [
+        {
+          "n": "Falling Maple",
+          "e": [
+            "inmortal"
+          ]
+        },
+        {
+          "n": "Infernal Torrent",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Marcel",
@@ -93,7 +108,21 @@
         "Crowd Control",
         "Support"
       ],
-      "kitTexto": "b7b0e0a9"
+      "kitTexto": "b7b0e0a9",
+      "habilidades": [
+        {
+          "n": "Platinum Snap",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Golden Hour",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Sora",
@@ -114,7 +143,21 @@
         "Charge",
         "Burst"
       ],
-      "kitTexto": "2cf9009b"
+      "kitTexto": "2cf9009b",
+      "habilidades": [
+        {
+          "n": "Sundering Strike - Overwhelm",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Windstride - Skyfall",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Obsidia",
@@ -135,7 +178,15 @@
         "Finisher",
         "Damage"
       ],
-      "kitTexto": "57fc3783"
+      "kitTexto": "57fc3783",
+      "habilidades": [
+        {
+          "n": "Hunt of Bone",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Zetian",
@@ -156,7 +207,22 @@
         "Damage",
         "Crowd Control"
       ],
-      "kitTexto": "a1b9efdd"
+      "kitTexto": "a1b9efdd",
+      "habilidades": [
+        {
+          "n": "Celestial Armament",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Fury of the Phoenix",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Kalea",
@@ -177,7 +243,21 @@
         "Control",
         "Regen"
       ],
-      "kitTexto": "9ba04e28"
+      "kitTexto": "9ba04e28",
+      "habilidades": [
+        {
+          "n": "Tidal Strike",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Tsunami Slam",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Lukas",
@@ -199,7 +279,15 @@
         "Regen",
         "Damage"
       ],
-      "kitTexto": "948db1ad"
+      "kitTexto": "948db1ad",
+      "habilidades": [
+        {
+          "n": "Flash Combo",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Suyou",
@@ -220,7 +308,15 @@
         "Chase",
         "Burst"
       ],
-      "kitTexto": "63bcdd35"
+      "kitTexto": "63bcdd35",
+      "habilidades": [
+        {
+          "n": "Blade Surge",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Zhuxin",
@@ -241,7 +337,15 @@
         "Damage",
         "Crowd Control"
       ],
-      "kitTexto": "77514a95"
+      "kitTexto": "77514a95",
+      "habilidades": [
+        {
+          "n": "Lantern Flare",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Chip",
@@ -262,7 +366,16 @@
         "Support",
         "Crowd Control"
       ],
-      "kitTexto": "441e9ee4"
+      "kitTexto": "441e9ee4",
+      "habilidades": [
+        {
+          "n": "Crash Course",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Cici",
@@ -283,7 +396,15 @@
         "Damage",
         "Regen"
       ],
-      "kitTexto": "00d08660"
+      "kitTexto": "00d08660",
+      "habilidades": [
+        {
+          "n": "Curtain Call",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Nolan",
@@ -325,7 +446,15 @@
         "Finisher",
         "Damage"
       ],
-      "kitTexto": "e6c02f21"
+      "kitTexto": "e6c02f21",
+      "habilidades": [
+        {
+          "n": "Star Helix",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Arlott",
@@ -346,7 +475,23 @@
         "Charge",
         "Burst"
       ],
-      "kitTexto": "43bffe42"
+      "kitTexto": "43bffe42",
+      "habilidades": [
+        {
+          "n": "Dauntless Strike",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "Final Slash",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Novaria",
@@ -388,7 +533,16 @@
         "Chase",
         "Damage"
       ],
-      "kitTexto": "78d8c09d"
+      "kitTexto": "78d8c09d",
+      "habilidades": [
+        {
+          "n": "Ha, Electrifying Beats!",
+          "e": [
+            "area",
+            "limpia"
+          ]
+        }
+      ]
     },
     {
       "name": "Fredrinn",
@@ -409,7 +563,22 @@
         "Damage",
         "Chase"
       ],
-      "kitTexto": "e7a73573"
+      "kitTexto": "e7a73573",
+      "habilidades": [
+        {
+          "n": "Brave Assault",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Energy Eruption",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Julian",
@@ -431,7 +600,21 @@
         "Chase",
         "Magic Damage"
       ],
-      "kitTexto": "3d4a50d9"
+      "kitTexto": "3d4a50d9",
+      "habilidades": [
+        {
+          "n": "Chain",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Enhanced Chain",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Xavier",
@@ -452,7 +635,15 @@
         "Damage",
         "Burst"
       ],
-      "kitTexto": "9b586e16"
+      "kitTexto": "9b586e16",
+      "habilidades": [
+        {
+          "n": "Transcendence",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Melissa",
@@ -495,7 +686,21 @@
         "Burst",
         "Control"
       ],
-      "kitTexto": "f7d18101"
+      "kitTexto": "f7d18101",
+      "habilidades": [
+        {
+          "n": "Instant Blast",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "My Turn",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Floryn",
@@ -516,7 +721,15 @@
         "Poke",
         "Guard"
       ],
-      "kitTexto": "016b1b30"
+      "kitTexto": "016b1b30",
+      "habilidades": [
+        {
+          "n": "Sprout",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Edith",
@@ -538,7 +751,28 @@
         "Control",
         "Burst"
       ],
-      "kitTexto": "b5879854"
+      "kitTexto": "b5879854",
+      "habilidades": [
+        {
+          "n": "Earth Shatter",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "Onward",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Lightning Bolt",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Valentina",
@@ -559,7 +793,15 @@
         "Burst",
         "Finisher"
       ],
-      "kitTexto": "2bb2ba68"
+      "kitTexto": "2bb2ba68",
+      "habilidades": [
+        {
+          "n": "Shadow Strike",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Aamon",
@@ -602,7 +844,15 @@
         "Damage",
         "Charge"
       ],
-      "kitTexto": "e56487d9"
+      "kitTexto": "e56487d9",
+      "habilidades": [
+        {
+          "n": "The Power of Axe",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Natan",
@@ -623,7 +873,15 @@
         "Burst",
         "Magic Damage"
       ],
-      "kitTexto": "33b8d823"
+      "kitTexto": "33b8d823",
+      "habilidades": [
+        {
+          "n": "Interference!",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Phoveus",
@@ -644,7 +902,16 @@
         "Regen",
         "Damage"
       ],
-      "kitTexto": "743e633f"
+      "kitTexto": "743e633f",
+      "habilidades": [
+        {
+          "n": "Dark Wave",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Beatrix",
@@ -687,7 +954,23 @@
         "Regen",
         "Control"
       ],
-      "kitTexto": "4184cc84"
+      "kitTexto": "4184cc84",
+      "habilidades": [
+        {
+          "n": "Slam, Slam",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "Spread, Spread",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Paquito",
@@ -708,7 +991,15 @@
         "Chase",
         "Damage"
       ],
-      "kitTexto": "c9aed7ec"
+      "kitTexto": "c9aed7ec",
+      "habilidades": [
+        {
+          "n": "Knockout Strike",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Mathilda",
@@ -750,7 +1041,15 @@
         "Poke",
         "Burst"
       ],
-      "kitTexto": "2a63c66e"
+      "kitTexto": "2a63c66e",
+      "habilidades": [
+        {
+          "n": "Real World Manipulation",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Brody",
@@ -771,7 +1070,15 @@
         "Burst",
         "Finisher"
       ],
-      "kitTexto": "5df5f48a"
+      "kitTexto": "5df5f48a",
+      "habilidades": [
+        {
+          "n": "Corrosive Strike",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Barats",
@@ -793,7 +1100,22 @@
         "Damage",
         "Crowd Control"
       ],
-      "kitTexto": "1c2af326"
+      "kitTexto": "1c2af326",
+      "habilidades": [
+        {
+          "n": "Missile \"Expert\"",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "Detona's Welcome",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Khaleed",
@@ -815,7 +1137,15 @@
         "Damage",
         "Regen"
       ],
-      "kitTexto": "aba353ba"
+      "kitTexto": "aba353ba",
+      "habilidades": [
+        {
+          "n": "Raging Sandstorm",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Benedetta",
@@ -857,7 +1187,15 @@
         "Support",
         "Crowd Control"
       ],
-      "kitTexto": "cb36d397"
+      "kitTexto": "cb36d397",
+      "habilidades": [
+        {
+          "n": "Duality",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Yu Zhong",
@@ -878,7 +1216,15 @@
         "Regen",
         "Damage"
       ],
-      "kitTexto": "a155b50c"
+      "kitTexto": "a155b50c",
+      "habilidades": [
+        {
+          "n": "Furious Dive",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Popol and Kupa",
@@ -900,7 +1246,28 @@
         "Push",
         "Burst"
       ],
-      "kitTexto": "d3c06512"
+      "kitTexto": "d3c06512",
+      "habilidades": [
+        {
+          "n": "Bite 'em, Kupa!",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Kupa, Help!",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "Popol's Surprise",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Atlas",
@@ -921,7 +1288,22 @@
         "Crowd Control",
         "Initiator"
       ],
-      "kitTexto": "cd36d302"
+      "kitTexto": "cd36d302",
+      "habilidades": [
+        {
+          "n": "Perfect Match",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Fatal Links",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Carmilla",
@@ -942,7 +1324,21 @@
         "Crowd Control",
         "Damage"
       ],
-      "kitTexto": "b3356db5"
+      "kitTexto": "b3356db5",
+      "habilidades": [
+        {
+          "n": "Bloodbath",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Curse of Blood",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Cecilion",
@@ -963,7 +1359,16 @@
         "Poke",
         "Burst"
       ],
-      "kitTexto": "9781ba63"
+      "kitTexto": "9781ba63",
+      "habilidades": [
+        {
+          "n": "Sanguine Claws",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Silvanna",
@@ -984,7 +1389,22 @@
         "Initiator",
         "Magic Damage"
       ],
-      "kitTexto": "2b236377"
+      "kitTexto": "2b236377",
+      "habilidades": [
+        {
+          "n": "Cometic Lance",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Imperial Justice",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Wanwan",
@@ -1005,7 +1425,23 @@
         "Finisher",
         "Burst"
       ],
-      "kitTexto": "ec581506"
+      "kitTexto": "ec581506",
+      "habilidades": [
+        {
+          "n": "Swallow’s Path",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "Needles in Flowers",
+          "e": [
+            "area",
+            "limpia"
+          ]
+        }
+      ]
     },
     {
       "name": "Masha",
@@ -1026,7 +1462,21 @@
         "Push",
         "Damage"
       ],
-      "kitTexto": "a0a4b7e8"
+      "kitTexto": "a0a4b7e8",
+      "habilidades": [
+        {
+          "n": "Primal Pact",
+          "e": [
+            "limpia"
+          ]
+        },
+        {
+          "n": "Savage Maul",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Baxia",
@@ -1048,7 +1498,15 @@
         "Support",
         "Damage"
       ],
-      "kitTexto": "7fd85e50"
+      "kitTexto": "7fd85e50",
+      "habilidades": [
+        {
+          "n": "Baxia-Shield Unity",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Lylia",
@@ -1112,7 +1570,15 @@
         "Chase",
         "Burst"
       ],
-      "kitTexto": "3a936690"
+      "kitTexto": "3a936690",
+      "habilidades": [
+        {
+          "n": "Tempest of Blades",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "X.Borg",
@@ -1133,7 +1599,21 @@
         "Regen",
         "Burst"
       ],
-      "kitTexto": "c6fc1d8d"
+      "kitTexto": "c6fc1d8d",
+      "habilidades": [
+        {
+          "n": "Fire Stake",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Last Insanity",
+          "e": [
+            "limpia"
+          ]
+        }
+      ]
     },
     {
       "name": "Terizla",
@@ -1154,7 +1634,16 @@
         "Burst",
         "Crowd Control"
       ],
-      "kitTexto": "4f131663"
+      "kitTexto": "4f131663",
+      "habilidades": [
+        {
+          "n": "Penalty Zone",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Esmeralda",
@@ -1196,7 +1685,21 @@
         "Burst",
         "Magic Damage"
       ],
-      "kitTexto": "f6c04317"
+      "kitTexto": "f6c04317",
+      "habilidades": [
+        {
+          "n": "Spatial Migration",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Violet Requiem",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Granger",
@@ -1238,7 +1741,22 @@
         "Initiator",
         "Crowd Control"
       ],
-      "kitTexto": "652b5fc9"
+      "kitTexto": "652b5fc9",
+      "habilidades": [
+        {
+          "n": "Tyrant's Revenge",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Tyrant's Rage",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Badang",
@@ -1260,7 +1778,21 @@
         "Charge",
         "Burst"
       ],
-      "kitTexto": "6b3cb138"
+      "kitTexto": "6b3cb138",
+      "habilidades": [
+        {
+          "n": "Chivalry Fist",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Fist Break",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Faramis",
@@ -1282,7 +1814,21 @@
         "Guard",
         "Charge"
       ],
-      "kitTexto": "f63188ee"
+      "kitTexto": "f63188ee",
+      "habilidades": [
+        {
+          "n": "Shadow Stampede",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Nether Realm",
+          "e": [
+            "inmortal"
+          ]
+        }
+      ]
     },
     {
       "name": "Kadita",
@@ -1303,7 +1849,22 @@
         "Burst",
         "Charge"
       ],
-      "kitTexto": "96f6ccd7"
+      "kitTexto": "96f6ccd7",
+      "habilidades": [
+        {
+          "n": "Breath of the Ocean",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "Rough Waves",
+          "e": [
+            "inmortal"
+          ]
+        }
+      ]
     },
     {
       "name": "Minsitthar",
@@ -1325,7 +1886,27 @@
         "Initiator",
         "Crowd Control"
       ],
-      "kitTexto": "5f766012"
+      "kitTexto": "5f766012",
+      "habilidades": [
+        {
+          "n": "Mark of the King",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Spear of Glory",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "King's Calling",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Harith",
@@ -1389,7 +1970,22 @@
         "Damage",
         "Magic Damage"
       ],
-      "kitTexto": "6c3e72f5"
+      "kitTexto": "6c3e72f5",
+      "habilidades": [
+        {
+          "n": "Starlium Beam",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Traction Pulse",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Belerick",
@@ -1410,7 +2006,23 @@
         "Crowd Control",
         "Regen"
       ],
-      "kitTexto": "562a5c45"
+      "kitTexto": "562a5c45",
+      "habilidades": [
+        {
+          "n": "Ancient Seed",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "Wrath of Dryad",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Hanzo",
@@ -1431,7 +2043,16 @@
         "Poke",
         "Burst"
       ],
-      "kitTexto": "ff3e1522"
+      "kitTexto": "ff3e1522",
+      "habilidades": [
+        {
+          "n": "Forbidden Ninjutsu: Black Mist",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Lunox",
@@ -1452,7 +2073,22 @@
         "Burst",
         "Damage"
       ],
-      "kitTexto": "5c6c060f"
+      "kitTexto": "5c6c060f",
+      "habilidades": [
+        {
+          "n": "Order & Chaos",
+          "e": [
+            "inmortal"
+          ]
+        },
+        {
+          "n": "Power of Order: Brilliance",
+          "e": [
+            "area",
+            "inmortal"
+          ]
+        }
+      ]
     },
     {
       "name": "Leomord",
@@ -1473,7 +2109,15 @@
         "Chase",
         "Burst"
       ],
-      "kitTexto": "a88a2f4a"
+      "kitTexto": "a88a2f4a",
+      "habilidades": [
+        {
+          "n": "Phantom Charge",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Vale",
@@ -1494,7 +2138,23 @@
         "Burst",
         "Crowd Control"
       ],
-      "kitTexto": "33977828"
+      "kitTexto": "33977828",
+      "habilidades": [
+        {
+          "n": "Windblow",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "Windstorm",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Claude",
@@ -1536,7 +2196,15 @@
         "Burst",
         "Support"
       ],
-      "kitTexto": "e96bf5be"
+      "kitTexto": "e96bf5be",
+      "habilidades": [
+        {
+          "n": "Contract: Explosion",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Selena",
@@ -1558,7 +2226,15 @@
         "Initiator",
         "Finisher"
       ],
-      "kitTexto": "e5f73e8c"
+      "kitTexto": "e5f73e8c",
+      "habilidades": [
+        {
+          "n": "Abyssal Arrow",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Kaja",
@@ -1579,7 +2255,21 @@
         "Initiator",
         "Charge"
       ],
-      "kitTexto": "ef720566"
+      "kitTexto": "ef720566",
+      "habilidades": [
+        {
+          "n": "Soaring Wings",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Divine Binding",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Chang'e",
@@ -1621,7 +2311,16 @@
         "Finisher",
         "Damage"
       ],
-      "kitTexto": "497e443b"
+      "kitTexto": "497e443b",
+      "habilidades": [
+        {
+          "n": "Forbidden Jutsu: Higanbana",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Uranus",
@@ -1663,7 +2362,16 @@
         "Finisher",
         "Charge"
       ],
-      "kitTexto": "89ec0851"
+      "kitTexto": "89ec0851",
+      "habilidades": [
+        {
+          "n": "Asura Aura",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Valir",
@@ -1684,7 +2392,28 @@
         "Damage",
         "Guard"
       ],
-      "kitTexto": "98483549"
+      "kitTexto": "98483549",
+      "habilidades": [
+        {
+          "n": "Ashing",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Searing Torrent",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "Vengeance Flame",
+          "e": [
+            "limpia"
+          ]
+        }
+      ]
     },
     {
       "name": "Gusion",
@@ -1727,7 +2456,15 @@
         "Guard",
         "Support"
       ],
-      "kitTexto": "b2f58522"
+      "kitTexto": "b2f58522",
+      "habilidades": [
+        {
+          "n": "Puppet-on-a-String",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Jawhead",
@@ -1749,7 +2486,21 @@
         "Charge",
         "Burst"
       ],
-      "kitTexto": "b396dc8d"
+      "kitTexto": "b396dc8d",
+      "habilidades": [
+        {
+          "n": "Ejector",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Unstoppable Force",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Lesley",
@@ -1770,7 +2521,15 @@
         "Finisher",
         "Burst"
       ],
-      "kitTexto": "c8efa832"
+      "kitTexto": "c8efa832",
+      "habilidades": [
+        {
+          "n": "Tactical Grenade",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Pharsa",
@@ -1791,7 +2550,15 @@
         "Burst",
         "Poke"
       ],
-      "kitTexto": "ec053346"
+      "kitTexto": "ec053346",
+      "habilidades": [
+        {
+          "n": "Curse of Crow",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Helcurt",
@@ -1813,7 +2580,15 @@
         "Push",
         "Burst"
       ],
-      "kitTexto": "6c5ab2c7"
+      "kitTexto": "6c5ab2c7",
+      "habilidades": [
+        {
+          "n": "Hidden Terror",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Zhask",
@@ -1834,7 +2609,16 @@
         "Chase",
         "Damage"
       ],
-      "kitTexto": "b16a1e6c"
+      "kitTexto": "b16a1e6c",
+      "habilidades": [
+        {
+          "n": "Mind Eater",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Hylos",
@@ -1855,7 +2639,15 @@
         "Guard",
         "Initiator"
       ],
-      "kitTexto": "090dff22"
+      "kitTexto": "090dff22",
+      "habilidades": [
+        {
+          "n": "Law and Order",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Diggie",
@@ -1876,7 +2668,22 @@
         "Guard",
         "Poke"
       ],
-      "kitTexto": "3192f6e3"
+      "kitTexto": "3192f6e3",
+      "habilidades": [
+        {
+          "n": "Reverse Time",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Time Journey",
+          "e": [
+            "aliados",
+            "limpia"
+          ]
+        }
+      ]
     },
     {
       "name": "Lancelot",
@@ -1918,7 +2725,15 @@
         "Burst",
         "Poke"
       ],
-      "kitTexto": "820dc54c"
+      "kitTexto": "820dc54c",
+      "habilidades": [
+        {
+          "n": "Blue Nova",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Argus",
@@ -1939,7 +2754,22 @@
         "Charge",
         "Burst"
       ],
-      "kitTexto": "d35002a6"
+      "kitTexto": "d35002a6",
+      "habilidades": [
+        {
+          "n": "Meteoric Sword",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Eternal Evil",
+          "e": [
+            "inmortal",
+            "limpia"
+          ]
+        }
+      ]
     },
     {
       "name": "Grock",
@@ -1960,7 +2790,23 @@
         "Crowd Control",
         "Initiator"
       ],
-      "kitTexto": "9e6d9988"
+      "kitTexto": "9e6d9988",
+      "habilidades": [
+        {
+          "n": "Mighty Swing",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "Earthen Rampart",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Irithel",
@@ -2025,7 +2871,21 @@
         "Crowd Control",
         "Burst"
       ],
-      "kitTexto": "4d6847b3"
+      "kitTexto": "4d6847b3",
+      "habilidades": [
+        {
+          "n": "Unbreakable",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Avatar of the Guardian",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Karrie",
@@ -2088,7 +2948,16 @@
         "Poke",
         "Control"
       ],
-      "kitTexto": "df87b7ec"
+      "kitTexto": "df87b7ec",
+      "habilidades": [
+        {
+          "n": "Deathly Grasp",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Lapu-Lapu",
@@ -2109,7 +2978,16 @@
         "Chase",
         "Burst"
       ],
-      "kitTexto": "993d91da"
+      "kitTexto": "993d91da",
+      "habilidades": [
+        {
+          "n": "Land Shaker",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Aurora",
@@ -2130,7 +3008,29 @@
         "Crowd Control",
         "Poke"
       ],
-      "kitTexto": "00f52bd6"
+      "kitTexto": "00f52bd6",
+      "habilidades": [
+        {
+          "n": "Pride of Ice",
+          "e": [
+            "inmortal"
+          ]
+        },
+        {
+          "n": "Frosty Breeze",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "Frigid Glacier",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Hilda",
@@ -2152,7 +3052,21 @@
         "Damage",
         "Regen"
       ],
-      "kitTexto": "60162cee"
+      "kitTexto": "60162cee",
+      "habilidades": [
+        {
+          "n": "Art of Hunting",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Power of Wildness",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Estes",
@@ -2194,7 +3108,15 @@
         "Damage",
         "Control"
       ],
-      "kitTexto": "a2c88e8c"
+      "kitTexto": "a2c88e8c",
+      "habilidades": [
+        {
+          "n": "Star Power Lockdown",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Johnson",
@@ -2215,7 +3137,22 @@
         "Support",
         "Crowd Control"
       ],
-      "kitTexto": "82672f6c"
+      "kitTexto": "82672f6c",
+      "habilidades": [
+        {
+          "n": "Impact Wrench",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "Full Throttle",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Moskov",
@@ -2236,7 +3173,15 @@
         "Finisher",
         "Chase"
       ],
-      "kitTexto": "f5c5f408"
+      "kitTexto": "f5c5f408",
+      "habilidades": [
+        {
+          "n": "Spear of Misery",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Yi Sun-shin",
@@ -2257,7 +3202,15 @@
         "Finisher",
         "Chase"
       ],
-      "kitTexto": "8899ac64"
+      "kitTexto": "8899ac64",
+      "habilidades": [
+        {
+          "n": "Mountain Shocker",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Ruby",
@@ -2278,7 +3231,23 @@
         "Crowd Control",
         "Regen"
       ],
-      "kitTexto": "3b607e8c"
+      "kitTexto": "3b607e8c",
+      "habilidades": [
+        {
+          "n": "Don't Run, Wolf King!",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "I'm Offended!",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Alpha",
@@ -2300,7 +3269,15 @@
         "Charge",
         "Damage"
       ],
-      "kitTexto": "95378f09"
+      "kitTexto": "95378f09",
+      "habilidades": [
+        {
+          "n": "Spear of Alpha",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Sun",
@@ -2344,7 +3321,15 @@
         "Chase",
         "Control"
       ],
-      "kitTexto": "27ec69a4"
+      "kitTexto": "27ec69a4",
+      "habilidades": [
+        {
+          "n": "The Way of Dragon",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Kagura",
@@ -2365,7 +3350,27 @@
         "Poke",
         "Finisher"
       ],
-      "kitTexto": "395cf2df"
+      "kitTexto": "395cf2df",
+      "habilidades": [
+        {
+          "n": "Yin Yang Gathering",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Rasho Umbrella Flee",
+          "e": [
+            "limpia"
+          ]
+        },
+        {
+          "n": "Yin Yang Overturn",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Natalia",
@@ -2408,7 +3413,15 @@
         "Poke",
         "Burst"
       ],
-      "kitTexto": "317e47f8"
+      "kitTexto": "317e47f8",
+      "habilidades": [
+        {
+          "n": "Mystic Projectile",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Freya",
@@ -2430,7 +3443,15 @@
         "Chase",
         "Damage"
       ],
-      "kitTexto": "2837d6e5"
+      "kitTexto": "2837d6e5",
+      "habilidades": [
+        {
+          "n": "Leap of Faith",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Hayabusa",
@@ -2472,7 +3493,22 @@
         "Guard",
         "Crowd Control"
       ],
-      "kitTexto": "3288ee4b"
+      "kitTexto": "3288ee4b",
+      "habilidades": [
+        {
+          "n": "Power Charge",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Noumenon Blast",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Minotaur",
@@ -2492,7 +3528,22 @@
       "speciality": [
         "Crowd Control"
       ],
-      "kitTexto": "f604206e"
+      "kitTexto": "f604206e",
+      "habilidades": [
+        {
+          "n": "Despair Stomp",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "Minoan Fury",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Layla",
@@ -2513,7 +3564,16 @@
         "Finisher",
         "Damage"
       ],
-      "kitTexto": "e93eaba4"
+      "kitTexto": "e93eaba4",
+      "habilidades": [
+        {
+          "n": "Void Projectile",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Fanny",
@@ -2555,7 +3615,15 @@
         "Chase",
         "Damage"
       ],
-      "kitTexto": "f566681c"
+      "kitTexto": "f566681c",
+      "habilidades": [
+        {
+          "n": "Spear Flip",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Eudora",
@@ -2576,7 +3644,15 @@
         "Control",
         "Burst"
       ],
-      "kitTexto": "a77d20e0"
+      "kitTexto": "a77d20e0",
+      "habilidades": [
+        {
+          "n": "Ball Lightning",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Rafaela",
@@ -2597,7 +3673,16 @@
         "Regen",
         "Guard"
       ],
-      "kitTexto": "0a839a2b"
+      "kitTexto": "0a839a2b",
+      "habilidades": [
+        {
+          "n": "Holy Baptism",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Clint",
@@ -2618,7 +3703,15 @@
         "Finisher",
         "Burst"
       ],
-      "kitTexto": "47d35910"
+      "kitTexto": "47d35910",
+      "habilidades": [
+        {
+          "n": "Trapping Recoil",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Bruno",
@@ -2639,7 +3732,15 @@
         "Finisher",
         "Burst"
       ],
-      "kitTexto": "f307f98e"
+      "kitTexto": "f307f98e",
+      "habilidades": [
+        {
+          "n": "Worldie",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Bane",
@@ -2661,7 +3762,15 @@
         "Push",
         "Burst"
       ],
-      "kitTexto": "8a69fd69"
+      "kitTexto": "8a69fd69",
+      "habilidades": [
+        {
+          "n": "Deadly Catch",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Franco",
@@ -2682,7 +3791,21 @@
         "Initiator",
         "Control"
       ],
-      "kitTexto": "aad773ea"
+      "kitTexto": "aad773ea",
+      "habilidades": [
+        {
+          "n": "Iron Hook",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Bloody Hunt",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Akai",
@@ -2703,7 +3826,23 @@
         "Guard",
         "Crowd Control"
       ],
-      "kitTexto": "456fc637"
+      "kitTexto": "456fc637",
+      "habilidades": [
+        {
+          "n": "Headbutt",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Heavy Spin",
+          "e": [
+            "area",
+            "cc",
+            "limpia"
+          ]
+        }
+      ]
     },
     {
       "name": "Karina",
@@ -2765,7 +3904,22 @@
       "speciality": [
         "Crowd Control"
       ],
-      "kitTexto": "4d9623a8"
+      "kitTexto": "4d9623a8",
+      "habilidades": [
+        {
+          "n": "Sacred Hammer",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Implosion",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Nana",
@@ -2786,7 +3940,28 @@
         "Poke",
         "Burst"
       ],
-      "kitTexto": "94c9ec67"
+      "kitTexto": "94c9ec67",
+      "habilidades": [
+        {
+          "n": "Molina's Gift",
+          "e": [
+            "inmortal",
+            "limpia"
+          ]
+        },
+        {
+          "n": "Molina Smooch",
+          "e": [
+            "cc"
+          ]
+        },
+        {
+          "n": "Molina Blitz",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Alice",
@@ -2808,7 +3983,16 @@
         "Charge",
         "Regen"
       ],
-      "kitTexto": "5d5e790f"
+      "kitTexto": "5d5e790f",
+      "habilidades": [
+        {
+          "n": "Throne of Ruin",
+          "e": [
+            "area",
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Saber",
@@ -2830,7 +4014,15 @@
         "Charge",
         "Finisher"
       ],
-      "kitTexto": "8bfcf3e6"
+      "kitTexto": "8bfcf3e6",
+      "habilidades": [
+        {
+          "n": "Triple Sweep",
+          "e": [
+            "cc"
+          ]
+        }
+      ]
     },
     {
       "name": "Balmond",
@@ -2873,7 +4065,22 @@
         "Finisher",
         "Damage"
       ],
-      "kitTexto": "01715c7c"
+      "kitTexto": "01715c7c",
+      "habilidades": [
+        {
+          "n": "Arrow of Eclipse",
+          "e": [
+            "area",
+            "cc"
+          ]
+        },
+        {
+          "n": "Hidden Moonlight",
+          "e": [
+            "limpia"
+          ]
+        }
+      ]
     }
   ],
   "newHeroes": [],
@@ -11405,7 +12612,7 @@
   },
   "tiers": {
     "fuente": "mlbb.gg",
-    "fecha": "2026-10-03T22:07:22.560Z",
+    "fecha": "2026-10-03T22:35:02.988Z",
     "tiers": {
       "Miya": "A",
       "Balmond": "D",

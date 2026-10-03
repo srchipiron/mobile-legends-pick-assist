@@ -37,6 +37,9 @@ export function seccionDraft(inf, { draft = null, linea, entorno = {} } = {}) {
     inf.linea(`  ${i + 1}. ${r.heroe.name} ${Math.round(r.p * 100)}%${motivos ? ` · ${motivos}` : ''}`);
   }
   for (const f of draft.analisis ?? []) inf.linea(`  > ${f.clave.replace(/^analisis\./, '')} ${JSON.stringify(f.params ?? {})}`);
+  // El plan de partida (3.36.0), con sus claves: para discutir un consejo
+  // hace falta saber de qué dato salió.
+  for (const f of [...(draft.partida?.equipo ?? []), ...(draft.partida?.tuyo ?? [])]) inf.linea(`  plan ${f.clave.replace(/^partida\./, '')} ${JSON.stringify(f.params ?? {})}`);
 
   // Por qué gana el nº1: qué término lo separa del nº2 y por cuánto. Es lo
   // que hace falta para discutir una recomendación en vez de creérsela.

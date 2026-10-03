@@ -50,7 +50,7 @@ export function Meta({ datos, linea, onCerrar, t = tPorDefecto }) {
       <div className="sheet-body">
         <p className="nota">{t('meta.pista', { rango: ETIQUETAS_RANGO[rangoFuerza] ?? rangoFuerza, dias: ventana?.dias ?? 7 })}</p>
         {rangoFuerza !== datos.rango && <p className="nota mal">{t('meta.fuerzaDe', { pedido: ETIQUETAS_RANGO[datos.rango] ?? datos.rango, usado: ETIQUETAS_RANGO[rangoFuerza] ?? rangoFuerza })}</p>}
-        {relaciones?.rango && relaciones.rango !== relaciones.pedido && <p className="nota mal">{t('meta.relacionesDe', { pedido: ETIQUETAS_RANGO[relaciones.pedido] ?? relaciones.pedido, usado: ETIQUETAS_RANGO[relaciones.rango] ?? relaciones.rango })}</p>}
+        {relaciones?.rango && relaciones.rango !== relaciones.pedido && <p className="nota mal nota-relaciones">{t('meta.relacionesDe', { pedido: ETIQUETAS_RANGO[relaciones.pedido] ?? relaciones.pedido, usado: ETIQUETAS_RANGO[relaciones.rango] ?? relaciones.rango })}</p>}
         {conDeriva && <p className="nota">{t('meta.deriva', { dias: ventana.dias })}</p>}
         {tiers && <p className="nota">{t('meta.tierPista')}</p>}
         {datos.meta.winrateLinea && Object.keys(datos.meta.winrateLinea).length > 0 && <p className="nota">{t('meta.wrLineaPista')}</p>}

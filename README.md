@@ -177,6 +177,16 @@ ordenado por lo que te quita: la probabilidad que pierdes si sale ese héroe (su
 contra tus aliados ya elegidos), por lo que sale cuando no está baneado. Un toque en «Ir a los
 picks» pasa a la segunda fase, con la tira de baneos arriba para volver.
 
+## Plan de partida
+
+«Plan y objetos», en cada tarjeta, abre arriba de la build qué hacer en ese draft con ese héroe.
+Para el equipo, frases cortas para decir por voz (focus, separarse del control en área del
+iniciador, quién se vuelve intocable, a quién proteger, cerrar pronto o aguantar, qué defensa,
+antisanación) y un botón para copiarlas al chat del juego; para ti, cuándo gastar la habilidad que
+quita controles, con quién ir y tus cruces claros. Los nombres salen de los cruces, las parejas y
+las etiquetas que el propio juego pone a cada habilidad; el plan en sí es consejo, no está medido
+contra partidas.
+
 ## Lo que esto no hace
 
 - **El winrate global no es tu winrate.** Elige tu rango en "Ajustes": la ingesta descarga
@@ -243,6 +253,7 @@ src/motor/                el motor, puro (sin React, sin red, sin almacén)
   analisis.js             las frases sobre el draft
   composicion.js          qué tiene y qué le falta a cada equipo
   builds.js               objetos: lo que se compra y el ajuste al draft
+  plan.js                 plan de partida: focus, control, a quién proteger, tus cruces claros
   maestria.js             tu nivel, el prior medido y la nota de maestría
   matrices.js             cruces y parejas, cobertura, umbrales medidos
   catalogo.js             el catálogo fundido con la API, tags deducidos, pools

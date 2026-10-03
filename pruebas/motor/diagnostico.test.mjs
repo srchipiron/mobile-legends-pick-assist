@@ -221,9 +221,10 @@ test('el diagnostico lleva el draft con nombres, para poder reproducir una parti
     rival: { nombre: 'Kadita', marcado: false },
     ranking: [{ heroe: h('Atlas'), p: 0.79, motivos: [{ clave: 'regla.ganaMatchup', params: { e: 'Ixia' } }] }],
     analisis: [{ clave: 'analisis.cuidadoCon', params: { e: 'Ixia', pct: 48 } }],
+    partida: { equipo: [{ clave: 'partida.focus', params: { e: 'Ixia' } }], tuyo: [{ clave: 'partida.evita', params: { e: 'Kadita', pct: 46 } }] },
   };
   const con = diagnosticar({ ...base, draft }).texto;
-  for (const esperado of ['DRAFT ACTUAL', 'Kadita', 'Ixia', 'Layla', 'Atlas 79', 'ganaMatchup:Ixia', 'cuidadoCon', 'deducido']) {
+  for (const esperado of ['DRAFT ACTUAL', 'Kadita', 'Ixia', 'Layla', 'Atlas 79', 'ganaMatchup:Ixia', 'cuidadoCon', 'deducido', 'plan focus {"e":"Ixia"}', 'plan evita']) {
     ok(con.includes(esperado), `el diagnostico no lleva "${esperado}"`);
   }
   // Marcado a mano se distingue de deducido: no es lo mismo que la app se

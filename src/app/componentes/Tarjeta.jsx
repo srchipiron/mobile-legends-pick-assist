@@ -77,7 +77,7 @@ export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLi
           </span>
         )}
         {/* Los objetos son lo siguiente que necesitas DESPUÉS de elegir: detrás de un toque. */}
-        {onBuild && <button className="pick-build" onClick={() => onBuild(heroe)}>{t('build.titulo')}</button>}
+        {onBuild && <button className="pick-build" onClick={() => onBuild(heroe)}>{t('partida.boton')}</button>}
       </div>
     </article>
   );

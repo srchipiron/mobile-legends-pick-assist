@@ -12,7 +12,7 @@ import { readdirSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
 import { test, ok, eq, terminar, RAIZ, leerTexto } from '../arnes.mjs';
-import { extraerLineas, extraerRol } from '../../scripts/ingesta/extraccion.mjs';
+import { extraerLineas, extraerRol, extraerHabilidades } from '../../scripts/ingesta/extraccion.mjs';
 import { callRoute } from '../../scripts/ingesta/descarga.mjs';
 import { idPrincipal, esIdDeHeroe, recogerPares, relationMap, pick } from '../../scripts/ingesta/relaciones.mjs';
 import { serializar } from '../../scripts/ingesta/salida.mjs';
@@ -317,6 +317,34 @@ test('el winrate por línea se funde PAR A PAR: lo de hoy manda, lo que falla ho
   eq(conservados, 2, 'no cuenta los pares conservados');
   // Sin nada guardado es lo descargado, tal cual.
   eq(JSON.stringify(fundirWinrateLinea(undefined, { B: { roam: 0.49 } }, heroes).winrateLinea), JSON.stringify({ B: { roam: 0.49 } }));
+});
+
+test('las habilidades: control, área, quitar controles (por etiqueta Y por texto) e intocable, una vez cada una', () => {
+  // Las formas reales de la API (3 de octubre de 2026), recortadas.
+  const tag = (...n) => n.map((tagname) => ({ tagid: 1, tagname, tagrgb: '0,0,0' }));
+  const ficha = { data: { records: [{ data: { hero: { data: { skill: [
+    { skilllist: [
+      { skillname: 'Young Again', skilldesc: 'Upon death, Diggie reverses time and turns back to egg form.', skilltag: tag('Buff') },
+      { skillname: 'Reverse Time', skilldesc: 'Diggie marks the target enemy hero and pulls them back.', skilltag: tag('CC', 'Damage') },
+      { skillname: 'Time Journey', skilldesc: 'Diggie removes all debuffs on nearby allied heroes (including himself) and grants them a <font color="x">650</font> shield and Control Immunity for 2s.', skilltag: tag('CC Immune', 'Speed Up') },
+      // Argus: la etiqueta no dice que limpia, el texto sí.
+      { skillname: 'Eternal Evil', skilldesc: 'Argus removes all control effects, gains Death Immunity for 4s.', skilltag: tag('Death Immunity', 'Buff') },
+      // Un héroe que se transforma repite la habilidad: una sola vez, con
+      // lo que haga en cualquiera de sus formas.
+      { skillname: 'Reverse Time', skilldesc: 'Again.', skilltag: tag('Death Immunity') },
+      // «allies» sin quitar controles no es limpiar a los aliados.
+      { skillname: 'Healing Wave', skilldesc: 'Heals nearby allies and stuns enemies.', skilltag: tag('CC', 'Heal') },
+    ] },
+  ] } } } }] } };
+  const h = extraerHabilidades(ficha);
+  eq(JSON.stringify(h), JSON.stringify([
+    { n: 'Reverse Time', e: ['cc', 'inmortal'] },
+    { n: 'Time Journey', e: ['aliados', 'limpia'] },
+    { n: 'Eternal Evil', e: ['inmortal', 'limpia'] },
+    { n: 'Healing Wave', e: ['cc'] },
+  ]));
+  // Una ralentización no es control duro, ni un «Buff» nada.
+  eq(extraerHabilidades({ skillname: 'Slow', skilldesc: 'Slows by 40%.', skilltag: tag('Slow', 'Buff') }).length, 0);
 });
 
 await terminar('scripts/ingesta');

@@ -33,6 +33,7 @@ export function medir(datos) {
     // La speciality de Moonton, desde 1.37.0 para los 133: sin contarla, una
     // corrida con la ficha caída la perdía sin que el comparador lo viera.
     conSpeciality: heroes.filter((h) => Array.isArray(h?.speciality) && h.speciality.length).length,
+    conHabilidades: heroes.filter((h) => Array.isArray(h?.habilidades) && h.habilidades.length).length,
     stats: Object.keys(datos?.stats ?? {}).length,
     // Los RANGOS resueltos, y si el pedido esta entre ellos: con el de glory
     // caido, `stats` se rellenaba con epic bajo la etiqueta glory y este

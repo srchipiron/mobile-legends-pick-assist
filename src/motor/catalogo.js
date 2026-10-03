@@ -34,12 +34,13 @@ export function tagsDeducidos(role, speciality = []) {
  * se decide por clave normalizada: con la cruda, «X.Borg» y «X Borg» serían
  * dos héroes. El id y el tipo de daño vienen de la API también para los del
  * catálogo (los retratos van por id, que no cambia aunque cambie el nombre).
+ * Y lo que hace cada habilidad (3.36.0), que lee el plan de partida.
  */
 export function fundirCatalogo(catalogo = [], api = []) {
   const porApi = new Map(api.map((h) => [nombreClave(h.name), h]));
   const salida = new Map(catalogo.map((h) => {
     const a = porApi.get(nombreClave(h.name));
-    return [h.name, { ...h, ...(a?.damage ? { damage: a.damage } : {}), ...(a?.id != null ? { id: a.id } : {}) }];
+    return [h.name, { ...h, ...(a?.damage ? { damage: a.damage } : {}), ...(a?.id != null ? { id: a.id } : {}), ...(a?.habilidades?.length ? { habilidades: a.habilidades } : {}) }];
   }));
   const enCatalogo = new Set(catalogo.map((h) => nombreClave(h.name)));
   for (const a of api) {
@@ -53,6 +54,7 @@ export function fundirCatalogo(catalogo = [], api = []) {
       roam: role === 'tank' || role === 'support',
       inferred: true,
       ...(a.damage ? { damage: a.damage } : {}),
+      ...(a.habilidades?.length ? { habilidades: a.habilidades } : {}),
     });
   }
   return [...salida.values()];

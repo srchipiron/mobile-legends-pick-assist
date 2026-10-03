@@ -611,6 +611,26 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .build-cuerpo { padding: 12px 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
 .build-vacio { margin: 0; font-size: 13px; color: var(--muted); }
 
+/* El plan de partida (3.36.0), arriba de la hoja de objetos. Letra grande a
+   proposito: se lee de un vistazo en mitad de una partida, para decirlo por
+   voz. La barra amarilla marca lo del equipo; la azul, lo tuyo. */
+.plan { display: flex; flex-direction: column; gap: 10px; }
+.plan-bloque { display: flex; flex-direction: column; gap: 6px; }
+.plan-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.plan-sub { margin: 0; font-size: 13px; font-weight: 600; color: var(--text); }
+.plan-copiar {
+  min-height: 32px; padding: 6px 12px; flex-shrink: 0;
+  border: 1px solid var(--line); border-radius: 999px;
+  font-size: 12px; font-weight: 600; color: var(--muted); background: var(--glass);
+}
+.plan-lista { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.plan-lista li {
+  padding: 8px 10px 8px 13px; font-size: 14px; line-height: 1.35;
+  border-radius: var(--r-sm); background: var(--glass);
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+.plan-bloque + .plan-bloque .plan-lista li { box-shadow: inset 3px 0 0 var(--ally); }
+
 .build { display: flex; flex-direction: column; gap: 8px; }
 .build-nucleo {
   margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
@@ -761,6 +781,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* Los mismos colores que ya usa la app para bien y mal, no dos nuevos. */
 .nota.bien { color: var(--c-comp); }
 .nota.mal { color: var(--enemy); }
+.nota-relaciones { margin-top: 2px; }
 /* La subida automática de partidas (3.10.0), dentro de «Tus partidas». */
 .envio-auto { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--glass); box-shadow: var(--brillo); }
 .envio-auto a { color: var(--gold); }

@@ -212,7 +212,11 @@ await prueba('la hoja Meta enseña la tier list por línea, con la tuya primero,
   // motor lo decide con los datos servidos (tras un reinicio de temporada
   // sí, con Gloria llena no): se compara con prepararDatos, no con el día.
   const fuerza = await decisionDeRango();
-  eq(await pagina.locator('[role=dialog] .nota.mal').count(), fuerza.rango === fuerza.pedido ? 0 : 1, `la hoja no cuenta de qué rango sale la fuerza (${fuerza.pedido} → ${fuerza.rango})`);
+  eq(await pagina.locator('[role=dialog] .nota.mal:not(.nota-relaciones)').count(), fuerza.rango === fuerza.pedido ? 0 : 1, `la hoja no cuenta de qué rango sale la fuerza (${fuerza.pedido} → ${fuerza.rango})`);
+  // Y lo mismo con cruces y parejas (3.35.0): lo decide la ingesta y va en
+  // `relaciones` de los datos servidos.
+  const rel = (await datosServidos()).datos.meta.relaciones;
+  eq(await pagina.locator('[role=dialog] .nota-relaciones').count(), rel?.rango && rel.rango !== rel.pedido ? 1 : 0, `la hoja no cuenta de qué rango salen los cruces (${JSON.stringify(rel)})`);
   // El winrate por línea (3.12.0): el nº1 de roam lleva el SUYO en roam, el que da el motor con los datos servidos.
   const { motor, datos } = await datosServidos();
   const esperado = motor.winrateEnLinea(datos, datos.porNombre.get(primero) ?? { name: primero }, 'roam');

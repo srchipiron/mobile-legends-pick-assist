@@ -8,6 +8,23 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.36.0
+
+- Nuevo «Plan de partida»: el botón de cada tarjeta ahora es «Plan y
+  objetos» y, arriba de la build, te dice qué hacer en ESTE draft. Para el
+  equipo, frases cortas para decir por voz (a quién hacer focus, cuándo
+  separarse del control en área de su iniciador, quién se vuelve intocable,
+  a quién proteger, si os conviene cerrar pronto o aguantar, armadura o
+  defensa mágica, antisanación), y «Copiar para el chat» para pegarlas en
+  el chat del juego. Para ti, con ese héroe: cuándo gastar la habilidad que
+  quita controles (con Diggie: guarda Time Journey para cuando entre el
+  control de Minotaur), con quién ir, y tu peor y tu mejor cruce cuando son
+  claros.
+- Los nombres de cada frase salen de los datos (los cruces y las parejas,
+  y lo que hace cada habilidad según el propio juego); las habilidades van
+  con su nombre en inglés, que es el que da la API. Es consejo, no
+  predicción, y la hoja lo dice.
+
 ## 3.35.0
 
 - Los cruces y las parejas salen de Mítico mientras Gloria no tenga

@@ -9,6 +9,7 @@ import { simularFinales } from './robustez.js';
 import { aconsejarEquipo } from './equipo.js';
 import { analizarComposicion } from './composicion.js';
 import { analizarDraft } from './analisis.js';
+import { planDePartida } from './plan.js';
 import { elegirVentana, elegirRango, mediaDeWinrate } from './ventana.js';
 
 /**
@@ -264,6 +265,14 @@ export function planDePicks(datos, { linea, maestria = null, n = 3 } = {}) {
 }
 
 /**
+ * El plan de partida de UN héroe en este draft (plan.js): qué hacer con él y
+ * qué decir al equipo. Es consejo, no nota: no cambia el ranking.
+ */
+export function planear(datos, { yo = null, aliados = [], enemigos = [] } = {}) {
+  return planDePartida({ yo, aliados, enemigos, meta: datos.meta });
+}
+
+/**
  * Todo de una vez, para quien no tiene render que cuidar (diagnóstico, bot,
  * paridad, pruebas). Devuelve lo mismo que la app calcula pieza a pieza.
  *
@@ -284,6 +293,7 @@ export function recomendar(datos, { linea, enemigos = [], aliados = [], baneos =
   const analisis = analizarDraft({ eleccion, ranking, enemigos, aliados, baneos, meta: datos.meta, rivalDeLinea: rival.nombre, empate, robustez, composicion });
   return {
     pool, lineasAbiertas, ranking, empate, rival, eleccion, robustez, composicion, consejos, analisis,
+    partida: planear(datos, { yo, aliados, enemigos }),
     baneosSugeridos: baneosSugeridos(datos, { aliados, enemigos, baneos }),
     cobertura: cobertura(pool, datos.meta.stats, datos.meta.counters),
   };
