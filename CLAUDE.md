@@ -1141,7 +1141,14 @@ se repite en cada corrida de `pro.yml` al log. NO vuelvas a suponer:
   validación cruzada (mínimo 0,5 por 1.000, cinco veces por debajo de lo
   medido) y `ajustar-modelo.mjs` lo enseña como `+dano` y `escala+dano`.
   La banda de drafts al azar se abre de 40/60 a 38/62 (p05/p95): es la
-  información nueva, no ruido. OJO (3.7.1): esa banda depende de la
+  información nueva, no ruido. **Vigilar**: el 3 de octubre de 2026, con
+  el corpus pro en 2.301 partidas a 400 días (188 posteriores al reinicio)
+  y los cruces de Mítico, la ganancia fuera de muestra del término bajó a
+  ≈0 (media de ocho semillas −0,01 por 1.000; a 120 días −2,0) y su
+  coeficiente libre a 0,13 ± 0,056 (el motor supone 0,5 × 0,44 = 0,22: a
+  1,6 SE, dentro del error, así que no se toca). La prueba exige desde
+  3.35.0 > −3 (el signo cambiado da −8 a −9), no > 0. Si el coeficiente
+  sale del error en las corridas siguientes de `pro.yml`, se reajusta. OJO (3.7.1): esa banda depende de la
   dispersión de los winrates del parche (5 pp en vez de 3 la semana
   después de un reinicio de temporada → 36/64) y por eso ya no se exige
   sobre los datos reales, sino sobre el meta sintético.

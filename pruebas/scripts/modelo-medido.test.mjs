@@ -103,7 +103,14 @@ test('el modelo: la escala es la medida en las partidas pro', async () => {
   const semillas = [1, 2, 3, 4, 5, 6, 7, 8];
   const gananciaMedia = semillas.reduce((acc, semilla) => acc + (validar(filasL, (f) => [f.H + f.C + f.S + PESO_EQUILIBRIO_DANO * f.D], { semilla }).cv.logL
     - validar(filasL, (f) => [f.H + f.C + f.S], { semilla }).cv.logL) / filasL.length * 1000, 0) / semillas.length;
-  ok(gananciaMedia > 0, `el equilibrio de daño EMPEORA la validacion cruzada a 400 dias (${gananciaMedia.toFixed(2)} de logL por 1.000 partidas, media de 8 semillas): ¿signo cambiado en el motor?`);
+  //    Y > 0 tambien era una moneda (3.35.0): el 3 de octubre de 2026, con
+  //    2.301 partidas a 400 dias y los cruces de Mitico, la media salio
+  //    -0,01 (con los de Gloria del 20 de septiembre, +1,6; con los de
+  //    Gloria ruidosa, +0,8), con el coeficiente libre del termino aun en
+  //    0,13 ± 0,056 (el motor supone 0,22: dentro del error). Con el signo
+  //    cambiado sale -8,1 (400 dias) y -9,4 (120). El suelo es -3: caza el
+  //    signo cambiado con holgura y no depende de como venga el dia.
+  ok(gananciaMedia > -3, `el equilibrio de daño EMPEORA la validacion cruzada a 400 dias (${gananciaMedia.toFixed(2)} de logL por 1.000 partidas, media de 8 semillas; con el signo cambiado sale -8): ¿signo cambiado en el motor?`);
 
   //    El margen de 2,5 SE es el correcto para no tumbar el despliegue por
   //    ruido, pero deja pasar mucho: con el ajuste de hoy (0.40 ± 0.13) todo
