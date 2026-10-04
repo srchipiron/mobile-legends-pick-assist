@@ -1,6 +1,97 @@
 {
- "actualizado": "2026-10-04T19:17:24.556Z",
+ "actualizado": "2026-10-04T20:01:20.262Z",
  "partidas": [
+  {
+   "t": 1791144067424,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Minotaur",
+    "Khaleed",
+    "Hilda"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.666,
+   "bans": [
+    "Eudora",
+    "X.Borg",
+    "Marcel",
+    "Hirara",
+    "Lukas",
+    "Martis",
+    "Saber",
+    "Aulus"
+   ],
+   "draft": {
+    "enemigos": [
+     "Belerick",
+     "Obsidia",
+     "Uranus",
+     "Zetian",
+     "Karina"
+    ],
+    "aliados": [
+     "Gloo",
+     "Kadita",
+     "Lesley",
+     "Joy"
+    ],
+    "linea": "roam",
+    "rival": "Belerick"
+   },
+   "lector": {
+    "baneos": [
+     "Eudora",
+     "X.Borg",
+     "Marcel",
+     "Hirara",
+     "Lukas",
+     "Martis",
+     "Saber",
+     "Aulus"
+    ],
+    "enemigos": [
+     "Obsidia",
+     "Zetian"
+    ],
+    "aliados": [
+     "Gloo",
+     "Lesley"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Fredrinn",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Valir",
+      "parecido": 0.56
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Karina",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Zetian",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Wanwan",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Chang'e",
+      "parecido": 0.72
+     }
+    ]
+   }
+  },
   {
    "t": 1791141430463,
    "pick": "Rafaela",
@@ -7239,6 +7330,12 @@
   {
    "cuando": "2026-10-04T19:17:24.556Z",
    "partidas": 158,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-04T20:01:20.262Z",
+   "partidas": 159,
    "heroes": 11,
    "incidencia": 11
   }
