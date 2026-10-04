@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T01:29:55.817Z",
+  "generatedAt": "2026-10-04T11:15:59.938Z",
   "rank": "glory",
   "relaciones": {
     "rango": "mythic",
@@ -619,14 +619,14 @@
         "magico": 4,
         "verdadero": 0
       },
-      "habilidades": [],
       "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_bee7c5e35d0a74231a84424fdbf15ed4.png",
       "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_df0a8dfc494f85ed9bbc4512cc1e5d3c.png",
       "speciality": [
         "Damage",
         "Burst"
       ],
-      "kitTexto": "9b586e16"
+      "kitTexto": "9b586e16",
+      "habilidades": []
     },
     {
       "name": "Melissa",
@@ -1169,14 +1169,14 @@
         "magico": 4,
         "verdadero": 0
       },
-      "habilidades": [],
       "retrato": "https://akmweb.youngjoygame.com/web/gms/image/c62254ad3286303de2a9812f358a9cef.jpg",
       "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_26e03fd72532d11c7b32911b95b8d559.png",
       "speciality": [
         "Support",
         "Crowd Control"
       ],
-      "kitTexto": "cb36d397"
+      "kitTexto": "cb36d397",
+      "habilidades": []
     },
     {
       "name": "Yu Zhong",
@@ -4151,7 +4151,7 @@
       "mythic": "133 héroes",
       "glory": "133 héroes"
     },
-    "tiers": "133 héroes",
+    "tiers": "fallo: HTTP 403 en https://back.mlbb.gg/api/v1/heroes; conservo la anterior",
     "ok": [],
     "failed": [],
     "imagenes": {
