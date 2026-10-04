@@ -39,6 +39,7 @@ export function Leyenda({ t = tPorDefecto }) {
         <span key={k}><i style={{ background: COLORES_TERMINO[k] }} />{t(`termino.${k}Largo`)}</span>
       ))}
       <span className="legend-nota">{t('leyenda.pro')}</span>
+      <span className="legend-nota">{t('leyenda.modelo')}</span>
     </div>
   );
 }

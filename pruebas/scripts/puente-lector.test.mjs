@@ -339,17 +339,24 @@ test('una captura que llega tarde no entra en el final de OTRO draft (3.37.0)', 
 test('el final de partida: la tabla con «DEFEAT» viene con el resultado, lo contestado se aprende, y sin origen nada (3.32.0)', async () => {
   const carpeta = mkdtempSync(join(tmpdir(), 'lector-resultado-'));
   const guardados = [];
-  let cual = pngTabla;
+  let cual = png;
   await conServidor({ capturar: () => cual, carpeta, guardarResultadosDe: (r) => guardados.push(r), vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 15 } }, async (base) => {
+    const leerFinal = async () => (await fetch(`${base}/final`, { headers: cab })).json();
     await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde: Date.now() }) });
-    ok(await hasta(async () => (await (await fetch(`${base}/final`, { headers: cab })).json()).fotogramas.length >= 1), 'no llega el primer fotograma');
-    const [f1] = (await (await fetch(`${base}/final`, { headers: cab })).json()).fotogramas;
-    ok(f1.tabla === true && f1.resultado === 'perdi' && f1.resultadoParecido >= 0.85, `la tabla de la derrota no viene con su resultado: ${JSON.stringify({ tabla: f1.tabla, resultado: f1.resultado, p: f1.resultadoParecido })}`);
-    // Otra pantalla (la del draft): cambio, pero ni tabla ni resultado.
-    cual = png;
-    ok(await hasta(async () => (await (await fetch(`${base}/final`, { headers: cab })).json()).fotogramas.length >= 2), 'no llega el segundo fotograma');
-    const f2 = (await (await fetch(`${base}/final`, { headers: cab })).json()).fotogramas[1];
+    // Una pantalla que no es la tabla (la del draft): entra, pero ni tabla ni resultado.
+    ok(await hasta(async () => (await leerFinal()).fotogramas.length >= 1), 'no llega el primer fotograma');
+    const [f2] = (await leerFinal()).fotogramas;
     ok(f2.tabla === false && f2.resultado === null, `la pantalla del draft pasa por tabla o da resultado: ${JSON.stringify({ tabla: f2.tabla, resultado: f2.resultado })}`);
+    ok((await leerFinal()).activa, 'sin resultado deja de vigilar');
+    cual = pngTabla;
+    ok(await hasta(async () => (await leerFinal()).fotogramas.length >= 2), 'no llega el fotograma de la tabla');
+    const f1 = (await leerFinal()).fotogramas[1];
+    ok(f1.tabla === true && f1.resultado === 'perdi' && f1.resultadoParecido >= 0.85, `la tabla de la derrota no viene con su resultado: ${JSON.stringify({ tabla: f1.tabla, resultado: f1.resultado, p: f1.resultadoParecido })}`);
+    // Con el resultado leído deja de capturar (3.38.0): la partida ha acabado.
+    cual = capturaCompletaPng({ columna: 2 });
+    await new Promise((r) => setTimeout(r, 400));
+    const fin = await leerFinal();
+    ok(!fin.activa && fin.fotogramas.length === 2 && fin.resultado === 'perdi', `con el resultado leído sigue capturando: ${JSON.stringify({ activa: fin.activa, n: fin.fotogramas.length })}`);
     // Lo contestado se aprende de los fotogramas de la partida (solo de la tabla) y se guarda; sin origen, 403.
     const sin = await fetch(`${base}/resultado`, { method: 'POST', body: JSON.stringify({ ids: [f1.id], gane: false }) });
     eq(sin.status, 403, 'un resultado sin origen se acepta');

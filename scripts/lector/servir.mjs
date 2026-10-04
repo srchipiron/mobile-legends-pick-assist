@@ -287,6 +287,13 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
       if (leido.resultado && !final.resultado) Object.assign(final, { resultado: leido.resultado, resultadoId: id, resultadoEn: t });
       podar();
       registrar(`Fotograma ${id} (minuto ${foto.minuto}): la pantalla ha cambiado${leido.tabla ? ` · tabla de resultado: ${leido.resultado ? (leido.resultado === 'gane' ? 'VICTORIA' : 'DERROTA') : 'palabra sin plantilla'} (${leido.parecido.toFixed(2)})` : ''}.`);
+      // Con el resultado leído la partida ha acabado: seguir capturando cada
+      // `intervaloMs` hasta el minuto 25 era gastar batería en el móvil (y en
+      // las pruebas, con capturas cada 200 ms, ahogaba al propio proceso).
+      if (leido.resultado) {
+        pararVigilancia();
+        registrar('Resultado leído: dejo de vigilar el final.');
+      }
     } catch (e) {
       registrar(`Un fotograma del final no se pudo leer: ${e.message}`);
     } finally { capturandoFinal = false; }

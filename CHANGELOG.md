@@ -8,6 +8,31 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.38.0
+
+- Tu primera recomendación sube unos 100 píxeles en un móvil pequeño: en
+  360×640 ya asoma sin bajar (antes empezaba fuera de la pantalla) y en un
+  móvil normal queda más cerca de los compañeros. Se ha quitado lo que
+  ocupaba sitio sin decir nada nuevo.
+- La composición de cada equipo dice solo lo que FALTA («sin primera
+  línea», «sin control»): los «✓» de lo que ya está cubierto ocupaban una
+  fila entera.
+- En la fase de picks, «Leer solo» va dentro de «Ajustes»; debajo de «Leer
+  del juego» se sigue diciendo qué pasó con la última lectura. En la fase
+  de baneos, «Buscar héroe», «Leer del juego» y «Leer solo» van en una
+  sola fila.
+- La aclaración de que la probabilidad es un modelo pasa a la leyenda de
+  «Ver por qué»; junto a la estimación queda solo con quién y cuántos se
+  ven.
+- En el selector de héroes, los que no puedes tocar (del otro equipo o
+  baneados) van al final: antes ocupaban sitio entre las primeras caras.
+- El plan de la fase de baneos ya no hereda el estilo del plan de partida.
+- El lector deja de hacer capturas en cuanto lee VICTORIA o DERROTA: hasta
+  ahora seguía con una cada 10 segundos hasta el minuto 25, gastando
+  batería del móvil con la partida ya acabada.
+- El aviso «Partida apuntada sola» ya no se vuelve a montar al pasar a la
+  fase de baneos: el botón «Deshacer» podía irse de debajo del dedo.
+
 ## 3.37.0
 
 - El lector ya no deja metido al héroe que un jugador solo estaba mirando:

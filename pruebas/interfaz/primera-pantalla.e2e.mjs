@@ -2,7 +2,10 @@
  * La tarjeta nº1 en la primera pantalla. Cada bloque nuevo encima de las
  * tarjetas la fue empujando: en 390×844 asomaba 156 px. Se mide en tres
  * fases del draft y tres tamaños; en 390×844 y 430×932 tiene que caber
- * ENTERA. En 360×640 no cabe (medido desde 1.38.0) y solo se apunta.
+ * ENTERA. En 360×640 no cabe (medido desde 1.38.0), pero desde 3.38.0
+ * tiene que ASOMAR: estaba en 655–687 px de 640 (la composición con sus
+ * «✓», «Leer solo» en la fila de botones y la nota de la estimación en dos
+ * líneas) y bajó a 555–590.
  */
 import { servirDist, abrirNavegador, paginaCon, prueba, ok, terminar } from './navegador.mjs';
 
@@ -26,6 +29,10 @@ for (const [ancho, alto] of [[360, 640], [390, 844], [430, 932]]) {
       const r = await pagina.locator('.pick').first().evaluate((e) => { const b = e.getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom) }; });
       salida.push(`${f.e.length}v${f.a.length}: top=${r.top} bottom=${r.bottom}`);
       if (alto >= 844) ok(r.bottom <= alto, `en ${ancho}×${alto} con ${f.e.length}v${f.a.length} la tarjeta nº1 no cabe entera (top ${r.top}, bottom ${r.bottom})`);
+      else ok(r.top < alto, `en ${ancho}×${alto} con ${f.e.length}v${f.a.length} la tarjeta nº1 ni asoma (top ${r.top})`);
+      // La composición dice lo que FALTA: un «✓» por cada cosa cubierta no dice nada y ocupa una fila.
+      const comp = await pagina.locator('.comp').innerText().catch(() => '');
+      ok(!comp.includes('✓'), `la composición pinta lo que sí está cubierto: ${comp}`);
       await contexto.close();
     }
     console.log(`  ${ancho}×${alto}: ${salida.join(' · ')}`);

@@ -1,6 +1,11 @@
 import { tPorDefecto } from './tPorDefecto.js';
 
-/** Qué tiene cada equipo: de qué pega y si hay primera línea, control e inicio. En una tira. */
+/**
+ * Qué tiene cada equipo: de qué pega y lo que le FALTA (primera línea,
+ * control, inicio, peel). En una tira. Desde 3.38.0 lo que sí tiene no se
+ * pinta: con el draft a medias casi todo eran «✓» que no decían nada, en
+ * dos filas, y empujaban la tarjeta nº1 fuera de la pantalla (80 px de 640).
+ */
 export function Composicion({ comp, t = tPorDefecto }) {
   if (!comp) return null;
   const fila = (nombre, c) => {
@@ -11,8 +16,8 @@ export function Composicion({ comp, t = tPorDefecto }) {
       <div className="comp-fila">
         <span className="comp-quien">{nombre}</span>
         <span className="comp-dano">{dano}</span>
-        {['tanky', 'cc_hard', 'engage', 'peel'].map((tag) => (
-          <span key={tag} className={`comp-chip ${c.cubiertos[tag] ? 'si' : 'falta'}`}>{c.cubiertos[tag] ? '✓' : '✗'} {t(`comp.${tag}`)}</span>
+        {['tanky', 'cc_hard', 'engage', 'peel'].filter((tag) => !c.cubiertos[tag]).map((tag) => (
+          <span key={tag} className="comp-chip falta">{t('comp.sin', { que: t(`comp.${tag}`) })}</span>
         ))}
         {c.dobles.map((db) => <span key={db.rol} className="comp-chip doble">{t('comp.doble', { n: db.n, rol: t(`rol.${db.rol}`), pp: db.pp })}</span>)}
       </div>

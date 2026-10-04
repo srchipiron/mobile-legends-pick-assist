@@ -15,7 +15,7 @@ export function PlanDePartida({ plan, yo, t = tPorDefecto }) {
   const equipo = plan?.equipo ?? [];
   const tuyo = plan?.tuyo ?? [];
   if (!equipo.length && !tuyo.length) {
-    return <section className="plan"><p className="build-vacio">{t('partida.vacio')}</p></section>;
+    return <section className="plan-partida"><p className="build-vacio">{t('partida.vacio')}</p></section>;
   }
   const copiar = async () => {
     try {
@@ -24,7 +24,7 @@ export function PlanDePartida({ plan, yo, t = tPorDefecto }) {
     } catch { /* sin portapapeles, las frases siguen en pantalla */ }
   };
   return (
-    <section className="plan">
+    <section className="plan-partida">
       <p className="build-nucleo">{t('partida.titulo')}</p>
       {equipo.length > 0 && (
         <div className="plan-bloque">

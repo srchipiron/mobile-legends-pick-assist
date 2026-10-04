@@ -1111,6 +1111,12 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   mentía con la API caída… Ninguna prueba los veía porque las pruebas se
   escribieron con el caso que motivó cada cambio. Tras una tanda de
   versiones seguidas, una revisión así antes de seguir añadiendo.
+- **Dos componentes con la misma clase CSS** (3.36.0 → 3.38.0) — el plan
+  de partida se llamó `.plan`, que ya era el plan A·B·C de la fase de
+  baneos, y su `display: flex; flex-direction: column` se le aplicaba
+  también a ese. `comprobar/css.mjs` mira que toda clase usada tenga
+  estilo, no que una clase nueva no exista ya: antes de nombrar una clase,
+  `grep` en `styles.css` y en `src/`.
 
 ## El modelo (2.0)
 
@@ -1716,6 +1722,16 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   última por una referencia (`apuntarSolaAhora`) y solo marca si apuntó.
   Un efecto con pocas dependencias que llama a una función del render
   tiene que llamarla por referencia a la última.
+  Desde 3.38.0 la vigilancia PARA en cuanto reconoce el resultado
+  (`pararVigilancia` en `vigilarTic`): seguía capturando cada 10 s hasta
+  el minuto 25 con la partida acabada. Se vio porque `lector.e2e` (con
+  capturas cada 200 ms y el lector en el MISMO proceso de Node que
+  Playwright) ahogaba al proceso y el aviso de 20 s caducaba antes del
+  toque: fallaba igual con 3.37.0. Y el aviso de «Deshacer» va en el
+  mismo hueco del árbol en las dos fases (App.jsx), o React lo volvía a
+  montar al pasar a baneos. Una prueba de navegador con un servidor en su
+  proceso no puede medir plazos con esperas fijas: se mira dentro de la
+  página, en el instante que importa.
 - **Las capturas llenando el móvil** (3.26.0 → 3.34.0, «se me está
   llenando el móvil de fotos de partidas») — `lector.sh` las guardaba en
   `~/storage/downloads/capturas` para que salieran en la galería y se
@@ -2422,6 +2438,21 @@ cambiar: un número que se mueve se lee peor con prisa. Una barra apilada
 con los términos en la tarjeta: más alto en la nº1 o menos preciso que los
 puntos. Esqueletos de carga: instalada, la app y los datos salen de la
 caché del instalador al abrir, así que no hay espera que tapar.
+
+**La nº1 asoma en 360×640 (3.38.0)**, pedido: «mejoras, céntrate en UI».
+Medido con los altos de cada bloque en picks (1v0, 3v1, 5v4): la tarjeta
+nº1 empezaba en 655–687 px de 640 y queda en 555–590 (390×844: 607–623 →
+551–570). Lo que se quitó no decía nada nuevo: la composición pintaba un
+«✓» por cada cosa cubierta (dos filas, 80 px; ahora solo «sin …», 56–59);
+«Leer solo» iba en la fila de botones y a 360 la partía en dos (92 → 44 px;
+va en «Ajustes» en picks, en la fila en baneos, y la línea de estado de la
+última lectura sigue fuera); y la nota de la estimación llevaba en dos
+líneas la advertencia de que es un modelo (pasa a la leyenda de «Ver por
+qué», `leyenda.modelo`). `primera-pantalla.e2e` exige ahora que en
+360×640 la nº1 ASOME (`top < alto`) y que la composición no pinte «✓». Y
+el selector pone al final los héroes que no se pueden tocar (otro bando,
+baneados): ocupaban caras de las doce primeras, que es donde se midió el
+orden de 3.17.0 (`rapido.e2e`). Tres mutaciones.
 
 ## Los idiomas
 

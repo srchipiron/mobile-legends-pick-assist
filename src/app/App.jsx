@@ -405,8 +405,11 @@ export default function App() {
           lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
           pie={pie}
         />
-        {selector}
+        {/* El aviso en el MISMO sitio que en picks (segundo hijo): si no, al
+            cambiar de fase se volvía a montar y el botón se iba de debajo del
+            dedo (la partida apuntada sola reinicia el draft a baneos). */}
         {deshacer}
+        {selector}
       </>
     );
   }

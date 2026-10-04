@@ -102,8 +102,27 @@ await prueba('las caras del selector de picks van en el orden del motor y NO se 
   eq((await nombres()).join(','), visto.join(','), 'tocar una cara reordena la rejilla (se toca a contrarreloj)');
   // Cambiar a tu equipo recalcula para tu equipo, sin tu línea.
   await pagina.locator('.sheet-bandos [role=tab]').nth(1).click(); await pagina.waitForTimeout(250);
-  const aliados = motor.probablesDelBando(datos, { equipo: [], linea: 'roam', bando: 'aliados' }).map((x) => x.name);
+  // Los del otro equipo no se pueden tocar y van al final (3.38.0): el orden
+  // del motor se mira entre los que sí.
+  const fuera = new Set(await pagina.locator('.hero-grid button[disabled] .grid-nombre').allTextContents());
+  const aliados = motor.probablesDelBando(datos, { equipo: [], linea: 'roam', bando: 'aliados' }).map((x) => x.name).filter((n) => !fuera.has(n));
   eq((await nombres()).slice(0, 20).join(','), aliados.slice(0, 20).join(','), 'las caras de Tu equipo no van en el orden del motor');
+  await contexto.close();
+});
+
+await prueba('las caras que no se pueden tocar (del otro equipo, baneadas) van al final de la rejilla', async () => {
+  // 3.38.0: ocupaban sitio entre las doce primeras, que es lo que se ve sin bajar.
+  const { contexto, pagina } = await paginaCon(navegador, url, {
+    viewport: { width: 360, height: 740 },
+    almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: ['Fanny', 'Layla', 'Chou'], allies: ['Miya'], bans: ['Hirara', 'Marcel', 'Eudora'], enemyRoam: null, fase: 'picks' } },
+  });
+  await pagina.locator('.side.enemy .slot.empty').first().click(); await pagina.waitForTimeout(300);
+  for (const pestana of [0, 1]) {
+    if (pestana) { await pagina.locator('.sheet-bandos [role=tab]').nth(1).click(); await pagina.waitForTimeout(250); }
+    const fuera = await pagina.locator('.hero-grid button').evaluateAll((bs) => bs.map((b) => b.disabled));
+    const primeraFuera = fuera.indexOf(true);
+    ok(primeraFuera > 0 && fuera.slice(primeraFuera).every(Boolean), `pestaña ${pestana}: hay caras deshabilitadas entre las que se pueden tocar (primera en ${primeraFuera} de ${fuera.length})`);
+  }
   await contexto.close();
 });
 

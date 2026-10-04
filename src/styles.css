@@ -611,10 +611,11 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .build-cuerpo { padding: 12px 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
 .build-vacio { margin: 0; font-size: 13px; color: var(--muted); }
 
-/* El plan de partida (3.36.0), arriba de la hoja de objetos. Letra grande a
+/* El plan de partida (3.36.0), arriba de la hoja de objetos. Con su propia
+   clase (3.38.0): con `.plan` pisaba el plan A·B·C de la fase de baneos. Letra grande a
    proposito: se lee de un vistazo en mitad de una partida, para decirlo por
    voz. La barra amarilla marca lo del equipo; la azul, lo tuyo. */
-.plan { display: flex; flex-direction: column; gap: 10px; }
+.plan-partida { display: flex; flex-direction: column; gap: 10px; }
 .plan-bloque { display: flex; flex-direction: column; gap: 6px; }
 .plan-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .plan-sub { margin: 0; font-size: 13px; font-weight: 600; color: var(--text); }
@@ -849,7 +850,6 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   border: 1px solid transparent; border-radius: 999px; padding: 1px 8px; font-size: 11px; color: var(--muted);
   background: var(--glass);
 }
-.comp-chip.si { color: var(--text); }
 .comp-chip.falta { color: var(--enemy); background: rgba(255, 69, 58, 0.14); }
 .comp-chip.doble { color: var(--enemy); background: rgba(255, 69, 58, 0.14); font-family: var(--font-num); }
 

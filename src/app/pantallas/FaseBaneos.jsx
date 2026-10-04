@@ -24,8 +24,12 @@ export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, 
         <p className="fase-pista">{t('fase.baneosPista')}</p>
         <Bando t={t} titulo={t('app.baneados')} tipo="bans" picks={baneos} max={10} onAnadir={onAbrirSelector} onQuitar={onQuitar} />
         <ProximosBaneos t={t} items={proximos} baneos={baneos} visibles={baneos.length < 10 ? 8 : 0} tasaDe={tasaDe} rango={rangoDatos} onBanear={onBanear} onQuitar={onQuitar} />
-        {onLeer && <BotonLector estado={lector?.estado} aviso={lector?.aviso} ultimo={lector?.ultimo} auto={lectorAuto} onAuto={onLectorAuto} onLeer={onLeer} t={t} />}
-        <button className="reset" onClick={onAbrirSelector}>{t('fase.buscarBaneo')}</button>
+        {/* En una fila (3.38.0): apilados eran tres botones a lo ancho entre los
+            baneos probables e «Ir a los picks». */}
+        <div className="tools">
+          <button className="reset" onClick={onAbrirSelector}>{t('fase.buscarBaneo')}</button>
+          {onLeer && <BotonLector estado={lector?.estado} aviso={lector?.aviso} ultimo={lector?.ultimo} auto={lectorAuto} onAuto={onLectorAuto} onLeer={onLeer} t={t} />}
+        </div>
         <button className="reset primario" onClick={onAPicks}>{baneos.length ? t('fase.aPicks') : t('fase.sinBaneosAPicks')}</button>
         {/* Tu plan antes de que salga nadie: la mitad de las veces el plan A
             llega baneado (Marcel 55% de ban), y verlo aquí ahorra los 30

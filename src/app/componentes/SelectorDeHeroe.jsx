@@ -61,9 +61,13 @@ export function SelectorDeHeroe({
     const qk = nombreClave(q);
     const empieza = (h) => (qk && nombreClave(h.name).startsWith(qk) ? 1 : 0);
     const base = pool && soloPool && !q ? heroes.filter((h) => pool.has(h.name)) : heroes;
+    // Los que no se pueden tocar (del otro bando, baneados) van al final
+    // (3.38.0): sin buscar, ocupaban caras de las primeras doce, que es lo
+    // que se ve sin bajar y donde se midió el orden de 3.17.0.
+    const fuera = (h) => (cogidos.has(h.name) ? 1 : 0);
     return filtrarPorNombre(base, q)
-      .sort((a, b) => (q ? empieza(b) - empieza(a) : 0) || criterio(b) - criterio(a) || a.name.localeCompare(b.name));
-  }, [heroes, q, stats, orden, pool, soloPool]);
+      .sort((a, b) => fuera(a) - fuera(b) || (q ? empieza(b) - empieza(a) : 0) || criterio(b) - criterio(a) || a.name.localeCompare(b.name));
+  }, [heroes, q, stats, orden, pool, soloPool, cogidos]);
 
   const marcado = (h) => !!seleccionados?.has(h.name);
   const lleno = multi && seleccionados && seleccionados.size >= max;

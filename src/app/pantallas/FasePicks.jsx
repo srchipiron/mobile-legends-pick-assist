@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useRef, useState } from 'react';
 import { buscar } from '../../motor/nombres.js';
+import { tic } from '../tacto.js';
 import { winrateEnLinea } from '../../motor/draft.js';
 import { MINUTOS_PARA_RECORDAR } from '../estado/useDraft.js';
 import { useAhora } from '../estado/useAhora.js';
@@ -121,13 +122,22 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
             {/* Al final a propósito: las pruebas de navegador abren maestría e historial por posición. */}
             <button className="reset" onClick={() => abrir('meta')}>{t('meta.boton')}</button>
           </div>
+          {/* «Leer solo» se enciende UNA vez: vive aquí desde 3.38.0. Fuera, en
+              la fila de botones, partía la fila en dos a 360 px y empujaba la
+              tarjeta nº1 48 px más abajo. Lo que hace (la última lectura) se
+              sigue diciendo debajo de «Leer del juego». */}
+          {onLeer && onLectorAuto && (
+            <button className="reset lector-auto" style={{ marginTop: '14px' }} aria-pressed={lectorAuto} onClick={() => { tic(); onLectorAuto(!lectorAuto); }}>
+              {t(lectorAuto ? 'lector.autoSi' : 'lector.autoNo')}
+            </button>
+          )}
           <button className="reset" style={{ marginTop: '14px' }} onClick={onDiagnostico}>{t('app.diagnostico')}</button>
         </details>
 
         <div className="tools">
           <button className="reset" onClick={draft.vaciarConDeshacer}>{t('app.nuevoDraft')}</button>
           <button className="reset" disabled={!ranking.length} onClick={() => abrir('apuntar')}>{t('app.apuntar')}</button>
-          {onLeer && <BotonLector estado={lector?.estado} aviso={lector?.aviso} ultimo={lector?.ultimo} auto={lectorAuto} onAuto={onLectorAuto} onLeer={onLeer} t={t} />}
+          {onLeer && <BotonLector estado={lector?.estado} aviso={lector?.aviso} ultimo={lector?.ultimo} auto={lectorAuto} onLeer={onLeer} t={t} />}
         </div>
       </aside>
 

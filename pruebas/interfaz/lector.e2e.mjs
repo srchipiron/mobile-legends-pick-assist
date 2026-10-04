@@ -132,18 +132,41 @@ await prueba('lo leído viaja con la partida apuntada, para medir al lector', as
 });
 
 await prueba('«Leer solo»: con el modo encendido la app lee sin tocar nada, lo dice debajo, y el interruptor se recuerda', async () => {
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:lector-auto': true } });
+  // La primera lectura es la del lector de verdad; las siguientes, la MISMA
+  // respuesta al instante: aquí el lector corre en este proceso de Node y una
+  // lectura tarda 3–5 s, así que el aviso (DESHACER_MS, 6 s) caducaba solo
+  // antes de acabar la segunda y la prueba no distinguía eso de «se lo llevó».
+  let primera = null;
+  const repetir = (p) => p.route(`http://127.0.0.1:${PUERTO}/leer*`, async (ruta) => {
+    if (primera) return ruta.fulfill(primera);
+    const r = await ruta.fetch();
+    primera = { status: r.status(), headers: r.headers(), body: await r.text() };
+    return ruta.fulfill(primera);
+  });
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:lector-auto': true }, antes: repetir });
   // Sin tocar «Leer del juego»: en unos segundos el draft tiene lo de la tablet.
   let d = null;
   for (let i = 0; i < 60 && !d?.enemies?.length; i++) { await pagina.waitForTimeout(250); d = await leer(pagina); }
   eq(d?.enemies?.join(), VERDAD.enemigos.join(), `leyendo solo no mete los picks enemigos: ${JSON.stringify(d)}`);
   // Una lectura más que no añade nada (la siguiente, o un toque) no se lleva el «Deshacer» de la que sí añadió.
   eq(await pagina.locator('.aviso-deshacer').count(), 1, 'la lectura no deja «Deshacer»');
-  await boton(pagina).click(); await pagina.waitForTimeout(2500);
-  eq(await pagina.locator('.aviso-deshacer').count(), 1, 'una lectura sin nada nuevo se lleva el «Deshacer» de la anterior');
+  // Se mira DENTRO de la página en el instante en que acaba esa lectura.
+  await pagina.evaluate(() => {
+    window.__trasLeer = null;
+    new window.MutationObserver((cambios) => {
+      if (window.__trasLeer === null && cambios.some((c) => c.oldValue === 'true')) window.__trasLeer = document.querySelectorAll('.aviso-deshacer').length;
+    }).observe(document.querySelector('button.lector'), { attributes: true, attributeFilter: ['aria-busy'], attributeOldValue: true });
+  });
+  await boton(pagina).click();
+  await pagina.waitForFunction(() => window.__trasLeer !== null, null, { timeout: 30000 });
+  eq(await pagina.evaluate(() => window.__trasLeer), 1, 'una lectura sin nada nuevo se lleva el «Deshacer» de la anterior');
   eq(await pagina.locator('.lector-auto').getAttribute('aria-pressed'), 'true', 'el interruptor no está encendido');
   ok(/última lectura bien/.test(await pagina.locator('.lector-estado').innerText()), `no dice qué pasó con la última lectura: ${await pagina.locator('.lector-estado').innerText()}`);
+  // En picks el interruptor va en «Ajustes» (3.38.0: en la fila de botones
+  // empujaba la nº1 48 px a 360) y lo que pasó se sigue diciendo fuera.
+  eq(await pagina.locator('.tools .lector-auto').count(), 0, 'en picks el interruptor sigue en la fila de botones');
   // Apagarlo se recuerda al recargar.
+  await pagina.locator('.more > summary').click();
   await pagina.locator('.lector-auto').click(); await pagina.waitForTimeout(200);
   eq(await pagina.evaluate(() => localStorage.getItem('roam-picker:lector-auto')), 'false', 'apagarlo no se guarda');
   await pagina.reload({ waitUntil: 'networkidle' }); await pagina.waitForTimeout(400);

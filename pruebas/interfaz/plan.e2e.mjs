@@ -20,10 +20,10 @@ for (const ancho of [390, 320]) {
     await contexto.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(url).origin });
     const nombre = (await pagina.locator('.pick .pick-nombre-boton, .pick .pick-name').first().textContent()).trim();
     await pagina.locator('.pick-build').first().click(); await pagina.waitForTimeout(400);
-    eq(await pagina.locator('.sheet .plan').count(), 1, 'la hoja no trae el plan');
+    eq(await pagina.locator('.sheet .plan-partida').count(), 1, 'la hoja no trae el plan');
     // El plan va ARRIBA de la build.
     const orden = await pagina.locator('.build-cuerpo').evaluate((c) => [...c.children].map((e) => e.className));
-    ok(/plan/.test(orden[0] ?? ''), `el plan no va el primero: ${orden.join(' | ')}`);
+    ok(/plan-partida/.test(orden[0] ?? ''), `el plan no va el primero: ${orden.join(' | ')}`);
     const focus = pagina.locator('.plan-lista li[data-clave="partida.focus"]');
     eq(await focus.count(), 1, 'con tres enemigos no dice a quién hacer focus');
     const texto = await focus.textContent();
