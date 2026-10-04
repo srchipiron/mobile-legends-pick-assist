@@ -1,6 +1,91 @@
 {
- "actualizado": "2026-10-04T20:01:20.262Z",
+ "actualizado": "2026-10-04T20:19:47.762Z",
  "partidas": [
+  {
+   "t": 1791145140712,
+   "pick": "Estes",
+   "recomendados": [
+    "Edith",
+    "Floryn",
+    "Gloo"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.637,
+   "bans": [
+    "Marcel",
+    "Rafaela",
+    "Belerick",
+    "Khufra",
+    "Atlas",
+    "Yi Sun-shin",
+    "Hirara",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Angela",
+     "Guinevere",
+     "Zetian",
+     "Joy",
+     "Miya"
+    ],
+    "aliados": [
+     "Nolan",
+     "Masha",
+     "Brody",
+     "Aurora"
+    ],
+    "linea": "roam",
+    "rival": "Angela"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Rafaela",
+     "Belerick",
+     "Khufra",
+     "Atlas",
+     "Yi Sun-shin",
+     "Hirara",
+     "Eudora"
+    ],
+    "enemigos": [
+     "Angela",
+     "Guinevere",
+     "Zetian",
+     "Miya"
+    ],
+    "aliados": [
+     "Nolan",
+     "Masha",
+     "Aurora"
+    ],
+    "dudas": [
+     {
+      "hueco": "e3",
+      "candidato": "Esmeralda",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Brody",
+      "parecido": 0.79
+     }
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Joy",
+      "Joy",
+      "Joy"
+     ],
+     "sinEncontrar": [
+      "Miya",
+      "Miya"
+     ]
+    }
+   }
+  },
   {
    "t": 1791144067424,
    "pick": "Minotaur",
@@ -7336,6 +7421,12 @@
   {
    "cuando": "2026-10-04T20:01:20.262Z",
    "partidas": 159,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-04T20:19:47.762Z",
+   "partidas": 160,
    "heroes": 11,
    "incidencia": 11
   }
