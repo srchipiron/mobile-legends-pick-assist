@@ -1,6 +1,81 @@
 {
- "actualizado": "2026-10-04T20:19:47.762Z",
+ "actualizado": "2026-10-04T20:37:40.999Z",
  "partidas": [
+  {
+   "t": 1791146245833,
+   "pick": "Estes",
+   "recomendados": [
+    "Natalia",
+    "Diggie",
+    "Angela"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.592,
+   "bans": [
+    "Yi Sun-shin",
+    "Hirara",
+    "Marcel",
+    "Lukas",
+    "Paquito",
+    "Kaja",
+    "Masha",
+    "Rafaela",
+    "Aulus"
+   ],
+   "draft": {
+    "enemigos": [
+     "Carmilla",
+     "Julian",
+     "Kagura",
+     "Kimmy",
+     "Belerick"
+    ],
+    "aliados": [
+     "Zetian",
+     "Fredrinn"
+    ],
+    "linea": "roam",
+    "rival": "Carmilla"
+   },
+   "lector": {
+    "baneos": [
+     "Yi Sun-shin",
+     "Hirara",
+     "Marcel",
+     "Lukas",
+     "Paquito",
+     "Kaja",
+     "Masha",
+     "Rafaela",
+     "Aulus"
+    ],
+    "enemigos": [
+     "Carmilla",
+     "Julian",
+     "Kagura",
+     "Kimmy",
+     "Belerick"
+    ],
+    "aliados": [
+     "Zetian",
+     "Fredrinn"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "a2",
+      "candidato": "Wanwan",
+      "parecido": 0.8
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Gord",
+      "parecido": 0.76
+     }
+    ]
+   }
+  },
   {
    "t": 1791145140712,
    "pick": "Estes",
@@ -7427,6 +7502,12 @@
   {
    "cuando": "2026-10-04T20:19:47.762Z",
    "partidas": 160,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-04T20:37:40.999Z",
+   "partidas": 161,
    "heroes": 11,
    "incidencia": 11
   }
