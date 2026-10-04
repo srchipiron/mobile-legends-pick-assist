@@ -1,6 +1,146 @@
 {
- "actualizado": "2026-10-04T18:47:51.556Z",
+ "actualizado": "2026-10-04T19:17:24.556Z",
  "partidas": [
+  {
+   "t": 1791141430463,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Diggie",
+    "Minotaur",
+    "Belerick"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.51,
+   "bans": [
+    "Hirara",
+    "Eudora",
+    "Estes",
+    "Nana",
+    "Marcel",
+    "Aulus",
+    "Silvanna",
+    "Gloo",
+    "Khufra"
+   ],
+   "draft": {
+    "enemigos": [
+     "Odette",
+     "Lukas",
+     "Sora",
+     "Miya"
+    ],
+    "aliados": [
+     "Beatrix",
+     "Harley",
+     "Chou",
+     "Kadita"
+    ],
+    "linea": "roam"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Eudora",
+     "Estes",
+     "Nana",
+     "Marcel",
+     "Aulus",
+     "Silvanna",
+     "Gloo",
+     "Khufra"
+    ],
+    "enemigos": [
+     "Joy",
+     "Odette",
+     "Lukas",
+     "Wanwan"
+    ],
+    "aliados": [
+     "Beatrix",
+     "Harley",
+     "Chou"
+    ],
+    "tuyo": "Rafaela",
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Angela",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Joy",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Joy",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Joy",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Joy",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Angela",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Joy",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Joy",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Joy",
+      "parecido": 0.8
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Joy",
+      "parecido": 0.78
+     }
+    ]
+   }
+  },
   {
    "t": 1791139657285,
    "pick": "Rafaela",
@@ -7093,6 +7233,12 @@
   {
    "cuando": "2026-10-04T18:47:51.556Z",
    "partidas": 157,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-04T19:17:24.556Z",
+   "partidas": 158,
    "heroes": 11,
    "incidencia": 11
   }
