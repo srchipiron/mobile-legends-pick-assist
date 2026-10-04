@@ -1,6 +1,133 @@
 {
- "actualizado": "2026-10-04T17:35:37.962Z",
+ "actualizado": "2026-10-04T18:28:16.745Z",
  "partidas": [
+  {
+   "t": 1791138480144,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Gloo",
+    "Rafaela",
+    "Natalia"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.616,
+   "bans": [
+    "Eudora",
+    "Minotaur",
+    "Guinevere",
+    "Sun",
+    "Marcel",
+    "Belerick",
+    "Paquito",
+    "Hirara",
+    "Kaja",
+    "Aulus"
+   ],
+   "draft": {
+    "enemigos": [
+     "Minsitthar",
+     "Atlas",
+     "Popol and Kupa",
+     "X.Borg"
+    ],
+    "aliados": [
+     "Kadita",
+     "Miya",
+     "Gusion",
+     "Argus"
+    ],
+    "linea": "roam",
+    "rival": "Atlas"
+   },
+   "lector": {
+    "baneos": [
+     "Eudora",
+     "Minotaur",
+     "Guinevere",
+     "Sun",
+     "Marcel",
+     "Belerick",
+     "Paquito",
+     "Hirara",
+     "Kaja",
+     "Aulus"
+    ],
+    "enemigos": [
+     "Minsitthar",
+     "Atlas",
+     "X.Borg",
+     "Rafaela"
+    ],
+    "aliados": [
+     "Miya",
+     "Gusion"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Saber",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Saber",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Saber",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Saber",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Saber",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Gord",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Gord",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Gord",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Aamon",
+      "parecido": 0.63
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Chang'e",
+      "parecido": 0.72
+     }
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Popol and Kupa",
+      "Popol and Kupa",
+      "Popol and Kupa"
+     ],
+     "sinEncontrar": [
+      "X.Borg",
+      "X.Borg"
+     ]
+    }
+   }
+  },
   {
    "t": 1791135321066,
    "pick": "Rafaela",
@@ -6816,6 +6943,12 @@
   {
    "cuando": "2026-10-04T17:35:37.962Z",
    "partidas": 155,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-04T18:28:16.745Z",
+   "partidas": 156,
    "heroes": 11,
    "incidencia": 11
   }
