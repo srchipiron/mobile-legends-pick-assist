@@ -1,6 +1,144 @@
 {
- "actualizado": "2026-10-04T18:28:16.745Z",
+ "actualizado": "2026-10-04T18:47:51.556Z",
  "partidas": [
+  {
+   "t": 1791139657285,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Diggie",
+    "Rafaela",
+    "Angela"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.491,
+   "bans": [
+    "Aulus",
+    "Eudora",
+    "Hirara",
+    "Obsidia",
+    "Lukas",
+    "Yi Sun-shin",
+    "Estes",
+    "Marcel",
+    "Khufra"
+   ],
+   "draft": {
+    "enemigos": [
+     "Belerick",
+     "Gord",
+     "Alpha",
+     "Uranus",
+     "Karrie"
+    ],
+    "aliados": [
+     "Balmond",
+     "Kadita",
+     "Hanabi",
+     "Fredrinn"
+    ],
+    "linea": "roam",
+    "rival": "Belerick"
+   },
+   "lector": {
+    "baneos": [
+     "Aulus",
+     "Eudora",
+     "Hirara",
+     "Obsidia",
+     "Lukas",
+     "Yi Sun-shin",
+     "Estes",
+     "Marcel",
+     "Khufra"
+    ],
+    "enemigos": [
+     "Alpha",
+     "Wanwan"
+    ],
+    "aliados": [
+     "Balmond",
+     "Fredrinn"
+    ],
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Atlas",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Gord",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Gord",
+      "parecido": 0.8
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Gord",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Gord",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Lapu-Lapu",
+      "parecido": 0.54
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Wanwan",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Gord",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Gord",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Moskov",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Atlas",
+      "parecido": 0.76
+     }
+    ]
+   }
+  },
   {
    "t": 1791138480144,
    "pick": "Rafaela",
@@ -6949,6 +7087,12 @@
   {
    "cuando": "2026-10-04T18:28:16.745Z",
    "partidas": 156,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-04T18:47:51.556Z",
+   "partidas": 157,
    "heroes": 11,
    "incidencia": 11
   }
