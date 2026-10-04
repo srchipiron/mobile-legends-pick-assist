@@ -16,7 +16,7 @@ import { extraerLineas, extraerRol, extraerHabilidades } from '../../scripts/ing
 import { callRoute } from '../../scripts/ingesta/descarga.mjs';
 import { idPrincipal, esIdDeHeroe, recogerPares, relationMap, pick } from '../../scripts/ingesta/relaciones.mjs';
 import { serializar } from '../../scripts/ingesta/salida.mjs';
-import { kitsRehechos, fundirWinrateLinea } from '../../scripts/ingesta/fusion.mjs';
+import { kitsRehechos, fundirWinrateLinea, relacionesDeLaCorrida } from '../../scripts/ingesta/fusion.mjs';
 
 test('el rol y la línea se leen aunque vengan hondos en la respuesta', () => {
   // Forma REAL de la API: el titulo de la linea vive en el nivel 8. El limite de
@@ -331,20 +331,45 @@ test('las habilidades: control, área, quitar controles (por etiqueta Y por text
       { skillname: 'Eternal Evil', skilldesc: 'Argus removes all control effects, gains Death Immunity for 4s.', skilltag: tag('Death Immunity', 'Buff') },
       // Un héroe que se transforma repite la habilidad: una sola vez, con
       // lo que haga en cualquiera de sus formas.
-      { skillname: 'Reverse Time', skilldesc: 'Again.', skilltag: tag('Death Immunity') },
+      { skillname: 'Reverse Time', skilldesc: 'Again.', skilltag: tag('Invincible') },
       // «allies» sin quitar controles no es limpiar a los aliados.
       { skillname: 'Healing Wave', skilldesc: 'Heals nearby allies and stuns enemies.', skilltag: tag('CC', 'Heal') },
+      // Faramis: «clear all debuffs» también es quitar controles.
+      { skillname: 'Nether Realm', skilldesc: 'Allied heroes within clear all debuffs and gain Death Immunity.', skilltag: tag('Death Immunity', 'Buff') },
+    ] },
+    // Otra forma (los que se transforman): su primera habilidad es la PASIVA
+    // y no se lanza: ni «guárdala» ni nada (Nana, Masha).
+    { skilllist: [
+      { skillname: "Molina's Gift", skilldesc: 'Upon taking fatal damage, removes all debuffs from Nana.', skilltag: tag('Death Immunity') },
+      { skillname: 'Molina Blitz', skilldesc: 'Stuns enemies in an area.', skilltag: tag('CC', 'AOE') },
     ] },
   ] } } } }] } };
   const h = extraerHabilidades(ficha);
   eq(JSON.stringify(h), JSON.stringify([
     { n: 'Reverse Time', e: ['cc', 'inmortal'] },
     { n: 'Time Journey', e: ['aliados', 'limpia'] },
-    { n: 'Eternal Evil', e: ['inmortal', 'limpia'] },
+    // «Death Immunity» no es intocable: Argus no muere, pero se le controla.
+    { n: 'Eternal Evil', e: ['limpia'] },
     { n: 'Healing Wave', e: ['cc'] },
+    { n: 'Nether Realm', e: ['aliados', 'limpia'] },
+    { n: 'Molina Blitz', e: ['area', 'cc'] },
   ]));
   // Una ralentización no es control duro, ni un «Buff» nada.
   eq(extraerHabilidades({ skillname: 'Slow', skilldesc: 'Slows by 40%.', skilltag: tag('Slow', 'Buff') }).length, 0);
+});
+
+test('la matriz de la corrida: sin filas nuevas se queda la guardada; de otro rango, no se funde con la guardada (3.37.0)', () => {
+  const previo = { rank: 'glory', relaciones: { rango: 'mythic' }, counters: { A: { B: 0.51 }, C: { D: 0.49 } }, synergies: { A: { B: 0.5 } } };
+  const vacia = relacionesDeLaCorrida(previo, { counters: { A: {} }, synergies: {} }, 'glory');
+  ok(vacia.conservado && vacia.frescas === 0 && vacia.relations.counters.C.D === 0.49, `sin filas nuevas no conserva la guardada: ${JSON.stringify(vacia)}`);
+  // Mismo rango que lo guardado: se funde fila a fila (C se conserva).
+  const igual = relacionesDeLaCorrida(previo, { counters: { A: { B: 0.6 } }, synergies: { A: { B: 0.52 } } }, 'mythic');
+  ok(!igual.conservado && igual.frescas === 1 && igual.relations.counters.A.B === 0.6 && igual.relations.counters.C?.D === 0.49, `con el mismo rango no funde: ${JSON.stringify(igual.relations)}`);
+  // Otro rango: C no se queda con la fila de Mítico bajo la etiqueta de Gloria.
+  const otro = relacionesDeLaCorrida(previo, { counters: { A: { B: 0.6 } }, synergies: {} }, 'glory');
+  ok(otro.frescas === 1 && !otro.relations.counters.C && !otro.relations.synergies.A, `mezcla filas de dos rangos: ${JSON.stringify(otro.relations)}`);
+  // Un fichero de antes de 3.35.0 (sin `relaciones`) es del rango de la ingesta.
+  eq(relacionesDeLaCorrida({ rank: 'glory', counters: { C: { D: 0.4 } }, synergies: {} }, { counters: { A: { B: 0.6 } }, synergies: {} }, 'glory').relations.counters.C?.D, 0.4);
 });
 
 await terminar('scripts/ingesta');

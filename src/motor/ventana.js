@@ -159,10 +159,15 @@ export function elegirRango(statsByRank = {}, rango = null) {
  * marca en `relaciones` de roam-meta.json, que el diagnóstico enseña.
  */
 export const CELDAS_PARA_COMPARAR = 500;
-export function elegirRangoDeRelaciones({ pedidas = null, respaldo = null, rango = null, minimo = CELDAS_PARA_COMPARAR } = {}) {
+export function elegirRangoDeRelaciones({ pedidas = null, respaldo = null, rango = null, minimo = CELDAS_PARA_COMPARAR, filasMinimas = 0 } = {}) {
   const rangoRespaldo = RANGO_DE_RESPALDO[rango];
   const base = { rango, pedido: rango, coherencia: null, motivo: null };
   if (!rangoRespaldo || !pedidas || !respaldo) return base;
+  // Un respaldo a medias (la API cortó a mitad de la segunda tanda) no
+  // sustituye a una matriz entera (3.37.0): con 500 celdas en común bastaba
+  // con cuatro héroes de Mítico para tirar los 133 de Gloria.
+  const filas = Object.values(respaldo.counters ?? {}).filter((f) => Object.keys(f ?? {}).length).length;
+  if (filas < filasMinimas) return { ...base, motivo: `no se pudo bajar ${rangoRespaldo} entero (${filas} de ${filasMinimas} héroes) para comprobar ${rango}` };
   const coherencia = {};
   for (const m of ['counters', 'synergies']) {
     const xs = []; const ys = [];

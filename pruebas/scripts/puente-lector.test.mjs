@@ -297,6 +297,45 @@ test('los fotogramas del final de partida: solo cuentan cuando la pantalla cambi
   ok(diferencia(f1.pequena, f1.pequena) === 0 && diferencia(f1.pequena, f3.pequena) > CAMBIO_MINIMO && diferencia(f1.pequena, null) === 255, 'la diferencia no mide lo que debe');
 });
 
+test('la tabla del resultado entra aunque ya haya pantallas de sobra, también la de VICTORIA sin plantilla, y no se poda (3.37.0)', async () => {
+  // Dos pantallas de partida llenan el tope; luego la tabla. Sin plantillas
+  // (como la victoria de serie) la palabra no se reconoce, pero es la tabla.
+  // (Pantallas que el lector ve distintas entre sí: la de estadísticas, la del draft y la tabla.)
+  const pantallas = [pantallaDeFinal('finales/estadisticas.png'), png, pngTabla];
+  let i = 0;
+  const capturar = () => pantallas[Math.min(i++, pantallas.length - 1)];
+  const carpeta = mkdtempSync(join(tmpdir(), 'lector-tabla-'));
+  // La cabecera de tabla se conoce (la de serie) pero no hay plantilla de ninguna palabra: «tabla» sin resultado, como una victoria.
+  await conServidor({ capturar, carpeta, resultados: { ...plantillasDeSerie(), perdi: [] }, maximos: { ...MAX_CAPTURAS, fotograma: 0 }, vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 15, maxFotogramas: 2 } }, async (base) => {
+    await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde: Date.now() - 60000 }) });
+    ok(await hasta(async () => (await (await fetch(`${base}/final`, { headers: cab })).json()).fotogramas.some((f) => f.tabla)), 'la tabla sin plantilla no entra con el tope lleno');
+    const f = await (await fetch(`${base}/final`, { headers: cab })).json();
+    ok(f.fotogramas.length === 2 && f.fotogramas[1].tabla === true && f.fotogramas[1].resultado === null, `no sustituye a la última pantalla que no es tabla: ${JSON.stringify(f.fotogramas.map((x) => [x.id, x.tabla]))}`);
+    // Con el tope de capturas a cero, lo que /final enseña sigue en la carpeta (la del draft, no).
+    ok(f.fotogramas.every((x) => existsSync(join(carpeta, `${x.id}.png`))), 'se podan las capturas que la vigilancia aún enseña');
+    eq(readdirSync(carpeta).filter((n) => n.startsWith('fotograma-')).length, 2, `la poda no quita la pantalla que ya no se enseña: ${readdirSync(carpeta)}`);
+  });
+});
+
+test('una captura que llega tarde no entra en el final de OTRO draft (3.37.0)', async () => {
+  // La primera captura tarda (la tablet se estaba buscando); mientras, la app avisa de un draft nuevo.
+  let soltar;
+  const pendiente = new Promise((r) => { soltar = r; });
+  let llamadas = 0;
+  const capturar = () => { llamadas += 1; return llamadas === 1 ? pendiente : new Promise(() => {}); };
+  await conServidor({ capturar, vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 15 } }, async (base) => {
+    const vigilar = (desde) => fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde }) });
+    await vigilar(Date.now() - 60000);
+    ok(await hasta(() => llamadas === 1), 'no empieza a capturar');
+    const nuevo = Date.now();
+    await vigilar(nuevo);
+    soltar(png);
+    await new Promise((r) => setTimeout(r, 1500));
+    const f = await (await fetch(`${base}/final`, { headers: cab })).json();
+    ok(f.desde === nuevo && f.fotogramas.length === 0, `la captura del draft anterior entra en el nuevo: ${JSON.stringify({ desde: f.desde === nuevo, n: f.fotogramas.length })}`);
+  });
+});
+
 test('el final de partida: la tabla con «DEFEAT» viene con el resultado, lo contestado se aprende, y sin origen nada (3.32.0)', async () => {
   const carpeta = mkdtempSync(join(tmpdir(), 'lector-resultado-'));
   const guardados = [];

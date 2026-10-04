@@ -15,8 +15,8 @@ import {
 } from './extraccion.mjs';
 import { fetchRelations } from './relaciones.mjs';
 import {
-  anotarFrescura, conservarFichasPrevias, fechaDeLaCorrida, fundirRelaciones, fundirWinrateLinea,
-  kitsRehechos, leerPrevio, relacionesPrevias,
+  anotarFrescura, conservarFichasPrevias, fechaDeLaCorrida, fundirWinrateLinea,
+  kitsRehechos, leerPrevio, relacionesPrevias, relacionesDeLaCorrida,
 } from './fusion.mjs';
 import { bajarImagenes } from './imagenes.mjs';
 import { fetchTiers } from './tiers.mjs';
@@ -217,8 +217,9 @@ async function main() {
     console.warn(`  · retratos: fallo (${err.message}); la lista saldra sin caras`);
   }
 
-  const relations = relacionesPrevias(previous);
+  let relations = relacionesPrevias(previous);
   let relacionesFrescas = 0;
+  const filasCon = (m) => Object.values(m?.counters ?? {}).filter((f) => Object.keys(f ?? {}).length).length;
   // De qué rango salen cruces y parejas (3.35.0): el pedido, salvo que tras
   // un reinicio de temporada no se parezca al de respaldo (ventana.js).
   let relacionesRango = { rango: RANK, pedido: RANK, coherencia: null, motivo: null };
@@ -226,11 +227,15 @@ async function main() {
     const fresh = await fetchRelations(nombresPedir, stats, heroList, RANK);
     let elegidas = fresh;
     const respaldo = RANGO_DE_RESPALDO[RANK];
-    if (respaldo) {
+    // Sin nada del rango pedido (API caída) no se pide el de respaldo: no
+    // hay con qué compararlo y serían 266 peticiones para nada (3.37.0).
+    if (respaldo && filasCon(fresh)) {
       const diagPedido = diagnostics.relations;
       try {
         const otras = await fetchRelations(nombresPedir, stats, heroList, respaldo);
-        relacionesRango = elegirRangoDeRelaciones({ pedidas: fresh, respaldo: otras, rango: RANK, ...(CELDAS_MINIMAS != null ? { minimo: CELDAS_MINIMAS } : {}) });
+        // El respaldo tiene que llegar casi entero (el 90%, el mismo listón
+        // que `anotarFrescura`) para poder sustituir al pedido.
+        relacionesRango = elegirRangoDeRelaciones({ pedidas: fresh, respaldo: otras, rango: RANK, filasMinimas: Math.ceil(0.9 * nombresPedir.length), ...(CELDAS_MINIMAS != null ? { minimo: CELDAS_MINIMAS } : {}) });
         if (relacionesRango.rango === respaldo) elegidas = otras; else diagnostics.relations = diagPedido;
       } catch (err) {
         diagnostics.relations = diagPedido;
@@ -239,7 +244,11 @@ async function main() {
       const c = relacionesRango.coherencia;
       console.log(`  · cruces y parejas de ${relacionesRango.rango}${c ? ` (r con ${respaldo}: cruces ${c.counters?.toFixed(2) ?? '-'}, parejas ${c.synergies?.toFixed(2) ?? '-'})` : ''}${relacionesRango.motivo ? `: ${relacionesRango.motivo}` : ''}`);
     }
-    relacionesFrescas = fundirRelaciones(relations, elegidas);
+    const corrida = relacionesDeLaCorrida(previous, elegidas, relacionesRango.rango);
+    relations = corrida.relations;
+    relacionesFrescas = corrida.frescas;
+    // Sin ninguna fila nueva se queda la matriz guardada, y con ella su etiqueta.
+    if (corrida.conservado) relacionesRango = previous?.relaciones ?? { ...relacionesRango, motivo: 'sin cruces nuevos: se conservan los de la corrida anterior' };
     console.log(`  · relaciones: ${relacionesFrescas} héroes nuevos de ${nombresPedir.length} · ${Object.keys(relations.counters).length} con fila`);
   } catch (err) {
     console.warn(`  · relaciones: fallo (${err.message}); conservo las anteriores`);

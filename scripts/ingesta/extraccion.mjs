@@ -165,14 +165,23 @@ export function extraerTextos(node, out = [], depth = 0) {
  * de eso, una vez cada una (los héroes que se transforman repiten nombres).
  * Por FORMA: cualquier objeto con `skillname` y `skilldesc`.
  */
-const ETIQUETA_EFECTO = { CC: 'cc', AOE: 'area', 'Remove CC': 'limpia', 'CC Immune': 'limpia', Invincible: 'inmortal', 'Death Immunity': 'inmortal' };
-const LIMPIA_TEXTO = /remov\w* (?:all )?(?:debuffs|negative effects|control effects)|purif|cleans/i;
+// «Death Immunity» NO es intocable (3.37.0): Argus no muere pero se le
+// puede controlar, y el plan decía «guardad el control para cuando se le
+// acabe», que es justo lo contrario. Solo `Invincible` lo es.
+const ETIQUETA_EFECTO = { CC: 'cc', AOE: 'area', 'Remove CC': 'limpia', 'CC Immune': 'limpia', Invincible: 'inmortal' };
+const LIMPIA_TEXTO = /(?:remov|clear)\w* (?:all )?(?:debuffs|negative effects|control effects)|purif|cleans/i;
 const ALIADOS_TEXTO = /allied heroes|allies|teammates/i;
 export function extraerHabilidades(node) {
   const vistas = new Map();
-  const rec = (n, depth = 0) => {
+  // La PASIVA es la primera de cada lista de habilidades (en los que se
+  // transforman, la primera de cada forma): no se lanza, así que no se
+  // «guarda» ni se avisa de ella (3.37.0: «Guarda Molina's Gift» de Nana y
+  // «Primal Pact» de Masha, que saltan solas). No se distingue por el
+  // enfriamiento: la ulti de Gatotkaca tampoco lo trae.
+  const rec = (n, depth = 0, pasiva = false) => {
     if (depth > HONDURA || n == null || typeof n !== 'object') return;
     if (typeof n.skillname === 'string' && typeof n.skilldesc === 'string') {
+      if (pasiva) return;
       const nombre = n.skillname.trim();
       const texto = n.skilldesc.replace(/<[^>]*>/g, ' ');
       const efectos = new Set();
@@ -189,7 +198,8 @@ export function extraerHabilidades(node) {
       }
       return;
     }
-    for (const v of Array.isArray(n) ? n : Object.values(n)) rec(v, depth + 1);
+    if (Array.isArray(n)) n.forEach((v, i) => rec(v, depth + 1, i === 0));
+    else for (const v of Object.values(n)) rec(v, depth + 1);
   };
   rec(node);
   return [...vistas].map(([n, e]) => ({ n, e: [...e].sort() }));
@@ -279,8 +289,9 @@ export async function fetchFichas(heroes) {
       if (cara) ficha.cara = cara;
       const kitTexto = huellaTexto(data);
       if (kitTexto) ficha.kitTexto = kitTexto;
-      const habilidades = extraerHabilidades(data);
-      if (habilidades.length) ficha.habilidades = habilidades;
+      // Siempre que la ficha llegue, aunque vacía: un rework que quita el
+      // último control no puede dejar las habilidades de antes (3.37.0).
+      ficha.habilidades = extraerHabilidades(data);
       if (Object.keys(ficha).length) out[h.name] = ficha;
     } catch (err) {
       if (diagnostics.speciality.errores.length < 4) {

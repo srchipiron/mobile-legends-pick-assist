@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, corregirLectura, dudasDeLectura, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -26,6 +26,26 @@ test('mete los nombres reconocidos con la grafía del catálogo, sin repetir y s
   const filaVacia = nombresDeLectura({ aliados: filas, tuyoFila: 2 }, heroes);
   ok(filaVacia.tuyo === null && filaVacia.aliados.join() === 'Clint,Hirara,X Borg', `con tu fila sin reconocer los otros no entran: ${filaVacia.aliados} / ${filaVacia.tuyo}`);
   ok(dudasDeLectura({ aliados: filas }).some((d) => d.hueco === 'a3' && d.candidato === 'Saber'), 'las dudas no cubren tu equipo (a1–a5)');
+});
+
+test('por hueco: el héroe que un jugador solo miraba se cambia por el que coge, y un «?» no quita nada (3.37.0)', () => {
+  // Los huecos salen de la lectura en su orden, con null en los «?» y en tu fila.
+  const filas = [{ nombre: 'Clint' }, { nombre: 'Hirara' }, { nombre: null, candidato: 'Saber' }, { nombre: 'X.Borg' }, { nombre: 'Khufra' }];
+  const n = nombresDeLectura({ enemigos: [{ nombre: 'Clint' }, { nombre: null }, { nombre: 'X.Borg' }], aliados: filas, tuyoFila: 1 }, heroes);
+  eq(JSON.stringify(n.huecos), JSON.stringify({ enemigos: ['Clint', null, 'X Borg'], aliados: ['Clint', null, null, 'X Borg', 'Khufra'] }));
+  eq(JSON.stringify(nombresDeLectura({ aliados: filas, tuyoFila: -1 }, heroes).huecos.aliados), '[]', 'sin tu fila no hay huecos de compañeros');
+  // El hueco 2 enseñaba a Joy y ahora a Selena: Joy sale.
+  const a = cambiosDeHueco(['Clint', 'Joy', null], ['Clint', 'Selena', null]);
+  eq(a.quitar.join(), 'Joy');
+  eq(JSON.stringify(a.huecos), JSON.stringify(['Clint', 'Selena', null]));
+  // Un «?» (skins, o no reconocido) no quita a nadie y conserva lo de antes.
+  const b = cambiosDeHueco(['Clint', 'Joy'], [null, null]);
+  eq(b.quitar.length, 0);
+  eq(JSON.stringify(b.huecos), JSON.stringify(['Clint', 'Joy']));
+  // Si el de antes sale en otro hueco de esta lectura (se reordenó), se queda.
+  eq(cambiosDeHueco(['Joy', 'Clint'], ['Clint', 'Joy']).quitar.length, 0);
+  // Sin lectura anterior no hay nada que quitar.
+  eq(cambiosDeHueco([], ['Clint']).quitar.length, 0);
 });
 
 test('cada fallo del lector tiene su tipo', async () => {
@@ -99,6 +119,12 @@ test('el final de la partida: cuándo se pregunta al lector, cómo se le avisa, 
   ok(mio.suyo && mio.resultado === 'gane' && mio.resultadoEn === t0 + 900000, `el resultado no llega con su instante: ${JSON.stringify({ suyo: mio.suyo, resultado: mio.resultado, en: mio.resultadoEn })}`);
   eq(mio.fotogramas.map((f) => f.id).join(), Array.from({ length: MAX_FOTOGRAMAS }, (_, i) => `fotograma-${i}`).join(), 'repite ids o se pasa del tope de fotogramas');
   ok(!('tabla' in mio.fotogramas[1]), 'el fotograma guarda más de lo que se sube');
+  // La tabla del resultado entra aunque la app ya tenga el tope (3.37.0), en
+  // el sitio de la última que no es tabla.
+  const llenos = Array.from({ length: MAX_FOTOGRAMAS }, (_, i) => ({ id: `fotograma-v${i}`, minuto: 8, miniatura: 'M', tira: 'T' }));
+  const conTabla = fundirFinal(llenos, { desde: t0, resultado: null, fotogramas: [{ id: 'fotograma-tabla', minuto: 16, miniatura: 'M', tira: 'T', tabla: true }] }, { completoDesde: t0 });
+  ok(conTabla.fotogramas.length === MAX_FOTOGRAMAS && conTabla.fotogramas.at(-1).id === 'fotograma-tabla' && conTabla.fotogramas.at(-1).tabla === true, `la tabla no entra con el tope lleno: ${conTabla.fotogramas.map((f) => f.id)}`);
+  eq(fundirFinal(conTabla.fotogramas, { desde: t0, fotogramas: [{ id: 'fotograma-tabla', tabla: true }] }, { completoDesde: t0 }).fotogramas.filter((f) => f.id === 'fotograma-tabla').length, 1, 'la misma tabla entra dos veces');
   eq(fundirFinal([], { desde: t0, resultado: 'empate', fotogramas: [] }, { completoDesde: t0 }).resultado, null, 'un resultado que no es gane/perdi se toma por bueno');
   eq(fundirFinal([], null, { completoDesde: t0 }).suyo, false, 'sin respuesta se toma por de este draft');
   const ensenadas = [];

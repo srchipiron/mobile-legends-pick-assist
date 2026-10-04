@@ -419,6 +419,7 @@ export default {
   'donar.texto': 'Invítame a un café',
   'rango.todos': 'Todos',
   'rango.crucesDe': 'Los cruces, las parejas y las builds son siempre de {rango}; solo cambian los winrates.',
+  'rango.crucesYBuildsDe': 'Los cruces y las parejas son ahora de {rango} y las builds de {builds}; solo cambian los winrates.',
   'partida.boton': 'Plan y objetos',
   'partida.titulo': 'Plan de partida',
   'partida.equipo': 'Para el equipo · dilo por voz',

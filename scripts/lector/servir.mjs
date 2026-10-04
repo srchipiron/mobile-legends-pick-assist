@@ -86,14 +86,16 @@ export const RETENCION_CAPTURAS_MS = 3 * 3600000;
 export const MAX_CAPTURAS = { lectura: 40, fotograma: 24, resultado: 8 };
 const FICHERO_DE_CAPTURA = /^(lectura|fotograma|resultado)-[\w-]+?\.(png|json|verdad\.json)$/;
 const idDeCaptura = (n) => n.replace(/\.(png|json|verdad\.json)$/, '');
-export function podarCapturas(carpeta, { ahora = Date.now(), retencionMs = RETENCION_CAPTURAS_MS, maximos = MAX_CAPTURAS } = {}) {
+export function podarCapturas(carpeta, { ahora = Date.now(), retencionMs = RETENCION_CAPTURAS_MS, maximos = MAX_CAPTURAS, proteger = new Set() } = {}) {
   let nombres;
   try { nombres = readdirSync(carpeta); } catch { return 0; }
   let borrados = 0;
   for (const tipo of Object.keys(maximos)) {
     const ficheros = nombres.filter((n) => FICHERO_DE_CAPTURA.test(n) && n.startsWith(`${tipo}-`));
     // Los ids llevan la hora en el nombre: ordenados, los primeros son los más viejos.
-    const ids = [...new Set(ficheros.map(idDeCaptura))].sort();
+    // Lo que la vigilancia del final aún enseña (la tabla, sobre todo) no se
+    // poda (3.37.0): sin su PNG, `/resultado` no aprende nada de ella.
+    const ids = [...new Set(ficheros.map(idDeCaptura))].filter((id) => !proteger.has(id)).sort();
     const sobran = new Set(ids.slice(0, Math.max(0, ids.length - maximos[tipo])));
     for (const n of ficheros) {
       const ruta = join(carpeta, n);
@@ -223,14 +225,15 @@ export function leerCaptura(png, caras, aprendido = null) {
  * El servidor, con la captura inyectada: en Termux es `capturarTablet`, en
  * las pruebas una captura de fichero.
  */
-export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia = VIGILANCIA, ahora = () => Date.now() }) {
+export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS }) {
   let n = 0, aprendiendo = null;
   resultados = resultados ?? plantillasDeSerie();
   /** Guarda una captura y borra las que ya no hacen falta (3.34.0). */
-  const guardarCaptura = (nombre, contenido) => {
+  const podar = () => { if (carpeta) podarCapturas(carpeta, { ahora: ahora(), maximos, proteger: new Set((final?.fotogramas ?? []).map((f) => f.id)) }); };
+  const guardarCaptura = (nombre, contenido, { conPoda = true } = {}) => {
     if (!carpeta) return;
     writeFileSync(join(carpeta, nombre), contenido);
-    podarCapturas(carpeta, { ahora: ahora() });
+    if (conPoda) podar();
   };
   // El final de la partida que se está vigilando (3.33.0): uno a la vez, el del último draft completado.
   let final = null, capturandoFinal = false, relojFinal = null;
@@ -241,6 +244,9 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
     : { desde: null, activa: false, resultado: null, resultadoId: null, resultadoEn: null, fotogramas: [] });
   const vigilarTic = async () => {
     if (!final || !final.activa || capturandoFinal) return;
+    // El final que se vigilaba al empezar: si mientras se capturaba llegó un
+    // draft nuevo (`/vigilar`), esta captura no es suya (3.37.0).
+    const yo = final;
     const t = ahora();
     if (t > final.hasta) {
       pararVigilancia();
@@ -252,22 +258,34 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
     try {
       let png;
       try { png = await capturar(); } catch (e) {
+        if (final !== yo) return;
         final.fallos += 1;
         if (final.fallos === 1) registrar(`Vigilando el final no consigo la captura (${String(e.message).split('\n')[0]}): sigo intentándolo.`);
         return;
       }
+      if (final !== yo) return;
       const img = leerPng(png);
       const f = fotogramaDe(img, final.anterior);
       final.anterior = f.pequena;
       if (!f.cambio) return;
       const id = `fotograma-${new Date(t).toISOString().replace(/[:.]/g, '-')}`;
-      guardarCaptura(`${id}.png`, png);
+      // Se poda DESPUÉS de decidir qué pantallas se quedan: así no se borra
+      // la que acaba de entrar ni se guarda la que acaba de salir.
+      guardarCaptura(`${id}.png`, png, { conPoda: false });
       const leido = reconocerResultado(tiraDe(img), resultados);
       const foto = { id, minuto: Math.round((t - final.desde) / 60000), miniatura: f.miniatura, tira: f.tira, tabla: leido.tabla, resultado: leido.resultado, resultadoParecido: Math.round(leido.parecido * 1000) / 1000 };
-      // Hasta `maxFotogramas` pantallas distintas; la de la tabla viaja siempre (sustituye a la última).
+      // Hasta `maxFotogramas` pantallas distintas; la de la TABLA viaja
+      // siempre, reconozca o no la palabra (sustituye a la última que no sea
+      // tabla). Hasta 3.36.0 solo entraba con la palabra reconocida, y la de
+      // VICTORIA, que no tiene plantilla de serie, se perdía en cuanto había
+      // ocho pantallas: no se podía aprender nunca.
       if (final.fotogramas.length < vigilancia.maxFotogramas) final.fotogramas.push(foto);
-      else if (leido.resultado) final.fotogramas[final.fotogramas.length - 1] = foto;
+      else if (leido.tabla) {
+        const i = final.fotogramas.findLastIndex((x) => !x.tabla);
+        final.fotogramas[i >= 0 ? i : final.fotogramas.length - 1] = foto;
+      }
       if (leido.resultado && !final.resultado) Object.assign(final, { resultado: leido.resultado, resultadoId: id, resultadoEn: t });
+      podar();
       registrar(`Fotograma ${id} (minuto ${foto.minuto}): la pantalla ha cambiado${leido.tabla ? ` · tabla de resultado: ${leido.resultado ? (leido.resultado === 'gane' ? 'VICTORIA' : 'DERROTA') : 'palabra sin plantilla'} (${leido.parecido.toFixed(2)})` : ''}.`);
     } catch (e) {
       registrar(`Un fotograma del final no se pudo leer: ${e.message}`);

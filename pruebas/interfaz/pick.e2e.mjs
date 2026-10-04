@@ -140,9 +140,13 @@ await prueba('con el draft completo y sin pick fijado, a los diez minutos pregun
   // «Más tarde» la quita y la vuelve a programar.
   await aviso.getByRole('button', { name: 'Más tarde' }).click(); await pagina.waitForTimeout(300);
   eq(await pagina.locator('.recordatorio').count(), 0, '«Más tarde» no quita la pregunta');
-  ok((await leer(pagina, 'roam-picker:draft')).completoDesde > hace11min + 60 * 1000, '«Más tarde» no vuelve a programar la pregunta');
+  // Sin tocar `completoDesde` (3.37.0): es lo que identifica el draft ante la vigilancia del lector.
+  const pospuesto = await leer(pagina, 'roam-picker:draft');
+  ok(pospuesto.recordarDesde > hace11min + 60 * 1000 && pospuesto.completoDesde === hace11min, `«Más tarde» no vuelve a programar la pregunta, o reescribe el instante del draft: ${JSON.stringify({ r: pospuesto.recordarDesde, c: pospuesto.completoDesde })}`);
+  await pagina.reload({ waitUntil: 'networkidle' }); await pagina.waitForTimeout(500);
+  eq(await pagina.locator('.recordatorio').count(), 0, '«Más tarde» no sobrevive a una recarga');
   // Quitar un enemigo deja el draft incompleto: se borra el instante y no se pregunta.
-  await pagina.evaluate((t) => { const d = JSON.parse(localStorage.getItem('roam-picker:draft')); d.completoDesde = t; localStorage.setItem('roam-picker:draft', JSON.stringify(d)); }, hace11min);
+  await pagina.evaluate((t) => { const d = JSON.parse(localStorage.getItem('roam-picker:draft')); d.completoDesde = t; delete d.recordarDesde; localStorage.setItem('roam-picker:draft', JSON.stringify(d)); }, hace11min);
   await pagina.reload({ waitUntil: 'networkidle' }); await pagina.waitForTimeout(500);
   eq(await pagina.locator('.recordatorio').count(), 1, 'con la hora de antes no vuelve a preguntar');
   await pagina.locator('.side.enemy .slot .x').first().click(); await pagina.waitForTimeout(300);

@@ -30,7 +30,8 @@ import { perfilDeDano } from './catalogo.js';
  *    etiquetas de `heroes.json`, revisadas leyendo el kit entero (3.20.0).
  *
  * Los umbrales de «escaláis mejor» (dos héroes de diferencia) y «son todo
- * físico» (tres o más, ninguno mágico ni mixto) son decisiones de producto:
+ * físico» (cuatro enemigos o más, ninguno mágico ni mixto; el escalado,
+ * solo con los dos equipos enteros) son decisiones de producto:
  * cuándo merece la pena decirlo, no una calibración.
  */
 
@@ -102,13 +103,15 @@ export function planDePartida({ yo = null, aliados = [], enemigos = [], meta = {
   const saltador = [...enemigos].filter((e) => tiene(e, 'dive')).sort((a, b) => amenaza.get(b.name) - amenaza.get(a.name))[0];
   if (carry && saltador) equipo.push({ clave: 'partida.protegedA', params: { a: carry.name, e: saltador.name } });
   // 5. Quién escala mejor.
-  if (enemigos.length >= 3 && nos.length >= 3) {
+  // Solo con los dos equipos enteros (3.37.0): con dos picks tuyos por
+  // salir, los que faltan suelen ser justo los que escalan (oro, jungla).
+  if (enemigos.length >= 5 && nos.length >= 5) {
     const dif = nos.filter(escala).length - enemigos.filter(escala).length;
     if (dif >= DIFERENCIA_DE_ESCALADO) equipo.push({ clave: 'partida.aguantad', params: {} });
     else if (-dif >= DIFERENCIA_DE_ESCALADO) equipo.push({ clave: 'partida.cerradPronto', params: {} });
   }
   // 6. De qué pegan.
-  if (enemigos.length >= 3) {
+  if (enemigos.length >= 4) {
     const p = perfilDeDano(enemigos);
     if (p.fisico >= 3 && !p.magico && !p.mixto) equipo.push({ clave: 'partida.todoFisico', params: {} });
     else if (p.magico >= 3 && !p.fisico && !p.mixto) equipo.push({ clave: 'partida.todoMagico', params: {} });

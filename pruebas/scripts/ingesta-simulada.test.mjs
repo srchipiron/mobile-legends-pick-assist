@@ -89,6 +89,10 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   let academyVacia = false;
   let fallosCountersPendientes = 0;
   let gloriaRuidosa = false;
+  // Un rework que le quita el último control (3.37.0): la ficha llega sin nada que contar.
+  let kitSinControl = false;
+  // Mítico cortado a mitad de la segunda tanda (3.37.0): solo los primeros tres héroes traen cruces.
+  let miticoAMedias = false, miticosServidos = 0;
   const srv = createServer((req, res) => {
     const u = new URL(req.url, 'http://x');
     const ruta = u.pathname;
@@ -126,7 +130,12 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
         // Las habilidades con sus etiquetas de Moonton (3.36.0): una de
         // control en área por etiqueta y una que limpia a los aliados por
         // TEXTO (corto, para no mover la huella del kit).
-        skill: { skilllist: [
+        // La primera de la lista es la pasiva, como en la API: no cuenta.
+        skill: { skilllist: kitSinControl ? [
+          { skillname: 'Frigid Breath', skilldesc: 'Passive.', skilltag: [{ tagname: 'Buff' }] },
+          { skillname: 'Fatal Links', skilldesc: DESCRIPCION, skilltag: [{ tagname: 'Buff' }] },
+        ] : [
+          { skillname: 'Frigid Breath', skilldesc: 'Removes all debuffs on allies.', skilltag: [{ tagname: 'CC Immune' }] },
           { skillname: 'Fatal Links', skilldesc: DESCRIPCION, skilltag: [{ tagname: 'CC' }, { tagname: 'AOE' }] },
           { skillname: 'Time Journey', skilldesc: 'Removes all debuffs on allies.', skilltag: [{ tagname: 'Speed Up' }] },
         ] },
@@ -138,6 +147,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       marca('counters'); return json(pares(2));
     }
     const signoDelRango = gloriaRuidosa && u.searchParams.get('rank') === 'glory' ? -1 : 1;
+    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && miticoAMedias && u.searchParams.get('rank') === 'mythic' && ++miticosServidos > 3) return json({ data: { sub_hero: [] } });
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta)) { marca('academy'); marca(`academy:${u.searchParams.get('rank')}`); return json(academyVacia ? { data: { sub_hero: [] } } : pares(4, signoDelRango)); }
     if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta)) { marca('compat'); marca(`compat:${u.searchParams.get('rank')}`); return json(pares(3, signoDelRango)); }
     if (ruta === '/api/equipment/expanded') {
@@ -263,6 +273,8 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(d2.diagnostics.frescosRecursos?.relaciones, 0, `cuenta relaciones frescas sin haberlas descargado: ${JSON.stringify(d2.diagnostics.frescosRecursos)}`);
     const atlasAntes = JSON.stringify(guardada.counters?.Atlas ?? null);
     ok(atlasAntes !== 'null' && JSON.stringify(d2.counters?.Atlas) === atlasAntes, 'la fila de Atlas no se conserva héroe a héroe');
+    // Y la etiqueta de rango es la de la matriz conservada, no la pedida (3.37.0: salía la de Mítico etiquetada como Gloria).
+    eq(JSON.stringify(d2.relaciones ?? null), JSON.stringify(guardada.relaciones ?? null), `la matriz conservada sale con otra etiqueta de rango: ${JSON.stringify(d2.relaciones)}`);
     ok(comparar(d2, guardada).peores.some((p) => p.clave === 'relacionesFrescas'), 'el comparador acepta una corrida que no ha descargado la matriz');
 
     // Tercera corrida: la ficha de los héroes caída (speciality se conserva
@@ -319,7 +331,8 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(d4.counters.Atlas?.Khufra, 0.5123, `el cruce guardado no es el de Mítico (0.5123; el de Gloria ruidosa sería 0.4877): ${JSON.stringify(d4.counters.Atlas)}`);
     eq(d4.synergies.Atlas?.Tigreal, 0.48, `la pareja guardada no es la de Mítico (0.48; la de Gloria sería 0.52): ${JSON.stringify(d4.synergies.Atlas)}`);
     // Y con Gloria coherente (sirve lo mismo que Mítico), se queda Gloria.
-    gloriaRuidosa = false;
+    // Y Atlas, rehecho sin control: sus habilidades de antes no se quedan.
+    gloriaRuidosa = false; kitSinControl = true;
     const out5 = resolve(dir, 'gloria-buena.json');
     const r5 = await correrIngesta([
       '--base', `http://127.0.0.1:${puerto}/api`,
@@ -329,6 +342,19 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(r5.status, 0, `la corrida con Gloria coherente no acaba bien: ${(r5.stdout + r5.stderr).slice(-400)}`);
     const d5 = JSON.parse(readFileSync(out5, 'utf8'));
     ok(d5.relaciones?.rango === 'glory' && d5.relaciones?.coherencia?.counters > 0.99 && !d5.relaciones?.motivo, `con Gloria coherente no se queda Gloria: ${JSON.stringify(d5.relaciones)}`);
+    eq(JSON.stringify(d5.heroes.find((h) => h.name === 'Atlas')?.habilidades), '[]', 'una ficha que llega sin habilidades deja las de antes');
+    // Sexta: Gloria ruidosa pero Mítico llega a medias: no se cambia a un
+    // Mítico de tres héroes tirando la Gloria entera, y se dice por qué.
+    gloriaRuidosa = true; miticoAMedias = true;
+    const out6 = resolve(dir, 'mitico-a-medias.json');
+    const r6 = await correrIngesta([
+      '--base', `http://127.0.0.1:${puerto}/api`,
+      '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out6, '--celdas-para-comparar', '1', '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
+      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
+    ]);
+    eq(r6.status, 0, `la corrida con Mítico a medias no acaba bien: ${(r6.stdout + r6.stderr).slice(-400)}`);
+    const d6 = JSON.parse(readFileSync(out6, 'utf8'));
+    ok(d6.relaciones?.rango === 'glory' && /entero/.test(d6.relaciones?.motivo ?? ''), `cambia a un Mítico a medias: ${JSON.stringify(d6.relaciones)}`);
   } finally {
     srv.close();
     rmSync(dir, { recursive: true, force: true });

@@ -161,6 +161,12 @@ test('cruces y parejas: sin respaldo, sin datos o con pocas celdas en común se 
   const d = elegirRangoDeRelaciones({ pedidas: { counters: recorte(ruidosa.counters), synergies: recorte(ruidosa.synergies) }, respaldo: mitico, rango: 'glory' });
   eq(d.rango, 'glory');
   ok(/pocos cruces/.test(d.motivo) && d.coherencia.counters === null, JSON.stringify(d));
+  // Un respaldo a medias (la API cortó en la segunda tanda) no sustituye a
+  // una matriz entera, aunque lo que llegó no se parezca (3.37.0).
+  const aMedias = { counters: recorte(mitico.counters), synergies: recorte(mitico.synergies) };
+  const e = elegirRangoDeRelaciones({ pedidas: ruidosa, respaldo: { counters: { ...aMedias.counters, h1: mitico.counters.h1, h2: mitico.counters.h2, h3: mitico.counters.h3 }, synergies: mitico.synergies }, rango: 'glory', minimo: 100, filasMinimas: 27 });
+  ok(e.rango === 'glory' && /entero \(4 de 27/.test(e.motivo), `cambia a un respaldo a medias: ${JSON.stringify(e)}`);
+  eq(elegirRangoDeRelaciones({ pedidas: ruidosa, respaldo: mitico, rango: 'glory', filasMinimas: 27 }).rango, 'mythic', 'con el respaldo entero no cambia');
   // El mínimo es una muestra de verdad, no un puñado (870 celdas aquí > 500;
   // la matriz real tiene 17.556).
   ok(CELDAS_PARA_COMPARAR >= 200 && CELDAS_PARA_COMPARAR <= 870, `mínimo de celdas raro: ${CELDAS_PARA_COMPARAR}`);

@@ -402,6 +402,7 @@ export default {
   'donar.texto': 'Buy me a coffee',
   'rango.todos': 'All',
   'rango.crucesDe': 'Matchups, pairs and builds are always from {rango}; only the winrates change.',
+  'rango.crucesYBuildsDe': 'Matchups and pairs come from {rango} for now and builds from {builds}; only the winrates change.',
   'partida.boton': 'Plan & items',
   'partida.titulo': 'Game plan',
   'partida.equipo': 'For the team · say it on voice',

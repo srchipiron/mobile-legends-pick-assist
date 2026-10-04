@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T22:42:12.789Z",
+  "generatedAt": "2026-10-04T01:29:55.817Z",
   "rank": "glory",
   "relaciones": {
     "rango": "mythic",
@@ -66,13 +66,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/425a83af97169190c173587764c42650.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_71224844b111f09367df00e4f9b97753.png",
-      "speciality": [
-        "Chase",
-        "Finisher"
-      ],
-      "kitTexto": "690c2129",
       "habilidades": [
         {
           "n": "Falling Maple",
@@ -87,7 +80,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/425a83af97169190c173587764c42650.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_71224844b111f09367df00e4f9b97753.png",
+      "speciality": [
+        "Chase",
+        "Finisher"
+      ],
+      "kitTexto": "690c2129"
     },
     {
       "name": "Marcel",
@@ -102,27 +102,21 @@
         "magico": 0,
         "verdadero": 1
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/e7aa2ab69d15fc168b2d60b0e5ed0a1e.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_df7603c292198bf4aa7b551d401ea5c1.png",
-      "speciality": [
-        "Crowd Control",
-        "Support"
-      ],
-      "kitTexto": "b7b0e0a9",
       "habilidades": [
-        {
-          "n": "Platinum Snap",
-          "e": [
-            "cc"
-          ]
-        },
         {
           "n": "Golden Hour",
           "e": [
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/e7aa2ab69d15fc168b2d60b0e5ed0a1e.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_df7603c292198bf4aa7b551d401ea5c1.png",
+      "speciality": [
+        "Crowd Control",
+        "Support"
+      ],
+      "kitTexto": "b7b0e0a9"
     },
     {
       "name": "Sora",
@@ -137,13 +131,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/72a206fce9a1ec0063cb4d52053f47b9.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_8143d7bbd4318d7c699908e808de885e.png",
-      "speciality": [
-        "Charge",
-        "Burst"
-      ],
-      "kitTexto": "2cf9009b",
       "habilidades": [
         {
           "n": "Sundering Strike - Overwhelm",
@@ -157,7 +144,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/72a206fce9a1ec0063cb4d52053f47b9.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_8143d7bbd4318d7c699908e808de885e.png",
+      "speciality": [
+        "Charge",
+        "Burst"
+      ],
+      "kitTexto": "2cf9009b"
     },
     {
       "name": "Obsidia",
@@ -172,13 +166,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/ec1e6b75f6b975c30e30e40c2665d195.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_9c3daef5625bfade5c4cb8a219845dd3.png",
-      "speciality": [
-        "Finisher",
-        "Damage"
-      ],
-      "kitTexto": "57fc3783",
       "habilidades": [
         {
           "n": "Hunt of Bone",
@@ -186,7 +173,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/ec1e6b75f6b975c30e30e40c2665d195.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_9c3daef5625bfade5c4cb8a219845dd3.png",
+      "speciality": [
+        "Finisher",
+        "Damage"
+      ],
+      "kitTexto": "57fc3783"
     },
     {
       "name": "Zetian",
@@ -201,20 +195,7 @@
         "magico": 6,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/20a263b2adb23ad40cd955b9abf4bbb0.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_8d965f05f84621a51f799aeb8fb5f4c4.png",
-      "speciality": [
-        "Damage",
-        "Crowd Control"
-      ],
-      "kitTexto": "a1b9efdd",
       "habilidades": [
-        {
-          "n": "Celestial Armament",
-          "e": [
-            "cc"
-          ]
-        },
         {
           "n": "Fury of the Phoenix",
           "e": [
@@ -222,7 +203,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/20a263b2adb23ad40cd955b9abf4bbb0.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_8d965f05f84621a51f799aeb8fb5f4c4.png",
+      "speciality": [
+        "Damage",
+        "Crowd Control"
+      ],
+      "kitTexto": "a1b9efdd"
     },
     {
       "name": "Kalea",
@@ -237,13 +225,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/f81399d64f2916499d853ca32c85902d.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_4f3d4649e301c76daf20bd8811f3095c.png",
-      "speciality": [
-        "Control",
-        "Regen"
-      ],
-      "kitTexto": "9ba04e28",
       "habilidades": [
         {
           "n": "Tidal Strike",
@@ -257,7 +238,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/f81399d64f2916499d853ca32c85902d.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_4f3d4649e301c76daf20bd8811f3095c.png",
+      "speciality": [
+        "Control",
+        "Regen"
+      ],
+      "kitTexto": "9ba04e28"
     },
     {
       "name": "Lukas",
@@ -273,13 +261,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/12a9a4f54f6f0e874a7ee51a84eda237.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_63040edd0cf15b815fcbbb8b2d08d7f7.png",
-      "speciality": [
-        "Regen",
-        "Damage"
-      ],
-      "kitTexto": "948db1ad",
       "habilidades": [
         {
           "n": "Flash Combo",
@@ -287,7 +268,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/12a9a4f54f6f0e874a7ee51a84eda237.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_63040edd0cf15b815fcbbb8b2d08d7f7.png",
+      "speciality": [
+        "Regen",
+        "Damage"
+      ],
+      "kitTexto": "948db1ad"
     },
     {
       "name": "Suyou",
@@ -302,13 +290,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/1cce8eefc4b4c738e8aafafff6bafc84.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_5e4ca70172332dde18bb1dc158ccc5c8.png",
-      "speciality": [
-        "Chase",
-        "Burst"
-      ],
-      "kitTexto": "63bcdd35",
       "habilidades": [
         {
           "n": "Blade Surge",
@@ -316,7 +297,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/1cce8eefc4b4c738e8aafafff6bafc84.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_5e4ca70172332dde18bb1dc158ccc5c8.png",
+      "speciality": [
+        "Chase",
+        "Burst"
+      ],
+      "kitTexto": "63bcdd35"
     },
     {
       "name": "Zhuxin",
@@ -331,13 +319,6 @@
         "magico": 4,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/dc19d6cdeb31fe8889d51a0c184a069a.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_595f85bc90df3889c711c6b1f02dc02d.png",
-      "speciality": [
-        "Damage",
-        "Crowd Control"
-      ],
-      "kitTexto": "77514a95",
       "habilidades": [
         {
           "n": "Lantern Flare",
@@ -345,7 +326,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/dc19d6cdeb31fe8889d51a0c184a069a.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_595f85bc90df3889c711c6b1f02dc02d.png",
+      "speciality": [
+        "Damage",
+        "Crowd Control"
+      ],
+      "kitTexto": "77514a95"
     },
     {
       "name": "Chip",
@@ -360,13 +348,6 @@
         "magico": 4,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/da414e182f118de13f1dedd94f483838.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_79224d297f14377ad2eda8543432330d.png",
-      "speciality": [
-        "Support",
-        "Crowd Control"
-      ],
-      "kitTexto": "441e9ee4",
       "habilidades": [
         {
           "n": "Crash Course",
@@ -375,7 +356,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/da414e182f118de13f1dedd94f483838.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_79224d297f14377ad2eda8543432330d.png",
+      "speciality": [
+        "Support",
+        "Crowd Control"
+      ],
+      "kitTexto": "441e9ee4"
     },
     {
       "name": "Cici",
@@ -390,13 +378,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/c9d494c6996a58eb498eb50508310c04.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_60e3e11da30f404c77fff9e22d3bdc72.png",
-      "speciality": [
-        "Damage",
-        "Regen"
-      ],
-      "kitTexto": "00d08660",
       "habilidades": [
         {
           "n": "Curtain Call",
@@ -404,7 +385,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/c9d494c6996a58eb498eb50508310c04.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_60e3e11da30f404c77fff9e22d3bdc72.png",
+      "speciality": [
+        "Damage",
+        "Regen"
+      ],
+      "kitTexto": "00d08660"
     },
     {
       "name": "Nolan",
@@ -425,7 +413,8 @@
         "Chase",
         "Burst"
       ],
-      "kitTexto": "4aa5b3f3"
+      "kitTexto": "4aa5b3f3",
+      "habilidades": []
     },
     {
       "name": "Ixia",
@@ -440,13 +429,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/9ef19d373ea9fc1b8caa4398b5ca9927.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_f070d82521ecd2e14d4ef3f25880830a.png",
-      "speciality": [
-        "Finisher",
-        "Damage"
-      ],
-      "kitTexto": "e6c02f21",
       "habilidades": [
         {
           "n": "Star Helix",
@@ -454,7 +436,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/9ef19d373ea9fc1b8caa4398b5ca9927.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_f070d82521ecd2e14d4ef3f25880830a.png",
+      "speciality": [
+        "Finisher",
+        "Damage"
+      ],
+      "kitTexto": "e6c02f21"
     },
     {
       "name": "Arlott",
@@ -469,13 +458,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_6d9ab303b128e1b47191b7b697964f59.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_f666faa5ec6be5353f10dcd1d8997a42.png",
-      "speciality": [
-        "Charge",
-        "Burst"
-      ],
-      "kitTexto": "43bffe42",
       "habilidades": [
         {
           "n": "Dauntless Strike",
@@ -491,7 +473,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_6d9ab303b128e1b47191b7b697964f59.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_f666faa5ec6be5353f10dcd1d8997a42.png",
+      "speciality": [
+        "Charge",
+        "Burst"
+      ],
+      "kitTexto": "43bffe42"
     },
     {
       "name": "Novaria",
@@ -512,7 +501,8 @@
         "Burst",
         "Poke"
       ],
-      "kitTexto": "abaab5d6"
+      "kitTexto": "abaab5d6",
+      "habilidades": []
     },
     {
       "name": "Joy",
@@ -527,13 +517,6 @@
         "magico": 5,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_afa07253caa5217b4131a715713bba9e.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_d3a3a55c22000ae78732fed8cba2efef.png",
-      "speciality": [
-        "Chase",
-        "Damage"
-      ],
-      "kitTexto": "78d8c09d",
       "habilidades": [
         {
           "n": "Ha, Electrifying Beats!",
@@ -542,7 +525,14 @@
             "limpia"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_afa07253caa5217b4131a715713bba9e.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_d3a3a55c22000ae78732fed8cba2efef.png",
+      "speciality": [
+        "Chase",
+        "Damage"
+      ],
+      "kitTexto": "78d8c09d"
     },
     {
       "name": "Fredrinn",
@@ -557,13 +547,6 @@
         "magico": 0,
         "verdadero": 1
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_9313e28c691fba3c2b2360cd9b93e8d8.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_dea170bfd5f26c41fb04e5edf72afedb.png",
-      "speciality": [
-        "Damage",
-        "Chase"
-      ],
-      "kitTexto": "e7a73573",
       "habilidades": [
         {
           "n": "Brave Assault",
@@ -578,7 +561,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_9313e28c691fba3c2b2360cd9b93e8d8.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_dea170bfd5f26c41fb04e5edf72afedb.png",
+      "speciality": [
+        "Damage",
+        "Chase"
+      ],
+      "kitTexto": "e7a73573"
     },
     {
       "name": "Julian",
@@ -594,13 +584,6 @@
         "magico": 11,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_b32a51f43231f7fd1ff5b5851eea5937.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_5511ddc0ad2789b525f32ef572b017eb.png",
-      "speciality": [
-        "Chase",
-        "Magic Damage"
-      ],
-      "kitTexto": "3d4a50d9",
       "habilidades": [
         {
           "n": "Chain",
@@ -614,7 +597,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_b32a51f43231f7fd1ff5b5851eea5937.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_5511ddc0ad2789b525f32ef572b017eb.png",
+      "speciality": [
+        "Chase",
+        "Magic Damage"
+      ],
+      "kitTexto": "3d4a50d9"
     },
     {
       "name": "Xavier",
@@ -629,21 +619,14 @@
         "magico": 4,
         "verdadero": 0
       },
+      "habilidades": [],
       "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_bee7c5e35d0a74231a84424fdbf15ed4.png",
       "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_df0a8dfc494f85ed9bbc4512cc1e5d3c.png",
       "speciality": [
         "Damage",
         "Burst"
       ],
-      "kitTexto": "9b586e16",
-      "habilidades": [
-        {
-          "n": "Transcendence",
-          "e": [
-            "cc"
-          ]
-        }
-      ]
+      "kitTexto": "9b586e16"
     },
     {
       "name": "Melissa",
@@ -664,7 +647,8 @@
         "Finisher",
         "Damage"
       ],
-      "kitTexto": "28ad44cf"
+      "kitTexto": "28ad44cf",
+      "habilidades": []
     },
     {
       "name": "Yin",
@@ -680,13 +664,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_3bcf17fb31f887ab2e823b66dc2df75f.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_ee1c12c84f49514a30e405fb5c617796.png",
-      "speciality": [
-        "Burst",
-        "Control"
-      ],
-      "kitTexto": "f7d18101",
       "habilidades": [
         {
           "n": "Instant Blast",
@@ -700,7 +677,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_3bcf17fb31f887ab2e823b66dc2df75f.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_ee1c12c84f49514a30e405fb5c617796.png",
+      "speciality": [
+        "Burst",
+        "Control"
+      ],
+      "kitTexto": "f7d18101"
     },
     {
       "name": "Floryn",
@@ -715,13 +699,6 @@
         "magico": 2,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_2ea4c37787275d9058149da01ce44731.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_5a57b91e4914cf071a3849e352e530a5.png",
-      "speciality": [
-        "Poke",
-        "Guard"
-      ],
-      "kitTexto": "016b1b30",
       "habilidades": [
         {
           "n": "Sprout",
@@ -729,7 +706,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_2ea4c37787275d9058149da01ce44731.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_5a57b91e4914cf071a3849e352e530a5.png",
+      "speciality": [
+        "Poke",
+        "Guard"
+      ],
+      "kitTexto": "016b1b30"
     },
     {
       "name": "Edith",
@@ -745,13 +729,6 @@
         "magico": 7,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_601469050705b388ede03c435ee5af41.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_daab57918de01a6d5bb2ed6f45808a7e.png",
-      "speciality": [
-        "Control",
-        "Burst"
-      ],
-      "kitTexto": "b5879854",
       "habilidades": [
         {
           "n": "Earth Shatter",
@@ -772,7 +749,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_601469050705b388ede03c435ee5af41.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_daab57918de01a6d5bb2ed6f45808a7e.png",
+      "speciality": [
+        "Control",
+        "Burst"
+      ],
+      "kitTexto": "b5879854"
     },
     {
       "name": "Valentina",
@@ -787,13 +771,6 @@
         "magico": 2,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_4e16b65a234f6c7918bb4530a686882b.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_24837021ec9d7aaf41b13fa55b6d13c9.png",
-      "speciality": [
-        "Burst",
-        "Finisher"
-      ],
-      "kitTexto": "2bb2ba68",
       "habilidades": [
         {
           "n": "Shadow Strike",
@@ -801,7 +778,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_4e16b65a234f6c7918bb4530a686882b.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_24837021ec9d7aaf41b13fa55b6d13c9.png",
+      "speciality": [
+        "Burst",
+        "Finisher"
+      ],
+      "kitTexto": "2bb2ba68"
     },
     {
       "name": "Aamon",
@@ -822,7 +806,8 @@
         "Chase",
         "Magic Damage"
       ],
-      "kitTexto": "893dd9e9"
+      "kitTexto": "893dd9e9",
+      "habilidades": []
     },
     {
       "name": "Aulus",
@@ -838,13 +823,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/b48762283aac961dd0ef0792e021e1d4.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_1366d775809e52ee6526b5b58d93cdff.png",
-      "speciality": [
-        "Damage",
-        "Charge"
-      ],
-      "kitTexto": "e56487d9",
       "habilidades": [
         {
           "n": "The Power of Axe",
@@ -852,7 +830,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/b48762283aac961dd0ef0792e021e1d4.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_1366d775809e52ee6526b5b58d93cdff.png",
+      "speciality": [
+        "Damage",
+        "Charge"
+      ],
+      "kitTexto": "e56487d9"
     },
     {
       "name": "Natan",
@@ -867,13 +852,6 @@
         "magico": 5,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_237efea2b4aafa9b92874509cdb9ac77.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_da02742f59013365923b216420bc4082.png",
-      "speciality": [
-        "Burst",
-        "Magic Damage"
-      ],
-      "kitTexto": "33b8d823",
       "habilidades": [
         {
           "n": "Interference!",
@@ -881,7 +859,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_237efea2b4aafa9b92874509cdb9ac77.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_da02742f59013365923b216420bc4082.png",
+      "speciality": [
+        "Burst",
+        "Magic Damage"
+      ],
+      "kitTexto": "33b8d823"
     },
     {
       "name": "Phoveus",
@@ -896,13 +881,6 @@
         "magico": 3,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/24151f1e98ff418f095560a9aab0967f.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_af21c0dd8b5308c27974bff900803a9a.png",
-      "speciality": [
-        "Regen",
-        "Damage"
-      ],
-      "kitTexto": "743e633f",
       "habilidades": [
         {
           "n": "Dark Wave",
@@ -911,7 +889,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/24151f1e98ff418f095560a9aab0967f.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_af21c0dd8b5308c27974bff900803a9a.png",
+      "speciality": [
+        "Regen",
+        "Damage"
+      ],
+      "kitTexto": "743e633f"
     },
     {
       "name": "Beatrix",
@@ -932,7 +917,8 @@
         "Finisher",
         "Damage"
       ],
-      "kitTexto": "9f3da982"
+      "kitTexto": "9f3da982",
+      "habilidades": []
     },
     {
       "name": "Gloo",
@@ -948,13 +934,6 @@
         "magico": 5,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/fb9fbde149e6163b6d7889f407f4cfbb.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_c472fe0233e5ef84a3ac9ba4a229d09f.png",
-      "speciality": [
-        "Regen",
-        "Control"
-      ],
-      "kitTexto": "4184cc84",
       "habilidades": [
         {
           "n": "Slam, Slam",
@@ -970,7 +949,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/fb9fbde149e6163b6d7889f407f4cfbb.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_c472fe0233e5ef84a3ac9ba4a229d09f.png",
+      "speciality": [
+        "Regen",
+        "Control"
+      ],
+      "kitTexto": "4184cc84"
     },
     {
       "name": "Paquito",
@@ -985,13 +971,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/3e5e0ce79068174c33574ba9933476f9.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_5ab87805b9107b126a3bab64a8a199ad.png",
-      "speciality": [
-        "Chase",
-        "Damage"
-      ],
-      "kitTexto": "c9aed7ec",
       "habilidades": [
         {
           "n": "Knockout Strike",
@@ -999,7 +978,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/3e5e0ce79068174c33574ba9933476f9.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_5ab87805b9107b126a3bab64a8a199ad.png",
+      "speciality": [
+        "Chase",
+        "Damage"
+      ],
+      "kitTexto": "c9aed7ec"
     },
     {
       "name": "Mathilda",
@@ -1020,7 +1006,8 @@
         "Initiator",
         "Guard"
       ],
-      "kitTexto": "6d113455"
+      "kitTexto": "6d113455",
+      "habilidades": []
     },
     {
       "name": "Yve",
@@ -1035,13 +1022,6 @@
         "magico": 5,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/144295225471df7bc06424d457893215.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_d9b0a1d92b1c4b3643d6332fd66aa8e6.png",
-      "speciality": [
-        "Poke",
-        "Burst"
-      ],
-      "kitTexto": "2a63c66e",
       "habilidades": [
         {
           "n": "Real World Manipulation",
@@ -1049,7 +1029,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/144295225471df7bc06424d457893215.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_d9b0a1d92b1c4b3643d6332fd66aa8e6.png",
+      "speciality": [
+        "Poke",
+        "Burst"
+      ],
+      "kitTexto": "2a63c66e"
     },
     {
       "name": "Brody",
@@ -1064,13 +1051,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/290e866a90f83c1183f9a010bbfd3347.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_cbb309b63cdf838fce79bd9cb95d4ed7.png",
-      "speciality": [
-        "Burst",
-        "Finisher"
-      ],
-      "kitTexto": "5df5f48a",
       "habilidades": [
         {
           "n": "Corrosive Strike",
@@ -1078,7 +1058,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/290e866a90f83c1183f9a010bbfd3347.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_cbb309b63cdf838fce79bd9cb95d4ed7.png",
+      "speciality": [
+        "Burst",
+        "Finisher"
+      ],
+      "kitTexto": "5df5f48a"
     },
     {
       "name": "Barats",
@@ -1094,13 +1081,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_eb6f11e65a54a02f5f4abd4075a909ef.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_6495be044c2d28106e200f6918391d54.png",
-      "speciality": [
-        "Damage",
-        "Crowd Control"
-      ],
-      "kitTexto": "1c2af326",
       "habilidades": [
         {
           "n": "Missile \"Expert\"",
@@ -1115,7 +1095,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_eb6f11e65a54a02f5f4abd4075a909ef.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_6495be044c2d28106e200f6918391d54.png",
+      "speciality": [
+        "Damage",
+        "Crowd Control"
+      ],
+      "kitTexto": "1c2af326"
     },
     {
       "name": "Khaleed",
@@ -1131,13 +1118,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_0a51c125997cb625e2c90c182e92bded.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_540a6a9d343842674ce002082366ec9d.png",
-      "speciality": [
-        "Damage",
-        "Regen"
-      ],
-      "kitTexto": "aba353ba",
       "habilidades": [
         {
           "n": "Raging Sandstorm",
@@ -1145,7 +1125,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_0a51c125997cb625e2c90c182e92bded.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_540a6a9d343842674ce002082366ec9d.png",
+      "speciality": [
+        "Damage",
+        "Regen"
+      ],
+      "kitTexto": "aba353ba"
     },
     {
       "name": "Benedetta",
@@ -1166,7 +1153,8 @@
         "Chase",
         "Burst"
       ],
-      "kitTexto": "a57cae67"
+      "kitTexto": "a57cae67",
+      "habilidades": []
     },
     {
       "name": "Luo Yi",
@@ -1181,21 +1169,14 @@
         "magico": 4,
         "verdadero": 0
       },
+      "habilidades": [],
       "retrato": "https://akmweb.youngjoygame.com/web/gms/image/c62254ad3286303de2a9812f358a9cef.jpg",
       "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_26e03fd72532d11c7b32911b95b8d559.png",
       "speciality": [
         "Support",
         "Crowd Control"
       ],
-      "kitTexto": "cb36d397",
-      "habilidades": [
-        {
-          "n": "Duality",
-          "e": [
-            "cc"
-          ]
-        }
-      ]
+      "kitTexto": "cb36d397"
     },
     {
       "name": "Yu Zhong",
@@ -1210,13 +1191,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_b68588be95bb5f37fdbe4ef5fc4ca110.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_9823ce4fe5eb89c0082b24f6d5ea67f6.png",
-      "speciality": [
-        "Regen",
-        "Damage"
-      ],
-      "kitTexto": "a155b50c",
       "habilidades": [
         {
           "n": "Furious Dive",
@@ -1224,7 +1198,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_b68588be95bb5f37fdbe4ef5fc4ca110.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_9823ce4fe5eb89c0082b24f6d5ea67f6.png",
+      "speciality": [
+        "Regen",
+        "Damage"
+      ],
+      "kitTexto": "a155b50c"
     },
     {
       "name": "Popol and Kupa",
@@ -1240,13 +1221,6 @@
         "magico": 2,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_c9bd7235fb2c3e2c803827012d95e24d.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_1acbb23b9a50f412104047a60eb18808.png",
-      "speciality": [
-        "Push",
-        "Burst"
-      ],
-      "kitTexto": "d3c06512",
       "habilidades": [
         {
           "n": "Bite 'em, Kupa!",
@@ -1267,7 +1241,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_c9bd7235fb2c3e2c803827012d95e24d.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_1acbb23b9a50f412104047a60eb18808.png",
+      "speciality": [
+        "Push",
+        "Burst"
+      ],
+      "kitTexto": "d3c06512"
     },
     {
       "name": "Atlas",
@@ -1282,13 +1263,6 @@
         "magico": 4,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_4008429d9b3916968024691deeeddd8c.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_d974ac796678180ff8724b88e192898b.png",
-      "speciality": [
-        "Crowd Control",
-        "Initiator"
-      ],
-      "kitTexto": "cd36d302",
       "habilidades": [
         {
           "n": "Perfect Match",
@@ -1303,7 +1277,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_4008429d9b3916968024691deeeddd8c.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_d974ac796678180ff8724b88e192898b.png",
+      "speciality": [
+        "Crowd Control",
+        "Initiator"
+      ],
+      "kitTexto": "cd36d302"
     },
     {
       "name": "Carmilla",
@@ -1318,13 +1299,6 @@
         "magico": 3,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_304b50e6df0a906fc47fade01ef6703a.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_6fb8f120dafdcbc1b5da2a2667016ad5.png",
-      "speciality": [
-        "Crowd Control",
-        "Damage"
-      ],
-      "kitTexto": "b3356db5",
       "habilidades": [
         {
           "n": "Bloodbath",
@@ -1338,7 +1312,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_304b50e6df0a906fc47fade01ef6703a.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_6fb8f120dafdcbc1b5da2a2667016ad5.png",
+      "speciality": [
+        "Crowd Control",
+        "Damage"
+      ],
+      "kitTexto": "b3356db5"
     },
     {
       "name": "Cecilion",
@@ -1353,13 +1334,6 @@
         "magico": 5,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_f26fbce0ad1d2cc1c7183d95b794dd82.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_045399c265021d47da6512e6de20b64f.png",
-      "speciality": [
-        "Poke",
-        "Burst"
-      ],
-      "kitTexto": "9781ba63",
       "habilidades": [
         {
           "n": "Sanguine Claws",
@@ -1368,7 +1342,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_f26fbce0ad1d2cc1c7183d95b794dd82.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_045399c265021d47da6512e6de20b64f.png",
+      "speciality": [
+        "Poke",
+        "Burst"
+      ],
+      "kitTexto": "9781ba63"
     },
     {
       "name": "Silvanna",
@@ -1383,13 +1364,6 @@
         "magico": 5,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_4c91a50abb279d6926028252dde8cc72.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_5e7b297af7c6e32a420b897aa4998071.png",
-      "speciality": [
-        "Initiator",
-        "Magic Damage"
-      ],
-      "kitTexto": "2b236377",
       "habilidades": [
         {
           "n": "Cometic Lance",
@@ -1404,7 +1378,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_4c91a50abb279d6926028252dde8cc72.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_5e7b297af7c6e32a420b897aa4998071.png",
+      "speciality": [
+        "Initiator",
+        "Magic Damage"
+      ],
+      "kitTexto": "2b236377"
     },
     {
       "name": "Wanwan",
@@ -1419,13 +1400,6 @@
         "magico": 0,
         "verdadero": 1
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/fd3f8ef8f0a6e9566fc553b90520de3f.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_44bfa1dc44deb8d7620605faaa9ffae7.png",
-      "speciality": [
-        "Finisher",
-        "Burst"
-      ],
-      "kitTexto": "ec581506",
       "habilidades": [
         {
           "n": "Swallow’s Path",
@@ -1441,7 +1415,14 @@
             "limpia"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/fd3f8ef8f0a6e9566fc553b90520de3f.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_44bfa1dc44deb8d7620605faaa9ffae7.png",
+      "speciality": [
+        "Finisher",
+        "Burst"
+      ],
+      "kitTexto": "ec581506"
     },
     {
       "name": "Masha",
@@ -1456,27 +1437,21 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/e0f364feb04f22dcb60ee74bf760b4b1.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_4d79ba6ebb0a0f2bf542917f0b19d056.png",
-      "speciality": [
-        "Push",
-        "Damage"
-      ],
-      "kitTexto": "a0a4b7e8",
       "habilidades": [
-        {
-          "n": "Primal Pact",
-          "e": [
-            "limpia"
-          ]
-        },
         {
           "n": "Savage Maul",
           "e": [
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/e0f364feb04f22dcb60ee74bf760b4b1.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_4d79ba6ebb0a0f2bf542917f0b19d056.png",
+      "speciality": [
+        "Push",
+        "Damage"
+      ],
+      "kitTexto": "a0a4b7e8"
     },
     {
       "name": "Baxia",
@@ -1492,13 +1467,6 @@
         "magico": 4,
         "verdadero": 1
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_d99ab7d1585ef44c37cdb9ee7adc49e7.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_80e408203869ca99302af195ac4f756c.png",
-      "speciality": [
-        "Support",
-        "Damage"
-      ],
-      "kitTexto": "7fd85e50",
       "habilidades": [
         {
           "n": "Baxia-Shield Unity",
@@ -1506,7 +1474,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_d99ab7d1585ef44c37cdb9ee7adc49e7.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_80e408203869ca99302af195ac4f756c.png",
+      "speciality": [
+        "Support",
+        "Damage"
+      ],
+      "kitTexto": "7fd85e50"
     },
     {
       "name": "Lylia",
@@ -1527,7 +1502,8 @@
         "Push",
         "Damage"
       ],
-      "kitTexto": "31b4ee99"
+      "kitTexto": "31b4ee99",
+      "habilidades": []
     },
     {
       "name": "Dyrroth",
@@ -1549,7 +1525,8 @@
         "Charge",
         "Burst"
       ],
-      "kitTexto": "dad64341"
+      "kitTexto": "dad64341",
+      "habilidades": []
     },
     {
       "name": "Ling",
@@ -1564,13 +1541,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_af4312bae7aa443129b46a17b4dce3a6.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_017bade52b9fc94bbc12615de6d75c08.png",
-      "speciality": [
-        "Chase",
-        "Burst"
-      ],
-      "kitTexto": "3a936690",
       "habilidades": [
         {
           "n": "Tempest of Blades",
@@ -1578,7 +1548,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_af4312bae7aa443129b46a17b4dce3a6.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_017bade52b9fc94bbc12615de6d75c08.png",
+      "speciality": [
+        "Chase",
+        "Burst"
+      ],
+      "kitTexto": "3a936690"
     },
     {
       "name": "X.Borg",
@@ -1593,13 +1570,6 @@
         "magico": 0,
         "verdadero": 2
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/d717ccd7463699aab1c51c64a661555d.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_efe9c7ed8d8f84f1bb0f88a3e08de5fc.png",
-      "speciality": [
-        "Regen",
-        "Burst"
-      ],
-      "kitTexto": "c6fc1d8d",
       "habilidades": [
         {
           "n": "Fire Stake",
@@ -1613,7 +1583,14 @@
             "limpia"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/d717ccd7463699aab1c51c64a661555d.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_efe9c7ed8d8f84f1bb0f88a3e08de5fc.png",
+      "speciality": [
+        "Regen",
+        "Burst"
+      ],
+      "kitTexto": "c6fc1d8d"
     },
     {
       "name": "Terizla",
@@ -1628,13 +1605,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_a36e13e0037e386658e8f37886e3b4d3.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_c4bb270c28c7be663f57e993b0d6d3d8.png",
-      "speciality": [
-        "Burst",
-        "Crowd Control"
-      ],
-      "kitTexto": "4f131663",
       "habilidades": [
         {
           "n": "Penalty Zone",
@@ -1643,7 +1613,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_a36e13e0037e386658e8f37886e3b4d3.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_c4bb270c28c7be663f57e993b0d6d3d8.png",
+      "speciality": [
+        "Burst",
+        "Crowd Control"
+      ],
+      "kitTexto": "4f131663"
     },
     {
       "name": "Esmeralda",
@@ -1664,7 +1641,8 @@
         "Regen",
         "Mixed Damage"
       ],
-      "kitTexto": "28c54fff"
+      "kitTexto": "28c54fff",
+      "habilidades": []
     },
     {
       "name": "Guinevere",
@@ -1679,13 +1657,6 @@
         "magico": 8,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_fa3eb7ce3b07a4939cc2fc0720256928.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_901bdd5d4432a2c0290dfc71df615a5a.png",
-      "speciality": [
-        "Burst",
-        "Magic Damage"
-      ],
-      "kitTexto": "f6c04317",
       "habilidades": [
         {
           "n": "Spatial Migration",
@@ -1699,7 +1670,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_fa3eb7ce3b07a4939cc2fc0720256928.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_901bdd5d4432a2c0290dfc71df615a5a.png",
+      "speciality": [
+        "Burst",
+        "Magic Damage"
+      ],
+      "kitTexto": "f6c04317"
     },
     {
       "name": "Granger",
@@ -1720,7 +1698,8 @@
         "Burst",
         "Finisher"
       ],
-      "kitTexto": "71af5f73"
+      "kitTexto": "71af5f73",
+      "habilidades": []
     },
     {
       "name": "Khufra",
@@ -1735,13 +1714,6 @@
         "magico": 2,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_32c5294cfd0d1d51c8237d22e9c47a41.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_2fe99f4001211d18b3d2b95d0d3dc395.png",
-      "speciality": [
-        "Initiator",
-        "Crowd Control"
-      ],
-      "kitTexto": "652b5fc9",
       "habilidades": [
         {
           "n": "Tyrant's Revenge",
@@ -1756,7 +1728,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_32c5294cfd0d1d51c8237d22e9c47a41.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_2fe99f4001211d18b3d2b95d0d3dc395.png",
+      "speciality": [
+        "Initiator",
+        "Crowd Control"
+      ],
+      "kitTexto": "652b5fc9"
     },
     {
       "name": "Badang",
@@ -1772,27 +1751,21 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/87240e3a64b48f6f56f039eab6fe47d8.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_a81815e34246147b672d48209089da9c.png",
-      "speciality": [
-        "Charge",
-        "Burst"
-      ],
-      "kitTexto": "6b3cb138",
       "habilidades": [
-        {
-          "n": "Chivalry Fist",
-          "e": [
-            "cc"
-          ]
-        },
         {
           "n": "Fist Break",
           "e": [
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/87240e3a64b48f6f56f039eab6fe47d8.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_a81815e34246147b672d48209089da9c.png",
+      "speciality": [
+        "Charge",
+        "Burst"
+      ],
+      "kitTexto": "6b3cb138"
     },
     {
       "name": "Faramis",
@@ -1808,13 +1781,6 @@
         "magico": 4,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_7c615f5f64784ed39f8862a41d9cd3fb.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_04e575d648d7f7ac1174f4369595c3a2.png",
-      "speciality": [
-        "Guard",
-        "Charge"
-      ],
-      "kitTexto": "f63188ee",
       "habilidades": [
         {
           "n": "Shadow Stampede",
@@ -1825,10 +1791,18 @@
         {
           "n": "Nether Realm",
           "e": [
-            "inmortal"
+            "aliados",
+            "limpia"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_7c615f5f64784ed39f8862a41d9cd3fb.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_04e575d648d7f7ac1174f4369595c3a2.png",
+      "speciality": [
+        "Guard",
+        "Charge"
+      ],
+      "kitTexto": "f63188ee"
     },
     {
       "name": "Kadita",
@@ -1843,13 +1817,6 @@
         "magico": 4,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/bbebde1b760c7161a2130d951cabcc65.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_99c0a77d0e01b06ad3f4351f8ef2869c.png",
-      "speciality": [
-        "Burst",
-        "Charge"
-      ],
-      "kitTexto": "96f6ccd7",
       "habilidades": [
         {
           "n": "Breath of the Ocean",
@@ -1864,7 +1831,14 @@
             "inmortal"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/bbebde1b760c7161a2130d951cabcc65.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_99c0a77d0e01b06ad3f4351f8ef2869c.png",
+      "speciality": [
+        "Burst",
+        "Charge"
+      ],
+      "kitTexto": "96f6ccd7"
     },
     {
       "name": "Minsitthar",
@@ -1880,20 +1854,7 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/ba291a006ee4426e416307d41b1b979c.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_c5d24a1dad6cef21de2698a4ed1d80ce.png",
-      "speciality": [
-        "Initiator",
-        "Crowd Control"
-      ],
-      "kitTexto": "5f766012",
       "habilidades": [
-        {
-          "n": "Mark of the King",
-          "e": [
-            "cc"
-          ]
-        },
         {
           "n": "Spear of Glory",
           "e": [
@@ -1906,7 +1867,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/ba291a006ee4426e416307d41b1b979c.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_c5d24a1dad6cef21de2698a4ed1d80ce.png",
+      "speciality": [
+        "Initiator",
+        "Crowd Control"
+      ],
+      "kitTexto": "5f766012"
     },
     {
       "name": "Harith",
@@ -1927,7 +1895,8 @@
         "Chase",
         "Damage"
       ],
-      "kitTexto": "4648cf31"
+      "kitTexto": "4648cf31",
+      "habilidades": []
     },
     {
       "name": "Thamuz",
@@ -1948,7 +1917,8 @@
         "Chase",
         "Damage"
       ],
-      "kitTexto": "2f1a2f11"
+      "kitTexto": "2f1a2f11",
+      "habilidades": []
     },
     {
       "name": "Kimmy",
@@ -1964,13 +1934,6 @@
         "magico": 6,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/f920245e53c4e54ee445c03f6c26ed2f.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_61295dfefd369004e5e4a7f4fc86647b.png",
-      "speciality": [
-        "Damage",
-        "Magic Damage"
-      ],
-      "kitTexto": "6c3e72f5",
       "habilidades": [
         {
           "n": "Starlium Beam",
@@ -1985,7 +1948,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/f920245e53c4e54ee445c03f6c26ed2f.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_61295dfefd369004e5e4a7f4fc86647b.png",
+      "speciality": [
+        "Damage",
+        "Magic Damage"
+      ],
+      "kitTexto": "6c3e72f5"
     },
     {
       "name": "Belerick",
@@ -2000,13 +1970,6 @@
         "magico": 5,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_765f9c9b8fa35be202c07a3159c4e90b.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_5f2a9eca0bafd4ed8dc39a93c771b3af.png",
-      "speciality": [
-        "Crowd Control",
-        "Regen"
-      ],
-      "kitTexto": "562a5c45",
       "habilidades": [
         {
           "n": "Ancient Seed",
@@ -2022,7 +1985,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_765f9c9b8fa35be202c07a3159c4e90b.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_5f2a9eca0bafd4ed8dc39a93c771b3af.png",
+      "speciality": [
+        "Crowd Control",
+        "Regen"
+      ],
+      "kitTexto": "562a5c45"
     },
     {
       "name": "Hanzo",
@@ -2037,13 +2007,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/dc8ef571d8894657aa343d2aa6f12855.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_d2d28d2fcb060726fa27553920ca1a33.png",
-      "speciality": [
-        "Poke",
-        "Burst"
-      ],
-      "kitTexto": "ff3e1522",
       "habilidades": [
         {
           "n": "Forbidden Ninjutsu: Black Mist",
@@ -2052,7 +2015,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/dc8ef571d8894657aa343d2aa6f12855.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_d2d28d2fcb060726fa27553920ca1a33.png",
+      "speciality": [
+        "Poke",
+        "Burst"
+      ],
+      "kitTexto": "ff3e1522"
     },
     {
       "name": "Lunox",
@@ -2067,13 +2037,6 @@
         "magico": 11,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_159b92373e78e0bb090036e5d652cdd3.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_e162688afdcaf3f6498af30badfe31c5.png",
-      "speciality": [
-        "Burst",
-        "Damage"
-      ],
-      "kitTexto": "5c6c060f",
       "habilidades": [
         {
           "n": "Order & Chaos",
@@ -2088,7 +2051,14 @@
             "inmortal"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_159b92373e78e0bb090036e5d652cdd3.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_e162688afdcaf3f6498af30badfe31c5.png",
+      "speciality": [
+        "Burst",
+        "Damage"
+      ],
+      "kitTexto": "5c6c060f"
     },
     {
       "name": "Leomord",
@@ -2103,13 +2073,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/dc25ce7fbbd35291871ed9c953f7f001.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_554cdf13a7587fe08c5deed60132c61c.png",
-      "speciality": [
-        "Chase",
-        "Burst"
-      ],
-      "kitTexto": "a88a2f4a",
       "habilidades": [
         {
           "n": "Phantom Charge",
@@ -2117,7 +2080,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/dc25ce7fbbd35291871ed9c953f7f001.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_554cdf13a7587fe08c5deed60132c61c.png",
+      "speciality": [
+        "Chase",
+        "Burst"
+      ],
+      "kitTexto": "a88a2f4a"
     },
     {
       "name": "Vale",
@@ -2132,13 +2102,6 @@
         "magico": 5,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_15e6ed1cab9b75f45700ea822d5d1945.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_2a7a8d1531a1c4f8524880413535348d.png",
-      "speciality": [
-        "Burst",
-        "Crowd Control"
-      ],
-      "kitTexto": "33977828",
       "habilidades": [
         {
           "n": "Windblow",
@@ -2154,7 +2117,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_15e6ed1cab9b75f45700ea822d5d1945.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_2a7a8d1531a1c4f8524880413535348d.png",
+      "speciality": [
+        "Burst",
+        "Crowd Control"
+      ],
+      "kitTexto": "33977828"
     },
     {
       "name": "Claude",
@@ -2175,7 +2145,8 @@
         "Burst",
         "Chase"
       ],
-      "kitTexto": "d079e9d7"
+      "kitTexto": "d079e9d7",
+      "habilidades": []
     },
     {
       "name": "Aldous",
@@ -2190,13 +2161,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_a97e28d45655ed7d3ad0c45b05671d85.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_0eb32187d08f14779585a8be53b83f01.png",
-      "speciality": [
-        "Burst",
-        "Support"
-      ],
-      "kitTexto": "e96bf5be",
       "habilidades": [
         {
           "n": "Contract: Explosion",
@@ -2204,7 +2168,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_a97e28d45655ed7d3ad0c45b05671d85.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_0eb32187d08f14779585a8be53b83f01.png",
+      "speciality": [
+        "Burst",
+        "Support"
+      ],
+      "kitTexto": "e96bf5be"
     },
     {
       "name": "Selena",
@@ -2220,13 +2191,6 @@
         "magico": 8,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_81d132f8c7b61f62a176388fa8751b3e.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_c3f967121519ae40509c5b2fdf52b19d.png",
-      "speciality": [
-        "Initiator",
-        "Finisher"
-      ],
-      "kitTexto": "e5f73e8c",
       "habilidades": [
         {
           "n": "Abyssal Arrow",
@@ -2234,7 +2198,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_81d132f8c7b61f62a176388fa8751b3e.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_c3f967121519ae40509c5b2fdf52b19d.png",
+      "speciality": [
+        "Initiator",
+        "Finisher"
+      ],
+      "kitTexto": "e5f73e8c"
     },
     {
       "name": "Kaja",
@@ -2249,13 +2220,6 @@
         "magico": 4,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/d5baf8eef3ca4381a929451dc2b68207.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_d558bb881e18a070eaeda1e1fdc248a8.png",
-      "speciality": [
-        "Initiator",
-        "Charge"
-      ],
-      "kitTexto": "ef720566",
       "habilidades": [
         {
           "n": "Soaring Wings",
@@ -2269,7 +2233,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/d5baf8eef3ca4381a929451dc2b68207.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_d558bb881e18a070eaeda1e1fdc248a8.png",
+      "speciality": [
+        "Initiator",
+        "Charge"
+      ],
+      "kitTexto": "ef720566"
     },
     {
       "name": "Chang'e",
@@ -2290,7 +2261,8 @@
         "Poke",
         "Burst"
       ],
-      "kitTexto": "aac76ffe"
+      "kitTexto": "aac76ffe",
+      "habilidades": []
     },
     {
       "name": "Hanabi",
@@ -2305,13 +2277,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/bcf943a06ac3bc606f88d8575d9a7c61.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_8a9c1966feb34e85d7bdcc1ed01ffb5d.png",
-      "speciality": [
-        "Finisher",
-        "Damage"
-      ],
-      "kitTexto": "497e443b",
       "habilidades": [
         {
           "n": "Forbidden Jutsu: Higanbana",
@@ -2320,7 +2285,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/bcf943a06ac3bc606f88d8575d9a7c61.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_8a9c1966feb34e85d7bdcc1ed01ffb5d.png",
+      "speciality": [
+        "Finisher",
+        "Damage"
+      ],
+      "kitTexto": "497e443b"
     },
     {
       "name": "Uranus",
@@ -2340,7 +2312,8 @@
       "speciality": [
         "Regen"
       ],
-      "kitTexto": "08783276"
+      "kitTexto": "08783276",
+      "habilidades": []
     },
     {
       "name": "Martis",
@@ -2356,13 +2329,6 @@
         "magico": 0,
         "verdadero": 1
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_1277b67d1d03c5584a874d00b9a593b3.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_cc8124b0eb6ca22d950b000744d69fbf.png",
-      "speciality": [
-        "Finisher",
-        "Charge"
-      ],
-      "kitTexto": "89ec0851",
       "habilidades": [
         {
           "n": "Asura Aura",
@@ -2371,7 +2337,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_1277b67d1d03c5584a874d00b9a593b3.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_cc8124b0eb6ca22d950b000744d69fbf.png",
+      "speciality": [
+        "Finisher",
+        "Charge"
+      ],
+      "kitTexto": "89ec0851"
     },
     {
       "name": "Valir",
@@ -2386,20 +2359,7 @@
         "magico": 6,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_3bd3fc834e5885c2a28956766e10151c.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_bf16690876761b80822df90eb3320d69.png",
-      "speciality": [
-        "Damage",
-        "Guard"
-      ],
-      "kitTexto": "98483549",
       "habilidades": [
-        {
-          "n": "Ashing",
-          "e": [
-            "cc"
-          ]
-        },
         {
           "n": "Searing Torrent",
           "e": [
@@ -2413,7 +2373,14 @@
             "limpia"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_3bd3fc834e5885c2a28956766e10151c.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_bf16690876761b80822df90eb3320d69.png",
+      "speciality": [
+        "Damage",
+        "Guard"
+      ],
+      "kitTexto": "98483549"
     },
     {
       "name": "Gusion",
@@ -2435,7 +2402,8 @@
         "Burst",
         "Magic Damage"
       ],
-      "kitTexto": "adfcce19"
+      "kitTexto": "adfcce19",
+      "habilidades": []
     },
     {
       "name": "Angela",
@@ -2450,13 +2418,6 @@
         "magico": 3,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_ce5fdf101ad7cb80f20f234722664f87.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_c7e0183956b2c2fd6d3fa0b18fe46917.png",
-      "speciality": [
-        "Guard",
-        "Support"
-      ],
-      "kitTexto": "b2f58522",
       "habilidades": [
         {
           "n": "Puppet-on-a-String",
@@ -2464,7 +2425,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_ce5fdf101ad7cb80f20f234722664f87.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_c7e0183956b2c2fd6d3fa0b18fe46917.png",
+      "speciality": [
+        "Guard",
+        "Support"
+      ],
+      "kitTexto": "b2f58522"
     },
     {
       "name": "Jawhead",
@@ -2480,13 +2448,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_dc3372a1768c8b9f142564de21f13daf.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_bd87c30b6c7de6ae3b5aa56162c48c8b.png",
-      "speciality": [
-        "Charge",
-        "Burst"
-      ],
-      "kitTexto": "b396dc8d",
       "habilidades": [
         {
           "n": "Ejector",
@@ -2500,7 +2461,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_dc3372a1768c8b9f142564de21f13daf.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_bd87c30b6c7de6ae3b5aa56162c48c8b.png",
+      "speciality": [
+        "Charge",
+        "Burst"
+      ],
+      "kitTexto": "b396dc8d"
     },
     {
       "name": "Lesley",
@@ -2515,13 +2483,6 @@
         "magico": 0,
         "verdadero": 2
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/cdc8a6b743a8fe10cb8e1733aad94d72.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_08770893183018333f54a98e63c41ee3.png",
-      "speciality": [
-        "Finisher",
-        "Burst"
-      ],
-      "kitTexto": "c8efa832",
       "habilidades": [
         {
           "n": "Tactical Grenade",
@@ -2529,7 +2490,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/cdc8a6b743a8fe10cb8e1733aad94d72.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_08770893183018333f54a98e63c41ee3.png",
+      "speciality": [
+        "Finisher",
+        "Burst"
+      ],
+      "kitTexto": "c8efa832"
     },
     {
       "name": "Pharsa",
@@ -2544,13 +2512,6 @@
         "magico": 4,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_abc3fab5356339f3f67da1ac73e37a61.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_10151d43910e62f7aa9ce08df481a20f.png",
-      "speciality": [
-        "Burst",
-        "Poke"
-      ],
-      "kitTexto": "ec053346",
       "habilidades": [
         {
           "n": "Curse of Crow",
@@ -2558,7 +2519,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_abc3fab5356339f3f67da1ac73e37a61.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_10151d43910e62f7aa9ce08df481a20f.png",
+      "speciality": [
+        "Burst",
+        "Poke"
+      ],
+      "kitTexto": "ec053346"
     },
     {
       "name": "Helcurt",
@@ -2574,13 +2542,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/9228edc9654dd14f3f7a862e8aafd32d.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_6abf0c552b59b8ca4cbc1af3662ef176.png",
-      "speciality": [
-        "Push",
-        "Burst"
-      ],
-      "kitTexto": "6c5ab2c7",
       "habilidades": [
         {
           "n": "Hidden Terror",
@@ -2588,7 +2549,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/9228edc9654dd14f3f7a862e8aafd32d.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_6abf0c552b59b8ca4cbc1af3662ef176.png",
+      "speciality": [
+        "Push",
+        "Burst"
+      ],
+      "kitTexto": "6c5ab2c7"
     },
     {
       "name": "Zhask",
@@ -2603,13 +2571,6 @@
         "magico": 4,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_1103416827aeecda2c9c8852d83f07af.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_d8f170087cb2d5b71bb22a0a4664a927.png",
-      "speciality": [
-        "Chase",
-        "Damage"
-      ],
-      "kitTexto": "b16a1e6c",
       "habilidades": [
         {
           "n": "Mind Eater",
@@ -2618,7 +2579,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_1103416827aeecda2c9c8852d83f07af.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_d8f170087cb2d5b71bb22a0a4664a927.png",
+      "speciality": [
+        "Chase",
+        "Damage"
+      ],
+      "kitTexto": "b16a1e6c"
     },
     {
       "name": "Hylos",
@@ -2633,13 +2601,6 @@
         "magico": 2,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_f6c06bb0d5187806f76c9f87f0227761.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_195ad9af866afaab415ae23a6be13b45.png",
-      "speciality": [
-        "Guard",
-        "Initiator"
-      ],
-      "kitTexto": "090dff22",
       "habilidades": [
         {
           "n": "Law and Order",
@@ -2647,7 +2608,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_f6c06bb0d5187806f76c9f87f0227761.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_195ad9af866afaab415ae23a6be13b45.png",
+      "speciality": [
+        "Guard",
+        "Initiator"
+      ],
+      "kitTexto": "090dff22"
     },
     {
       "name": "Diggie",
@@ -2662,13 +2630,6 @@
         "magico": 2,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_0ae1a0cb0222ebc952fead5310cefad1.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_b1bdf46136cb8a7903dae6d58e8349cb.png",
-      "speciality": [
-        "Guard",
-        "Poke"
-      ],
-      "kitTexto": "3192f6e3",
       "habilidades": [
         {
           "n": "Reverse Time",
@@ -2683,7 +2644,14 @@
             "limpia"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_0ae1a0cb0222ebc952fead5310cefad1.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_b1bdf46136cb8a7903dae6d58e8349cb.png",
+      "speciality": [
+        "Guard",
+        "Poke"
+      ],
+      "kitTexto": "3192f6e3"
     },
     {
       "name": "Lancelot",
@@ -2704,7 +2672,8 @@
         "Chase",
         "Burst"
       ],
-      "kitTexto": "851f70e6"
+      "kitTexto": "851f70e6",
+      "habilidades": []
     },
     {
       "name": "Odette",
@@ -2719,13 +2688,6 @@
         "magico": 5,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/84bb0394443db64729b26898974740bc.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_d9251718a8894546ba04cfa9ca68dedc.png",
-      "speciality": [
-        "Burst",
-        "Poke"
-      ],
-      "kitTexto": "820dc54c",
       "habilidades": [
         {
           "n": "Blue Nova",
@@ -2733,7 +2695,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/84bb0394443db64729b26898974740bc.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_d9251718a8894546ba04cfa9ca68dedc.png",
+      "speciality": [
+        "Burst",
+        "Poke"
+      ],
+      "kitTexto": "820dc54c"
     },
     {
       "name": "Argus",
@@ -2748,13 +2717,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/0b5293fd74807e7df7639eeba4126d52.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_0bd96658e5b8ec578226ea1622bd7231.png",
-      "speciality": [
-        "Charge",
-        "Burst"
-      ],
-      "kitTexto": "d35002a6",
       "habilidades": [
         {
           "n": "Meteoric Sword",
@@ -2765,11 +2727,17 @@
         {
           "n": "Eternal Evil",
           "e": [
-            "inmortal",
             "limpia"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/0b5293fd74807e7df7639eeba4126d52.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_0bd96658e5b8ec578226ea1622bd7231.png",
+      "speciality": [
+        "Charge",
+        "Burst"
+      ],
+      "kitTexto": "d35002a6"
     },
     {
       "name": "Grock",
@@ -2784,13 +2752,6 @@
         "magico": 1,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/437571ec07ff85626d247e4e0ce0c051.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_f8b8c8964d3202b7b762947ac96f1ed3.png",
-      "speciality": [
-        "Crowd Control",
-        "Initiator"
-      ],
-      "kitTexto": "9e6d9988",
       "habilidades": [
         {
           "n": "Mighty Swing",
@@ -2806,7 +2767,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/437571ec07ff85626d247e4e0ce0c051.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_f8b8c8964d3202b7b762947ac96f1ed3.png",
+      "speciality": [
+        "Crowd Control",
+        "Initiator"
+      ],
+      "kitTexto": "9e6d9988"
     },
     {
       "name": "Irithel",
@@ -2827,7 +2795,8 @@
         "Finisher",
         "Burst"
       ],
-      "kitTexto": "ee2edf51"
+      "kitTexto": "ee2edf51",
+      "habilidades": []
     },
     {
       "name": "Harley",
@@ -2849,7 +2818,8 @@
         "Burst",
         "Poke"
       ],
-      "kitTexto": "828f9943"
+      "kitTexto": "828f9943",
+      "habilidades": []
     },
     {
       "name": "Gatotkaca",
@@ -2865,13 +2835,6 @@
         "magico": 5,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_254e963426d9fc39ddd3ca05c99edd3e.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_96f9dbbc096e0f0a28f9b9e587d06a9c.png",
-      "speciality": [
-        "Crowd Control",
-        "Burst"
-      ],
-      "kitTexto": "4d6847b3",
       "habilidades": [
         {
           "n": "Unbreakable",
@@ -2885,7 +2848,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_254e963426d9fc39ddd3ca05c99edd3e.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_96f9dbbc096e0f0a28f9b9e587d06a9c.png",
+      "speciality": [
+        "Crowd Control",
+        "Burst"
+      ],
+      "kitTexto": "4d6847b3"
     },
     {
       "name": "Karrie",
@@ -2906,7 +2876,8 @@
         "Finisher",
         "Damage"
       ],
-      "kitTexto": "f071f79c"
+      "kitTexto": "f071f79c",
+      "habilidades": []
     },
     {
       "name": "Roger",
@@ -2927,7 +2898,8 @@
         "Finisher",
         "Burst"
       ],
-      "kitTexto": "4acec7fc"
+      "kitTexto": "4acec7fc",
+      "habilidades": []
     },
     {
       "name": "Vexana",
@@ -2942,13 +2914,6 @@
         "magico": 6,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/8b683bc21e564058d6324d504d8f4e12.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_743edd1702084c4ed247908d698bca77.png",
-      "speciality": [
-        "Poke",
-        "Control"
-      ],
-      "kitTexto": "df87b7ec",
       "habilidades": [
         {
           "n": "Deathly Grasp",
@@ -2957,7 +2922,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/8b683bc21e564058d6324d504d8f4e12.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_743edd1702084c4ed247908d698bca77.png",
+      "speciality": [
+        "Poke",
+        "Control"
+      ],
+      "kitTexto": "df87b7ec"
     },
     {
       "name": "Lapu-Lapu",
@@ -2972,13 +2944,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_4099998ef69c6e791386cd653e5db9f1.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_28036c4584c914c5aad4d2feeafb2452.png",
-      "speciality": [
-        "Chase",
-        "Burst"
-      ],
-      "kitTexto": "993d91da",
       "habilidades": [
         {
           "n": "Land Shaker",
@@ -2987,7 +2952,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_4099998ef69c6e791386cd653e5db9f1.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_28036c4584c914c5aad4d2feeafb2452.png",
+      "speciality": [
+        "Chase",
+        "Burst"
+      ],
+      "kitTexto": "993d91da"
     },
     {
       "name": "Aurora",
@@ -3002,20 +2974,7 @@
         "magico": 6,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/ed2295c60bd772b89b7bdbbc2aee6095.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_f9b2be0150361018bb98f941b9667c42.png",
-      "speciality": [
-        "Crowd Control",
-        "Poke"
-      ],
-      "kitTexto": "00f52bd6",
       "habilidades": [
-        {
-          "n": "Pride of Ice",
-          "e": [
-            "inmortal"
-          ]
-        },
         {
           "n": "Frosty Breeze",
           "e": [
@@ -3030,7 +2989,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/ed2295c60bd772b89b7bdbbc2aee6095.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_f9b2be0150361018bb98f941b9667c42.png",
+      "speciality": [
+        "Crowd Control",
+        "Poke"
+      ],
+      "kitTexto": "00f52bd6"
     },
     {
       "name": "Hilda",
@@ -3046,13 +3012,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_cdf5a0543dc8582be3b3be49971755c9.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_acd700708dc515f5c63a08f8835a9941.png",
-      "speciality": [
-        "Damage",
-        "Regen"
-      ],
-      "kitTexto": "60162cee",
       "habilidades": [
         {
           "n": "Art of Hunting",
@@ -3066,7 +3025,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_cdf5a0543dc8582be3b3be49971755c9.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_acd700708dc515f5c63a08f8835a9941.png",
+      "speciality": [
+        "Damage",
+        "Regen"
+      ],
+      "kitTexto": "60162cee"
     },
     {
       "name": "Estes",
@@ -3087,7 +3053,8 @@
         "Regen",
         "Guard"
       ],
-      "kitTexto": "8d275a94"
+      "kitTexto": "8d275a94",
+      "habilidades": []
     },
     {
       "name": "Cyclops",
@@ -3102,13 +3069,6 @@
         "magico": 3,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_fc97f5a70d8eeacbc455e88030dc80de.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_68da456f9c01b2f88d29ee320db181ed.png",
-      "speciality": [
-        "Damage",
-        "Control"
-      ],
-      "kitTexto": "a2c88e8c",
       "habilidades": [
         {
           "n": "Star Power Lockdown",
@@ -3116,7 +3076,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_fc97f5a70d8eeacbc455e88030dc80de.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_68da456f9c01b2f88d29ee320db181ed.png",
+      "speciality": [
+        "Damage",
+        "Control"
+      ],
+      "kitTexto": "a2c88e8c"
     },
     {
       "name": "Johnson",
@@ -3131,13 +3098,6 @@
         "magico": 5,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/6207fbd29715174199c9b0b221e33998.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_85ff988c6660b4d04f8dd3d40df988bb.png",
-      "speciality": [
-        "Support",
-        "Crowd Control"
-      ],
-      "kitTexto": "82672f6c",
       "habilidades": [
         {
           "n": "Impact Wrench",
@@ -3152,7 +3112,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/6207fbd29715174199c9b0b221e33998.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_85ff988c6660b4d04f8dd3d40df988bb.png",
+      "speciality": [
+        "Support",
+        "Crowd Control"
+      ],
+      "kitTexto": "82672f6c"
     },
     {
       "name": "Moskov",
@@ -3167,13 +3134,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/5c4587c25e681be1aecfda0cfbe44714.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_a60a866ab6752a7f66766e720da987ea.png",
-      "speciality": [
-        "Finisher",
-        "Chase"
-      ],
-      "kitTexto": "f5c5f408",
       "habilidades": [
         {
           "n": "Spear of Misery",
@@ -3181,7 +3141,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/5c4587c25e681be1aecfda0cfbe44714.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_a60a866ab6752a7f66766e720da987ea.png",
+      "speciality": [
+        "Finisher",
+        "Chase"
+      ],
+      "kitTexto": "f5c5f408"
     },
     {
       "name": "Yi Sun-shin",
@@ -3196,13 +3163,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_2c58c685825527c0643de5e0af8e0c2a.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_961378be3f498d42c25b3defd1635ad1.png",
-      "speciality": [
-        "Finisher",
-        "Chase"
-      ],
-      "kitTexto": "8899ac64",
       "habilidades": [
         {
           "n": "Mountain Shocker",
@@ -3210,7 +3170,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_2c58c685825527c0643de5e0af8e0c2a.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_961378be3f498d42c25b3defd1635ad1.png",
+      "speciality": [
+        "Finisher",
+        "Chase"
+      ],
+      "kitTexto": "8899ac64"
     },
     {
       "name": "Ruby",
@@ -3225,13 +3192,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_73beab0536050bba2b6c52489b5bd230.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_4b96c75b136290576d849309722d4d20.png",
-      "speciality": [
-        "Crowd Control",
-        "Regen"
-      ],
-      "kitTexto": "3b607e8c",
       "habilidades": [
         {
           "n": "Don't Run, Wolf King!",
@@ -3247,7 +3207,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_73beab0536050bba2b6c52489b5bd230.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_4b96c75b136290576d849309722d4d20.png",
+      "speciality": [
+        "Crowd Control",
+        "Regen"
+      ],
+      "kitTexto": "3b607e8c"
     },
     {
       "name": "Alpha",
@@ -3263,13 +3230,6 @@
         "magico": 0,
         "verdadero": 4
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_eed2e33ec8c273b456e011b4732b42e8.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_86c9f91f530727db6498f920d19180d1.png",
-      "speciality": [
-        "Charge",
-        "Damage"
-      ],
-      "kitTexto": "95378f09",
       "habilidades": [
         {
           "n": "Spear of Alpha",
@@ -3277,7 +3237,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_eed2e33ec8c273b456e011b4732b42e8.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_86c9f91f530727db6498f920d19180d1.png",
+      "speciality": [
+        "Charge",
+        "Damage"
+      ],
+      "kitTexto": "95378f09"
     },
     {
       "name": "Sun",
@@ -3299,7 +3266,8 @@
         "Push",
         "Damage"
       ],
-      "kitTexto": "5ca2225d"
+      "kitTexto": "5ca2225d",
+      "habilidades": []
     },
     {
       "name": "Chou",
@@ -3315,13 +3283,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_d0f3f3411e585c106a34f0e57c157c8c.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_158209b180032c4564b8f3bde8c48888.png",
-      "speciality": [
-        "Chase",
-        "Control"
-      ],
-      "kitTexto": "27ec69a4",
       "habilidades": [
         {
           "n": "The Way of Dragon",
@@ -3329,7 +3290,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_d0f3f3411e585c106a34f0e57c157c8c.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_158209b180032c4564b8f3bde8c48888.png",
+      "speciality": [
+        "Chase",
+        "Control"
+      ],
+      "kitTexto": "27ec69a4"
     },
     {
       "name": "Kagura",
@@ -3344,20 +3312,7 @@
         "magico": 6,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/f4b49a4cef7926adb059933d0158a967.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_da424b020b8ac8235d64a1b8a09aa749.png",
-      "speciality": [
-        "Poke",
-        "Finisher"
-      ],
-      "kitTexto": "395cf2df",
       "habilidades": [
-        {
-          "n": "Yin Yang Gathering",
-          "e": [
-            "cc"
-          ]
-        },
         {
           "n": "Rasho Umbrella Flee",
           "e": [
@@ -3370,7 +3325,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/f4b49a4cef7926adb059933d0158a967.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_da424b020b8ac8235d64a1b8a09aa749.png",
+      "speciality": [
+        "Poke",
+        "Finisher"
+      ],
+      "kitTexto": "395cf2df"
     },
     {
       "name": "Natalia",
@@ -3392,7 +3354,8 @@
         "Chase",
         "Finisher"
       ],
-      "kitTexto": "e5f6a715"
+      "kitTexto": "e5f6a715",
+      "habilidades": []
     },
     {
       "name": "Gord",
@@ -3407,13 +3370,6 @@
         "magico": 3,
         "verdadero": 1
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/33c6326c4a1fc7ed885be8840fda6bd7.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_9513f5e10ec33f76747732eaf2082259.png",
-      "speciality": [
-        "Poke",
-        "Burst"
-      ],
-      "kitTexto": "317e47f8",
       "habilidades": [
         {
           "n": "Mystic Projectile",
@@ -3421,7 +3377,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/33c6326c4a1fc7ed885be8840fda6bd7.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_9513f5e10ec33f76747732eaf2082259.png",
+      "speciality": [
+        "Poke",
+        "Burst"
+      ],
+      "kitTexto": "317e47f8"
     },
     {
       "name": "Freya",
@@ -3437,13 +3400,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/1ae9ac180ace59bc164b59093ef2e414.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_b9c34c88762ca8e66ccd4d84071bf0bc.png",
-      "speciality": [
-        "Chase",
-        "Damage"
-      ],
-      "kitTexto": "2837d6e5",
       "habilidades": [
         {
           "n": "Leap of Faith",
@@ -3451,7 +3407,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/1ae9ac180ace59bc164b59093ef2e414.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_b9c34c88762ca8e66ccd4d84071bf0bc.png",
+      "speciality": [
+        "Chase",
+        "Damage"
+      ],
+      "kitTexto": "2837d6e5"
     },
     {
       "name": "Hayabusa",
@@ -3472,7 +3435,8 @@
         "Chase",
         "Burst"
       ],
-      "kitTexto": "b8f9a1fb"
+      "kitTexto": "b8f9a1fb",
+      "habilidades": []
     },
     {
       "name": "Lolita",
@@ -3487,13 +3451,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/ce1c7af1a946f70585e40296ba85c9c0.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_474cea36a4bfdc7bf7d94530853a99b2.png",
-      "speciality": [
-        "Guard",
-        "Crowd Control"
-      ],
-      "kitTexto": "3288ee4b",
       "habilidades": [
         {
           "n": "Power Charge",
@@ -3508,7 +3465,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/ce1c7af1a946f70585e40296ba85c9c0.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_474cea36a4bfdc7bf7d94530853a99b2.png",
+      "speciality": [
+        "Guard",
+        "Crowd Control"
+      ],
+      "kitTexto": "3288ee4b"
     },
     {
       "name": "Minotaur",
@@ -3523,12 +3487,6 @@
         "magico": 0,
         "verdadero": 1
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_6104e5d77623c131a84b88575739713d.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_3ecd2c0843df7ec85044dafff6bf4553.png",
-      "speciality": [
-        "Crowd Control"
-      ],
-      "kitTexto": "f604206e",
       "habilidades": [
         {
           "n": "Despair Stomp",
@@ -3543,7 +3501,13 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_6104e5d77623c131a84b88575739713d.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_3ecd2c0843df7ec85044dafff6bf4553.png",
+      "speciality": [
+        "Crowd Control"
+      ],
+      "kitTexto": "f604206e"
     },
     {
       "name": "Layla",
@@ -3558,13 +3522,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/f222c954b85dce735916d61fc355668a.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_b2b38e9406ea0de0b866db7674feea0f.png",
-      "speciality": [
-        "Finisher",
-        "Damage"
-      ],
-      "kitTexto": "e93eaba4",
       "habilidades": [
         {
           "n": "Void Projectile",
@@ -3573,7 +3530,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/f222c954b85dce735916d61fc355668a.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_b2b38e9406ea0de0b866db7674feea0f.png",
+      "speciality": [
+        "Finisher",
+        "Damage"
+      ],
+      "kitTexto": "e93eaba4"
     },
     {
       "name": "Fanny",
@@ -3594,7 +3558,8 @@
         "Chase",
         "Finisher"
       ],
-      "kitTexto": "edb32f2f"
+      "kitTexto": "edb32f2f",
+      "habilidades": []
     },
     {
       "name": "Zilong",
@@ -3609,13 +3574,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_af87bb386288a5edb9afa85c1b07da3d.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_9db57da4f0daef6d432676e4f19101ed.png",
-      "speciality": [
-        "Chase",
-        "Damage"
-      ],
-      "kitTexto": "f566681c",
       "habilidades": [
         {
           "n": "Spear Flip",
@@ -3623,7 +3581,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_af87bb386288a5edb9afa85c1b07da3d.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_9db57da4f0daef6d432676e4f19101ed.png",
+      "speciality": [
+        "Chase",
+        "Damage"
+      ],
+      "kitTexto": "f566681c"
     },
     {
       "name": "Eudora",
@@ -3638,13 +3603,6 @@
         "magico": 7,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/79b29476fd42bb3d3e048dc6bcfc7687.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_87b2a655b254c136dce8976e21935a80.png",
-      "speciality": [
-        "Control",
-        "Burst"
-      ],
-      "kitTexto": "a77d20e0",
       "habilidades": [
         {
           "n": "Ball Lightning",
@@ -3652,7 +3610,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/79b29476fd42bb3d3e048dc6bcfc7687.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_87b2a655b254c136dce8976e21935a80.png",
+      "speciality": [
+        "Control",
+        "Burst"
+      ],
+      "kitTexto": "a77d20e0"
     },
     {
       "name": "Rafaela",
@@ -3667,13 +3632,6 @@
         "magico": 2,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_cff725e14a043421803080af07949c0e.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_68277dce415742c4a98883151c693a07.png",
-      "speciality": [
-        "Regen",
-        "Guard"
-      ],
-      "kitTexto": "0a839a2b",
       "habilidades": [
         {
           "n": "Holy Baptism",
@@ -3682,7 +3640,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_cff725e14a043421803080af07949c0e.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_68277dce415742c4a98883151c693a07.png",
+      "speciality": [
+        "Regen",
+        "Guard"
+      ],
+      "kitTexto": "0a839a2b"
     },
     {
       "name": "Clint",
@@ -3697,13 +3662,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/f05e671ec71ef3582c6eeb070c69467f.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_fd120c3e9261a233442ee88a1d7c9f58.png",
-      "speciality": [
-        "Finisher",
-        "Burst"
-      ],
-      "kitTexto": "47d35910",
       "habilidades": [
         {
           "n": "Trapping Recoil",
@@ -3711,7 +3669,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/f05e671ec71ef3582c6eeb070c69467f.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_fd120c3e9261a233442ee88a1d7c9f58.png",
+      "speciality": [
+        "Finisher",
+        "Burst"
+      ],
+      "kitTexto": "47d35910"
     },
     {
       "name": "Bruno",
@@ -3726,13 +3691,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/126add04a4acef50fbee3f39ff8c4759.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_2a733ac5b7d1f97093e82940af6f5008.png",
-      "speciality": [
-        "Finisher",
-        "Burst"
-      ],
-      "kitTexto": "f307f98e",
       "habilidades": [
         {
           "n": "Worldie",
@@ -3740,7 +3698,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/126add04a4acef50fbee3f39ff8c4759.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_2a733ac5b7d1f97093e82940af6f5008.png",
+      "speciality": [
+        "Finisher",
+        "Burst"
+      ],
+      "kitTexto": "f307f98e"
     },
     {
       "name": "Bane",
@@ -3756,13 +3721,6 @@
         "magico": 2,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/ec9fd2ca0f85e66b324beaf7febfde63.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_7e4e74bb161da0f477cc0d1819fa39e6.png",
-      "speciality": [
-        "Push",
-        "Burst"
-      ],
-      "kitTexto": "8a69fd69",
       "habilidades": [
         {
           "n": "Deadly Catch",
@@ -3770,7 +3728,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/ec9fd2ca0f85e66b324beaf7febfde63.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_7e4e74bb161da0f477cc0d1819fa39e6.png",
+      "speciality": [
+        "Push",
+        "Burst"
+      ],
+      "kitTexto": "8a69fd69"
     },
     {
       "name": "Franco",
@@ -3785,13 +3750,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_64e00f9a9ce834e493c13f1e52e15f62.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_9bed3c0095335606e0ce616c6e5a8553.png",
-      "speciality": [
-        "Initiator",
-        "Control"
-      ],
-      "kitTexto": "aad773ea",
       "habilidades": [
         {
           "n": "Iron Hook",
@@ -3805,7 +3763,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_64e00f9a9ce834e493c13f1e52e15f62.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_9bed3c0095335606e0ce616c6e5a8553.png",
+      "speciality": [
+        "Initiator",
+        "Control"
+      ],
+      "kitTexto": "aad773ea"
     },
     {
       "name": "Akai",
@@ -3820,13 +3785,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/1fee18007166e2e449239587545c2c10.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_28f223447f0174336ff0922d364d81d3.png",
-      "speciality": [
-        "Guard",
-        "Crowd Control"
-      ],
-      "kitTexto": "456fc637",
       "habilidades": [
         {
           "n": "Headbutt",
@@ -3842,7 +3800,14 @@
             "limpia"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/1fee18007166e2e449239587545c2c10.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_28f223447f0174336ff0922d364d81d3.png",
+      "speciality": [
+        "Guard",
+        "Crowd Control"
+      ],
+      "kitTexto": "456fc637"
     },
     {
       "name": "Karina",
@@ -3863,7 +3828,8 @@
         "Finisher",
         "Magic Damage"
       ],
-      "kitTexto": "a6c2be12"
+      "kitTexto": "a6c2be12",
+      "habilidades": []
     },
     {
       "name": "Alucard",
@@ -3884,7 +3850,8 @@
         "Chase",
         "Damage"
       ],
-      "kitTexto": "76aec084"
+      "kitTexto": "76aec084",
+      "habilidades": []
     },
     {
       "name": "Tigreal",
@@ -3899,12 +3866,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_23660115389f8f5a6e7cee37cde10671.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_8b30576754be1a4f8bebd09df8d6bec7.png",
-      "speciality": [
-        "Crowd Control"
-      ],
-      "kitTexto": "4d9623a8",
       "habilidades": [
         {
           "n": "Sacred Hammer",
@@ -3919,7 +3880,13 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_23660115389f8f5a6e7cee37cde10671.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_8b30576754be1a4f8bebd09df8d6bec7.png",
+      "speciality": [
+        "Crowd Control"
+      ],
+      "kitTexto": "4d9623a8"
     },
     {
       "name": "Nana",
@@ -3934,21 +3901,7 @@
         "magico": 3,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_02df4eda75eb45735a76eb4bbe39138c.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_ee1e0d80d87bb614a0c552ef028f85ce.png",
-      "speciality": [
-        "Poke",
-        "Burst"
-      ],
-      "kitTexto": "94c9ec67",
       "habilidades": [
-        {
-          "n": "Molina's Gift",
-          "e": [
-            "inmortal",
-            "limpia"
-          ]
-        },
         {
           "n": "Molina Smooch",
           "e": [
@@ -3961,7 +3914,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_02df4eda75eb45735a76eb4bbe39138c.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_ee1e0d80d87bb614a0c552ef028f85ce.png",
+      "speciality": [
+        "Poke",
+        "Burst"
+      ],
+      "kitTexto": "94c9ec67"
     },
     {
       "name": "Alice",
@@ -3977,13 +3937,6 @@
         "magico": 5,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/86831c838a2bf2a1745811f7eb9496f1.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_18300163a5a912a84adb52b8d59b4618.png",
-      "speciality": [
-        "Charge",
-        "Regen"
-      ],
-      "kitTexto": "5d5e790f",
       "habilidades": [
         {
           "n": "Throne of Ruin",
@@ -3992,7 +3945,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/86831c838a2bf2a1745811f7eb9496f1.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_18300163a5a912a84adb52b8d59b4618.png",
+      "speciality": [
+        "Charge",
+        "Regen"
+      ],
+      "kitTexto": "5d5e790f"
     },
     {
       "name": "Saber",
@@ -4008,13 +3968,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_9642be6622ac24480431681f09ad7380.png",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_6bbfac806f29d29f17fea9e98d2d2fee.png",
-      "speciality": [
-        "Charge",
-        "Finisher"
-      ],
-      "kitTexto": "8bfcf3e6",
       "habilidades": [
         {
           "n": "Triple Sweep",
@@ -4022,7 +3975,14 @@
             "cc"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/svnres/img/mlbb/community/100_9642be6622ac24480431681f09ad7380.png",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_6bbfac806f29d29f17fea9e98d2d2fee.png",
+      "speciality": [
+        "Charge",
+        "Finisher"
+      ],
+      "kitTexto": "8bfcf3e6"
     },
     {
       "name": "Balmond",
@@ -4044,7 +4004,8 @@
         "Damage",
         "Regen"
       ],
-      "kitTexto": "7f760331"
+      "kitTexto": "7f760331",
+      "habilidades": []
     },
     {
       "name": "Miya",
@@ -4059,13 +4020,6 @@
         "magico": 0,
         "verdadero": 0
       },
-      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/299d8aab8de508fff88c1f1e935017cb.jpg",
-      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_da894b37bfb5cadb32307f371f31918a.png",
-      "speciality": [
-        "Finisher",
-        "Damage"
-      ],
-      "kitTexto": "01715c7c",
       "habilidades": [
         {
           "n": "Arrow of Eclipse",
@@ -4080,7 +4034,14 @@
             "limpia"
           ]
         }
-      ]
+      ],
+      "retrato": "https://akmweb.youngjoygame.com/web/gms/image/299d8aab8de508fff88c1f1e935017cb.jpg",
+      "cara": "https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_da894b37bfb5cadb32307f371f31918a.png",
+      "speciality": [
+        "Finisher",
+        "Damage"
+      ],
+      "kitTexto": "01715c7c"
     }
   ],
   "newHeroes": [],
@@ -12612,7 +12573,7 @@
   },
   "tiers": {
     "fuente": "mlbb.gg",
-    "fecha": "2026-10-03T22:35:02.988Z",
+    "fecha": "2026-10-04T01:22:56.297Z",
     "tiers": {
       "Miya": "A",
       "Balmond": "D",

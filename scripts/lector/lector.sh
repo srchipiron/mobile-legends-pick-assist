@@ -73,10 +73,21 @@ pkill -f 'scripts/lector/servir.mjs' 2>/dev/null && sleep 1
 
 # Las capturas van en casa de Termux, NO en la galería del móvil, y el lector
 # borra solas las de hace más de unas horas (3.34.0: «se me está llenando el
-# móvil de fotos de partidas»). La carpeta de Descargas de antes se quita.
+# móvil de fotos de partidas»). De la carpeta de Descargas de antes se
+# quitan SOLO las capturas del lector (3.37.0: era un `rm -rf` de una carpeta
+# pública con un nombre corriente, y se llevaba cualquier cosa tuya que
+# hubiera dentro), y la carpeta solo si se queda vacía.
 CAPTURAS="$HOME/capturas"
-if [ -d "$HOME/storage/downloads/capturas" ]; then
-  rm -rf "$HOME/storage/downloads/capturas" && echo "Quitadas las capturas de Descargas: ya no se guardan en la galería."
+VIEJAS="$HOME/storage/downloads/capturas"
+if [ -d "$VIEJAS" ]; then
+  QUITADAS=0
+  for f in "$VIEJAS"/lectura-* "$VIEJAS"/fotograma-* "$VIEJAS"/resultado-*; do
+    case "$f" in
+      *.png|*.json) [ -f "$f" ] && rm -f -- "$f" && QUITADAS=$((QUITADAS + 1)) ;;
+    esac
+  done
+  rmdir "$VIEJAS" 2>/dev/null
+  [ "$QUITADAS" -gt 0 ] && echo "Quitadas $QUITADAS capturas de Descargas: ya no se guardan en la galería."
 fi
 mkdir -p "$CAPTURAS"
 exec node "$AQUI/servir.mjs" --guardar-capturas "$CAPTURAS" "$@"

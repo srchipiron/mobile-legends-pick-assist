@@ -16,6 +16,8 @@ import { capturaCompletaPng, pantallaDeFinal, VERDAD } from '../fixtures/juego/c
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
 const png = capturaCompletaPng();
+// La otra columna de picks enemigos (1 de octubre de 2026): en los huecos de Clint y Khufra, Rafaela y Eudora.
+const png2 = capturaCompletaPng({ columna: 2 });
 const pngTabla = pantallaDeFinal();
 
 let capturar = () => png;
@@ -73,6 +75,30 @@ await prueba('leer no quita nada ni repite: lo que ya había se queda, y una seg
   await boton(pagina).click(); await pagina.waitForTimeout(4000);
   ok(/ya estaba en el draft/.test(await pagina.locator('.lector-aviso').innerText()), 'una segunda lectura igual no dice que ya estaba');
   eq(JSON.stringify((await leer(pagina)).enemies), JSON.stringify(d.enemies), 'una segunda lectura repite enemigos');
+  ok(!errores.length, `errores de página: ${errores}`);
+  await contexto.close();
+});
+
+await prueba('el héroe que un jugador solo miraba se cambia por el que coge en ese hueco, y se deshace (3.37.0)', async () => {
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen });
+  await boton(pagina).click();
+  await pagina.locator('.aviso-deshacer').waitFor({ timeout: 15000 });
+  eq((await leer(pagina)).enemies.join(), 'Clint,Khufra', 'la primera lectura no mete a Clint y Khufra');
+  // Los dos primeros jugadores enemigos cambian: Rafaela y Eudora en sus huecos.
+  capturar = () => png2;
+  try {
+    await boton(pagina).click(); await pagina.waitForTimeout(4000);
+    const d = await leer(pagina);
+    // (Eudora está entre los baneos del montaje, que salen de otra captura:
+    // no entra de enemiga, pero su hueco sí quita a Khufra.)
+    eq([...d.enemies].sort().join(), 'Aamon,Lesley,Rafaela', `los que solo se miraban no se cambian por los de su hueco: ${d.enemies}`);
+    ok(!d.lectura.enemigos.includes('Clint') && !d.lectura.enemigos.includes('Khufra'), `lo cambiado sigue contando como leído: ${d.lectura.enemigos}`);
+    // Deshacer devuelve a Clint y Khufra.
+    await pagina.locator('.aviso-deshacer').getByRole('button', { name: 'Deshacer' }).click(); await pagina.waitForTimeout(300);
+    eq((await leer(pagina)).enemies.join(), 'Clint,Khufra', 'deshacer no devuelve el draft de antes del cambio');
+  } finally {
+    capturar = () => png;
+  }
   ok(!errores.length, `errores de página: ${errores}`);
   await contexto.close();
 });
@@ -152,6 +178,11 @@ await prueba('con «Leer solo» y el draft completo, el lector vigila el final p
   eq((await leer(pagina)).enemies.join(), draft.enemies.join(), 'deshacer no devuelve el draft');
   await pagina.waitForTimeout(1500);
   eq(((await leer(pagina, 'roam-picker:partidas')) ?? []).length, 0, 'tras deshacer se vuelve a apuntar sola');
+  // Ni tras una recarga (la app se actualiza sola): la marca va en el draft (3.37.0).
+  eq((await leer(pagina)).apuntadaSola, draft.completoDesde, 'lo deshecho no queda marcado en el draft');
+  await pagina.reload({ waitUntil: 'networkidle' });
+  await pagina.waitForTimeout(2500);
+  eq(((await leer(pagina, 'roam-picker:partidas')) ?? []).length, 0, 'tras deshacer y recargar se vuelve a apuntar sola');
   ok(!errores.length, `errores de página: ${errores}`);
   capturar = () => png;
   await contexto.close();

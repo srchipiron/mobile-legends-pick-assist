@@ -65,7 +65,9 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
   // (`rec.eleccion`), y «Otro héroe» abre «Apuntar partida».
   const preguntar = !!(rec.eleccion && (
     (miPick && draft.miPickDesde && ahora - draft.miPickDesde >= plazo)
-    || (!miPick && draft.completoDesde && ahora - draft.completoDesde >= plazo)
+    // «Más tarde» sin pick fijado apunta `recordarDesde` (3.37.0); el de un
+    // draft anterior es más viejo que este `completoDesde` y no cuenta.
+    || (!miPick && draft.completoDesde && ahora - Math.max(draft.completoDesde, draft.recordarDesde ?? 0) >= plazo)
   ));
 
   return (
@@ -109,7 +111,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
           </div>
           <div className="side">
             <div className="side-label"><span>{t('app.rango')}</span></div>
-            <SelectorDeRango t={t} rangos={meta?.ranks} valor={rango} onCambiar={onRango} rangoDeCruces={meta?.relaciones?.rango ?? meta?.rank} />
+            <SelectorDeRango t={t} rangos={meta?.ranks} valor={rango} onCambiar={onRango} rangoDeCruces={meta?.relaciones?.rango ?? meta?.rank} rangoDeBuilds={meta?.rank} />
           </div>
           {/* Lo que se toca UNA VEZ vive aquí dentro; fuera quedan los dos botones que se usan con una partida delante. */}
           <div className="tools">
@@ -191,7 +193,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
               tier={meta?.tiers?.tiers?.[c.heroe.name] ?? null}
               wrLinea={linea ? winrateEnLinea(datos, c.heroe, linea) : null}
               linea={linea}
-              onBuild={meta?.builds ? (h) => abrir({ build: h }) : null}
+              onBuild={meta ? (h) => abrir({ build: h }) : null /* también sin builds: la hoja lleva el plan (3.37.0) */}
               elegido={miPick?.name === c.heroe.name}
               onElegir={draft.fijarPick}
             />

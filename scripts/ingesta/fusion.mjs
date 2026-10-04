@@ -81,6 +81,24 @@ export function relacionesPrevias(previous) {
   return { counters: { ...(previous?.counters ?? {}) }, synergies: { ...(previous?.synergies ?? {}) } };
 }
 
+/**
+ * La matriz de la corrida (3.37.0): sin ninguna fila nueva, la guardada
+ * tal cual (y con ella su etiqueta de rango: `conservado`); con filas
+ * nuevas de OTRO rango que el de la guardada, se empieza de cero y no se
+ * funde (las que falten se quedan sin fila y el comparador las cuenta).
+ * Hasta 3.36.0 se fundía siempre sobre la guardada: el día del cambio
+ * Gloria → Mítico, los héroes que fallaban conservaban la fila ruidosa de
+ * Gloria con la etiqueta de Mítico, y con todo caído salía la de Mítico
+ * etiquetada como Gloria.
+ */
+export function relacionesDeLaCorrida(previous, elegidas, rango) {
+  const filas = Object.values(elegidas?.counters ?? {}).filter((f) => Object.keys(f ?? {}).length).length;
+  if (!filas) return { relations: relacionesPrevias(previous), frescas: 0, conservado: true };
+  const rangoPrevio = previous?.relaciones?.rango ?? previous?.rank ?? null;
+  const relations = rangoPrevio && rangoPrevio !== rango ? { counters: {}, synergies: {} } : relacionesPrevias(previous);
+  return { relations, frescas: fundirRelaciones(relations, elegidas), conservado: false };
+}
+
 /** Funde la matriz nueva sobre la conservada y devuelve cuantas filas son nuevas. */
 export function fundirRelaciones(relations, fresh) {
   let relacionesFrescas = 0;

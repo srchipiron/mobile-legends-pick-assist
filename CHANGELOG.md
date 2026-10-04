@@ -8,6 +8,30 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.37.0
+
+- El lector ya no deja metido al héroe que un jugador solo estaba mirando:
+  si en el mismo hueco ve después a otro, cambia uno por otro. En tus 29
+  partidas leídas hubo que quitar a mano 30 nombres (Joy cinco veces), todos
+  de picks que el jugador miró y no cogió. «Deshacer» lo devuelve.
+- La tabla del final se guarda siempre, también la de VICTORIA: con ocho
+  pantallas ya guardadas se perdía, y por eso la victoria no se aprendía
+  nunca.
+- «Más tarde» ya no hace que el lector pierda el final de la partida, una
+  partida apuntada sola que deshaces no se vuelve a apuntar al recargar, y
+  apuntar a mano mientras el lector contestaba ya no la apunta dos veces.
+- Al arrancar, `lector` borra de Descargas solo sus capturas: antes se
+  llevaba la carpeta `capturas` entera, con lo que tuvieras dentro.
+- El plan de partida ya no te manda guardar una pasiva (Nana, Masha), no
+  llama «intocable» a quien solo no puede morir (Argus) y solo dice quién
+  escala mejor con los dos equipos completos. Sale también si un día faltan
+  las builds.
+- Si un día la descarga de cruces falla a medias, ya no se mezclan los de
+  Gloria y los de Mítico ni se etiqueta una matriz con el rango que no es; y
+  Ajustes dice bien de qué rango son los cruces y de cuál las builds.
+- Arreglados el botón «Copiar para el chat» (algo bajo para el dedo) y un
+  aviso del compilador.
+
 ## 3.36.0
 
 - Nuevo «Plan de partida»: el botón de cada tarjeta ahora es «Plan y

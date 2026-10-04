@@ -158,6 +158,8 @@ export default function App() {
    * Apunta la partida con la estimación que había delante para ESE héroe y
    * el draft entero (es lo que la hace medible después), y limpia el draft.
    */
+  // El draft (su `completoDesde`) cuya partida ya se apuntó: la vigilancia no la apunta otra vez.
+  const apuntadaSola = useRef(null);
   const guardarPartida = (pick, gane, { t = null, origen = null } = {}) => {
     const heroe = datos.porNombre.get(pick);
     const est = heroe ? rec.estimacionCon(heroe) : null;
@@ -178,13 +180,15 @@ export default function App() {
     ensenarResultado({ ids: fotogramas.current.map((f) => f.id), gane });
     // Los fotogramas del final, con el resultado (3.30.0): antes de reiniciar.
     volcarFotogramas(gane ? 'gane' : 'perdi');
+    // Este draft ya está apuntado (a mano o sola): un tic de la vigilancia
+    // que estuviera esperando al lector no lo vuelve a apuntar (3.37.0).
+    if (draft.completoDesde) apuntadaSola.current = draft.completoDesde;
     cerrar();
     draft.reiniciar();
   };
 
   // Apuntada sola (3.32.0): una por draft, y con vuelta atrás durante un rato
   // (olvida la partida y devuelve el draft tal cual estaba).
-  const apuntadaSola = useRef(null);
   const [apuntada, setApuntada] = useState(null);
   const apuntarSola = (gane, t = Date.now()) => {
     const antes = draft.foto();
@@ -201,6 +205,11 @@ export default function App() {
   // no se apuntaba nada).
   const apuntarSolaAhora = useRef(apuntarSola);
   apuntarSolaAhora.current = apuntarSola;
+  // El draft de AHORA, para el tic de la vigilancia, que espera al lector.
+  const completoActual = useRef(draft.completoDesde);
+  completoActual.current = draft.completoDesde;
+  const draftActual = useRef(draft);
+  draftActual.current = draft;
   useEffect(() => {
     if (!apuntada) return undefined;
     const reloj = setTimeout(() => setApuntada((a) => (a === apuntada ? null : a)), DESHACER_APUNTADA_MS);
@@ -209,24 +218,33 @@ export default function App() {
   const deshacerApuntada = () => {
     if (!apuntada) return;
     personal.olvidarPartida(apuntada.t);
-    draft.restaurar(apuntada.antes);
+    // Con la marca guardada en el draft: tras una recarga (la app se
+    // actualiza sola) no se vuelve a apuntar lo que deshiciste (3.37.0).
+    draft.restaurar({ ...apuntada.antes, apuntadaSola: apuntada.antes.completoDesde });
     setApuntada(null);
   };
   // Recoger el final de la partida que vigila el lector (3.33.0): va DESPUÉS de apuntarSola y guardarPartida, que usa.
   useEffect(() => {
     if (!tocaVigilarFinal({ auto: lectorAuto, completoDesde: draft.completoDesde })) return undefined;
+    const yo = draft.completoDesde;
+    // Si mientras se esperaba al lector el draft cambió (apuntaste a mano,
+    // nuevo draft), lo que conteste ya no es de este draft (3.37.0).
+    const sigue = () => completoActual.current === yo;
     const tic = async () => {
       if (vigilando.current || document.visibilityState !== 'visible') return;
       vigilando.current = true;
       try {
         let f = await pedirFinal();
+        if (!sigue()) return;
         // El lector no sabe de este draft (acaba de completarse, o se reinició): se le avisa, y contesta con lo que tenga.
-        if (f.desde !== draft.completoDesde) f = (await avisarVigilancia({ desde: draft.completoDesde })) ?? f;
-        const { suyo, fotogramas: lista, resultado, resultadoEn } = fundirFinal(fotogramas.current, f, { completoDesde: draft.completoDesde });
+        if (f.desde !== yo) f = (await avisarVigilancia({ desde: yo })) ?? f;
+        if (!sigue()) return;
+        const { suyo, fotogramas: lista, resultado, resultadoEn } = fundirFinal(fotogramas.current, f, { completoDesde: yo });
         if (!suyo) return;
         fotogramas.current = lista;
         // La tabla de resultado con una palabra conocida (3.32.0): la partida se apunta SOLA, con «Deshacer», fechada cuando el lector vio la tabla.
-        if (resultado && apuntadaSola.current !== draft.completoDesde && apuntarSolaAhora.current(resultado === 'gane', resultadoEn ?? Date.now())) apuntadaSola.current = draft.completoDesde;
+        // Nunca dos veces por draft, ni la que deshiciste (marca guardada en el draft).
+        if (resultado && apuntadaSola.current !== yo && draftActual.current.apuntadaSola !== yo && apuntarSolaAhora.current(resultado === 'gane', resultadoEn ?? Date.now())) apuntadaSola.current = yo;
       } catch { /* sin lector: se vuelve a intentar en el siguiente tic */ }
       finally { vigilando.current = false; }
     };
@@ -384,7 +402,7 @@ export default function App() {
           onBanear={(h) => draft.anadir('baneos', h)}
           onQuitar={(h) => draft.quitar('baneos', h)}
           onAPicks={() => draft.setFase('picks')}
-          lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
+          lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
           pie={pie}
         />
         {selector}

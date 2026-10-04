@@ -5,7 +5,7 @@
  * de septiembre de 2026, fase de picks) y con la regla de seguridad que
  * pidió él: el lector solo hace capturas, nunca toca la tablet.
  */
-import { readFileSync, readdirSync, mkdtempSync, mkdirSync, writeFileSync, symlinkSync, existsSync, chmodSync } from 'node:fs';
+import { readFileSync, readdirSync, mkdtempSync, mkdirSync, writeFileSync, symlinkSync, existsSync, chmodSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:net';
@@ -301,9 +301,18 @@ test('«lector» (lector.sh) se instala solo, cierra el lector anterior, trae lo
   // Con acceso al almacenamiento las capturas NO van a Descargas (3.34.0: llenaban la galería), y las que había allí se quitan.
   mkdirSync(join(home, 'storage', 'downloads', 'capturas'), { recursive: true });
   writeFileSync(join(home, 'storage', 'downloads', 'capturas', 'lectura-vieja.png'), 'x');
+  writeFileSync(join(home, 'storage', 'downloads', 'capturas', 'lectura-vieja.verdad.json'), '{}');
+  // Lo que no es del lector se queda (3.37.0: antes era un `rm -rf` de la carpeta).
+  writeFileSync(join(home, 'storage', 'downloads', 'capturas', 'mi-foto.jpg'), 'x');
   const r2 = spawnSync('bash', [join(RAIZ, 'scripts/lector/lector.sh')], { encoding: 'utf8', env });
   ok(new RegExp(`--guardar-capturas ${home}/capturas`).test(r2.stdout), `con ~/storage guarda en Descargas: ${r2.stdout}`);
-  ok(!existsSync(join(home, 'storage', 'downloads', 'capturas')) && /Quitadas las capturas de Descargas/.test(r2.stdout), 'no quita las capturas antiguas de Descargas');
+  ok(!existsSync(join(home, 'storage', 'downloads', 'capturas', 'lectura-vieja.png')) && !existsSync(join(home, 'storage', 'downloads', 'capturas', 'lectura-vieja.verdad.json')) && /Quitadas 2 capturas de Descargas/.test(r2.stdout), `no quita las capturas antiguas de Descargas: ${r2.stdout}`);
+  ok(existsSync(join(home, 'storage', 'downloads', 'capturas', 'mi-foto.jpg')), 'borra de Descargas un fichero que no es del lector');
+  // Y con la carpeta ya vacía, se quita la carpeta.
+  rmSync(join(home, 'storage', 'downloads', 'capturas', 'mi-foto.jpg'));
+  writeFileSync(join(home, 'storage', 'downloads', 'capturas', 'fotograma-1.png'), 'x');
+  spawnSync('bash', [join(RAIZ, 'scripts/lector/lector.sh')], { encoding: 'utf8', env });
+  ok(!existsSync(join(home, 'storage', 'downloads', 'capturas')), 'la carpeta vacía de Descargas no se quita');
 });
 
 test('el mismo héroe leído en dos huecos de una fila: se queda el que más se parece, el otro pasa a «?»', () => {

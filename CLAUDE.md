@@ -320,7 +320,15 @@ ninguna constante.
   la app porque guardar las dos matrices doblaría lo que baja el móvil. El
   umbral es el de la fuerza: no hay serie con la que calibrar otro, y lo
   medido (0,91 sano, 0,64 roto) cae a los dos lados. Cuesta 266
-  peticiones más por corrida.
+  peticiones más por corrida. Desde 3.37.0 (revisión de lo de 3.35.0): el
+  respaldo solo sustituye si llega casi entero (`filasMinimas`, el 90% de
+  los héroes pedidos: con 500 celdas bastaban cuatro héroes de Mítico para
+  tirar los 133 de Gloria); sin ninguna fila del rango pedido no se pide
+  el de respaldo; y `relacionesDeLaCorrida` (fusion.mjs) no funde filas de
+  OTRO rango (empieza de cero y el comparador cuenta las que falten) y,
+  sin ninguna fila nueva, conserva la matriz CON su etiqueta (antes salía
+  la de Mítico etiquetada como Gloria). Ajustes dice el rango de los cruces
+  y el de las builds por separado (`rango.crucesYBuildsDe`).
 
 Dos constantes que se midieron y se dejaron como estaban, para no volver a
 medirlas: el umbral de «tu héroe está N puntos por encima» (`>= 0.02` en
@@ -1087,6 +1095,23 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   rama y una prueba recorre TODAS las claves de los dos idiomas con 1 y con
   2: ninguna deja llaves.
 
+- **Las pruebas de navegador en rojo dos pushes seguidos sin que nadie
+  mirara** (3.35.0 → 3.37.0) — `pruebas-ui.yml` no bloquea el despliegue
+  (a propósito: no puede depender de un Chrome), así que su rojo no para
+  nada; el botón «Copiar» medía 31,x px de alto en el Chrome del runner y
+  32 aquí. Después de cada push, mirar también esa corrida. Y un atributo
+  JSX repetido (`lectorAuto` dos veces en App.jsx) solo salía como aviso
+  en el registro de Vite: hoy `pruebas/app/avisos-jsx.test.mjs` compila
+  cada fichero de `src/` con esbuild y falla con cualquier aviso.
+- **Lo recién publicado, revisado a la contra, tenía 14 fallos** (3.37.0)
+  — tres revisiones en paralelo del código de 3.33–3.36, cada una con la
+  orden de reproducir antes de afirmar: pasivas tratadas como habilidades,
+  un tipo de inmunidad leído como otro, una tabla de victoria que no podía
+  entrar, un `rm -rf` de una carpeta pública, una etiqueta de rango que
+  mentía con la API caída… Ninguna prueba los veía porque las pruebas se
+  escribieron con el caso que motivó cada cambio. Tras una tanda de
+  versiones seguidas, una revisión así antes de seguir añadiendo.
+
 ## El modelo (2.0)
 
 `src/motor/modelo.js` y `src/motor/ranking.js`. La nota de un pick ES la
@@ -1702,7 +1727,34 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   que el aprendizaje llega a mirar), sin tocar nada que no sea una captura
   del lector, y `lector` quita la carpeta de Descargas al arrancar. Todo
   lo que un proceso automático escribe en disco lleva su límite desde el
-  primer día, o el primer día que se usa de verdad lo llena.
+  primer día, o el primer día que se usa de verdad lo llena. Y desde
+  3.37.0 de Descargas se borran SOLO las capturas del lector (era un `rm
+  -rf` de `Download/capturas`, una carpeta pública con un nombre
+  corriente), y la poda no toca las pantallas que `/final` aún enseña.
+- **El héroe que el jugador solo MIRABA (3.37.0)**: el juego pinta en el
+  hueco de cada jugador el héroe que está mirando antes de confirmarlo, y
+  el lector solo sumaba. En las 29 partidas leídas hasta el 3 de octubre
+  de 2026, 30 de 407 nombres leídos hubo que quitarlos después (Joy cinco
+  veces, Wanwan y Miya tres), todos en picks y ninguno en baneos.
+  `nombresDeLectura` devuelve también `huecos` (quién se ve en cada
+  jugador, null en los «?» y en tu fila) y `cambiosDeHueco` (lector.js,
+  puro) quita al de antes si el MISMO hueco reconoce ahora a otro y él no
+  sale en otro hueco; un «?» (skins) no quita nada. `useDraft` guarda los
+  huecos en un ref (no en el almacén: tras recargar solo se pierde ese
+  cambio) y saca lo cambiado de `lectura` (no fue un fallo del lector).
+  Pruebas: `app/lector.test` y `lector.e2e` con las dos columnas reales
+  (Clint y Khufra en los huecos de Rafaela y Eudora).
+- **Lo que una revisión de 3.33–3.34 encontró (3.37.0)**: la tabla de
+  VICTORIA (sin plantilla de serie: `tabla` sin `resultado`) se tiraba con
+  ocho pantallas ya guardadas, en el lector y en `fundirFinal`, así que no
+  se aprendía nunca: hoy entra siempre en el sitio de la última que no es
+  tabla. «Más tarde» sin pick reescribía `completoDesde`, que identifica
+  el draft ante la vigilancia, y la reiniciaba (se perdía la tabla y se
+  vigilaba la partida siguiente): hoy apunta `recordarDesde`. Una partida
+  apuntada sola y deshecha se volvía a apuntar tras recargar: la marca va
+  en el draft (`apuntadaSola`). Y el tic que espera al lector comprueba
+  después de cada `await` que el draft sigue siendo el suyo, y
+  `vigilarTic` que el final sigue siendo el mismo.
 - **La primera tanda real de aprendizaje rompió los picks (1 de octubre
   de 2026, 3.30.1)**: a las 20:44 aprendió a Rafaela y a Selena de las
   tres últimas capturas de un draft, y desde entonces los cinco huecos
@@ -1895,21 +1947,33 @@ conviene no olvidar:
   del texto: medido el 3 de octubre de 2026, la etiqueta marca 5 de las 11
   que lo hacen (Argus, X.Borg, Masha, Akai, Joy y Nana solo lo dicen en el
   texto). `aliados` solo si además limpia y el texto habla de aliados
-  (Diggie). NO se identifica la ulti: por CD máximo fallaba en 11 de 111
-  héroes de cuatro habilidades (CD nulo en las de cargas) y los que se
-  transforman llegan a 20 habilidades; se nombra la habilidad por su
-  efecto y su nombre en inglés. Se conserva con la ficha caída, como
-  `speciality`, y `comparar-ingesta` cuenta `conHabilidades`.
+  (Diggie, Faramis: «clear all debuffs»). NO se identifica la ulti: por CD
+  máximo fallaba en 11 de 111 héroes de cuatro habilidades (CD nulo en las
+  de cargas) y los que se transforman llegan a 20 habilidades; se nombra
+  la habilidad por su efecto y su nombre en inglés. Desde 3.37.0: la
+  PASIVA (la primera de cada lista; no por el enfriamiento, que la ulti de
+  Gatotkaca tampoco trae) no cuenta, porque no se lanza («guarda Molina's
+  Gift» de Nana); `Death Immunity` NO es `inmortal` (Argus no muere pero
+  se le controla: «guardad el control para cuando se le acabe» era lo
+  contrario); y la ficha que llega sin nada que contar deja `[]`, no las
+  de antes (un rework que quita el último control). Se conserva con la
+  ficha caída, como `speciality`, y `comparar-ingesta` cuenta
+  `conHabilidades`.
 - **Medido en 300 drafts de roam completos** (5 contra 4): focus en el
   100%, «quédate con» 58%, «busca a» 53%, «rota con» 44%, «separaos» 37%,
   antisanación 31%, «abres tú» 30%, «proteged a» 27%, intocable 25%,
   «evita» 17%, cerrar pronto 6%, guardar la limpieza (Diggie) 5%, aguantad
-  3%; ningún plan vacío. Cazado ahí: «quédate con Fanny» (asesina con
+  3%; ningún plan vacío. Con 3.37.0 (sin pasivas ni Death Immunity, y el
+  ancla en el tirador inmóvil): «quédate con» 55% e intocable 8%; lo demás
+  igual. Cazado ahí: «quédate con Fanny» (asesina con
   `assassin_late`): a quien se protege es al tirador inmóvil y nunca a
   quien salta (`dive`).
-- Los umbrales de «escaláis mejor» (`DIFERENCIA_DE_ESCALADO` = 2) y de
-  «todo físico/mágico» (tres o más, ninguno del otro ni mixto) y los topes
-  (`MAX_EQUIPO` 5, `MAX_TUYO` 4) son decisiones de producto.
+- Los umbrales de «escaláis mejor» (`DIFERENCIA_DE_ESCALADO` = 2, y desde
+  3.37.0 solo con los dos equipos enteros: con picks tuyos por salir, los
+  que faltan suelen ser justo los que escalan) y de «todo físico/mágico»
+  (cuatro enemigos o más, ninguno del otro ni mixto) y los topes
+  (`MAX_EQUIPO` 5, `MAX_TUYO` 4) son decisiones de producto. La hoja sale
+  también sin builds (el botón dependía de `meta.builds`).
 - «Copiar para el chat» copia lo del equipo en una línea (` · `).
 - Pruebas: `motor/plan.test` (fixture determinista, 20 mutaciones),
   `scripts/ingesta.test` (formas reales de la API) e `ingesta-simulada`

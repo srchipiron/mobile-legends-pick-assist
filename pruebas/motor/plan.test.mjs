@@ -97,12 +97,19 @@ test('tu peor y tu mejor cruce solo cuando son claros (p05/p95), y tu mejor pare
 test('equipo: escalado por diferencia, daño solo si es todo de un tipo, antisanación con dos curanderos, proteger al tirador', () => {
   const m = meta();
   const tres = (enemigos, aliados = [mia, layla]) => planDePartida({ yo: diggie, aliados, enemigos, meta: m }).equipo.map((f) => f.clave);
-  ok(tres([fanny, lylia, gord]).includes('partida.aguantad'), 'escaláis con dos más y no lo dice');
-  ok(!tres([fanny, lylia, H('Kimmy', ['hypercarry'])]).includes('partida.aguantad'), 'lo dice con uno de diferencia');
-  ok(tres([layla, mia, H('Irithel', ['hypercarry'])], [fanny, lylia]).includes('partida.cerradPronto'), 'ellos escalan con dos más y no lo dice');
-  ok(tres([fanny, layla, mia]).includes('partida.todoFisico'), 'todo físico y no lo dice');
-  ok(!tres([fanny, layla, lylia]).includes('partida.todoFisico'), 'dice todo físico con un mago');
-  ok(tres([lylia, gord, H('Kagura', [], { damage: { fisico: 0, magico: 2, verdadero: 0 } })]).includes('partida.todoMagico'), 'todo mágico y no lo dice');
+  // Relleno sin etiquetas ni daño, para completar equipos.
+  const x = (n) => H(`X${n}`);
+  const nosCinco = [mia, layla, x(1), x(2)];
+  // El escalado solo con los dos equipos enteros (3.37.0): con picks tuyos por salir no se sabe.
+  ok(tres([fanny, lylia, gord, x(3), x(4)], nosCinco).includes('partida.aguantad'), 'escaláis con dos más y no lo dice');
+  ok(!tres([fanny, lylia, H('Kimmy', ['hypercarry']), x(3), x(4)], nosCinco).includes('partida.aguantad'), 'lo dice con uno de diferencia');
+  ok(tres([layla, mia, H('Irithel', ['hypercarry']), x(3), x(4)], [fanny, lylia, x(1), x(2)]).includes('partida.cerradPronto'), 'ellos escalan con dos más y no lo dice');
+  ok(!tres([layla, mia, H('Irithel', ['hypercarry']), x(3), x(4)], [fanny, lylia]).includes('partida.cerradPronto'), 'dice quién escala con dos picks tuyos por salir');
+  // Todo de un daño: con cuatro enemigos o más.
+  ok(tres([fanny, layla, mia, x(3)]).includes('partida.todoFisico'), 'todo físico y no lo dice');
+  ok(!tres([fanny, layla, mia]).includes('partida.todoFisico'), 'dice todo físico con solo tres enemigos vistos');
+  ok(!tres([fanny, layla, lylia, x(3)]).includes('partida.todoFisico'), 'dice todo físico con un mago');
+  ok(tres([lylia, gord, H('Kagura', [], { damage: { fisico: 0, magico: 2, verdadero: 0 } }), x(3)]).includes('partida.todoMagico'), 'todo mágico y no lo dice');
   const cura = (n) => H(n, ['heal']);
   ok(tres([cura('Estes'), cura('Floryn'), lylia]).includes('partida.antisanacion'), 'dos curanderos y no lo dice');
   ok(!tres([cura('Estes'), lylia, gord]).includes('partida.antisanacion'), 'antisanación por un solo curandero');

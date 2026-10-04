@@ -5,7 +5,7 @@
  * los plurales, el nº1 en la primera pantalla, el pie con teclado y la
  * limpieza de nombres fantasma. Cada una nació de un fallo real (CLAUDE.md).
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 /** El motor con los datos que sirve dist/, con Gloria pedida (lo que ve la app sin rango guardado). */
@@ -21,6 +21,22 @@ const navegador = await abrirNavegador();
 const LINEA = { 'roam-picker:linea': 'roam' };
 const PICKS = { enemies: ['Layla', 'Fanny', 'Pharsa'], allies: ['Chou'], bans: ['Hirara'], enemyRoam: null, fase: 'picks' };
 const con = (draft, extra = {}, viewport) => paginaCon(navegador, url, { viewport, almacen: { ...LINEA, 'roam-picker:draft': draft, ...extra } });
+
+await prueba('el selector de rango dice de qué rango son los cruces y de cuál las builds, cada uno con el suyo (3.37.0)', async () => {
+  // Con los datos servidos: cruces y parejas de `relaciones.rango` (Mítico
+  // mientras Gloria se rellena) y builds del rango de la ingesta.
+  const { readFile } = await import('node:fs/promises');
+  const meta = JSON.parse(await readFile(new URL('../../dist/data/roam-meta.json', import.meta.url), 'utf8'));
+  const cruces = meta.relaciones?.rango ?? meta.rank;
+  const etiqueta = { epic: 'Epic', legend: 'Legend', mythic: 'Mythic', glory: 'Glory' };
+  const { contexto, pagina, errores } = await con(PICKS, { 'roam-picker:rank': 'glory' });
+  await abrirAjustes(pagina);
+  const notas = await pagina.locator('.rank-picker + .build-nota').allInnerTexts();
+  if (cruces === meta.rank) eq(notas.length, 0, `con todo del rango elegido sale una nota: ${notas}`);
+  else ok(notas.length === 1 && notas[0].includes(etiqueta[cruces]) && notas[0].includes(`builds de ${etiqueta[meta.rank]}`), `la nota no dice el rango de cada cosa: ${notas}`);
+  ok(!errores.length, `errores de página: ${errores}`);
+  await contexto.close();
+});
 
 await prueba('con Ajustes abierto a 360x640 la lista sigue viéndose', async () => {
   const { contexto, pagina, errores } = await con(PICKS, {}, { width: 360, height: 640 });
