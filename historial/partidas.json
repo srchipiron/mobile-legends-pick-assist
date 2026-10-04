@@ -1,6 +1,118 @@
 {
- "actualizado": "2026-10-03T21:23:31.641Z",
+ "actualizado": "2026-10-04T00:22:36.524Z",
  "partidas": [
+  {
+   "t": 1791073340938,
+   "pick": "Diggie",
+   "recomendados": [
+    "Gloo",
+    "Carmilla",
+    "Atlas"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.406,
+   "bans": [
+    "Eudora",
+    "Hirara",
+    "Lukas",
+    "Marcel",
+    "Kaja",
+    "Angela",
+    "Vexana",
+    "Estes"
+   ],
+   "draft": {
+    "enemigos": [
+     "Miya",
+     "Odette",
+     "Suyou",
+     "Minotaur",
+     "Aamon"
+    ],
+    "aliados": [
+     "Kadita",
+     "Paquito",
+     "Yi Sun-shin",
+     "Moskov"
+    ],
+    "linea": "roam",
+    "rival": "Minotaur"
+   },
+   "lector": {
+    "baneos": [
+     "Eudora",
+     "Hirara",
+     "Lukas",
+     "Marcel",
+     "Kaja",
+     "Angela",
+     "Vexana",
+     "Estes"
+    ],
+    "enemigos": [
+     "Miya",
+     "Odette"
+    ],
+    "aliados": [
+     "Paquito",
+     "Yi Sun-shin",
+     "Moskov"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Zetian",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Wanwan",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Zetian",
+      "parecido": 0.59
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Selena",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Natalia",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Zetian",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Nolan",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Wanwan",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Valir",
+      "parecido": 0.68
+     }
+    ]
+   }
+  },
   {
    "t": 1791062597303,
    "pick": "Angela",
@@ -6500,6 +6612,12 @@
   {
    "cuando": "2026-10-03T21:23:31.641Z",
    "partidas": 152,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-04T00:22:36.524Z",
+   "partidas": 153,
    "heroes": 11,
    "incidencia": 11
   }
