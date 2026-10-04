@@ -1,6 +1,87 @@
 {
- "actualizado": "2026-10-04T17:08:09.676Z",
+ "actualizado": "2026-10-04T17:35:37.962Z",
  "partidas": [
+  {
+   "t": 1791135321066,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Gloo",
+    "Rafaela",
+    "Edith"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.633,
+   "bans": [
+    "Eudora",
+    "Hirara",
+    "Marcel",
+    "Wanwan",
+    "Belerick",
+    "Minotaur",
+    "Yi Sun-shin",
+    "Atlas",
+    "Hanzo"
+   ],
+   "draft": {
+    "enemigos": [
+     "Franco",
+     "Pharsa",
+     "Leomord",
+     "Yu Zhong",
+     "Melissa"
+    ],
+    "aliados": [
+     "X.Borg",
+     "Zetian",
+     "Saber",
+     "Lesley"
+    ],
+    "linea": "roam",
+    "rival": "Franco"
+   },
+   "lector": {
+    "baneos": [
+     "Eudora",
+     "Hirara",
+     "Marcel",
+     "Wanwan",
+     "Belerick",
+     "Minotaur",
+     "Yi Sun-shin",
+     "Atlas",
+     "Hanzo"
+    ],
+    "enemigos": [
+     "Franco",
+     "Leomord",
+     "Yu Zhong"
+    ],
+    "aliados": [
+     "Zetian",
+     "Saber",
+     "Lesley"
+    ],
+    "tuyo": "Rafaela",
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Fredrinn",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Beatrix",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "a1",
+      "candidato": "X.Borg",
+      "parecido": 0.79
+     }
+    ]
+   }
+  },
   {
    "t": 1791133675274,
    "pick": "Gloo",
@@ -6729,6 +6810,12 @@
   {
    "cuando": "2026-10-04T17:08:09.676Z",
    "partidas": 154,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-04T17:35:37.962Z",
+   "partidas": 155,
    "heroes": 11,
    "incidencia": 11
   }
