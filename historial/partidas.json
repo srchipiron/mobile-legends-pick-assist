@@ -1,6 +1,111 @@
 {
- "actualizado": "2026-10-04T00:22:36.524Z",
+ "actualizado": "2026-10-04T17:08:09.676Z",
  "partidas": [
+  {
+   "t": 1791133675274,
+   "pick": "Gloo",
+   "recomendados": [
+    "Edith",
+    "Atlas",
+    "Rafaela"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.522,
+   "bans": [
+    "Marcel",
+    "Khufra",
+    "Hirara",
+    "Paquito",
+    "Masha",
+    "Belerick",
+    "Brody",
+    "Floryn",
+    "Aulus"
+   ],
+   "draft": {
+    "enemigos": [
+     "Angela",
+     "Cecilion",
+     "Arlott",
+     "Fredrinn",
+     "Melissa"
+    ],
+    "aliados": [
+     "Lukas",
+     "Aurora",
+     "Obsidia",
+     "X.Borg"
+    ],
+    "linea": "roam",
+    "rival": "Angela"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Khufra",
+     "Hirara",
+     "Paquito",
+     "Masha",
+     "Belerick",
+     "Brody",
+     "Floryn",
+     "Aulus"
+    ],
+    "enemigos": [
+     "Gord",
+     "Wanwan",
+     "Joy",
+     "Angela",
+     "Cecilion"
+    ],
+    "aliados": [
+     "Hirara",
+     "Lukas",
+     "Aurora",
+     "Obsidia"
+    ],
+    "dudas": [
+     {
+      "hueco": "t2",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Melissa",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Gloo",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.74
+     }
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Arlott",
+      "Arlott",
+      "Arlott"
+     ],
+     "sinEncontrar": [
+      "Melissa",
+      "Melissa",
+      "Melissa"
+     ]
+    }
+   }
+  },
   {
    "t": 1791073340938,
    "pick": "Diggie",
@@ -6618,6 +6723,12 @@
   {
    "cuando": "2026-10-04T00:22:36.524Z",
    "partidas": 153,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-04T17:08:09.676Z",
+   "partidas": 154,
    "heroes": 11,
    "incidencia": 11
   }
