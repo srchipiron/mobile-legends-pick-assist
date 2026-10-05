@@ -1,6 +1,531 @@
 {
- "actualizado": "2026-10-05T17:14:44.521Z",
+ "actualizado": "2026-10-05T21:26:33.323Z",
  "partidas": [
+  {
+   "t": 1791234420918,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Chip",
+    "Rafaela",
+    "Floryn"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.494,
+   "bans": [
+    "Khufra",
+    "Hirara",
+    "Atlas",
+    "Lukas",
+    "Sun",
+    "Paquito",
+    "Eudora",
+    "Marcel",
+    "Gloo"
+   ],
+   "draft": {
+    "enemigos": [
+     "Hanzo",
+     "Ixia",
+     "Franco",
+     "Gord"
+    ],
+    "aliados": [
+     "Clint",
+     "Esmeralda",
+     "Luo Yi",
+     "Yi Sun-shin"
+    ],
+    "linea": "roam",
+    "rival": "Franco"
+   },
+   "lector": {
+    "baneos": [
+     "Khufra",
+     "Hirara",
+     "Atlas",
+     "Lukas",
+     "Sun",
+     "Paquito",
+     "Eudora",
+     "Marcel",
+     "Gloo"
+    ],
+    "enemigos": [
+     "Joy",
+     "Hanzo",
+     "Ixia",
+     "Franco",
+     "Gord"
+    ],
+    "aliados": [
+     "Clint",
+     "Esmeralda",
+     "Luo Yi"
+    ],
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Guinevere",
+      "parecido": 0.63
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Gusion",
+      "parecido": 0.54
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Moskov",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Chang'e",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Atlas",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Gord",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Atlas",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Moskov",
+      "parecido": 0.57
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Moskov",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Atlas",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Gord",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Moskov",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Wanwan",
+      "parecido": 0.63
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Atlas",
+      "parecido": 0.74
+     }
+    ],
+    "ms": [
+     4449,
+     4846,
+     4760,
+     4995,
+     5012,
+     5348,
+     5185,
+     4973,
+     4820,
+     4675,
+     9799,
+     5683,
+     5059,
+     6031,
+     4865,
+     4692,
+     4813,
+     4758,
+     4785,
+     5890
+    ],
+    "msCaptura": [
+     3308,
+     3698,
+     3657,
+     3846,
+     3884,
+     3980,
+     4098,
+     4018,
+     3682,
+     3663,
+     8733,
+     4456,
+     4007,
+     4845,
+     3628,
+     3533,
+     3636,
+     3583,
+     3632,
+     4379
+    ]
+   }
+  },
+  {
+   "t": 1791232726169,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Rafaela"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.556,
+   "bans": [
+    "Khufra",
+    "Paquito",
+    "Hirara",
+    "Marcel",
+    "Atlas",
+    "Esmeralda",
+    "Barats",
+    "Belerick"
+   ],
+   "draft": {
+    "enemigos": [
+     "Eudora",
+     "Masha",
+     "Yi Sun-shin",
+     "Obsidia",
+     "Minotaur"
+    ],
+    "aliados": [
+     "Kagura",
+     "Clint",
+     "Lukas",
+     "Gloo"
+    ],
+    "linea": "roam",
+    "rival": "Minotaur"
+   },
+   "lector": {
+    "baneos": [
+     "Khufra",
+     "Paquito",
+     "Hirara",
+     "Marcel",
+     "Atlas",
+     "Esmeralda",
+     "Barats",
+     "Belerick"
+    ],
+    "enemigos": [
+     "Eudora",
+     "Masha",
+     "Yi Sun-shin",
+     "Obsidia"
+    ],
+    "aliados": [
+     "Kagura",
+     "Clint",
+     "Lukas"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Julian",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Fredrinn",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Zetian",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Gord",
+      "parecido": 0.61
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Fredrinn",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Beatrix",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Wanwan",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Angela",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Bruno",
+      "parecido": 0.72
+     }
+    ],
+    "ms": [
+     4614,
+     4524,
+     4652,
+     4913,
+     5119,
+     8964,
+     9472,
+     5245,
+     5280,
+     5217,
+     9609,
+     9120,
+     9428,
+     4897,
+     7906,
+     4842,
+     4970,
+     9677,
+     5325,
+     4338
+    ],
+    "msCaptura": [
+     3564,
+     3440,
+     3570,
+     3772,
+     3801,
+     7845,
+     8295,
+     3985,
+     4156,
+     4148,
+     8426,
+     8187,
+     8470,
+     3997,
+     6951,
+     3952,
+     4121,
+     8265,
+     4058,
+     3202
+    ]
+   }
+  },
+  {
+   "t": 1791231114800,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Badang",
+    "Khaleed",
+    "Minotaur"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.489,
+   "bans": [
+    "Belerick",
+    "Khufra",
+    "Hirara",
+    "Paquito",
+    "Melissa",
+    "Estes",
+    "Kaja",
+    "Lukas",
+    "Marcel"
+   ],
+   "draft": {
+    "enemigos": [
+     "Angela",
+     "Kadita",
+     "Barats",
+     "Zetian",
+     "Hanabi"
+    ],
+    "aliados": [
+     "Eudora",
+     "Clint",
+     "Esmeralda",
+     "Joy"
+    ],
+    "linea": "roam",
+    "rival": "Angela"
+   },
+   "lector": {
+    "baneos": [
+     "Belerick",
+     "Khufra",
+     "Hirara",
+     "Paquito",
+     "Melissa",
+     "Estes",
+     "Kaja",
+     "Lukas",
+     "Marcel"
+    ],
+    "enemigos": [
+     "Angela",
+     "Kadita",
+     "Zetian",
+     "Gord"
+    ],
+    "aliados": [
+     "Eudora",
+     "Clint",
+     "Joy"
+    ],
+    "tuyo": "Floryn",
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Gatotkaca",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Angela",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Joy",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Natan",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Bane",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Angela",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Angela",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Angela",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Joy",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Joy",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Angela",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Angela",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Angela",
+      "parecido": 0.71
+     }
+    ],
+    "ms": [
+     5135,
+     9057,
+     9345,
+     5248,
+     9667,
+     5607,
+     5014,
+     3651,
+     7722,
+     4889,
+     9200,
+     8257,
+     11016,
+     5912,
+     4488,
+     9848,
+     4151,
+     3817,
+     4669,
+     10962
+    ],
+    "msCaptura": [
+     3962,
+     8326,
+     8404,
+     4173,
+     8719,
+     4550,
+     3709,
+     2697,
+     6687,
+     3841,
+     8100,
+     7037,
+     9950,
+     4685,
+     3286,
+     8874,
+     3051,
+     2760,
+     3572,
+     9519
+    ]
+   }
+  },
   {
    "t": 1791220467375,
    "pick": "Rafaela",
@@ -8184,6 +8709,12 @@
   {
    "cuando": "2026-10-05T17:14:44.521Z",
    "partidas": 165,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-05T21:26:33.323Z",
+   "partidas": 168,
    "heroes": 11,
    "incidencia": 11
   }
