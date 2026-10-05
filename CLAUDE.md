@@ -3192,7 +3192,10 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   deja leer repositorios de fuera desde la sesión; `ls-remote` sí), coger
   el commit de `vX.Y.Z^{}` si la etiqueta es anotada, y cambiarlo en
   TODOS los workflows a la vez. No hay Dependabot: abriría pull requests
-  que Javi tendría que fusionar desde el móvil. Y por diseño de 3.40.0: lo leído que
+  que Javi tendría que fusionar desde el móvil. Y la verificación en dos
+  pasos de su cuenta de GitHub, activada por él el mismo día (desde una
+  sesión no se puede comprobar: `gh api user` da
+  `two_factor_authentication: null` con el token de la sesión). Y por diseño de 3.40.0: lo leído que
   no llegó a entrar (por el tope de cinco) cuenta como «quitado a mano» y
   no vuelve a entrar en ese draft aunque luego quede hueco; con el tope
   lleno uno de los seis leídos sobraba, y `cambiosDeHueco` ya cambia al
