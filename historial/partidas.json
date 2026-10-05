@@ -1,6 +1,194 @@
 {
- "actualizado": "2026-10-05T21:48:43.655Z",
+ "actualizado": "2026-10-05T21:49:59.864Z",
  "partidas": [
+  {
+   "t": 1791236965053,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Minotaur",
+    "Khaleed",
+    "Lolita"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.546,
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Wanwan",
+    "Gusion",
+    "Lukas",
+    "Aulus",
+    "Eudora",
+    "Sora",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Dyrroth",
+     "Xavier",
+     "Irithel",
+     "Gord",
+     "Martis"
+    ],
+    "aliados": [
+     "Granger",
+     "Aamon",
+     "Selena",
+     "Silvanna"
+    ],
+    "linea": "roam"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Marcel",
+     "Wanwan",
+     "Gusion",
+     "Lukas",
+     "Aulus",
+     "Eudora",
+     "Sora",
+     "Paquito"
+    ],
+    "enemigos": [
+     "Dyrroth",
+     "Xavier",
+     "Irithel",
+     "Gord",
+     "Yi Sun-shin"
+    ],
+    "aliados": [
+     "Granger",
+     "Aamon"
+    ],
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Wanwan",
+      "parecido": 0.62
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Gusion",
+      "parecido": 0.55
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Moskov",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Chang'e",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Atlas",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Atlas",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Atlas",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Moskov",
+      "parecido": 0.6
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Moskov",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Atlas",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Gord",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Gord",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Gord",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Gord",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Gord",
+      "parecido": 0.76
+     }
+    ],
+    "ms": [
+     4894,
+     8438,
+     4942,
+     5283,
+     4999,
+     4586,
+     4573,
+     4914,
+     5365,
+     4840,
+     6399,
+     5333,
+     6051,
+     5069,
+     10132,
+     9195
+    ],
+    "msCaptura": [
+     3808,
+     7217,
+     3700,
+     4029,
+     3668,
+     3351,
+     3536,
+     3893,
+     4282,
+     3723,
+     5365,
+     4094,
+     4735,
+     3942,
+     9063,
+     8057
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Irithel",
+      "Gord",
+      "Martis",
+      "Gord",
+      "Martis",
+      "Gord",
+      "Martis"
+     ]
+    }
+   }
+  },
   {
    "t": 1791234420918,
    "pick": "Minotaur",
@@ -8721,6 +8909,12 @@
   {
    "cuando": "2026-10-05T21:48:43.655Z",
    "partidas": 168,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-05T21:49:59.864Z",
+   "partidas": 169,
    "heroes": 11,
    "incidencia": 11
   }
