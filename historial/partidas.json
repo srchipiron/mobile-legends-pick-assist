@@ -1,6 +1,183 @@
 {
- "actualizado": "2026-10-05T16:33:51.414Z",
+ "actualizado": "2026-10-05T16:53:45.107Z",
  "partidas": [
+  {
+   "t": 1791219158699,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Rafaela",
+    "Lolita"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.475,
+   "origen": "lector",
+   "bans": [
+    "Eudora",
+    "Miya",
+    "Lukas",
+    "Gloo",
+    "Marcel",
+    "Hirara",
+    "Alice",
+    "Belerick",
+    "Aulus",
+    "Hanzo"
+   ],
+   "draft": {
+    "enemigos": [
+     "Hylos",
+     "Lesley",
+     "Cyclops",
+     "Argus",
+     "Saber"
+    ],
+    "aliados": [
+     "Kadita",
+     "Hanabi",
+     "Zilong",
+     "Benedetta"
+    ],
+    "linea": "roam",
+    "rival": "Hylos"
+   },
+   "lector": {
+    "baneos": [
+     "Eudora",
+     "Miya",
+     "Lukas",
+     "Gloo",
+     "Marcel",
+     "Hirara",
+     "Alice",
+     "Belerick",
+     "Aulus",
+     "Hanzo"
+    ],
+    "enemigos": [
+     "Hylos",
+     "Lesley",
+     "Cyclops",
+     "Fanny"
+    ],
+    "aliados": [
+     "Wanwan",
+     "Zilong"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Carmilla",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Atlas",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Natalia",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Zetian",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Natalia",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Chang'e",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Fredrinn",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Wanwan",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Wanwan",
+      "parecido": 0.64
+     }
+    ],
+    "ms": [
+     4868,
+     4783,
+     4821,
+     4786,
+     5030,
+     5137,
+     5733,
+     4837,
+     4351,
+     4688,
+     4983,
+     5313,
+     4459,
+     5256,
+     5075,
+     4339,
+     4636,
+     4797,
+     4821,
+     4818
+    ],
+    "msCaptura": [
+     3582,
+     3723,
+     3733,
+     3621,
+     3725,
+     3840,
+     4651,
+     3913,
+     3444,
+     3751,
+     3862,
+     4210,
+     3500,
+     4318,
+     4301,
+     3568,
+     3781,
+     3694,
+     3800,
+     3567
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Argus",
+      "Saber",
+      "Argus",
+      "Saber",
+      "Hylos",
+      "Lesley",
+      "Cyclops",
+      "Argus",
+      "Saber"
+     ]
+    }
+   }
+  },
   {
    "t": 1791218013674,
    "pick": "Diggie",
@@ -7858,6 +8035,12 @@
   {
    "cuando": "2026-10-05T16:33:51.414Z",
    "partidas": 163,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-05T16:53:45.107Z",
+   "partidas": 164,
    "heroes": 11,
    "incidencia": 11
   }
