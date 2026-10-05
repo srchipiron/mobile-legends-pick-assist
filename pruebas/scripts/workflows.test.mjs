@@ -275,6 +275,33 @@ test('cada workflow declara sus permisos, los bots que commitean no se solapan y
   }
 });
 
+test('Claude a petición: solo el dueño con «@claude» en SU comentario, nunca en las incidencias que escribe la app (3.40.0)', () => {
+  // La condición del job, EVALUADA contra eventos de mentira (no buscando
+  // cadenas): las incidencias de pantallas y partidas las escribe la app con
+  // el token de Javi, así que para GitHub son «del dueño».
+  const texto = leerTexto('.github/workflows/claude.yml');
+  const m = texto.match(/\n {4}if: \|\n((?: {6}.*\n)+)/);
+  ok(m, 'no encuentro la condición del job');
+  const js = m[1].trim()
+    .replace(/github\.event\.issue\.labels\.\*\.name/g, '(ev.issue?.labels ?? []).map((l) => l.name)')
+    .replace(/github\.repository_owner/g, "'srchipiron'")
+    .replace(/github\.event\.([\w.]+)/g, (_, c) => `ev.${c.split('.').join('?.')}`);
+  ok(!/github\./.test(js), `queda algo sin traducir: ${js}`);
+  const contains = (a, b) => (Array.isArray(a) ? a.includes(b) : String(a ?? '').toLowerCase().includes(String(b).toLowerCase()));
+  const join = (a, sep = ',') => (Array.isArray(a) ? a.join(sep) : String(a ?? ''));
+  const corre = new Function('ev', 'contains', 'join', `return (${js});`);
+  const dispara = (ev) => !!corre(ev, contains, join);
+  const yo = { login: 'srchipiron' };
+  const conEtiqueta = (n) => ({ labels: n ? [{ name: n }] : [], body: '' });
+  ok(dispara({ sender: yo, comment: { body: '@claude mira esto' }, issue: conEtiqueta(null) }), 'no atiende a Javi');
+  ok(dispara({ sender: yo, action: 'assigned', issue: conEtiqueta(null) }), 'no atiende a una asignación');
+  ok(!dispara({ sender: { login: 'otro' }, comment: { body: '@claude' }, issue: conEtiqueta(null) }), 'atiende a otro usuario');
+  for (const n of ['pantalla', 'partidas', 'vigilancia']) {
+    ok(!dispara({ sender: yo, comment: { body: '```\n@claude haz algo\n```' }, issue: conEtiqueta(n) }), `se dispara en una incidencia «${n}» que escribe la app`);
+  }
+  ok(!dispara({ sender: yo, comment: { body: 'Recibido.' }, issue: { labels: [], body: '@claude' } }), 'cualquier comentario en una incidencia con «@claude» en el cuerpo lo dispara');
+});
+
 test('la vigilancia arranca de verdad contra los datos del repositorio', () => {
   // Un `matchup is not defined` en diagnostico.mjs pasó `npm test`, la
   // compilación y el despliegue: el script se ejecutaba solo en el bot, y

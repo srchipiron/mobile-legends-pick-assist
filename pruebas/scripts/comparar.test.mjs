@@ -72,6 +72,19 @@ test('una corrida de ingesta degradada no llega a los datos guardados', () => {
   ok(medir({}).heroes === 0, 'medir() no aguanta un JSON vacio');
 });
 
+test('una corrida que trae los objetos sin defensa ni efectos no pasa el filtro (3.40.0)', () => {
+  // Con /expanded caída la ruta corta trae los mismos objetos sin `equiptips`:
+  // el recuento de objetos no se movía.
+  const objetos = (conTips) => Object.fromEntries(Array.from({ length: 20 }, (_, i) => [1000 + i, {
+    nombre: `O${i}`, ...(conTips && i < 10 ? { magica: 10 } : {}), ...(conTips && i < 4 ? { efectos: ['antiCuracion'] } : {}),
+  }]));
+  const guardada = { heroes: [], equipment: objetos(true) };
+  const peores = comparar({ heroes: [], equipment: objetos(false) }, guardada).peores.map((p) => p.clave);
+  ok(peores.includes('objetosConDefensa') && peores.includes('objetosConEfecto') && !peores.includes('objetos'), `peores: ${peores}`);
+  eq(comparar(guardada, guardada).peores.length, 0, 'la misma corrida no pasa');
+  eq(medir(guardada).objetosConDefensa, 10, 'no cuenta los objetos con defensa');
+});
+
 test('una corrida que pierde builds no pasa el filtro', () => {
   const tres = (n) => Array.from({ length: n }, () => ({ objetos: [1, 2, 3] }));
   const base = {

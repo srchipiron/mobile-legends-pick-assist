@@ -1117,6 +1117,51 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   también a ese. `comprobar/css.mjs` mira que toda clase usada tenga
   estilo, no que una clase nueva no exista ya: antes de nombrar una clase,
   `grep` en `styles.css` y en `src/`.
+- **«Leer solo» deshaciendo lo que se tocaba a mano** (3.28.0 → 3.40.0,
+  cazado por la primera pasada de `click-path-audit` de ECC, seis fallos
+  reproducidos en `toques.e2e.mjs`): la × quitaba un héroe y la lectura de
+  5 s después lo volvía a meter (`aplicarLectura` solo sumaba; hoy lo leído
+  y ya no presente es un rechazo, `rechazados`); soltar el pick que fijó el
+  lector y volvía a fijarse (`soltadoAMano`); el «Deshacer» no caducaba
+  porque cada lectura vacía lo reapuntaba y el temporizador iba atado al
+  objeto (hoy `creado`); una lectura con enemigos pasaba a picks y
+  desmontaba la hoja de baneos abierta (el aviso y la hoja van en el mismo
+  hueco en las dos fases); el selector de picks reordenaba la rejilla al
+  entrar un compañero leído (`fueraAlOrdenar` se fija al abrir); y con el
+  pick fijado de otra línea se preguntaba y apuntaba el nº1. Cada uno
+  funcionaba solo; juntos, el proceso automático pisaba al dedo. Todo lo
+  que escribe un proceso automático sobre un estado que también toca la
+  persona tiene que saber qué quitó la persona.
+- **La vigilancia del final guardaba las PRIMERAS pantallas y la subida
+  cortaba la tabla** (3.33.0 → 3.40.0, `silent-failure-hunter`): con ocho
+  ya guardadas, el lector y `fundirFinal` descartaban las nuevas, así que
+  la tabla (que es de las últimas) solo entraba por su excepción; y
+  `cuerpoDeFotogramas` metía miniaturas por orden hasta llenar el mensaje
+  (10–12 mil caracteres cada una): las incidencias #21–#35 dicen «8
+  pantallas» y ninguna lleva la tabla. Hoy se quedan las últimas y la
+  subida va por importancia (tablas, luego de la más nueva a la más
+  vieja), con «N de M» en el título.
+- **Un canal de la app que podía mandar a Claude** (hasta 3.40.0,
+  `security-reviewer`, sin que llegara a pasar): `claude.yml` atiende a
+  comentarios del dueño con «@claude», y las incidencias de pantallas y
+  partidas las escribe la APP con el token de Javi, con texto que llega
+  del puerto local del lector. Hoy la app solo sube fotogramas con la
+  forma del lector (`fotogramaValido`: id, minuto, base64), el lector
+  exige `Host` local (contra el rebinding de DNS) y ya no tiene `/captura`,
+  y `claude.yml` no se dispara en incidencias con etiqueta `pantalla`,
+  `partidas` o `vigilancia` ni por el «@claude» del cuerpo (prueba que
+  EVALÚA la condición contra eventos). Lo que entra por un canal
+  automático no puede llegar a un canal que obedece órdenes.
+- **El 422 que soltaba el rango** (hasta 3.40.0, `silent-failure-hunter`,
+  sin constancia de que pasara): `callRoute` reintentaba sin parámetros,
+  así que una API que rechazara `rank` daba los datos de todos los rangos
+  guardados como de Gloria (y la guarda de rango los veía idénticos a los
+  de Mítico) y una que rechazara `lane`, las builds de otra línea. Hoy
+  rango y línea no se sueltan nunca, lo soltado va con la respuesta
+  (`sin`) y `fetchStats` falla si pidió 3 días y le quitaron `days`. Y
+  la descarga se niega a llamar a una ruta de cuentas (`RUTA_PROHIBIDA`,
+  en el descubrimiento y en `request`). Un reintento que afloja tiene que
+  saber qué parámetros dicen DE QUÉ es el dato.
 
 ## El modelo (2.0)
 
@@ -3046,8 +3091,64 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   y descripción (sin ellos no se cargan), la licencia y que los agentes
   traídos no puedan escribir (dos mutaciones). La declaración del plugin se
   deja: si un día carga, sus hooks siguen apagados.
+  **Primera pasada (3.40.0)**, con los cuatro en paralelo y la orden de
+  reproducir antes de afirmar: `click-path-audit` 6 fallos (los seis
+  reproducidos y arreglados), `silent-failure-hunter` 9 (arreglados 7:
+  fotogramas, subida, comparador de objetos, 422, builds, dudas,
+  aprendizaje a destiempo), `security-reviewer` 7 (arreglados los de
+  código; los de configuración de GitHub son de Javi, abajo). Desde ahí
+  el bucle está en `/revisar` (`.claude/commands/revisar.md`): los
+  agentes que tocan según el diff, verificar, arreglar con prueba y
+  `pr-test-analyzer` antes de publicar. Ese último, sobre el diff de
+  3.40.0, rompió 25 cosas y sobrevivieron 8; las reales se cerraron
+  antes de subir: la prueba de SEGURIDAD nueva se saltaba con
+  `process.getBuiltinModule`, `(()=>{}).constructor(…)`, `Reflect` y un
+  «//» dentro de una cadena que escondía un `import(` (hoy quita los
+  comentarios con esbuild, no con una expresión, y prohíbe además toda
+  llamada a un miembro calculado), el `Host` aceptaba
+  `localhost.atacante.example` si se quitaba el `$` sin que nada fallara,
+  la vigilancia podía guardar «las tres primeras y la última», y la × de
+  baneos y compañeros, el «Deshacer» de una lectura y la partida apuntada
+  sola con tu pick no tenían prueba. **De las dos guías de Affaan
+  (5 de octubre de 2026)** se aplicó lo que sirve sin ordenador: agentes
+  con herramientas acotadas (solo lectura), habilidades y mandatos del
+  proyecto, bucle de verificación, reglas en un solo CLAUDE.md. Lo que
+  NO aplica aquí: atajos de teclado, editores (Zed), tmux, `/fork`,
+  `/statusline`, `/plugin` y los hooks de memoria (piden la CLI de
+  escritorio; en la nube cada sesión empieza de cero y la memoria es
+  este fichero). Lo que es de Javi y no se puede hacer desde una sesión:
+  desactivar en claude.ai los conectores que no usa (Gmail, Calendar,
+  Spotify, Strava: cargan herramientas en cada sesión y la guía pide
+  menos de 10 servidores activos), proteger `main`, fijar las acciones de
+  los workflows por SHA y separar el origen de la app (ver «Lo que queda
+  pendiente»).
 
 ## Lo que queda pendiente
+
+- **Lo que dejó abierto la pasada de ECC de 3.40.0** (medido o
+  reproducido, no arreglado): (1) los retratos de `public/heroes/` no se
+  vuelven a bajar si la API cambia la URL (un rework como Masha o Bruno
+  se queda con la cara vieja en las tarjetas; el lector usa `cara`, que
+  sí se actualiza): haría falta guardar la URL de cada retrato; (2)
+  `volcarFotogramas` vacía la lista antes de saber si la subida fue bien:
+  sin red al apuntar, esa partida no sube sus pantallas; (3)
+  «Nuevo draft» + «Deshacer» devuelve el draft pero sus fotogramas ya se
+  volcaron sin resultado, y deshacer una partida apuntada sola no
+  deshace lo que se le enseñó al lector; (4) `/corregir` espera a que el
+  lector aprenda y la app corta a los 20 s (`PLAZO_LECTOR_MS`): 16 de 39
+  partidas leídas llevan `aprendizaje`, así que a veces llega y a veces
+  no. **De seguridad, decisiones de Javi** (`security-reviewer`): la app
+  comparte origen (`srchipiron.github.io`) con otra app suya, así que
+  cualquier página de ese origen lee el `localStorage` (el token) y el
+  lector la acepta como origen; un dominio propio o mover la otra app lo
+  cierra. El token, con caducidad y solo «Issues» de este repositorio.
+  `main` sin proteger, acciones fijadas por etiqueta y no por SHA, la
+  declaración de ECC sin fijar a un commit, y `lector.sh` ejecuta lo que
+  traiga `git pull` sin preguntar. Y por diseño de 3.40.0: lo leído que
+  no llegó a entrar (por el tope de cinco) cuenta como «quitado a mano» y
+  no vuelve a entrar en ese draft aunque luego quede hueco; con el tope
+  lleno uno de los seis leídos sobraba, y `cambiosDeHueco` ya cambia al
+  que solo se miraba.
 
 - **Lo que 3.0 perdió sin querer, repuesto en 3.1.0**: la prueba de que la
   PANTALLA del Veredicto enseña el margen junto a la diferencia existía en

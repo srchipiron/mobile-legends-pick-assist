@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:net';
 import { spawnSync } from 'node:child_process';
+import { transformSync } from 'esbuild';
 import { test, ok, eq, terminar, RAIZ, leerJson, generador } from '../arnes.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
 import { LADO, muestra, normalizar, reconocer } from '../../scripts/lector/caras.mjs';
@@ -240,6 +241,61 @@ test('las caras de referencia tienen su tamaño y su fuente, y el lector avisa d
   }
   const heroes = [{ name: 'A', cara: 'u1' }, { name: 'B', cara: 'u2' }, { name: 'C', cara: 'u3' }, { name: 'D' }];
   eq(carasDesfasadas({ A: 'u1', B: 'viejo' }, heroes).join(','), 'B,C', 'no avisa de una cara rehecha (B) o de un héroe nuevo (C)');
+});
+
+test('SEGURIDAD: todo lo que el lector ejecuta (su carpeta y lo que importa de fuera) solo importa lo permitido y no puede cargar código por otra vía (3.40.0)', () => {
+  // La prueba de abajo mira PALABRAS; la revisión de seguridad de 3.40.0 la
+  // esquivó con `await import('node:child' + '_process')` y partiendo
+  // 'sh'+'ell', y metiéndolo en src/motor/nombres.js, que el lector importa
+  // desde fuera de su carpeta. Aquí se recorre el grafo de importaciones
+  // entero y se mira la FORMA: qué módulos de Node importa cada fichero y que
+  // no haya otra manera de cargar código.
+  const leerFichero = (f) => readFileSync(f, 'utf8');
+  // Sin comentarios con un ANALIZADOR (esbuild, el de Vite), no con una
+  // expresión: `const u = 'a//'; return import(…)` escondía el import detrás
+  // de un «//» dentro de una cadena (lo cazó la revisión por mutación).
+  const sinComentarios = (t) => transformSync(t, { loader: 'js', format: 'esm' }).code;
+  const carpeta = join(RAIZ, 'scripts/lector');
+  const cola = readdirSync(carpeta, { recursive: true }).map(String).filter((f) => /\.(c|m)?js$/.test(f)).map((f) => join(carpeta, f));
+  const vistos = new Map();
+  while (cola.length) {
+    const f = cola.pop();
+    if (vistos.has(f)) continue;
+    const texto = sinComentarios(leerFichero(f));
+    vistos.set(f, texto);
+    for (const m of texto.matchAll(/(?:^|\n)\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g)) {
+      const dep = m[1] ?? m[2];
+      if (dep.startsWith('.')) cola.push(join(f, '..', dep));
+    }
+  }
+  const relativo = (f) => f.slice(RAIZ.length + 1);
+  ok([...vistos.keys()].some((f) => /src\/motor\/nombres\.js$/.test(f)), 'el recorrido no llega a lo que el lector importa de fuera de su carpeta');
+  // Los módulos de Node que puede importar cada fichero (lo de hoy): lanzar programas, solo leer.mjs.
+  const DE_NODE = {
+    'scripts/lector/leer.mjs': ['node:child_process', 'node:fs', 'node:path', 'node:url'],
+    'scripts/lector/servir.mjs': ['node:http', 'node:fs', 'node:os', 'node:path', 'node:url', 'node:worker_threads'],
+    'scripts/lector/tablet.mjs': ['node:dgram', 'node:net'],
+    'scripts/lector/png.mjs': ['node:zlib'],
+    'scripts/lector/sacar-caras.mjs': ['node:fs', 'node:path'],
+    'scripts/lector/lectura-tarea.mjs': ['node:worker_threads'],
+    'scripts/lector/aprender-tarea.mjs': ['node:worker_threads', 'node:fs'],
+  };
+  for (const [f, texto] of vistos) {
+    const r = relativo(f);
+    const deps = [...texto.matchAll(/(?:^|\n)\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g)].map((m) => m[1] ?? m[2]).filter((d) => !d.startsWith('.'));
+    for (const d of deps) ok((DE_NODE[r] ?? []).includes(d), `${r} importa ${d}, que no tiene permitido`);
+    // Ninguna otra forma de cargar o ejecutar código.
+    // También `process.getBuiltinModule` (carga child_process sin import),
+    // el constructor de funciones por `.constructor(`, `Reflect` y CUALQUIER
+    // llamada a un miembro calculado (`x['constr' + 'uctor'](…)`): en el
+    // código del lector no hay ninguna, así que la regla puede ser estricta.
+    const otraVia = texto.match(/\bimport\s*\(|\brequire\s*\(|\bcreateRequire\b|\beval\s*\(|\bFunction\s*\(|\bprocess\s*\[|\bprocess\.(binding|dlopen|_linkedBinding)\b|\bgetBuiltinModule\b|\.constructor\b|\bconstructor\s*\(|\bReflect\b|\]\s*\(|\bglobalThis\s*\[|\beval\s*:\s*true|\bmodule\.constructor\b/);
+    ok(!otraVia, `${r} puede cargar o ejecutar código por otra vía: ${otraVia?.[0]}`);
+    // Un hilo solo arranca ficheros del propio lector, nunca código en texto.
+    for (const m of texto.matchAll(/new\s+Worker\s*\((.{0,80})/g)) ok(/^\s*(new URL\(\s*["'][\w-]+\.mjs["'],\s*import\.meta\.url\s*\)|tarea)\s*,/.test(m[1]), `${r} arranca un hilo con ${m[1].trim()}`);
+    // Y `tarea` solo puede ser un fichero del lector (su valor por defecto).
+    if (/new\s+Worker\s*\(\s*tarea\b/.test(texto)) ok(/\btarea\s*=\s*new URL\(\s*["'][\w-]+\.mjs["'],\s*import\.meta\.url\s*\)/.test(texto) && (texto.match(/\btarea\s*=/g) ?? []).length === 1, `${r} arranca un hilo con una \`tarea\` que puede venir de otro sitio`);
+  }
 });
 
 test('SEGURIDAD: el lector solo conecta y hace capturas con adb; nunca toca, instala ni abre una consola en la tablet', () => {

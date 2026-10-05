@@ -158,7 +158,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
         </div>
         {preguntar && (
           <section className="recordatorio" role="status">
-            <p>{t(miPick ? 'recordatorio.pregunta' : 'recordatorio.preguntaSinFijar', { yo: rec.eleccion.heroe.name })}</p>
+            <p>{t(miPick ? 'recordatorio.pregunta' : 'recordatorio.preguntaSinFijar', { yo: miPick ? miPick.name : rec.eleccion.heroe.name })}</p>
             <button className="gane" onClick={() => onResultado?.(true)}>{t('registro.gane')}</button>
             <button onClick={() => onResultado?.(false)}>{t('registro.perdi')}</button>
             {!miPick && <button onClick={() => abrir('apuntar')}>{t('recordatorio.otroHeroe')}</button>}

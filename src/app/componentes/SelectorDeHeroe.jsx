@@ -48,6 +48,12 @@ export function SelectorDeHeroe({
     inputRef.current?.focus();
   }, []);
 
+  // Quién no se puede tocar, tal como estaba al recibir el ORDEN (al abrir
+  // o al cambiar de pestaña, cuando llega `heroes` nuevo) (3.40.0): una
+  // lectura que mete a un compañero con la hoja abierta lo mandaba al final
+  // y todas las caras de detrás se movían un sitio bajo el dedo. El que pasa
+  // a no poderse tocar después se deshabilita en su sitio.
+  const fueraAlOrdenar = useMemo(() => cogidos, [heroes]);
   const lista = useMemo(() => {
     const pickRate = (h) => buscar(stats, h.name)?.pickRate ?? -1;
     // Para banear, primero los más baneados: es lo que se va a buscar.
@@ -64,10 +70,10 @@ export function SelectorDeHeroe({
     // Los que no se pueden tocar (del otro bando, baneados) van al final
     // (3.38.0): sin buscar, ocupaban caras de las primeras doce, que es lo
     // que se ve sin bajar y donde se midió el orden de 3.17.0.
-    const fuera = (h) => (cogidos.has(h.name) ? 1 : 0);
+    const fuera = (h) => (fueraAlOrdenar.has(h.name) ? 1 : 0);
     return filtrarPorNombre(base, q)
       .sort((a, b) => fuera(a) - fuera(b) || (q ? empieza(b) - empieza(a) : 0) || criterio(b) - criterio(a) || a.name.localeCompare(b.name));
-  }, [heroes, q, stats, orden, pool, soloPool, cogidos]);
+  }, [heroes, q, stats, orden, pool, soloPool, fueraAlOrdenar]);
 
   const marcado = (h) => !!seleccionados?.has(h.name);
   const lleno = multi && seleccionados && seleccionados.size >= max;

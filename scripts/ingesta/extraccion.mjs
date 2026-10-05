@@ -564,9 +564,13 @@ export async function fetchStats(rank, days = DAYS) {
     size: 200, index: 1, page_size: 200, page_index: 1,
     sort_field: 'win_rate', sort_order: 'desc', order: 'desc', lang: 'en',
   };
-  const { rows } = estado.ROUTES?.rank
+  const { rows, sin = [] } = estado.ROUTES?.rank
     ? await callRoute(estado.ROUTES.rank, values)
     : await fetchResource(['/hero-rank/', '/hero-rank', '/hero-rate/'], values);
+  // Una ventana que no es la de siempre y que la API no aceptó: lo que llega
+  // es la de por defecto, y guardarlo como «3 días» la haría pasar la guarda
+  // de coherencia sin serlo (3.40.0). Mejor un fallo, que cae a la de 7.
+  if (days !== DAYS && (sin.includes('days') || sin.includes('past_days'))) throw new Error(`la API no acepta days=${days}`);
 
   const stats = {};
   for (const row of rows) {

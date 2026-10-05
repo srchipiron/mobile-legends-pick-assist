@@ -60,6 +60,12 @@ export function medir(datos) {
     cruces: Object.values(datos?.counters ?? {}).reduce((n, fila) => n + Object.keys(fila ?? {}).length, 0),
     sinergias: Object.values(datos?.synergies ?? {}).reduce((n, fila) => n + Object.keys(fila ?? {}).length, 0),
     objetos: Object.keys(datos?.equipment ?? {}).length,
+    // Lo que se lee de los objetos, no solo cuántos hay (3.40.0): con la ruta
+    // /expanded caída la corta trae los 184 sin `equiptips`, el recuento de
+    // objetos no se movía y la corrida se llevaba la defensa y los efectos
+    // de todos (los avisos de build dejaban de salir sin decir nada).
+    objetosConDefensa: Object.values(datos?.equipment ?? {}).filter((o) => o?.magica || o?.fisica).length,
+    objetosConEfecto: Object.values(datos?.equipment ?? {}).filter((o) => Array.isArray(o?.efectos) && o.efectos.length).length,
     // Las BUILDS, no los heroes con builds: un heroe con una build en vez de
     // tres pasa igual en el recuento de heroes y la app tiene menos que
     // ensenar. Mismo fallo que ya costo la matriz de counters.

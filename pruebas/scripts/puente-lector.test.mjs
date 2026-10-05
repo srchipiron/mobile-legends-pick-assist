@@ -214,7 +214,7 @@ test('una corrección de la app guarda la verdad junto a la captura, aprende de 
   eq(leerAprendido(f)?.capturas, 1, 'lo aprendido de la versión actual no se lee');
 });
 
-test('la captura reducida (temporal): dos PNG pequeños con paleta que caben en una incidencia, y solo para la app', async () => {
+test('las imágenes reducidas: dos PNG pequeños con paleta que caben en una incidencia; y /captura ya no existe', async () => {
   const colores = (img) => new Set(Array.from({ length: img.ancho * img.alto }, (_, i) => img.rgba.subarray(i * 4, i * 4 + 3).join())).size;
   // Una pantalla «de foto» (ruido con degradado): el peor caso para comprimir.
   const ancho = 2400, alto = 1504, rgba = new Uint8Array(ancho * alto * 4);
@@ -236,12 +236,32 @@ test('la captura reducida (temporal): dos PNG pequeños con paleta que caben en 
   eq(`${r.ancho}x${r.alto} ${r.rgba[0]} ${r.rgba[4]}`, '2x1 127 0', `reducir no promedia: ${Array.from(r.rgba)}`);
   const q = cuantizar({ ancho: 1, alto: 1, rgba: new Uint8Array([100, 100, 100, 255]) });
   eq(q.rgba[0], 102, `cuantizar no lleva 100 al nivel 2 de 6 (102): ${q.rgba[0]}`);
-  // La ruta: a la app sí, sin origen no, y lo que vuelve se lee.
-  await conServidor({ capturar: () => png }, async (base) => {
-    eq((await fetch(`${base}/captura`)).status, 403, 'una captura sin origen se entrega');
-    const r2 = await (await fetch(`${base}/captura`, { headers: { Origin: 'https://srchipiron.github.io' } })).json();
-    ok(/^resultado-/.test(r2.id) && r2.ancho === 2400, `la captura no lleva id ni tamaño: ${JSON.stringify(r2).slice(0, 80)}`);
-    eq(leerPng(Buffer.from(r2.miniatura, 'base64')).ancho, 320, 'la miniatura no mide 320 px');
+  // La ruta `/captura` ya no existe (3.40.0): daba una pantalla de la tablet a quien pusiera la cabecera `Origin`.
+  let capturas = 0;
+  await conServidor({ capturar: () => { capturas += 1; return png; } }, async (base) => {
+    eq((await fetch(`${base}/captura`, { headers: { Origin: 'https://srchipiron.github.io' } })).status, 404, '/captura sigue dando una pantalla de la tablet');
+    eq(capturas, 0, 'pedir /captura hace una captura de la tablet');
+  });
+});
+
+test('el lector solo contesta a peticiones dirigidas a 127.0.0.1 o localhost (contra DNS rebinding, 3.40.0)', async () => {
+  const { request } = await import('node:http');
+  const pedirCon = (puerto, host, camino = '/estado') => new Promise((r, x) => {
+    const q = request({ host: '127.0.0.1', port: puerto, path: camino, headers: { Host: host } }, (res) => { res.resume(); r(res.statusCode); });
+    q.on('error', x); q.end();
+  });
+  let capturas = 0;
+  await conServidor({ capturar: () => { capturas += 1; return png; } }, async (base) => {
+    const puerto = new URL(base).port;
+    eq(await pedirCon(puerto, `127.0.0.1:${puerto}`), 200, 'con Host 127.0.0.1 no contesta');
+    eq(await pedirCon(puerto, `localhost:${puerto}`), 200, 'con Host localhost no contesta');
+    eq(await pedirCon(puerto, 'atacante.example'), 403, 'contesta a una web con otro dominio que apunta a 127.0.0.1');
+    eq(await pedirCon(puerto, 'atacante.example', '/leer'), 403, '/leer contesta con otro Host');
+    // Un dominio que EMPIEZA o ACABA como uno local sigue siendo del atacante.
+    for (const h of ['localhost.atacante.example', '127.0.0.1.atacante.example', 'x127.0.0.1', 'malolocalhost:47323']) {
+      eq(await pedirCon(puerto, h), 403, `contesta con Host ${h}`);
+    }
+    eq(capturas, 0, 'con otro Host se hace la captura igualmente');
   });
 });
 
@@ -334,6 +354,29 @@ test('la tabla del resultado entra aunque ya haya pantallas de sobra, también l
     // Con el tope de capturas a cero, lo que /final enseña sigue en la carpeta (la del draft, no).
     ok(f.fotogramas.every((x) => existsSync(join(carpeta, `${x.id}.png`))), 'se podan las capturas que la vigilancia aún enseña');
     eq(readdirSync(carpeta).filter((n) => n.startsWith('fotograma-')).length, 2, `la poda no quita la pantalla que ya no se enseña: ${readdirSync(carpeta)}`);
+  });
+});
+
+test('la vigilancia se queda con las ÚLTIMAS pantallas, no con las primeras de la partida (3.40.0)', async () => {
+  // Seis pantallas «de juego» alternando (todas cambian respecto a la
+  // anterior) y después la de rango. Con tope 4 tienen que quedar las
+  // CUATRO ÚLTIMAS, en orden: sacar la más nueva en vez de la más vieja
+  // guardaba las tres primeras más la última (lo cazó la mutación).
+  const A = png, B = pantallaDeFinal('finales/estadisticas.png');
+  const rango = pantallaDeFinal('finales/rango-victoria.png');
+  const secuencia = [B, A, B, A, B, A, rango];
+  let i = 0;
+  const capturar = () => secuencia[Math.min(i++, secuencia.length - 1)];
+  await conServidor({ capturar, vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 15, maxFotogramas: 4 } }, async (base) => {
+    await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde: Date.now() - 60000 }) });
+    ok(await hasta(() => i > secuencia.length + 2), 'no llega a capturar la pantalla de rango');
+    const mini = (p) => fotogramaDe(leerPng(p)).miniatura;
+    const esperadas = [A, B, A, rango].map(mini);
+    // Lo capturado se procesa después: se espera a que llegue la última.
+    let f = null;
+    ok(await hasta(async () => { f = await (await fetch(`${base}/final`, { headers: cab })).json(); return f.fotogramas.at(-1)?.miniatura === esperadas[3]; }), 'la pantalla del final (rango) no está entre las que se guardan');
+    eq(f.fotogramas.length, 4, 'no se respeta el tope de pantallas');
+    ok(f.fotogramas.every((x, k) => x.miniatura === esperadas[k]), 'no se guardan las cuatro ÚLTIMAS pantallas en orden (hasta 3.39.0 las cuatro primeras: la del final no entraba)');
   });
 });
 

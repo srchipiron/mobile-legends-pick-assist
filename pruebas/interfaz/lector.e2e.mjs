@@ -180,13 +180,16 @@ await prueba('con «Leer solo» y el draft completo, el lector vigila el final p
   // La tablet enseña la tabla de la derrota (incidencia #15); la app NO pide capturas: avisa y recoge.
   capturar = () => pngTabla;
   const completoDesde = Date.now() - 9 * 60 * 1000;
-  const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], enemyRoam: null, fase: 'picks', completoDesde };
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:lector-auto': true, 'roam-picker:draft': draft } });
+  // Con tu pick fijado FUERA del ranking de tu línea (Khufra jugando exp):
+  // se apunta tu pick, no el nº1 de la línea (3.40.0).
+  const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], enemyRoam: null, fase: 'picks', completoDesde, miPick: 'Khufra', miPickDesde: completoDesde };
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:linea': 'exp', 'roam-picker:lector-auto': true, 'roam-picker:draft': draft } });
   // El lector recibe el aviso con el instante del draft completo y en los INTERVALO_FINAL_MS siguientes la app recoge el resultado.
   let partidas = [];
   for (let i = 0; i < 100 && !partidas.length; i++) { await pagina.waitForTimeout(250); partidas = (await leer(pagina, 'roam-picker:partidas')) ?? []; }
   eq(partidas.length, 1, 'la partida no se apunta sola con la tabla a la vista');
   const [p] = partidas;
+  eq(p.pick, 'Khufra', 'la partida apuntada sola es la del nº1 de la línea, no tu pick fijado');
   ok(p.origen === 'lector' && p.gane === false && p.draft?.enemigos?.length === 5 && p.pick, `la partida apuntada sola no es la del draft, perdida y del lector: ${JSON.stringify({ origen: p.origen, gane: p.gane, pick: p.pick, enemigos: p.draft?.enemigos })}`);
   ok(Math.abs(p.t - Date.now()) < 60000, 'la partida no va fechada cuando el lector vio la tabla');
   const aviso = pagina.locator('.aviso-deshacer');

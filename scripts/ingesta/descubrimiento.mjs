@@ -5,7 +5,7 @@
  */
 
 import { BASES, DAYS, RANK, diagnostics, estado, sleep } from './contexto.mjs';
-import { callRoute, request } from './descarga.mjs';
+import { RUTA_PROHIBIDA, callRoute, request } from './descarga.mjs';
 import { recogerPares, relationMap } from './relaciones.mjs';
 
 /**
@@ -61,7 +61,9 @@ export async function discoverRoutes() {
       }
       if (!schema?.paths) continue;
 
-      const allPaths = Object.keys(schema.paths);
+      // Las de la cuenta fuera, encajen o no con un patrón (3.40.0): elegir
+      // por lo que devuelve una ruta llamaría a cualquiera que encajara.
+      const allPaths = Object.keys(schema.paths).filter((p) => !RUTA_PROHIBIDA.test(p));
       diagnostics.schema = {
         url: schemaUrl,
         pathCount: allPaths.length,

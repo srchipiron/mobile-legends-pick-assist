@@ -8,6 +8,39 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.40.0
+
+- Con «Leer solo» encendido, lo que tocas ya no lo deshace la lectura
+  siguiente: un héroe quitado con la × (un Joy o un Wanwan mal leído) no
+  vuelve a los 5 segundos, y tu pick que fijó el lector y soltaste no se
+  vuelve a fijar solo. El «Deshacer» se va a los 6 segundos de verdad
+  (leyendo solo no caducaba nunca), y deshacer una lectura no hace que la
+  siguiente lo vuelva a meter.
+- El selector no se te mueve debajo del dedo: si una lectura llega con la
+  hoja de baneos abierta, la hoja sigue abierta con lo que habías escrito;
+  y si llega con la de picks abierta, las caras no cambian de sitio (el
+  héroe recién leído se queda donde estaba, apagado).
+- Con tu pick fijado de otra línea, la pregunta de cómo fue y lo que se
+  apunta (a mano o solo) es tu pick, no el nº1 de la línea.
+- El lector se queda con las ÚLTIMAS pantallas del final de la partida,
+  no con las primeras, y al subirlas al proyecto la tabla del resultado
+  va siempre (en las 15 últimas subidas no llegó ninguna: las miniaturas
+  llenaban el mensaje antes de llegar a ella).
+- Más seguro: lo que llega del lector solo se sube a GitHub si tiene la
+  forma de una captura (nada de texto que pudiera dar órdenes), el
+  lector rechaza peticiones que no vengan de tu propio móvil aunque
+  traigan la dirección de la app, desaparece su ruta antigua de captura
+  y Claude ya no se pone a trabajar por un «@claude» escrito en las
+  incidencias que sube la app. La descarga de datos se niega a llamar
+  a cualquier ruta de cuentas de usuario.
+- Datos más honestos: si la API rechaza el rango o la línea, ya no se
+  guardan los datos de todos los rangos como si fueran de Gloria; si una
+  corrida trae los objetos sin su defensa, no se publica; y si fallan las
+  builds de un héroe, se quedan las de antes en vez de perderse.
+- Las dudas del lector que viajan con la partida son las del draft, no
+  las de la pantalla de carga, y lo que aprendió el lector va con SU
+  partida y no con la siguiente.
+
 ## 3.39.0
 
 - El lector de la tablet va unas siete veces más rápido: con la misma

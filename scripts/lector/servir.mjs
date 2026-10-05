@@ -39,7 +39,7 @@ import { PARTES, leerParte, juntarLectura, leerCaptura } from './lectura.mjs';
 import { resumirAprendizaje, CAPTURAS_POR_CORRECCION, VERSION_APRENDIDO } from './aprender.mjs';
 
 export { CAPTURAS_POR_CORRECCION };
-import { miniaturasDe, fotogramaDe } from './miniatura.mjs';
+import { fotogramaDe } from './miniatura.mjs';
 import { tiraDe, reconocerResultado, aprenderResultado, plantillasIniciales, cargarResultados, guardarResultados, VERSION_RESULTADOS } from './resultado.mjs';
 
 /** Decisión de producto: un puerto alto, fijo, que la app conoce. */
@@ -195,6 +195,9 @@ export function capturaAutomatica({ fija = null, memoria = {}, recordar = () => 
   return ahora;
 }
 
+/** El `Host` de una petición al lector: 127.0.0.1 o localhost, con o sin puerto. */
+export const hostPermitido = (h) => typeof h === 'string' && /^(127\.0\.0\.1|localhost)(:\d{1,5})?$/.test(h);
+
 export const origenPermitido = (o) => !!o && (ORIGENES.includes(o) || /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(o));
 
 export { leerCaptura };
@@ -316,11 +319,17 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
       // tabla). Hasta 3.36.0 solo entraba con la palabra reconocida, y la de
       // VICTORIA, que no tiene plantilla de serie, se perdía en cuanto había
       // ocho pantallas: no se podía aprender nunca.
-      if (final.fotogramas.length < vigilancia.maxFotogramas) final.fotogramas.push(foto);
-      else if (leido.tabla) {
-        const i = final.fotogramas.findLastIndex((x) => !x.tabla);
-        final.fotogramas[i >= 0 ? i : final.fotogramas.length - 1] = foto;
+      // Y desde 3.40.0 se quedan las ÚLTIMAS: la nueva saca a la más vieja que
+      // no sea tabla. Quedándose las primeras, las ocho eran pantallas de
+      // juego de los minutos 8 y 9 (15 de 15 incidencias desde 3.33.0) y las
+      // del final (rango, MVP, estadísticas) no entraban nunca.
+      if (final.fotogramas.length >= vigilancia.maxFotogramas) {
+        const i = final.fotogramas.findIndex((x) => !x.tabla);
+        if (i >= 0) final.fotogramas.splice(i, 1);
+        else if (!leido.tabla) { podar(); return; }
+        else final.fotogramas.shift();
       }
+      final.fotogramas.push(foto);
       if (leido.resultado && !final.resultado) Object.assign(final, { resultado: leido.resultado, resultadoId: id, resultadoEn: t });
       podar();
       registrar(`Fotograma ${id} (minuto ${foto.minuto}): la pantalla ha cambiado${leido.tabla ? ` · tabla de resultado: ${leido.resultado ? (leido.resultado === 'gane' ? 'VICTORIA' : 'DERROTA') : 'palabra sin plantilla'} (${leido.parecido.toFixed(2)})` : ''}.`);
@@ -375,6 +384,12 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
   const servidor = createServer(async (req, res) => {
     const origen = req.headers.origin;
     const cabeceras = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', Vary: 'Origin' };
+    // Solo peticiones dirigidas a ESTE aparato (3.40.0): con otro `Host` es
+    // una web que ha hecho apuntar su dominio a 127.0.0.1 (DNS rebinding).
+    if (!hostPermitido(req.headers.host)) {
+      res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'host no permitido' }));
+      return;
+    }
     if (origen) {
       if (!origenPermitido(origen)) {
         res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' }));
@@ -409,29 +424,10 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
       res.writeHead(200, cabeceras).end(JSON.stringify(estadoFinal()));
       return;
     }
-    if (req.method === 'GET' && ruta === '/captura') {
-      // Una captura REDUCIDA para mandar al proyecto (3.29.0, temporal: la
-      // pantalla de resultado, para medir dónde está el cartel). Solo a la
-      // app, y es lo único que sale como imagen: pequeña y con paleta.
-      if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
-      let png;
-      try { png = await capturar(); } catch (e) {
-        res.writeHead(502, cabeceras).end(JSON.stringify({ error: FALLOS_DE_CAPTURA.includes(e?.tipo) ? e.tipo : 'captura' }));
-        return;
-      }
-      try {
-        const img = leerPng(png);
-        const id = `resultado-${new Date().toISOString().replace(/[:.]/g, '-')}`;
-        guardarCaptura(`${id}.png`, png);
-        const mini = miniaturasDe(img);
-        registrar(`Captura reducida ${id} (${img.ancho}×${img.alto}): ${mini.miniatura.length + mini.tira.length} caracteres.`);
-        res.writeHead(200, cabeceras).end(JSON.stringify({ id, ancho: img.ancho, alto: img.alto, ...mini }));
-      } catch (e) {
-        registrar(`La captura no se pudo reducir: ${e.message}`);
-        res.writeHead(500, cabeceras).end(JSON.stringify({ error: 'formato' }));
-      }
-      return;
-    }
+    // `/captura` (3.29.0, una pantalla reducida a petición) se quitó en 3.40.0:
+    // la app ya no la pedía desde que vigila el lector (3.33.0) y daba una
+    // imagen de la tablet a cualquier programa del móvil que pusiera la
+    // cabecera `Origin` (fuera de un navegador se pone la que se quiera).
     if (req.method === 'POST' && ruta === '/resultado') {
       // Lo que contestó Javi (Gané / Perdí) con los fotogramas de esa partida (3.32.0): se aprende la palabra de la tabla.
       if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }

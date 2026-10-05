@@ -48,6 +48,19 @@ export function dudasDeLectura(lectura) {
 }
 
 /**
+ * Las dudas que se quedan con el draft (3.40.0): las de la última lectura que
+ * reconoció a ALGUIEN. Leyendo solo se captura cada 5 s hasta completar el
+ * draft, y las últimas capturas suelen ser la pantalla de carga o la partida
+ * (todo «?»): sus dudas tapaban las del draft, que son las que dicen qué
+ * afinar. Si ninguna lectura ha reconocido a nadie, valen las últimas: ese
+ * es justo el caso en que el lector no casa con la tablet.
+ */
+export function dudasQueQuedan(previas, nuevas, reconocio) {
+  if (!Array.isArray(nuevas)) return previas ?? null;
+  return reconocio || !previas?.length ? nuevas : previas;
+}
+
+/**
  * Un fallo con su tipo: `sinPuente` (no está abierto o falta el permiso),
  * `plazo`, `tablet` (el lector no la ve en la wifi), `emparejar` (la tablet
  * no deja entrar al móvil), `captura` (adb no consigue la captura) o `error`.
@@ -161,22 +174,32 @@ export async function pedirFinal({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS,
  * `resultado` es 'gane' o 'perdi' cuando el lector vio la tabla, con
  * `resultadoEn` (cuándo la vio: el instante de la partida apuntada sola).
  */
+const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
+/** Un fotograma como lo da el lector: id `fotograma-…`, minuto, y las dos imágenes en base64 (sin nada más dentro). */
+export const fotogramaValido = (f) => !!f && typeof f.id === 'string' && /^fotograma-[\w-]{1,80}$/.test(f.id)
+  && Number.isFinite(f.minuto) && typeof f.miniatura === 'string' && BASE64.test(f.miniatura) && typeof f.tira === 'string' && BASE64.test(f.tira);
+
 export function fundirFinal(actuales, final, { completoDesde, maximo = MAX_FOTOGRAMAS }) {
   if (!final || !Number.isFinite(completoDesde) || final.desde !== completoDesde) return { suyo: false, fotogramas: actuales, resultado: null, resultadoEn: null };
   const ids = new Set(actuales.map((f) => f.id));
   const fotogramas = [...actuales];
   for (const f of Array.isArray(final.fotogramas) ? final.fotogramas : []) {
-    if (!f || typeof f.id !== 'string' || ids.has(f.id)) continue;
+    // Lo que llega del puerto del lector va a una incidencia de GitHub: solo
+    // se acepta con la forma que da el lector (3.40.0). Un texto con «@claude»
+    // dentro de una franja habría puesto a trabajar a Claude en el repositorio
+    // con el token de Javi (claude.yml atiende a sus comentarios).
+    if (!fotogramaValido(f) || ids.has(f.id)) continue;
     const nuevo = { id: f.id, minuto: f.minuto, miniatura: f.miniatura, tira: f.tira, ...(f.tabla ? { tabla: true } : {}) };
-    if (fotogramas.length < maximo) fotogramas.push(nuevo);
-    else if (f.tabla) {
-      // La tabla del resultado entra siempre (3.37.0), en el sitio de la
-      // última pantalla que no lo sea: es la que se sube y la que enseña.
-      const i = fotogramas.findLastIndex((x) => !x.tabla);
-      if (i < 0) continue;
-      ids.delete(fotogramas[i].id);
-      fotogramas[i] = nuevo;
-    } else continue;
+    if (fotogramas.length >= maximo) {
+      // Las ÚLTIMAS (3.40.0), como en el lector: la nueva saca a la más vieja
+      // que no sea tabla, y la tabla del resultado entra siempre (3.37.0).
+      const i = fotogramas.findIndex((x) => !x.tabla);
+      if (i < 0 && !f.tabla) continue;
+      const fuera = i >= 0 ? i : 0;
+      ids.delete(fotogramas[fuera].id);
+      fotogramas.splice(fuera, 1);
+    }
+    fotogramas.push(nuevo);
     ids.add(f.id);
   }
   const resultado = final.resultado === 'gane' || final.resultado === 'perdi' ? final.resultado : null;
@@ -211,20 +234,26 @@ export const TOPE_MENSAJE = 60000;
 const VALLA = '```';
 export function cuerpoDeFotogramas({ fotogramas, resultado = null, version = '' }) {
   const etiqueta = resultado === 'gane' ? 'ganada' : resultado === 'perdi' ? 'perdida' : 'sin apuntar';
-  const lineas = [`Fotogramas del final de una partida (${etiqueta}) · app ${version} · ${fotogramas.length} pantallas distintas desde el minuto ${DESDE_FINAL_MIN}.`, ''];
-  let cuerpo = lineas.join('\n');
-  for (const f of fotogramas) {
-    const trozo = `\n\n${f.id} · minuto ${f.minuto} · pantalla entera a 160 px (PNG, base64):\n\n${VALLA}\n${f.miniatura}\n${VALLA}`;
-    if (cuerpo.length + trozo.length > TOPE_MENSAJE) break;
-    cuerpo += trozo;
-  }
-  let comentario = 'Franjas de arriba a 320 px (PNG, base64):';
-  for (const f of fotogramas) {
-    const trozo = `\n\n${f.id} · minuto ${f.minuto}:\n\n${VALLA}\n${f.tira}\n${VALLA}`;
-    if (comentario.length + trozo.length > TOPE_MENSAJE) break;
-    comentario += trozo;
-  }
-  return { titulo: `Final de partida (${etiqueta}): ${fotogramas.length} pantallas`, cuerpo, comentario };
+  const validos = fotogramas.filter(fotogramaValido);
+  // Lo que más importa primero (3.40.0): la tabla del resultado y después las
+  // más recientes. Por orden, las miniaturas reales (10–12 mil caracteres)
+  // llenaban el mensaje con las cuatro o cinco primeras y la tabla, que va
+  // la última, no se subió en ninguna de las incidencias #21–#35.
+  const porImportancia = [...validos.filter((f) => f.tabla), ...validos.filter((f) => !f.tabla).reverse()];
+  const caben = (cabecera, trozo) => {
+    let largo = cabecera.length;
+    const dentro = new Set();
+    for (const f of porImportancia) { const t = trozo(f); if (largo + t.length <= TOPE_MENSAJE) { largo += t.length; dentro.add(f); } }
+    return validos.filter((f) => dentro.has(f));
+  };
+  const trozoMini = (f) => `\n\n${f.id} · minuto ${f.minuto}${f.tabla ? ' · TABLA' : ''} · pantalla entera a 160 px (PNG, base64):\n\n${VALLA}\n${f.miniatura}\n${VALLA}`;
+  const trozoTira = (f) => `\n\n${f.id} · minuto ${f.minuto}${f.tabla ? ' · TABLA' : ''}:\n\n${VALLA}\n${f.tira}\n${VALLA}`;
+  const cabecera = `Fotogramas del final de una partida (${etiqueta}) · app ${version} · `;
+  const enCuerpo = caben(cabecera + '000 de 000 pantallas distintas desde el minuto 00.\n', trozoMini);
+  const cuerpo = `${cabecera}${enCuerpo.length} de ${validos.length} pantallas distintas desde el minuto ${DESDE_FINAL_MIN}.\n` + enCuerpo.map(trozoMini).join('');
+  const enComentario = caben('Franjas de arriba a 320 px (PNG, base64):', trozoTira);
+  const comentario = 'Franjas de arriba a 320 px (PNG, base64):' + enComentario.map(trozoTira).join('');
+  return { titulo: `Final de partida (${etiqueta}): ${enCuerpo.length} de ${validos.length} pantallas${validos.some((f) => f.tabla) ? ', con la tabla' : ''}`, cuerpo, comentario };
 }
 
 /**

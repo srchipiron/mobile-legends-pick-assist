@@ -14,6 +14,7 @@ import {
  * que el código de estado a secas para saber qué corregir.
  */
 export async function request(url, method, body) {
+  if (RUTA_PROHIBIDA.test(new URL(url).pathname)) throw new Error(`ruta prohibida: ${new URL(url).pathname}`);
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
   try {
@@ -110,6 +111,16 @@ export async function fetchResource(paths, params = {}) {
   throw lastErr ?? new Error('ninguna combinación respondió');
 }
 
+/** Los parámetros que dicen de qué son los datos: no se sueltan ante un 422. */
+const PARAMETROS_DE_IDENTIDAD = new Set(['rank', 'rank_id', 'lane']);
+
+/**
+ * Rutas que NO se tocan nunca (3.40.0): las de la cuenta, tras el inicio de
+ * sesión. La cuenta de Javi vale dinero. El descubrimiento ya las quita del
+ * esquema; esto es la segunda puerta, en la única función que sale a la red.
+ */
+export const RUTA_PROHIBIDA = /\/(user|users|account|auth|login|oauth|session|me)(\/|$)/i;
+
 /** Llama a una ruta ya descubierta, mandando solo los parámetros que acepta. */
 export async function callRoute(route, values, pathValue) {
   const base = route.template.replace(/\{[^}]+\}/, encodeURIComponent(pathValue ?? ''));
@@ -120,14 +131,18 @@ export async function callRoute(route, values, pathValue) {
   // Intentos en orden decreciente de exigencia. Un 422 significa que algún
   // parámetro no le vale, y los valores por defecto del endpoint suelen
   // funcionar: antes bastaba un parámetro mal para perder TODOS los counters.
-  const intentos = [
-    declarados,
-    Object.fromEntries(Object.entries(declarados).filter(([k]) => k === 'rank')),
-    {},
-  ];
+  // Pero el rango y la línea dicen DE QUÉ son los datos (3.40.0): sin ellos la
+  // API da los de todos los rangos o los de otra línea, y se guardaban con la
+  // etiqueta pedida. Esos no se sueltan nunca; si la API no los acepta, la
+  // llamada falla y se conserva lo anterior, que al menos es lo que dice ser.
+  const identidad = Object.fromEntries(Object.entries(declarados).filter(([k]) => PARAMETROS_DE_IDENTIDAD.has(k)));
+  const intentos = [declarados, identidad];
 
   let ultimoError;
   for (const params of intentos) {
+    // Lo que se soltó va con la respuesta: quien pide una ventana de días
+    // tiene que saber si se la han dado (`fetchStats`).
+    const sin = Object.keys(declarados).filter((k) => !(k in params));
     const url = new URL(base);
     try {
       if (route.method === 'GET') {
@@ -135,10 +150,10 @@ export async function callRoute(route, values, pathValue) {
           if (v != null) url.searchParams.set(k, String(v));
         }
         const data = await request(url.toString(), 'GET');
-        return { data, rows: firstArray(data) ?? [] };
+        return { data, rows: firstArray(data) ?? [], sin };
       }
       const data = await request(url.toString(), route.method, params);
-      return { data, rows: firstArray(data) ?? [] };
+      return { data, rows: firstArray(data) ?? [], sin };
     } catch (err) {
       ultimoError = err;
       if (err.status !== 422) throw err; // solo tiene sentido aflojar ante validación

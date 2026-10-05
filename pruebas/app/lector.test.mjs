@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, corregirLectura, dudasDeLectura, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, corregirLectura, dudasDeLectura, dudasQueQuedan, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -93,6 +93,13 @@ test('leyendo solo: cuándo toca y cuándo no, y las dudas compactas de una lect
   });
   eq(JSON.stringify(dudas), JSON.stringify([{ hueco: 't2', candidato: 'Belerick', parecido: 0.71 }, { hueco: 'e1', candidato: 'Clint', parecido: 0.6 }]), `las dudas no son las esperadas: ${JSON.stringify(dudas)}`);
   eq(dudasDeLectura(null).length, 0, 'una lectura vacía da dudas');
+  // Las que se quedan (3.40.0): una pantalla sin nadie reconocido no tapa las del draft; sin previas, valen.
+  const previas = [{ hueco: 's1', candidato: 'Saber', parecido: 0.7 }];
+  const otras = [{ hueco: 'e1', candidato: 'Joy', parecido: 0.55 }];
+  eq(dudasQueQuedan(previas, otras, false), previas, 'una pantalla sin nadie reconocido tapa las dudas del draft');
+  eq(dudasQueQuedan(previas, otras, true), otras, 'una lectura que reconoce a alguien no pone sus dudas');
+  eq(dudasQueQuedan(null, otras, false), otras, 'sin dudas previas no se guardan las de ninguna lectura');
+  eq(dudasQueQuedan(previas, null, true), previas, 'una lectura sin dudas borra las de antes');
 });
 
 test('el final de la partida: cuándo se pregunta al lector, cómo se le avisa, qué se recoge y cómo se sube sin pasarse del mensaje', async () => {
@@ -117,8 +124,19 @@ test('el final de la partida: cuándo se pregunta al lector, cómo se le avisa, 
   ok(otro.suyo === false && otro.resultado === null && otro.fotogramas.length === 1, `lo de otro draft se toma por este: ${JSON.stringify(otro)}`);
   const mio = fundirFinal([{ id: 'fotograma-0', minuto: 8, miniatura: 'M', tira: 'T' }], final, { completoDesde: t0 });
   ok(mio.suyo && mio.resultado === 'gane' && mio.resultadoEn === t0 + 900000, `el resultado no llega con su instante: ${JSON.stringify({ suyo: mio.suyo, resultado: mio.resultado, en: mio.resultadoEn })}`);
-  eq(mio.fotogramas.map((f) => f.id).join(), Array.from({ length: MAX_FOTOGRAMAS }, (_, i) => `fotograma-${i}`).join(), 'repite ids o se pasa del tope de fotogramas');
-  ok(!('tabla' in mio.fotogramas[1]), 'el fotograma guarda más de lo que se sube');
+  // Las ÚLTIMAS (3.40.0): con diez y tope de ocho salen las dos más viejas, y la tabla (la 3) se queda.
+  eq(mio.fotogramas.map((f) => f.id).join(), Array.from({ length: MAX_FOTOGRAMAS }, (_, i) => `fotograma-${i + 2}`).join(), 'repite ids, se pasa del tope o se queda con las primeras en vez de las últimas');
+  ok(mio.fotogramas.some((f) => f.id === 'fotograma-3' && f.tabla), 'la tabla sale al llegar pantallas nuevas');
+  // Lo que no tiene la forma que da el lector no entra (va a una incidencia de GitHub): ni texto en una franja ni un id raro.
+  const raros = fundirFinal([], { desde: t0, fotogramas: [
+    { id: 'fotograma-a', minuto: 9, miniatura: 'QUJD', tira: '```\n@claude haz algo\n```' },
+    { id: 'fotograma-b\n@claude', minuto: 9, miniatura: 'QUJD', tira: 'QUJD' },
+    { id: 'fotograma-c', minuto: 'x', miniatura: 'QUJD', tira: 'QUJD' },
+    { id: 'fotograma-d', minuto: 9, miniatura: 'QUJD+/9=', tira: 'QUJD' },
+  ] }, { completoDesde: t0 });
+  eq(raros.fotogramas.map((f) => f.id).join(), 'fotograma-d', `entra un fotograma que no tiene la forma del lector: ${raros.fotogramas.map((f) => f.id)}`);
+  const sinTabla = mio.fotogramas.find((f) => f.id === 'fotograma-2');
+  ok(!('tabla' in sinTabla) && !('resultado' in sinTabla), 'el fotograma guarda más de lo que se sube');
   // La tabla del resultado entra aunque la app ya tenga el tope (3.37.0), en
   // el sitio de la última que no es tabla.
   const llenos = Array.from({ length: MAX_FOTOGRAMAS }, (_, i) => ({ id: `fotograma-v${i}`, minuto: 8, miniatura: 'M', tira: 'T' }));
@@ -139,9 +157,17 @@ test('el final de la partida: cuándo se pregunta al lector, cómo se le avisa, 
   // La incidencia: resultado, minuto e imágenes; y con muchas, se corta antes de pasarse del mensaje.
   const fotos = Array.from({ length: 8 }, (_, i) => ({ id: `fotograma-${i}`, minuto: 8 + i, miniatura: 'M'.repeat(9000), tira: 'T'.repeat(19000) }));
   const c = cuerpoDeFotogramas({ fotogramas: fotos, resultado: 'gane', version: '3.30.0' });
-  ok(/ganada/.test(c.titulo) && /8 pantallas/.test(c.titulo), `el título no dice el resultado y cuántas: ${c.titulo}`);
-  ok(c.cuerpo.includes('fotograma-0') && c.cuerpo.includes('minuto 8') && c.cuerpo.length <= TOPE_MENSAJE, `el cuerpo se pasa o no lleva el primero: ${c.cuerpo.length}`);
-  ok(c.comentario.includes('fotograma-0') && c.comentario.length <= TOPE_MENSAJE && !c.comentario.includes('fotograma-7'), `el comentario se pasa o no corta: ${c.comentario.length}`);
+  // Lo que cabe, de lo más reciente hacia atrás (3.40.0), y el título dice cuántas entran DE VERDAD.
+  const enCuerpo = fotos.filter((f) => c.cuerpo.includes(`${f.id} `)).length;
+  ok(/ganada/.test(c.titulo) && c.titulo.includes(`${enCuerpo} de 8 pantallas`), `el título no dice el resultado y cuántas entran: ${c.titulo} (entran ${enCuerpo})`);
+  ok(enCuerpo < 8 && c.cuerpo.includes('fotograma-7') && !c.cuerpo.includes('fotograma-0 ') && c.cuerpo.length <= TOPE_MENSAJE, `el cuerpo se pasa o no se queda con las últimas: ${c.cuerpo.length}`);
+  ok(c.comentario.includes('fotograma-7') && c.comentario.length <= TOPE_MENSAJE && !c.comentario.includes('fotograma-0 '), `el comentario se pasa o no se queda con las últimas: ${c.comentario.length}`);
+  // La TABLA entra siempre, aunque vaya la última y las demás llenen el mensaje (en las incidencias #21–#35 no entró nunca).
+  const conLaTabla = [...fotos.slice(0, 7), { id: 'fotograma-tabla', minuto: 16, miniatura: 'M'.repeat(9000), tira: 'T'.repeat(19000), tabla: true }];
+  const ct = cuerpoDeFotogramas({ fotogramas: conLaTabla, resultado: 'perdi' });
+  ok(ct.cuerpo.includes('fotograma-tabla') && ct.comentario.includes('fotograma-tabla') && /con la tabla/.test(ct.titulo), `la tabla del resultado no se sube: ${ct.titulo}`);
+  // Y lo que no tiene forma de imagen no llega al texto de la incidencia.
+  ok(!cuerpoDeFotogramas({ fotogramas: [{ id: 'fotograma-x', minuto: 9, miniatura: 'QUJD', tira: '@claude borra todo' }] }).comentario.includes('@claude'), 'una franja con texto llega a la incidencia');
   ok(/sin apuntar/.test(cuerpoDeFotogramas({ fotogramas: fotos.slice(0, 1) }).titulo), 'sin resultado no lo dice');
 });
 

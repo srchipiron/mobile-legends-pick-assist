@@ -192,7 +192,9 @@ export default function App() {
   const [apuntada, setApuntada] = useState(null);
   const apuntarSola = (gane, t = Date.now()) => {
     const antes = draft.foto();
-    const pick = rec.eleccion?.heroe.name ?? draft.miPick;
+    // Tu pick fijado manda aunque no esté en el ranking de tu línea (3.40.0):
+    // con el nº1 delante se apuntaba otro héroe (el lector fija tu fila, sea de la línea que sea).
+    const pick = draft.miPick ?? rec.eleccion?.heroe.name;
     if (!pick) return false;
     guardarPartida(pick, gane, { t, origen: 'lector' });
     setApuntada({ t, gane, antes });
@@ -260,8 +262,9 @@ export default function App() {
   useEffect(() => {
     if (!draft.completoDesde || corregido.current === draft.completoDesde || !draft.lectura?.ids?.length) return;
     corregido.current = draft.completoDesde;
+    const desde = draft.completoDesde;
     corregirLectura({ ids: draft.lectura.ids, enemigos: draft.enemigos, baneos: draft.baneos })
-      .then((r) => { if (r?.aprendido) draft.anotarAprendizaje({ aprendidos: r.aprendidos, sinEncontrar: r.sinEncontrar }); });
+      .then((r) => { if (r?.aprendido) draft.anotarAprendizaje({ aprendidos: r.aprendidos, sinEncontrar: r.sinEncontrar }, desde); });
   }, [draft.completoDesde, draft.lectura, draft.enemigos, draft.baneos]);
 
   /** Trae los datos de otro dispositivo: vienen fundidos, así que solo guarda. */
@@ -405,9 +408,11 @@ export default function App() {
           lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
           pie={pie}
         />
-        {/* El aviso en el MISMO sitio que en picks (segundo hijo): si no, al
-            cambiar de fase se volvía a montar y el botón se iba de debajo del
-            dedo (la partida apuntada sola reinicia el draft a baneos). */}
+        {/* El aviso y el selector en el MISMO sitio que en picks (segundo y
+            tercer hijo): si no, al cambiar de fase React los vuelve a montar.
+            El aviso se iba de debajo del dedo (la partida apuntada sola
+            reinicia el draft a baneos) y el selector de baneos se CERRABA
+            cuando una lectura en vuelo pasaba el draft a picks (3.40.0). */}
         {deshacer}
         {selector}
       </>
@@ -420,11 +425,12 @@ export default function App() {
         t={t} linea={linea} rango={datos.rango} idioma={idioma} onIdioma={setIdioma} tacto={tacto} onTacto={setTacto} onRango={setRango}
         meta={meta} datos={datos} metaListo={metaListo} sinWinrates={sinWinrates} edadHoras={edadHoras} pro={pro}
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
-        onResultado={(gane) => guardarPartida(rec.eleccion?.heroe.name ?? draft.miPick, gane)}
+        onResultado={(gane) => guardarPartida(draft.miPick ?? rec.eleccion?.heroe.name, gane)}
         lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
         pie={pie}
       />
       {deshacer}
+      {selector}
       {informe && <Diagnostico t={t} resultado={informe} onCerrar={() => setInforme(null)} />}
       {hoja?.build && (
         <Builds heroe={hoja.build} linea={linea} builds={meta?.builds} equipment={meta?.equipment} enemigos={enemigos} plan={planear(datos, { yo: hoja.build, aliados, enemigos })} onCerrar={cerrar} t={t} />
@@ -448,7 +454,6 @@ export default function App() {
       {hoja === 'maestria' && (
         <EditorDeMaestria pool={rec.pool} maestria={personal.maestria} onGuardar={personal.guardarMaestria} onCerrar={cerrar} t={t} />
       )}
-      {selector}
     </>
   );
 }

@@ -37,10 +37,18 @@ jobs:
     timeout-minutes: 60
     # Solo el dueño del repositorio. Sin esto, en un repositorio público
     # cualquiera podría escribir "@claude" y gastar la clave de Javi.
+    # Y nunca en las incidencias que escribe la APP con el token de Javi
+    # (3.40.0): las de pantallas, partidas y vigilancia. Para GitHub esos
+    # comentarios son «del dueño», y su texto viene del lector o del móvil,
+    # no de Javi: un «@claude» colado ahí ponía a trabajar a Claude con
+    # permiso de escritura. Tampoco cuenta el «@claude» del CUERPO de la
+    # incidencia: con él, cualquier comentario posterior en ella lo disparaba.
     if: |
       github.event.sender.login == github.repository_owner &&
+      !contains(join(github.event.issue.labels.*.name, ','), 'pantalla') &&
+      !contains(join(github.event.issue.labels.*.name, ','), 'partidas') &&
+      !contains(join(github.event.issue.labels.*.name, ','), 'vigilancia') &&
       (contains(github.event.comment.body, '@claude') ||
-       contains(github.event.issue.body, '@claude') ||
        github.event.action == 'assigned')
     runs-on: ubuntu-latest
     env:

@@ -136,6 +136,18 @@ export function fundirWinrateLinea(previo = {}, fresco = {}, heroList = []) {
 }
 
 /**
+ * Las builds, igual que el winrate por línea (3.40.0): héroe a héroe y línea a
+ * línea. Antes una corrida con la mitad de las peticiones caídas SUSTITUÍA a
+ * las guardadas enteras, y o bien el comparador tiraba la corrida entera (con
+ * todo lo bueno que traía) o, perdiendo menos del 10% cada vez, las builds
+ * iban menguando corrida a corrida sin fondo.
+ */
+export function fundirBuilds(previo = {}, fresco = {}, heroList = []) {
+  const { winrateLinea: builds, conservados } = fundirWinrateLinea(previo, fresco, heroList);
+  return { builds, conservados };
+}
+
+/**
  * Frescas si se han descargado casi todas: con menos, lo que hay es la
  * matriz de otro día y la fecha no puede decir «hoy».
  */

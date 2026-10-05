@@ -15,7 +15,7 @@ import {
 } from './extraccion.mjs';
 import { fetchRelations } from './relaciones.mjs';
 import {
-  anotarFrescura, conservarFichasPrevias, fechaDeLaCorrida, fundirWinrateLinea,
+  anotarFrescura, conservarFichasPrevias, fechaDeLaCorrida, fundirBuilds, fundirWinrateLinea,
   kitsRehechos, leerPrevio, relacionesPrevias, relacionesDeLaCorrida,
 } from './fusion.mjs';
 import { bajarImagenes } from './imagenes.mjs';
@@ -167,7 +167,11 @@ async function main() {
   let builds = previous?.builds ?? {};
   try {
     const fresh = await fetchBuilds(heroList);
-    if (Object.keys(fresh).length) builds = fresh;
+    if (Object.keys(fresh).length) {
+      const fundido = fundirBuilds(previous?.builds, fresh, heroList);
+      builds = fundido.builds;
+      if (diagnostics.builds) diagnostics.builds.conservadas = fundido.conservados;
+    }
     console.log(`  · builds: ${Object.keys(builds).length} heroes`);
   } catch (err) {
     console.warn(`  · builds: fallo (${err.message}); conservo las anteriores`);

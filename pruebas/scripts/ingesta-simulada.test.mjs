@@ -73,6 +73,10 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     '/api/equipment': parametros('size', 'index', 'lang'),
     '/api/heroes/{hero_id}/builds': parametros('lane', 'rank', 'size', 'index'),
     '/api/academy/heroes/{hero_id}/win-rate/timeline': parametros('lane', 'rank', 'size', 'index'),
+    // Las rutas de la cuenta (tras el inicio de sesión) NO se tocan nunca:
+    // la cuenta de Javi vale dinero. Esta encaja con el patrón de los cruces
+    // y trae MÁS pares que ninguna, así que sin el filtro ganaría (3.40.0).
+    '/api/user/heroes/{hero_id}/counters': parametros('rank', 'days', 'size', 'index'),
   } };
   // Larga a proposito: la huella del texto solo cuenta cadenas de 40 o mas
   // caracteres una vez quitadas etiquetas, cifras y espacios. Con una corta,
@@ -100,6 +104,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     const json = (o) => { res.setHeader('content-type', 'application/json'); res.end(JSON.stringify(o)); };
     const bin = (b) => { res.setHeader('content-type', 'image/png'); res.end(b); };
     let m;
+    if (/^\/api\/user\//.test(ruta)) { marca('user'); return json(pares(8, 1)); }
     if (/openapi\.json$/.test(ruta)) { marca('esquema'); return json(esquema); }
     if (ruta === '/api/heroes/hero-rank/') {
       // La ventana corta (days=3) se sirve DISTINTA a la de 7 para poder
@@ -162,7 +167,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       marca('equipoCorto');
       return json({ code: 0, data: { records: [{ data: { equipid: 90001, equipname: 'Objeto de Prueba' } }, { data: { equipid: 90002, equipname: 'Segundo Objeto' } }] } });
     }
-    if (/^\/api\/heroes\/[^/]+\/builds$/.test(ruta)) {
+    if ((m = ruta.match(/^\/api\/heroes\/([^/]+)\/builds$/))) {
+      // La misma caída que el winrate por línea: las builds se funden héroe a héroe (3.40.0).
+      if (m[1] === fallaLineaDe) { res.statusCode = 500; return res.end('{}'); }
       marca(`builds:${u.searchParams.get('lane')}`);
       return json({ code: 0, data: [{ equipid: [90001, 90002, 90003], build_win_rate: 0.555, build_pick_rate: 0.1,
         emblem: { data: { emblemname: 'Tank' } }, battleskill: { data: { skillname: 'Flicker' } } }] });
@@ -234,6 +241,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(d.counters.Atlas?.Khufra, 0.5123, `cruce Atlas→Khufra: ${JSON.stringify(d.counters.Atlas)}`);
     eq(d.counters.Atlas?.Layla, 0.53, 'no ha elegido la ruta con MÁS cruces (academy trae 4, la del esquema 2)');
     ok(/^4 pares .*academy/.test(d.diagnostics.rutasMedidas?.counter ?? ''), `rutas medidas: ${JSON.stringify(d.diagnostics.rutasMedidas)}`);
+    eq(golpes.user ?? 0, 0, 'la ingesta ha llamado a una ruta de la cuenta (/api/user/)');
+    // Y ni se intenta: el descubrimiento las quita del esquema; la puerta de `request` es la segunda.
+    ok(!/prohibida|\/api\/user\//.test(salida + JSON.stringify(d.diagnostics)), 'el descubrimiento ofrece una ruta de la cuenta como candidata');
     eq(d.synergies.Atlas?.Tigreal, 0.48, `pareja Atlas+Tigreal: ${JSON.stringify(d.synergies.Atlas)}`);
     const obj = d.equipment?.['90001'];
     ok(obj && obj.nombre === 'Objeto de Prueba' && obj.magica === 18 && obj.fisica === 5 && obj.tipo === 'Defense', `objeto servido: ${JSON.stringify(obj)}`);
@@ -307,6 +317,10 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(d3.winrateLinea?.Atlas?.roam, 0.4431, `Atlas no trae el winrate por línea de hoy: ${JSON.stringify(d3.winrateLinea?.Atlas)}`);
     eq(d3.winrateLinea?.Khufra?.roam, 0.4341, `el winrate por línea de Khufra se pierde con su ruta caída: ${JSON.stringify(d3.winrateLinea?.Khufra)}`);
     eq(d3.diagnostics.lineas?.conservados, 1, `no cuenta los pares conservados: ${JSON.stringify(d3.diagnostics.lineas)}`);
+    // Y las builds igual (3.40.0): antes la corrida sustituía a las guardadas
+    // enteras y Khufra se quedaba sin build.
+    ok(d3.builds?.Atlas?.roam?.length && d3.builds?.Khufra?.roam?.length, `las builds de Khufra se pierden con su ruta caída: ${JSON.stringify(Object.keys(d3.builds ?? {}))}`);
+    eq(d3.diagnostics.builds?.conservadas, 1, `no cuenta las builds conservadas: ${JSON.stringify(d3.diagnostics.builds)}`);
 
     // La guarda de rango de cruces y parejas (3.35.0). En la primera corrida
     // Gloria y Mítico sirven lo mismo: los cruces (una fila por héroe del

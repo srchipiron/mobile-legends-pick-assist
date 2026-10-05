@@ -12,8 +12,9 @@ import { readdirSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
 import { test, ok, eq, terminar, RAIZ, leerTexto } from '../arnes.mjs';
-import { extraerLineas, extraerRol, extraerHabilidades } from '../../scripts/ingesta/extraccion.mjs';
-import { callRoute } from '../../scripts/ingesta/descarga.mjs';
+import { extraerLineas, extraerRol, extraerHabilidades, fetchStats } from '../../scripts/ingesta/extraccion.mjs';
+import { callRoute, request } from '../../scripts/ingesta/descarga.mjs';
+import { estado } from '../../scripts/ingesta/contexto.mjs';
 import { idPrincipal, esIdDeHeroe, recogerPares, relationMap, pick } from '../../scripts/ingesta/relaciones.mjs';
 import { serializar } from '../../scripts/ingesta/salida.mjs';
 import { kitsRehechos, fundirWinrateLinea, relacionesDeLaCorrida } from '../../scripts/ingesta/fusion.mjs';
@@ -151,6 +152,64 @@ test('un 422 se reintenta con menos parámetros en vez de perderlo todo', async 
     ok(data?.data?.records?.length, 'no recupera los datos tras el 422');
   } finally {
     srv.close();
+  }
+});
+
+test('un 422 NO suelta el rango ni la línea, y la ventana de días que no llega se dice (3.40.0)', async () => {
+  // Antes el último intento iba sin parámetros: si la API rechazaba el rango,
+  // llegaban los datos de TODOS los rangos y se guardaban como de Gloria (o
+  // las builds de otra línea), y la guarda de rango los veía idénticos.
+  let rechaza = 'rank';
+  const peticiones = [];
+  const srv = createServer((req, res) => {
+    const u = new URL(req.url, 'http://x');
+    peticiones.push(u.search);
+    res.setHeader('content-type', 'application/json');
+    if (u.searchParams.has(rechaza)) {
+      res.statusCode = 422;
+      return res.end(JSON.stringify({ details: [{ loc: ['query', rechaza] }] }));
+    }
+    return res.end(JSON.stringify({ code: 0, data: { records: [{ data: { main_heroid: 93, main_hero: { data: { name: 'Atlas' } }, main_hero_win_rate: 0.5 } }] } }));
+  });
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    const ruta = (params) => ({ template: `${base}/api/heroes/{hero_identifier}/x`, method: 'GET', params });
+    let error = null;
+    try { await callRoute(ruta(['rank', 'days', 'size']), { rank: 'glory', days: 7, size: 20 }, 'Atlas'); } catch (e) { error = e; }
+    ok(error?.status === 422, `sin el rango que se pidió devuelve datos: ${peticiones.join(' | ')}`);
+    ok(peticiones.every((q) => /rank=glory/.test(q)), `alguna petición fue sin rango: ${peticiones.join(' | ')}`);
+    rechaza = 'lane'; peticiones.length = 0; error = null;
+    try { await callRoute(ruta(['lane', 'rank', 'size']), { lane: 'roam', rank: 'glory', size: 20 }, 'Atlas'); } catch (e) { error = e; }
+    ok(error?.status === 422 && peticiones.every((q) => /lane=roam/.test(q)), `sin la línea que se pidió devuelve datos: ${peticiones.join(' | ')}`);
+    // Lo que se suelta va con la respuesta.
+    rechaza = 'days';
+    const r = await callRoute(ruta(['rank', 'days', 'size']), { rank: 'glory', days: 7, size: 20 }, 'Atlas');
+    eq([...r.sin].sort().join(), 'days,size', 'no dice qué parámetros soltó');
+    // Y la ventana corta que la API no acepta falla en vez de llegar como la de siempre.
+    const antes = estado.ROUTES;
+    estado.ROUTES = { rank: { template: `${base}/api/heroes/rank`, method: 'GET', params: ['days', 'rank', 'size', 'index'] } };
+    try {
+      error = null;
+      try { await fetchStats('glory', 3); } catch (e) { error = e; }
+      ok(/days=3/.test(error?.message ?? ''), `la de 3 días llega con la ventana por defecto: ${error?.message}`);
+      ok(Object.keys(await fetchStats('glory')).includes('Atlas'), 'la de siempre deja de leerse cuando la API no acepta days');
+    } finally {
+      estado.ROUTES = antes;
+    }
+  } finally {
+    srv.close();
+  }
+});
+
+test('la ingesta no llama nunca a una ruta de la cuenta (3.40.0)', async () => {
+  for (const camino of ['/api/user/heroes', '/api/users/1', '/api/me', '/api/auth/token', '/api/account/x', '/api/login']) {
+    let error = null;
+    try { await request(`http://127.0.0.1:9${camino}`, 'GET'); } catch (e) { error = e; }
+    ok(/ruta prohibida/.test(error?.message ?? ''), `${camino} no se para antes de salir a la red: ${error?.message}`);
+  }
+  for (const camino of ['/api/academy/meta/version', '/api/heroes/rank', '/api/heroes/{id}/compatibility']) {
+    ok(!/\/(user|users|account|auth|login|oauth|session|me)(\/|$)/i.test(camino), `${camino} se tomaría por de la cuenta`);
   }
 });
 
