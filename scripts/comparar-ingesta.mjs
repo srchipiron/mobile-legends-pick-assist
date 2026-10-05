@@ -73,6 +73,9 @@ export function medir(datos) {
       .reduce((n, porLinea) => n + Object.values(porLinea ?? {}).reduce((m, l) => m + (l?.length ?? 0), 0), 0),
     // El winrate por linea (3.12.0): los PARES heroe-linea, no los heroes.
     winrateLinea: Object.values(datos?.winrateLinea ?? {}).reduce((n, porLinea) => n + Object.keys(porLinea ?? {}).length, 0),
+    // La curva por duración (3.43.0): los pares héroe-línea con curva. Es lo
+    // que dice en qué fase es fuerte cada equipo en el plan de partida.
+    curvaLinea: Object.values(datos?.curvaLinea ?? {}).reduce((n, porLinea) => n + Object.keys(porLinea ?? {}).length, 0),
   };
 }
 
@@ -92,7 +95,8 @@ export const MARGEN = 0.9;
  */
 // `winrateLinea` (pares héroe-línea) desde 3.14.0: sin él en la lista cada
 // corrida podía perder un 10% respecto a la anterior aceptada, sin fondo.
-export const FIJAS = ['heroes', 'conLinea', 'conRol', 'conDano', 'conSpeciality', 'cruces', 'sinergias', 'winrateLinea'];
+// `curvaLinea` desde 3.43.0, por lo mismo.
+export const FIJAS = ['heroes', 'conLinea', 'conRol', 'conDano', 'conSpeciality', 'cruces', 'sinergias', 'winrateLinea', 'curvaLinea'];
 
 /** Máximo de cada recuento fijo en las filas de historial/salud.jsonl (líneas rotas, fuera). */
 export function maximosDelHistorial(texto) {

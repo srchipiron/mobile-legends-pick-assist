@@ -159,6 +159,7 @@ if (rutaHistorial) {
     // Pares héroe-línea del winrate por línea: el comparador de la ingesta
     // compara contra el máximo de esta columna (FIJAS), no solo contra ayer.
     winrateLinea: Object.values(meta.winrateLinea ?? {}).reduce((n, porLinea) => n + Object.keys(porLinea ?? {}).length, 0),
+    curvaLinea: Object.values(meta.curvaLinea ?? {}).reduce((n, porLinea) => n + Object.keys(porLinea ?? {}).length, 0),
     pools: Object.fromEntries(LINEAS.map((l) => [l, datos.poolsPorLinea[l].length])),
     // De qué rango sale la fuerza (3.11.0): Mítico mientras Gloria está vacía tras un reinicio.
     fuerza: datos.meta.fuerza?.rango ?? null,

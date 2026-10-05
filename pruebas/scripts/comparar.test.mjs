@@ -126,4 +126,14 @@ test('una corrida que pierde el winrate por línea no pasa el filtro (se cuentan
   ok(comparar(base, base, maximos).peores.some((p) => p.clave === 'winrateLinea' && p.antes === 30), 'una corrida muy por debajo del máximo del historial pasa el filtro');
 });
 
+test('una corrida que pierde la curva por duración no pasa el filtro (3.43.0)', () => {
+  const curva = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+  const base = { heroes: [{ name: 'A', lanes: ['exp'] }], curvaLinea: { A: { exp: curva, jungle: curva }, B: { roam: curva } } };
+  eq(comparar(base, base).peores.length, 0, 'una corrida idéntica se rechaza');
+  ok(comparar({ ...base, curvaLinea: { A: { exp: curva } } }, base).peores.some((p) => p.clave === 'curvaLinea'), 'una corrida con dos tercios menos de curvas pasa el filtro');
+  const viejo = { ...base }; delete viejo.curvaLinea;
+  eq(comparar(base, viejo).peores.length, 0, 'la primera corrida con curvas se rechaza contra un fichero que no las tenía');
+  ok(comparar(base, base, maximosDelHistorial('{"curvaLinea":30}')).peores.some((p) => p.clave === 'curvaLinea' && p.antes === 30), 'las curvas no se comparan con el máximo del historial');
+});
+
 await terminar('scripts/comparar');

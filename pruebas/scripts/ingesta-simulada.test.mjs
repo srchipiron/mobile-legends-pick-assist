@@ -184,7 +184,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       if (!u.searchParams.get('lane') || m[1] === fallaLineaDe) { res.statusCode = 422; res.end('{}'); return; }
       marca(`lineas:${u.searchParams.get('lane')}`);
       return json({ code: 0, data: { records: [{ data: { heroid: Number(m[1]), real_road: 3, big_rank: '9', total_win_rate: 0.4321 + desplazaLinea + Number(m[1]) / 1000,
-        time_win_rate: [{ time_min: 10, time_max: 12, win_rate: 0.4 }, { time_min: 20, win_rate: 0.5 }] } }], total: 1 } });
+        // La curva por duración (3.43.0), con la forma real: seis tramos,
+        // desordenados a propósito y distinta por héroe y por corrida.
+        time_win_rate: [20, 10, 12, 14, 16, 18].map((t) => ({ time_min: t, ...(t < 20 ? { time_max: t + 2 } : {}), win_rate: 0.4 + (t - 10) / 100 + desplazaLinea + Number(m[1]) / 1000 })) } }], total: 1 } });
     }
     // La tier list de mlbb.gg, en el mismo servidor con otra base (--tiers).
     if (ruta === '/api/v1/heroes') { marca('tiers'); return json(heroes.map((h) => ({ id: h.id, name: h.name }))); }
@@ -258,6 +260,11 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(d.winrateLinea?.Atlas?.roam, 0.4331, `winrate de Atlas en roam: ${JSON.stringify(d.winrateLinea?.Atlas)}`);
     eq(d.winrateLinea?.Khufra?.roam, 0.4341, 'el winrate por línea no es el de cada héroe');
     ok(!(d.diagnostics.lineas?.errores ?? []).length && d.diagnostics.lineas?.valores === 3, `diagnóstico del winrate por línea: ${JSON.stringify(d.diagnostics.lineas)}`);
+    // La curva por duración de la misma respuesta (3.43.0): la servida, en el
+    // orden de los tramos aunque la API los dé desordenados.
+    eq(JSON.stringify(d.curvaLinea?.Atlas?.roam), JSON.stringify([0.401, 0.421, 0.441, 0.461, 0.481, 0.501]), `curva de Atlas en roam: ${JSON.stringify(d.curvaLinea?.Atlas)}`);
+    eq(d.curvaLinea?.Khufra?.roam?.[0], 0.402, 'la curva no es la de cada héroe');
+    eq(d.diagnostics.lineas?.curvas, 3, `el diagnóstico no cuenta las curvas: ${JSON.stringify(d.diagnostics.lineas)}`);
     ok(existsSync(resolve(dir, 'objetos', '90001.png')), 'no ha bajado el icono del objeto');
     ok(existsSync(resolve(dir, 'heroes', '1.jpg')), 'no ha bajado el retrato de Atlas');
     for (const [k, v] of Object.entries({ speciality: d.diagnostics.speciality?.errores, builds: d.diagnostics.builds?.errores, relations: d.diagnostics.relations?.errores })) {
@@ -320,6 +327,10 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(d3.winrateLinea?.Atlas?.roam, 0.4431, `Atlas no trae el winrate por línea de hoy: ${JSON.stringify(d3.winrateLinea?.Atlas)}`);
     eq(d3.winrateLinea?.Khufra?.roam, 0.4341, `el winrate por línea de Khufra se pierde con su ruta caída: ${JSON.stringify(d3.winrateLinea?.Khufra)}`);
     eq(d3.diagnostics.lineas?.conservados, 1, `no cuenta los pares conservados: ${JSON.stringify(d3.diagnostics.lineas)}`);
+    // La curva igual: la de hoy para Atlas, la de antes para Khufra.
+    eq(d3.curvaLinea?.Atlas?.roam?.[0], 0.411, `Atlas no trae la curva de hoy: ${JSON.stringify(d3.curvaLinea?.Atlas)}`);
+    eq(d3.curvaLinea?.Khufra?.roam?.[0], 0.402, `la curva de Khufra se pierde con su ruta caída: ${JSON.stringify(d3.curvaLinea?.Khufra)}`);
+    eq(d3.diagnostics.lineas?.curvasConservadas, 1, `no cuenta las curvas conservadas: ${JSON.stringify(d3.diagnostics.lineas)}`);
     // Y las builds igual (3.40.0): antes la corrida sustituía a las guardadas
     // enteras y Khufra se quedaba sin build.
     ok(d3.builds?.Atlas?.roam?.length && d3.builds?.Khufra?.roam?.length, `las builds de Khufra se pierden con su ruta caída: ${JSON.stringify(Object.keys(d3.builds ?? {}))}`);

@@ -463,7 +463,7 @@ export default function App() {
       {selector}
       {informe && <Diagnostico t={t} resultado={informe} onCerrar={() => setInforme(null)} />}
       {hoja?.build && (
-        <Builds heroe={hoja.build} linea={linea} builds={meta?.builds} equipment={meta?.equipment} enemigos={enemigos} plan={planear(datos, { yo: hoja.build, aliados, enemigos })} onCerrar={cerrar} t={t} />
+        <Builds heroe={hoja.build} linea={linea} builds={meta?.builds} equipment={meta?.equipment} enemigos={enemigos} plan={planear(datos, { yo: hoja.build, aliados, enemigos, linea, baneos, maestria: personal.maestriaUsada, rivalMarcado: draft.rivalMarcado })} onCerrar={cerrar} t={t} />
       )}
       {hoja === 'linea' && (
         <ElegirLinea valor={linea} onElegir={(l) => { setLinea(l); cerrar(); }} onCerrar={cerrar} t={t} />

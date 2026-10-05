@@ -180,6 +180,9 @@ async function main() {
   // El winrate de cada heroe en cada linea (3.12.0): se ensena, no puntua.
   // Si falla, lo anterior, como las builds.
   let winrateLinea = previous?.winrateLinea ?? {};
+  // La curva por duración (3.43.0) viaja en la misma respuesta y se funde
+  // igual, par a par: si falla, la de antes.
+  let curvaLinea = previous?.curvaLinea ?? {};
   try {
     const fresh = await fetchWinrateLinea(heroList);
     if (Object.keys(fresh).length) {
@@ -187,7 +190,12 @@ async function main() {
       winrateLinea = fundido.winrateLinea;
       if (diagnostics.lineas) diagnostics.lineas.conservados = fundido.conservados;
     }
-    console.log(`  · winrate por linea: ${Object.keys(winrateLinea).length} heroes`);
+    if (Object.keys(fresh.curvas ?? {}).length) {
+      const fundido = fundirWinrateLinea(previous?.curvaLinea, fresh.curvas, heroList);
+      curvaLinea = fundido.winrateLinea;
+      if (diagnostics.lineas) diagnostics.lineas.curvasConservadas = fundido.conservados;
+    }
+    console.log(`  · winrate por linea: ${Object.keys(winrateLinea).length} heroes, curvas por duracion: ${Object.keys(curvaLinea).length}`);
   } catch (err) {
     console.warn(`  · winrate por linea: fallo (${err.message}); conservo el anterior`);
   }
@@ -344,6 +352,7 @@ async function main() {
     equipment: equipo,
     builds,
     winrateLinea,
+    curvaLinea,
   };
 
   await mkdir(dirname(OUT), { recursive: true });

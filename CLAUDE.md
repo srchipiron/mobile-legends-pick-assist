@@ -2131,6 +2131,87 @@ conviene no olvidar:
   enemigo blando, copia, nada fuera a 320 px; tres mutaciones). El
   diagnóstico enseña el plan del nº1 con sus claves.
 
+## Las fases de la partida (3.43.0)
+
+`src/motor/fases.js`, por `planear` en `draft.js`. Pedido por Javi: «que
+solo leyendo sepa exactamente qué hacer… que seas capaz de predecir qué
+problemas puedo tener y cómo jugar el early, mid y late». La hoja «Plan y
+objetos» enseña la probabilidad de ganar SEGÚN EL MINUTO EN QUE ACABE la
+partida (seis barras: 10–12 … 20+) y el plan por etapas (al principio, en
+las peleas, al final, problemas). Lo que conviene no volver a suponer:
+
+- **El dato es la curva por duración de la API** (`curvaLinea` en
+  roam-meta.json: el winrate de cada héroe EN SU LÍNEA en las partidas que
+  acaban en cada tramo de dos minutos, de la misma respuesta que
+  `winrateLinea`, `recogerCurva` en extraccion.mjs: ni una petición más).
+  Seis tramos fijos (`TRAMOS_CURVA` = `TRAMOS` de fases.js, con prueba de
+  que coinciden); con otros tramos no se guarda. Se funde par a par como el
+  winrate por línea y `comparar-ingesta` la cuenta (`curvaLinea` en `FIJAS`
+  y en la fila de salud). La primera tanda (Gloria, 165 pares) se metió el
+  5 de octubre de 2026 con el serializador de la ingesta; desde ahí la trae
+  el bot.
+- **Es señal**: la pendiente de cada héroe-línea casa entre Gloria y Mítico
+  a r = 0,88 (poblaciones distintas); σ entre héroes 1,4 pp por tramo,
+  residuo a la recta 1,1 pp. Por tercios de cuota de pick, la fiabilidad es
+  0,87 en los poco jugados y 0,91 en los muy jugados (ruido de la
+  diferencia 0,21 frente a 0,11): poco, así que NO se encoge por muestra
+  (probado en pro: encoger con s = 0,001–0,012 da +5,06 a +5,08 frente a
+  +4,91, dentro del ruido). Lo extremo de Natalia en roam (+1,24 / +1,04 de
+  logit en los dos rangos) no es ruido.
+- **Predice**: sobre 2.268 partidas pro con su duración, la forma de las
+  curvas de los dos equipos (cada héroe en la línea del reparto de la app)
+  EN EL TRAMO EN QUE ACABÓ, sumada al modelo, mejora la validación cruzada
+  +4,9 por 1.000 con las curvas de Gloria y +6,2 con las de Mítico (el
+  equilibrio de daño, que sí entró en el modelo, da +3), coeficiente 0,71 ±
+  0,15 y 0,87 ± 0,16; a 120 días, 0,75 ± 0,23 y 0,90 ± 0,24. Con las
+  curvas BARAJADAS entre héroes, +0,45 y el signo al revés. En crudo: el
+  equipo «de late» gana el 39–42% de las partidas de menos de 13 minutos y
+  el 49–50% de las de 18 o más. `COEF_FASE = 0.71` (las de Gloria, que son
+  las que trae la ingesta). `scripts/medir-fases.mjs` lo repite (con prueba
+  que lo ejecuta entero); si el coeficiente se aleja más de 2,5 SE, lo dice.
+- **Lo que NO dice**: quién gana sin saber cuánto dura (eso sigue siendo la
+  nota de `evaluarDraft`). El ranking es idéntico con y sin curvas (hay
+  prueba). La probabilidad por tramo es la nota de siempre más
+  `COEF_FASE × (forma vuestra − forma suya)` en ese tramo; cada forma se
+  centra en lo que cabe esperar de lo que SALE (`centroDeFases`, ponderado
+  por cuota de pick, con el «no sé» a 0), para que un equipo con menos
+  héroes a la vista no parezca de early o de late por eso.
+- **Umbrales, decisiones de producto con la frecuencia medida** (300
+  drafts completos de roam): la diferencia entre la partida corta y la
+  larga va de −26 a +29 puntos (p05/p95), p25/p75 −10/+13; «sois de early /
+  de late» con `DIFERENCIA_DE_FASE` 10 puntos (sale en el 59%). Un héroe se
+  nombra de early o de late con `PENDIENTE_DE_HEROE` 0,25 de logit (p20 y
+  p80 de los 165 pares). «La partida cambia de lado en el minuto X» solo con
+  tendencia. Las primeras cifras (0,05 y 0,12) lo decían de casi todo: el
+  enemigo «de early» salía en el 84% de los drafts.
+- **Por etapas** (plan.js): al principio, tu héroe por fases (con SU curva:
+  «62% si acaba antes del 12, 56% si pasa del 20»), tu rival de línea y el
+  cruce (p90/p10), con quién ir (vuestro más de early) y de quién cuidarse
+  (el suyo); en las peleas, lo de 3.36.0; al final, su carta (el más de late
+  que NO es tanque: «id a por él antes que a nadie» de un tanque contradecía
+  el focus; la primera versión lo decía de Tigreal), la vuestra y el minuto
+  en que cambia; problemas, tu peor cruce y la fase en contra (lo del equipo
+  NO se repite: la primera versión decía tres cosas dos veces). «Cerrad
+  pronto» / «aguantad» del chat de voz salen de la curva (con tres o más de
+  cada lado); las etiquetas `hypercarry`/`assassin_late` solo sin curvas.
+- **Las barras** salen de la línea del 50% (arriba verde, abajo rojo) con la
+  MISMA escala en todos los drafts (±30 puntos llena la mitad): con una
+  escala fija del 30 al 70% un draft al 74–78% pintaba seis bloques llenos
+  iguales.
+- **Liquipedia** (preguntado por Javi): la ficha de un héroe trae
+  estadísticas base, enfriamientos por nivel y el texto de las habilidades,
+  lo mismo que la API, y nada de en qué fase es fuerte. De Liquipedia se
+  siguen usando solo las partidas pro (que son las que miden esto).
+- Pruebas: `motor/fases.test` (propiedades y datos reales), `plan.test`
+  (etapas, con fixture), `scripts/ingesta.test` (`recogerCurva`),
+  `ingesta-simulada` (servida y conservada), `comparar.test`,
+  `diagnostico.test` (aviso sin curvas) y `interfaz/plan.e2e` (seis barras,
+  frases traducidas, nada fuera a 320 px). 21 mutaciones, todas cazadas
+  (una sobrevivía, «cambia de lado sin tendencia», y pidió su caso). Y la
+  prueba de navegador del plan miraba el desborde con `.plan *`, una clase
+  que desde 3.38.0 es la del plan A·B·C de los baneos: no miraba nada. Hoy
+  `.plan-partida *`, y exige que haya algo que mirar.
+
 ## El consejo para los compañeros
 
 Desde 1.34.0, `src/motor/equipo.js`. Con algún enemigo a la vista, para cada

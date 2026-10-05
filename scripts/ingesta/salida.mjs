@@ -43,6 +43,7 @@ export function serializar(out) {
       synergies: compactar(out.synergies),
       builds: compactarBuilds(out.builds),
       ...(out.winrateLinea ? { winrateLinea: compactarBuilds(out.winrateLinea) } : {}),
+      ...(out.curvaLinea ? { curvaLinea: compactarBuilds(out.curvaLinea) } : {}),
     },
     null,
     2,

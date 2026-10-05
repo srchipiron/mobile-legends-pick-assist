@@ -8,6 +8,23 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.43.0
+
+- El plan de partida dice ahora cómo va a ir la partida según el minuto en
+  que acabe: «Plan y objetos» de cualquier héroe enseña tu probabilidad de
+  ganar si acaba entre el 10 y el 12, el 12 y el 14… o pasado el 20, en seis
+  barras, y si sois más fuertes al principio o al final («95% si acaba antes
+  del 12, 48% si pasa del 20: cuanto antes se cierre, mejor»). Sale de cómo
+  gana cada héroe de ese draft según lo que dura la partida en tu rango, con
+  un peso medido contra 2.268 partidas profesionales: predice de verdad
+  quién gana las partidas cortas y las largas.
+- El plan va por etapas: qué hacer al principio (si tu héroe es de partidas
+  cortas o largas, tu rival de línea y si le ganas el cruce, con quién ir y
+  de quién cuidarte), en las peleas, al final (su carta para el final, la
+  vuestra y en qué minuto cambia la partida de lado) y los problemas que vas
+  a tener. «Cerrad pronto» y «aguantad» para el chat de voz salen ahora de
+  esos datos y no de etiquetas escritas a mano.
+
 ## 3.42.1
 
 - Las herramientas que usan los procesos automáticos del proyecto (publicar

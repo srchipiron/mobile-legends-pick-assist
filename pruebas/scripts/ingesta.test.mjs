@@ -12,7 +12,8 @@ import { readdirSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
 import { test, ok, eq, terminar, RAIZ, leerTexto } from '../arnes.mjs';
-import { extraerLineas, extraerRol, extraerHabilidades, fetchStats } from '../../scripts/ingesta/extraccion.mjs';
+import { extraerLineas, extraerRol, extraerHabilidades, fetchStats, recogerCurva, TRAMOS_CURVA } from '../../scripts/ingesta/extraccion.mjs';
+import { TRAMOS } from '../../src/motor/fases.js';
 import { callRoute, request } from '../../scripts/ingesta/descarga.mjs';
 import { estado } from '../../scripts/ingesta/contexto.mjs';
 import { idPrincipal, esIdDeHeroe, recogerPares, relationMap, pick } from '../../scripts/ingesta/relaciones.mjs';
@@ -429,6 +430,22 @@ test('la matriz de la corrida: sin filas nuevas se queda la guardada; de otro ra
   ok(otro.frescas === 1 && !otro.relations.counters.C && !otro.relations.synergies.A, `mezcla filas de dos rangos: ${JSON.stringify(otro.relations)}`);
   // Un fichero de antes de 3.35.0 (sin `relaciones`) es del rango de la ingesta.
   eq(relacionesDeLaCorrida({ rank: 'glory', counters: { C: { D: 0.4 } }, synergies: {} }, { counters: { A: { B: 0.6 } }, synergies: {} }, 'glory').relations.counters.C?.D, 0.4);
+});
+
+test('la curva por duración (3.43.0): seis tramos en orden, la de la forma real; con otros tramos o un valor imposible, nada', () => {
+  eq(TRAMOS_CURVA.join(), TRAMOS.join(), 'la ingesta y el motor no hablan de los mismos tramos');
+  const real = { code: 0, data: { records: [{ data: { total_win_rate: 0.59, time_win_rate: [
+    { time_min: 20, win_rate: 0.5574 }, { time_max: 12, time_min: 10, win_rate: 0.6199 }, { time_max: 14, time_min: 12, win_rate: 0.6024 },
+    { time_max: 16, time_min: 14, win_rate: 0.5899 }, { time_max: 18, time_min: 16, win_rate: 0.5784 }, { time_max: 20, time_min: 18, win_rate: 0.5766 },
+  ] } }] } };
+  eq(JSON.stringify(recogerCurva(real)), JSON.stringify([0.6199, 0.6024, 0.5899, 0.5784, 0.5766, 0.5574]), 'no ordena los tramos o no los lee');
+  const cinco = structuredClone(real); cinco.data.records[0].data.time_win_rate.pop();
+  eq(recogerCurva(cinco), null, 'guarda una curva con un tramo menos');
+  const otros = structuredClone(real); otros.data.records[0].data.time_win_rate[0].time_min = 25;
+  eq(recogerCurva(otros), null, 'guarda una curva con otros tramos (hablaría de otros minutos)');
+  const rota = structuredClone(real); rota.data.records[0].data.time_win_rate[1].win_rate = 1.4;
+  eq(recogerCurva(rota), null, 'guarda una curva con un winrate imposible');
+  eq(recogerCurva({ data: { records: [] } }), null, 'saca una curva de una respuesta vacía');
 });
 
 await terminar('scripts/ingesta');

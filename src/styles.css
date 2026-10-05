@@ -630,7 +630,31 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   border-radius: var(--r-sm); background: var(--glass);
   box-shadow: inset 3px 0 0 var(--gold);
 }
-.plan-bloque + .plan-bloque .plan-lista li { box-shadow: inset 3px 0 0 var(--ally); }
+/* Por etapas (3.43.0): lo tuyo en azul, los problemas en rojo; lo del equipo
+   sigue en amarillo. */
+.plan-etapa .plan-lista li { box-shadow: inset 3px 0 0 var(--ally); }
+.etapa-problemas .plan-lista li { box-shadow: inset 3px 0 0 var(--enemy); }
+.plan-equipo .plan-lista li { box-shadow: inset 3px 0 0 var(--gold); }
+
+/* Cómo va a ir la partida (3.43.0): seis barras, del 30% al 70%, verde a
+   favor y rojo en contra, con la línea del 50%. */
+.curva-partida { gap: 8px; }
+.curva-ayuda { margin: 0; font-size: 12px; color: var(--muted); }
+.curva-barras { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.curva-tramo { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.curva-pct { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 600; }
+.curva-tramo.a-favor .curva-pct { color: var(--c-comp); }
+.curva-tramo.en-contra .curva-pct { color: var(--enemy); }
+.curva-hueco {
+  position: relative; width: 100%; height: 64px;
+  border-radius: 6px; background: var(--glass); overflow: hidden;
+}
+.curva-hueco::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid var(--line-hi); }
+.curva-barra { position: absolute; left: 0; right: 0; display: block; }
+.curva-tramo.a-favor .curva-barra { bottom: 50%; border-radius: 6px 6px 0 0; background: color-mix(in srgb, var(--c-comp) 70%, transparent); }
+.curva-tramo.en-contra .curva-barra { top: 50%; border-radius: 0 0 6px 6px; background: color-mix(in srgb, var(--enemy) 70%, transparent); }
+.curva-min { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.curva-resumen { margin: 0; padding: 8px 10px; font-size: 14px; line-height: 1.35; border-radius: var(--r-sm); background: var(--glass); }
 
 .build { display: flex; flex-direction: column; gap: 8px; }
 .build-nucleo {

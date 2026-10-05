@@ -130,6 +130,16 @@ export function seccionCobertura(inf, { datos, linea, entorno = {} }) {
     inf.check(d.media >= 60, `Matriz completa: ${d.media.toFixed(0)} rivales por héroe`,
       `Solo ${d.media.toFixed(0)} rivales por héroe: la descarga se ha quedado en la ruta corta`, true);
   }
+  // Las curvas por duración (3.43.0): sin ellas el plan de partida se queda
+  // sin fases y nada más se entera. La de su línea o, si no juega esa, otra.
+  const curvas = datos.meta?.curvaLinea ?? {};
+  if (Object.keys(curvas).length) {
+    const conCurva = pool.filter((h) => curvas[nombreClave(h.name)]?.[linea]).length;
+    inf.check(conCurva >= pool.length * 0.8, `Fases: ${conCurva}/${pool.length} héroes de tu línea con curva por duración`,
+      `Fases: solo ${conCurva} de ${pool.length} héroes de tu línea con curva por duración: el plan habla de fases con medio equipo`, true);
+  } else {
+    inf.check(false, '', 'Fases: sin curvas por duración: el plan de partida no dice cómo va según el minuto (¿falla la ruta win-rate/timeline?)', true);
+  }
   const cb = coberturaBuilds(pool, meta?.builds, linea);
   if (Object.keys(meta?.builds ?? {}).length) {
     inf.check(cb.con >= cb.total * 0.8, `Builds: ${cb.con}/${cb.total} héroes de tu línea`, `Builds: solo ${cb.con} de ${cb.total} héroes de tu línea`, true);

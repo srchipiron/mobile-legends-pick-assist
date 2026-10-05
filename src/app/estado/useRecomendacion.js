@@ -76,7 +76,7 @@ export function useRecomendacion({ datos, linea, enemigos, aliados, baneos, riva
 
   // El plan de partida del héroe del que se habla (3.36.0): el de la hoja
   // se calcula al abrirla para cualquier tarjeta; este va al diagnóstico.
-  const partida = useMemo(() => planear(datos, { yo, aliados, enemigos }), [datos, yo, aliados, enemigos]);
+  const partida = useMemo(() => planear(datos, { yo, aliados, enemigos, linea, baneos, maestria, rivalMarcado }), [datos, yo, aliados, enemigos, linea, baneos, maestria, rivalMarcado]);
 
   /** La probabilidad con UN héroe concreto (el que apuntas, aunque no sea el nº1). */
   const estimacionCon = (heroe) => ranking.find((r) => r.heroe === heroe) ?? estimarCon(datos, { yo: heroe, enemigos, aliados, baneos, maestria });

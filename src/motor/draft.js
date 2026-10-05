@@ -11,6 +11,7 @@ import { analizarComposicion } from './composicion.js';
 import { analizarDraft } from './analisis.js';
 import { planDePartida } from './plan.js';
 import { elegirVentana, elegirRango, mediaDeWinrate } from './ventana.js';
+import { centroDeFases, fasesDePartida } from './fases.js';
 
 /**
  * El cerebro: de los ficheros de datos y el draft a todo lo que la app
@@ -86,6 +87,12 @@ export function prepararDatos({ catalogo = null, meta = null, rango = null } = {
     // el global de la misma ventana. Su ventana es de ~15–30 días del rango
     // de la ingesta (Gloria), no la de la fuerza.
     winrateLinea: indexarPorNombre(meta?.winrateLinea),
+    // La curva por duración (3.43.0): el winrate de cada héroe en su línea
+    // según el minuto en que acaba la partida. Dice en qué fase es fuerte
+    // cada equipo (fases.js); NO puntúa en el ranking. Y su centro (lo que
+    // cabe esperar de lo que sale, ponderado por cuota de pick), UNA vez.
+    curvaLinea: indexarPorNombre(meta?.curvaLinea),
+    centroDeFases: meta?.curvaLinea ? centroDeFases(meta.curvaLinea, meta.winrateLinea, stats) : null,
     counters: indexarPorNombre(meta?.counters, 2),
     synergies: indexarPorNombre(meta?.synergies, 2),
     // Lo que cabe esperar de equilibrio de daño en un equipo de n héroes,
@@ -268,8 +275,24 @@ export function planDePicks(datos, { linea, maestria = null, n = 3 } = {}) {
  * El plan de partida de UN héroe en este draft (plan.js): qué hacer con él y
  * qué decir al equipo. Es consejo, no nota: no cambia el ranking.
  */
-export function planear(datos, { yo = null, aliados = [], enemigos = [] } = {}) {
-  return planDePartida({ yo, aliados, enemigos, meta: datos.meta });
+export function planear(datos, { yo = null, aliados = [], enemigos = [], linea = null, baneos = [], maestria = null, rivalMarcado = null } = {}) {
+  if (!yo) return planDePartida({ yo, aliados, enemigos, meta: datos.meta });
+  // Tu línea: la que juegas; sin ella (llamadas de antes de 3.43.0), la
+  // primera del héroe. Los compañeros, repartidos SIN tu línea, y los
+  // enemigos, como el rival: el mismo reparto que el resto del motor.
+  const mia = linea ?? datos.lineas.get(nombreClave(yo.name))?.lanes?.[0] ?? yo.lanes?.[0] ?? null;
+  const companeros = aliados.filter((a) => a.name !== yo.name);
+  const lineasNos = lineasOcupadas(companeros, datos.lineas, datos.frecuencias, LINEAS.filter((l) => l !== mia));
+  const lineasEllos = lineasOcupadas(enemigos, datos.lineas, datos.frecuencias);
+  const estimacion = (aliados.length || enemigos.length) ? estimarCon(datos, { yo, enemigos, aliados: companeros, baneos, maestria }) : null;
+  const fases = estimacion ? fasesDePartida({
+    pBase: estimacion.p,
+    nos: [{ heroe: yo, linea: mia }, ...companeros.map((h, i) => ({ heroe: h, linea: lineasNos[i] ?? null }))],
+    ellos: enemigos.map((h, i) => ({ heroe: h, linea: lineasEllos[i] ?? null })),
+    datosFases: { curvaLinea: datos.meta.curvaLinea, winrateLinea: datos.meta.winrateLinea, centro: datos.meta.centroDeFases },
+  }) : null;
+  const rival = mia ? rivalDeLinea(datos, { linea: mia, enemigos, marcado: rivalMarcado }).nombre : null;
+  return planDePartida({ yo, aliados, enemigos, meta: datos.meta, fases, rival: enemigos.find((e) => e.name === rival) ?? null });
 }
 
 /**
@@ -293,7 +316,7 @@ export function recomendar(datos, { linea, enemigos = [], aliados = [], baneos =
   const analisis = analizarDraft({ eleccion, ranking, enemigos, aliados, baneos, meta: datos.meta, rivalDeLinea: rival.nombre, empate, robustez, composicion });
   return {
     pool, lineasAbiertas, ranking, empate, rival, eleccion, robustez, composicion, consejos, analisis,
-    partida: planear(datos, { yo, aliados, enemigos }),
+    partida: planear(datos, { yo, aliados, enemigos, linea, baneos, maestria, rivalMarcado }),
     baneosSugeridos: baneosSugeridos(datos, { aliados, enemigos, baneos }),
     cobertura: cobertura(pool, datos.meta.stats, datos.meta.counters),
   };

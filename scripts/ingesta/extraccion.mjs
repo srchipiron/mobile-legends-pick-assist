@@ -467,6 +467,14 @@ export async function fetchBuilds(heroList) {
  */
 export async function fetchWinrateLinea(heroList) {
   const out = {};
+  // La curva por duración de la MISMA respuesta (3.43.0): el winrate de ese
+  // héroe en esa línea en las partidas que acaban en cada tramo de dos
+  // minutos. Es lo que dice en qué fase es fuerte (medido contra 2.268
+  // partidas pro: ver «Las fases de la partida» en CLAUDE.md). No cuesta ni
+  // una petición más. Va en una propiedad aparte para no cambiar la forma de
+  // lo que devuelve.
+  const curvas = {};
+  Object.defineProperty(out, 'curvas', { value: curvas, enumerable: false });
   if (!estado.ROUTES?.lineas) return out;
   const lineasValidas = new Set(['roam', 'jungle', 'mid', 'gold', 'exp']);
   const errores = [];
@@ -478,6 +486,8 @@ export async function fetchWinrateLinea(heroList) {
         const { data } = await callRoute(estado.ROUTES.lineas, { lane, rank: RANK, lang: 'en', size: 20, index: 1 }, h.id ?? h.name);
         const wr = recogerWinrateLinea(data);
         if (wr != null) (out[h.name] ??= {})[lane] = Math.round(wr * 1e4) / 1e4;
+        const curva = recogerCurva(data);
+        if (curva) (curvas[h.name] ??= {})[lane] = curva;
       } catch (err) {
         if (errores.length < 4) errores.push(`${h.name}/${lane}: ${err.message}`);
       }
@@ -488,9 +498,35 @@ export async function fetchWinrateLinea(heroList) {
     pedidas,
     heroes: Object.keys(out).length,
     valores: Object.values(out).reduce((n, porLinea) => n + Object.keys(porLinea).length, 0),
+    curvas: Object.values(curvas).reduce((n, porLinea) => n + Object.keys(porLinea).length, 0),
     errores,
   };
   return out;
+}
+
+/**
+ * Los tramos de la curva por duración, en minutos: 10–12, 12–14, …, 18–20 y
+ * 20 o más. Así los da la API hoy; si cambian, la curva NO se guarda (con
+ * otros tramos, la cuenta de las fases de la app hablaría de otros minutos).
+ */
+export const TRAMOS_CURVA = [10, 12, 14, 16, 18, 20];
+
+/** La curva por duración (`time_win_rate`) de la respuesta, este donde este: seis winrates en el orden de TRAMOS_CURVA, o null. */
+export function recogerCurva(node, depth = 0) {
+  if (depth > HONDURA || node == null || typeof node !== 'object') return null;
+  if (Array.isArray(node.time_win_rate)) {
+    const tramos = [...node.time_win_rate].filter((x) => x && typeof x === 'object').sort((a, b) => Number(a.time_min) - Number(b.time_min));
+    const desde = tramos.map((x) => Number(x.time_min));
+    const wr = tramos.map((x) => Number(x.win_rate));
+    if (desde.length !== TRAMOS_CURVA.length || desde.some((d, i) => d !== TRAMOS_CURVA[i])) return null;
+    if (wr.some((v) => !Number.isFinite(v) || v <= 0 || v >= 1)) return null;
+    return wr.map((v) => Math.round(v * 1e4) / 1e4);
+  }
+  for (const x of Array.isArray(node) ? node : Object.values(node)) {
+    const r = recogerCurva(x, depth + 1);
+    if (r) return r;
+  }
+  return null;
 }
 
 /** El primer `total_win_rate` posible de la respuesta, este donde este. */

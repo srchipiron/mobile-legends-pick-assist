@@ -299,4 +299,17 @@ test('la línea de la corrida pro dice la edad de los datos y, si el lunes Liqui
   ok(!lineas({ errores: [], generatedAt: hace(2) }).some((l) => /no pudo leer Liquipedia/.test(l)), 'lo dice sin errores');
 });
 
+test('el diagnóstico dice cuántos de tu línea tienen curva por duración, y avisa sin curvas (3.43.0)', () => {
+  const entorno = { version: '1.0', rango: 'glory', sinDatosPersonales: true };
+  const meta = metaSintetica();
+  const pool = prepararDatos({ catalogo: { heroes: catalogo.heroes }, meta, rango: 'glory' }).poolsPorLinea.roam;
+  const curva = [0.52, 0.51, 0.5, 0.5, 0.49, 0.48];
+  const lineas = (m) => diagnosticar({ linea: 'roam', maestria: {}, partidas: [], entorno, datos: prepararDatos({ catalogo: { heroes: catalogo.heroes }, meta: m, rango: 'glory' }) }).texto.split('\n').filter((l) => /Fases/.test(l));
+  const todas = Object.fromEntries(pool.map((x) => [x.name, { roam: curva }]));
+  ok(lineas({ ...meta, curvaLinea: todas }).some((l) => /^\[OK/.test(l) && l.includes(`${pool.length}/${pool.length}`)), `con todas las curvas no da OK: ${lineas({ ...meta, curvaLinea: todas })}`);
+  const pocas = Object.fromEntries(pool.slice(0, 2).map((x) => [x.name, { roam: curva }]));
+  ok(lineas({ ...meta, curvaLinea: pocas }).some((l) => /^\[AVISO\]/.test(l)), `con dos curvas no avisa: ${lineas({ ...meta, curvaLinea: pocas })}`);
+  ok(lineas({ ...meta, curvaLinea: undefined }).some((l) => /^\[AVISO\].*sin curvas/.test(l)), `sin curvas no avisa: ${lineas({ ...meta, curvaLinea: undefined })}`);
+});
+
 await terminar('motor/diagnostico');
