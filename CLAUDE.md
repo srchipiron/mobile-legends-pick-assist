@@ -3057,6 +3057,16 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   temporada. Siguiendo la app 69% y por libre 75% en el MISMO periodo: esa
   comparación, que no tiene el sesgo del reinicio, no dice que la app ayude.
 
+- **La calibración en la cola de Javi, por meses** (5 de octubre de 2026,
+  reabierto como pedía el punto anterior al pasar de 100 drafts): con 144
+  partidas con estimación, previsto 54,4% y ganado 63,9%, pero partido por
+  meses el desfase es SOLO septiembre (105 partidas: previsto 54,1%, ganado
+  68,6% ± 8,9, la racha tras el reinicio del 16) y octubre cuadra (39:
+  previsto 55,0%, ganado 51,3% ± 15,7, su 51% de siempre). Con ≥50%
+  previsto gana el 70,3% (101) y con <50% el 48,8% (43): el número separa
+  en su cola. La re-puntuación de hoy (115 drafts) da pendiente 0,78 ±
+  0,72 y AUC 0,56 ± 0,11: el ± sigue mandando. No se toca ni la escala ni
+  el nivel; se vuelve a mirar por meses cuando octubre pase de 100.
 - **Lo examinado en 3.14.0 y dejado como está** (26 de septiembre de 2026,
   dos revisiones en paralelo, del código de 3.10–3.13 y de los bots): (1)
   una partida apuntada DESPUÉS de fechar la maestría pero jugada antes (se
@@ -3177,8 +3187,7 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   comparte origen (`srchipiron.github.io`) con otra app suya, así que
   cualquier página de ese origen lee el `localStorage` (el token) y el
   lector la acepta como origen; un dominio propio o mover la otra app lo
-  cierra. El token, con caducidad y solo «Issues» de este repositorio.
-  La declaración de ECC sin fijar a un commit, y `lector.sh` ejecuta lo
+  cierra. La declaración de ECC sin fijar a un commit, y `lector.sh` ejecuta lo
   que traiga `git pull` sin preguntar. HECHO el 5 de octubre de 2026:
   `main` protegida con un conjunto de reglas de GitHub («Proteger main»:
   sin borrarla ni reescribir su historial, sin excepciones; NO pide pull
@@ -3195,7 +3204,10 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   que Javi tendría que fusionar desde el móvil. Y la verificación en dos
   pasos de su cuenta de GitHub, activada por él el mismo día (desde una
   sesión no se puede comprobar: `gh api user` da
-  `two_factor_authentication: null` con el token de la sesión). Y por diseño de 3.40.0: lo leído que
+  `two_factor_authentication: null` con el token de la sesión), y el token
+  de la subida de partidas rehecho con caducidad y solo «Issues» de este
+  repositorio (la subida de las 15:07 UTC llegó a la #11 y el bot la
+  procesó: funciona). Y por diseño de 3.40.0: lo leído que
   no llegó a entrar (por el tope de cinco) cuenta como «quitado a mano» y
   no vuelve a entrar en ese draft aunque luego quede hueco; con el tope
   lleno uno de los seis leídos sobraba, y `cambiosDeHueco` ya cambia al
