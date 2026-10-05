@@ -7,7 +7,7 @@ import { mkdtempSync, readdirSync, readFileSync, writeFileSync, existsSync, utim
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { crearServidor, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS } from '../../scripts/lector/servir.mjs';
+import { crearServidor, lectorEnHilos, leerCaptura, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS } from '../../scripts/lector/servir.mjs';
 import { guardarResultados } from '../../scripts/lector/resultado.mjs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { carasGuardadas } from '../../scripts/lector/leer.mjs';
@@ -22,6 +22,26 @@ const pngTabla = pantallaDeFinal();
 const cab = { Origin: 'https://srchipiron.github.io' };
 /** Espera (hasta `ms`) a que `cond` sea verdad. */
 const hasta = async (cond, ms = 10000) => { const t0 = Date.now(); while (!(await cond()) && Date.now() - t0 < ms) await new Promise((r) => setTimeout(r, 20)); return cond(); };
+
+test('las lecturas en tres hilos dan exactamente lo mismo que en uno, y si un hilo falla se lee en uno solo (3.39.0)', async () => {
+  const unaSola = leerCaptura(png, caras);
+  // Sin avisos: si los hilos fallaran, el plan B (leer en uno solo) daría lo mismo y taparía el fallo.
+  const avisosBuenos = [];
+  const enHilos = lectorEnHilos({ caras, registrar: (l) => avisosBuenos.push(l) });
+  try {
+    for (const vez of [1, 2]) eq(JSON.stringify(await enHilos.leer(png)), JSON.stringify(unaSola), `la lectura ${vez} en hilos no es la de un hilo`);
+    // Lo aprendido de la tablet llega a los hilos: unas posiciones de picks que no leen nada no cambian lo que la medida sí lee.
+    const aprendido = { version: VERSION_APRENDIDO, picks: [[100, 100, 40], [100, 300, 40], [100, 500, 40], [100, 700, 40], [100, 900, 40]], caras: {}, capturas: 1 };
+    eq(JSON.stringify(await enHilos.leer(png, aprendido)), JSON.stringify(leerCaptura(png, caras, aprendido)), 'con lo aprendido, los hilos y uno solo leen distinto');
+    eq(avisosBuenos.join(' | '), '', 'los hilos fallaron y se leyó en uno solo');
+  } finally { enHilos.cerrar(); }
+  const avisos = [];
+  const roto = lectorEnHilos({ caras, registrar: (l) => avisos.push(l), tarea: new URL('file:///no-existe/lectura-tarea.mjs') });
+  try {
+    eq(JSON.stringify(await roto.leer(png)), JSON.stringify(unaSola), 'con los hilos rotos no se lee en uno solo');
+    ok(avisos.some((l) => /hilos de lectura fallaron/.test(l)), `no dice que los hilos fallaron: ${avisos}`);
+  } finally { roto.cerrar(); }
+});
 
 async function conServidor(opciones, fn) {
   const servidor = crearServidor({ caras, ...opciones });

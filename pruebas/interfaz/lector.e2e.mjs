@@ -91,7 +91,8 @@ await prueba('el héroe que un jugador solo miraba se cambia por el que coge en 
     const d = await leer(pagina);
     // (Eudora está entre los baneos del montaje, que salen de otra captura:
     // no entra de enemiga, pero su hueco sí quita a Khufra.)
-    eq([...d.enemies].sort().join(), 'Aamon,Lesley,Rafaela', `los que solo se miraban no se cambian por los de su hueco: ${d.enemies}`);
+    // (Gloo, en el tercer hueco, sale leído desde 3.39.0: afinar el tamaño lo encuentra.)
+    eq([...d.enemies].sort().join(), 'Aamon,Gloo,Lesley,Rafaela', `los que solo se miraban no se cambian por los de su hueco: ${d.enemies}`);
     ok(!d.lectura.enemigos.includes('Clint') && !d.lectura.enemigos.includes('Khufra'), `lo cambiado sigue contando como leído: ${d.lectura.enemigos}`);
     // Deshacer devuelve a Clint y Khufra.
     await pagina.locator('.aviso-deshacer').getByRole('button', { name: 'Deshacer' }).click(); await pagina.waitForTimeout(300);

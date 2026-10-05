@@ -8,6 +8,22 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.39.0
+
+- El lector de la tablet va unas siete veces más rápido: con la misma
+  captura, una lectura pasa de 4,8 s a 0,7 s en el ordenador de pruebas
+  (en tu móvil tardaba varias veces más; ahora también bastante menos).
+  Cuantas más lecturas caben mientras se elige, más picks se ven antes de
+  que salgan las skins, y antes se cambia el héroe que el rival solo
+  estaba mirando (Joy y Wanwan salían así en tus partidas).
+- Lee más picks: afina la posición y el tamaño de cada cara antes de
+  decidir. En la captura de prueba del 1 de octubre ahora lee los cinco
+  picks enemigos (Gloo salía «?»), y en todas las caras de prueba no
+  pone nombre a ningún héroe que no esté.
+- Cada partida apunta lo que tardó cada lectura en tu móvil (y cuánto
+  de eso fue la captura de la tablet): el informe de tus partidas lo
+  dirá, para saber dónde se va el tiempo de verdad.
+
 ## 3.38.0
 
 - Tu primera recomendación sube unos 100 píxeles en un móvil pequeño: en

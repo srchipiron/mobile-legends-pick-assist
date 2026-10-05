@@ -317,6 +317,14 @@ test('lo que leyó el lector viaja con la partida, saneado, y se mide contra el 
   const equipo = aciertosDelLector([{ pick: 'Estes', draft: { enemigos: ['Clint'], aliados: ['Guinevere', 'Novaria'] }, lector: { baneos: [], enemigos: ['Clint'], aliados: ['Guinevere', 'Leomord'], tuyo: 'Estes' } }]);
   eq(`${equipo.leidos}/${equipo.acertados}`, '4/3', `compañeros y pick leídos no se miden: ${JSON.stringify(equipo)}`);
   eq(equipo.fallos.Leomord, 1, 'un compañero leído que no acabó en el draft no cuenta como fallo');
+  // Lo que tardó cada lectura en el móvil (3.39.0): números razonables, los últimos 20, y su mediana en el informe.
+  const conTiempos = sanearLectura({ baneos: ['Hirara'], enemigos: [], ms: [1200, 'x', -5, 7000.4, 1e9, ...Array.from({ length: 25 }, () => 3000)], msCaptura: [800, 900] });
+  eq(conTiempos.ms.length, 20, 'los tiempos no se recortan a los últimos 20');
+  ok(conTiempos.ms.every((x) => Number.isInteger(x) && x >= 0 && x <= 600000), `entra un tiempo imposible: ${conTiempos.ms}`);
+  eq(sanearLectura({ baneos: ['A'], enemigos: [], ms: [1200, 'x', -5, 7000.4] }).ms.join(), '1200,7000', 'los tiempos no se sanean');
+  const t = aciertosDelLector([{ pick: 'X', draft: { enemigos: [] }, lector: { baneos: ['A'], enemigos: [], ms: [4000, 6000, 9000], msCaptura: [1000, 2000, 3000] } }]).tiempos;
+  eq(`${t?.lecturas} ${t?.mediana} ${t?.medianaCaptura}`, '3 6000 2000', `la mediana de los tiempos sale ${JSON.stringify(t)}`);
+  eq(aciertosDelLector([p]).tiempos, null, 'sin tiempos guardados se inventa una mediana');
 });
 
 test('la lectura guarda los ids de las capturas del lector (solo los válidos) para devolverle la verdad', () => {

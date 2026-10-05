@@ -181,7 +181,7 @@ export function useDraft() {
    * está en otro sitio (un enemigo baneado, un compañero) no se toca. Con
    * enemigos nuevos el draft pasa a picks. Todo de una vez, con Deshacer.
    */
-  const aplicarLectura = useCallback(({ baneos = [], enemigos = [], aliados = [], tuyo = null, id = null, dudas = null, huecos = null }) => {
+  const aplicarLectura = useCallback(({ baneos = [], enemigos = [], aliados = [], tuyo = null, id = null, dudas = null, huecos = null, ms = null, msCaptura = null }) => {
     const antes = actual.current;
     const ahora = Date.now();
     // Draft nuevo: los huecos de la partida anterior no dicen nada.
@@ -217,7 +217,7 @@ export function useDraft() {
     // jugador lo miró y cogió otro) y no debe contar como fallo al apuntar.
     const union = (a = [], b = [], sin = []) => [...new Set([...a, ...b])].filter((n) => !sin.includes(n));
     // Las dudas son las de la ÚLTIMA lectura (la más completa), no la unión.
-    const lectura = sanearLectura({ baneos: union(antes.lectura?.baneos, baneos), enemigos: union(antes.lectura?.enemigos, enemigos, quitadosE), aliados: union(antes.lectura?.aliados, aliados, quitadosA), tuyo: tuyo ?? antes.lectura?.tuyo, ids: union(antes.lectura?.ids, id ? [id] : []), dudas: dudas ?? antes.lectura?.dudas, aprendizaje: antes.lectura?.aprendizaje });
+    const lectura = sanearLectura({ baneos: union(antes.lectura?.baneos, baneos), enemigos: union(antes.lectura?.enemigos, enemigos, quitadosE), aliados: union(antes.lectura?.aliados, aliados, quitadosA), tuyo: tuyo ?? antes.lectura?.tuyo, ids: union(antes.lectura?.ids, id ? [id] : []), dudas: dudas ?? antes.lectura?.dudas, aprendizaje: antes.lectura?.aprendizaje, ms: [...(antes.lectura?.ms ?? []), ...(Number.isFinite(ms) ? [ms] : [])], msCaptura: [...(antes.lectura?.msCaptura ?? []), ...(Number.isFinite(msCaptura) ? [msCaptura] : [])] });
     const sueltaPick = miPick && (nuevosBaneos.includes(miPick) || nuevosEnemigos.includes(miPick));
     const nuevo = {
       ...antes, baneos: nuevosBaneos, enemigos: nuevosEnemigos, lectura,

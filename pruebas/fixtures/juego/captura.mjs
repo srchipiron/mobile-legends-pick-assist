@@ -19,7 +19,7 @@ export const VERDAD = {
   tuyos: ['Hirara', 'Marcel', 'Masha', 'Belerick', 'Eudora'],
   suyos: ['Saber', 'Irithel', 'Paquito', 'Aulus', 'Hirara'],
   enemigos: ['Clint', 'Khufra'],
-  /** La segunda columna de picks: Gloo se queda a 0,80 por un pelo y sale «?». */
+  /** La segunda columna de picks. Gloo se quedaba en 0,65 («?») hasta 3.39.0; afinando el tamaño, 0,91. */
   enemigos2: ['Rafaela', 'Eudora', 'Gloo', 'Lesley', 'Aamon'],
   aliados: ['Clint', 'Guinevere', 'Novaria', 'Leomord', 'Estes'],
   /** La quinta fila es la de Javi (nombre en amarillo). */

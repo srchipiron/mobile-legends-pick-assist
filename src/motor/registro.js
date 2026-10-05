@@ -51,6 +51,12 @@ export function sanearLectura(lectura) {
     .filter((d) => d && typeof d === 'object' && /^[tsea][1-5]$/.test(d.hueco) && typeof d.candidato === 'string' && d.candidato.trim() && Number.isFinite(Number(d.parecido)))
     .map((d) => ({ hueco: d.hueco, candidato: d.candidato.trim().slice(0, 40), parecido: Math.max(0, Math.min(1, Math.round(Number(d.parecido) * 100) / 100)) })).slice(0, 15) : [];
   if (dudas.length) salida.dudas = dudas;
+  // Cuánto tardó cada lectura en el móvil (3.39.0): la total y la de la
+  // captura de la tablet, las últimas 20. Sin esto, «va lento» no se podía medir.
+  const tiempos = (l) => (Array.isArray(l) ? l.map(Number).filter((x) => Number.isFinite(x) && x >= 0 && x <= 600000).map(Math.round).slice(-20) : []);
+  const ms = tiempos(lectura.ms), msCaptura = tiempos(lectura.msCaptura);
+  if (ms.length) salida.ms = ms;
+  if (msCaptura.length) salida.msCaptura = msCaptura;
   const a = lectura.aprendizaje;
   if (a && typeof a === 'object') {
     const aprendizaje = { aprendidos: nombres(a.aprendidos, 10), sinEncontrar: nombres(a.sinEncontrar, 10) };
@@ -80,14 +86,17 @@ export function aciertosDelLector(partidas = []) {
   }
   // Lo que dudó (3.28.0): a quién se parecía cada hueco sin reconocer, y qué
   // aprendió o no encontró al corregir. Agregado por nombre.
-  const dudas = {}, aprendidos = {}, sinEncontrar = {};
+  const dudas = {}, aprendidos = {}, sinEncontrar = {}, ms = [], msCaptura = [];
   for (const p of con) {
     const l = sanearLectura(p.lector);
+    ms.push(...(l.ms ?? [])); msCaptura.push(...(l.msCaptura ?? []));
     for (const d of l.dudas ?? []) dudas[d.candidato] = (dudas[d.candidato] ?? 0) + 1;
     for (const n of l.aprendizaje?.aprendidos ?? []) aprendidos[n] = (aprendidos[n] ?? 0) + 1;
     for (const n of l.aprendizaje?.sinEncontrar ?? []) sinEncontrar[n] = (sinEncontrar[n] ?? 0) + 1;
   }
-  return { partidas: con.length, leidos, acertados, acierto: leidos ? acertados / leidos : null, fallos, dudas, aprendidos, sinEncontrar };
+  const mediana = (l) => (l.length ? [...l].sort((x, y) => x - y)[Math.floor((l.length - 1) / 2)] : null);
+  const tiempos = ms.length ? { lecturas: ms.length, mediana: mediana(ms), medianaCaptura: mediana(msCaptura) } : null;
+  return { partidas: con.length, leidos, acertados, acierto: leidos ? acertados / leidos : null, fallos, dudas, aprendidos, sinEncontrar, tiempos };
 }
 
 /** Partidas mínimas de cada rama antes de que los números signifiquen algo. */

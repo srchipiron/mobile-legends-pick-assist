@@ -12,8 +12,8 @@ import { createServer } from 'node:net';
 import { spawnSync } from 'node:child_process';
 import { test, ok, eq, terminar, RAIZ, leerJson, generador } from '../arnes.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
-import { LADO } from '../../scripts/lector/caras.mjs';
-import { leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, carasGuardadas, carasDesfasadas, encontrarTablet, sinRepetidos, REFERENCIA } from '../../scripts/lector/leer.mjs';
+import { LADO, muestra, normalizar, reconocer } from '../../scripts/lector/caras.mjs';
+import { leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, carasGuardadas, carasDesfasadas, encontrarTablet, sinRepetidos, REFERENCIA, PICKS_ENEMIGOS, ALIADOS, BANEOS, ambasOrientaciones } from '../../scripts/lector/leer.mjs';
 import { preguntaMdns, tabletsDeRespuesta, buscarPorMdns, escanearPuertos, SERVICIO } from '../../scripts/lector/tablet.mjs';
 import { capturaCompleta, VERDAD as VERDAD_JUEGO } from '../fixtures/juego/captura.mjs';
 
@@ -95,11 +95,86 @@ test('lee los picks del enemigo mientras se elige: Clint y Khufra, y nada en los
   eq(picks.map((p) => p.nombre ?? '?').join(','), 'Clint,Khufra,?,?,?', `los picks enemigos salen ${picks.map((p) => `${p.candidato} ${p.parecido.toFixed(2)}`).join(' | ')}`);
 });
 
+test('la búsqueda en dos pasadas (reducida y luego entera) decide igual que comparar con todas las caras (3.39.0)', () => {
+  // La de hasta 3.38.0, tal cual: cada posición contra todas las caras a 24×24.
+  const exhaustiva = (img, [cx, cy, r], refs, { pasos = 3, escalas = [0.94, 1.06], finura = 16 } = {}) => {
+    const paso = Math.max(1, Math.round(r / finura)), mejor = new Map();
+    let donde = [0, 0], tope = -Infinity;
+    const probar = (dx, dy, esc) => {
+      const v = normalizar(muestra(img, cx + dx * paso, cy + dy * paso, r * esc));
+      for (const c of refs) { let k = 0; for (let i = 0; i < v.length; i++) k += v[i] * c.v[i]; if (!(mejor.get(c.nombre) >= k)) mejor.set(c.nombre, k); if (k > tope) { tope = k; donde = [dx, dy]; } }
+    };
+    for (let dx = -pasos; dx <= pasos; dx++) for (let dy = -pasos; dy <= pasos; dy++) probar(dx, dy, 1);
+    const [bx, by] = donde;
+    for (const esc of escalas) for (let dx = bx - 1; dx <= bx + 1; dx++) for (let dy = by - 1; dy <= by + 1; dy++) probar(dx, dy, esc);
+    const [a, b] = [...mejor].sort((x, y) => y[1] - x[1]);
+    return { candidato: a[0], parecido: a[1], segundo: b[0], parecidoSegundo: b[1] };
+  };
+  const img = capturaCompleta({ columna: 2 }), ambas = ambasOrientaciones(caras);
+  const opPicks = { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12] };
+  const casos = [
+    ...PICKS_ENEMIGOS.map((p) => [p, ambas, opPicks]),
+    ...ALIADOS.slice(0, 2).map((p) => [p, ambas, { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12, 1.25], finura: 8 }]),
+    ...BANEOS.tuyos.slice(0, 2).map((p) => [p, caras, {}]),
+    // Sin el héroe que está: lo que queda son caras parecidas entre sí, que es donde una criba gruesa se equivocaría.
+    [PICKS_ENEMIGOS[1], ambas.filter((c) => c.nombre !== 'Eudora'), opPicks],
+    [ALIADOS[4], ambas.filter((c) => c.nombre !== 'Estes'), { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12, 1.25], finura: 8 }],
+  ];
+  for (const [pos, refs, op] of casos) {
+    // Sin afinar (eso busca MÁS que la de antes, a propósito: va en la prueba siguiente).
+    const e = exhaustiva(img, pos, refs, op), r = reconocer(img, pos, refs, { ...op, afinar: 0 });
+    ok(r.candidato === e.candidato && r.segundo?.nombre === e.segundo, `en ${pos.map(Math.round)} la búsqueda en dos pasadas da ${r.candidato}/${r.segundo?.nombre} y la exhaustiva ${e.candidato}/${e.segundo}`);
+    ok(Math.abs(r.parecido - e.parecido) < 1e-9 && Math.abs(r.segundo.parecido - e.parecidoSegundo) < 1e-9, `en ${pos.map(Math.round)} el parecido cambia: ${r.parecido} / ${e.parecido}`);
+  }
+});
+
+test('la muestra de una cara da los mismos números que la de hasta 3.38.0, también pegada al borde de la imagen', () => {
+  // La de antes: un píxel acotado por llamada, canal a canal. Con ella se hicieron las caras guardadas.
+  const pixel = (img, x, y, c) => img.rgba[(Math.max(0, Math.min(img.alto - 1, y)) * img.ancho + Math.max(0, Math.min(img.ancho - 1, x))) * 4 + c];
+  const caja = (img, x0, y0, x1, y1, c) => {
+    let s = 0;
+    for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) {
+      const x = x0 + ((i + 0.5) / 2) * (x1 - x0) - 0.5, y = y0 + ((j + 0.5) / 2) * (y1 - y0) - 0.5, xf = Math.floor(x), yf = Math.floor(y), fx = x - xf, fy = y - yf;
+      s += (pixel(img, xf, yf, c) * (1 - fx) + pixel(img, xf + 1, yf, c) * fx) * (1 - fy) + (pixel(img, xf, yf + 1, c) * (1 - fx) + pixel(img, xf + 1, yf + 1, c) * fx) * fy;
+    }
+    return s / 4;
+  };
+  const antes = (img, cx, cy, r) => {
+    const sx = cx - 0.6 * r, sy = cy - 0.7 * r, sw = 1.2 * r, sh = 0.9 * r, v = new Float32Array(LADO * LADO * 3);
+    for (let j = 0, k = 0; j < LADO; j++) for (let i = 0; i < LADO; i++) for (let c = 0; c < 3; c++) v[k++] = caja(img, sx + (i * sw) / LADO, sy + (j * sh) / LADO, sx + ((i + 1) * sw) / LADO, sy + ((j + 1) * sh) / LADO, c);
+    return v;
+  };
+  const img = capturaCompleta({ columna: 2 });
+  for (const [cx, cy, r] of [[2228, 335, 74], [165, 537, 72], [85, 138, 47], [3, 5, 60], [2398, 1500, 90], [1200.3, 700.7, 33.3]]) {
+    const a = antes(img, cx, cy, r), b = muestra(img, cx, cy, r);
+    ok(a.every((x, i) => x === b[i]), `la muestra en (${cx}, ${cy}, ${r}) no es la de antes`);
+  }
+});
+
 test('los picks enemigos se leen tal cual y en espejo: en la captura del 1 de octubre tres de cinco no van reflejados (3.31.0)', () => {
   const img = capturaCompleta({ columna: 2 });
   const l = leerPicksEnemigos(img, caras);
-  eq(l.map((x) => x.nombre ?? '?').join(), 'Rafaela,Eudora,?,Lesley,Aamon', `lee ${l.map((x) => `${x.nombre ?? '?'}(${x.parecido.toFixed(2)})`).join(' ')}`);
-  ok(l[2].candidato === 'Gloo' && l[2].parecido > 0.6, `el tercer hueco (Gloo, sin espejo, a 0,80 por un pelo) no se queda cerca: ${l[2].candidato} ${l[2].parecido.toFixed(2)}`);
+  // Gloo (sin espejo) se quedaba en 0,65 y salía «?»: su dibujo pide otro tamaño en otro sitio, y hasta 3.38.0 el tamaño solo se buscaba alrededor del mejor sitio de TODOS.
+  eq(l.map((x) => x.nombre ?? '?').join(), 'Rafaela,Eudora,Gloo,Lesley,Aamon', `lee ${l.map((x) => `${x.nombre ?? '?'}(${x.parecido.toFixed(2)})`).join(' ')}`);
+});
+
+test('afinar posición y tamaño encuentra al que está y no pone nombre al que no está (3.39.0)', () => {
+  const img = capturaCompleta({ columna: 2 }), ambas = ambasOrientaciones(caras);
+  const opPicks = { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12] }, opAliados = { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12, 1.25], finura: 8 };
+  const casos = [
+    ...BANEOS.tuyos.map((p, i) => [p, VERDAD_JUEGO.tuyos[i], caras, {}]),
+    ...BANEOS.suyos.map((p, i) => [p, VERDAD_JUEGO.suyos[i], caras, {}]),
+    ...PICKS_ENEMIGOS.map((p, i) => [p, VERDAD_JUEGO.enemigos2[i], ambas, opPicks]),
+    ...ALIADOS.map((p, i) => [p, VERDAD_JUEGO.aliados[i], ambas, opAliados]),
+  ];
+  for (const [pos, verdad, refs, op] of casos) {
+    const con = reconocer(img, pos, refs, op), sinAfinar = reconocer(img, pos, refs, { ...op, afinar: 0 });
+    eq(con.nombre, verdad, `en ${pos.map(Math.round)} lee ${con.candidato} (${con.parecido.toFixed(3)}) y es ${verdad}`);
+    ok(con.parecido >= sinAfinar.parecido - 1e-12, `afinar baja el parecido de ${verdad}`);
+    // El mismo hueco sin su héroe entre las caras (un héroe nuevo o rehecho): afinar sube al que más se le parece, pero no hasta ponerle nombre.
+    const sin = reconocer(img, pos, refs.filter((c) => c.nombre !== verdad), op);
+    eq(sin.nombre, null, `sin ${verdad} entre las caras, afinar lee ${sin.candidato} (${sin.parecido.toFixed(3)})`);
+  }
 });
 
 test('TU equipo se lee con sus skins y la fila con el nombre en amarillo es la tuya (3.31.0)', () => {

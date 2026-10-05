@@ -15,27 +15,45 @@ const CANALES = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 };
 /** Las siete pasadas de Adam7: [x0, y0, paso x, paso y]. */
 const ADAM7 = [[0, 0, 8, 8], [4, 0, 8, 8], [0, 4, 4, 8], [2, 0, 4, 4], [0, 2, 2, 4], [1, 0, 2, 2], [0, 1, 1, 2]];
 
-/** Deshace los filtros de `alto` filas de `fila` bytes desde `desde`; devuelve las filas y dónde acaba. */
+/**
+ * Deshace los filtros de `alto` filas de `fila` bytes desde `desde`; devuelve las filas y dónde acaba.
+ * Un bucle por tipo de filtro (3.39.0): con el tipo y los vecinos decididos
+ * dentro del bucle de cada byte, una captura de 2400×1504 (14 MB) costaba
+ * más que inflarla.
+ */
 function desfiltrar(crudo, desde, fila, alto, bpp) {
   const salida = new Uint8Array(fila * alto);
   let p = desde;
   for (let y = 0; y < alto; y++) {
     const filtro = crudo[p++];
     const o = y * fila, prev = o - fila;
-    for (let i = 0; i < fila; i++) {
-      const x = crudo[p++];
-      const a = i >= bpp ? salida[o + i - bpp] : 0, b = y ? salida[prev + i] : 0, c = y && i >= bpp ? salida[prev + i - bpp] : 0;
-      let v;
-      if (filtro === 0) v = x;
-      else if (filtro === 1) v = x + a;
-      else if (filtro === 2) v = x + b;
-      else if (filtro === 3) v = x + ((a + b) >> 1);
-      else if (filtro === 4) {
-        const pp = a + b - c, pa = Math.abs(pp - a), pb = Math.abs(pp - b), pc = Math.abs(pp - c);
-        v = x + (pa <= pb && pa <= pc ? a : pb <= pc ? b : c);
-      } else throw new Error(`filtro PNG desconocido: ${filtro}`);
-      salida[o + i] = v & 255;
-    }
+    if (filtro === 0) {
+      salida.set(crudo.subarray(p, p + fila), o);
+    } else if (filtro === 1) {
+      for (let i = 0; i < bpp; i++) salida[o + i] = crudo[p + i];
+      for (let i = bpp; i < fila; i++) salida[o + i] = (crudo[p + i] + salida[o + i - bpp]) & 255;
+    } else if (filtro === 2) {
+      if (y) for (let i = 0; i < fila; i++) salida[o + i] = (crudo[p + i] + salida[prev + i]) & 255;
+      else salida.set(crudo.subarray(p, p + fila), o);
+    } else if (filtro === 3) {
+      for (let i = 0; i < fila; i++) {
+        const a = i >= bpp ? salida[o + i - bpp] : 0, b = y ? salida[prev + i] : 0;
+        salida[o + i] = (crudo[p + i] + ((a + b) >> 1)) & 255;
+      }
+    } else if (filtro === 4) {
+      if (!y) {
+        // Sin fila de arriba, Paeth es «el de la izquierda».
+        for (let i = 0; i < fila; i++) salida[o + i] = (crudo[p + i] + (i >= bpp ? salida[o + i - bpp] : 0)) & 255;
+      } else {
+        for (let i = 0; i < bpp; i++) salida[o + i] = (crudo[p + i] + salida[prev + i]) & 255;
+        for (let i = bpp; i < fila; i++) {
+          const a = salida[o + i - bpp], b = salida[prev + i], c = salida[prev + i - bpp];
+          const pa = b > c ? b - c : c - b, pb = a > c ? a - c : c - a, pc = a + b - 2 * c > 0 ? a + b - 2 * c : 2 * c - a - b;
+          salida[o + i] = (crudo[p + i] + (pa <= pb && pa <= pc ? a : pb <= pc ? b : c)) & 255;
+        }
+      }
+    } else throw new Error(`filtro PNG desconocido: ${filtro}`);
+    p += fila;
   }
   return { filas: salida, hasta: p };
 }
@@ -63,6 +81,10 @@ export function leerPng(buf) {
   }
   const bytes = bits / 8, bpp = canales * bytes;
   const crudo = inflateSync(Buffer.concat(datos));
+  if (!entrelazado && tipo === 6 && bits === 8) {
+    // Lo que da `screencap -p`: las filas ya son el RGBA que se devuelve.
+    return { ancho, alto, rgba: desfiltrar(crudo, 0, ancho * 4, alto, 4).filas };
+  }
   const rgba = new Uint8Array(ancho * alto * 4);
   const pintar = (filas, w, h, x0, y0, dx, dy) => {
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {

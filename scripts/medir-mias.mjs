@@ -146,6 +146,7 @@ export function informe(m, { generado = null } = {}) {
     if (Object.keys(lec.dudas ?? {}).length) L.push(`- Huecos sin reconocer, a quién se parecían más: ${lista(lec.dudas)}.`);
     if (Object.keys(lec.aprendidos ?? {}).length) L.push(`- Aprendidos de las correcciones: ${lista(lec.aprendidos)}.`);
     if (Object.keys(lec.sinEncontrar ?? {}).length) L.push(`- Sin encontrar en la captura al corregir (hace falta verla): ${lista(lec.sinEncontrar)}.`);
+    if (lec.tiempos) L.push(`- Lo que tarda una lectura en tu móvil (${lec.tiempos.lecturas} lecturas): mediana ${(lec.tiempos.mediana / 1000).toFixed(1)} s, de ellos ${lec.tiempos.medianaCaptura != null ? (lec.tiempos.medianaCaptura / 1000).toFixed(1) : '?'} s la captura de la tablet.`);
   }
   if (m.porHeroe.length) {
     L.push('', '### Por héroe (con la app)', '', '| Héroe | Partidas | Ganadas | % |', '|---|---:|---:|---:|');

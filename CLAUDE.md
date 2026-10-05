@@ -1798,6 +1798,48 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   Seis mutaciones. Lección: lo que se aprende solo no puede mandar sobre
   lo que se midió, y «las últimas capturas» de un proceso automático no
   son las de la pantalla que uno tiene en la cabeza.
+- **Más rápido y más fino (3.39.0)**, pedido por Javi («va demasiado mal y
+  lento»). Medido antes de tocar nada, en sus 39 partidas leídas: baneos
+  337 de 338; de los picks, leídos 2 de cada 3 y uno de cada cinco de lo
+  leído sobraba (Joy y Wanwan 8 veces en 16 partidas: el héroe que el
+  rival enseña antes de elegir, que solo se cambia si una lectura POSTERIOR
+  ve otro en ese hueco). Y una lectura costaba 4,8 s aquí: el 80% era
+  comparar cada hueco en 157 posiciones con 266 caras a 24×24. Tres cosas,
+  cada una contra la versión de antes:
+  (1) `reconocer` en dos pasadas: todas las caras reducidas a 8×8 y solo
+  los `FINALISTAS` (32) que más se parecen, a 24×24. En 260 casos (caras
+  reales, desplazadas, sin su héroe, sitios al azar) da EXACTAMENTE lo
+  mismo que la búsqueda de antes, también el segundo candidato (con 16
+  cambiaba en 4, con 24 en 1); la prueba guarda la búsqueda exhaustiva
+  dentro y compara. Comparar cada finalista solo en sus 8 mejores
+  posiciones reducidas bajaba algún parecido 0,06: descartado. `muestra`
+  da los mismos números con las coordenadas precalculadas (prueba contra
+  la de antes, también en el borde), y el PNG deshace cada filtro con su
+  propio bucle (y el RGBA de `screencap -p` no se copia otra vez).
+  (2) Los tres trozos (baneos, enemigos, tu equipo) en tres hilos
+  (`lectorEnHilos`, `lectura-tarea.mjs`, `lectura.mjs`) con la captura en
+  memoria compartida: 1,4 → 0,7 s aquí. `lectura.mjs` va aparte de
+  servir.mjs porque un hilo que importara servir.mjs vería su mismo
+  `process.argv[1]` y arrancaría otro servidor. Si un hilo falla, esa
+  lectura se hace en uno solo; la prueba exige que sin fallo NO se use ese
+  plan B (con el plan B tapando, cruzar las partes pasaba la prueba).
+  (3) `AFINADOS` (3): los tres mejores se afinan subiendo un paso de
+  posición o de tamaño mientras se parezcan más. Lo destapó la prueba de
+  equivalencia con un fallo propio (los límites del bucle de tamaños se
+  movían): con un poco más de búsqueda Gloo daba 0,87 donde se quedaba en
+  0,65. Medido en 81 casos con el héroe y 167 sin él: aciertos 76 → 81,
+  falsos 0 → 0, el falso más alto el mismo 0,7996 (con 5 afinados, igual).
+  El MARGEN sobre el segundo se midió y NO entra: con las caras en su sitio
+  separa (aciertos ≥ 0,14, falsos ≤ 0,064), pero desplazadas se solapan
+  (falsos hasta 0,15), y bajar el umbral a 0,75 con margen metía 3–6
+  falsos de 167. Cada lectura lleva `ms` y `msCaptura` (lo que tardó la
+  tablet en dar la imagen) y la partida se lleva los 20 últimos
+  (`sanearLectura`): `medir-mias` y el diagnóstico dicen la mediana. Lo que
+  falta por medir en su móvil: cuánto es la captura (adb codifica un PNG
+  de 2400×1504 en la tablet y lo manda por wifi; `screencap` sin `-p` da
+  14 MB en crudo y cambiaría el mandato permitido: se decide con esa cifra
+  delante). Doce mutaciones; sobrevive una inofensiva (la versión reducida
+  sin normalizar elige los mismos finalistas).
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

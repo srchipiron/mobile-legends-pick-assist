@@ -34,8 +34,9 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Worker } from 'node:worker_threads';
 import { leerPng } from './png.mjs';
-import { capturarTablet, encontrarTablet, leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, sinRepetidos, carasGuardadas } from './leer.mjs';
-import { carasAprendidas, resumirAprendizaje, CAPTURAS_POR_CORRECCION, VERSION_APRENDIDO } from './aprender.mjs';
+import { capturarTablet, encontrarTablet, carasGuardadas } from './leer.mjs';
+import { PARTES, leerParte, juntarLectura, leerCaptura } from './lectura.mjs';
+import { resumirAprendizaje, CAPTURAS_POR_CORRECCION, VERSION_APRENDIDO } from './aprender.mjs';
 
 export { CAPTURAS_POR_CORRECCION };
 import { miniaturasDe, fotogramaDe } from './miniatura.mjs';
@@ -196,28 +197,62 @@ export function capturaAutomatica({ fija = null, memoria = {}, recordar = () => 
 
 export const origenPermitido = (o) => !!o && (ORIGENES.includes(o) || /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(o));
 
-const plano = (r) => ({ nombre: r.nombre ?? null, candidato: r.candidato ?? null, parecido: Math.round((r.parecido ?? 0) * 1000) / 1000 });
+export { leerCaptura };
 
 /**
- * Lo que se lee de una captura (PNG): baneos de los dos lados, picks
- * enemigos (con lo aprendido de esta tablet si lo hay) y, desde 3.31.0, TU
- * equipo: las cinco filas de la izquierda (`aliados`) y cuál eres tú
- * (`tuyo`: el nombre de la fila con tu nombre en amarillo, o null si no se
- * distingue; `tuyoFila` dice cuál, de 0 a 4, o −1).
+ * La lectura en tres hilos a la vez (3.39.0): baneos, picks enemigos y tu
+ * equipo no dependen uno de otro, y el móvil tiene varios núcleos. La
+ * captura se decodifica aquí una vez y se comparte sin copiarla. Los hilos
+ * se crean al primer toque y viven con el servidor (`cerrar`). Si un hilo
+ * falla, esa lectura se hace aquí, entera, y los hilos se vuelven a crear
+ * en la siguiente: leer más despacio es mejor que no leer.
  */
-export function leerCaptura(png, caras, aprendido = null) {
-  const img = leerPng(png);
-  const baneos = leerBaneos(img, caras);
-  const enemigos = sinRepetidos(leerPicksEnemigos(img, caras, { posiciones: aprendido?.picks ?? undefined, extra: carasAprendidas(aprendido) }));
-  const aliados = sinRepetidos(leerAliados(img, caras));
-  const tuyoFila = filaPropia(img);
-  // Un equipo no banea dos veces al mismo héroe; los DOS equipos sí pueden
-  // banear al mismo (Hirara en la captura real, Belerick y Atlas en la
-  // primera tarde): se quita el repetido dentro de cada lado, no entre lados.
+export function lectorEnHilos({ caras, registrar = () => {}, tarea = new URL('lectura-tarea.mjs', import.meta.url) }) {
+  let hilos = null, siguiente = 0;
+  const pendientes = new Map();
+  const tirar = (motivo) => {
+    for (const h of hilos ?? []) h.terminate().catch(() => {});
+    hilos = null;
+    for (const { rechazar } of pendientes.values()) rechazar(motivo);
+    pendientes.clear();
+  };
+  const arrancar = () => {
+    hilos = PARTES.map(() => {
+      const h = new Worker(tarea, { workerData: { caras } });
+      h.unref();
+      h.on('message', ({ id, resultado, error }) => {
+        const p = pendientes.get(id);
+        if (!p) return;
+        pendientes.delete(id);
+        if (error) p.rechazar(new Error(error)); else p.resolver(resultado);
+      });
+      h.on('error', (e) => tirar(e));
+      h.on('exit', (codigo) => { if (codigo !== 0 && hilos) tirar(new Error(`un hilo de lectura salió con ${codigo}`)); });
+      return h;
+    });
+  };
+  const pedir = (hilo, mensaje) => new Promise((resolver, rechazar) => {
+    const id = ++siguiente;
+    pendientes.set(id, { resolver, rechazar });
+    hilo.postMessage({ id, ...mensaje });
+  });
   return {
-    ancho: img.ancho, alto: img.alto,
-    tuyos: sinRepetidos(baneos.tuyos).map(plano), suyos: sinRepetidos(baneos.suyos).map(plano), enemigos: enemigos.map(plano),
-    aliados: aliados.map(plano), tuyoFila, tuyo: tuyoFila >= 0 ? (aliados[tuyoFila].nombre ?? null) : null,
+    async leer(png, aprendido = null) {
+      const img = leerPng(png);
+      try {
+        if (!hilos) arrancar();
+        const pixeles = new SharedArrayBuffer(img.rgba.length);
+        new Uint8Array(pixeles).set(img.rgba);
+        const [baneos, enemigos, aliados] = await Promise.all(PARTES.map((parte, i) => pedir(hilos[i], { parte, ancho: img.ancho, alto: img.alto, pixeles, aprendido })));
+        return juntarLectura(img, { baneos, enemigos, aliados });
+      } catch (e) {
+        registrar(`Los hilos de lectura fallaron (${String(e?.message ?? e).split('\n')[0]}): leo en uno solo.`);
+        tirar(e);
+        const [baneos, enemigos, aliados] = PARTES.map((p) => leerParte(img, p, caras, aprendido));
+        return juntarLectura(img, { baneos, enemigos, aliados });
+      }
+    },
+    cerrar: () => tirar(new Error('lector cerrado')),
   };
 }
 
@@ -225,7 +260,9 @@ export function leerCaptura(png, caras, aprendido = null) {
  * El servidor, con la captura inyectada: en Termux es `capturarTablet`, en
  * las pruebas una captura de fichero.
  */
-export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS }) {
+export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true }) {
+  // Las lecturas, en tres hilos a la vez (3.39.0); `enHilos: false` las hace aquí.
+  const lector = enHilos ? lectorEnHilos({ caras, registrar }) : null;
   let n = 0, aprendiendo = null;
   resultados = resultados ?? plantillasDeSerie();
   /** Guarda una captura y borra las que ya no hacen falta (3.34.0). */
@@ -437,14 +474,17 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
       try {
         n += 1;
         const id = `lectura-${new Date().toISOString().replace(/[:.]/g, '-')}-${n}`;
-        const lectura = { version: VERSION_PUENTE, id, ...leerCaptura(png, caras, aprendido), ms: Date.now() - t0 };
+        const t1 = Date.now();
+        const leido = lector ? await lector.leer(png, aprendido) : leerCaptura(png, caras, aprendido);
+        // `ms` es lo que espera la app; `msCaptura`, lo que tardó la tablet en dar la imagen (3.39.0).
+        const lectura = { version: VERSION_PUENTE, id, ...leido, ms: Date.now() - t0, msCaptura: t1 - t0 };
         if (carpeta) {
           writeFileSync(join(carpeta, `${id}.json`), JSON.stringify(lectura, null, 1));
           guardarCaptura(`${id}.png`, png);
         }
         // Un «?» dice a qué se quedó más cerca: con eso se afina sin pedir la captura.
         const nombres = (l) => l.map((x) => x.nombre ?? (x.candidato ? `?(${x.candidato} ${x.parecido.toFixed(2)})` : '?')).join(', ');
-        registrar(`Lectura ${n} (${lectura.ms} ms): baneos ${nombres([...lectura.tuyos, ...lectura.suyos])} · enemigos ${nombres(lectura.enemigos)} · tu equipo ${nombres(lectura.aliados)} · tú ${lectura.tuyo ?? (lectura.tuyoFila >= 0 ? '?' : 'sin fila amarilla')}`);
+        registrar(`Lectura ${n} (${lectura.ms} ms, captura ${lectura.msCaptura}): baneos ${nombres([...lectura.tuyos, ...lectura.suyos])} · enemigos ${nombres(lectura.enemigos)} · tu equipo ${nombres(lectura.aliados)} · tú ${lectura.tuyo ?? (lectura.tuyoFila >= 0 ? '?' : 'sin fila amarilla')}`);
         res.writeHead(200, cabeceras).end(JSON.stringify(lectura));
       } catch (e) {
         registrar(`La captura no se pudo leer: ${e.message}`);
@@ -458,7 +498,7 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
   // de Node a los 5 s de inactividad, cada toque caía justo cuando el lector
   // cerraba el socket (ECONNRESET, visto en las pruebas con el bucle ocupado).
   servidor.keepAliveTimeout = 65000;
-  servidor.on('close', pararVigilancia);
+  servidor.on('close', () => { pararVigilancia(); lector?.cerrar(); });
   return servidor;
 }
 

@@ -69,7 +69,12 @@ export const PICKS_ENEMIGOS = [0, 1, 2, 3, 4].map((i) => {
  * 2 de 5 solo en espejo y 4 de 5 con las dos (Gloo a 0,80 por un pelo);
  * en los huecos vacíos lo más parecido queda en 0,74.
  */
-export const ambasOrientaciones = (caras) => [...caras.map((c) => ({ ...c, v: espejo(c.v) })), ...caras];
+const orientadas = new WeakMap();
+export const ambasOrientaciones = (caras) => {
+  // La misma lista para las mismas caras: así se empaquetan una vez (caras.mjs) y no en cada lectura.
+  if (!orientadas.has(caras)) orientadas.set(caras, [...caras.map((c) => ({ ...c, v: espejo(c.v) })), ...caras]);
+  return orientadas.get(caras);
+};
 
 /**
  * `posiciones` y `extra` vienen de lo aprendido de las correcciones
