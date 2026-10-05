@@ -1,6 +1,198 @@
 {
- "actualizado": "2026-10-05T15:09:36.330Z",
+ "actualizado": "2026-10-05T16:33:51.414Z",
  "partidas": [
+  {
+   "t": 1791218013674,
+   "pick": "Diggie",
+   "recomendados": [
+    "Diggie",
+    "Gloo",
+    "Chip"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.559,
+   "bans": [
+    "Belerick",
+    "Eudora",
+    "Marcel",
+    "Lukas",
+    "Aulus",
+    "Carmilla",
+    "Paquito",
+    "Khufra",
+    "Badang"
+   ],
+   "draft": {
+    "enemigos": [
+     "Guinevere",
+     "Kimmy",
+     "Lesley",
+     "Saber",
+     "Gord"
+    ],
+    "aliados": [
+     "Yin",
+     "Leomord",
+     "Ling",
+     "Kadita"
+    ],
+    "linea": "roam"
+   },
+   "lector": {
+    "baneos": [
+     "Belerick",
+     "Eudora",
+     "Marcel",
+     "Lukas",
+     "Aulus",
+     "Carmilla",
+     "Paquito",
+     "Khufra",
+     "Badang"
+    ],
+    "enemigos": [
+     "Guinevere",
+     "Kimmy",
+     "Lesley",
+     "Saber",
+     "Gord"
+    ],
+    "aliados": [
+     "Yin",
+     "Leomord",
+     "Ling",
+     "Joy"
+    ],
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Chip",
+      "parecido": 0.59
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Gusion",
+      "parecido": 0.55
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Moskov",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Chang'e",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Atlas",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Atlas",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Atlas",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Atlas",
+      "parecido": 0.53
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Atlas",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Atlas",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Gord",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Gord",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Fredrinn",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Moskov",
+      "parecido": 0.69
+     }
+    ],
+    "ms": [
+     4262,
+     4150,
+     4587,
+     4570,
+     4623,
+     4945,
+     4415,
+     4431,
+     4452,
+     4573,
+     4441,
+     4237,
+     3933,
+     3541,
+     4016,
+     4117,
+     4202,
+     4105,
+     5687,
+     4117
+    ],
+    "msCaptura": [
+     3158,
+     3010,
+     3439,
+     3458,
+     3685,
+     3922,
+     3450,
+     3351,
+     3378,
+     3537,
+     3422,
+     3303,
+     3024,
+     2321,
+     2801,
+     3211,
+     3172,
+     2941,
+     4338,
+     2962
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Gord"
+     ]
+    }
+   }
+  },
   {
    "t": 1791147480910,
    "pick": "Rafaela",
@@ -7660,6 +7852,12 @@
   {
    "cuando": "2026-10-05T15:09:36.330Z",
    "partidas": 162,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-05T16:33:51.414Z",
+   "partidas": 163,
    "heroes": 11,
    "incidencia": 11
   }
