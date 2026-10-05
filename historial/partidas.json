@@ -1,6 +1,143 @@
 {
- "actualizado": "2026-10-05T16:53:45.107Z",
+ "actualizado": "2026-10-05T17:14:44.521Z",
  "partidas": [
+  {
+   "t": 1791220467375,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Gloo",
+    "Belerick"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.481,
+   "bans": [
+    "Masha",
+    "Lukas",
+    "Hirara",
+    "Marcel",
+    "Yi Sun-shin",
+    "Eudora",
+    "Aulus"
+   ],
+   "draft": {
+    "enemigos": [
+     "Novaria",
+     "Natan",
+     "Benedetta",
+     "Carmilla",
+     "Suyou"
+    ],
+    "aliados": [
+     "Hayabusa",
+     "Sun",
+     "Bruno",
+     "Zetian"
+    ],
+    "linea": "roam",
+    "rival": "Carmilla"
+   },
+   "lector": {
+    "baneos": [
+     "Masha",
+     "Lukas",
+     "Hirara",
+     "Marcel",
+     "Yi Sun-shin",
+     "Eudora",
+     "Aulus"
+    ],
+    "enemigos": [
+     "Novaria",
+     "Natan",
+     "Benedetta",
+     "Carmilla",
+     "Zetian"
+    ],
+    "aliados": [
+     "Hayabusa",
+     "Yi Sun-shin"
+    ],
+    "tuyo": "Rafaela",
+    "dudas": [
+     {
+      "hueco": "e2",
+      "candidato": "Wanwan",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Beatrix",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Marcel",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Joy",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Gord",
+      "parecido": 0.63
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Lapu-Lapu",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Zetian",
+      "parecido": 0.65
+     }
+    ],
+    "ms": [
+     5074,
+     5406,
+     5659,
+     5225,
+     5364,
+     5380,
+     5247,
+     4023,
+     4633,
+     4665
+    ],
+    "msCaptura": [
+     3870,
+     4358,
+     4613,
+     4145,
+     4491,
+     4538,
+     4442,
+     3012,
+     3575,
+     3816
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Natan",
+      "Benedetta",
+      "Carmilla",
+      "Suyou",
+      "Natan",
+      "Benedetta",
+      "Carmilla",
+      "Suyou",
+      "Natan",
+      "Benedetta"
+     ]
+    }
+   }
+  },
   {
    "t": 1791219158699,
    "pick": "Estes",
@@ -8041,6 +8178,12 @@
   {
    "cuando": "2026-10-05T16:53:45.107Z",
    "partidas": 164,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-05T17:14:44.521Z",
+   "partidas": 165,
    "heroes": 11,
    "incidencia": 11
   }
