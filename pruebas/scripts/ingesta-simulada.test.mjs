@@ -99,6 +99,8 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   // 3.43.1: las estadísticas de Mítico (el rango de respaldo) caídas, y la
   // ruta de parejas contestando sin ningún par.
   let fallaMitico = false; let parejasVacias = false;
+  // 3.43.2: la curva por duración en porcentaje (otra forma de la ruta).
+  let curvaEnPorcentaje = false;
   // Un rework que le quita el último control (3.37.0): la ficha llega sin nada que contar.
   let kitSinControl = false;
   // Mítico cortado a mitad de la segunda tanda (3.37.0): solo los primeros tres héroes traen cruces.
@@ -191,7 +193,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       return json({ code: 0, data: { records: [{ data: { heroid: Number(m[1]), real_road: 3, big_rank: '9', total_win_rate: 0.4321 + desplazaLinea + Number(m[1]) / 1000,
         // La curva por duración (3.43.0), con la forma real: seis tramos,
         // desordenados a propósito y distinta por héroe y por corrida.
-        time_win_rate: [20, 10, 12, 14, 16, 18].map((t) => ({ time_min: t, ...(t < 20 ? { time_max: t + 2 } : {}), win_rate: 0.4 + (t - 10) / 100 + desplazaLinea + Number(m[1]) / 1000 })) } }], total: 1 } });
+        time_win_rate: [20, 10, 12, 14, 16, 18].map((t) => ({ time_min: t, ...(t < 20 ? { time_max: t + 2 } : {}), win_rate: (curvaEnPorcentaje ? 100 : 1) * (0.4 + (t - 10) / 100 + desplazaLinea + Number(m[1]) / 1000) })) } }], total: 1 } });
     }
     // La tier list de mlbb.gg, en el mismo servidor con otra base (--tiers).
     if (ruta === '/api/v1/heroes') { marca('tiers'); return json(heroes.map((h) => ({ id: h.id, name: h.name }))); }
@@ -323,7 +325,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
 
     // Y la ruta de parejas sin ningún par, con los cruces bien (3.43.1): cada
     // fila conservaba las parejas de la corrida anterior y salía fresca.
-    fallaMitico = false; parejasVacias = true;
+    fallaMitico = false; parejasVacias = true; curvaEnPorcentaje = true;
     const outP = resolve(dir, 'sin-parejas.json');
     const rP = await correrIngesta([
       '--base', `http://127.0.0.1:${puerto}/api`,
@@ -337,7 +339,11 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     ok(dP.diagnostics.frescosRecursos?.relaciones > 100, `los cruces no se descargaron: ${JSON.stringify(dP.diagnostics.frescosRecursos)}`);
     eq(dP.generatedAt, guardada.generatedAt, 'con las parejas conservadas la corrida se fecha como si fuera nueva');
     ok(comparar(dP, guardada).peores.some((p) => p.clave === 'relacionesFrescas'), 'el comparador acepta una corrida sin parejas nuevas');
-    parejasVacias = false;
+    // Las curvas en porcentaje no se leen y se conservan las de antes: se
+    // cuenta (3.43.2; antes el contador ni se escribía y la app decía 37/37).
+    ok(dP.diagnostics.lineas?.curvasConservadas > 0 && dP.diagnostics.lineas?.curvas === 0, `las curvas conservadas no dejan marca: ${JSON.stringify(dP.diagnostics.lineas)}`);
+    eq(dP.diagnostics.lineas?.conservados, 0, `el winrate por línea, que sí llegó, sale conservado: ${JSON.stringify(dP.diagnostics.lineas)}`);
+    parejasVacias = false; curvaEnPorcentaje = false;
 
     // Tercera corrida: la ficha de los héroes caída (speciality se conserva
     // de la corrida anterior, que se pasa con --previo), la ruta principal

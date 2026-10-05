@@ -183,21 +183,30 @@ async function main() {
   // La curva por duración (3.43.0) viaja en la misma respuesta y se funde
   // igual, par a par: si falla, la de antes.
   let curvaLinea = previous?.curvaLinea ?? {};
+  // Cuántos pares salen de la corrida anterior, también si no llegó NINGUNO
+  // nuevo (3.43.2): con la ruta cambiada de forma se conservaba todo y el
+  // contador ni se escribía, así que nada lo decía.
+  const pares = (m) => Object.values(m ?? {}).reduce((n, porLinea) => n + Object.keys(porLinea ?? {}).length, 0);
+  const anotarConservados = () => {
+    diagnostics.lineas = { ...(diagnostics.lineas ?? {}), conservados: pares(winrateLinea), curvasConservadas: pares(curvaLinea) };
+  };
   try {
     const fresh = await fetchWinrateLinea(heroList);
+    anotarConservados();
     if (Object.keys(fresh).length) {
       const fundido = fundirWinrateLinea(previous?.winrateLinea, fresh, heroList);
       winrateLinea = fundido.winrateLinea;
-      if (diagnostics.lineas) diagnostics.lineas.conservados = fundido.conservados;
+      diagnostics.lineas.conservados = fundido.conservados;
     }
     if (Object.keys(fresh.curvas ?? {}).length) {
       const fundido = fundirWinrateLinea(previous?.curvaLinea, fresh.curvas, heroList);
       curvaLinea = fundido.winrateLinea;
-      if (diagnostics.lineas) diagnostics.lineas.curvasConservadas = fundido.conservados;
+      diagnostics.lineas.curvasConservadas = fundido.conservados;
     }
     console.log(`  · winrate por linea: ${Object.keys(winrateLinea).length} heroes, curvas por duracion: ${Object.keys(curvaLinea).length}`);
   } catch (err) {
     console.warn(`  · winrate por linea: fallo (${err.message}); conservo el anterior`);
+    anotarConservados();
   }
 
   // Los iconos, solo de los objetos que la app puede llegar a ensenar: los que

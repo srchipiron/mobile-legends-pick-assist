@@ -181,6 +181,37 @@ test('por etapas (3.43.0): tu héroe por fases, tu rival de línea, quién empuj
   ok(late.etapas.temprano.some((x) => x.clave === 'etapa.tuHeroeTarde'), 'tu héroe de late no sale');
 });
 
+test('sin órdenes contrarias (3.43.2): manda el cruce con tu rival, luego el plan del equipo; y las fases se afirman con tres de cada lado', () => {
+  const m = meta({ counters: { Diggie: { Fanny: 0.53, Lylia: 0.47, Atlas: 0.53 } } });
+  const claves = (l) => l.map((x) => x.clave);
+  // De late y le ganas al rival: «apriétale» y no «no regales nada al principio».
+  const a = planDePartida({ yo: diggie, aliados: [mia], enemigos: [fanny], meta: m, fases: fasesDe({ yo: { h: diggie, p: PENDIENTE_DE_HEROE } }), rival: fanny });
+  ok(claves(a.etapas.temprano).includes('etapa.rivalGanas') && !claves(a.etapas.temprano).includes('etapa.tuHeroeTarde'), `«no regales nada» junto a «apriétale»: ${JSON.stringify(a.etapas.temprano)}`);
+  // De early y pierdes el cruce: «juega seguro» y no «juega agresivo».
+  const b = planDePartida({ yo: diggie, aliados: [mia], enemigos: [lylia], meta: m, fases: fasesDe({ yo: { h: diggie, p: -PENDIENTE_DE_HEROE } }), rival: lylia });
+  ok(claves(b.etapas.temprano).includes('etapa.rivalPierdes') && !claves(b.etapas.temprano).includes('etapa.tuHeroePronto'), `«juega agresivo» junto a «juega seguro»: ${JSON.stringify(b.etapas.temprano)}`);
+  // De early con el equipo de late: «no forcéis peleas pronto» manda.
+  const c = planDePartida({ yo: diggie, aliados: [mia, layla], enemigos: [atlas, fanny, lylia], meta: m, fases: fasesDe({ tendencia: 'tarde', ini: 0.44, fin: 0.58, yo: { h: diggie, p: -PENDIENTE_DE_HEROE } }) });
+  ok(claves(c.equipo).includes('partida.aguantad') && !claves(c.etapas.temprano).includes('etapa.tuHeroePronto'), `«juega agresivo» junto a «no forcéis peleas pronto»: ${JSON.stringify(c)}`);
+  // Sin conflicto, la frase de tu héroe sigue saliendo.
+  const d = planDePartida({ yo: diggie, aliados: [mia], enemigos: [fanny], meta: m, fases: fasesDe({ yo: { h: diggie, p: -PENDIENTE_DE_HEROE } }), rival: fanny });
+  ok(claves(d.etapas.temprano).includes('etapa.tuHeroePronto'), 'sin conflicto se calla la frase de tu héroe');
+  // «Cuidado con X al principio» ni de tu rival ni de uno al que le ganas claro.
+  // Lylia te gana el cruce (sin el filtro del «le ganas»): solo la frase del rival.
+  const e = planDePartida({ yo: diggie, aliados: [mia], enemigos: [lylia, fanny], meta: m, fases: fasesDe({ ellos: { pronto: lylia } }), rival: lylia });
+  ok(claves(e.etapas.temprano).includes('etapa.rivalPierdes') && !claves(e.etapas.temprano).includes('etapa.enemigoPronto'), `«cuidado con» tu rival, que ya sale arriba: ${JSON.stringify(e.etapas.temprano)}`);
+  const g = planDePartida({ yo: diggie, aliados: [mia], enemigos: [atlas, lylia], meta: m, fases: fasesDe({ ellos: { pronto: atlas } }) });
+  ok(!claves(g.etapas.temprano).includes('etapa.enemigoPronto'), '«cuidado con» uno al que le ganas claro el cruce');
+  const h = planDePartida({ yo: diggie, aliados: [mia], enemigos: [lylia, fanny], meta: m, fases: fasesDe({ ellos: { pronto: lylia } }) });
+  ok(claves(h.etapas.temprano).includes('etapa.enemigoPronto'), 'no avisa del de early que te gana');
+  // «El más … de los suyos» con UN enemigo visto no dice nada.
+  const uno = planDePartida({ yo: diggie, aliados: [mia], enemigos: [lylia], meta: m, fases: fasesDe({ ellos: { pronto: lylia, tarde: lylia } }) });
+  ok(!claves(uno.etapas.temprano).includes('etapa.enemigoPronto') && !claves(uno.etapas.tarde).includes('etapa.enemigoTarde'), `con un enemigo lo nombra como «el más … de los suyos»: ${JSON.stringify(uno.etapas)}`);
+  // Uno contra uno: ni cambio de lado ni «vais por detrás».
+  const solo = planDePartida({ yo: diggie, enemigos: [lylia], meta: m, fases: fasesDe({ tendencia: 'pronto', ini: 0.6, fin: 0.4, cambio: { minuto: 16, aFavor: false } }) });
+  ok(!claves(solo.etapas.tarde).some((k) => k.startsWith('etapa.cambia')) && !solo.problemas.some((x) => x.clave.startsWith('problema.')), `con un héroe por lado afirma fases: ${JSON.stringify(solo)}`);
+});
+
 test('de punta a punta: las habilidades de la API llegan al catálogo fundido y al plan, y el plan no toca el ranking', () => {
   // El catálogo escrito a mano no lleva habilidades: vienen de roam-meta.json.
   const sinHab = (h) => ({ name: h.name, role: 'support', tags: h.tags, roam: true });

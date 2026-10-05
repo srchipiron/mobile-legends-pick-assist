@@ -152,13 +152,17 @@ export function fasesDePartida({ pBase, nos = [], ellos = [], datosFases }) {
   const ini = puntos[0].p;
   const fin = puntos[puntos.length - 1].p;
   const tendencia = fin - ini >= DIFERENCIA_DE_FASE ? 'tarde' : ini - fin >= DIFERENCIA_DE_FASE ? 'pronto' : 'igual';
-  // El primer tramo en que la partida cambia de lado (de ≥50% a <50% o al revés).
+  // El tramo en que la partida cambia de lado (de ≥50% a <50% o al revés).
   // Solo con tendencia: con la partida igualada en todas las fases, cruzar
-  // el 50% por medio punto no es «la partida cambia de lado».
+  // el 50% por medio punto no es «la partida cambia de lado». Y el ÚLTIMO
+  // cruce, en el sentido de la tendencia (3.43.2): con 52 48 49 57 62 69 el
+  // primero decía «a partir del 12 van por delante ellos» con las barras al
+  // 57–69% desde el 16.
   let cambio = null;
   for (let i = 1; tendencia !== 'igual' && i < puntos.length; i++) {
-    if ((puntos[i - 1].p >= 0.5) !== (puntos[i].p >= 0.5)) { cambio = { minuto: puntos[i].desde, aFavor: puntos[i].p >= 0.5 }; break; }
+    if ((puntos[i - 1].p >= 0.5) !== (puntos[i].p >= 0.5)) cambio = { minuto: puntos[i].desde, aFavor: puntos[i].p >= 0.5 };
   }
+  if (cambio && cambio.aFavor !== (tendencia === 'tarde')) cambio = null;
   const extremo = (lista, signo) => {
     const x = [...lista].sort((a, b) => signo * (b.pendiente - a.pendiente))[0];
     return x && signo * x.pendiente >= PENDIENTE_DE_HEROE ? x : null;

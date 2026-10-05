@@ -59,6 +59,10 @@ test('el diagnostico detecta datos imposibles y caidas frente a su propio histor
   const fuerzaVieja = { ...meta, rank: 'mythic', statsByRank: { mythic: meta.stats }, diagnostics: { conservado: true, frescos: ['epic'] } };
   ok(avisosDe(fuerzaVieja, null).some((l) => /Fuerza de héroe: de mythic, que la última corrida NO descargó/.test(l)), `la fuerza de un rango conservado no avisa: ${avisosDe(fuerzaVieja, null)}`);
   ok(!avisosDe({ ...fuerzaVieja, diagnostics: { conservado: false, frescos: ['mythic'] } }, null).some((l) => /que la última corrida NO descargó/.test(l)), 'avisa con la fuerza fresca');
+  // Curvas y winrate por línea de otra corrida (3.43.2): se dice.
+  const conservadas = avisosDe({ ...meta, diagnostics: { lineas: { curvasConservadas: 165, conservados: 3 } } }, null);
+  ok(conservadas.some((l) => /165 curvas por duración son de una corrida anterior/.test(l)) && conservadas.some((l) => /Winrate por línea: 3 pares/.test(l)), `lo conservado no avisa: ${conservadas}`);
+  ok(!avisosDe({ ...meta, diagnostics: { lineas: { curvasConservadas: 0, conservados: 0 } } }, null).some((l) => /corrida anterior/.test(l)), 'avisa sin nada conservado');
 
   // Datos sanos: ninguno de los avisos nuevos.
   const limpio = avisosDe(meta, null);

@@ -2221,6 +2221,23 @@ las peleas, al final, problemas). Lo que conviene no volver a suponer:
   MISMA escala en todos los drafts (±30 puntos llena la mitad): con una
   escala fija del 30 al 70% un draft al 74–78% pintaba seis bloques llenos
   iguales.
+- **Sin órdenes contrarias (3.43.2)**, de una revisión a la contra sobre
+  1.500 drafts completos: «no regales nada al principio» junto a «apriétale
+  desde el principio» 30 veces, «juega agresivo» junto a «juega seguro» o
+  «no forcéis peleas pronto» 54, «cuidado con X» del rival al que le ganas
+  20, y «a partir del minuto 12 van por delante ellos» con las barras al
+  57–69% desde el 16 (se cogía el PRIMER cruce del 50%; 76 de 1.347 cambios
+  cruzan más de una vez). Hoy manda el cruce con tu rival, luego el plan del
+  equipo, y la frase de tu héroe solo si no choca; el cambio de lado es el
+  último cruce y en el sentido de la tendencia; las afirmaciones de fase
+  (cambio, «vais por detrás») piden tres por bando y «el más … de los
+  suyos», dos. El rival (`rivalDeLinea`) va en TU línea al leer las curvas:
+  repartidos todos a la vez, el marcado caía en otra en el 4% de los drafts.
+  Y `diagnostics.lineas.conservados`/`curvasConservadas` se escriben
+  SIEMPRE (con la ruta cambiada de forma no se escribían y la app decía
+  «37/37»), con aviso en el diagnóstico. Un consejo que se compone de
+  frases independientes se prueba contra sí mismo: cada par de frases que
+  pueden salir juntas.
 - **Liquipedia** (preguntado por Javi): la ficha de un héroe trae
   estadísticas base, enfriamientos por nivel y el texto de las habilidades,
   lo mismo que la API, y nada de en qué fase es fuerte. De Liquipedia se

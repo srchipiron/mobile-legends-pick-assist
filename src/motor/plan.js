@@ -115,7 +115,11 @@ export function planDePartida({ yo = null, aliados = [], enemigos = [], meta = {
   // Desde 3.43.0 lo dice la curva por duración medida (fases.js) en vez de
   // las etiquetas: con tres o más de cada lado. Sin curvas (datos de antes),
   // las etiquetas, como siempre.
-  if (fases && enemigos.length >= 3 && nos.length >= 3) {
+  // Lo que se afirma de las fases, solo con tres o más de cada lado
+  // (3.43.2: el cambio de lado y «vais por detrás» salían con un héroe
+  // contra uno).
+  const fasesConfiables = fases && enemigos.length >= 3 && nos.length >= 3 ? fases : null;
+  if (fasesConfiables) {
     if (fases.tendencia === 'tarde') equipo.push({ clave: 'partida.aguantad', params: {} });
     else if (fases.tendencia === 'pronto') equipo.push({ clave: 'partida.cerradPronto', params: {} });
   } else if (!fases && enemigos.length >= 5 && nos.length >= 5) {
@@ -137,28 +141,42 @@ export function planDePartida({ yo = null, aliados = [], enemigos = [], meta = {
   // AL PRINCIPIO: tu héroe por fases (su curva medida), tu línea (el rival y
   // vuestro cruce), con quién ir y de quién cuidarse mientras la partida es
   // corta. Los nombres salen de las curvas y de la matriz, no de etiquetas.
+  // Sin órdenes contrarias (3.43.2): en 1.500 drafts, «no regales nada al
+  // principio» salía junto a «apriétale desde el principio» 30 veces, y «juega
+  // agresivo» junto a «juega seguro» o «no forcéis peleas pronto» 54. Manda
+  // lo más concreto: el cruce con tu rival y, después, el plan del equipo;
+  // la frase de tu héroe solo si no choca con ninguno.
   const tuFase = fases?.nos?.porHeroe?.find((x) => x.heroe.name === yo.name);
   const ext = (c) => ({ ini: pct(c.curva[0]), fin: pct(c.curva[c.curva.length - 1]) });
-  if (tuFase && tuFase.pendiente <= -PENDIENTE_DE_HEROE) temprano.push({ clave: 'etapa.tuHeroePronto', params: { yo: yo.name, ...ext(tuFase) } });
-  else if (tuFase && tuFase.pendiente >= PENDIENTE_DE_HEROE) temprano.push({ clave: 'etapa.tuHeroeTarde', params: { yo: yo.name, ...ext(tuFase) } });
   const cRival = rival ? cruce(meta.counters, yo.name, rival.name) : null;
-  if (rival && valido(cRival) && cRival >= CRUCE_DESTACABLE) temprano.push({ clave: 'etapa.rivalGanas', params: { e: rival.name, pct: pct(cRival) } });
-  else if (rival && valido(cRival) && cRival <= CRUCE_MALO) temprano.push({ clave: 'etapa.rivalPierdes', params: { e: rival.name, pct: pct(cRival) } });
+  const rivalGanas = rival && valido(cRival) && cRival >= CRUCE_DESTACABLE;
+  const rivalPierdes = rival && valido(cRival) && cRival <= CRUCE_MALO;
+  const equipoTarde = equipo.some((f) => f.clave === 'partida.aguantad');
+  const equipoPronto = equipo.some((f) => f.clave === 'partida.cerradPronto');
+  if (tuFase && tuFase.pendiente <= -PENDIENTE_DE_HEROE && !rivalPierdes && !equipoTarde) temprano.push({ clave: 'etapa.tuHeroePronto', params: { yo: yo.name, ...ext(tuFase) } });
+  else if (tuFase && tuFase.pendiente >= PENDIENTE_DE_HEROE && !rivalGanas && !equipoPronto) temprano.push({ clave: 'etapa.tuHeroeTarde', params: { yo: yo.name, ...ext(tuFase) } });
+  if (rivalGanas) temprano.push({ clave: 'etapa.rivalGanas', params: { e: rival.name, pct: pct(cRival) } });
+  else if (rivalPierdes) temprano.push({ clave: 'etapa.rivalPierdes', params: { e: rival.name, pct: pct(cRival) } });
   const aliadoPronto = fases?.nos?.pronto;
-  if (aliadoPronto && aliadoPronto.heroe.name !== yo.name) temprano.push({ clave: 'etapa.aliadoPronto', params: { a: aliadoPronto.heroe.name } });
+  if (aliadoPronto && aliadoPronto.heroe.name !== yo.name && nos.length >= 2) temprano.push({ clave: 'etapa.aliadoPronto', params: { a: aliadoPronto.heroe.name } });
+  // «Cuidado con X al principio», no de tu rival (ya sale arriba, y con
+  // «le ganas el cruce» se contradecía) ni de uno al que le ganas claro.
   const enemigoPronto = fases?.ellos?.pronto;
-  if (enemigoPronto) temprano.push({ clave: 'etapa.enemigoPronto', params: { e: enemigoPronto.heroe.name } });
+  const cPronto = enemigoPronto ? cruce(meta.counters, yo.name, enemigoPronto.heroe.name) : null;
+  if (enemigoPronto && enemigos.length >= 2 && enemigoPronto.heroe.name !== rival?.name && !(valido(cPronto) && cPronto >= CRUCE_DESTACABLE)) temprano.push({ clave: 'etapa.enemigoPronto', params: { e: enemigoPronto.heroe.name } });
 
   // AL FINAL: quién es su carta y la vuestra cuando la partida se alarga.
+  // «El más … de los suyos» solo con dos o más en ese bando (3.43.2: con un
+  // enemigo visto, «Chang'e es su carta para el final» no decía nada).
   // La suya, entre los que NO aguantan: «matadlo el primero» a un tanque es
   // lo contrario del focus (la primera versión lo decía de Tigreal).
   const enemigoTarde = [...(fases?.ellos?.porHeroe ?? [])]
     .filter((x) => !tiene(x.heroe, 'tanky') && x.pendiente >= PENDIENTE_DE_HEROE)
     .sort((a, b) => b.pendiente - a.pendiente)[0];
-  if (enemigoTarde) tarde.push({ clave: 'etapa.enemigoTarde', params: { e: enemigoTarde.heroe.name } });
+  if (enemigoTarde && enemigos.length >= 2) tarde.push({ clave: 'etapa.enemigoTarde', params: { e: enemigoTarde.heroe.name } });
   const aliadoTarde = fases?.nos?.tarde;
-  if (aliadoTarde && aliadoTarde.heroe.name !== yo.name) tarde.push({ clave: 'etapa.aliadoTarde', params: { a: aliadoTarde.heroe.name } });
-  if (fases && fases.cambio) {
+  if (aliadoTarde && aliadoTarde.heroe.name !== yo.name && nos.length >= 2) tarde.push({ clave: 'etapa.aliadoTarde', params: { a: aliadoTarde.heroe.name } });
+  if (fasesConfiables?.cambio) {
     tarde.push({ clave: fases.cambio.aFavor ? 'etapa.cambiaAFavor' : 'etapa.cambiaEnContra', params: { min: fases.cambio.minuto } });
   }
 
@@ -201,7 +219,7 @@ export function planDePartida({ yo = null, aliados = [], enemigos = [], meta = {
   // detrás. Lo del equipo (daño, curación, separarse) ya sale en su lista: la
   // primera versión lo repetía aquí y la hoja decía tres cosas dos veces.
   if (peor && peor.c <= CRUCE_FUERTE_EN_CONTRA) problemas.push({ clave: 'partida.evita', params: { e: peor.e.name, pct: pct(peor.c) } });
-  if (fases && fases.tendencia !== 'igual') {
+  if (fasesConfiables && fases.tendencia !== 'igual') {
     const corto = fases.puntos[0].p; const largo = fases.puntos[fases.puntos.length - 1].p;
     if (fases.tendencia === 'pronto' && largo < 0.5) problemas.push({ clave: 'problema.largaEnContra', params: { p: pct(largo) } });
     if (fases.tendencia === 'tarde' && corto < 0.5) problemas.push({ clave: 'problema.cortaEnContra', params: { p: pct(corto) } });

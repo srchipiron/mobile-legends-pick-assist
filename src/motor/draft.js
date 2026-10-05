@@ -283,7 +283,14 @@ export function planear(datos, { yo = null, aliados = [], enemigos = [], linea =
   const mia = linea ?? datos.lineas.get(nombreClave(yo.name))?.lanes?.[0] ?? yo.lanes?.[0] ?? null;
   const companeros = aliados.filter((a) => a.name !== yo.name);
   const lineasNos = lineasOcupadas(companeros, datos.lineas, datos.frecuencias, LINEAS.filter((l) => l !== mia));
-  const lineasEllos = lineasOcupadas(enemigos, datos.lineas, datos.frecuencias);
+  // Tu rival va en TU línea (3.43.2): repartidos todos a la vez, el rival
+  // marcado a mano caía en otra línea en el 4% de los drafts y su curva era
+  // la de esa otra (Alpha en jungla, con la de exp), mientras la hoja decía
+  // «tu rival de línea es Alpha». Los demás, sin tu línea.
+  const rival = mia ? rivalDeLinea(datos, { linea: mia, enemigos, marcado: rivalMarcado }).nombre : null;
+  const otros = enemigos.filter((e) => e.name !== rival);
+  const lineasOtros = lineasOcupadas(otros, datos.lineas, datos.frecuencias, rival ? LINEAS.filter((l) => l !== mia) : undefined);
+  const lineasEllos = enemigos.map((e) => (e.name === rival ? mia : lineasOtros[otros.indexOf(e)]));
   const estimacion = (aliados.length || enemigos.length) ? estimarCon(datos, { yo, enemigos, aliados: companeros, baneos, maestria }) : null;
   const fases = estimacion ? fasesDePartida({
     pBase: estimacion.p,
@@ -291,7 +298,6 @@ export function planear(datos, { yo = null, aliados = [], enemigos = [], linea =
     ellos: enemigos.map((h, i) => ({ heroe: h, linea: lineasEllos[i] ?? null })),
     datosFases: { curvaLinea: datos.meta.curvaLinea, winrateLinea: datos.meta.winrateLinea, centro: datos.meta.centroDeFases },
   }) : null;
-  const rival = mia ? rivalDeLinea(datos, { linea: mia, enemigos, marcado: rivalMarcado }).nombre : null;
   return planDePartida({ yo, aliados, enemigos, meta: datos.meta, fases, rival: enemigos.find((e) => e.name === rival) ?? null });
 }
 

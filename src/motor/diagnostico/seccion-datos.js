@@ -174,6 +174,12 @@ export function seccionCobertura(inf, { datos, linea, entorno = {} }) {
   } else {
     inf.check(false, '', 'Fases: sin curvas por duración: el plan de partida no dice cómo va según el minuto (¿falla la ruta win-rate/timeline?)', true);
   }
+  // Lo conservado de otra corrida (3.43.2): con la ruta cambiada de forma,
+  // las curvas y el winrate por línea se quedaban los de antes para siempre
+  // y la cobertura seguía diciendo «37/37».
+  const lin = meta?.diagnostics?.lineas;
+  if (lin?.curvasConservadas > 0) inf.check(false, '', `Fases: ${lin.curvasConservadas} curvas por duración son de una corrida anterior (la última no las trajo)`, true);
+  if (lin?.conservados > 0) inf.check(false, '', `Winrate por línea: ${lin.conservados} pares son de una corrida anterior (la última no los trajo)`, true);
   const cb = coberturaBuilds(pool, meta?.builds, linea);
   if (Object.keys(meta?.builds ?? {}).length) {
     inf.check(cb.con >= cb.total * 0.8, `Builds: ${cb.con}/${cb.total} héroes de tu línea`, `Builds: solo ${cb.con} de ${cb.total} héroes de tu línea`, true);

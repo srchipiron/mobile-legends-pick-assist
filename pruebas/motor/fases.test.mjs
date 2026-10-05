@@ -12,7 +12,8 @@ import {
   TRAMOS, COEF_FASE, DIFERENCIA_DE_FASE, PENDIENTE_DE_HEROE,
   formaDe, curvaDe, centroDeFases, formaDeEquipo, probabilidadPorTramo, fasesDePartida,
 } from '../../src/motor/fases.js';
-import { indexarPorNombre } from '../../src/motor/nombres.js';
+import { indexarPorNombre, nombreClave, buscar } from '../../src/motor/nombres.js';
+import { lineasOcupadas } from '../../src/motor/lineas.js';
 import { prepararDatos, planear, ordenar } from '../../src/motor/draft.js';
 import { logit } from '../../src/motor/modelo.js';
 
@@ -80,6 +81,19 @@ test('fases: tendencia solo por encima del umbral, el cambio de lado solo con te
   ok(roza.puntos[0].p < 0.5 && roza.puntos[5].p > 0.5 && roza.tendencia === 'igual', `el caso no cruza el 50% sin tendencia: ${JSON.stringify(roza.puntos.map((x) => x.p))}`);
   eq(roza.cambio, null, 'cruzar el 50% por poco y sin tendencia se dice como un cambio de lado');
   eq(igual.nos.tarde, null, 'un héroe plano sale como de late');
+  // El ÚLTIMO cruce del 50%, en el sentido de la tendencia (3.43.2): con la
+  // curva bajando y volviendo a subir, el primero decía lo contrario de las
+  // barras. Aquí 52 → 48 → … → 69: a favor desde el 14, no «en contra desde el 12».
+  const vuelta = indexarPorNombre({ V: { roam: [0.52, 0.48, 0.51, 0.57, 0.62, 0.69] } });
+  const fv = fasesDePartida({ pBase: 0.5, nos: [{ heroe: H('V'), linea: 'roam' }], ellos: [], datosFases: { curvaLinea: vuelta, winrateLinea: { v: { roam: 0.5 } }, centro: [0, 0, 0, 0, 0, 0] } });
+  ok(fv.puntos[1].p < 0.5 && fv.puntos[2].p > 0.5 && fv.tendencia === 'tarde', `el caso no baja y vuelve a subir: ${JSON.stringify(fv.puntos.map((x) => x.p))}`);
+  eq(JSON.stringify(fv.cambio), JSON.stringify({ minuto: 14, aFavor: true }), 'con varios cruces del 50% se queda el primero');
+  // Y si el último cruce va contra la tendencia (35 43 57 65 57 48: de late,
+  // pero por detrás otra vez pasado el 20), no se dice ningún minuto.
+  const contra = indexarPorNombre({ C: { roam: [0.3, 0.4, 0.6, 0.7, 0.6, 0.47] } });
+  const fc = fasesDePartida({ pBase: 0.5, nos: [{ heroe: H('C'), linea: 'roam' }], ellos: [], datosFases: { curvaLinea: contra, winrateLinea: { c: { roam: 0.5 } }, centro: [0, 0, 0, 0, 0, 0] } });
+  ok(fc.tendencia === 'tarde' && fc.puntos[5].p < 0.5 && fc.puntos[3].p > 0.5, `el caso no es de late con el final en contra: ${JSON.stringify(fc.puntos.map((x) => x.p))}`);
+  eq(fc.cambio, null, `dice un cambio de lado que las barras desmienten: ${JSON.stringify(fc.cambio)}`);
   eq(fasesDePartida({ pBase: 0.5, nos: [{ heroe: H('Nadie'), linea: 'roam' }], ellos: [], datosFases: df }), null, 'sin ninguna curva vuestra hay fases');
   eq(fasesDePartida({ pBase: 0.5, nos: [{ heroe: H('Tardio'), linea: 'gold' }], ellos: [], datosFases: { ...df, centro: null } }), null, 'sin centro hay fases');
 });
@@ -103,6 +117,28 @@ test('con los datos de verdad: seis tramos, el centro de lo que sale, y el ranki
   const sinCurvas = ordenar(sin, { linea: 'roam', enemigos: enemigos.map((h) => sin.porNombre.get(h.name)), aliados: aliados.map((h) => sin.porNombre.get(h.name)) }).map((r) => `${r.heroe.name}:${r.p.toFixed(6)}`);
   eq(con.join(), sinCurvas.join(), 'las curvas cambian el ranking');
   eq(planear(sin, { yo: sin.porNombre.get(yo.name), aliados: [], enemigos: [sin.porNombre.get(enemigos[0].name)], linea: 'roam' }).fases, null, 'sin curvas hay fases');
+});
+
+test('tu rival de línea va en TU línea también en las curvas, aunque el reparto lo pusiera en otra (3.43.2)', () => {
+  const catalogo = JSON.parse(readFileSync(`${RAIZ}/public/data/heroes.json`, 'utf8'));
+  const meta = JSON.parse(readFileSync(`${RAIZ}/public/data/roam-meta.json`, 'utf8'));
+  const datos = prepararDatos({ catalogo, meta });
+  const lanes = (h) => datos.lineas.get(nombreClave(h.name))?.lanes ?? [];
+  // Un enemigo que juega roam pero cuya línea principal es otra, junto a otro
+  // que también puede ir a roam: el reparto a solas lo manda a su principal.
+  let caso = null;
+  for (const r of datos.poolsPorLinea.roam) {
+    if (lanes(r)[0] === 'roam' || !buscar(meta.curvaLinea, r.name)?.roam) continue;
+    for (const o of datos.poolsPorLinea.roam) {
+      if (o === r) continue;
+      if (lineasOcupadas([r, o], datos.lineas, datos.frecuencias)[0] !== 'roam') { caso = [r, o]; break; }
+    }
+    if (caso) break;
+  }
+  ok(caso, 'no hay un draft en que el reparto saque al rival de roam: la prueba no vigila nada');
+  const yo = datos.poolsPorLinea.roam.find((x) => !caso.includes(x));
+  const p = planear(datos, { yo, enemigos: caso, aliados: [], linea: 'roam', rivalMarcado: caso[0].name });
+  eq(p.fases?.ellos.porHeroe.find((x) => x.heroe.name === caso[0].name)?.linea, 'roam', `la curva del rival marcado (${caso[0].name}) no es la de tu línea: ${JSON.stringify(p.fases?.ellos.porHeroe.map((x) => [x.heroe.name, x.linea]))}`);
 });
 
 await terminar('motor/fases');

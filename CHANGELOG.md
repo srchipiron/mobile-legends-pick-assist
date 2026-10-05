@@ -8,6 +8,28 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.43.2
+
+- El plan de partida ya no se contradice. Si le ganas el cruce a tu rival
+  de línea, ya no te dice a la vez que «no regales nada al principio»; si
+  te lo gana, no te dice «juega agresivo»; y si el equipo es de partida
+  larga, tampoco. Manda lo más concreto: tu cruce y, después, el plan del
+  equipo. «Cuidado con X al principio» ya no se dice de tu rival ni de
+  alguien al que le ganas claro.
+- «A partir del minuto X…» usa el último momento en que la partida cambia
+  de lado, y solo si va en el mismo sentido que las barras. Antes podía
+  decir «van por delante ellos desde el 12» con las barras al 57–69% desde
+  el 16.
+- Lo que el plan afirma de las fases necesita ya algo de draft delante. El
+  cambio de lado y «vais por detrás» piden tres héroes por bando; «el más
+  fuerte de los suyos» pide al menos dos.
+- El rival de línea que marcas se lee con su curva de TU línea, no con la
+  de otra línea suya.
+- «Su carta para el final» ya no choca con el focus: dice que no le dejéis
+  farmear, no «id a por él antes que a nadie».
+- Si una descarga no trae las curvas por duración o el winrate por línea y
+  se quedan los de antes, el diagnóstico lo dice.
+
 ## 3.43.1
 
 - Los datos ya no se publican como de hoy si una parte importante viene de
