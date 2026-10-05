@@ -19,7 +19,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test, ok, eq, terminar, RAIZ, leerTexto, leerJson } from '../arnes.mjs';
 import { WORKFLOWS, leerWorkflow, mandatos, ejecuta } from '../fixtures/yaml-workflows.mjs';
-import { medir } from '../../scripts/comparar-ingesta.mjs';
+import { medir, FIJAS } from '../../scripts/comparar-ingesta.mjs';
 
 const tmp = mkdtempSync(join(tmpdir(), 'workflows-'));
 const corre = (script, args, opts = {}) => spawnSync(process.execPath, [resolve(RAIZ, script), ...args], { encoding: 'utf8', cwd: RAIZ, ...opts });
@@ -351,8 +351,10 @@ test('la vigilancia arranca de verdad contra los datos del repositorio', () => {
   ok(existsSync(salud) && /"cruces":\d+/.test(readFileSync(salud, 'utf8')), 'no deja la fila de salud con sus cifras');
   // Cada recuento de FIJAS que el comparador mira contra el historial tiene
   // que estar en la fila, o su máximo es siempre 0 y el trinquete no existe.
+  // Hasta 3.43.1 solo se miraba `winrateLinea`, y `conRol` y `conSpeciality`
+  // estaban en FIJAS sin columna: el trinquete no existía para ellas.
   const enDatos = medir(leerJson('public/data/roam-meta.json'));
-  eq(fila.winrateLinea, enDatos.winrateLinea, `la fila de salud no cuenta los pares del winrate por línea como el comparador (${fila.winrateLinea} frente a ${enDatos.winrateLinea})`);
+  for (const k of FIJAS) eq(fila[k], enDatos[k], `la fila de salud no cuenta «${k}» como el comparador (${fila[k]} frente a ${enDatos[k]})`);
 });
 
 test('revisión línea a línea de scripts y workflows: guardas que no vigilaban, bucles verdes en rojo, fechas, tiempos', async () => {

@@ -8,10 +8,12 @@ import { catalogo, h, crearRnd } from '../fixtures/catalogo.mjs';
 import { indexarPorNombre, nombreClave, idMotivo } from '../../src/motor/nombres.js';
 import { terminoHeroe, terminoCruce, terminoPareja, evaluarDraft, logit, ESCALA, SUB_MAX, equilibrioDe, terminoEquilibrio, esperanzaCruces, disponibilidad, PESO_EQUILIBRIO_DANO } from '../../src/motor/modelo.js';
 import { COUNTER_RULES } from '../../src/motor/reglas.js';
-import { mediaDeSinergia, CRUCE_FUERTE, CRUCE_FUERTE_EN_CONTRA } from '../../src/motor/matrices.js';
+import { mediaDeSinergia, cruce, CRUCE_FUERTE, CRUCE_FUERTE_EN_CONTRA } from '../../src/motor/matrices.js';
 import { LINEAS } from '../../src/motor/catalogo.js';
 import { prepararDatos, estimarCon, ordenar } from '../../src/motor/draft.js';
 import { generador } from '../../src/motor/robustez.js';
+
+const lookupCruce = (datos, a, b) => cruce(datos.meta.counters, a.name, b.name) ?? 0.5;
 
 test('el winrate NO se encoge por una muestra inventada', () => {
   // Medido el ruido real entre 14 corridas consecutivas de la ingesta: la
@@ -267,6 +269,28 @@ test('lo que falta por salir se pondera por lo que se JUEGA: pickrate cuando no 
   const pools = { roam: [{ name: 'E' }, { name: 'F' }] };
   const r = esperanzaCruces(yo, { lineasAbiertas: ['roam'], poolsPorLinea: pools, stats, counters });
   ok(r.valor > 0, `pondera por pickrate a secas: ${r.valor}`);
+  // Lo que ya no puede salir (baneado o cogido) no entra en la esperanza: con
+  // F fuera solo queda E, y el valor es exactamente el de E. Sin esta
+  // comprobación, quitar el filtro pasaba todas las pruebas (mutación, 3.43.1).
+  const sinF = esperanzaCruces(yo, { lineasAbiertas: ['roam'], poolsPorLinea: pools, stats, counters, excluidos: new Set([nombreClave('F')]) });
+  ok(Math.abs(sinF.valor - logit(0.6)) < 1e-12, `un baneado sigue contando en «por ver»: ${sinF.valor}`);
+  // Y por clave normalizada: «X.Borg» baneado es «X Borg» en el pool.
+  const conBorg = esperanzaCruces(yo, { lineasAbiertas: ['roam'], poolsPorLinea: { roam: [{ name: 'E' }, { name: 'X Borg' }] }, stats, counters: indexarPorNombre({ Y: { E: 0.6, 'X.Borg': 0.3 } }, 2), excluidos: new Set([nombreClave('X.Borg')]) });
+  ok(Math.abs(conBorg.valor - logit(0.6)) < 1e-12, `el baneado con otra grafía sigue contando: ${conBorg.valor}`);
+});
+
+test('«por ver» con los datos de verdad: el más jugado de una línea abierta, baneado, deja de contar', () => {
+  const meta = leerJson('public/data/roam-meta.json');
+  if (!(meta.heroes ?? []).length) return;
+  const datos = prepararDatos({ catalogo, meta });
+  const yo = datos.poolsPorLinea.roam[0];
+  const enemigos = [datos.poolsPorLinea.gold.find((x) => x !== yo)];
+  // El de la jungla con más cruce en contra de yo (que más pesa al quitarlo).
+  const jungla = datos.poolsPorLinea.jungle.filter((x) => x !== yo && !enemigos.includes(x));
+  const ban = jungla.reduce((a, b) => (Math.abs(logit(lookupCruce(datos, yo, b))) > Math.abs(logit(lookupCruce(datos, yo, a))) ? b : a));
+  const sin = estimarCon(datos, { yo, enemigos }).terminos.porVer;
+  const con = estimarCon(datos, { yo, enemigos, baneos: [ban] }).terminos.porVer;
+  ok(Number.isFinite(sin) && Math.abs(sin - con) > 1e-6, `banear a ${ban.name} no cambia «por ver» de ${yo.name}: ${sin} y ${con}`);
 });
 
 test('la estimación no favorece al equipo que lleva más héroes en pantalla', () => {

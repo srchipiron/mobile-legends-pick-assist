@@ -19,8 +19,16 @@
 import { readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { RANGO_DE_RESPALDO } from '../src/motor/ventana.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+/** ¿Se descargaron casi todas las filas de cruces y de parejas? Sin la marca (ficheros viejos), sí. */
+function matrizFresca(r) {
+  if (!r) return 1;
+  const casi = (n) => r.pedidas && n / r.pedidas >= 0.9;
+  return casi(r.relaciones) && casi(r.parejas ?? r.relaciones) ? 1 : 0;
+}
 
 /** Lo que la app necesita, contado. Nada de porcentajes. */
 export function medir(datos) {
@@ -45,14 +53,16 @@ export function medir(datos) {
     // resuelve menos, pero tampoco trae nada, y commitearla solo cambiaria
     // la fecha. Los ficheros de antes de esta medida no llevan `frescos`, y
     // para ellos cuenta como fresco lo que tenga datos.
+    // Desde 3.43.1 también el de RESPALDO (Mítico para Gloria): es con el
+    // que la app compara y, tras un reinicio de temporada, con el que
+    // puntúa; conservado de hace días cambiaba la decisión sin dejar marca.
     rangoFresco: datos?.diagnostics?.frescos
-      ? (datos.diagnostics.frescos.includes(datos.rank) ? 1 : 0)
+      ? (datos.diagnostics.frescos.includes(datos.rank) && (!RANGO_DE_RESPALDO[datos.rank] || datos.diagnostics.frescos.includes(RANGO_DE_RESPALDO[datos.rank])) ? 1 : 0)
       : (datos?.rank && datos?.statsByRank?.[datos.rank] ? 1 : 0),
     // Y que la MATRIZ se haya descargado en esa corrida, no conservado: los
-    // ficheros de antes de esta marca cuentan como frescos.
-    relacionesFrescas: datos?.diagnostics?.frescosRecursos
-      ? (datos.diagnostics.frescosRecursos.pedidas && datos.diagnostics.frescosRecursos.relaciones / datos.diagnostics.frescosRecursos.pedidas >= 0.9 ? 1 : 0)
-      : 1,
+    // ficheros de antes de esta marca cuentan como frescos. Cruces y, desde
+    // 3.43.1, parejas (los ficheros sin la cuenta de parejas, por los cruces).
+    relacionesFrescas: matrizFresca(datos?.diagnostics?.frescosRecursos),
     counters: Object.keys(datos?.counters ?? {}).length,
     // Los PARES, no solo cuantos heroes tienen fila. Una corrida puede traer
     // los 133 con fila y cinco cruces cada uno en vez de 132: son los mismos
@@ -95,8 +105,9 @@ export const MARGEN = 0.9;
  */
 // `winrateLinea` (pares héroe-línea) desde 3.14.0: sin él en la lista cada
 // corrida podía perder un 10% respecto a la anterior aceptada, sin fondo.
-// `curvaLinea` desde 3.43.0, por lo mismo.
-export const FIJAS = ['heroes', 'conLinea', 'conRol', 'conDano', 'conSpeciality', 'cruces', 'sinergias', 'winrateLinea', 'curvaLinea'];
+// `curvaLinea` desde 3.43.0, por lo mismo; `conHabilidades` desde 3.43.1
+// (de ella sale el plan de partida, y la fila de salud no la llevaba).
+export const FIJAS = ['heroes', 'conLinea', 'conRol', 'conDano', 'conSpeciality', 'conHabilidades', 'cruces', 'sinergias', 'winrateLinea', 'curvaLinea'];
 
 /** Máximo de cada recuento fijo en las filas de historial/salud.jsonl (líneas rotas, fuera). */
 export function maximosDelHistorial(texto) {

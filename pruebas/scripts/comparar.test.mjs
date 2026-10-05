@@ -5,7 +5,7 @@
  * en el diff: mismos números y `generatedAt` nuevo. Esto llegó a producción.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { comparar, medir, maximosDelHistorial } from '../../scripts/comparar-ingesta.mjs';
+import { comparar, medir, maximosDelHistorial, FIJAS } from '../../scripts/comparar-ingesta.mjs';
 
 test('una corrida de ingesta degradada no llega a los datos guardados', () => {
   // Esto llego a produccion: el bot de datos commiteo una corrida con los 133
@@ -38,6 +38,13 @@ test('una corrida de ingesta degradada no llega a los datos guardados', () => {
   ok(comparar(menguada, menguada).peores.length === 0, 'sin historial, una corrida igual a la guardada se rechaza');
   ok(comparar(menguada, menguada, maximos).peores.some((p) => p.clave === 'cruces' && p.antes === 90), 'no detecta que la corrida esta muy por debajo del maximo del historial');
   ok(comparar(buena, buena, { objetos: 999 }).peores.length === 0, 'los objetos se comparan contra el historial y no deberian');
+  // Cada recuento de tamano fijo tiene trinquete (3.43.1): conRol,
+  // conSpeciality y conHabilidades estaban fuera de la fila de salud o de la
+  // lista, y diez corridas perdiendo un 9% cada una pasaban.
+  for (const clave of ['conRol', 'conSpeciality', 'conHabilidades', 'curvaLinea']) {
+    ok(FIJAS.includes(clave), `${clave} no tiene trinquete contra el historial`);
+    ok(comparar(buena, buena, { [clave]: 1e6 }).peores.some((p) => p.clave === clave), `${clave} no se compara con el maximo del historial`);
+  }
 
   const sinLineas = { ...buena, heroes: buena.heroes.map((h) => ({ ...h, lanes: [] })) };
   ok(comparar(sinLineas, buena).peores.some((p) => p.clave === 'conLinea'),

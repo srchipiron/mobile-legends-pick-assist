@@ -1,7 +1,7 @@
 import { nombreClave } from '../nombres.js';
 import { cruce, sinergia, cobertura, densidadCounters, CRUCE_DESTACABLE, PAREJA_DESTACABLE, COLA_DEL_MOTIVO } from '../matrices.js';
 import { coberturaBuilds } from '../builds.js';
-import { WINRATE_POSIBLE } from '../ventana.js';
+import { WINRATE_POSIBLE, RANGO_DE_RESPALDO } from '../ventana.js';
 
 /**
  * Los datos con los que decide la app: que estén, que sean frescos, que
@@ -12,6 +12,26 @@ import { WINRATE_POSIBLE } from '../ventana.js';
 
 const media = (a) => a.reduce((x, y) => x + y, 0) / a.length;
 const desv = (a) => Math.sqrt(a.reduce((s, x) => s + (x - media(a)) ** 2, 0) / (a.length - 1));
+
+/**
+ * Qué no descargó la última corrida (3.43.1): el aviso decía siempre «no
+ * descargó estadísticas de glory» aunque lo que faltara fuera la matriz de
+ * cruces, las parejas o el rango de respaldo.
+ */
+export function queFaltaDeLaCorrida(meta) {
+  const d = meta?.diagnostics ?? {};
+  const falta = [];
+  const frescos = d.frescos ?? [];
+  const respaldo = RANGO_DE_RESPALDO[meta?.rank];
+  if (meta?.rank && !frescos.includes(meta.rank)) falta.push(`estadísticas de ${meta.rank}`);
+  if (respaldo && !frescos.includes(respaldo)) falta.push(`estadísticas de ${respaldo} (el rango de respaldo)`);
+  const r = d.frescosRecursos;
+  if (r?.pedidas) {
+    if (r.relaciones / r.pedidas < 0.9) falta.push(`cruces (${r.relaciones} de ${r.pedidas} héroes)`);
+    else if (r.parejas != null && r.parejas / r.pedidas < 0.9) falta.push(`parejas (${r.parejas} de ${r.pedidas} héroes)`);
+  }
+  return falta;
+}
 
 /** @param {import('./informe.js').Informe} inf */
 export function seccionDatos(inf, { datos, linea, entorno = {} }) {
@@ -29,11 +49,6 @@ export function seccionDatos(inf, { datos, linea, entorno = {} }) {
   inf.linea(`Generado: ${gen.toLocaleString('es-ES')} (hace ${Math.round(horas)} h)`);
   inf.check(horas < 36, 'Datos frescos', `Datos de hace ${Math.round(horas)} h: la actualización automática puede estar rota`, true);
   inf.linea(`Rangos: ${meta.ranks?.join(', ') || 'ninguno'} · activo: ${entorno.rango ?? '?'}`);
-  // Las estadísticas cambian con el rango; los cruces, parejas y builds son
-  // SIEMPRE del rango de la ingesta. Con otro rango se mezclan poblaciones.
-  if (entorno.rango && meta.rank && entorno.rango !== meta.rank) {
-    inf.check(false, '', `Estadísticas de ${entorno.rango} pero cruces, parejas y builds de ${meta.rank}: dos poblaciones mezcladas`, true);
-  }
   if (meta.coberturaPorLinea) {
     inf.linea('Cobertura por línea: ' + Object.entries(meta.coberturaPorLinea).map(([l, c]) => `${l} ${c.conCounters}/${c.total}`).join(' · '));
   }
@@ -65,6 +80,19 @@ export function seccionDatos(inf, { datos, linea, entorno = {} }) {
   } else if (rel) {
     inf.linea(`Cruces y parejas: de ${rel.rango}${coh ? ` (coherencia con el rango de abajo: ${coh})` : ''}`);
   }
+  // Las estadísticas cambian con el rango que elijas; cruces y parejas son
+  // los que eligió la INGESTA (`relaciones.rango`, Mítico tras un reinicio)
+  // y las builds, las del rango de la ingesta. Hasta 3.43.1 se comparaba tu
+  // rango con `meta.rank` y, con cruces de Mítico, eligiendo Mítico decía
+  // «cruces de glory: dos poblaciones mezcladas», que era falso.
+  const rangoFuerza = f?.rango ?? entorno.rango;
+  const rangoRel = rel?.rango ?? meta.rank;
+  if (rangoFuerza && rangoRel && rangoFuerza !== rangoRel) {
+    inf.check(false, '', `Fuerza de héroe de ${rangoFuerza} pero cruces y parejas de ${rangoRel}: dos poblaciones mezcladas`, true);
+  }
+  if (entorno.rango && meta.rank && entorno.rango !== meta.rank) {
+    inf.linea(`Builds: de ${meta.rank} (la ingesta solo las baja de ese rango)`);
+  }
   const v = datos.meta?.ventana;
   if (v?.dias === 7 && meta.recientes) {
     inf.check(false, '', `Fuerza de héroe: ventana de 7 días porque la de ${meta.recientes.dias} no vale: ${v.motivo}`, true);
@@ -76,7 +104,13 @@ export function seccionDatos(inf, { datos, linea, entorno = {} }) {
   inf.linea(`API: ${meta.diagnostics?.base ?? 'desconocida'}`);
   if (meta.diagnostics?.conservado != null) {
     inf.check(!meta.diagnostics.conservado, `Última corrida con estadísticas nuevas (${(meta.diagnostics.frescos ?? []).join(', ') || 'ninguno'})`,
-      `La última corrida NO descargó estadísticas de ${meta.rank ?? 'tu rango'}: se conservan las anteriores (API caída o cambiada)`, true);
+      `La última corrida NO descargó ${queFaltaDeLaCorrida(meta).join(' ni ') || `estadísticas de ${meta.rank ?? 'tu rango'}`}: se conservan las anteriores (API caída o cambiada)`, true);
+  }
+  // La fuerza puede salir del rango de respaldo (Mítico): si ese no se
+  // descargó, la guarda compara y puntúa con un dato de otra corrida.
+  const frescos = meta.diagnostics?.frescos;
+  if (Array.isArray(frescos) && f?.rango && meta.statsByRank?.[f.rango] && !frescos.includes(f.rango)) {
+    inf.check(false, '', `Fuerza de héroe: de ${f.rango}, que la última corrida NO descargó: es de una corrida anterior`, true);
   }
   // Las estadísticas que DECIDEN (las de 7 días del rango de la fuerza), no
   // las de la ingesta: con la guarda de rango activa eran las de Gloria y

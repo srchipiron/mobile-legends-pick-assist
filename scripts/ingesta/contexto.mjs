@@ -6,6 +6,7 @@
 
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { RANGO_DE_RESPALDO } from '../../src/motor/ventana.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Dos niveles: este fichero vive en scripts/ingesta/, no en scripts/.
@@ -56,6 +57,9 @@ export const RANKS = (typeof args.ranks === 'string' ? args.ranks : 'epic,legend
 // El rango pedido se descarga siempre: fuera de la lista, `estadisticasNuevas`
 // era falso para siempre y la fecha del fichero no avanzaba jamás.
 if (!RANKS.includes(RANK)) RANKS.push(RANK);
+// Y su rango de respaldo (3.43.1): con él decide la guarda de rango, y
+// fuera de la lista se quedaba el de una corrida vieja (ver estadisticasFrescas).
+if (RANGO_DE_RESPALDO[RANK] && !RANKS.includes(RANGO_DE_RESPALDO[RANK])) RANKS.unshift(RANGO_DE_RESPALDO[RANK]);
 
 /**
  * Bases conocidas, de la más actual a la más antigua.

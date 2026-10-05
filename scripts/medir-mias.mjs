@@ -84,7 +84,9 @@ export function medir(registro, datos) {
     const a = auc(filas);
     salida.hoy = { n, brier, brierSE, auc: a, aucSE: errorDeAuc(a, ganadas, n - ganadas), acierto, pendiente, mediaP: filas.reduce((a, f) => a + f.p, 0) / n, real: filas.reduce((a, f) => a + f.y, 0) / n };
   } else {
-    salida.hoy = { n: 0 };
+    // Por qué no hay nada (3.43.1): sin los datos del meta, o con drafts que
+    // no se pudieron re-puntuar, decía «ninguna partida lleva el draft».
+    salida.hoy = { n: 0, sinDatos: !datos, conDraft: conApp.filter((p) => p.draft).length };
   }
   const porHeroe = new Map();
   for (const p of conApp) { const h = porHeroe.get(p.pick) ?? { pick: p.pick, n: 0, ganadas: 0 }; h.n += 1; h.ganadas += p.gane ? 1 : 0; porHeroe.set(p.pick, h); }
@@ -96,7 +98,7 @@ export function medir(registro, datos) {
   return salida;
 }
 
-export function informe(m, { generado = null } = {}) {
+export function informe(m, { generado = null, errorDatos = null } = {}) {
   const L = [];
   L.push(`## Tus partidas: ${m.n} apuntadas · ${m.conApp} con la app · ${m.previas} de tu historial`);
   if (!m.conApp) { L.push('', 'Todavía no hay partidas apuntadas con la app. Con cada partida que apuntes (Gané/Perdí al volver a la app) esto empieza a decir algo.'); return L.join('\n'); }
@@ -125,7 +127,9 @@ export function informe(m, { generado = null } = {}) {
   }
   const h = m.hoy;
   L.push('', `### El modelo de hoy sobre tus drafts${generado ? ` (datos del ${generado.slice(0, 10)})` : ''}`);
-  if (!h.n) L.push('- Ninguna partida lleva el draft guardado (se guarda solo desde 3.5.0).');
+  if (!h.n && h.sinDatos) L.push(`- No se pudo re-puntuar: no se han podido leer los datos del meta${errorDatos ? ` (${errorDatos})` : ''}.`);
+  else if (!h.n && h.conDraft) L.push(`- Hay ${h.conDraft} partidas con draft y ninguna se ha podido re-puntuar (¿héroes que no están en el catálogo de hoy?).`);
+  else if (!h.n) L.push('- Ninguna partida lleva el draft guardado (se guarda solo desde 3.5.0).');
   else {
     L.push(`- ${h.n} drafts re-puntuados con el modelo y los datos de hoy: media prevista ${pct(h.mediaP)}, real ${pct(h.real)}, acierta el lado (≥50%) el ${pct(h.acierto)}.`);
     const aucTxt = h.auc == null ? '—' : `${h.auc.toFixed(3)}${h.aucSE != null ? ` ± ${(1.96 * h.aucSE).toFixed(3)}` : ''}`;
@@ -163,15 +167,19 @@ if (process.argv[1] && process.argv[1].endsWith('medir-mias.mjs')) {
   const fichero = opcion('--fichero', 'historial/partidas.json');
   let registro;
   try { registro = existsSync(fichero) ? JSON.parse(readFileSync(fichero, 'utf8')) : { partidas: [], maestria: {} }; } catch (e) { console.error(`No puedo leer ${fichero}: ${e.message}`); process.exit(1); }
-  let datos = null; let generado = null;
+  let datos = null; let generado = null; let errorDatos = null;
   try {
     const catalogo = JSON.parse(readFileSync('public/data/heroes.json', 'utf8'));
     const meta = JSON.parse(readFileSync('public/data/roam-meta.json', 'utf8'));
     datos = prepararDatos({ catalogo, meta });
     generado = meta.generatedAt ?? null;
-  } catch { /* sin datos del meta no se re-puntúa, el resto sí */ }
+  } catch (e) {
+    // Sin datos del meta no se re-puntúa, el resto sí; pero se DICE por qué.
+    errorDatos = e.message;
+    console.error(`No se pudo re-puntuar: ${e.message}`);
+  }
   const m = medir(registro, datos);
-  console.log(informe(m, { generado }));
+  console.log(informe(m, { generado, errorDatos }));
   const json = opcion('--json');
   if (json) writeFileSync(json, JSON.stringify({ cuando: new Date().toISOString(), datosDe: generado, ...m }, null, 1));
 }

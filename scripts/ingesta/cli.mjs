@@ -15,7 +15,7 @@ import {
 } from './extraccion.mjs';
 import { fetchRelations } from './relaciones.mjs';
 import {
-  anotarFrescura, conservarFichasPrevias, fechaDeLaCorrida, fundirBuilds, fundirWinrateLinea,
+  anotarFrescura, conservarFichasPrevias, estadisticasFrescas, fechaDeLaCorrida, fundirBuilds, fundirWinrateLinea,
   kitsRehechos, leerPrevio, relacionesPrevias, relacionesDeLaCorrida,
 } from './fusion.mjs';
 import { bajarImagenes } from './imagenes.mjs';
@@ -231,6 +231,7 @@ async function main() {
 
   let relations = relacionesPrevias(previous);
   let relacionesFrescas = 0;
+  let parejasFrescas = 0;
   const filasCon = (m) => Object.values(m?.counters ?? {}).filter((f) => Object.keys(f ?? {}).length).length;
   // De qué rango salen cruces y parejas (3.35.0): el pedido, salvo que tras
   // un reinicio de temporada no se parezca al de respaldo (ventana.js).
@@ -259,6 +260,7 @@ async function main() {
     const corrida = relacionesDeLaCorrida(previous, elegidas, relacionesRango.rango);
     relations = corrida.relations;
     relacionesFrescas = corrida.frescas;
+    parejasFrescas = corrida.frescasParejas;
     // Sin ninguna fila nueva se queda la matriz guardada, y con ella su etiqueta.
     if (corrida.conservado) relacionesRango = previous?.relaciones ?? { ...relacionesRango, motivo: 'sin cruces nuevos: se conservan los de la corrida anterior' };
     console.log(`  · relaciones: ${relacionesFrescas} héroes nuevos de ${nombresPedir.length} · ${Object.keys(relations.counters).length} con fila`);
@@ -266,7 +268,7 @@ async function main() {
     console.warn(`  · relaciones: fallo (${err.message}); conservo las anteriores`);
     relacionesRango = previous?.relaciones ?? relacionesRango;
   }
-  const matrizNueva = anotarFrescura(relacionesFrescas, nombresPedir.length);
+  const matrizNueva = anotarFrescura(relacionesFrescas, nombresPedir.length, parejasFrescas);
 
   const avgOf = (byName) => {
     const r = Object.values(byName).map((s) => s.winRate).filter((n) => n != null);
@@ -291,7 +293,7 @@ async function main() {
   // conservarFichasPrevias), asi que una peticion caida no inventa un aviso.
   const heroesCambiados = kitsRehechos(heroList, heroes.heroes);
 
-  const estadisticasNuevas = frescos.includes(RANK);
+  const estadisticasNuevas = estadisticasFrescas(frescos, RANK, RANGO_DE_RESPALDO[RANK]);
   const generatedAt = fechaDeLaCorrida({ frescos, estadisticasNuevas, matrizNueva, previous });
   const out = {
     generatedAt,

@@ -8,6 +8,24 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.43.1
+
+- Los datos ya no se publican como de hoy si una parte importante viene de
+  una descarga anterior: las estadísticas de Mítico (con las que la app
+  decide qué rango puntúa tras un reinicio de temporada) o las parejas
+  («combina bien con»). Con Mítico de hace días la app podía cambiar de
+  rango por su cuenta: el nº1 de roam cambiaba en 112 de 300 drafts sin que
+  nada lo dijera. Ahora esa corrida no se publica y el diagnóstico dice qué
+  faltó.
+- El diagnóstico ya no avisa de «dos poblaciones mezcladas» cuando las
+  estadísticas y los cruces son del mismo rango, y dice si la fuerza de los
+  héroes sale de un rango que la última descarga no trajo.
+- La cuenta de aciertos del lector compara cada cosa leída con su lado del
+  draft: un enemigo leído como compañero ya no cuenta como acierto (el
+  acierto real de tus partidas era 92,0%, no 93,6%).
+- El informe de tus partidas dice por qué no pudo re-puntuar los drafts en
+  vez de decir que no hay ninguno.
+
 ## 3.43.0
 
 - El plan de partida dice ahora cómo va a ir la partida según el minuto en

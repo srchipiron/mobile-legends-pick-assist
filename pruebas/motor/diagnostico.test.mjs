@@ -25,9 +25,10 @@ test('el diagnostico detecta datos imposibles y caidas frente a su propio histor
   };
   // Los datos como los monta la app (prepararDatos): el catálogo fundido con
   // ese meta y las matrices indexadas por clave.
-  const datosDe = (m) => prepararDatos({ catalogo: { heroes: catalogo.heroes }, meta: m, rango: entorno.rango });
+  // Con el rango del entorno de CADA llamada, como en la app.
+  const datosDe = (m, rango = entorno.rango) => prepararDatos({ catalogo: { heroes: catalogo.heroes }, meta: m, rango });
   const base = { linea: 'roam', maestria: {}, partidas: [], entorno };
-  const informe = (m, extra = {}) => diagnosticar({ ...base, datos: datosDe(m), ...extra }).texto;
+  const informe = (m, extra = {}) => diagnosticar({ ...base, datos: datosDe(m, extra.entorno?.rango), ...extra }).texto;
   const avisosDe = (m, hist) => informe(m, { historial: hist }).split('\n').filter((l) => /^\[AVISO\]/.test(l));
 
   // Una corrida que conservó lo anterior por API caída avisa; una con
@@ -38,8 +39,26 @@ test('el diagnostico detecta datos imposibles y caidas frente a su propio histor
 
   // Estadísticas de un rango y cruces de otro: se dice. Los cruces, las
   // parejas y las builds son siempre del rango de la ingesta.
-  ok(informe({ ...meta, rank: 'glory' }, { entorno: { ...entorno, rango: 'epic' } }).includes('dos poblaciones'), 'no avisa de que las estadísticas y los cruces son de rangos distintos');
+  ok(informe({ ...meta, rank: 'glory', ranks: ['epic', 'glory'], statsByRank: { epic: meta.stats, glory: meta.stats } }, { entorno: { ...entorno, rango: 'epic' } }).includes('dos poblaciones'), 'no avisa de que las estadísticas y los cruces son de rangos distintos');
   ok(!informe({ ...meta, rank: 'glory' }, { entorno: { ...entorno, rango: 'glory' } }).includes('dos poblaciones'), 'avisa con el mismo rango');
+  // Con los cruces de Mítico (la guarda de rango de la ingesta) y Mítico
+  // elegido, no hay mezcla: hasta 3.43.1 comparaba con `meta.rank` y decía
+  // «cruces de glory», que era falso.
+  const conMitico = { ...meta, rank: 'glory', statsByRank: { mythic: meta.stats, glory: meta.stats }, relaciones: { rango: 'mythic', pedido: 'glory' } };
+  const txtMitico = informe(conMitico, { entorno: { ...entorno, rango: 'mythic' } });
+  ok(!txtMitico.includes('dos poblaciones') && /Builds: de glory/.test(txtMitico), `con cruces de Mítico y Mítico elegido avisa de una mezcla: ${txtMitico.split('\n').filter((l) => /poblaciones|Builds/.test(l))}`);
+  ok(informe(conMitico, { entorno: { ...entorno, rango: 'glory' } }).includes('dos poblaciones'), 'fuerza de Gloria con cruces de Mítico no avisa');
+
+  // Qué faltó en la corrida (3.43.1): el aviso decía siempre «estadísticas
+  // de glory» aunque lo que faltara fuera la matriz, las parejas o Mítico.
+  const faltan = (d) => avisosDe({ ...meta, rank: 'glory', diagnostics: { conservado: true, ...d } }, null).find((l) => /NO descargó/.test(l)) ?? '';
+  ok(/NO descargó cruces \(0 de 133/.test(faltan({ frescos: ['mythic', 'glory'], frescosRecursos: { relaciones: 0, parejas: 0, pedidas: 133 } })), 'con la matriz caída dice que faltan estadísticas');
+  ok(/NO descargó parejas/.test(faltan({ frescos: ['mythic', 'glory'], frescosRecursos: { relaciones: 133, parejas: 0, pedidas: 133 } })), 'con las parejas caídas no lo dice');
+  ok(/NO descargó estadísticas de mythic/.test(faltan({ frescos: ['glory'], frescosRecursos: { relaciones: 133, parejas: 133, pedidas: 133 } })), 'con Mítico caído no lo dice');
+  // Y la fuerza sacada de un rango que la corrida no descargó, se dice.
+  const fuerzaVieja = { ...meta, rank: 'mythic', statsByRank: { mythic: meta.stats }, diagnostics: { conservado: true, frescos: ['epic'] } };
+  ok(avisosDe(fuerzaVieja, null).some((l) => /Fuerza de héroe: de mythic, que la última corrida NO descargó/.test(l)), `la fuerza de un rango conservado no avisa: ${avisosDe(fuerzaVieja, null)}`);
+  ok(!avisosDe({ ...fuerzaVieja, diagnostics: { conservado: false, frescos: ['mythic'] } }, null).some((l) => /que la última corrida NO descargó/.test(l)), 'avisa con la fuerza fresca');
 
   // Datos sanos: ninguno de los avisos nuevos.
   const limpio = avisosDe(meta, null);

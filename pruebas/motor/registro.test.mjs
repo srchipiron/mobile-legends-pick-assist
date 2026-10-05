@@ -317,6 +317,11 @@ test('lo que leyó el lector viaja con la partida, saneado, y se mide contra el 
   const equipo = aciertosDelLector([{ pick: 'Estes', draft: { enemigos: ['Clint'], aliados: ['Guinevere', 'Novaria'] }, lector: { baneos: [], enemigos: ['Clint'], aliados: ['Guinevere', 'Leomord'], tuyo: 'Estes' } }]);
   eq(`${equipo.leidos}/${equipo.acertados}`, '4/3', `compañeros y pick leídos no se miden: ${JSON.stringify(equipo)}`);
   eq(equipo.fallos.Leomord, 1, 'un compañero leído que no acabó en el draft no cuenta como fallo');
+  // Cada lista contra SU lado (3.43.1): un enemigo leído como compañero o un
+  // baneo leído como enemigo es un fallo, aunque el héroe esté en el draft.
+  const cruzado = aciertosDelLector([{ pick: 'Estes', bans: ['Hirara'], draft: { enemigos: ['Clint'], aliados: ['Guinevere'] }, lector: { baneos: ['Clint'], enemigos: ['Hirara'], aliados: ['Clint', 'Estes'] } }]);
+  eq(`${cruzado.leidos}/${cruzado.acertados}`, '4/1', `un héroe leído en el lado equivocado cuenta como acierto: ${JSON.stringify(cruzado)}`);
+  eq(JSON.stringify(cruzado.fallos), JSON.stringify({ Clint: 2, Hirara: 1 }), 'los fallos de lado no se apuntan');
   // Lo que tardó cada lectura en el móvil (3.39.0): números razonables, los últimos 20, y su mediana en el informe.
   const conTiempos = sanearLectura({ baneos: ['Hirara'], enemigos: [], ms: [1200, 'x', -5, 7000.4, 1e9, ...Array.from({ length: 25 }, () => 3000)], msCaptura: [800, 900] });
   eq(conTiempos.ms.length, 20, 'los tiempos no se recortan a los últimos 20');
@@ -332,6 +337,11 @@ test('la lectura guarda los ids de las capturas del lector (solo los válidos) p
   eq(l.ids.join(), 'lectura-2026-10-01T18-02-11-123Z-3,lectura-x', `los ids no se sanean: ${l?.ids}`);
   ok(sanearLectura({ ids: ['lectura-1'] })?.ids?.length === 1, 'una lectura solo con ids (nada reconocido) se pierde');
   ok(!('ids' in sanearLectura({ enemigos: ['Clint'] })), 'sin ids aparece el campo');
+  // Las ÚLTIMAS veinte (las del final del draft son las que tienen picks) y
+  // con la forma entera: ni un id que sale de la carpeta ni uno que se alarga.
+  const muchos = Array.from({ length: 25 }, (_, i) => `lectura-${i}`);
+  eq(sanearLectura({ ids: muchos }).ids.join(), muchos.slice(-20).join(), 'no se queda con los veinte últimos ids');
+  eq(sanearLectura({ ids: ['../lectura-1', 'lectura-1/../x', 'lectura-../../x', 'lectura-2'] }).ids.join(), 'lectura-2', 'entra un id con ruta');
 });
 
 test('la lectura guarda las dudas (hueco, candidato, parecido) y lo aprendido, saneados, y el agregado los cuenta por nombre', () => {

@@ -84,6 +84,13 @@ test('medir-mias: veredicto, calibración y el modelo de hoy sobre los drafts gu
   const vacio = medir({ partidas: [], maestria: {} }, null);
   eq(vacio.n, 0);
   ok(/Todavía no hay partidas/.test(informe(vacio)), 'con cero partidas no lo dice');
+  // Sin datos del meta (3.43.1) decía «ninguna partida lleva el draft», que
+  // es falso: lo que falla es la lectura de los datos, y se dice con su error.
+  const sinMeta = medir({ partidas: partidasDe(5), maestria: {} }, null);
+  ok(sinMeta.hoy.sinDatos && sinMeta.hoy.conDraft === 5, `sin datos no lo marca: ${JSON.stringify(sinMeta.hoy)}`);
+  const txtSinMeta = informe(sinMeta, { errorDatos: 'Unexpected end of JSON input' });
+  ok(/No se pudo re-puntuar.*Unexpected end of JSON/.test(txtSinMeta) && !/Ninguna partida lleva el draft/.test(txtSinMeta), `sin datos del meta no lo dice: ${txtSinMeta.split('\n').filter((l) => /re-puntu|draft/.test(l))}`);
+  ok(/ninguna se ha podido re-puntuar/.test(informe({ ...sinMeta, hoy: { n: 0, sinDatos: false, conDraft: 5 } })), 'con drafts que no se re-puntúan dice que no hay drafts');
   const conLector = partidasDe(24).map((p, i) => (i < 2 ? { ...p, lector: { enemigos: ['Layla'], dudas: [{ hueco: 'e2', candidato: 'Belerick', parecido: 0.7 }], aprendizaje: { aprendidos: ['Fanny'], sinEncontrar: ['Pharsa'] } } } : p));
   const registro = { partidas: [...conLector, { t: 1, pick: 'Tigreal', gane: true, previa: true, recomendados: [] }], maestria: { Tigreal: { games: 500, winRate: 0.53 } } };
   const r = spawnSync(process.execPath, ['-e', `

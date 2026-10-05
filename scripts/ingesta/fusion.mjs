@@ -93,21 +93,30 @@ export function relacionesPrevias(previous) {
  */
 export function relacionesDeLaCorrida(previous, elegidas, rango) {
   const filas = Object.values(elegidas?.counters ?? {}).filter((f) => Object.keys(f ?? {}).length).length;
-  if (!filas) return { relations: relacionesPrevias(previous), frescas: 0, conservado: true };
+  if (!filas) return { relations: relacionesPrevias(previous), frescas: 0, frescasParejas: 0, conservado: true };
   const rangoPrevio = previous?.relaciones?.rango ?? previous?.rank ?? null;
   const relations = rangoPrevio && rangoPrevio !== rango ? { counters: {}, synergies: {} } : relacionesPrevias(previous);
-  return { relations, frescas: fundirRelaciones(relations, elegidas), conservado: false };
+  const cuenta = {};
+  const frescas = fundirRelaciones(relations, elegidas, cuenta);
+  return { relations, frescas, frescasParejas: cuenta.parejas, conservado: false };
 }
 
-/** Funde la matriz nueva sobre la conservada y devuelve cuantas filas son nuevas. */
-export function fundirRelaciones(relations, fresh) {
+/**
+ * Funde la matriz nueva sobre la conservada y devuelve cuántas filas de
+ * cruces son nuevas; en `cuenta.parejas`, cuántas de PAREJAS. Las parejas se cuentan aparte desde 3.43.1: con la ruta de parejas
+ * vacía y la de cruces bien, cada fila conservaba las parejas de la corrida
+ * anterior y la corrida salía fresca, con la fecha de hoy.
+ */
+export function fundirRelaciones(relations, fresh, cuenta = {}) {
   let relacionesFrescas = 0;
+  let parejas = 0;
   for (const [nombre, fila] of Object.entries(fresh.counters)) {
     if (!Object.keys(fila ?? {}).length) continue;
     relations.counters[nombre] = fila;
-    if (Object.keys(fresh.synergies[nombre] ?? {}).length) relations.synergies[nombre] = fresh.synergies[nombre];
+    if (Object.keys(fresh.synergies?.[nombre] ?? {}).length) { relations.synergies[nombre] = fresh.synergies[nombre]; parejas += 1; }
     relacionesFrescas += 1;
   }
+  cuenta.parejas = parejas;
   return relacionesFrescas;
 }
 
@@ -149,11 +158,26 @@ export function fundirBuilds(previo = {}, fresco = {}, heroList = []) {
 
 /**
  * Frescas si se han descargado casi todas: con menos, lo que hay es la
- * matriz de otro día y la fecha no puede decir «hoy».
+ * matriz de otro día y la fecha no puede decir «hoy». Cruces Y parejas
+ * (3.43.1): sin contar las parejas, una ruta de parejas vacía dejaba las de
+ * hace días con la fecha de hoy.
  */
-export function anotarFrescura(relacionesFrescas, pedidas) {
-  diagnostics.frescosRecursos = { relaciones: relacionesFrescas, pedidas };
-  return pedidas ? relacionesFrescas / pedidas >= 0.9 : false;
+export function anotarFrescura(relacionesFrescas, pedidas, parejasFrescas = relacionesFrescas) {
+  diagnostics.frescosRecursos = { relaciones: relacionesFrescas, parejas: parejasFrescas, pedidas };
+  return pedidas ? relacionesFrescas / pedidas >= 0.9 && parejasFrescas / pedidas >= 0.9 : false;
+}
+
+/**
+ * ¿Se descargaron las estadísticas que DECIDEN? Las del rango pedido y,
+ * si tiene, las de su rango de respaldo (3.43.1): la guarda de rango compara
+ * Gloria con Mítico (ventana.js) y, si Gloria no se parece, puntúa con
+ * Mítico. Con Mítico conservado de hace días la guarda comparaba contra un
+ * dato viejo (con los datos del 5 de octubre de 2026 y el Mítico del 27 de
+ * septiembre, la decisión pasaba de Mítico a Gloria y el nº1 de roam
+ * cambiaba en 112 de 300 drafts) y la fecha decía «hoy».
+ */
+export function estadisticasFrescas(frescos, rango, respaldo) {
+  return frescos.includes(rango) && (!respaldo || frescos.includes(respaldo));
 }
 
 /**

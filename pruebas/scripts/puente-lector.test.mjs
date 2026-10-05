@@ -3,7 +3,7 @@
  * scripts/lector/servir.mjs): una captura de la pantalla del draft entra,
  * salen NOMBRES; solo para la app (y su copia local), nunca la imagen.
  */
-import { mkdtempSync, readdirSync, readFileSync, writeFileSync, existsSync, utimesSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
@@ -161,6 +161,24 @@ test('un hueco sin reconocer dice en Termux a qué se quedó más cerca', async 
   });
   const linea = lineas.find((l) => /^Lectura 1/.test(l)) ?? '';
   ok(/enemigos \?\([A-Za-z.' -]+ 0\.\d\d\)/.test(linea), `la línea de Termux no dice el candidato y el parecido de un «?»: ${linea}`);
+});
+
+test('una corrección no escribe fuera de la carpeta de capturas, ni con un id que sale de ella ni con uno que se alarga (3.43.1)', async () => {
+  // La carpeta va DENTRO de otra, y fuera hay un PNG con nombre de captura:
+  // sin el ^ de la expresión, «../lectura-fuera» le escribía la verdad al
+  // lado; sin el $, «lectura-1/../../lectura-fuera» también.
+  const raiz = mkdtempSync(join(tmpdir(), 'lector-fuera-'));
+  const carpeta = join(raiz, 'capturas');
+  mkdirSync(carpeta);
+  writeFileSync(join(raiz, 'lectura-fuera.png'), 'x');
+  mkdirSync(join(carpeta, 'lectura-1'));
+  let aprendio = false;
+  await conServidor({ capturar: () => png, carpeta, aprender: async () => { aprendio = true; return { aprendido: null, informe: [] }; }, guardar: () => {} }, async (base) => {
+    const r = await fetch(`${base}/corregir`, { method: 'POST', headers: { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: ['../lectura-fuera', 'lectura-1/../../lectura-fuera', 'lectura-../../lectura-fuera'], enemigos: ['Clint'] }) });
+    eq(r.status, 200, 'la corrección con ids malos no contesta');
+  });
+  eq(readdirSync(raiz).filter((f) => f.endsWith('.verdad.json')).join(), '', `escribe fuera de la carpeta de capturas: ${readdirSync(raiz)}`);
+  ok(!aprendio, 'aprende de una captura de fuera de la carpeta');
 });
 
 test('la app distingue «no veo la tablet» y «falta emparejar» de un fallo de captura', async () => {

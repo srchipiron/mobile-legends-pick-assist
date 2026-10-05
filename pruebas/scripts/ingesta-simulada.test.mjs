@@ -96,6 +96,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   let academyVacia = false;
   let fallosCountersPendientes = 0;
   let gloriaRuidosa = false;
+  // 3.43.1: las estadísticas de Mítico (el rango de respaldo) caídas, y la
+  // ruta de parejas contestando sin ningún par.
+  let fallaMitico = false; let parejasVacias = false;
   // Un rework que le quita el último control (3.37.0): la ficha llega sin nada que contar.
   let kitSinControl = false;
   // Mítico cortado a mitad de la segunda tanda (3.37.0): solo los primeros tres héroes traen cruces.
@@ -115,6 +118,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       // puede tirar sola, porque es un extra que no debe tumbar la corrida.
       const corta = u.searchParams.get('days') === '3';
       if (corta && fallaRecientes) { res.statusCode = 500; return res.end('{}'); }
+      if (fallaMitico && u.searchParams.get('rank') === 'mythic') { res.statusCode = 500; return res.end('{}'); }
       marca(`${corta ? 'rank3' : 'rank'}:${u.searchParams.get('rank')}`);
       return json({ code: 0, data: { records: heroes.map((h) => ({ data: {
         main_heroid: h.id, main_hero: { data: { name: h.name } },
@@ -157,6 +161,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     const signoDelRango = gloriaRuidosa && u.searchParams.get('rank') === 'glory' ? -1 : 1;
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && miticoAMedias && u.searchParams.get('rank') === 'mythic' && ++miticosServidos > 3) return json({ data: { sub_hero: [] } });
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta)) { marca('academy'); marca(`academy:${u.searchParams.get('rank')}`); return json(academyVacia ? { data: { sub_hero: [] } } : pares(4, signoDelRango)); }
+    if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta) && parejasVacias) return json({ data: { sub_hero: [] } });
     if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta)) { marca('compat'); marca(`compat:${u.searchParams.get('rank')}`); return json(pares(3, signoDelRango)); }
     if (ruta === '/api/equipment/expanded') {
       marca('equipo');
@@ -296,6 +301,43 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     // Y la etiqueta de rango es la de la matriz conservada, no la pedida (3.37.0: salía la de Mítico etiquetada como Gloria).
     eq(JSON.stringify(d2.relaciones ?? null), JSON.stringify(guardada.relaciones ?? null), `la matriz conservada sale con otra etiqueta de rango: ${JSON.stringify(d2.relaciones)}`);
     ok(comparar(d2, guardada).peores.some((p) => p.clave === 'relacionesFrescas'), 'el comparador acepta una corrida que no ha descargado la matriz');
+
+    // Las estadísticas de Mítico caídas con todo lo demás bien (3.43.1): la
+    // guarda de rango compara Gloria con Mítico y puntúa con él, así que un
+    // Mítico conservado de otra corrida no puede salir con la fecha de hoy.
+    fallaCounters = false; fallaRecientes = false; fallaMitico = true;
+    const outM = resolve(dir, 'sin-mitico.json');
+    const rM = await correrIngesta([
+      '--base', `http://127.0.0.1:${puerto}/api`,
+      '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', outM, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
+      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
+    ]);
+    eq(rM.status, 0, `la ingesta sin Mítico no acaba bien: ${(rM.stdout + rM.stderr).slice(-400)}`);
+    const dM = JSON.parse(readFileSync(outM, 'utf8'));
+    ok(golpes['rank:mythic'] > 1, 'con --ranks glory no se pide el rango de respaldo');
+    ok(dM.diagnostics.frescos.includes('glory') && !dM.diagnostics.frescos.includes('mythic'), `rangos frescos: ${dM.diagnostics.frescos}`);
+    eq(dM.diagnostics.frescosRecursos?.parejas > 100, true, `con la matriz entera no cuenta las parejas: ${JSON.stringify(dM.diagnostics.frescosRecursos)}`);
+    eq(dM.generatedAt, guardada.generatedAt, 'con Mítico conservado la corrida se fecha como si fuera nueva');
+    eq(dM.diagnostics.conservado, true, 'no dice que Mítico es de otra corrida');
+    ok(comparar(dM, guardada).peores.some((p) => p.clave === 'rangoFresco'), 'el comparador acepta una corrida sin el rango de respaldo');
+
+    // Y la ruta de parejas sin ningún par, con los cruces bien (3.43.1): cada
+    // fila conservaba las parejas de la corrida anterior y salía fresca.
+    fallaMitico = false; parejasVacias = true;
+    const outP = resolve(dir, 'sin-parejas.json');
+    const rP = await correrIngesta([
+      '--base', `http://127.0.0.1:${puerto}/api`,
+      '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', outP, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
+      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
+    ]);
+    eq(rP.status, 0, `la ingesta sin parejas no acaba bien: ${(rP.stdout + rP.stderr).slice(-400)}`);
+    const dP = JSON.parse(readFileSync(outP, 'utf8'));
+    ok(dP.diagnostics.frescos.includes('mythic'), `Mítico no se descargó: ${dP.diagnostics.frescos}`);
+    eq(dP.diagnostics.frescosRecursos?.parejas, 0, `cuenta parejas frescas sin haberlas descargado: ${JSON.stringify(dP.diagnostics.frescosRecursos)}`);
+    ok(dP.diagnostics.frescosRecursos?.relaciones > 100, `los cruces no se descargaron: ${JSON.stringify(dP.diagnostics.frescosRecursos)}`);
+    eq(dP.generatedAt, guardada.generatedAt, 'con las parejas conservadas la corrida se fecha como si fuera nueva');
+    ok(comparar(dP, guardada).peores.some((p) => p.clave === 'relacionesFrescas'), 'el comparador acepta una corrida sin parejas nuevas');
+    parejasVacias = false;
 
     // Tercera corrida: la ficha de los héroes caída (speciality se conserva
     // de la corrida anterior, que se pasa con --previo), la ruta principal

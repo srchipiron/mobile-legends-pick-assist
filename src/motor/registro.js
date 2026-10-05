@@ -77,11 +77,25 @@ export function aciertosDelLector(partidas = []) {
   let leidos = 0, acertados = 0;
   for (const p of con) {
     const l = sanearLectura(p.lector);
-    const finales = new Set([...(p.bans ?? []), ...(p.draft?.enemigos ?? []), ...(p.draft?.aliados ?? []), ...(p.pick ? [p.pick] : [])].map(nombreClave));
-    for (const n of [...l.baneos, ...l.enemigos, ...(l.aliados ?? []), ...(l.tuyo ? [l.tuyo] : [])]) {
-      leidos += 1;
-      if (finales.has(nombreClave(n))) acertados += 1;
-      else fallos[n] = (fallos[n] ?? 0) + 1;
+    // Cada lista contra SU lado del draft final (3.43.1): contra todos a la
+    // vez, un enemigo leído como baneo o un baneo leído como compañero
+    // contaba como acierto (11 de 677 en las partidas del 5 de octubre de
+    // 2026). Los compañeros, con tu pick: sin tu fila reconocida el lector
+    // los devuelve con el tuyo dentro.
+    const S = (lista) => new Set((lista ?? []).map(nombreClave));
+    const tuyo = p.pick ? [p.pick] : [];
+    const lados = [
+      [l.baneos, S(p.bans)],
+      [l.enemigos, S(p.draft?.enemigos)],
+      [l.aliados ?? [], S([...(p.draft?.aliados ?? []), ...tuyo])],
+      [l.tuyo ? [l.tuyo] : [], S(tuyo)],
+    ];
+    for (const [leidas, finales] of lados) {
+      for (const n of leidas) {
+        leidos += 1;
+        if (finales.has(nombreClave(n))) acertados += 1;
+        else fallos[n] = (fallos[n] ?? 0) + 1;
+      }
     }
   }
   // Lo que dudó (3.28.0): a quién se parecía cada hueco sin reconocer, y qué

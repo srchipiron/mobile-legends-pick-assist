@@ -178,6 +178,17 @@ test('al fundir la maestría gana la de más partidas AUNQUE la otra tenga fecha
   const sinFecha = { Diggie: { games: 3821, winRate: 0.55 } };
   eq(fundirPerfil({ mastery: sinFecha }, { mastery: buena }).mastery.Diggie.desde, 100, 'en el empate se pierde la fecha');
   eq(fundirPerfil({ mastery: buena }, { mastery: sinFecha }).mastery.Diggie.desde, 100, 'en el empate se pierde la fecha (al revés)');
+  // Empate y las dos con fecha: se queda la de este móvil (lleva las
+  // correcciones), aunque la de fuera sea más reciente o tenga otro winrate.
+  const otraFechada = { Diggie: { games: 3821, winRate: 0.6, desde: 300 } };
+  eq(fundirPerfil({ mastery: buena }, { mastery: otraFechada }).mastery.Diggie.winRate, 0.55, 'en el empate con las dos fechadas gana la de fuera');
+});
+
+test('al fundir, el rango, la línea y el idioma son los de este móvil; los de fuera solo rellenan lo que falta', () => {
+  const r = fundirPerfil({ rango: 'mythic', linea: 'exp', idioma: 'en' }, { rango: 'glory', linea: 'roam', idioma: 'es' });
+  eq(`${r.rango} ${r.linea} ${r.idioma}`, 'mythic exp en', 'importar un código cambia las preferencias de este móvil');
+  const vacio = fundirPerfil({}, { rango: 'glory', linea: 'roam', idioma: 'es' });
+  eq(`${vacio.rango} ${vacio.linea} ${vacio.idioma}`, 'glory roam es', 'en un móvil sin preferencias no se rellenan con las del código');
 });
 
 await terminar('motor/perfil');

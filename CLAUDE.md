@@ -1209,6 +1209,29 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   `toques.e2e` (las dos de deshacer y la de «sin deshacer, sale al acabar
   el plazo»). Un «Deshacer» solo deshace lo que aún no ha salido de la
   app: lo que se manda fuera espera a su plazo.
+- **La frescura medida en lo pedido, no en lo que DECIDE** (hasta 3.43.1,
+  `silent-failure-hunter`, sin constancia de que pasara): la fecha del
+  fichero miraba las estadísticas de Gloria y las filas de CRUCES, pero la
+  guarda de rango compara Gloria con Mítico y puntúa con él, y cada fila de
+  cruces arrastraba las parejas de la corrida anterior si la ruta de
+  parejas venía vacía. Con el Mítico del 27 de septiembre y los datos del 5
+  de octubre la guarda pasaba de Mítico a Gloria (r 0,76 → 0,87) y el nº1
+  de roam cambiaba en 112 de 300 drafts, con la fecha de hoy, el comparador
+  conforme y el diagnóstico «Datos frescos». Hoy `estadisticasFrescas`
+  (fusion.mjs) exige también el rango de respaldo, la ingesta lo pide
+  aunque `--ranks` no lo lleve, `anotarFrescura` cuenta las parejas aparte
+  (`frescosRecursos.parejas`), el comparador mira las dos cosas
+  (`rangoFresco`, `relacionesFrescas`) y el diagnóstico dice QUÉ faltó
+  (`queFaltaDeLaCorrida`) y si la fuerza sale de un rango no descargado. En
+  la misma pasada: la fila de salud no llevaba `conRol` ni `conSpeciality`
+  aunque estaban en `FIJAS` (trinquete sin fondo: diez corridas perdiendo
+  un 9% se aceptaban, 133 → 55; hoy la fila lleva TODAS las de `FIJAS`,
+  contadas con `medir`, y la prueba lo exige para todas), el aviso de «dos
+  poblaciones» comparaba tu rango con `meta.rank` y no con
+  `relaciones.rango`, `aciertosDelLector` comparaba cada nombre leído con
+  todo el draft (11 de 677 eran del lado equivocado) y `medir-mias` se
+  tragaba el error de leer el meta. Toda marca de frescura tiene que cubrir
+  lo que DECIDE, no solo lo que se pidió.
 
 ## El modelo (2.0)
 

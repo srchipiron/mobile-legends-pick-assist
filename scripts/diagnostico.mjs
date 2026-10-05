@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { appendFile, mkdir } from 'node:fs/promises';
 import { diagnosticar, medirRuido, cifrasDe } from '../src/motor/diagnostico/index.js';
 import { prepararDatos } from '../src/motor/draft.js';
+import { medir, FIJAS } from './comparar-ingesta.mjs';
 import { LINEAS } from '../src/motor/catalogo.js';
 import { densidadCounters } from '../src/motor/matrices.js';
 
@@ -170,6 +171,12 @@ if (rutaHistorial) {
     coherenciaCruces: datos.meta.relaciones?.coherencia?.counters != null ? Number(datos.meta.relaciones.coherencia.counters.toFixed(3)) : null,
     coherenciaParejas: datos.meta.relaciones?.coherencia?.synergies != null ? Number(datos.meta.relaciones.coherencia.synergies.toFixed(3)) : null,
   };
+  // Todo recuento que el comparador mira contra el máximo del historial
+  // (FIJAS), contado como lo cuenta él (3.43.1): `conRol` y `conSpeciality`
+  // estaban en FIJAS sin columna aquí, así que su máximo era siempre 0 y
+  // diez corridas perdiendo un 9% cada una se aceptaban (133 → 55).
+  const medido = medir(meta);
+  for (const k of FIJAS) if (!(k in fila)) fila[k] = medido[k];
   await mkdir(dirname(resolve(ROOT, rutaHistorial)), { recursive: true });
   await appendFile(resolve(ROOT, rutaHistorial), `${JSON.stringify(fila)}\n`);
   console.log(`Anotado en ${rutaHistorial}`);
