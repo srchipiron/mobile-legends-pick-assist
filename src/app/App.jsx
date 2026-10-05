@@ -22,7 +22,8 @@ import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
 import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, cuerpoDeFotogramas, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
-import { draftCompleto } from './estado/useDraft.js';
+import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
+import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
 import { ApuntarPartida } from './componentes/ApuntarPartida.jsx';
 import { HistorialPartidas } from './componentes/HistorialPartidas.jsx';
@@ -140,17 +141,37 @@ export default function App() {
   const fotogramas = useRef([]);
   const vigilando = useRef(false);
   const ahora = useAhora();
-  /** Sube lo vigilado (si hay) y lo olvida. Sin token no sube: se descarta. */
-  const volcarFotogramas = (resultado = null) => {
-    const lista = fotogramas.current;
-    fotogramas.current = [];
-    if (!lista.length || !envio.activo) return;
-    envio.subirAparte({ ...cuerpoDeFotogramas({ fotogramas: lista, resultado, version: __APP_VERSION__ }), etiquetas: ['pantalla'] });
+  /** Sube unas pantallas (si hay). Sin token no sube: se descartan. */
+  const envioActual = useRef(envio);
+  envioActual.current = envio;
+  const subirFotogramas = (lista, resultado = null) => {
+    if (!lista.length || !envioActual.current.activo) return;
+    envioActual.current.subirAparte({ ...cuerpoDeFotogramas({ fotogramas: lista, resultado, version: __APP_VERSION__ }), etiquetas: ['pantalla'] });
   };
-  // Al dejar de estar completo el draft (nuevo draft, vaciar) se vuelcan sin resultado.
+  /** Las pantallas vigiladas, fuera de la lista (las de este draft ya no se vuelven a subir). */
+  const sacarFotogramas = () => { const lista = fotogramas.current; fotogramas.current = []; return lista; };
+  // Lo que un «Deshacer» aún puede echar atrás espera a su plazo (3.42.0, diferido.js).
+  const diferido = useRef(null);
+  if (!diferido.current) diferido.current = crearDiferido();
+  // Si la app se va (se cierra, se recarga), lo pendiente sale antes.
+  useEffect(() => {
+    const salir = () => diferido.current.ejecutar();
+    window.addEventListener('pagehide', salir);
+    return () => window.removeEventListener('pagehide', salir);
+  }, []);
+  // Al dejar de estar completo el draft (nuevo draft, vaciar) se suben sin
+  // resultado, pero pasado el plazo del «Deshacer»: si vuelve el MISMO draft,
+  // vuelven sus pantallas y no se ha subido nada (3.42.0).
   const completoAntes = useRef(draft.completoDesde);
   useEffect(() => {
-    if (completoAntes.current && !draft.completoDesde) volcarFotogramas(null);
+    const antes = completoAntes.current;
+    if (antes && !draft.completoDesde) {
+      const lista = sacarFotogramas();
+      if (lista.length) diferido.current.programar(antes, { lista }, DESHACER_MS + 1000, ({ lista: l }) => subirFotogramas(l, null));
+    } else if (draft.completoDesde) {
+      const vuelve = diferido.current.cancelar(draft.completoDesde);
+      if (vuelve) fotogramas.current = [...vuelve.lista, ...fotogramas.current];
+    }
     completoAntes.current = draft.completoDesde;
   }, [draft.completoDesde]);
 
@@ -160,7 +181,7 @@ export default function App() {
    */
   // El draft (su `completoDesde`) cuya partida ya se apuntó: la vigilancia no la apunta otra vez.
   const apuntadaSola = useRef(null);
-  const guardarPartida = (pick, gane, { t = null, origen = null } = {}) => {
+  const guardarPartida = (pick, gane, { t = null, origen = null, deshacible = false } = {}) => {
     const heroe = datos.porNombre.get(pick);
     const est = heroe ? rec.estimacionCon(heroe) : null;
     personal.apuntarPartida({
@@ -176,10 +197,17 @@ export default function App() {
     });
     // Y al lector, lo que había de verdad, para que aprenda (3.27.0).
     corregirLectura({ ids: draft.lectura?.ids ?? [], enemigos: draft.enemigos, baneos: draft.baneos });
-    // Y el resultado con sus fotogramas, para que aprenda la palabra de la tabla (3.32.0): antes de volcarlos.
-    ensenarResultado({ ids: fotogramas.current.map((f) => f.id), gane });
-    // Los fotogramas del final, con el resultado (3.30.0): antes de reiniciar.
-    volcarFotogramas(gane ? 'gane' : 'perdi');
+    // Y el resultado con sus fotogramas, para que aprenda la palabra de la
+    // tabla (3.32.0), y los fotogramas al proyecto con el resultado (3.30.0).
+    // Si la partida se apuntó sola, después del plazo de su «Deshacer»
+    // (3.42.0): deshecha, el lector no aprende nada de ella.
+    const lista = sacarFotogramas();
+    const ensenarYSubir = ({ lista: l, gane: g }) => {
+      ensenarResultado({ ids: l.map((f) => f.id), gane: g });
+      subirFotogramas(l, g ? 'gane' : 'perdi');
+    };
+    if (deshacible && draft.completoDesde) diferido.current.programar(draft.completoDesde, { lista, gane }, DESHACER_APUNTADA_MS + 1000, ensenarYSubir);
+    else ensenarYSubir({ lista, gane });
     // Este draft ya está apuntado (a mano o sola): un tic de la vigilancia
     // que estuviera esperando al lector no lo vuelve a apuntar (3.37.0).
     if (draft.completoDesde) apuntadaSola.current = draft.completoDesde;
@@ -196,7 +224,7 @@ export default function App() {
     // con el nº1 delante se apuntaba otro héroe (el lector fija tu fila, sea de la línea que sea).
     const pick = draft.miPick ?? rec.eleccion?.heroe.name;
     if (!pick) return false;
-    guardarPartida(pick, gane, { t, origen: 'lector' });
+    guardarPartida(pick, gane, { t, origen: 'lector', deshacible: true });
     setApuntada({ t, gane, antes });
     return true;
   };
@@ -220,6 +248,8 @@ export default function App() {
   const deshacerApuntada = () => {
     if (!apuntada) return;
     personal.olvidarPartida(apuntada.t);
+    // Lo que iba a enseñarse al lector y subirse no sale y sus pantallas
+    // vuelven (3.42.0): lo hace el efecto de `completoDesde` al volver el draft.
     // Con la marca guardada en el draft: tras una recarga (la app se
     // actualiza sola) no se vuelve a apuntar lo que deshiciste (3.37.0).
     draft.restaurar({ ...apuntada.antes, apuntadaSola: apuntada.antes.completoDesde });

@@ -195,10 +195,12 @@ await prueba('con «Leer solo» y el draft completo, el lector vigila el final p
   const aviso = pagina.locator('.aviso-deshacer');
   ok(/apuntada sola/.test(await aviso.innerText()) && /[Pp]erdida/.test(await aviso.innerText()), `el aviso no dice que se apuntó sola y cómo: ${await aviso.innerText()}`);
   eq((await leer(pagina)).enemies.length, 0, 'el draft no se reinicia al apuntar');
-  // Lo apuntado solo vuelve al lector como enseñanza (la tabla contestada «perdida» se suma a la de serie).
-  let estado = null;
-  for (let i = 0; i < 20 && estado?.resultados?.perdi !== 2; i++) { await pagina.waitForTimeout(250); estado = await (await fetch(`http://127.0.0.1:${PUERTO}/estado`)).json(); }
-  eq(estado?.resultados?.perdi, 2, `el lector no aprende de la partida apuntada sola: ${JSON.stringify(estado?.resultados)}`);
+  // Lo apuntado solo vuelve al lector como enseñanza, pero DESPUÉS del plazo
+  // de su «Deshacer» (3.42.0; lo de después del plazo lo mira toques.e2e):
+  // mientras se puede deshacer, el lector sigue con la tabla de serie.
+  await pagina.waitForTimeout(2000);
+  const estado = await (await fetch(`http://127.0.0.1:${PUERTO}/estado`)).json();
+  eq(estado?.resultados?.perdi, 1, `el lector aprende de la partida apuntada sola antes de poder deshacerla: ${JSON.stringify(estado?.resultados)}`);
   // «Deshacer» olvida la partida y devuelve el draft, y no se vuelve a apuntar sola.
   await aviso.getByRole('button', { name: 'Deshacer' }).click(); await pagina.waitForTimeout(500);
   eq(((await leer(pagina, 'roam-picker:partidas')) ?? []).length, 0, 'deshacer no olvida la partida');

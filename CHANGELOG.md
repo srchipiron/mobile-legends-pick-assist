@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.42.0
+
+- «Deshacer» ya deshace del todo: si vacías el draft con «Nuevo draft» y lo
+  devuelves, las pantallas del final de esa partida siguen con ella (antes
+  ya se habían subido al proyecto sin el resultado); y si deshaces una
+  partida que se apuntó sola, el lector no aprende «ganada» o «perdida» de
+  ella. Lo que va al proyecto y al lector espera a que pase el plazo del
+  «Deshacer».
+
 ## 3.41.0
 
 - Las caras de los héroes rehechos ya salen con su dibujo nuevo: Masha y

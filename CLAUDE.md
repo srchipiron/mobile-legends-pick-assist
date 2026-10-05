@@ -1195,6 +1195,20 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   plazo de una lectura (20 s): hoy `PLAZO_CORREGIR_MS` (3 min). No se puede
   medir cuántas se perdían: una corrección sin nada aprendido tampoco deja
   `aprendizaje` (16 de 39 lo llevan).
+- **Un «Deshacer» que no deshacía lo que ya había salido** (3.23.0/3.32.0
+  → 3.42.0): «Nuevo draft» subía en el acto las pantallas del final sin
+  resultado (y al devolver el draft con «Deshacer» ya no estaban), y una
+  partida apuntada sola le enseñaba al lector «ganada» o «perdida» y subía
+  sus pantallas antes de que se pudiera deshacer. Hoy lo que sale de la app
+  (al proyecto o al lector) espera al plazo de su «Deshacer»
+  (`crearDiferido`, src/app/diferido.js, con la clave del draft:
+  `completoDesde`); si ese draft vuelve, se cancela y las pantallas vuelven
+  a la lista; si llega otra cosa que esperar o la app se va (`pagehide`),
+  lo pendiente sale ya. `corregirLectura` sigue saliendo en el acto: la
+  verdad del draft no cambia al deshacer. Pruebas en `app/diferido.test` y
+  `toques.e2e` (las dos de deshacer y la de «sin deshacer, sale al acabar
+  el plazo»). Un «Deshacer» solo deshace lo que aún no ha salido de la
+  app: lo que se manda fuera espera a su plazo.
 
 ## El modelo (2.0)
 
@@ -3158,12 +3172,8 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
 
 ## Lo que queda pendiente
 
-- **Lo que dejó abierto la pasada de ECC de 3.40.0**: «Nuevo draft» +
-  «Deshacer» devuelve el draft pero sus fotogramas ya se volcaron sin
-  resultado, y deshacer una partida apuntada sola no deshace lo que se le
-  enseñó al lector. Cerrados en 3.41.0 (ver «Errores ya cometidos»): los
-  retratos de los rehechos, las pantallas sin red y el plazo de
-  `/corregir`. **De seguridad, decisiones de Javi** (`security-reviewer`): la app
+- **Lo que dejó abierto la pasada de ECC de 3.40.0**: cerrado en 3.41.0
+  y 3.42.0 (ver «Errores ya cometidos»). **De seguridad, decisiones de Javi** (`security-reviewer`): la app
   comparte origen (`srchipiron.github.io`) con otra app suya, así que
   cualquier página de ese origen lee el `localStorage` (el token) y el
   lector la acepta como origen; un dominio propio o mover la otra app lo
