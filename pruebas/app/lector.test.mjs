@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, corregirLectura, dudasDeLectura, dudasQueQuedan, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -171,4 +171,24 @@ test('el final de la partida: cuándo se pregunta al lector, cómo se le avisa, 
   ok(/sin apuntar/.test(cuerpoDeFotogramas({ fotogramas: fotos.slice(0, 1) }).titulo), 'sin resultado no lo dice');
 });
 
-await terminar('app/lector');
+await test('la corrección espera a que el lector aprenda, no los 20 s de una lectura (3.41.0)', async () => {
+  // Aprender son decenas de segundos por captura en un móvil: con 20 s la
+  // app cortaba y lo aprendido no llegaba a la partida.
+  // El reloj se pone ANTES del primer `await`: se mira qué plazo pide y se
+  // devuelve el temporizador de verdad en el acto (las otras pruebas del
+  // fichero corren a la vez).
+  const plazos = [];
+  const original = globalThis.setTimeout;
+  globalThis.setTimeout = (f, ms, ...r) => { plazos.push(ms); return original(f, ms, ...r); };
+  let pendiente;
+  try {
+    pendiente = corregirLectura({ ids: ['lectura-1'], enemigos: ['Layla'], pedir: async () => new Response('{"aprendido":true}', { status: 200 }) });
+  } finally {
+    globalThis.setTimeout = original;
+  }
+  ok((await pendiente)?.aprendido, 'la corrección no devuelve lo aprendido');
+  ok(plazos.length === 1 && plazos[0] === PLAZO_CORREGIR_MS, `la corrección corta con otro plazo: ${plazos}`);
+  ok(PLAZO_CORREGIR_MS >= 6 * PLAZO_LECTOR_MS, `el plazo de la corrección no da para aprender de varias capturas: ${PLAZO_CORREGIR_MS}`);
+});
+
+terminar('app/lector');

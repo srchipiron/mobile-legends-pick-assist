@@ -35,12 +35,25 @@ export function Imagen({ src, alt, className, tam }) {
   );
 }
 
+// La huella del contenido de cada imagen publicada (vite.config.js, 3.41.0).
+const HUELLAS = typeof __HUELLAS__ === 'undefined' ? {} : __HUELLAS__;
+
+/**
+ * La ruta de una cara o un icono con la huella de su contenido (`?v=`): la
+ * caché del móvil las guarda para siempre (`CacheFirst`), así que sin ella
+ * una imagen rehecha con el mismo nombre no llegaba nunca.
+ */
+export function rutaDeImagen(carpeta, id, ext, huellas = HUELLAS) {
+  const v = huellas?.[carpeta]?.[id];
+  return `./${carpeta}/${id}${ext}${v ? `?v=${v}` : ''}`;
+}
+
 /**
  * La cara de un héroe, por id (un id no cambia aunque Moonton reescriba el
  * nombre). `alt` se pasa como `title`: en los chips, donde el nombre ya está
  * escrito al lado, se pone a '' para no sacar un tooltip que no dice nada.
  */
-export const Cara = ({ heroe, className, tam, alt = heroe?.name }) => <Imagen src={`./heroes/${heroe?.id}.jpg`} alt={alt} className={className} tam={tam} />;
+export const Cara = ({ heroe, className, tam, alt = heroe?.name }) => <Imagen src={rutaDeImagen('heroes', heroe?.id, '.jpg')} alt={alt} className={className} tam={tam} />;
 
 /** El icono de un objeto. */
-export const Icono = ({ id, nombre }) => <Imagen src={`./objetos/${id}.png`} alt={nombre} className="obj-icono" tam={28} />;
+export const Icono = ({ id, nombre }) => <Imagen src={rutaDeImagen('objetos', id, '.png')} alt={nombre} className="obj-icono" tam={28} />;

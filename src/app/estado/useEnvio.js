@@ -3,7 +3,7 @@ import { CLAVES, leer, guardar } from './almacen.js';
 import { useAhora } from './useAhora.js';
 import { recogerPerfil, exportarPerfil } from '../../motor/perfil.js';
 import { subirIncidencia, comentarIncidencia } from '../github.js';
-import { huellaDe, sanearEnvio, tocaSubir, ESPERA_MS } from '../envio.js';
+import { huellaDe, sanearEnvio, tocaSubir, encolarAparte, vaciarCola, ESPERA_MS } from '../envio.js';
 
 /**
  * La subida automática de tus partidas (3.10.0). Con un token de GitHub
@@ -55,17 +55,41 @@ export function useEnvio({ perfil, t }) {
   }, [t, cambiar]);
 
   /**
-   * Una incidencia NUEVA con un cuerpo y, si lo hay, un comentario (3.29.0,
-   * temporal: la pantalla de resultado reducida). El token no sale de aquí.
+   * Una incidencia NUEVA con un cuerpo y, si lo hay, un comentario (3.29.0:
+   * las pantallas del final). Entra en una cola y se sube en cuanto se puede
+   * (3.41.0): sin red no se pierde, se reintenta al volver. El token no sale
+   * de aquí.
    */
-  const subirAparte = useCallback(async ({ titulo, cuerpo, comentario = null, etiquetas = [] }) => {
+  const cola = useRef([]);
+  const subiendoCola = useRef(false);
+  const vaciar = useCallback(async () => {
     const { estado: e } = ultimo.current;
-    if (!e.token) return { error: 'sinToken' };
-    const r = await subirIncidencia({ numero: null, titulo, cuerpo, etiquetas }, e.token);
-    if (r.error) return r;
-    if (comentario && r.numero) await comentarIncidencia({ numero: r.numero, cuerpo: comentario }, e.token);
-    return r;
+    if (!e.token || subiendoCola.current || !cola.current.length) return;
+    subiendoCola.current = true;
+    try {
+      const lista = cola.current;
+      const queda = await vaciarCola(lista, {
+        subir: ({ titulo, cuerpo, etiquetas = [] }) => subirIncidencia({ numero: null, titulo, cuerpo, etiquetas }, e.token),
+        comentar: ({ numero, cuerpo }) => comentarIncidencia({ numero, cuerpo }, e.token),
+      });
+      // Lo encolado mientras se subía va detrás de lo que quedó.
+      cola.current = [...queda, ...cola.current.slice(lista.length)];
+    } finally {
+      subiendoCola.current = false;
+    }
   }, []);
+  const subirAparte = useCallback((envio) => {
+    cola.current = encolarAparte(cola.current, envio);
+    return vaciar();
+  }, [vaciar]);
+  // Reintento: cada minuto y al volver a la app (`ahora`), y al volver la red.
+  useEffect(() => { vaciar(); }, [ahora, estado.token, vaciar]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const alVolver = () => { vaciar(); };
+    window.addEventListener('online', alVolver);
+    return () => window.removeEventListener('online', alVolver);
+  }, [vaciar]);
 
   /** Activar (con el token) o quitar (null). Quitarlo conserva la incidencia: al volver a activarlo sigue en la misma. */
   const guardarToken = useCallback((token) => {

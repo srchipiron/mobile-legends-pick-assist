@@ -3,7 +3,7 @@
  * cuándo toca y que lo guardado no pueda reventar la app.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { huellaDe, sanearEnvio, tocaSubir, ESPERA_MS, REINTENTO_MS } from '../../src/app/envio.js';
+import { huellaDe, sanearEnvio, tocaSubir, encolarAparte, vaciarCola, MAX_APARTE, ESPERA_MS, REINTENTO_MS } from '../../src/app/envio.js';
 import { recogerPerfil } from '../../src/motor/perfil.js';
 
 const partidas = [{ t: 2, pick: 'Atlas', gane: true, recomendados: ['Atlas'] }, { t: 1, pick: 'Tigreal', gane: false, recomendados: [] }];
@@ -46,4 +46,37 @@ test('tocaSubir: con token, con partidas, con red, con datos nuevos, y sin macha
   ok(ESPERA_MS >= 1000 && ESPERA_MS <= 10000, `una espera de ${ESPERA_MS} ms no es «unos segundos»`);
 });
 
-await terminar('app/envio');
+await test('las pantallas del final que no se pudieron subir esperan en cola y se suben al volver la red (3.41.0)', async () => {
+  const subidas = [], comentarios = [];
+  let red = false;
+  const api = {
+    subir: async (e) => { if (!red) return { error: 'red' }; subidas.push(e.titulo); return { numero: 100 + subidas.length }; },
+    comentar: async (c) => { if (!red) return { error: 'red' }; comentarios.push(c); return { url: 'x' }; },
+  };
+  let cola = encolarAparte([], { titulo: 'A', cuerpo: 'a', comentario: 'ca' });
+  cola = encolarAparte(cola, { titulo: 'B', cuerpo: 'b' });
+  cola = await vaciarCola(cola, api);
+  eq(cola.map((e) => e.titulo).join(), 'A,B', 'sin red se pierde lo que no se subió');
+  red = true;
+  cola = await vaciarCola(cola, api);
+  eq(cola.length, 0, 'con red no se sube lo que esperaba');
+  eq(subidas.join(), 'A,B', 'no se suben en orden, o se repiten');
+  eq(JSON.stringify(comentarios), JSON.stringify([{ numero: 101, cuerpo: 'ca' }]), 'el comentario no va a su incidencia');
+  // La incidencia se crea y el comentario falla: queda SOLO el comentario, con su número.
+  let falla = true;
+  const aMedias = await vaciarCola([{ titulo: 'C', cuerpo: 'c', comentario: 'cc' }], {
+    subir: async () => ({ numero: 7 }),
+    comentar: async () => (falla ? { error: 'red' } : { url: 'x' }),
+  });
+  ok(aMedias.length === 1 && aMedias[0].numero === 7, `una incidencia creada se volvería a crear: ${JSON.stringify(aMedias)}`);
+  let creadas = 0;
+  falla = false;
+  eq((await vaciarCola(aMedias, { subir: async () => { creadas += 1; return { numero: 8 }; }, comentar: async () => ({ url: 'x' }) })).length, 0, 'el comentario pendiente no se sube');
+  eq(creadas, 0, 'la incidencia se crea dos veces');
+  // Con tope: se tiran las más viejas.
+  let llena = [];
+  for (let i = 0; i < MAX_APARTE + 2; i++) llena = encolarAparte(llena, { titulo: `T${i}` });
+  eq(llena.map((e) => e.titulo).join(), Array.from({ length: MAX_APARTE }, (_, i) => `T${i + 2}`).join(), 'la cola no tiene tope o tira las nuevas');
+});
+
+terminar('app/envio');

@@ -1162,6 +1162,39 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   la descarga se niega a llamar a una ruta de cuentas (`RUTA_PROHIBIDA`,
   en el descubrimiento y en `request`). Un reintento que afloja tiene que
   saber qué parámetros dicen DE QUÉ es el dato.
+- **Una imagen con el mismo nombre que cambia de dibujo** (hasta 3.41.0)
+  — la ingesta solo bajaba las caras que FALTABAN, así que Masha y Bruno,
+  rehechos en 2.2.16 (16 de septiembre de 2026), siguieron tres semanas
+  con la cara vieja en las tarjetas aunque la API ya diera otra URL
+  (comprobado el 5 de octubre: el fichero guardado y el de la URL de hoy
+  eran dibujos distintos). Y aunque se hubiera bajado, el móvil la tenía en
+  `CacheFirst` con el mismo nombre y no la habría pedido nunca; y el
+  despliegue copiaba con `cp -n`, que no pisa. Hoy cada carpeta lleva
+  `fuentes.json` (id → URL; `bajarImagenes` baja de nuevo si cambia), el
+  despliegue parte de una copia de public/ y copia encima, y la app pide
+  cada imagen con `?v=` y la huella de SU CONTENIDO (`__HUELLAS__`,
+  `scripts/huellas.mjs`, en la clave de la caché): una bajada fallida no
+  deja un dibujo viejo con una clave nueva. Lo que se guarda en caché
+  «para siempre» necesita en el nombre algo que cambie con el contenido.
+  Y lo destapó de rebote: la prueba «la ingesta arranca sin errores»
+  corría sin `--iconos` ni `--retratos`, así que escribía en public/ (no
+  se notaba porque todo «ya estaba»); con `fuentes.json` nuevo bajó las
+  206 imágenes del CDN de verdad dentro del repositorio. Hoy va a una
+  copia y comprueba que public/ no se toca. Al añadir una salida a la
+  ingesta, mira qué pruebas la corren sin decirle dónde escribir.
+  El 5 de octubre de 2026, al estrenarlo, cambiaron ocho caras (Masha,
+  Bruno, Brody, Paquito, Clint, Kadita, Badang, Luo Yi).
+- **Subidas que se daban por hechas antes de hacerse** (3.30.0 → 3.41.0):
+  `volcarFotogramas` vaciaba la lista y llamaba a `subirAparte` sin mirar
+  qué contestaba: sin red al apuntar, las pantallas del final de esa
+  partida se perdían. Hoy van a una cola (`encolarAparte`/`vaciarCola` en
+  envio.js, `MAX_APARTE` 4, en memoria) que se reintenta cada minuto y con
+  el evento `online`; si la incidencia se crea y el comentario falla, queda
+  solo el comentario con su número. Y `/corregir`, que ESPERA a que el
+  lector aprenda (decenas de segundos por captura en el móvil), tenía el
+  plazo de una lectura (20 s): hoy `PLAZO_CORREGIR_MS` (3 min). No se puede
+  medir cuántas se perdían: una corrección sin nada aprendido tampoco deja
+  `aprendizaje` (16 de 39 lo llevan).
 
 ## El modelo (2.0)
 
@@ -3125,19 +3158,12 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
 
 ## Lo que queda pendiente
 
-- **Lo que dejó abierto la pasada de ECC de 3.40.0** (medido o
-  reproducido, no arreglado): (1) los retratos de `public/heroes/` no se
-  vuelven a bajar si la API cambia la URL (un rework como Masha o Bruno
-  se queda con la cara vieja en las tarjetas; el lector usa `cara`, que
-  sí se actualiza): haría falta guardar la URL de cada retrato; (2)
-  `volcarFotogramas` vacía la lista antes de saber si la subida fue bien:
-  sin red al apuntar, esa partida no sube sus pantallas; (3)
-  «Nuevo draft» + «Deshacer» devuelve el draft pero sus fotogramas ya se
-  volcaron sin resultado, y deshacer una partida apuntada sola no
-  deshace lo que se le enseñó al lector; (4) `/corregir` espera a que el
-  lector aprenda y la app corta a los 20 s (`PLAZO_LECTOR_MS`): 16 de 39
-  partidas leídas llevan `aprendizaje`, así que a veces llega y a veces
-  no. **De seguridad, decisiones de Javi** (`security-reviewer`): la app
+- **Lo que dejó abierto la pasada de ECC de 3.40.0**: «Nuevo draft» +
+  «Deshacer» devuelve el draft pero sus fotogramas ya se volcaron sin
+  resultado, y deshacer una partida apuntada sola no deshace lo que se le
+  enseñó al lector. Cerrados en 3.41.0 (ver «Errores ya cometidos»): los
+  retratos de los rehechos, las pantallas sin red y el plazo de
+  `/corregir`. **De seguridad, decisiones de Javi** (`security-reviewer`): la app
   comparte origen (`srchipiron.github.io`) con otra app suya, así que
   cualquier página de ese origen lee el `localStorage` (el token) y el
   lector la acepta como origen; un dominio propio o mover la otra app lo

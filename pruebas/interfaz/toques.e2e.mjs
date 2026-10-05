@@ -31,7 +31,7 @@ const lectorFalso = (estado) => async (p) => {
       if (estado.puertaCorregir) await estado.puertaCorregir;
       return ruta.fulfill({ status: 200, headers: CORS, body: JSON.stringify(estado.corregir) });
     }
-    if (camino === '/final') return ruta.fulfill({ status: 200, headers: CORS, body: JSON.stringify({ desde: null, fotogramas: [] }) });
+    if (camino === '/final') return ruta.fulfill({ status: 200, headers: CORS, body: JSON.stringify(estado.final ?? { desde: null, fotogramas: [] }) });
     return ruta.fulfill({ status: 200, headers: CORS, body: '{}' });
   });
 };
@@ -204,6 +204,46 @@ await prueba('lo que el lector aprendió llega a SU draft, no al siguiente si en
   await b.pagina.waitForTimeout(800);
   eq((await leer(b.pagina))?.lectura ?? null, null, 'lo aprendido en el draft anterior se pega al nuevo');
   await b.contexto.close();
+});
+
+await prueba('las pantallas del final que no suben por falta de red esperan y suben al volver la red (3.41.0)', async () => {
+  // Draft completo hace 11 minutos: el lector ya tiene dos pantallas del final y la app pregunta cómo fue.
+  const completoDesde = Date.now() - 11 * 60 * 1000;
+  const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], fase: 'picks', completoDesde };
+  const e = { respuesta: () => ({}), final: { desde: completoDesde, resultado: null, fotogramas: [
+    { id: 'fotograma-1', minuto: 9, miniatura: 'QUJD', tira: 'QUJD' }, { id: 'fotograma-2', minuto: 12, miniatura: 'QUJD', tira: 'QUJD' }] } };
+  const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': draft, 'roam-picker:lector-auto': true, 'roam-picker:envio': { token: 'github_pat_prueba' } }, antes: lectorFalso(e) });
+  let red = false;
+  const pantallas = [];
+  await contexto.route('https://api.github.com/**', async (ruta) => {
+    const cuerpo = ruta.request().postData() ?? '';
+    if (!red) return ruta.abort('internetdisconnected');
+    if (/"pantalla"/.test(cuerpo)) pantallas.push(JSON.parse(cuerpo));
+    return ruta.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ number: 9, html_url: 'https://github.com/x/y/issues/9' }) });
+  });
+  // La app recoge lo vigilado (cada 10 s) y después se contesta «Gané» sin red.
+  await pagina.waitForTimeout(11000);
+  await pagina.locator('.recordatorio button.gane').click();
+  await pagina.waitForTimeout(1500);
+  eq(pantallas.length, 0, 'sube sin red (la prueba no prueba nada)');
+  red = true;
+  await pagina.evaluate(() => window.dispatchEvent(new Event('online')));
+  for (let i = 0; i < 40 && !pantallas.length; i++) await pagina.waitForTimeout(250);
+  eq(pantallas.length, 1, 'las pantallas del final se pierden si no hay red al apuntar');
+  ok(/2 de 2 pantallas/.test(pantallas[0]?.title ?? ''), `no suben las dos pantallas: ${pantallas[0]?.title}`);
+  await contexto.close();
+});
+
+await prueba('cada cara se pide con la huella de su contenido, para que una rehecha no se quede en la caché (3.41.0)', async () => {
+  const { createHash } = await import('node:crypto');
+  const { readFileSync } = await import('node:fs');
+  const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: ['Masha'], allies: [], bans: [], fase: 'picks' } } });
+  const src = await pagina.locator('.side.enemy img').first().getAttribute('src');
+  const id = src?.match(/heroes\/(\d+)\.jpg/)?.[1];
+  ok(id, `la cara de Masha no se pide por id: ${src}`);
+  const huella = createHash('md5').update(readFileSync(new URL(`../../public/heroes/${id}.jpg`, import.meta.url))).digest('hex').slice(0, 8);
+  ok(src.endsWith(`?v=${huella}`), `la cara no lleva la huella de su contenido (${huella}): ${src}`);
+  await contexto.close();
 });
 
 await terminar('interfaz/toques');

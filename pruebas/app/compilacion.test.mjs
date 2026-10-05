@@ -10,7 +10,8 @@
  * La compilación cuesta ~4 s y se hace UNA vez para todo el fichero.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { test, ok, eq, terminar, RAIZ, leerJson, leerTexto } from '../arnes.mjs';
@@ -45,8 +46,22 @@ test('las imagenes no entran en la precarga del instalador', () => {
   // app pide de verdad: ./heroes/{id}.jpg y ./objetos/{id}.png. Sin ella no
   // habria imagen sin cobertura, que es justo cuando estas en un draft.
   ok(reglas.length, 'el sw.js compilado no tiene ninguna regla de cache con expresión regular');
-  for (const pedida of ['/mobile-legends-pick-assist/heroes/12.jpg', '/mobile-legends-pick-assist/objetos/1001.png']) {
+  for (const pedida of ['/mobile-legends-pick-assist/heroes/12.jpg', '/mobile-legends-pick-assist/objetos/1001.png', '/mobile-legends-pick-assist/heroes/12.jpg?v=0a1b2c3d']) {
     ok(reglas.some((re) => re.test(pedida)), `ninguna regla de cache del sw.js casa con ${pedida}: sin cobertura no habrá imagen`);
+  }
+});
+
+test('la app pide cada cara con la huella de SU contenido, para que una cara rehecha no se quede en la caché del móvil (3.41.0)', () => {
+  // Masha y Bruno se rehicieron con el mismo nombre de fichero, y la caché
+  // del móvil (CacheFirst) se habría quedado con la vieja para siempre.
+  const js = readdirSync(resolve(DIST, 'assets')).filter((f) => f.endsWith('.js')).map((f) => readFileSync(resolve(DIST, 'assets', f), 'utf8')).join('\n');
+  for (const [carpeta, ext] of [['heroes', '.jpg'], ['objetos', '.png']]) {
+    const ficheros = readdirSync(resolve(RAIZ, 'public', carpeta)).filter((f) => f.endsWith(ext));
+    ok(ficheros.length > 20, `no hay ${carpeta} con los que probar`);
+    for (const f of ficheros.slice(0, 5)) {
+      const huella = createHash('md5').update(readFileSync(resolve(RAIZ, 'public', carpeta, f))).digest('hex').slice(0, 8);
+      ok(js.includes(`"${f.slice(0, -ext.length)}":"${huella}"`) || js.includes(`${f.slice(0, -ext.length)}:"${huella}"`), `el paquete no lleva la huella del contenido de ${carpeta}/${f} (${huella})`);
+    }
   }
 });
 

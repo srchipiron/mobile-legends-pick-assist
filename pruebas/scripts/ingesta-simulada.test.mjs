@@ -14,7 +14,7 @@
  * degradado era el que acababa publicado.
  */
 import { spawn } from 'node:child_process';
-import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
@@ -56,6 +56,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   const imagen = (firma) => Buffer.concat([firma, Buffer.alloc(300)]);
   const PNG = imagen(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
   const JPG = imagen(Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
+  // El retrato rehecho (3.41.0): otra URL y otros bytes para el mismo héroe.
+  const JPG2 = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe1]), Buffer.alloc(400, 7)]);
+  let retratoNuevo = false;
   const heroes = [
     { id: 1, name: 'Atlas', linea: 'Roam', rol: 'Tank' },
     { id: 2, name: 'Khufra', linea: 'Roam', rol: 'Tank' },
@@ -130,7 +133,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       const h = heroes.find((x) => String(x.id) === m[1]) ?? heroes[0];
       // La forma real (medida el 28-9-2026): el retrato de la web fuera y la
       // cara del juego dentro del objeto de configuración, junto a `heroid`.
-      return json({ code: 0, data: { records: [{ data: { head: `http://127.0.0.1:${puerto}/img/${h.id}.jpg`, hero: { data: {
+      return json({ code: 0, data: { records: [{ data: { head: `http://127.0.0.1:${puerto}/img/${h.id}.jpg${retratoNuevo && h.id === 1 ? '?n=2' : ''}`, hero: { data: {
         heroid: h.id, name: h.name, head: `http://127.0.0.1:${puerto}/cara/${h.id}.png`, speciality: ['Guard', 'Crowd Control'],
         // Las habilidades con sus etiquetas de Moonton (3.36.0): una de
         // control en área por etiqueta y una que limpia a los aliados por
@@ -186,7 +189,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     // La tier list de mlbb.gg, en el mismo servidor con otra base (--tiers).
     if (ruta === '/api/v1/heroes') { marca('tiers'); return json(heroes.map((h) => ({ id: h.id, name: h.name }))); }
     if ((m = ruta.match(/^\/api\/v1\/heroes\/(\d+)$/))) { marca('tier'); return json({ id: Number(m[1]), name: heroes.find((x) => String(x.id) === m[1])?.name, tier: m[1] === '1' ? 'S' : 'B' }); }
-    if (ruta.startsWith('/img/')) { marca('img'); return bin(ruta.endsWith('.jpg') ? JPG : PNG); }
+    if (ruta.startsWith('/img/')) { marca('img'); return bin(u.searchParams.get('n') === '2' ? JPG2 : ruta.endsWith('.jpg') ? JPG : PNG); }
     res.statusCode = 404; res.end('{}');
   });
   await new Promise((r) => srv.listen(0, '127.0.0.1', r));
@@ -332,6 +335,8 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     // celdas bajado a lo que tiene la simulación: cruces y parejas salen de
     // Mítico, los dos del mismo rango, y lo marca.
     fallaDetail = false; academyVacia = false; fallaLineaDe = null; gloriaRuidosa = true;
+    // Y Atlas, rehecho, trae otra cara: se baja otra vez aunque el fichero ya esté (3.41.0).
+    retratoNuevo = true;
     const out4 = resolve(dir, 'gloria-ruidosa.json');
     const r4 = await correrIngesta([
       '--base', `http://127.0.0.1:${puerto}/api`,
@@ -343,6 +348,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(d4.relaciones?.rango, 'mythic', `con Gloria incoherente los cruces no salen de Mítico: ${JSON.stringify(d4.relaciones)}`);
     ok(d4.relaciones?.coherencia?.counters < 0.8 && /no se parecen/.test(d4.relaciones?.motivo ?? ''), `no dice la coherencia ni el porqué: ${JSON.stringify(d4.relaciones)}`);
     eq(d4.counters.Atlas?.Khufra, 0.5123, `el cruce guardado no es el de Mítico (0.5123; el de Gloria ruidosa sería 0.4877): ${JSON.stringify(d4.counters.Atlas)}`);
+    eq(d4.diagnostics.imagenes?.heroes?.cambiados, 1, `el retrato rehecho no se vuelve a bajar: ${JSON.stringify(d4.diagnostics.imagenes)}`);
+    ok(readFileSync(resolve(dir, 'heroes', '1.jpg')).equals(JPG2), 'el fichero del retrato sigue siendo el de antes');
+    ok(JSON.parse(readFileSync(resolve(dir, 'heroes', 'fuentes.json'), 'utf8'))['1']?.endsWith('?n=2'), 'no se apunta de dónde salió el retrato nuevo');
     eq(d4.synergies.Atlas?.Tigreal, 0.48, `la pareja guardada no es la de Mítico (0.48; la de Gloria sería 0.52): ${JSON.stringify(d4.synergies.Atlas)}`);
     // Y con Gloria coherente (sirve lo mismo que Mítico), se queda Gloria.
     // Y Atlas, rehecho sin control: sus habilidades de antes no se quedan.
@@ -356,6 +364,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(r5.status, 0, `la corrida con Gloria coherente no acaba bien: ${(r5.stdout + r5.stderr).slice(-400)}`);
     const d5 = JSON.parse(readFileSync(out5, 'utf8'));
     ok(d5.relaciones?.rango === 'glory' && d5.relaciones?.coherencia?.counters > 0.99 && !d5.relaciones?.motivo, `con Gloria coherente no se queda Gloria: ${JSON.stringify(d5.relaciones)}`);
+    eq(d5.diagnostics.imagenes?.heroes?.bajados, 0, `se vuelven a bajar retratos que no han cambiado: ${JSON.stringify(d5.diagnostics.imagenes)}`);
     eq(JSON.stringify(d5.heroes.find((h) => h.name === 'Atlas')?.habilidades), '[]', 'una ficha que llega sin habilidades deja las de antes');
     // Sexta: Gloria ruidosa pero Mítico llega a medias: no se cambia a un
     // Mítico de tres héroes tirando la Gloria entera, y se dice por qué.
@@ -392,7 +401,15 @@ test('la ingesta arranca sin errores de programación', async () => {
   if (existsSync(REAL)) copyFileSync(REAL, out);
 
   try {
-    const r = await correrIngesta(['--base', 'http://127.0.0.1:1/api', '--ranks', 'mythic', '--out', out]);
+    // Las imágenes a una COPIA de las publicadas (3.41.0): sin `--iconos` ni
+    // `--retratos` esta prueba escribía en public/ (las rebajaba de verdad
+    // del CDN en cuanto cambiaba una URL, y con ellas `fuentes.json`). Una
+    // copia, y no una carpeta vacía: vacía bajaría las 206 en cada `npm test`.
+    for (const c of ['objetos', 'heroes']) cpSync(resolve(RAIZ, 'public', c), resolve(dir, c), { recursive: true });
+    const tocado = () => ['objetos', 'heroes'].flatMap((c) => readdirSync(resolve(RAIZ, 'public', c)).map((f) => statSync(resolve(RAIZ, 'public', c, f)).mtimeMs)).reduce((a, b) => Math.max(a, b), 0);
+    const antes = tocado();
+    const r = await correrIngesta(['--base', 'http://127.0.0.1:1/api', '--ranks', 'mythic', '--out', out, '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes')]);
+    eq(tocado(), antes, 'la prueba escribe en public/objetos o public/heroes');
     const salida = `${r.stdout}\n${r.stderr}`;
     eq(r.status, 0, `la ingesta contra una base inalcanzable acaba con código ${r.status}: ${salida.slice(-400)}`);
 

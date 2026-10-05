@@ -14,6 +14,14 @@ export const URL_LECTOR = `http://127.0.0.1:${PUERTO_LECTOR}`;
 /** Decisión de producto: la captura por wifi más el reconocimiento tardan 2–4 s; 20 s es «no está». */
 export const PLAZO_LECTOR_MS = 20000;
 /**
+ * La corrección espera a que el lector APRENDA (3.41.0): decenas de segundos
+ * por captura en un móvil, de tres a ocho capturas, y detrás de la tanda
+ * anterior si la hay. Con los 20 s de una lectura la app cortaba y lo
+ * aprendido no llegaba nunca a la partida (el lector sí aprendía). Es una
+ * petición a 127.0.0.1 que no bloquea nada: tres minutos, decisión de producto.
+ */
+export const PLAZO_CORREGIR_MS = 3 * 60 * 1000;
+/**
  * Leyendo solo (3.28.0): cada cuánto se pide una lectura. Con el draft en
  * marcha, cada 5 s (una lectura tarda 4–6 s en el móvil: va una tras otra
  * sin acumularse); con el draft vacío, cada 12 s, que es buscar si ha
@@ -93,7 +101,7 @@ export async function pedirLectura({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_M
  * pantallazo con la verdad y aprende dónde están los huecos en esa tablet
  * y qué cara pinta. Nunca lanza: si el lector no está, no pasa nada.
  */
-export async function corregirLectura({ ids = [], enemigos = [], baneos = [], base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+export async function corregirLectura({ ids = [], enemigos = [], baneos = [], base = URL_LECTOR, plazoMs = PLAZO_CORREGIR_MS, pedir = (...a) => fetch(...a) } = {}) {
   if (!ids.length || !enemigos.length) return null;
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), plazoMs);

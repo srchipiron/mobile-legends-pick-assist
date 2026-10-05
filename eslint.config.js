@@ -10,7 +10,7 @@ const navegador = {
   TextEncoder: 'readonly', TextDecoder: 'readonly', Response: 'readonly', setTimeout: 'readonly', clearTimeout: 'readonly',
   requestAnimationFrame: 'readonly', setInterval: 'readonly', clearInterval: 'readonly', URLSearchParams: 'readonly', history: 'readonly', location: 'readonly', console: 'readonly', crypto: 'readonly',
   Intl: 'readonly', AbortSignal: 'readonly', AbortController: 'readonly', btoa: 'readonly', atob: 'readonly',
-  __APP_VERSION__: 'readonly', __BUILD_TIME__: 'readonly', __CHANGELOG__: 'readonly',
+  __APP_VERSION__: 'readonly', __BUILD_TIME__: 'readonly', __CHANGELOG__: 'readonly', __HUELLAS__: 'readonly',
 };
 const node = {
   process: 'readonly', console: 'readonly', Buffer: 'readonly', URL: 'readonly', fetch: 'readonly', setTimeout: 'readonly',

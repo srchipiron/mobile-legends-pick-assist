@@ -1,4 +1,5 @@
 import { parsearChangelog } from './scripts/changelog.mjs';
+import { huellasDeImagenes } from './scripts/huellas.mjs';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -14,6 +15,13 @@ export default defineConfig({
     // Las novedades, del mismo CHANGELOG.md que exige comprobar/version.mjs.
     __CHANGELOG__: JSON.stringify(parsearChangelog(readFileSync(new URL('./CHANGELOG.md', import.meta.url), 'utf8'))),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    // La huella del contenido de cada cara e icono (3.41.0): la app los pide
+    // con `?v=` y una imagen rehecha entra aunque el móvil tenga la vieja en
+    // caché. ~3 KB en el paquete.
+    __HUELLAS__: JSON.stringify({
+      heroes: huellasDeImagenes(new URL('./public/heroes', import.meta.url).pathname, '.jpg'),
+      objetos: huellasDeImagenes(new URL('./public/objetos', import.meta.url).pathname, '.png'),
+    }),
   },
   // En GitHub Pages el workflow pasa BASE_PATH=/nombre-del-repo/.
   // En local ('npm run dev') no hace falta nada.
@@ -86,7 +94,9 @@ export default defineConfig({
           {
             // Un icono o una cara no cambian salvo que Moonton los rediseñe: se
             // sirven de caché sin preguntar, y así funcionan sin cobertura.
-            urlPattern: /\/(objetos|heroes)\/\d+\.(png|jpg)$/,
+            // Cuando los rediseña cambia la huella (`?v=`, 3.41.0), que va en
+            // la clave de la caché: la nueva se pide y la vieja caduca sola.
+            urlPattern: /\/(objetos|heroes)\/\d+\.(png|jpg)(\?v=[0-9a-f]+)?$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'imagenes',

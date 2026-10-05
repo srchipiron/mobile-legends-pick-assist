@@ -203,8 +203,8 @@ async function main() {
     for (const [id, o] of Object.entries(equipo)) if (o.magica || o.fisica || o.efectos?.length) aEnsenar.add(id);
     const subconjunto = Object.fromEntries(Object.entries(equipo).filter(([id]) => aEnsenar.has(id)));
     const urls = Object.fromEntries(Object.entries(subconjunto).map(([id, o]) => [id, o.icono]));
-    const { bajados, fallos } = await bajarImagenes(urls, ICONOS, '.png', 'objetos');
-    console.log(`  · iconos: ${bajados} nuevos, ${fallos} fallos (de ${Object.keys(subconjunto).length} que se ensenan)`);
+    const { bajados, cambiados, fallos } = await bajarImagenes(urls, ICONOS, '.png', 'objetos');
+    console.log(`  · iconos: ${bajados} bajados (${cambiados} cambiados), ${fallos} fallos (de ${Object.keys(subconjunto).length} que se ensenan)`);
   } catch (err) {
     console.warn(`  · iconos: fallo (${err.message}); se ensenaran solo los nombres`);
   }
@@ -215,8 +215,8 @@ async function main() {
     const urls = Object.fromEntries(
       heroList.filter((h) => h.retrato && h.id != null).map((h) => [h.id, h.retrato]),
     );
-    const { bajados, fallos } = await bajarImagenes(urls, RETRATOS, '.jpg', 'heroes');
-    console.log(`  · retratos: ${bajados} nuevos, ${fallos} fallos (de ${Object.keys(urls).length} heroes)`);
+    const { bajados, cambiados, fallos } = await bajarImagenes(urls, RETRATOS, '.jpg', 'heroes');
+    console.log(`  · retratos: ${bajados} bajados (${cambiados} cambiados), ${fallos} fallos (de ${Object.keys(urls).length} heroes)`);
   } catch (err) {
     console.warn(`  · retratos: fallo (${err.message}); la lista saldra sin caras`);
   }

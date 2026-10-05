@@ -4,7 +4,7 @@
  * lo bajado es de verdad una imagen.
  */
 
-import { writeFile, mkdir, readdir } from 'node:fs/promises';
+import { writeFile, mkdir, readdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { TIMEOUT_MS, UA, diagnostics, sleep } from './contexto.mjs';
 
@@ -16,21 +16,37 @@ import { TIMEOUT_MS, UA, diagnostics, sleep } from './contexto.mjs';
  * tercero-, y en mitad de un draft una imagen que tarda es una imagen que no
  * esta. Sirviendolos nosotros funcionan tambien sin cobertura.
  *
- * Solo se baja lo que falta: son 100x100 y no cambian salvo que Moonton
- * rediseñe el objeto, asi que la segunda corrida no descarga nada.
+ * Solo se baja lo que falta O lo que ha cambiado de origen (3.41.0): cada
+ * carpeta lleva `FUENTES` (id -> URL de la que salió el fichero). Antes se
+ * miraba solo si el fichero existía, y Masha y Bruno, rehechos en 2.2.16,
+ * seguían con la cara VIEJA en las tarjetas aunque la API ya diera otra URL
+ * (comprobado el 5 de octubre de 2026: el fichero guardado y el de su URL de
+ * hoy eran imágenes distintas). Un fichero sin URL apuntada (los de antes de
+ * esto) se baja una vez para saberla. Si la bajada falla se queda el de
+ * antes con su URL de antes: así se vuelve a intentar en la corrida siguiente.
  */
+export const FUENTES = 'fuentes.json';
+
 export async function bajarImagenes(urlPorClave, dir, ext, clave) {
   let bajados = 0;
   let fallos = 0;
+  let cambiados = 0;
   let existentes = new Set();
   try {
     existentes = new Set((await readdir(dir)).filter((f) => f.endsWith(ext)));
   } catch {
     await mkdir(dir, { recursive: true });
   }
+  let fuentes = {};
+  try {
+    const leidas = JSON.parse(await readFile(resolve(dir, FUENTES), 'utf8'));
+    if (leidas && typeof leidas === 'object' && !Array.isArray(leidas)) fuentes = leidas;
+  } catch { /* sin fichero (o roto): se aprende bajando */ }
 
   for (const [id, url] of Object.entries(urlPorClave)) {
-    if (!url || existentes.has(`${id}${ext}`)) continue;
+    if (!url) continue;
+    const esta = existentes.has(`${id}${ext}`);
+    if (esta && fuentes[id] === url) continue;
     try {
       // Con tope: un CDN que no responde colgaba el paso hasta el
       // timeout-minutes y se perdía la corrida entera con nueve minutos hechos.
@@ -39,15 +55,20 @@ export async function bajarImagenes(urlPorClave, dir, ext, clave) {
       const buf = Buffer.from(await res.arrayBuffer());
       if (!esImagen(buf)) throw new Error('no es una imagen');
       await writeFile(resolve(dir, `${id}${ext}`), buf);
+      fuentes[id] = url;
       bajados += 1;
+      if (esta) cambiados += 1;
     } catch (err) {
       fallos += 1;
       if (fallos <= 3) console.warn(`  · imagen ${id}: ${err.message}`);
     }
     await sleep(80);
   }
-  (diagnostics.imagenes ??= {})[clave] = { bajados, fallos, yaEstaban: existentes.size };
-  return { bajados, fallos };
+  // Ordenado por id: el diff de una corrida sin cambios es vacío.
+  const ordenadas = Object.fromEntries(Object.entries(fuentes).sort(([a], [b]) => a.localeCompare(b, 'en', { numeric: true })));
+  await writeFile(resolve(dir, FUENTES), `${JSON.stringify(ordenadas, null, 1)}\n`);
+  (diagnostics.imagenes ??= {})[clave] = { bajados, cambiados, fallos, yaEstaban: existentes.size };
+  return { bajados, cambiados, fallos };
 }
 
 /**

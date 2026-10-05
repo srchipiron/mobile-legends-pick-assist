@@ -52,3 +52,39 @@ export function tocaSubir(estado, huella, { ahora, enLinea = true, partidas = 0 
   if (estado.error && estado.huellaIntentada === huella && estado.intento && ahora - estado.intento < REINTENTO_MS) return false;
   return true;
 }
+
+/**
+ * Las subidas APARTE (las pantallas del final de una partida) que aún no han
+ * llegado (3.41.0). Antes se vaciaban antes de saber si la subida fue bien:
+ * sin cobertura al apuntar, esa partida perdía sus pantallas para siempre.
+ * Ahora esperan en cola (en memoria: es lo que dura la app abierta, y una
+ * partida apuntada la deja abierta) y se reintentan al volver la red o cada
+ * minuto. Como mucho `MAX_APARTE`: se tiran las más viejas, que son las que
+ * menos dicen.
+ */
+export const MAX_APARTE = 4;
+
+export const encolarAparte = (cola, envio) => [...cola, { ...envio }].slice(-MAX_APARTE);
+
+/**
+ * Sube en orden lo que hay en cola y devuelve lo que queda. Para en el
+ * primer fallo (sin red, el siguiente fallaría igual). Si la incidencia se
+ * crea y el comentario falla, queda solo el comentario, con su número: así
+ * no se repite la incidencia.
+ */
+export async function vaciarCola(cola, { subir, comentar }) {
+  const queda = [...cola];
+  while (queda.length) {
+    const e = queda[0];
+    if (!e.numero) {
+      const r = await subir(e);
+      if (!r || r.error) return queda;
+      queda[0] = { ...e, numero: r.numero ?? null };
+      if (!e.comentario || !r.numero) { queda.shift(); continue; }
+    }
+    const c = await comentar({ numero: queda[0].numero, cuerpo: queda[0].comentario });
+    if (!c || c.error) return queda;
+    queda.shift();
+  }
+  return queda;
+}

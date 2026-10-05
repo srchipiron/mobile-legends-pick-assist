@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.41.0
+
+- Las caras de los héroes rehechos ya salen con su dibujo nuevo: Masha y
+  Bruno seguían con la cara de antes del rework en las tarjetas y los
+  huecos. Ahora la app vuelve a bajar una cara cuando Moonton la cambia, y
+  tu móvil la pide de nuevo aunque tuviera la vieja guardada.
+- Las pantallas del final de la partida ya no se pierden si no tienes red
+  al apuntarla: esperan y se suben solas en cuanto vuelve la conexión.
+- Lo que aprende el lector al terminar el draft ya llega a la partida: la
+  app esperaba 20 segundos y aprender en el móvil tarda más; ahora espera
+  hasta tres minutos.
+
 ## 3.40.0
 
 - Con «Leer solo» encendido, lo que tocas ya no lo deshace la lectura
