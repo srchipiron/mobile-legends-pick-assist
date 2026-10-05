@@ -275,6 +275,34 @@ test('cada workflow declara sus permisos, los bots que commitean no se solapan y
   }
 });
 
+test('cada acción de terceros va fijada a un commit, con su versión al lado (3.42.1)', () => {
+  // Una etiqueta (`@v4`) la puede mover quien controle el repositorio de la
+  // acción, y estos workflows corren con permiso de escribir en main y de
+  // abrir incidencias. Fijada a un commit, lo que corre es lo que se leyó.
+  // Se lee cada línea `uses:` del texto (no solo los pasos): un `uses` a
+  // nivel de job (workflow reutilizable) también ejecuta código de fuera.
+  const fijada = /^[\w.-]+\/[\w./-]+@[0-9a-f]{40} # v\d+\.\d+\.\d+$/;
+  const commitDe = new Map();
+  let vistas = 0;
+  for (const f of WORKFLOWS) {
+    const lineas = leerTexto(`.github/workflows/${f}`).split('\n');
+    lineas.forEach((l, i) => {
+      const m = l.match(/^\s*(?:- )?uses:\s*(.+?)\s*$/);
+      if (!m) return;
+      vistas++;
+      const uso = m[1].replace(/^['"]|['"]$/g, '');
+      ok(fijada.test(uso), `${f}:${i + 1}: «${uso}» no va fijada a un commit con su versión (owner/repo@<40 hex> # vX.Y.Z)`);
+      // La misma acción, el mismo commit en todos: dos versiones de checkout
+      // en dos workflows es una que nadie actualizó.
+      const [accion, resto] = uso.split('@');
+      const previo = commitDe.get(accion);
+      if (previo) eq(resto, previo.resto, `${f}:${i + 1}: ${accion} va a otro commit que en ${previo.donde}`);
+      else commitDe.set(accion, { resto, donde: `${f}:${i + 1}` });
+    });
+  }
+  ok(vistas >= 30, `solo ${vistas} líneas uses: la lectura se ha quedado corta`);
+});
+
 test('Claude a petición: solo el dueño con «@claude» en SU comentario, nunca en las incidencias que escribe la app (3.40.0)', () => {
   // La condición del job, EVALUADA contra eventos de mentira (no buscando
   // cadenas): las incidencias de pantallas y partidas las escribe la app con

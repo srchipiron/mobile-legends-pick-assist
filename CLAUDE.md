@@ -3178,9 +3178,21 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   cualquier página de ese origen lee el `localStorage` (el token) y el
   lector la acepta como origen; un dominio propio o mover la otra app lo
   cierra. El token, con caducidad y solo «Issues» de este repositorio.
-  `main` sin proteger, acciones fijadas por etiqueta y no por SHA, la
-  declaración de ECC sin fijar a un commit, y `lector.sh` ejecuta lo que
-  traiga `git pull` sin preguntar. Y por diseño de 3.40.0: lo leído que
+  La declaración de ECC sin fijar a un commit, y `lector.sh` ejecuta lo
+  que traiga `git pull` sin preguntar. HECHO el 5 de octubre de 2026:
+  `main` protegida con un conjunto de reglas de GitHub («Proteger main»:
+  sin borrarla ni reescribir su historial, sin excepciones; NO pide pull
+  request ni pruebas en verde, porque los cuatro bots y las sesiones
+  suben directo a `main`, y ningún workflow hace `push -f` a `main`, solo
+  mantenimiento a su rama), y desde 3.42.1 las acciones de los workflows
+  van fijadas a un commit con su versión al lado (`@<sha> # vX.Y.Z`,
+  prueba en `workflows.test`: cada `uses:` fijado y la misma acción al
+  mismo commit en todos; cuatro mutaciones). Para ACTUALIZAR una: `git
+  ls-remote --tags https://github.com/<acción>` (la API de GitHub no
+  deja leer repositorios de fuera desde la sesión; `ls-remote` sí), coger
+  el commit de `vX.Y.Z^{}` si la etiqueta es anotada, y cambiarlo en
+  TODOS los workflows a la vez. No hay Dependabot: abriría pull requests
+  que Javi tendría que fusionar desde el móvil. Y por diseño de 3.40.0: lo leído que
   no llegó a entrar (por el tope de cinco) cuenta como «quitado a mano» y
   no vuelve a entrar en ese draft aunque luego quede hueco; con el tope
   lleno uno de los seis leídos sobraba, y `cambiosDeHueco` ya cambia al

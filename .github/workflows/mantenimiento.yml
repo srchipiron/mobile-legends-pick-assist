@@ -25,8 +25,8 @@ jobs:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
       # node_modules ENTERO, por hash del lockfile. La cache de npm de
@@ -35,7 +35,7 @@ jobs:
       # guardado, el paso se salta. npm ci BORRA node_modules antes de
       # instalar, asi que solo corre si la cache no ha traido nada.
       - id: modulos
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: node_modules
           key: modulos-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}
@@ -69,7 +69,7 @@ jobs:
       # inventarle tags a un héroe que nadie ha mirado es justo lo que este
       # proyecto no quiere. Se avisa para que se haga a conciencia.
       - name: Avisar de héroes sin tags
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             // github-script v9 es ESM: require() ya no existe aquí dentro.
@@ -104,7 +104,7 @@ jobs:
       # sigue avisando hasta que una persona los mire. Tampoco se automatiza:
       # deducirle tags a un héroe rehecho es el sesgo de Marcel otra vez.
       - name: Avisar de héroes con el kit rehecho
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const fs = await import('node:fs');

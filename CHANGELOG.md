@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.42.1
+
+- Las herramientas que usan los procesos automáticos del proyecto (publicar
+  la app, traer los datos, vigilar, guardar tus partidas) van ahora fijadas
+  a una versión exacta que no se puede cambiar por detrás. Antes cogían
+  «la última de la serie», que quien mantiene cada herramienta podía
+  sustituir por otra sin avisar; ahora, para cambiarla, hay que hacerlo
+  aquí. En la app no cambia nada.
+
 ## 3.42.0
 
 - «Deshacer» ya deshace del todo: si vacías el draft con «Nuevo draft» y lo
