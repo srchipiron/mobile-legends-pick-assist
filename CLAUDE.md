@@ -3030,6 +3030,22 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   versión con package.json + CHANGELOG + CLAUDE.md, 17 de 17 commits de
   `src/` con prueba, es.js y en.js siempre juntos); CLAUDE.md sigue
   mandando sobre él.
+  **El 5 de octubre de 2026 se comprobó que la declaración NO instala nada
+  en las sesiones en la nube**: `~/.claude/plugins/installed_plugins.json`
+  vacío y ninguna habilidad de ECC en la sesión; solo llegaba el `env`. Y
+  `/plugin marketplace add` / `/plugin install` escritos desde el móvil no
+  hacen nada en la nube (es un mandato de la CLI de escritorio). Así que lo
+  que sirve va COPIADO y adaptado en `.claude/` (ver `.claude/ecc/README.md`,
+  con la licencia MIT): los agentes `silent-failure-hunter`,
+  `security-reviewer` y `pr-test-analyzer` (`.claude/agents/`, solo leen) y
+  la habilidad `click-path-audit` (`.claude/skills/`, Claude Code la detectó
+  en la misma sesión al crearla). Cada uno lleva las reglas de AQUÍ (la
+  lista de fallos silenciosos, la seguridad de la cuenta, la regla de
+  mutación, los hooks de estado de la app) en vez de las genéricas de ECC,
+  que hablaban de Zustand, SQL o bcrypt. `claude-config.test` exige nombre
+  y descripción (sin ellos no se cargan), la licencia y que los agentes
+  traídos no puedan escribir (dos mutaciones). La declaración del plugin se
+  deja: si un día carga, sus hooks siguen apagados.
 
 ## Lo que queda pendiente
 
