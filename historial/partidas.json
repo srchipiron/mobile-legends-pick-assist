@@ -1,6 +1,203 @@
 {
- "actualizado": "2026-10-05T21:49:59.864Z",
+ "actualizado": "2026-10-05T22:06:39.459Z",
  "partidas": [
+  {
+   "t": 1791237982099,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.604,
+   "bans": [
+    "Hirara",
+    "Atlas",
+    "Aulus",
+    "Eudora",
+    "Belerick",
+    "Marcel",
+    "Paquito",
+    "Gloo"
+   ],
+   "draft": {
+    "enemigos": [
+     "Cici",
+     "Angela",
+     "Zetian",
+     "Lancelot",
+     "Bruno"
+    ],
+    "aliados": [
+     "Masha",
+     "Kadita",
+     "Claude",
+     "Natalia"
+    ],
+    "linea": "roam",
+    "rival": "Angela"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Atlas",
+     "Aulus",
+     "Eudora",
+     "Belerick",
+     "Marcel",
+     "Paquito",
+     "Gloo"
+    ],
+    "enemigos": [
+     "Gord",
+     "Yi Sun-shin",
+     "Joy",
+     "Cici",
+     "Angela"
+    ],
+    "aliados": [
+     "Masha",
+     "Claude"
+    ],
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Gord",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Zetian",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Valir",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Julian",
+      "parecido": 0.62
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Atlas",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Atlas",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Claude",
+      "parecido": 0.46
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Gord",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Gord",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Gord",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Joy",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Chang'e",
+      "parecido": 0.71
+     }
+    ],
+    "ms": [
+     4468,
+     4396,
+     6949,
+     5009,
+     5206,
+     4924,
+     8931,
+     4890,
+     4536,
+     4648,
+     4786,
+     4356,
+     4882,
+     10317,
+     9314,
+     6066,
+     8102,
+     8919,
+     4639,
+     8884
+    ],
+    "msCaptura": [
+     3301,
+     3327,
+     5905,
+     3881,
+     3988,
+     3817,
+     7796,
+     3876,
+     3605,
+     3608,
+     3816,
+     3539,
+     3941,
+     9368,
+     8333,
+     4914,
+     7114,
+     7806,
+     3788,
+     7855
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Angela",
+      "Lancelot",
+      "Bruno",
+      "Angela",
+      "Lancelot",
+      "Bruno",
+      "Angela",
+      "Lancelot",
+      "Bruno"
+     ]
+    }
+   }
+  },
   {
    "t": 1791236965053,
    "pick": "Minotaur",
@@ -8915,6 +9112,12 @@
   {
    "cuando": "2026-10-05T21:49:59.864Z",
    "partidas": 169,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-05T22:06:39.459Z",
+   "partidas": 170,
    "heroes": 11,
    "incidencia": 11
   }
