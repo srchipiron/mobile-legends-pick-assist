@@ -192,19 +192,28 @@ test('SEGURIDAD: repetir /vigilar no deja al móvil hablando sin fin (revisión 
 
 test('SEGURIDAD: lo que quedaba en la cola de voz de un draft que ya no es el vigilado no se dice', async () => {
   const dichos = [];
-  // Una voz lenta, como la de verdad: los avisos se acumulan en la cola.
-  const hablar = (texto) => new Promise((r) => setTimeout(() => { dichos.push(texto); r(null); }, 150));
-  const servidor = crearServidor({ capturar: () => capturaCompletaPng(), hablar, vigilancia: { ...VIGILANCIA, intervaloMs: 15, intervaloInicioMs: 15 }, enHilos: false });
+  // Una voz que no acaba hasta que la prueba la suelta: los avisos se quedan
+  // en cola sin depender de lo rápido que sea el aparato (en el runner de
+  // GitHub, con plazos fijos, la segunda petición llegaba tarde).
+  let soltar = null;
+  const hablar = (texto) => new Promise((r) => { dichos.push(texto); soltar = () => r(null); });
+  const pantallaChica = escribirPng(ampliada(pantallas.find((p) => p.f === 'fuera-0.png').img, 1));
+  const servidor = crearServidor({ capturar: () => pantallaChica, hablar, vigilancia: { ...VIGILANCIA, intervaloMs: 15, intervaloInicioMs: 15 }, enHilos: false });
   await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
   const base = `http://127.0.0.1:${servidor.address().port}`;
   const cab = { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' };
+  const hasta = async (cond, ms = 8000) => { const t0 = Date.now(); while (!cond() && Date.now() - t0 < ms) await new Promise((r) => setTimeout(r, 15)); return cond(); };
   try {
     await fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify({ desde: Date.now() - 9 * 60000, guion: [7.5, 7.6, 7.7].map((min, i) => ({ min, texto: `viejo ${i}` })) }) });
-    await new Promise((r) => setTimeout(r, 60));
+    ok(await hasta(() => dichos.length === 1), 'no empieza a decir el primer aviso');
+    // Con el primero sonando (y los otros dos en cola), llega otro draft.
     await fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify({ desde: Date.now() - 1000, guion: [] }) });
-    await new Promise((r) => setTimeout(r, 700));
-    ok(dichos.length <= 1, `dice lo de un draft que ya no es el vigilado: ${dichos}`);
-  } finally { servidor.close(); }
+    soltar();
+    await new Promise((r) => setTimeout(r, 300));
+    soltar?.();
+    await new Promise((r) => setTimeout(r, 300));
+    eq(dichos.join(), 'viejo 0', 'dice lo que quedaba en cola de un draft que ya no es el vigilado');
+  } finally { soltar?.(); servidor.close(); }
 });
 
 await terminar('scripts/directo-lector');
