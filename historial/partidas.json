@@ -1,6 +1,211 @@
 {
- "actualizado": "2026-10-06T19:23:05.732Z",
+ "actualizado": "2026-10-06T20:23:55.808Z",
  "partidas": [
+  {
+   "t": 1791317162827,
+   "pick": "Hayabusa",
+   "recomendados": [
+    "Khufra",
+    "Atlas",
+    "Diggie"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.606,
+   "origen": "lector",
+   "bans": [
+    "Lukas",
+    "Hirara",
+    "Eudora",
+    "Marcel",
+    "Aulus",
+    "Masha",
+    "Belerick",
+    "Nolan"
+   ],
+   "draft": {
+    "enemigos": [
+     "Zetian",
+     "Vale",
+     "Leomord",
+     "Ruby",
+     "Saber"
+    ],
+    "aliados": [
+     "Lesley",
+     "Nana",
+     "Barats",
+     "Rafaela"
+    ],
+    "linea": "roam",
+    "rival": "Saber"
+   },
+   "lector": {
+    "baneos": [
+     "Lukas",
+     "Hirara",
+     "Eudora",
+     "Marcel",
+     "Aulus",
+     "Masha",
+     "Belerick",
+     "Nolan"
+    ],
+    "enemigos": [
+     "Zetian",
+     "Vale",
+     "Saber"
+    ],
+    "aliados": [
+     "Hayabusa",
+     "Lesley"
+    ],
+    "tuyo": "Hayabusa",
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Atlas",
+      "parecido": 0.58
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Atlas",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Atlas",
+      "parecido": 0.54
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Alucard",
+      "parecido": 0.51
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Kaja",
+      "parecido": 0.45
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Atlas",
+      "parecido": 0.44
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Claude",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Atlas",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Atlas",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Granger",
+      "parecido": 0.59
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Beatrix",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Fredrinn",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Bane",
+      "parecido": 0.63
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Gord",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Fredrinn",
+      "parecido": 0.68
+     }
+    ],
+    "ms": [
+     9911,
+     6128,
+     6389,
+     10584,
+     10593,
+     8809,
+     10096,
+     8328,
+     9003,
+     8787,
+     11767,
+     8362,
+     6074,
+     10466,
+     9424,
+     10161,
+     5386,
+     5752,
+     7578,
+     7087
+    ],
+    "msCaptura": [
+     8734,
+     5067,
+     5187,
+     9565,
+     9322,
+     7656,
+     8840,
+     7152,
+     7965,
+     7611,
+     10282,
+     7203,
+     4807,
+     9477,
+     8248,
+     8954,
+     4416,
+     4684,
+     6699,
+     6064
+    ],
+    "formatos": [
+     "png",
+     "png",
+     "png",
+     "crudo",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "crudo",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png"
+    ]
+   }
+  },
   {
    "t": 1791314213961,
    "pick": "Minotaur",
@@ -9424,6 +9629,12 @@
   {
    "cuando": "2026-10-06T19:23:05.732Z",
    "partidas": 172,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-06T20:23:55.808Z",
+   "partidas": 173,
    "heroes": 11,
    "incidencia": 11
   }
