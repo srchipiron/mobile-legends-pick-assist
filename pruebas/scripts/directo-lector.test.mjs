@@ -5,13 +5,14 @@
  * se quedaron atrás, medir la duración y decir el cierre de su tramo; y la
  * voz (voz.mjs) con el texto como DATO: por la entrada estándar, limpio.
  */
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync, mkdtempSync, chmodSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
 import { parecidoAPartida, enPartida, UMBRAL_PARTIDA, recorteMarcador } from '../../scripts/lector/partida.mjs';
-import { limpiarTexto, TOPE_VOZ } from '../../scripts/lector/voz.mjs';
-import { crearServidor, VIGILANCIA, RETRASO_MAXIMO_MIN } from '../../scripts/lector/servir.mjs';
+import { limpiarTexto, TOPE_VOZ, hablarConTermux } from '../../scripts/lector/voz.mjs';
+import { crearServidor, VIGILANCIA, RETRASO_MAXIMO_MIN, VOZ_POR_VENTANA } from '../../scripts/lector/servir.mjs';
 import { tramoDeMinutos } from '../../src/motor/directo.js';
 import { capturaCompletaPng, pantallaDeFinal } from '../fixtures/juego/captura.mjs';
 
@@ -130,6 +131,79 @@ test('sin ver empezar la partida, el inicio se estima y se marca (la app no apun
     // El aviso del minuto 6,5 se dice (va al minuto 7 del inicio estimado) y la voz contesta que falta Termux:API.
     while (Date.now() - t0 < 8000 && f.voz !== 'falta') { f = await (await fetch(`${base}/final`, { headers: cab })).json(); await new Promise((r) => setTimeout(r, 20)); }
     eq(f.voz, 'falta', 'sin Termux:API /final no lo dice');
+  } finally { servidor.close(); }
+});
+
+test('SEGURIDAD: con un termux-tts-speak de pega, los argumentos son siempre «-l es» o «-l en» y el texto llega por la entrada estándar, limpio, sea cual sea lo que mande la app', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'voz-'));
+  const registro = join(dir, 'llamadas');
+  writeFileSync(join(dir, 'termux-tts-speak'), `#!/bin/sh\nprintf '%s|' "$@" >> '${registro}'\nprintf '#' >> '${registro}'\ncat >> '${registro}'\nprintf '\\n' >> '${registro}'\n`);
+  chmodSync(join(dir, 'termux-tts-speak'), 0o755);
+  const antes = process.env.PATH;
+  process.env.PATH = `${dir}:${antes}`;
+  try {
+    const malos = [['--help', 'es'], ['-e com.evil -l x', '-e'], ['$(id); `id`', 'es;id>/tmp/x'], ['hola\u001b[2Jx', ['es']], ['ok', 'en']];
+    for (const [texto, idioma] of malos) eq(await hablarConTermux(texto, idioma), null, `la voz falla con ${JSON.stringify([texto, idioma])}`);
+    const lineas = readFileSync(registro, 'utf8').trim().split('\n');
+    eq(lineas.length, malos.length, 'no se llamó una vez por aviso');
+    lineas.forEach((l, i) => {
+      const [args, entrada] = l.split('#');
+      eq(args, i === malos.length - 1 ? '-l|en|' : '-l|es|', `argumentos distintos de «-l es/en»: ${args}`);
+      eq(entrada, limpiarTexto(malos[i][0]), 'el texto no llega limpio por la entrada estándar');
+    });
+    eq(await hablarConTermux('', 'es'), null, 'un texto vacío falla');
+  } finally { process.env.PATH = antes; }
+});
+
+test('SEGURIDAD: repetir /vigilar no deja al móvil hablando sin fin (revisión de seguridad de 3.44.0: 30 avisos dejaban 600 en cola)', async () => {
+  let desfase = 0;
+  const ahora = () => Date.now() + desfase;
+  const dichos = [];
+  const hablar = async (texto) => { dichos.push(texto); return null; };
+  const servidor = crearServidor({ capturar: () => capturaCompletaPng(), ahora, hablar, vigilancia: { ...VIGILANCIA, intervaloMs: 15, intervaloInicioMs: 15 }, enHilos: false });
+  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${servidor.address().port}`;
+  const cab = { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' };
+  try {
+    // Drafts «completados» hace 9 minutos (inicio estimado ya), con 20 avisos que tocan todos, una y otra vez.
+    const guion = Array.from({ length: 20 }, (_, i) => ({ min: 7 + i * 0.01, texto: `engaño ${i}` }));
+    for (let i = 0; i < 30; i++) {
+      await fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify({ desde: Date.now() - 9 * 60000 - i, guion }) });
+      await new Promise((r) => setTimeout(r, 40));
+    }
+    // Y el mismo draft con el guion reenviado (avisos justo por delante del minuto de ahora).
+    const desde = Date.now() - 9 * 60000 - 99;
+    for (let i = 0; i < 5; i++) {
+      await fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify({ desde, guion: guion.map((a) => ({ ...a, min: 8 + i * 0.001 })) }) });
+      await new Promise((r) => setTimeout(r, 40));
+    }
+    await new Promise((r) => setTimeout(r, 300));
+    ok(dichos.length <= VOZ_POR_VENTANA, `en unos segundos dice ${dichos.length} avisos (tope ${VOZ_POR_VENTANA} por ventana)`);
+    // Pasada la ventana vuelve a poder hablar, pero lo de un draft que ya no es el vigilado no se dice.
+    const n = dichos.length;
+    desfase = 3 * 60000 + 1000;
+    await new Promise((r) => setTimeout(r, 300));
+    ok(dichos.length - n <= VOZ_POR_VENTANA, `tras la ventana dice ${dichos.length - n}`);
+    // Y un cuerpo enorme se contesta (no se queda colgado).
+    const r = await fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify({ desde: Date.now(), guion: [{ min: 1, texto: 'x'.repeat(80000) }] }) }).then((x) => x.status).catch(() => 'cortado');
+    ok(r === 400 || r === 'cortado', `un cuerpo enorme no se rechaza: ${r}`);
+  } finally { servidor.close(); }
+});
+
+test('SEGURIDAD: lo que quedaba en la cola de voz de un draft que ya no es el vigilado no se dice', async () => {
+  const dichos = [];
+  // Una voz lenta, como la de verdad: los avisos se acumulan en la cola.
+  const hablar = (texto) => new Promise((r) => setTimeout(() => { dichos.push(texto); r(null); }, 150));
+  const servidor = crearServidor({ capturar: () => capturaCompletaPng(), hablar, vigilancia: { ...VIGILANCIA, intervaloMs: 15, intervaloInicioMs: 15 }, enHilos: false });
+  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${servidor.address().port}`;
+  const cab = { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' };
+  try {
+    await fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify({ desde: Date.now() - 9 * 60000, guion: [7.5, 7.6, 7.7].map((min, i) => ({ min, texto: `viejo ${i}` })) }) });
+    await new Promise((r) => setTimeout(r, 60));
+    await fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify({ desde: Date.now() - 1000, guion: [] }) });
+    await new Promise((r) => setTimeout(r, 700));
+    ok(dichos.length <= 1, `dice lo de un draft que ya no es el vigilado: ${dichos}`);
   } finally { servidor.close(); }
 });
 

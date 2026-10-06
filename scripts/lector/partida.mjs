@@ -16,8 +16,10 @@
  * pantalla rara suelta no arranca el reloj.
  *
  * Y el MARCADOR (muertes de cada equipo y reloj, arriba en el centro: x
- * 44–58%, y 0–5%): se recorta a resolución completa para aprender sus
- * dígitos con las pantallas de las partidas de Javi. Todavía no se lee.
+ * 44–58%, y 0–4%: los dígitos van en el 1–3%; lo de debajo, donde
+ * pueden salir avisos con nombres de jugadores, se deja fuera): se recorta
+ * a resolución completa para aprender sus dígitos con las pantallas de las
+ * partidas de Javi. Todavía no se lee.
  *
  * Puro: píxeles dentro, números fuera.
  */
@@ -30,7 +32,7 @@ export const REGION_MINIMAPA = PLANTILLA.region;
 /** Entre el peor de juego (0,50) y el mejor de fuera (0,42), medidos. */
 export const UMBRAL_PARTIDA = 0.47;
 /** El marcador de arriba en el centro, [x0, y0, x1, y1]. */
-export const REGION_MARCADOR = [0.44, 0, 0.58, 0.05];
+export const REGION_MARCADOR = [0.44, 0, 0.58, 0.04];
 /** Lo que ocupa como mucho el recorte del marcador en base64 (va con los fotogramas a la incidencia). */
 export const TOPE_MARCADOR = 12000;
 

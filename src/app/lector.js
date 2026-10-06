@@ -274,13 +274,19 @@ export function cuerpoDeFotogramas({ fotogramas, resultado = null, version = '' 
     return validos.filter((f) => dentro.has(f));
   };
   const trozoMini = (f) => `\n\n${f.id} · minuto ${f.minuto}${f.tabla ? ' · TABLA' : ''} · pantalla entera a 160 px (PNG, base64):\n\n${VALLA}\n${f.miniatura}\n${VALLA}`;
-  // Con el recorte del marcador a resolución completa (3.44.0): es lo que hace falta para aprender sus dígitos.
-  const trozoTira = (f) => `\n\n${f.id} · minuto ${f.minuto}${f.tabla ? ' · TABLA' : ''}:\n\n${VALLA}\n${f.tira}\n${VALLA}${f.marcador ? `\n\n${f.id} · marcador a resolución completa:\n\n${VALLA}\n${f.marcador}\n${VALLA}` : ''}`;
+  const trozoTira = (f) => `\n\n${f.id} · minuto ${f.minuto}${f.tabla ? ' · TABLA' : ''}:\n\n${VALLA}\n${f.tira}\n${VALLA}`;
+  // Y el recorte del marcador a resolución completa (3.44.0), con lo que
+  // sobre DESPUÉS de las franjas: un marcador grande no deja fuera una franja.
+  const trozoMarcador = (f) => `\n\n${f.id} · marcador a resolución completa:\n\n${VALLA}\n${f.marcador}\n${VALLA}`;
   const cabecera = `Fotogramas del final de una partida (${etiqueta}) · app ${version} · `;
   const enCuerpo = caben(cabecera + '000 de 000 pantallas distintas desde el minuto 00.\n', trozoMini);
   const cuerpo = `${cabecera}${enCuerpo.length} de ${validos.length} pantallas distintas desde el minuto ${DESDE_FINAL_MIN}.\n` + enCuerpo.map(trozoMini).join('');
   const enComentario = caben('Franjas de arriba a 320 px (PNG, base64):', trozoTira);
-  const comentario = 'Franjas de arriba a 320 px (PNG, base64):' + enComentario.map(trozoTira).join('');
+  let comentario = 'Franjas de arriba a 320 px (PNG, base64):' + enComentario.map(trozoTira).join('');
+  for (const f of porImportancia.filter((x) => x.marcador)) {
+    const trozo = trozoMarcador(f);
+    if (comentario.length + trozo.length <= TOPE_MENSAJE) comentario += trozo;
+  }
   return { titulo: `Final de partida (${etiqueta}): ${enCuerpo.length} de ${validos.length} pantallas${validos.some((f) => f.tabla) ? ', con la tabla' : ''}`, cuerpo, comentario };
 }
 

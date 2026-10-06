@@ -147,6 +147,8 @@ export const RETRASO_MAXIMO_MIN = 2;
 const RETRASO_DEL_INICIO_MIN = 4;
 /** Lo que se acepta de la app: avisos, frases de cierre. */
 const MAX_AVISOS = 20, MAX_CIERRES = 6;
+/** Como mucho tantos avisos dichos en cualquier ventana de este largo, en todo el lector (decisión de seguridad). */
+export const VOZ_POR_VENTANA = 4, VENTANA_VOZ_MS = 3 * 60000;
 
 /** Lo aprendido, si es de la versión actual: lo de 3.27.0–3.30.0 (versión 1) se aprendió sin guardas y se descarta. */
 export function leerAprendido(fichero = FICHERO_APRENDIDO) {
@@ -309,8 +311,21 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
 
   // ── La voz (3.44.0): un aviso detrás de otro, nunca dos a la vez. ──────
   let colaVoz = Promise.resolve();
+  // Topes (revisión de seguridad de 3.44.0): sin ellos, repetir `/vigilar`
+  // (cualquier programa del móvil puede poner el `Origin` de la app) dejaba
+  // cientos de avisos en la cola y el móvil hablando horas. Por draft, como
+  // mucho su guion y su cierre; en todo el lector, como mucho
+  // `VOZ_POR_VENTANA` avisos cada `VENTANA_VOZ_MS` (un guion de verdad dice
+  // 3 en los 3 minutos más apretados); y lo encolado de un draft que ya no
+  // es el vigilado no se dice.
+  const dichosRecientes = [];
   const decir = (f, texto) => {
-    colaVoz = colaVoz.then(() => hablar(texto, f.idioma)).then((r) => {
+    const t = ahora();
+    while (dichosRecientes.length && t - dichosRecientes[0] > VENTANA_VOZ_MS) dichosRecientes.shift();
+    if (f !== final || (f.hablados ?? 0) >= MAX_AVISOS + 1 || dichosRecientes.length >= VOZ_POR_VENTANA) return colaVoz;
+    f.hablados = (f.hablados ?? 0) + 1;
+    dichosRecientes.push(t);
+    colaVoz = colaVoz.then(() => (f === final ? hablar(texto, f.idioma) : null)).then((r) => {
       const antes = f.voz;
       f.voz = r ?? 'ok';
       if (r === 'falta' && antes !== 'falta') registrar('Para oír los consejos instala Termux:API (F-Droid) y ejecuta: pkg install termux-api');
@@ -468,7 +483,9 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
   };
   const leerCuerpo = (req) => new Promise((resolver) => {
     const trozos = [];
-    req.on('data', (t) => { trozos.push(t); if (trozos.reduce((s, x) => s + x.length, 0) > 65536) req.destroy(); });
+    // Demasiado grande: se corta y se contesta como cuerpo malo (sin el
+    // `resolver`, la promesa quedaba colgada para siempre por petición).
+    req.on('data', (t) => { trozos.push(t); if (trozos.reduce((s, x) => s + x.length, 0) > 65536) { resolver(null); req.destroy(); } });
     req.on('end', () => { try { resolver(JSON.parse(Buffer.concat(trozos).toString('utf8'))); } catch { resolver(null); } });
     req.on('error', () => resolver(null));
   });

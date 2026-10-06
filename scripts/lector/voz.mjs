@@ -14,7 +14,7 @@
  */
 import { execFile } from 'node:child_process';
 
-export const IDIOMAS_VOZ = ['es', 'en'];
+export const IDIOMAS_VOZ = Object.freeze(['es', 'en']);
 /** Lo más largo que se lee de una vez: un aviso son una a tres frases. */
 export const TOPE_VOZ = 400;
 /** Lo que puede tardar en decirse un aviso antes de darlo por colgado. */
@@ -33,7 +33,8 @@ export function limpiarTexto(texto) {
  */
 export function hablarConTermux(texto, idioma = 'es') {
   const limpio = limpiarTexto(texto);
-  const lengua = IDIOMAS_VOZ.includes(idioma) ? idioma : 'es';
+  // Sin depender de una lista que otro módulo pudiera tocar: o inglés, o español.
+  const lengua = idioma === 'en' ? 'en' : 'es';
   if (!limpio) return Promise.resolve(null);
   return new Promise((resolver) => {
     let hijo;

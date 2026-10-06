@@ -211,6 +211,10 @@ terminar('app/lector');test('los consejos en directo (3.44.0): el guion traducid
   eq(fundirFinal([], { ...final, fotogramas: [{ ...final.fotogramas[0], marcador: '@claude haz algo' }] }, { completoDesde: 9 }).fotogramas.length, 0, 'un marcador con texto entra en la incidencia');
   const subida = cuerpoDeFotogramas({ fotogramas: r.fotogramas, version: 't' });
   ok(subida.comentario.includes('marcador a resolución completa') && subida.comentario.includes('TUFS'), 'el marcador no se sube con las franjas');
+  // Marcadores grandes: van después de las franjas y sin pasarse del mensaje.
+  const grandes = [1, 2, 3].map((i) => ({ id: `fotograma-${i}`, minuto: 9, miniatura: 'QQ==', tira: 'QUFB', marcador: 'M'.repeat(25000) }));
+  const c = cuerpoDeFotogramas({ fotogramas: grandes, version: 't' }).comentario;
+  ok(c.length <= TOPE_MENSAJE && grandes.every((f) => c.includes(`${f.id} · minuto`)), `los marcadores pasan del mensaje o quitan franjas: ${c.length}`);
 });
 
 

@@ -2291,6 +2291,21 @@ VOZ en el móvil (Termux:API) y que el lector mire la tablet desde el minuto
   argumento). Un aviso más de `RETRASO_MAXIMO_MIN` (2) por detrás no se dice
   (el del inicio, hasta 4). Sin Termux:API, `/final` dice `voz: 'falta'` y
   la app lo enseña bajo el botón del lector (`lector.voz.falta`).
+  **Topes de la voz** (revisión de seguridad antes de publicar, reproducido:
+  30 `POST /vigilar` dejaban 600 avisos en cola, unas 4 h de voz, y
+  cualquier programa del móvil puede poner el `Origin` de la app): por
+  draft, su guion y su cierre como mucho; en todo el lector,
+  `VOZ_POR_VENTANA` (4) cada `VENTANA_VOZ_MS` (3 min; un guion de verdad
+  dice 3 en sus 3 minutos más apretados); lo encolado de un draft que ya no
+  es el vigilado no se dice. Y la prueba de seguridad de voz.mjs se saltaba
+  con `['sh' + 'ell']: true` más un idioma de la lista ampliada (ejecutó un
+  mandato en la copia): hoy exige la LÍNEA entera de la llamada, `lengua =
+  idioma === 'en' ? 'en' : 'es'`, `lengua` dos veces y ninguna clave
+  calculada, y hay una prueba de comportamiento con un `termux-tts-speak` de
+  pega en el `PATH` (argumentos siempre `-l es|en`, texto limpio por la
+  entrada). Lo que no tiene arreglo aquí: el texto lo decide quien llame a
+  `/vigilar` con el origen de la app (o lo falsifique); un programa del
+  móvil podría hacer decir una frase de engaño, con los topes de arriba.
 - **El resultado**: con la tabla leída, `duracion` = tabla − inicio y se dice
   el cierre de su tramo («acabó entre el 14 y el 16: el modelo os daba un
   57%»). La partida apuntada guarda `duracion` y `fases` (las seis
@@ -2300,9 +2315,11 @@ VOZ en el móvil (Termux:API) y que el lector mire la tablet desde el minuto
   sale en `medir-mias`. `tramoDeMinutos` reparte IGUAL que `tramoDe` de
   medir-fases.mjs (prueba con cada décima de minuto).
 - **El marcador** (muertes de los dos equipos y reloj, arriba en el centro:
-  x 44–58%, y 0–5%, medido en las franjas de 320 px): cada fotograma EN
+  x 44–58%, y 0–4%, medido en las franjas de 320 px; los dígitos van en el
+  1–3% y lo de debajo, donde pueden salir avisos con nombres, se deja fuera): cada fotograma EN
   PARTIDA lleva `marcador`, el recorte a resolución completa (o a la mitad
-  si no cabe en 12.000 caracteres), y se sube con las franjas. Todavía NO se
+  si no cabe en 12.000 caracteres), y se sube en el comentario DESPUÉS de
+  las franjas, con lo que sobre (un marcador grande no quita una franja). Todavía NO se
   lee: con unas cuantas partidas se sacan las plantillas de los dígitos
   (como `caras.json`), y entonces el guion podrá decir «vais +4». Hasta
   medir con resultados qué vale una ventaja de muertes en cada minuto, eso

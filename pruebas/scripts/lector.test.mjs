@@ -326,8 +326,13 @@ test('SEGURIDAD: el lector solo conecta y hace capturas con adb; nunca toca, ins
   ok(/^import \{ execFile \} from 'node:child_process';$/m.test(voz), 'voz.mjs no importa exactamente { execFile } de node:child_process');
   ok(!/\bimport\s*\(|\brequire\s*\(|\bspawn|\bexecSync|\bexecFileSync|\bexec\s*\(|\bfork\s*\(|\badb\b|shell\s*:/.test(voz), 'voz.mjs lanza programas por otra vía o toca adb');
   eq([...voz.matchAll(/\bexecFile\b/g)].length, 2, 'execFile aparece en voz.mjs más veces que el import y una llamada');
-  ok(/execFile\('termux-tts-speak', \['-l', lengua\],/.test(voz), 'voz.mjs no llama a termux-tts-speak con solo el idioma de argumento');
-  ok(/const lengua = IDIOMAS_VOZ\.includes\(idioma\) \? idioma : 'es';/.test(voz), 'el idioma de la voz no sale de la lista cerrada');
+  // La LÍNEA entera (con solo el principio, un tercer argumento o unas
+  // opciones con `shell` pasaban: revisión de seguridad de 3.44.0, que la
+  // esquivó con `['sh' + 'ell']: true` y ejecutó un mandato).
+  ok(/^\s*hijo = execFile\('termux-tts-speak', \['-l', lengua\], \{ timeout: PLAZO_VOZ_MS \}, \(err\) => \{$/m.test(voz), 'voz.mjs no llama a termux-tts-speak exactamente con el idioma y el plazo');
+  ok(/^\s*const lengua = idioma === 'en' \? 'en' : 'es';$/m.test(voz), 'el idioma de la voz no es «en» o «es» sin más');
+  eq([...voz.matchAll(/\blengua\b/g)].length, 2, 'en voz.mjs `lengua` se declara o se usa más de una vez (¿sombreada?)');
+  ok(!/\]\s*:/.test(voz), 'voz.mjs usa una clave calculada (`[…]: …`), con la que se cuelan opciones');
   // Los guiones de shell (lector.sh, 3.26.0) no llaman a adb: ni una vez.
   for (const f of todos.filter((g) => /\.sh$/.test(g))) {
     const texto = readFileSync(join(carpeta, f), 'utf8').replace(/^\s*#.*$/gm, '');
