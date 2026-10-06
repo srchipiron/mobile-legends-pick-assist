@@ -8,6 +8,12 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.44.2
+
+- Las partidas profesionales cuentan dos baneos que se perdían: Mathilda
+  escrita «matilda» en Liquipedia, y el baneo que no se hizo a tiempo
+  («default»), que ya no sale como nombre desconocido en el diagnóstico.
+
 ## 3.44.1
 
 - Los consejos en directo ya no hablan de un héroe que no juegas: si tu pick

@@ -102,6 +102,10 @@ test('la ingesta profesional lee los drafts de Liquipedia y reconoce a los heroe
   // Un hueco sin héroe («none») no es un nombre sin reconocer.
   const conHueco = resumirPro([{ torneo: 'x', fecha: '2026-01-01', picks: [['none', 'layla', 'fanny', 'hylos', 'chou'], ['tigreal', 'zilong', 'eudora', 'miya', 'saber']], bans: [['NONE'], []], ganador: 1 }], heroes);
   eq(Object.keys(conHueco.sinMapear).length, 0, `«none» se cuenta como slug sin mapear: ${JSON.stringify(conHueco.sinMapear)}`);
+  // Ni el baneo que no se hizo («default»), y «matilda» (sin h) es Mathilda: los dos, vistos en el corpus guardado.
+  const conDefault = resumirPro([{ torneo: 'x', fecha: '2026-01-01', picks: [['layla', 'fanny', 'hylos', 'chou', 'saber'], ['tigreal', 'zilong', 'eudora', 'miya', 'alucard']], bans: [['default', 'matilda'], []], ganador: 1 }], heroes);
+  eq(Object.keys(conDefault.sinMapear).length, 0, `«default» o «matilda» sin reconocer: ${JSON.stringify(conDefault.sinMapear)}`);
+  eq(conDefault.heroes?.Mathilda?.bans, 1, 'el baneo de «matilda» no cuenta para Mathilda');
   eq(Object.values(conHueco.heroes).reduce((a, x) => a + x.picks, 0), 9, 'el hueco no cuenta como pick');
 
   // El resumen cuenta picks, victorias y baneos por heroe, y respeta la ventana.

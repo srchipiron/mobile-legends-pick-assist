@@ -3421,6 +3421,25 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   menos de 10 servidores activos), proteger `main`, fijar las acciones de
   los workflows por SHA y separar el origen de la app (ver «Lo que queda
   pendiente»).
+- **Lo examinado el 6 de octubre de 2026 (3.44.2)**, con el lector en sus
+  47 partidas leídas: (1) el umbral `PARECIDO_MINIMO` 0,80 está bien puesto
+  en los cuatro lados: de las 353 dudas guardadas (`lector.dudas`), el
+  candidato era el de verdad en 20 de 151 enemigos, 6 de 97 aliados, 4 de
+  49 baneos tuyos y 3 de 48 suyos, también entre 0,75 y 0,80; bajarlo
+  metería más falsos que aciertos. (2) Lo que sí es de un héroe: Gord,
+  candidato en 19 huecos enemigos, era él en 10, con un máximo de 0,77, y
+  sale 10 veces en «sin encontrar al corregir»: su dibujo en el panel no
+  se parece lo bastante a la cara de la API (que sí es la de 2.2.16) y el
+  aprendizaje no lo coge (0,78). Se arregla con UNA captura del draft con
+  Gord: sin ella, cualquier cambio sería a ciegas. Argus, igual (9). (3)
+  La lectura tarda 4,9 s de mediana en su móvil y 3,8 s son la captura de
+  la tablet (146 lecturas): lo que queda por ganar está en `screencap`,
+  no en el reconocimiento. Probar la captura en crudo (sin `-p`) cambia
+  el mandato permitido y manda 14 MB por wifi en cada captura, también
+  durante la partida (vigilancia del final): se decide con Javi, no solo.
+  (4) Los guiones de voz con tres drafts reales leen bien (nombres,
+  porcentajes, sin llaves); el aviso del inicio es el más largo (unos 200
+  caracteres, la mitad del tope).
 
 ## Lo que queda pendiente
 

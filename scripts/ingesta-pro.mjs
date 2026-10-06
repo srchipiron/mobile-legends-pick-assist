@@ -109,14 +109,20 @@ export const ALIAS = {
   fara: 'Faramis',
   sele: 'Selena',
   luo: 'Luo Yi',
+  // Visto el 5-10-2026 (lo avisó el diagnóstico): «matilda», sin la h, en un
+  // baneo de MLBB Continental Championships S8 (19-9-2026). No es prefijo de
+  // ningún otro nombre.
+  matilda: 'Mathilda',
 };
 
 /**
  * Lo que Liquipedia escribe cuando un hueco del draft no tiene héroe (una
  * partida a medias o mal rellenada): no es un nombre sin reconocer, es un
- * hueco. No se cuenta como slug sin mapear ni como pick.
+ * hueco. No se cuenta como slug sin mapear ni como pick. «default» sale en
+ * un baneo de MCT 2026 East Asia (26-4-2026, `historial/pro-partidas.jsonl`):
+ * el baneo que no se hizo a tiempo; no es ningún héroe.
  */
-export const SIN_PICK = new Set(['none', '']);
+export const SIN_PICK = new Set(['none', 'default', '']);
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
