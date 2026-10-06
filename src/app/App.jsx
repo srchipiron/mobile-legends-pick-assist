@@ -213,12 +213,13 @@ export default function App() {
     // Si la partida se apuntó sola, después del plazo de su «Deshacer»
     // (3.42.0): deshecha, el lector no aprende nada de ella.
     const lista = sacarFotogramas();
-    const ensenarYSubir = ({ lista: l, gane: g }) => {
-      ensenarResultado({ ids: l.map((f) => f.id), gane: g });
+    const ensenarYSubir = ({ lista: l, gane: g, desde: d }) => {
+      // Con `desde`, el lector deja de vigilar y de hablar de esa partida (3.44.1).
+      ensenarResultado({ ids: l.map((f) => f.id), gane: g, desde: d });
       subirFotogramas(l, g ? 'gane' : 'perdi');
     };
-    if (deshacible && draft.completoDesde) diferido.current.programar(draft.completoDesde, { lista, gane }, DESHACER_APUNTADA_MS + 1000, ensenarYSubir);
-    else ensenarYSubir({ lista, gane });
+    if (deshacible && draft.completoDesde) diferido.current.programar(draft.completoDesde, { lista, gane, desde: draft.completoDesde }, DESHACER_APUNTADA_MS + 1000, ensenarYSubir);
+    else ensenarYSubir({ lista, gane, desde: draft.completoDesde });
     // Este draft ya está apuntado (a mano o sola): un tic de la vigilancia
     // que estuviera esperando al lector no lo vuelve a apuntar (3.37.0).
     if (draft.completoDesde) apuntadaSola.current = draft.completoDesde;
@@ -252,7 +253,12 @@ export default function App() {
   const draftActual = useRef(draft);
   draftActual.current = draft;
   // El guion de AHORA (el héroe fijado puede cambiar con el draft completo).
-  const directo = useMemo(() => guionTraducido(rec.partida, t, idioma), [rec.partida, t, idioma]);
+  // Con tu pick fijado fuera del ranking de tu línea (el lector fija tu fila,
+  // sea de la línea que sea), el plan es el del nº1: la voz hablaría de otro
+  // héroe, y mejor callar (3.44.1). Y sin los datos del día todavía (recién
+  // abierta la app), el guion está vacío y no vale como guion: `listo`.
+  const planDelPick = draft.miPick && rec.yo?.name !== draft.miPick ? null : rec.partida;
+  const directo = useMemo(() => ({ ...guionTraducido(planDelPick, t, idioma), listo: metaListo }), [planDelPick, t, idioma, metaListo]);
   const directoActual = useRef(directo);
   directoActual.current = directo;
   useEffect(() => {
@@ -281,14 +287,21 @@ export default function App() {
       if (vigilando.current || document.visibilityState !== 'visible') return;
       vigilando.current = true;
       try {
-        let f = await pedirFinal();
+        // Sin `/final` (el lector tarda o acaba de arrancar) se le avisa igual:
+        // si no, el guion no llegaba y con el móvil ya en el bolsillo no
+        // había otro tic (3.44.1).
+        let f = await pedirFinal().catch(() => ({ desde: null, fotogramas: [] }));
         if (!sigue()) return;
         // El lector no sabe de este draft (acaba de completarse, o se reinició)
         // o su guion de consejos ya no es el de ahora (3.44.0): se le avisa,
         // con el guion, y contesta con lo que tenga.
-        const huella = `${yo}|${directoActual.current.huella}`;
+        // Sin los datos del día no se manda guion (el lector conserva el que
+        // tenga): tras recargar, el primer aviso iba con el guion VACÍO y el
+        // lector daba por pasados los avisos del minuto en que llegaba el bueno.
+        const d = directoActual.current;
+        const huella = `${yo}|${d.listo ? d.huella : 'sin datos'}`;
         if (f.desde !== yo || guionEnviado.current !== huella) {
-          const r = await avisarVigilancia({ desde: yo, directo: directoActual.current });
+          const r = await avisarVigilancia({ desde: yo, directo: d.listo ? d : null });
           if (r) { f = r; guionEnviado.current = huella; }
         }
         if (!sigue()) return;
@@ -296,7 +309,8 @@ export default function App() {
         if (!suyo) return;
         fotogramas.current = lista;
         if (duracion) duracionFinal.current = { desde: yo, duracion };
-        setVozLector(voz);
+        // La voz que falta se dice hasta que vuelva a sonar (un draft nuevo aún no ha hablado).
+        if (voz) setVozLector(voz);
         // La tabla de resultado con una palabra conocida (3.32.0): la partida se apunta SOLA, con «Deshacer», fechada cuando el lector vio la tabla.
         // Nunca dos veces por draft, ni la que deshiciste (marca guardada en el draft).
         if (resultado && apuntadaSola.current !== yo && draftActual.current.apuntadaSola !== yo && apuntarSolaAhora.current(resultado === 'gane', resultadoEn ?? Date.now())) apuntadaSola.current = yo;
@@ -381,15 +395,16 @@ export default function App() {
   // Hasta que no hay catálogo los nombres leídos no resuelven a nadie: se espera.
   const conCatalogo = !!carga.catalogo && datos.heroes.length > 0;
   useEffect(() => {
-    if (!conCatalogo || !tocaLeerSolo({ auto: lectorAuto, hoja, completo })) return undefined;
-    const tic = () => { if (tocaLeerSolo({ auto: lectorAuto, visible: document.visibilityState === 'visible', hoja, completo, leyendo: leyendoAhora.current })) leerDelJuego({ silencioso: true }); };
+    const tuPick = { miPick: draft.miPick, completoDesde: draft.completoDesde };
+    if (!conCatalogo || !tocaLeerSolo({ auto: lectorAuto, hoja, completo, ...tuPick })) return undefined;
+    const tic = () => { if (tocaLeerSolo({ auto: lectorAuto, visible: document.visibilityState === 'visible', hoja, completo, leyendo: leyendoAhora.current, ...tuPick })) leerDelJuego({ silencioso: true }); };
     // Al (re)arrancar, una lectura ya, salvo que acabe de haber una: la
     // primera lectura cambia el draft de vacío a lleno y eso rearma esto.
     if (Date.now() - ultimaLectura.current >= INTERVALO_AUTO_MS) tic();
     const reloj = setInterval(tic, vacio ? INTERVALO_AUTO_VACIO_MS : INTERVALO_AUTO_MS);
     return () => clearInterval(reloj);
     // leerDelJuego cambia en cada render; lo que decide si se lee es lo de aquí.
-  }, [conCatalogo, lectorAuto, hoja, completo, vacio]);
+  }, [conCatalogo, lectorAuto, hoja, completo, vacio, draft.miPick, draft.completoDesde]);
 
   if (error) return <div className="results"><p className="notice">{t('app.errorDatos', { error })}</p></div>;
   if (!carga.catalogo) return <div className="results"><p className="empty-state">{t('app.cargando')}</p></div>;

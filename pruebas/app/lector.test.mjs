@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -85,6 +85,13 @@ test('leyendo solo: cuándo toca y cuándo no, y las dudas compactas de una lect
   ok(!tocaLeerSolo({ auto: true, hoja: 'enemigos' }), 'con una hoja abierta lee (se está tocando a mano)');
   ok(!tocaLeerSolo({ auto: true, completo: true }), 'con el draft completo sigue leyendo durante la partida');
   ok(!tocaLeerSolo({ auto: true, leyendo: true }), 'lee mientras otra lectura está en marcha');
+  // Completo pero sin TU pick (eliges el último, 3.44.1): se sigue leyendo tu fila un rato, y nada más.
+  const t0 = 1_000_000;
+  ok(tocaLeerSolo({ auto: true, completo: true, completoDesde: t0, ahora: t0 + 10000 }), 'con el draft completo antes de tu pick deja de leer tu fila');
+  ok(!tocaLeerSolo({ auto: true, completo: true, completoDesde: t0, ahora: t0 + LEER_TU_PICK_MS }), 'sin tu pick sigue leyendo durante la partida');
+  ok(!tocaLeerSolo({ auto: true, completo: true, completoDesde: t0, ahora: t0 + 10000, miPick: 'Clint' }), 'con tu pick ya fijado sigue leyendo el draft completo');
+  ok(!tocaLeerSolo({ auto: true, completo: true, ahora: t0 }), 'sin saber desde cuándo está completo lee');
+  ok(LEER_TU_PICK_MS <= 3 * 60000, 'el plazo de leer tu fila se mete en la partida');
   ok(INTERVALO_AUTO_MS >= 4000 && INTERVALO_AUTO_VACIO_MS > INTERVALO_AUTO_MS, 'los intervalos no respetan lo que tarda una lectura (4–6 s) ni van más despacio con el draft vacío');
   const dudas = dudasDeLectura({
     tuyos: [{ nombre: 'Hirara', candidato: 'Hirara', parecido: 0.95 }, { nombre: null, candidato: 'Belerick', parecido: 0.713 }],
@@ -149,6 +156,10 @@ test('el final de la partida: cuándo se pregunta al lector, cómo se le avisa, 
   const e = await ensenarResultado({ ids: ['fotograma-1', 'fotograma-2'], gane: true, pedir: async (url, o) => { ensenadas.push({ url, o }); return new Response(JSON.stringify({ aprendidos: 1 }), { status: 200 }); } });
   ok(e?.aprendidos === 1 && /\/resultado$/.test(ensenadas[0].url) && ensenadas[0].o.method === 'POST' && JSON.parse(ensenadas[0].o.body).gane === true && JSON.parse(ensenadas[0].o.body).ids.length === 2, `el resultado no se enseña al lector: ${JSON.stringify(ensenadas)}`);
   eq(await ensenarResultado({ ids: [], gane: true, pedir: async () => { throw new Error('no debía pedir'); } }), null, 'sin fotogramas pide igual');
+  // Con el draft (3.44.1) se avisa aunque no haya fotogramas: el lector deja de hablar de esa partida.
+  const conDesde = [];
+  await ensenarResultado({ ids: [], gane: false, desde: 77, pedir: async (url, o) => { conDesde.push(JSON.parse(o.body)); return new Response('{}', { status: 200 }); } });
+  ok(conDesde.length === 1 && conDesde[0].desde === 77 && conDesde[0].gane === false, `apuntar sin fotogramas no avisa al lector con el draft: ${JSON.stringify(conDesde)}`);
   eq(await ensenarResultado({ ids: ['fotograma-1'], gane: false, pedir: async () => { throw new Error('sin lector'); } }), null, 'sin lector lanza');
   const tipo = async (pedir) => { try { await pedirFinal({ pedir, plazoMs: 1000 }); return 'ok'; } catch (e) { return e.tipo; } };
   eq(await tipo(() => Promise.reject(new TypeError('Failed to fetch'))), 'sinPuente');

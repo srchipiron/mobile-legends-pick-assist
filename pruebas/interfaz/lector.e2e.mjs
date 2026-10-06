@@ -188,9 +188,11 @@ await prueba('con «Leer solo» y el draft completo, el lector vigila el final p
   let partidas = [];
   for (let i = 0; i < 100 && !partidas.length; i++) { await pagina.waitForTimeout(250); partidas = (await leer(pagina, 'roam-picker:partidas')) ?? []; }
   eq(partidas.length, 1, 'la partida no se apunta sola con la tabla a la vista');
-  // Con el aviso, la app le manda al lector el guion de los consejos en directo de tu pick (3.44.0).
+  // Con tu pick FUERA del ranking de tu línea el plan sería el del nº1: el
+  // lector recibe la vigilancia, pero sin consejos de otro héroe (3.44.1; el
+  // guion de un draft normal lo mira la prueba de abajo).
   const fin = await (await fetch(`http://127.0.0.1:${PUERTO}/final`, { headers: { Origin: new URL(url).origin } })).json();
-  ok(fin.desde === completoDesde && fin.avisos >= 2, `el lector no recibe el guion de los consejos en directo: ${JSON.stringify({ desde: fin.desde, avisos: fin.avisos })}`);
+  ok(fin.desde === completoDesde && fin.avisos === 0, `el lector recibe consejos del nº1 con tu pick fijado fuera de la línea: ${JSON.stringify({ desde: fin.desde, avisos: fin.avisos })}`);
   const [p] = partidas;
   eq(p.pick, 'Khufra', 'la partida apuntada sola es la del nº1 de la línea, no tu pick fijado');
   ok(p.origen === 'lector' && p.gane === false && p.draft?.enemigos?.length === 5 && p.pick, `la partida apuntada sola no es la del draft, perdida y del lector: ${JSON.stringify({ origen: p.origen, gane: p.gane, pick: p.pick, enemigos: p.draft?.enemigos })}`);
@@ -217,6 +219,28 @@ await prueba('con «Leer solo» y el draft completo, el lector vigila el final p
   eq(((await leer(pagina, 'roam-picker:partidas')) ?? []).length, 0, 'tras deshacer y recargar se vuelve a apuntar sola');
   ok(!errores.length, `errores de página: ${errores}`);
   capturar = () => png;
+  await contexto.close();
+});
+
+await prueba('el guion de los consejos en directo llega al lector con el draft completo; y si eliges el último, se sigue leyendo tu fila un rato (3.44.1)', async () => {
+  const origen = { headers: { Origin: new URL(url).origin } };
+  // Sin pick fijado: el guion del nº1 de la línea, con sus avisos.
+  const completoDesde = Date.now() - 2 * 60 * 1000;
+  const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], enemyRoam: null, fase: 'picks', completoDesde };
+  let { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:linea': 'exp', 'roam-picker:lector-auto': true, 'roam-picker:draft': draft } });
+  let fin = null;
+  for (let i = 0; i < 80; i++) { await pagina.waitForTimeout(250); fin = await (await fetch(`http://127.0.0.1:${PUERTO}/final`, origen)).json(); if (fin.desde === completoDesde && fin.avisos >= 2) break; }
+  ok(fin.desde === completoDesde && fin.avisos >= 2, `el lector no recibe el guion de los consejos en directo: ${JSON.stringify({ desde: fin.desde, avisos: fin.avisos })}`);
+  // Pasado el plazo de leer tu fila, con el draft completo no se lee nada.
+  eq((await leer(pagina)).miPick ?? null, null, 'con el draft completo hace minutos sigue leyendo la tablet');
+  ok(!errores.length, `errores de página: ${errores}`);
+  await contexto.close();
+  // Completo hace unos segundos y sin tu pick (eliges el último): se lee tu fila y queda fijado.
+  ({ contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:lector-auto': true, 'roam-picker:draft': { ...draft, completoDesde: Date.now() - 5000 } } }));
+  let d = null;
+  for (let i = 0; i < 120; i++) { await pagina.waitForTimeout(250); d = await leer(pagina); if (d.miPick) break; }
+  eq(d.miPick, VERDAD.tuyo, `con el draft completo antes de tu pick no se lee tu fila: ${d.miPick}`);
+  ok(!errores.length, `errores de página: ${errores}`);
   await contexto.close();
 });
 

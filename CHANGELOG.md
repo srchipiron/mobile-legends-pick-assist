@@ -8,6 +8,27 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.44.1
+
+- Los consejos en directo ya no hablan de un héroe que no juegas: si tu pick
+  fijado no es de tu línea, la voz se calla en vez de darte el plan del nº1.
+  Y si eliges el último, el lector sigue mirando tu fila un minuto y medio
+  después de completar el draft, para saber con quién juegas.
+- Corregir un enemigo o un compañero con el draft ya completo (la × y meter
+  al de verdad) ya no reinicia la vigilancia de la partida: antes el lector
+  volvía a decir el aviso del inicio, retrasaba todos los consejos y perdía
+  las pantallas del final.
+- Con la partida acabada, la voz se calla: al ver la tabla del resultado
+  (también la de victoria que aún no conoce) y al apuntar la partida en la
+  app aunque el lector no viera la tabla.
+- Las partidas de más de 23 minutos también se miden: con el inicio visto, el
+  lector vigila hasta el minuto 40 de partida en vez de hasta el 25 del draft.
+- Si al empezar a mirar la tablet ya estaba en partida, el inicio se da por
+  estimado: esa duración no se apunta ni se dice un cierre que podría ser de
+  otro tramo.
+- Tras recargar la app con el draft completo, el lector ya no recibe un guion
+  vacío antes del bueno (se perdía el aviso del minuto en que llegaba).
+
 ## 3.44.0
 
 - Consejos en directo por voz: con «Leer solo», el móvil te va diciendo en

@@ -12,8 +12,9 @@ import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
 import { parecidoAPartida, enPartida, UMBRAL_PARTIDA, recorteMarcador } from '../../scripts/lector/partida.mjs';
 import { limpiarTexto, TOPE_VOZ, hablarConTermux } from '../../scripts/lector/voz.mjs';
-import { crearServidor, VIGILANCIA, RETRASO_MAXIMO_MIN, VOZ_POR_VENTANA } from '../../scripts/lector/servir.mjs';
+import { crearServidor, plantillasDeSerie, VIGILANCIA, RETRASO_MAXIMO_MIN, VOZ_POR_VENTANA } from '../../scripts/lector/servir.mjs';
 import { tramoDeMinutos } from '../../src/motor/directo.js';
+import { fundirFinal } from '../../src/app/lector.js';
 import { capturaCompletaPng, pantallaDeFinal } from '../fixtures/juego/captura.mjs';
 
 const CARPETA = join(RAIZ, 'pruebas/fixtures/juego/pantallas');
@@ -58,7 +59,8 @@ test('el guion se dice en su minuto de PARTIDA (inicio visto por el minimapa), l
   const vigilancia = { ...VIGILANCIA, intervaloMs: 15, intervaloInicioMs: 15 };
   // `cola`: pantallas sueltas que salen antes que `pantalla` (una de juego entre dos del draft).
   let capturas = 0; const cola = [];
-  const servidor = crearServidor({ capturar: () => { capturas += 1; return cola.length ? cola.shift() : pantalla; }, ahora, hablar, vigilancia, enHilos: false });
+  const registro = [];
+  const servidor = crearServidor({ capturar: () => { capturas += 1; return cola.length ? cola.shift() : pantalla; }, ahora, hablar, vigilancia, enHilos: false, registrar: (l) => registro.push(l) });
   await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
   const base = `http://127.0.0.1:${servidor.address().port}`;
   const cab = { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' };
@@ -97,9 +99,11 @@ test('el guion se dice en su minuto de PARTIDA (inicio visto por el minimapa), l
     eq(dichos[1], 'en:Peleas');
     // Saltamos al minuto 12: el del 9 se quedó atrás más de RETRASO_MAXIMO_MIN y no se dice.
     desfase = inicio - desde + (9 + RETRASO_MAXIMO_MIN + 1) * 60000;
-    await hasta(async () => (await final()).dichos === 3, 2000);
+    ok(await hasta(async () => (await final()).saltados === 1, 2000), 'el aviso atrasado no cuenta como saltado');
     await new Promise((r) => setTimeout(r, 100));
     eq(dichos.length, 2, `dice un aviso que se quedó atrás: ${dichos}`);
+    eq((await final()).dichos, 2, 'cuenta como dicho un aviso que no se dijo');
+    ok(registro.some((l) => l.includes('sin decir (atrasado') && l.includes('Momento')), 'el aviso atrasado no deja línea en el registro');
     // Acaba hacia el minuto 15 de partida: duración y el cierre de su tramo.
     desfase = inicio - desde + 15 * 60000;
     pantalla = tablaPng;
@@ -110,6 +114,121 @@ test('el guion se dice en su minuto de PARTIDA (inicio visto por el minimapa), l
     eq(dichos[2], `en:${cierres[tramoDeMinutos(f.duracion)]}`, 'el cierre no es el de su tramo');
     eq(f.voz, 'ok', 'no dice que la voz va bien');
   } finally { servidor.close(); }
+});
+
+/** Un lector con la tablet y el reloj en manos de la prueba (3.44.1). */
+async function lectorDePrueba(opciones = {}) {
+  const p = { pantalla: null, desfase: 0, dichos: [] };
+  const ahora = () => Date.now() + p.desfase;
+  const servidor = crearServidor({ capturar: () => p.pantalla, ahora, hablar: async (texto) => { p.dichos.push(texto); return null; }, vigilancia: { ...VIGILANCIA, intervaloMs: 15, intervaloInicioMs: 15 }, enHilos: false, ...opciones });
+  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${servidor.address().port}`;
+  const cab = { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' };
+  p.final = async () => (await fetch(`${base}/final`, { headers: cab })).json();
+  p.vigilar = (cuerpo) => fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify(cuerpo) });
+  p.resultado = async (cuerpo) => (await fetch(`${base}/resultado`, { method: 'POST', headers: cab, body: JSON.stringify(cuerpo) })).status;
+  p.hasta = async (cond, ms = 8000) => { const t0 = Date.now(); while (!(await cond()) && Date.now() - t0 < ms) await new Promise((r) => setTimeout(r, 15)); return cond(); };
+  p.cerrar = () => servidor.close();
+  return p;
+}
+const CIERRES = ['c10', 'c12', 'c14', 'c16', 'c18', 'c20'];
+
+test('ya en partida al empezar a mirar (draft completado tarde, lector reiniciado): el inicio sale ESTIMADO, la app no apunta la duración y no se dice un cierre que puede ser de otro tramo', async () => {
+  const juegoPng = escribirPng(ampliada(pantallas.find((p) => p.f.startsWith('juego-')).img, 3));
+  const p = await lectorDePrueba();
+  try {
+    const desde = Date.now();
+    await p.vigilar({ desde, guion: [{ min: 0.25, texto: 'Empieza' }], cierres: CIERRES });
+    // Desde la primera captura, minimapa: la partida empezó antes y no se sabe cuánto.
+    p.pantalla = juegoPng;
+    p.desfase = 2 * 60000;
+    ok(await p.hasta(async () => (await p.final()).inicio != null), 'no da la partida por empezada');
+    eq((await p.final()).inicioEstimado, true, 'un inicio que no se vio llegar sale como medido');
+    p.desfase = 15 * 60000;
+    p.pantalla = pantallaDeFinal();
+    ok(await p.hasta(async () => (await p.final()).resultado === 'perdi'), 'no lee la tabla');
+    const f = await p.final();
+    ok(f.duracion > 0, 'no calcula la duración (aunque sea estimada)');
+    eq(fundirFinal([], f, { completoDesde: desde }).duracion, null, 'la app apunta una duración con el inicio sin ver');
+    await new Promise((r) => setTimeout(r, 100));
+    ok(!p.dichos.some((d) => d.startsWith('c')), `dice un cierre con el inicio estimado: ${p.dichos}`);
+  } finally { p.cerrar(); }
+});
+
+test('una partida de más de 23 minutos también se mide: con el inicio visto se vigila pasado el minuto 25 del draft, con su duración y su cierre', async () => {
+  const juegoPng = escribirPng(ampliada(pantallas.find((p) => p.f.startsWith('juego-')).img, 3));
+  const draftPng = escribirPng(ampliada(pantallas.find((p) => p.f === 'fuera-0.png').img, 3));
+  const p = await lectorDePrueba();
+  try {
+    const desde = Date.now();
+    await p.vigilar({ desde, guion: [], cierres: CIERRES });
+    p.pantalla = draftPng;
+    p.desfase = 2 * 60000;
+    await new Promise((r) => setTimeout(r, 80));
+    p.pantalla = juegoPng;
+    ok(await p.hasta(async () => (await p.final()).inicio != null), 'no ve empezar la partida');
+    const { inicio, inicioEstimado } = await p.final();
+    eq(inicioEstimado, false);
+    // Minuto 26 de PARTIDA (más de 27 del draft): sigue mirando y la tabla cuenta.
+    p.desfase = inicio - desde + 26 * 60000;
+    await new Promise((r) => setTimeout(r, 80));
+    ok((await p.final()).activa, 'deja de vigilar en el minuto 25 del draft con la partida en juego');
+    p.pantalla = pantallaDeFinal();
+    ok(await p.hasta(async () => (await p.final()).resultado === 'perdi'), 'no lee la tabla de una partida larga');
+    const f = await p.final();
+    ok(Math.abs(f.duracion - 26) < 0.5, `la duración no es la de la partida: ${f.duracion}`);
+    eq(fundirFinal([], f, { completoDesde: desde }).duracion, f.duracion, 'la app no apunta la duración de una partida larga');
+    ok(await p.hasta(() => p.dichos.length >= 1), 'no dice el cierre');
+    eq(p.dichos[0], CIERRES[5]);
+  } finally { p.cerrar(); }
+});
+
+test('con la partida acabada no se dice nada más: ni tras ver la tabla, ni tras apuntarla en la app aunque la tabla no se viera (3.44.1)', async () => {
+  const juegoPng = escribirPng(ampliada(pantallas.find((p) => p.f.startsWith('juego-')).img, 3));
+  const draftPng = escribirPng(ampliada(pantallas.find((p) => p.f === 'fuera-0.png').img, 3));
+  const p = await lectorDePrueba();
+  try {
+    const desde = Date.now();
+    await p.vigilar({ desde, guion: [{ min: 13, texto: 'tarde' }], cierres: CIERRES });
+    p.pantalla = draftPng; p.desfase = 2 * 60000;
+    await new Promise((r) => setTimeout(r, 80));
+    p.pantalla = juegoPng;
+    ok(await p.hasta(async () => (await p.final()).inicio != null), 'no ve empezar la partida');
+    const { inicio } = await p.final();
+    // Acaba en el minuto 12 y Javi la apunta en la app sin que el lector viera la tabla.
+    p.desfase = inicio - desde + 12 * 60000;
+    p.pantalla = draftPng;
+    const r = await p.resultado({ ids: [], gane: true, desde });
+    ok(r === 200 || r === 400, `el aviso de partida apuntada no se contesta: ${r}`);
+    eq((await p.final()).activa, false, 'apuntada en la app, el lector sigue vigilando esa partida');
+    p.desfase = inicio - desde + 13.5 * 60000;
+    await new Promise((r2) => setTimeout(r2, 150));
+    eq(p.dichos.length, 0, `habla de una partida ya apuntada: ${p.dichos}`);
+    // Otro draft (otro instante) no se para por un resultado viejo.
+    const otro = desde + 1;
+    await p.vigilar({ desde: otro, guion: [] });
+    await p.resultado({ ids: [], gane: true, desde });
+    eq((await p.final()).activa, true, 'el resultado de una partida para la vigilancia de otra');
+    // Y la tabla vista sin palabra conocida (la de victoria hasta aprenderla): duración y cierre, y después nada.
+    const q = await lectorDePrueba({ resultados: { ...plantillasDeSerie(), perdi: [] } });
+    try {
+      await q.vigilar({ desde, guion: [{ min: 13, texto: 'tarde' }], cierres: CIERRES });
+      q.pantalla = draftPng; q.desfase = 2 * 60000;
+      await new Promise((r2) => setTimeout(r2, 80));
+      q.pantalla = juegoPng;
+      ok(await q.hasta(async () => (await q.final()).inicio != null), 'no ve empezar la partida');
+      const i2 = (await q.final()).inicio;
+      q.desfase = i2 - desde + 12.5 * 60000;
+      q.pantalla = pantallaDeFinal();
+      ok(await q.hasta(async () => (await q.final()).duracion != null), 'una tabla sin palabra conocida no da la duración');
+      eq((await q.final()).resultado, null, 'la prueba necesita una tabla SIN palabra conocida');
+      ok(await q.hasta(() => q.dichos.length >= 1), 'no dice el cierre');
+      q.pantalla = draftPng;
+      q.desfase = i2 - desde + 13.5 * 60000;
+      await new Promise((r2) => setTimeout(r2, 150));
+      eq(q.dichos.join(), CIERRES[1], `tras la tabla sigue con los consejos de la partida: ${q.dichos}`);
+    } finally { q.cerrar(); }
+  } finally { p.cerrar(); }
 });
 
 test('sin ver empezar la partida, el inicio se estima y se marca (la app no apunta esa duración); sin Termux:API, la voz lo dice', async () => {

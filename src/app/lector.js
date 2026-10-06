@@ -1,4 +1,5 @@
 import { nombreClave } from '../motor/nombres.js';
+import { esDuracionPosible } from '../motor/directo.js';
 
 /**
  * El botón «Leer del juego» (3.25.0) habla con el lector de Termux
@@ -29,6 +30,14 @@ export const PLAZO_CORREGIR_MS = 3 * 60 * 1000;
  */
 export const INTERVALO_AUTO_MS = 5000;
 export const INTERVALO_AUTO_VACIO_MS = 12000;
+/**
+ * Con el draft completo pero sin TU pick (3.44.1): si eliges el último, los
+ * cinco enemigos y tus cuatro compañeros están antes que tú, la lectura
+ * paraba y los consejos en directo hablaban del nº1 aunque cogieras otro. Se
+ * sigue leyendo (tu fila) hasta este plazo: lo que dura la elección de skins.
+ * Decisión de producto; pasado, se para como siempre (no se captura jugando).
+ */
+export const LEER_TU_PICK_MS = 90000;
 
 /**
  * ¿Toca leer solo ahora? Con el modo encendido, la app a la vista, sin una
@@ -36,7 +45,8 @@ export const INTERVALO_AUTO_VACIO_MS = 12000;
  * con los cinco enemigos y los cuatro compañeros ya no hay nada que leer, y
  * seguir haciendo capturas durante la partida sería gastar por nada.
  */
-export const tocaLeerSolo = ({ auto, visible = true, hoja = null, completo = false, leyendo = false }) => !!auto && visible && !hoja && !completo && !leyendo;
+export const tocaLeerSolo = ({ auto, visible = true, hoja = null, completo = false, leyendo = false, miPick = null, completoDesde = null, ahora = Date.now() }) => !!auto && visible && !hoja && !leyendo
+  && (!completo || (!miPick && Number.isFinite(completoDesde) && ahora - completoDesde >= 0 && ahora - completoDesde < LEER_TU_PICK_MS));
 
 /**
  * Lo que el lector no reconoció en una lectura, compacto, para guardarlo
@@ -216,7 +226,7 @@ export function fundirFinal(actuales, final, { completoDesde, maximo = MAX_FOTOG
   const resultado = final.resultado === 'gane' || final.resultado === 'perdi' ? final.resultado : null;
   // Cuánto duró la partida (3.44.0, del inicio que vio el lector a la tabla)
   // y si la voz funciona: lo de la voz se enseña, la duración se apunta.
-  const duracion = Number.isFinite(final.duracion) && final.duracion > 0 && final.duracion <= 60 && !final.inicioEstimado ? final.duracion : null;
+  const duracion = esDuracionPosible(final.duracion) && !final.inicioEstimado ? final.duracion : null;
   const voz = ['ok', 'falta', 'otro'].includes(final.voz) ? final.voz : null;
   return { suyo: true, fotogramas, resultado, resultadoEn: resultado && Number.isFinite(final.resultadoEn) ? final.resultadoEn : null, duracion, voz };
 }
@@ -238,12 +248,13 @@ export function guionTraducido(plan, t, idioma = 'es') {
  * partida, para que el lector aprenda la palabra de la tabla (3.32.0).
  * Nunca lanza; sin fotogramas no pide nada.
  */
-export async function ensenarResultado({ ids = [], gane, base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
-  if (!ids.length || typeof gane !== 'boolean') return null;
+export async function ensenarResultado({ ids = [], gane, desde = null, base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+  // Con `desde` (3.44.1) el lector deja también de vigilar y de hablar de esa partida, aunque no haya fotogramas.
+  if ((!ids.length && !Number.isFinite(desde)) || typeof gane !== 'boolean') return null;
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), plazoMs);
   try {
-    const r = await pedir(`${base}/resultado`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, gane }), cache: 'no-store', signal: corte.signal });
+    const r = await pedir(`${base}/resultado`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, gane, ...(Number.isFinite(desde) ? { desde } : {}) }), cache: 'no-store', signal: corte.signal });
     return r.ok ? await r.json().catch(() => null) : null;
   } catch {
     return null;

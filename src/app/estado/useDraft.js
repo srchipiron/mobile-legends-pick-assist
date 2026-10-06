@@ -64,13 +64,35 @@ function cargar() {
 /** ¿Están los cinco enemigos y los cuatro compañeros? Entonces se está jugando. */
 export const draftCompleto = (d) => d.enemigos.length >= TOPES.enemigos && d.aliados.length >= TOPES.aliados;
 
-/** Cuándo se completó: se conserva si ya lo estaba, arranca si acaba de completarse, se borra si deja de estarlo. */
-function completoDesdeDe(d, ahora) {
-  if (!draftCompleto(d)) return null;
-  return d.completoDesde ?? ahora;
+/**
+ * Corregir un draft completo (la × a un enemigo mal leído y meter al de
+ * verdad) es la MISMA partida (3.44.1): `completoDesde` es lo que la
+ * identifica ante el lector, y hasta 3.44.0 la corrección arrancaba otro,
+ * el lector tiraba la partida que vigilaba (fotogramas, resultado), volvía
+ * a decir el aviso del inicio y medía la duración desde la corrección. Se
+ * reconoce porque vuelve a completarse con casi los mismos héroes
+ * (`COMUNES_DE_LA_MISMA` de 9: una partida nueva no comparte casi ninguno)
+ * y dentro de `MISMA_PARTIDA_MS` (lo que dura una partida). Decisiones de
+ * producto. No se guarda: tras recargar a medias de una corrección, el
+ * draft vuelve a contar como nuevo, como antes.
+ */
+export const COMUNES_DE_LA_MISMA = 7;
+export const MISMA_PARTIDA_MS = 30 * 60000;
+
+/** Cuándo se completó: se conserva si ya lo estaba, arranca si acaba de completarse (o vuelve el de antes si es una corrección), se borra si deja de estarlo. */
+export function conCompleto(d, ahora) {
+  if (!draftCompleto(d)) {
+    const ultimoCompleto = d.completoDesde ? { desde: d.completoDesde, heroes: [...d.enemigos, ...d.aliados] } : (d.ultimoCompleto ?? null);
+    return { ...d, completoDesde: null, ultimoCompleto };
+  }
+  if (d.completoDesde || !Number.isFinite(ahora)) return { ...d, completoDesde: d.completoDesde ?? null };
+  const a = d.ultimoCompleto;
+  const comunes = a ? [...d.enemigos, ...d.aliados].filter((n) => a.heroes.includes(n)).length : 0;
+  const mismo = a && ahora - a.desde >= 0 && ahora - a.desde < MISMA_PARTIDA_MS && comunes >= COMUNES_DE_LA_MISMA;
+  return { ...d, completoDesde: mismo ? a.desde : ahora };
 }
 
-const VACIO = { enemigos: [], aliados: [], baneos: [], rivalMarcado: null, fase: 'baneos', miPick: null, miPickDesde: null, miPickLeido: false, completoDesde: null, recordarDesde: null, apuntadaSola: null, lectura: null };
+const VACIO = { enemigos: [], aliados: [], baneos: [], rivalMarcado: null, fase: 'baneos', miPick: null, miPickDesde: null, miPickLeido: false, completoDesde: null, ultimoCompleto: null, recordarDesde: null, apuntadaSola: null, lectura: null };
 
 export function useDraft() {
   const [draft, setDraft] = useState(cargar);
@@ -100,7 +122,7 @@ export function useDraft() {
       // Tu pick fijado no puede ser a la vez enemigo, compañero ni baneado.
       const sueltaPick = d.miPick === heroe.name;
       const nuevo = { ...d, [bando]: [...lista, heroe.name], ...(sueltaPick ? { miPick: null, miPickDesde: null } : {}) };
-      return { ...nuevo, completoDesde: completoDesdeDe(nuevo, ahora) };
+      return conCompleto(nuevo, ahora);
     });
   }, []);
 
@@ -122,7 +144,7 @@ export function useDraft() {
       [bando]: d[bando].filter((n) => n !== heroe.name),
       rivalMarcado: bando === 'enemigos' && d.rivalMarcado === heroe.name ? null : d.rivalMarcado,
     };
-    return { ...nuevo, completoDesde: completoDesdeDe(nuevo, null) };
+    return conCompleto(nuevo, null);
   }), []);
 
   /** Baneos: se marca y se desmarca sin cerrar el selector. */
@@ -168,7 +190,7 @@ export function useDraft() {
       [bando]: antes[bando].filter((n) => n !== heroe.name),
       rivalMarcado: bando === 'enemigos' && antes.rivalMarcado === heroe.name ? null : antes.rivalMarcado,
     };
-    const despues = { ...nuevo, completoDesde: completoDesdeDe(nuevo, null) };
+    const despues = conCompleto(nuevo, null);
     setDraft(despues);
     setParaDeshacer({ antes, despues, tipo: 'quitado', nombre: heroe.name, creado: Date.now() });
   }, []);
@@ -238,7 +260,7 @@ export function useDraft() {
       fase: nE || nA ? 'picks' : antes.fase,
       ...(sueltaPick ? { miPick: null, miPickDesde: null, miPickLeido: false } : puedeFijar ? { miPick, miPickDesde: ahora, miPickLeido: true } : {}),
     };
-    const despues = { ...nuevo, completoDesde: completoDesdeDe(nuevo, ahora) };
+    const despues = conCompleto(nuevo, ahora);
     setDraft(despues);
     const fijado = !!puedeFijar && !sueltaPick;
     const cambiados = quitadosE.length + quitadosA.length;
@@ -294,7 +316,7 @@ export function useDraft() {
     const miPick = d.miPick && conocidos.has(d.miPick) ? d.miPick : null;
     if (enemigos === d.enemigos && aliados === d.aliados && baneos === d.baneos && rivalMarcado === d.rivalMarcado && miPick === d.miPick) return d;
     const nuevo = { ...d, enemigos, aliados, baneos, rivalMarcado, miPick, miPickDesde: miPick ? d.miPickDesde : null };
-    return { ...nuevo, completoDesde: completoDesdeDe(nuevo, null) };
+    return conCompleto(nuevo, null);
   }), []);
 
   return { ...draft, anadir, quitar, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio, vaciarConDeshacer, quitarConDeshacer, aplicarLectura, anotarAprendizaje, deshacible, deshacer, olvidarDeshacer, foto, restaurar };

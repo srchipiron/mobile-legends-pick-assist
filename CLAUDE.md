@@ -2331,6 +2331,47 @@ VOZ en el móvil (Termux:API) y que el lector mire la tablet desde el minuto
   marcado, la voz que falta), `app/lector.test` (guion en el aviso; de vuelta
   duración solo con inicio visto, voz y marcador validados), `registro.test`,
   `perfil.test` y la de seguridad del lector.
+- **La revisión a la contra de 3.44.0 (3.44.1)**, con `silent-failure-hunter`
+  y `click-path-audit` antes de la primera partida real, encontró doce cosas,
+  todas arregladas; las nueve primeras con su prueba y su mutación:
+  (1) un inicio NO visto salía como medido: si la primera captura ya era de
+  juego (draft completado tarde a mano, lector reiniciado a mitad), la
+  partida medía minutos de menos y se apuntaba. Hoy hace falta haber visto
+  la tablet fuera de partida (`vistoFuera`); si no, `inicioEstimado`;
+  (2) las partidas de más de ~23 minutos no tenían tabla, duración ni cierre
+  (vigilancia hasta el 25 del DRAFT): con el inicio visto se vigila hasta
+  `partidaHastaMin` (40) de partida, y desde la primera tabla solo dos
+  minutos más;
+  (3) el cierre se decía con un inicio estimado (tramo posiblemente falso,
+  dicho como hecho): hoy no;
+  (4) un aviso atrasado o cortado por un tope contaba como dicho y no dejaba
+  rastro: hoy `saltados` en `/final` y una línea en el registro;
+  (5) `tramoDeMinutos` daba tramo a 1–3 minutos y `sanearDuracion` cortaba en
+  60, cuando medir-fases tira por debajo de 3 y por encima de 90: hoy los
+  tres usan `esDuracionPosible` (directo.js);
+  (6) con tu pick fijado fuera del ranking de tu línea, la voz decía el plan
+  del nº1: hoy se calla (guion vacío). Hacer el plan del pick fijado pediría
+  que `eleccionDe` admita héroes fuera del ranking: no se ha hecho;
+  (7) corregir un enemigo con el draft completo arrancaba otro `completoDesde`
+  y el lector tiraba la partida vigilada (repetía el aviso del inicio,
+  retrasaba todo 8 minutos, perdía fotogramas y resultado): hoy `conCompleto`
+  (useDraft) recupera el instante si vuelve a completarse con 7 de los 9
+  héroes dentro de 30 minutos (`ultimoCompleto`, en memoria, NO se guarda);
+  (8) la voz seguía con la partida acabada si no veía la tabla: hoy calla
+  con la primera tabla (aunque no conozca la palabra) y cuando la app apunta
+  la partida (`/resultado` lleva `desde`);
+  (9) si eliges el último, el draft se completaba antes de tu pick y la
+  lectura paraba: hoy sigue `LEER_TU_PICK_MS` (90 s) leyendo tu fila;
+  (10) tras recargar, el primer `/vigilar` llevaba el guion vacío y se perdía
+  el aviso de ese minuto: hoy sin datos del día no se manda guion (`listo`).
+  Sin prueba propia (tiempos del navegador; reproducidas por el agente con
+  `page.route`): (10), el reintento del
+  aviso cuando falla `/final` y que el aviso «falta la voz» se quede hasta
+  que vuelva a sonar (antes se borraba al empezar otro draft). Lección: el
+  estado de un proceso que vive aparte (el lector) se identifica por algo que
+  la persona puede tocar sin querer (`completoDesde`); toda corrección a mano
+  tiene que conservar esa identidad.
+
 
 ## El consejo para los compañeros
 

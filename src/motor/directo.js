@@ -90,12 +90,21 @@ export function guionEnDirecto(plan) {
 }
 
 /**
+ * Lo que puede durar una partida, en minutos: los mismos límites que
+ * `tramoDe` de medir-fases.mjs (de 3 a 90, sin los extremos). Fuera de eso
+ * es una medida rota, no una partida: ni tramo ni duración apuntada.
+ */
+export const DURACION_MINIMA = 3;
+export const DURACION_MAXIMA = 90;
+export const esDuracionPosible = (min) => typeof min === 'number' && min > DURACION_MINIMA && min < DURACION_MAXIMA;
+
+/**
  * El tramo de una duración en minutos (10–12 → 0 … 20+ → 4 y 5): el mismo
  * reparto que medir-fases.mjs, para que lo que se mide en tus partidas sea
  * lo mismo que se midió en las pro.
  */
 export function tramoDeMinutos(min) {
-  if (!(min > 0)) return null;
+  if (!esDuracionPosible(min)) return null;
   return Math.max(0, Math.min(TRAMOS.length - 1, Math.floor((min - TRAMOS[0]) / 2)));
 }
 

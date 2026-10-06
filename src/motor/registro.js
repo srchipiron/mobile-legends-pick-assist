@@ -1,7 +1,7 @@
 import { nombreClave } from './nombres.js';
 import { maestriaEfectiva, winrateDeReferencia } from './maestria.js';
 import { TRAMOS } from './fases.js';
-import { tramoDeMinutos } from './directo.js';
+import { tramoDeMinutos, esDuracionPosible } from './directo.js';
 
 /**
  * Registro de partidas: a quién cogiste, a quién recomendaba la app, la
@@ -121,7 +121,7 @@ export function aciertosDelLector(partidas = []) {
  * probabilidades de fases.js) (3.44.0): con las dos se mide si las fases
  * aciertan en TUS partidas (`medirFasesMias`). Lo que no tenga la forma, fuera.
  */
-export const sanearDuracion = (d) => (typeof d === 'number' && Number.isFinite(d) && d > 0 && d <= 60 ? Math.round(d * 10) / 10 : null);
+export const sanearDuracion = (d) => (esDuracionPosible(d) ? Math.round(d * 10) / 10 : null);
 export const sanearFases = (f) => (Array.isArray(f) && f.length === TRAMOS.length && f.every((p) => typeof p === 'number' && p > 0 && p < 1)
   ? f.map((p) => Math.round(p * 1000) / 1000) : null);
 

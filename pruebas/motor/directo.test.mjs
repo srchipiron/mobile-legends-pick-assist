@@ -64,12 +64,15 @@ test('el cierre, uno por tramo con su probabilidad; y los tramos, repartidos igu
   eq(c.length, 6);
   eq(`${c[0].params.desde}-${c[0].params.hasta}:${c[0].params.p}`, '10-12:40');
   eq(c[5].clave, 'directo.cierreLargo');
-  for (let m = 3.1; m < 40; m += 0.1) {
+  for (let d = 0; d < 950; d++) {
+    const m = d / 10;
     const mm = Math.floor(m), ss = Math.round((m - mm) * 60);
     if (ss === 60) continue;
     eq(tramoDeMinutos(m), tramoDe(`${mm}:${String(ss).padStart(2, '0')}`), `el minuto ${m.toFixed(1)} cae en otro tramo que en medir-fases`);
   }
   eq(tramoDeMinutos(0), null);
+  // Lo que medir-fases tira (de 3 minutos para abajo, de 90 para arriba) no tiene tramo aquí tampoco.
+  eq(tramoDeMinutos(2.5), null); eq(tramoDeMinutos(3), null); eq(tramoDeMinutos(90), null);
 });
 
 test('con los datos de verdad: el plan trae su guion, con claves que existen en los dos idiomas', () => {

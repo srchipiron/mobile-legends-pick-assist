@@ -126,8 +126,15 @@ export function podarCapturas(carpeta, { ahora = Date.now(), retencionMs = RETEN
  * Javi miraba el móvil (rango, MVP, en partida) y la tabla no se vio nunca.
  * Los mismos números que `src/app/lector.js` (hay prueba); el reloj es el
  * del móvil en los dos lados, así que `desde` se compara tal cual.
+ *
+ * `partidaHastaMin` (3.44.1): con el inicio VISTO, se vigila hasta ese
+ * minuto de partida aunque pase del `hastaMin` del draft. Con 25 desde el
+ * draft, una partida de más de unos 23 minutos acababa sin tabla, sin
+ * duración y sin apuntarse sola: justo el tramo 20+ se quedaba sin medir.
+ * En cuanto sale la tabla se deja de mirar a los dos minutos. Decisión de
+ * producto: una partida de Gloria casi nunca pasa de 30.
  */
-export const VIGILANCIA = { desdeMin: 8, hastaMin: 25, intervaloMs: 10000, maxFotogramas: 8, inicioDesdeMin: 1, intervaloInicioMs: 20000 };
+export const VIGILANCIA = { desdeMin: 8, hastaMin: 25, intervaloMs: 10000, maxFotogramas: 8, inicioDesdeMin: 1, intervaloInicioMs: 20000, partidaHastaMin: 40 };
 
 /**
  * Los consejos EN DIRECTO (3.44.0): con el draft completo la app manda el
@@ -306,8 +313,8 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
   const hora = (t) => new Date(t).toISOString().slice(11, 19);
   const pararVigilancia = () => { if (relojFinal) clearInterval(relojFinal); relojFinal = null; if (final) final.activa = false; };
   const estadoFinal = () => (final
-    ? { desde: final.desde, activa: final.activa, resultado: final.resultado, resultadoId: final.resultadoId, resultadoEn: final.resultadoEn, fotogramas: final.fotogramas, inicio: final.inicio, inicioEstimado: final.inicioEstimado, duracion: final.duracion, voz: final.voz, avisos: final.guion.length, dichos: final.dichos.size }
-    : { desde: null, activa: false, resultado: null, resultadoId: null, resultadoEn: null, fotogramas: [], inicio: null, inicioEstimado: false, duracion: null, voz: null, avisos: 0, dichos: 0 });
+    ? { desde: final.desde, activa: final.activa, resultado: final.resultado, resultadoId: final.resultadoId, resultadoEn: final.resultadoEn, fotogramas: final.fotogramas, inicio: final.inicio, inicioEstimado: final.inicioEstimado, duracion: final.duracion, voz: final.voz, avisos: final.guion.length, dichos: final.dichosVoz, saltados: final.saltados }
+    : { desde: null, activa: false, resultado: null, resultadoId: null, resultadoEn: null, fotogramas: [], inicio: null, inicioEstimado: false, duracion: null, voz: null, avisos: 0, dichos: 0, saltados: 0 });
 
   // ── La voz (3.44.0): un aviso detrás de otro, nunca dos a la vez. ──────
   let colaVoz = Promise.resolve();
@@ -319,10 +326,11 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
   // 3 en los 3 minutos más apretados); y lo encolado de un draft que ya no
   // es el vigilado no se dice.
   const dichosRecientes = [];
+  /** Encola `texto`; devuelve false si un tope no lo deja (y entonces no se dice). */
   const decir = (f, texto) => {
     const t = ahora();
     while (dichosRecientes.length && t - dichosRecientes[0] > VENTANA_VOZ_MS) dichosRecientes.shift();
-    if (f !== final || (f.hablados ?? 0) >= MAX_AVISOS + 1 || dichosRecientes.length >= VOZ_POR_VENTANA) return colaVoz;
+    if (f !== final || (f.hablados ?? 0) >= MAX_AVISOS + 1 || dichosRecientes.length >= VOZ_POR_VENTANA) return false;
     f.hablados = (f.hablados ?? 0) + 1;
     dichosRecientes.push(t);
     colaVoz = colaVoz.then(() => (f === final ? hablar(texto, f.idioma) : null)).then((r) => {
@@ -330,28 +338,48 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
       f.voz = r ?? 'ok';
       if (r === 'falta' && antes !== 'falta') registrar('Para oír los consejos instala Termux:API (F-Droid) y ejecuta: pkg install termux-api');
     }).catch(() => { f.voz = 'otro'; });
-    return colaVoz;
+    return true;
   };
-  /** Los avisos que tocan ya: en su minuto de PARTIDA, y no si se quedaron muy atrás. */
+  /**
+   * Los avisos que tocan ya: en su minuto de PARTIDA, y no si se quedaron
+   * muy atrás. `dichos` son los ya pasados (dichos o no); `dichosVoz`, los
+   * que de verdad se encolaron, y `saltados`, los que no, con su línea en
+   * el registro: hasta 3.44.0 un aviso atrasado o cortado por un tope
+   * contaba como dicho y no dejaba rastro.
+   */
   const hablarPendientes = (f, t) => {
-    if (!f.inicio) return;
+    // Con la partida acabada (tabla vista, o apuntada en la app) no se dice nada más (3.44.1).
+    if (!f.inicio || f.acabada) return;
     const m = (t - f.inicio) / 60000;
     f.guion.forEach((a, i) => {
       if (f.dichos.has(i) || a.min > m) return;
       f.dichos.add(i);
       const tope = i === 0 && a.min < 1 ? RETRASO_DEL_INICIO_MIN : RETRASO_MAXIMO_MIN;
-      if (m - a.min <= tope) { registrar(`Minuto ${m.toFixed(1)} de partida: «${a.texto}»`); decir(f, a.texto); }
+      const porque = m - a.min > tope ? `atrasado ${(m - a.min).toFixed(1)} min` : !decir(f, a.texto) ? 'tope de voz' : null;
+      if (porque) { f.saltados += 1; registrar(`Minuto ${m.toFixed(1)} de partida, sin decir (${porque}): «${a.texto}»`); return; }
+      f.dichosVoz += 1;
+      registrar(`Minuto ${m.toFixed(1)} de partida: «${a.texto}»`);
     });
   };
-  /** Dos capturas seguidas con el minimapa: empezó la partida (hacia la mitad entre la anterior y la primera). */
+  /**
+   * Dos capturas seguidas con el minimapa: empezó la partida (hacia la mitad
+   * entre la anterior y la primera). Solo es un inicio MEDIDO si antes se
+   * vio la tablet fuera de partida: si la primera captura ya era de juego
+   * (el draft se completó a mano con la partida empezada, o el lector se
+   * reinició a mitad), la partida empezó antes y no se sabe cuánto; hasta
+   * 3.44.0 eso salía como medido y la duración, minutos corta, se apuntaba.
+   */
   const detectarInicio = (f, img, t, intervalo) => {
     if (f.inicio) return;
-    if (!enPartida(img)) { f.seguidas = 0; return; }
+    if (!enPartida(img)) { f.seguidas = 0; f.vistoFuera = true; return; }
     f.seguidas += 1;
     if (f.seguidas === 1) f.primera = t;
     if (f.seguidas >= 2) {
       f.inicio = f.primera - intervalo / 2;
-      registrar(`La partida ha empezado hacia las ${hora(f.inicio)}: ${f.guion.length} consejos en directo${f.guion.length ? '' : ' (la app no ha mandado ninguno)'}.`);
+      f.inicioEstimado = !f.vistoFuera;
+      // Visto empezar: se vigila hasta `partidaHastaMin` de partida aunque pase del minuto del draft.
+      if (!f.inicioEstimado) f.hasta = Math.max(f.hasta, f.inicio + vigilancia.partidaHastaMin * 60000);
+      registrar(`La partida ha empezado hacia las ${hora(f.inicio)}${f.inicioEstimado ? ' o antes (ya estaba en partida al empezar a mirar: inicio estimado)' : ''}: ${f.guion.length} consejos en directo${f.guion.length ? '' : ' (la app no ha mandado ninguno)'}.`);
     }
   };
   const vigilarTic = async () => {
@@ -362,7 +390,7 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
     const t = ahora();
     if (t > final.hasta) {
       pararVigilancia();
-      registrar(`Vigilancia del final acabada a los ${vigilancia.hastaMin} minutos: ${final.fotogramas.length} pantallas distintas${final.resultado ? `, resultado ${final.resultado === 'gane' ? 'ganada' : 'perdida'}` : ', sin ver la tabla de resultado'}.`);
+      registrar(`Vigilancia del final acabada a los ${Math.round((final.hasta - final.desde) / 60000)} minutos del draft: ${final.fotogramas.length} pantallas distintas${final.resultado ? `, resultado ${final.resultado === 'gane' ? 'ganada' : 'perdida'}` : ', sin ver la tabla de resultado'}.`);
       return;
     }
     const finDelInicio = final.desde + vigilancia.desdeMin * 60000;
@@ -427,16 +455,20 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
         else final.fotogramas.shift();
       }
       final.fotogramas.push(foto);
-      if (leido.resultado && !final.resultado) {
-        Object.assign(final, { resultado: leido.resultado, resultadoId: id, resultadoEn: t });
-        // Cuánto duró (3.44.0), y lo que el modelo daba para ESE final.
-        if (final.inicio) {
-          final.duracion = Math.round(((t - final.inicio) / 60000) * 10) / 10;
-          const cierre = final.cierres[tramoDeMinutos(final.duracion)];
-          registrar(`Partida de unos ${final.duracion} minutos${final.inicioEstimado ? ' (inicio estimado)' : ''}.`);
-          if (cierre) decir(final, cierre);
-        }
+      // La primera tabla: la partida ha acabado, gane o pierda, y aunque la
+      // palabra no tenga plantilla (la de victoria se aprende): cuánto duró
+      // (3.44.0) y lo que el modelo daba para ESE final. Y se deja de mirar a
+      // los dos minutos (las pantallas de después), sin pasar del límite.
+      if (leido.tabla) final.acabada = true;
+      if (leido.tabla && final.duracion == null && final.inicio) {
+        final.duracion = Math.round(((t - final.inicio) / 60000) * 10) / 10;
+        final.hasta = Math.min(final.hasta, Math.max(final.desde + vigilancia.hastaMin * 60000, t + 2 * 60000));
+        registrar(`Partida de unos ${final.duracion} minutos${final.inicioEstimado ? ' (inicio estimado: no se apunta ni se dice el cierre)' : ''}.`);
+        // Con el inicio estimado el tramo puede ser otro: el cierre lo afirmaría como hecho.
+        const cierre = final.inicioEstimado ? null : final.cierres[tramoDeMinutos(final.duracion)];
+        if (cierre && !decir(final, cierre)) registrar('El cierre no se dice: tope de voz.');
       }
+      if (leido.resultado && !final.resultado) Object.assign(final, { resultado: leido.resultado, resultadoId: id, resultadoEn: t });
       podar();
       registrar(`Fotograma ${id} (minuto ${foto.minuto}): la pantalla ha cambiado${leido.tabla ? ` · tabla de resultado: ${leido.resultado ? (leido.resultado === 'gane' ? 'VICTORIA' : 'DERROTA') : 'palabra sin plantilla'} (${leido.parecido.toFixed(2)})` : ''}.`);
       // Con el resultado leído la partida ha acabado: seguir capturando cada
@@ -474,7 +506,7 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
       return final;
     }
     pararVigilancia();
-    final = { desde, hasta: desde + vigilancia.hastaMin * 60000, activa: true, fotogramas: [], resultado: null, resultadoId: null, resultadoEn: null, anterior: null, fallos: 0, ...nuevo, dichos: new Set(), inicio: null, inicioEstimado: false, seguidas: 0, primera: null, ultimaInicio: 0, fallosInicio: 0, duracion: null, voz: null };
+    final = { desde, hasta: desde + vigilancia.hastaMin * 60000, activa: true, fotogramas: [], resultado: null, resultadoId: null, resultadoEn: null, anterior: null, fallos: 0, ...nuevo, dichos: new Set(), dichosVoz: 0, saltados: 0, vistoFuera: false, acabada: false, inicio: null, inicioEstimado: false, seguidas: 0, primera: null, ultimaInicio: 0, fallosInicio: 0, duracion: null, voz: null };
     if (ahora() > final.hasta) { final.activa = false; return final; }
     relojFinal = setInterval(vigilarTic, Math.min(vigilancia.intervaloMs, vigilancia.intervaloInicioMs));
     relojFinal.unref?.();
@@ -560,6 +592,13 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
       // Lo que contestó Javi (Gané / Perdí) con los fotogramas de esa partida (3.32.0): se aprende la palabra de la tabla.
       if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
       const cuerpo = await leerCuerpo(req);
+      // Apuntada en la app (3.44.1): esa partida ha acabado aunque no se viera
+      // la tabla; seguir con sus consejos era hablar en el menú del juego.
+      if (cuerpo && typeof cuerpo.gane === 'boolean' && final && Number.isFinite(cuerpo.desde) && cuerpo.desde === final.desde && !final.acabada) {
+        final.acabada = true;
+        pararVigilancia();
+        registrar('Partida apuntada en la app: dejo de vigilarla y de dar consejos.');
+      }
       if (!cuerpo || typeof cuerpo.gane !== 'boolean' || !carpeta) { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'falta gane o carpeta' })); return; }
       const ids = (Array.isArray(cuerpo.ids) ? cuerpo.ids : []).filter((id) => /^fotograma-[\w-]+$/.test(id) && existsSync(join(carpeta, `${id}.png`))).slice(-8);
       let aprendidos = 0, contradichas = 0;
