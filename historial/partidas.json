@@ -1,6 +1,133 @@
 {
- "actualizado": "2026-10-06T20:23:55.808Z",
+ "actualizado": "2026-10-06T21:08:58.878Z",
  "partidas": [
+  {
+   "t": 1791319311759,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Carmilla",
+    "Chip"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.53,
+   "origen": "lector",
+   "bans": [
+    "Hirara",
+    "Atlas",
+    "Rafaela",
+    "Marcel",
+    "Khufra",
+    "Lukas",
+    "Yi Sun-shin",
+    "Masha"
+   ],
+   "draft": {
+    "enemigos": [
+     "Obsidia",
+     "Barats",
+     "Gloo",
+     "Novaria",
+     "Gusion"
+    ],
+    "aliados": [
+     "Eudora",
+     "Cici",
+     "Miya",
+     "Nolan"
+    ],
+    "linea": "roam",
+    "rival": "Gloo"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Atlas",
+     "Rafaela",
+     "Marcel",
+     "Khufra",
+     "Lukas",
+     "Yi Sun-shin",
+     "Masha"
+    ],
+    "enemigos": [
+     "Obsidia",
+     "Gloo",
+     "Novaria",
+     "Gusion"
+    ],
+    "aliados": [
+     "Eudora",
+     "Gord",
+     "Cici",
+     "Miya"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "e2",
+      "candidato": "Zetian",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Eudora",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Suyou",
+      "parecido": 0.74
+     }
+    ],
+    "ms": [
+     9495,
+     8054,
+     7140,
+     12131,
+     7433,
+     8735,
+     7058
+    ],
+    "msCaptura": [
+     8381,
+     6928,
+     5963,
+     11334,
+     6631,
+     7774,
+     6028
+    ],
+    "formatos": [
+     "png",
+     "png",
+     "png",
+     "crudo",
+     "png",
+     "png",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Barats",
+      "Gusion",
+      "Barats",
+      "Gusion",
+      "Barats"
+     ]
+    }
+   },
+   "fases": [
+    0.573,
+    0.534,
+    0.533,
+    0.495,
+    0.49,
+    0.485
+   ]
+  },
   {
    "t": 1791317162827,
    "pick": "Hayabusa",
@@ -9635,6 +9762,12 @@
   {
    "cuando": "2026-10-06T20:23:55.808Z",
    "partidas": 173,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-06T21:08:58.878Z",
+   "partidas": 174,
    "heroes": 11,
    "incidencia": 11
   }
