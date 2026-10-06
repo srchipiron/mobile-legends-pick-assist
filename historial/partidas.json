@@ -1,6 +1,168 @@
 {
- "actualizado": "2026-10-05T22:06:39.459Z",
+ "actualizado": "2026-10-06T18:52:53.567Z",
  "partidas": [
+  {
+   "t": 1791312649820,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Gloo",
+    "Rafaela",
+    "Diggie"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.612,
+   "origen": "lector",
+   "bans": [
+    "Hirara",
+    "Lukas",
+    "Aulus",
+    "Belerick",
+    "Eudora",
+    "Marcel",
+    "Yi Sun-shin",
+    "Paquito",
+    "Masha"
+   ],
+   "draft": {
+    "enemigos": [
+     "Zetian",
+     "Lesley",
+     "Fanny",
+     "Grock",
+     "Fredrinn"
+    ],
+    "aliados": [
+     "Yu Zhong",
+     "Pharsa",
+     "Sun",
+     "Clint"
+    ],
+    "linea": "roam",
+    "rival": "Grock"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Lukas",
+     "Aulus",
+     "Belerick",
+     "Eudora",
+     "Marcel",
+     "Yi Sun-shin",
+     "Paquito",
+     "Masha"
+    ],
+    "enemigos": [
+     "Zetian",
+     "Lesley",
+     "Fanny",
+     "Fredrinn"
+    ],
+    "aliados": [
+     "Yu Zhong",
+     "Clint"
+    ],
+    "dudas": [
+     {
+      "hueco": "e3",
+      "candidato": "Fredrinn",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Beatrix",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Wanwan",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Claude",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Arlott",
+      "parecido": 0.51
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Lapu-Lapu",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Joy",
+      "parecido": 0.78
+     }
+    ],
+    "ms": [
+     6436,
+     10036,
+     6430,
+     13346,
+     14602,
+     7155,
+     8615,
+     8060,
+     10266,
+     7225,
+     7542,
+     8452,
+     6938
+    ],
+    "msCaptura": [
+     4943,
+     8991,
+     5106,
+     11756,
+     13331,
+     6034,
+     7508,
+     6957,
+     9694,
+     6206,
+     6787,
+     7723,
+     5927
+    ],
+    "formatos": [
+     "png",
+     "crudo",
+     "png",
+     "crudo",
+     "png",
+     "png",
+     "png",
+     "png",
+     "crudo",
+     "png",
+     "png",
+     "png",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Grock",
+      "Grock",
+      "Grock"
+     ]
+    }
+   },
+   "fases": [
+    0.732,
+    0.615,
+    0.56,
+    0.549,
+    0.557,
+    0.55
+   ]
+  },
   {
    "t": 1791237982099,
    "pick": "Rafaela",
@@ -9118,6 +9280,12 @@
   {
    "cuando": "2026-10-05T22:06:39.459Z",
    "partidas": 170,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-06T18:52:53.567Z",
+   "partidas": 171,
    "heroes": 11,
    "incidencia": 11
   }
