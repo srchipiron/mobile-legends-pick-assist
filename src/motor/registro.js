@@ -59,6 +59,10 @@ export function sanearLectura(lectura) {
   const ms = tiempos(lectura.ms), msCaptura = tiempos(lectura.msCaptura);
   if (ms.length) salida.ms = ms;
   if (msCaptura.length) salida.msCaptura = msCaptura;
+  // Con qué captura se hizo cada una (3.45.0: comprimida o no), alineada por
+  // el final con `ms` (las lecturas de antes de 3.45.0 no lo llevan).
+  const formatos = Array.isArray(lectura.formatos) ? lectura.formatos.filter((f) => f === 'crudo' || f === 'png').slice(-20) : [];
+  if (formatos.length && formatos.length <= ms.length) salida.formatos = formatos;
   const a = lectura.aprendizaje;
   if (a && typeof a === 'object') {
     const aprendizaje = { aprendidos: nombres(a.aprendidos, 10), sinEncontrar: nombres(a.sinEncontrar, 10) };
@@ -103,15 +107,23 @@ export function aciertosDelLector(partidas = []) {
   // Lo que dudó (3.28.0): a quién se parecía cada hueco sin reconocer, y qué
   // aprendió o no encontró al corregir. Agregado por nombre.
   const dudas = {}, aprendidos = {}, sinEncontrar = {}, ms = [], msCaptura = [];
+  const porFormato = { crudo: { ms: [], msCaptura: [] }, png: { ms: [], msCaptura: [] } };
   for (const p of con) {
     const l = sanearLectura(p.lector);
     ms.push(...(l.ms ?? [])); msCaptura.push(...(l.msCaptura ?? []));
+    // Por formato de captura (3.45.0), emparejando por el final.
+    const f = l.formatos ?? [], desde = (l.ms ?? []).length - f.length, desdeC = (l.msCaptura ?? []).length - f.length;
+    f.forEach((formato, i) => {
+      porFormato[formato].ms.push(l.ms[desde + i]);
+      if (desdeC >= 0 && l.msCaptura.length === l.ms.length) porFormato[formato].msCaptura.push(l.msCaptura[desdeC + i]);
+    });
     for (const d of l.dudas ?? []) dudas[d.candidato] = (dudas[d.candidato] ?? 0) + 1;
     for (const n of l.aprendizaje?.aprendidos ?? []) aprendidos[n] = (aprendidos[n] ?? 0) + 1;
     for (const n of l.aprendizaje?.sinEncontrar ?? []) sinEncontrar[n] = (sinEncontrar[n] ?? 0) + 1;
   }
   const mediana = (l) => (l.length ? [...l].sort((x, y) => x - y)[Math.floor((l.length - 1) / 2)] : null);
-  const tiempos = ms.length ? { lecturas: ms.length, mediana: mediana(ms), medianaCaptura: mediana(msCaptura) } : null;
+  const resumen = (x) => (x.ms.length ? { lecturas: x.ms.length, mediana: mediana(x.ms), medianaCaptura: mediana(x.msCaptura) } : null);
+  const tiempos = ms.length ? { lecturas: ms.length, mediana: mediana(ms), medianaCaptura: mediana(msCaptura), crudo: resumen(porFormato.crudo), png: resumen(porFormato.png) } : null;
   return { partidas: con.length, leidos, acertados, acierto: leidos ? acertados / leidos : null, fallos, dudas, aprendidos, sinEncontrar, tiempos };
 }
 

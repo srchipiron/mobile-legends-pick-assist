@@ -45,9 +45,10 @@ export function juntarLectura({ ancho, alto }, { baneos, enemigos, aliados }) {
   };
 }
 
-/** La lectura entera de un PNG, en este hilo. */
-export function leerCaptura(png, caras, aprendido = null) {
-  const img = leerPng(png);
+/** La lectura entera de una captura, en este hilo. */
+export function leerCaptura(captura, caras, aprendido = null) {
+  // Un PNG, o la imagen ya lista (la captura en crudo, 3.45.0).
+  const img = captura?.rgba ? captura : leerPng(captura);
   const [baneos, enemigos, aliados] = PARTES.map((p) => leerParte(img, p, caras, aprendido));
   return juntarLectura(img, { baneos, enemigos, aliados });
 }

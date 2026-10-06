@@ -203,7 +203,7 @@ export function useDraft() {
    * está en otro sitio (un enemigo baneado, un compañero) no se toca. Con
    * enemigos nuevos el draft pasa a picks. Todo de una vez, con Deshacer.
    */
-  const aplicarLectura = useCallback(({ baneos = [], enemigos = [], aliados = [], tuyo = null, id = null, dudas = null, huecos = null, ms = null, msCaptura = null }) => {
+  const aplicarLectura = useCallback(({ baneos = [], enemigos = [], aliados = [], tuyo = null, id = null, dudas = null, huecos = null, ms = null, msCaptura = null, formato = null }) => {
     const reconocio = baneos.length + enemigos.length + aliados.length > 0 || !!tuyo;
     const antes = actual.current;
     const ahora = Date.now();
@@ -251,7 +251,7 @@ export function useDraft() {
     const union = (a = [], b = [], sin = []) => [...new Set([...a, ...b])].filter((n) => !sin.includes(n));
     // Las dudas son las de la ÚLTIMA lectura que reconoció a alguien, no la
     // unión ni la de una pantalla que no es el draft (`dudasQueQuedan`).
-    const lectura = sanearLectura({ baneos: union(antes.lectura?.baneos, baneos), enemigos: union(antes.lectura?.enemigos, enemigos, quitadosE), aliados: union(antes.lectura?.aliados, aliados, quitadosA), tuyo: tuyo ?? antes.lectura?.tuyo, ids: union(antes.lectura?.ids, id ? [id] : []), dudas: dudasQueQuedan(antes.lectura?.dudas, dudas, reconocio), aprendizaje: antes.lectura?.aprendizaje, ms: [...(antes.lectura?.ms ?? []), ...(Number.isFinite(ms) ? [ms] : [])], msCaptura: [...(antes.lectura?.msCaptura ?? []), ...(Number.isFinite(msCaptura) ? [msCaptura] : [])] });
+    const lectura = sanearLectura({ baneos: union(antes.lectura?.baneos, baneos), enemigos: union(antes.lectura?.enemigos, enemigos, quitadosE), aliados: union(antes.lectura?.aliados, aliados, quitadosA), tuyo: tuyo ?? antes.lectura?.tuyo, ids: union(antes.lectura?.ids, id ? [id] : []), dudas: dudasQueQuedan(antes.lectura?.dudas, dudas, reconocio), aprendizaje: antes.lectura?.aprendizaje, ms: [...(antes.lectura?.ms ?? []), ...(Number.isFinite(ms) ? [ms] : [])], msCaptura: [...(antes.lectura?.msCaptura ?? []), ...(Number.isFinite(msCaptura) ? [msCaptura] : [])], formatos: [...(antes.lectura?.formatos ?? []), ...(Number.isFinite(ms) ? [formato === 'crudo' ? 'crudo' : 'png'] : [])] });
     const sueltaPick = miPick && (nuevosBaneos.includes(miPick) || nuevosEnemigos.includes(miPick));
     const nuevo = {
       ...antes, baneos: nuevosBaneos, enemigos: nuevosEnemigos, lectura,

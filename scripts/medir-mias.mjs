@@ -160,6 +160,9 @@ export function informe(m, { generado = null, errorDatos = null } = {}) {
     if (Object.keys(lec.aprendidos ?? {}).length) L.push(`- Aprendidos de las correcciones: ${lista(lec.aprendidos)}.`);
     if (Object.keys(lec.sinEncontrar ?? {}).length) L.push(`- Sin encontrar en la captura al corregir (hace falta verla): ${lista(lec.sinEncontrar)}.`);
     if (lec.tiempos) L.push(`- Lo que tarda una lectura en tu móvil (${lec.tiempos.lecturas} lecturas): mediana ${(lec.tiempos.mediana / 1000).toFixed(1)} s, de ellos ${lec.tiempos.medianaCaptura != null ? (lec.tiempos.medianaCaptura / 1000).toFixed(1) : '?'} s la captura de la tablet.`);
+    // Comprimida o no (3.45.0): el lector prueba las dos y se queda con la más rápida.
+    const seg = (t) => (t ? `${(t.mediana / 1000).toFixed(1)} s (${t.lecturas} lecturas${t.medianaCaptura != null ? `, captura ${(t.medianaCaptura / 1000).toFixed(1)} s` : ''})` : 'ninguna');
+    if (lec.tiempos?.crudo || lec.tiempos?.png) L.push(`- Por formato de captura: sin comprimir ${seg(lec.tiempos.crudo)} · comprimida ${seg(lec.tiempos.png)}.`);
   }
   if (m.porHeroe.length) {
     L.push('', '### Por héroe (con la app)', '', '| Héroe | Partidas | Ganadas | % |', '|---|---:|---:|---:|');

@@ -8,6 +8,22 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.45.0
+
+- El lector prueba a pedir la captura de la tablet sin comprimir y se queda
+  con la que vaya más rápida en tu tablet y tu wifi. Hasta ahora casi 4 de
+  los 5 segundos de cada lectura eran la captura: la tablet comprimía la
+  imagen antes de mandarla. Las primeras lecturas alternan las dos formas, y
+  después usa la más rápida y de vez en cuando vuelve a probar la otra.
+- Si la captura sin comprimir falla o tu tablet la da en un formato que no
+  sabe leer, la lectura sale igual con la de siempre y el lector deja de
+  probarla hasta que lo reinicies.
+- Solo en las lecturas del draft: durante la partida (inicio y final) sigue
+  la captura comprimida, para no cargar la wifi mientras juegas.
+- Tus partidas subidas dicen cuánto tarda cada forma (lo verás en la
+  respuesta del bot y en el diagnóstico). Para estrenarlo, reinicia el
+  lector con `lector`.
+
 ## 3.44.2
 
 - Las partidas profesionales cuentan dos baneos que se perdían: Mathilda

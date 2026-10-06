@@ -197,10 +197,17 @@ export function conectarTablet(dispositivo, { ms = 15000 } = {}) {
   }
 }
 
-export function capturarTablet(dispositivo) {
+/**
+ * La captura de la pantalla de la tablet: en PNG (`-p`, la tablet la
+ * comprime) o, con `crudo`, tal cual (3.45.0: unos 14 MB a 2400×1504 por la
+ * wifi, sin comprimir; `leerCrudo` en png.mjs). Las dos son el mismo
+ * `screencap` de solo lectura: nada toca la pantalla.
+ */
+export function capturarTablet(dispositivo, { crudo = false } = {}) {
   // `connect` no falla si ya está conectada; sin él, el primer uso tras
   // encender la depuración no encuentra la tablet.
   conectarTablet(dispositivo);
+  if (crudo) return execFileSync('adb', ['-s', dispositivo, 'exec-out', 'screencap'], { maxBuffer: 64 * 1024 * 1024, timeout: 20000 });
   return execFileSync('adb', ['-s', dispositivo, 'exec-out', 'screencap', '-p'], { maxBuffer: 64 * 1024 * 1024, timeout: 20000 });
 }
 

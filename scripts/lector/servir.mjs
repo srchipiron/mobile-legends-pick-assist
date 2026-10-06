@@ -33,7 +33,7 @@ import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Worker } from 'node:worker_threads';
-import { leerPng } from './png.mjs';
+import { leerPng, leerCrudo, escribirPngRapido } from './png.mjs';
 import { capturarTablet, encontrarTablet, carasGuardadas } from './leer.mjs';
 import { PARTES, leerParte, juntarLectura, leerCaptura } from './lectura.mjs';
 import { resumirAprendizaje, CAPTURAS_POR_CORRECCION, VERSION_APRENDIDO } from './aprender.mjs';
@@ -44,6 +44,52 @@ import { enPartida, recorteMarcador } from './partida.mjs';
 import { hablarConTermux, limpiarTexto, IDIOMAS_VOZ } from './voz.mjs';
 import { tramoDeMinutos } from '../../src/motor/directo.js';
 import { tiraDe, reconocerResultado, aprenderResultado, plantillasIniciales, cargarResultados, guardarResultados, VERSION_RESULTADOS } from './resultado.mjs';
+
+/**
+ * La captura de las LECTURAS del draft, comprimida o no (3.45.0, pedido por
+ * Javi: «prueba lo de la captura sin comprimir»). En su móvil una lectura
+ * tardaba 4,9 s de mediana y 3,8 eran la captura: la tablet comprime un PNG
+ * de 2400×1504 y el móvil lo descomprime en JavaScript. Sin comprimir son
+ * unos 14 MB por la wifi y nada que descomprimir; cuál va antes depende de
+ * su tablet y de su wifi, y eso no se puede medir desde aquí. Así que el
+ * lector las PRUEBA: alterna hasta tener `muestras` de cada una, se queda
+ * con la de menor mediana (de las últimas `ventana`, captura + imagen
+ * lista) y cada `explorar` lecturas vuelve a probar la otra por si la wifi
+ * cambió. Si la de crudo falla o no se sabe leer, se queda en PNG hasta que
+ * se reinicie el lector. Las capturas de la PARTIDA (inicio y final) siguen
+ * en PNG: 14 MB cada 10 s por la wifi mientras se juega podrían meter lag.
+ * Decisiones de producto.
+ */
+export const ELECCION_DE_CAPTURA = { muestras: 3, ventana: 5, explorar: 10 };
+
+export function crearElectorDeCaptura({ muestras = ELECCION_DE_CAPTURA.muestras, ventana = ELECCION_DE_CAPTURA.ventana, explorar = ELECCION_DE_CAPTURA.explorar } = {}) {
+  const tiempos = { crudo: [], png: [] };
+  let n = 0, roto = null;
+  const mediana = (l) => [...l].sort((a, b) => a - b)[Math.floor((l.length - 1) / 2)];
+  const mejor = () => (mediana(tiempos.crudo) <= mediana(tiempos.png) ? 'crudo' : 'png');
+  return {
+    /** El formato de la próxima lectura. */
+    siguiente() {
+      n += 1;
+      if (roto) return 'png';
+      if (tiempos.crudo.length < muestras || tiempos.png.length < muestras) return tiempos.crudo.length <= tiempos.png.length ? 'crudo' : 'png';
+      const m = mejor();
+      return n % explorar === 0 ? (m === 'crudo' ? 'png' : 'crudo') : m;
+    },
+    /** Lo que tardó una lectura con ese formato hasta tener la imagen; devuelve el elegido si acaba de cambiar. */
+    anotar(formato, ms) {
+      if (!tiempos[formato] || !Number.isFinite(ms)) return null;
+      const antes = tiempos.crudo.length >= muestras && tiempos.png.length >= muestras ? mejor() : null;
+      tiempos[formato].push(ms);
+      if (tiempos[formato].length > ventana) tiempos[formato].shift();
+      const ahora = tiempos.crudo.length >= muestras && tiempos.png.length >= muestras ? mejor() : null;
+      return ahora && ahora !== antes ? ahora : null;
+    },
+    /** La captura en crudo no vale en esta tablet: PNG hasta reiniciar. */
+    descartar(motivo) { roto = String(motivo ?? 'sin motivo'); },
+    estado: () => ({ roto, crudo: tiempos.crudo.length ? mediana(tiempos.crudo) : null, png: tiempos.png.length ? mediana(tiempos.png) : null }),
+  };
+}
 
 /** Decisión de producto: un puerto alto, fijo, que la app conoce. */
 export const PUERTO = 47323;
@@ -204,10 +250,10 @@ export function capturaAutomatica({ fija = null, memoria = {}, recordar = () => 
     return buscando;
   };
   let fijaRecordada = false;
-  const ahora = async (segunda = false) => {
+  const ahora = async (opciones = {}, segunda = false) => {
     if (!tablet) await localizar();
     try {
-      const png = capturar(tablet);
+      const png = capturar(tablet, opciones);
       if (fija && !fijaRecordada) {
         fijaRecordada = true;
         const [ip, puerto] = fija.split(':');
@@ -219,7 +265,7 @@ export function capturaAutomatica({ fija = null, memoria = {}, recordar = () => 
       if (fija || segunda) throw e;
       registrar(`La tablet no contesta en ${tablet}: la busco otra vez.`);
       tablet = null;
-      return ahora(true);
+      return ahora(opciones, true);
     }
   };
   ahora.preparar = () => { if (!tablet) localizar().catch((e) => registrar(e.message)); };
@@ -271,8 +317,9 @@ export function lectorEnHilos({ caras, registrar = () => {}, tarea = new URL('le
     hilo.postMessage({ id, ...mensaje });
   });
   return {
-    async leer(png, aprendido = null) {
-      const img = leerPng(png);
+    async leer(captura, aprendido = null) {
+      // Un PNG, o la imagen ya lista (la captura en crudo, 3.45.0).
+      const img = captura?.rgba ? captura : leerPng(captura);
       try {
         if (!hilos) arrancar();
         const pixeles = new SharedArrayBuffer(img.rgba.length);
@@ -294,7 +341,7 @@ export function lectorEnHilos({ caras, registrar = () => {}, tarea = new URL('le
  * El servidor, con la captura inyectada: en Termux es `capturarTablet`, en
  * las pruebas una captura de fichero.
  */
-export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux }) {
+export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux }) {
   // Lo que no se pida, como siempre (las pruebas encogen solo algunos plazos).
   const vigilancia = { ...VIGILANCIA, ...vigilanciaPedida };
   // Las lecturas, en tres hilos a la vez (3.39.0); `enHilos: false` las hace aquí.
@@ -628,8 +675,23 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
     }
     if (req.method === 'GET' && ruta === '/leer') {
       const t0 = Date.now();
-      let png;
-      try { png = await capturar(); } catch (e) {
+      // Comprimida o no (3.45.0, `crearElectorDeCaptura`); sin elector, comprimida como siempre.
+      let formato = elector?.siguiente() ?? 'png', png = null, crudo = null, tFormato = t0, t1;
+      try {
+        try {
+          if (formato === 'crudo') crudo = leerCrudo(await capturar({ crudo: true }));
+        } catch (e) {
+          // ¿La crudo o la tablet? Se prueba la comprimida: si sale, es la
+          // crudo la que no vale aquí; si tampoco, es la tablet (y la crudo
+          // no se descarta por eso).
+          registrar(`La captura sin comprimir falló (${String(e.message).split('\n')[0]}): pruebo la comprimida.`);
+          formato = 'png'; tFormato = Date.now();
+          png = await capturar();
+          elector?.descartar(e.message);
+          registrar('La captura sin comprimir no vale con esta tablet: sigo con la comprimida hasta que reinicies el lector.');
+        }
+        if (formato === 'png' && !png) png = await capturar();
+      } catch (e) {
         registrar(`No se pudo hacer la captura: ${String(e.message).split('\n')[0]}`);
         res.writeHead(502, cabeceras).end(JSON.stringify({ error: FALLOS_DE_CAPTURA.includes(e?.tipo) ? e.tipo : 'captura' }));
         return;
@@ -637,17 +699,26 @@ export function crearServidor({ capturar, caras = carasGuardadas(), carpeta = nu
       try {
         n += 1;
         const id = `lectura-${new Date().toISOString().replace(/[:.]/g, '-')}-${n}`;
-        const t1 = Date.now();
-        const leido = lector ? await lector.leer(png, aprendido) : leerCaptura(png, caras, aprendido);
-        // `ms` es lo que espera la app; `msCaptura`, lo que tardó la tablet en dar la imagen (3.39.0).
-        const lectura = { version: VERSION_PUENTE, id, ...leido, ms: Date.now() - t0, msCaptura: t1 - t0 };
+        t1 = Date.now();
+        const img = crudo ?? leerPng(png);
+        // Lo que costó tener la imagen con este formato (captura + descomprimir): eso decide cuál va antes.
+        const elegido = elector?.anotar(formato, Date.now() - tFormato);
+        if (elegido) {
+          const { crudo: mc, png: mp } = elector.estado();
+          registrar(`Captura ${elegido === 'crudo' ? 'SIN comprimir' : 'comprimida'}: es la más rápida en tu tablet (mediana sin comprimir ${(mc / 1000).toFixed(1)} s, comprimida ${(mp / 1000).toFixed(1)} s).`);
+        }
+        const leido = lector ? await lector.leer(img, aprendido) : leerCaptura(img, caras, aprendido);
+        // `ms` es lo que espera la app; `msCaptura`, lo que tardó la tablet en dar la imagen (3.39.0), y con qué formato (3.45.0).
+        const lectura = { version: VERSION_PUENTE, id, ...leido, ms: Date.now() - t0, msCaptura: t1 - tFormato, formato };
         if (carpeta) {
           writeFileSync(join(carpeta, `${id}.json`), JSON.stringify(lectura, null, 1));
-          guardarCaptura(`${id}.png`, png);
+          // El aprendizaje lee PNG: la crudo se comprime aparte, sin parar al lector.
+          if (png) guardarCaptura(`${id}.png`, png);
+          else escribirPngRapido(img).then((b) => guardarCaptura(`${id}.png`, b)).catch((e) => registrar(`No se pudo guardar la captura ${id}: ${e.message}`));
         }
         // Un «?» dice a qué se quedó más cerca: con eso se afina sin pedir la captura.
         const nombres = (l) => l.map((x) => x.nombre ?? (x.candidato ? `?(${x.candidato} ${x.parecido.toFixed(2)})` : '?')).join(', ');
-        registrar(`Lectura ${n} (${lectura.ms} ms, captura ${lectura.msCaptura}): baneos ${nombres([...lectura.tuyos, ...lectura.suyos])} · enemigos ${nombres(lectura.enemigos)} · tu equipo ${nombres(lectura.aliados)} · tú ${lectura.tuyo ?? (lectura.tuyoFila >= 0 ? '?' : 'sin fila amarilla')}`);
+        registrar(`Lectura ${n} (${lectura.ms} ms, captura ${formato === 'crudo' ? 'sin comprimir' : 'comprimida'} ${lectura.msCaptura}): baneos ${nombres([...lectura.tuyos, ...lectura.suyos])} · enemigos ${nombres(lectura.enemigos)} · tu equipo ${nombres(lectura.aliados)} · tú ${lectura.tuyo ?? (lectura.tuyoFila >= 0 ? '?' : 'sin fila amarilla')}`);
         res.writeHead(200, cabeceras).end(JSON.stringify(lectura));
       } catch (e) {
         registrar(`La captura no se pudo leer: ${e.message}`);
@@ -690,7 +761,7 @@ async function principal() {
   if (aprendido) registrar(`Con lo aprendido de ${aprendido.capturas} capturas: ${Object.keys(aprendido.caras ?? {}).length} caras de esta tablet${aprendido.picks ? ' y los huecos de picks medidos aquí' : ''}.`);
   const resultados = leerResultados();
   registrar(resultados ? `Resultados: ${resultados.gane.length} plantillas de victoria y ${resultados.perdi.length} de derrota aprendidas de tus partidas.` : 'Resultados: solo la derrota de serie; la victoria se aprende de tu primera partida ganada en la que se vea la tabla.');
-  const servidor = crearServidor({ capturar, carpeta, registrar, aprendido, resultados });
+  const servidor = crearServidor({ capturar, elector: crearElectorDeCaptura(), carpeta, registrar, aprendido, resultados });
   servidor.on('error', (e) => {
     console.error(e.code === 'EADDRINUSE' ? `El puerto ${puerto} ya está en uso: hay otro lector abierto. Ciérralo, o arranca con «lector», que lo cierra solo.` : e.message);
     process.exit(1);

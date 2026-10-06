@@ -311,7 +311,8 @@ test('SEGURIDAD: el lector solo conecta y hace capturas con adb; nunca toca, ins
   const todos = readdirSync(carpeta, { recursive: true }).map(String);
   const ficheros = todos.filter((f) => /\.(c|m)?js$/.test(f));
   const sinComentarios = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-  const PERMITIDOS = [/^\['connect', \w+\]$/, /^\['-s', \w+, 'exec-out', 'screencap', '-p'\]$/];
+  // `screencap` con `-p` (PNG) o sin él (en crudo, 3.45.0): la misma captura de solo lectura.
+  const PERMITIDOS = [/^\['connect', \w+\]$/, /^\['-s', \w+, 'exec-out', 'screencap', '-p'\]$/, /^\['-s', \w+, 'exec-out', 'screencap'\]$/];
   const PROHIBIDOS = /['"`](input|shell|tap|swipe|keyevent|text|install|uninstall|push|am|pm|monkey|sendevent|root|reboot)['"`]/;
   for (const f of ficheros) {
     const texto = sinComentarios(readFileSync(join(carpeta, f), 'utf8'));
@@ -347,8 +348,8 @@ test('SEGURIDAD: el lector solo conecta y hace capturas con adb; nunca toca, ins
   // Y execFileSync aparece exactamente en el import y en dos llamadas, las permitidas.
   const usos = [...leer.matchAll(/\bexecFileSync\b/g)].length;
   const llamadas = [...leer.matchAll(/execFileSync\(\s*'adb',\s*(\[[^\]]*\])/g)].map((m) => m[1]);
-  eq(usos, 3, `execFileSync aparece ${usos} veces en leer.mjs y se esperaban 3 (import, connect, screencap)`);
-  eq(llamadas.length, 2, `leer.mjs hace ${llamadas.length} llamadas a adb y se esperaban 2`);
+  eq(usos, 4, `execFileSync aparece ${usos} veces en leer.mjs y se esperaban 4 (import, connect, screencap en PNG y en crudo)`);
+  eq(llamadas.length, 3, `leer.mjs hace ${llamadas.length} llamadas a adb y se esperaban 3`);
   for (const a of llamadas) ok(PERMITIDOS.some((p) => p.test(a)), `leer.mjs llama a adb con ${a}: solo se permite connect y exec-out screencap -p`);
 });
 

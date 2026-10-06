@@ -7,7 +7,7 @@
  * navegador ni librerías de imagen, y una dependencia nativa es justo lo que
  * no compila en un móvil.
  */
-import { deflateSync, inflateSync } from 'node:zlib';
+import { deflate, deflateSync, inflateSync } from 'node:zlib';
 
 const FIRMA = '89504e470d0a1a0a';
 /** Canales por tipo de color PNG: gris, RGB, paleta, gris+alfa, RGBA. */
@@ -169,8 +169,57 @@ export function escribirPng({ ancho, alto, rgba }, filtros = () => 0, { paleta =
     trozo('IDAT', deflateSync(Buffer.concat(filas))), trozo('IEND', Buffer.alloc(0))]);
 }
 
+// Por tabla (3.45.0): el mismo CRC de siempre, ocho veces más rápido. Con
+// la captura en crudo se escribe un PNG de varios MB en el móvil, y bit a
+// bit eran cientos de milisegundos con el lector parado.
+const TABLA_CRC = Uint32Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xedb88320 & -(c & 1));
+  return c >>> 0;
+});
 function crc32(buf) {
   let c = ~0;
-  for (const byte of buf) { c ^= byte; for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xedb88320 & -(c & 1)); }
+  for (let i = 0; i < buf.length; i++) c = TABLA_CRC[(c ^ buf[i]) & 255] ^ (c >>> 8);
   return ~c >>> 0;
+}
+
+/**
+ * `adb exec-out screencap` SIN `-p` (3.45.0): la imagen tal cual, sin que la
+ * tablet la comprima. Cabecera de 12 bytes (ancho, alto y formato de píxel,
+ * en little-endian; Android 8 y anteriores) o de 16 (más el espacio de
+ * color), y los píxeles: RGBA_8888 (1) o RGBX_8888 (2), cuatro bytes por
+ * píxel, fila tras fila. Cualquier otra cosa (otro formato, un tamaño que no
+ * cuadra) se rechaza: el lector vuelve entonces a la captura en PNG.
+ */
+export function leerCrudo(buf) {
+  if (!buf || buf.length < 16) throw new Error('captura en crudo vacía');
+  const ancho = buf.readUInt32LE(0), alto = buf.readUInt32LE(4), formato = buf.readUInt32LE(8);
+  if (!(ancho > 0 && alto > 0 && ancho <= 10000 && alto <= 10000)) throw new Error(`captura en crudo con un tamaño imposible (${ancho}×${alto})`);
+  const datos = ancho * alto * 4, cabecera = buf.length - datos;
+  if (cabecera !== 12 && cabecera !== 16) throw new Error(`captura en crudo de ${buf.length} bytes, que no cuadra con ${ancho}×${alto}`);
+  if (formato !== 1 && formato !== 2) throw new Error(`captura en crudo con el formato de píxel ${formato}, que no se sabe leer`);
+  const rgba = new Uint8Array(buf.buffer, buf.byteOffset + cabecera, datos);
+  // RGBX: el cuarto byte no es transparencia.
+  if (formato === 2) for (let k = 3; k < datos; k += 4) rgba[k] = 255;
+  return { ancho, alto, rgba };
+}
+
+/**
+ * Un PNG RGBA sin filtros y con la compresión más rápida, comprimiendo fuera
+ * del hilo principal (3.45.0): para guardar en el móvil la captura en crudo
+ * (el aprendizaje lee PNG) sin parar al lector mientras tanto.
+ */
+export async function escribirPngRapido({ ancho, alto, rgba }) {
+  const fila = ancho * 4, crudo = Buffer.alloc((fila + 1) * alto);
+  for (let y = 0; y < alto; y++) crudo.set(rgba.subarray(y * fila, (y + 1) * fila), y * (fila + 1) + 1);
+  const comprimido = await new Promise((resolver, rechazar) => deflate(crudo, { level: 1 }, (e, r) => (e ? rechazar(e) : resolver(r))));
+  const trozo = (nombre, cuerpo) => {
+    const largo = Buffer.alloc(4); largo.writeUInt32BE(cuerpo.length);
+    const tn = Buffer.concat([Buffer.from(nombre, 'latin1'), cuerpo]);
+    const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(tn));
+    return Buffer.concat([largo, tn, crc]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(ancho, 0); ihdr.writeUInt32BE(alto, 4); ihdr[8] = 8; ihdr[9] = 6;
+  return Buffer.concat([Buffer.from(FIRMA, 'hex'), trozo('IHDR', ihdr), trozo('IDAT', comprimido), trozo('IEND', Buffer.alloc(0))]);
 }

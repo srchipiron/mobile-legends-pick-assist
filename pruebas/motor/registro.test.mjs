@@ -330,6 +330,12 @@ test('lo que leyó el lector viaja con la partida, saneado, y se mide contra el 
   const t = aciertosDelLector([{ pick: 'X', draft: { enemigos: [] }, lector: { baneos: ['A'], enemigos: [], ms: [4000, 6000, 9000], msCaptura: [1000, 2000, 3000] } }]).tiempos;
   eq(`${t?.lecturas} ${t?.mediana} ${t?.medianaCaptura}`, '3 6000 2000', `la mediana de los tiempos sale ${JSON.stringify(t)}`);
   eq(aciertosDelLector([p]).tiempos, null, 'sin tiempos guardados se inventa una mediana');
+  // Por formato de captura (3.45.0): emparejado por el final con `ms` (las lecturas de antes no lo llevan).
+  const conFormato = sanearLectura({ baneos: ['A'], enemigos: [], ms: [9000, 2000, 5000, 2500], msCaptura: [8000, 900, 4000, 1000], formatos: ['crudo', 'png', 'crudo', 'gif'] });
+  eq(conFormato.formatos.join(), 'crudo,png,crudo', `los formatos no se sanean: ${conFormato.formatos}`);
+  const tf = aciertosDelLector([{ pick: 'X', draft: { enemigos: [] }, lector: { baneos: ['A'], enemigos: [], ms: [9000, 2000, 5000, 2500], msCaptura: [8000, 900, 4000, 1000], formatos: ['crudo', 'png', 'crudo'] } }]).tiempos;
+  eq(`${tf?.crudo?.lecturas} ${tf?.crudo?.mediana} ${tf?.png?.lecturas} ${tf?.png?.mediana} ${tf?.png?.medianaCaptura}`, '2 2000 1 5000 4000', `los tiempos por formato no van con su lectura: ${JSON.stringify(tf)}`);
+  ok(!sanearLectura({ baneos: ['A'], enemigos: [], ms: [1000], formatos: ['png', 'crudo'] }).formatos, 'acepta más formatos que lecturas');
 });
 
 test('la lectura guarda los ids de las capturas del lector (solo los válidos) para devolverle la verdad', () => {

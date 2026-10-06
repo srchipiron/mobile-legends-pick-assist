@@ -1493,7 +1493,8 @@ abajo), a petición de Javi antes de probarlo en su tablet: se aprende de
 sus partidas.
 
 - **SEGURIDAD, no negociable**: su cuenta vale dinero. El lector solo hace
-  `adb connect` y `adb exec-out screencap -p`: nada de `input tap`,
+  `adb connect` y `adb exec-out screencap -p` (o `screencap` sin `-p`, la
+  misma captura sin comprimir, desde 3.45.0): nada de `input tap`,
   `shell`, `install`, ni rutas `/api/user/*` de la API. Tocar la pantalla
   por adb sería automatizar el juego (bot). La prueba de seguridad de
   `lector.test` va por FORMA desde 3.21.0 (la de 3.19.0 buscaba texto y se
@@ -1955,6 +1956,28 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   14 MB en crudo y cambiaría el mandato permitido: se decide con esa cifra
   delante). Doce mutaciones; sobrevive una inofensiva (la versión reducida
   sin normalizar elige los mismos finalistas).
+- **La captura sin comprimir (3.45.0)**, pedida por Javi tras medir que
+  3,8 de los 4,9 s de cada lectura eran la captura (146 lecturas): `adb
+  exec-out screencap` SIN `-p` da la imagen tal cual (cabecera de 12 o 16
+  bytes y RGBA_8888/RGBX_8888, `leerCrudo` en png.mjs; ~14 MB a
+  2400×1504), así la tablet no comprime y el móvil no descomprime. Cuál va
+  antes depende de su tablet y su wifi y no se mide desde aquí, así que
+  `crearElectorDeCaptura` (servir.mjs, solo en `/leer`) alterna hasta tener
+  3 de cada una, usa la de menor mediana (de las últimas 5, captura + imagen
+  lista) y cada 10 lecturas prueba la otra; una crudo que falla o no se sabe
+  leer se reintenta comprimida en la MISMA petición y, si esa sale, la crudo
+  se descarta hasta reiniciar (si fallan las dos, es la tablet y no se
+  descarta nada). La captura en crudo se guarda para el aprendizaje como
+  PNG sin filtros, comprimido FUERA del hilo principal (`escribirPngRapido`,
+  87 ms aquí; el CRC pasó a tabla). Las de la partida (inicio, final) siguen
+  en PNG: 14 MB cada 10 s por la wifi mientras se juega podrían meter lag.
+  Cada lectura lleva `formato` y la partida `lector.formatos` (alineado por
+  el final con `ms`): `medir-mias` y el diagnóstico dicen la mediana de cada
+  forma. La prueba de seguridad admite la tercera llamada a adb, con su
+  forma exacta. Pruebas en `captura-cruda.test` (cabeceras, RGBX, rechazos,
+  la misma lectura que en PNG, el PNG guardado, la vuelta a la comprimida y
+  la tablet apagada) y `registro.test`. Sin medir todavía en su tablet: si
+  la crudo va más rápida; lo dirán sus partidas.
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el
