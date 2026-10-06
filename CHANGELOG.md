@@ -8,6 +8,30 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.44.0
+
+- Consejos en directo por voz: con «Leer solo», el móvil te va diciendo en
+  voz alta qué hacer según el minuto de la partida. Al empezar te dice con
+  cuánto salís, tu cruce y el focus. A los 5 minutos, lo de las peleas. Y
+  luego, según vuestras fases: cuándo es vuestro momento, cuándo empieza a
+  jugar en contra cada minuto, cuándo se pone la partida de un lado y qué
+  pasa pasado el 20. Suena por el altavoz o los auriculares del móvil, con
+  el móvil en el bolsillo.
+- Para oírlos hace falta, una sola vez, la app Termux:API (de F-Droid) y en
+  Termux `pkg install termux-api`. Sin ella todo funciona igual pero no
+  suena, y la app lo dice debajo del botón del lector.
+- El lector sabe cuándo empieza la partida: mira la tablet desde el minuto 1
+  después del draft, una vez cada 20 segundos, y la reconoce por el minimapa.
+  Sigue siendo solo una captura de pantalla; no toca nada.
+- Al acabar te dice cuánto duró y qué probabilidad os daba el modelo para
+  ese final, y la partida guarda su duración. Con eso el informe de tus
+  partidas mide si las fases aciertan en tus partidas, no solo en las
+  profesionales.
+- Las pantallas de la partida que se suben al proyecto llevan ahora un
+  recorte del marcador a resolución completa. Con unas cuantas, el lector
+  aprenderá a leer las muertes de cada equipo y los consejos podrán contar
+  cómo va la partida.
+
 ## 3.43.2
 
 - El plan de partida ya no se contradice. Si le ganas el cruce a tu rival

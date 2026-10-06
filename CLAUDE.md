@@ -2252,6 +2252,69 @@ las peleas, al final, problemas). Lo que conviene no volver a suponer:
   que desde 3.38.0 es la del plan A·B·C de los baneos: no miraba nada. Hoy
   `.plan-partida *`, y exige que haya algo que mirar.
 
+## Los consejos en directo (3.44.0)
+
+Pedido por Javi: «que los consejos vayan en tiempo real según como vaya la
+partida y los minutos… y analizar el resultado». Él eligió (preguntado) la
+VOZ en el móvil (Termux:API) y que el lector mire la tablet desde el minuto
+1, cada 20 s. Cómo va, por piezas:
+
+- **El guion** (`src/motor/directo.js`, `guionEnDirecto`, lo añade `planear`
+  como `plan.directo`, y `cierresPorTramo` como `plan.cierres`): el plan y las
+  fases convertidos en avisos por minuto de PARTIDA (inicio 0,25; peleas 5;
+  de early «vuestro momento» 9 y «cada minuto en contra» 15; de late
+  «aguantad» 8 y «ahora vosotros» 15; su carta y la vuestra 13; el cambio de
+  lado dos minutos antes, solo si el plan lo afirma; pasado el 20, 19,5).
+  Cada cifra es la probabilidad de SU tramo de fases.js; los minutos son
+  decisión de producto. Nada nuevo medido: se decide CUÁNDO decir lo medido.
+  La app lo traduce (`guionTraducido`) y lo manda en `POST /vigilar` junto
+  con el aviso de draft completo; si cambia (otro pick fijado), lo vuelve a
+  mandar (huella), y el lector no repite lo ya pasado.
+- **El inicio de la partida** (`scripts/lector/partida.mjs`): por el
+  MINIMAPA, correlación de la esquina de arriba a la izquierda (a 160 px,
+  con la paleta de `fotogramaDe`) con `minimapa.json`, la media de 37
+  pantallas de juego de las incidencias #21–#35 (índice par). Medido con
+  las 83: de juego fuera de la plantilla 0,50–0,99 (todas menos una >
+  0,62); fuera de partida (draft, tabla, rango, MVP, estadísticas) ≤ 0,42.
+  `UMBRAL_PARTIDA` 0,47 y DOS capturas seguidas; inicio = la primera menos
+  medio intervalo. Sin verlo al llegar al minuto 8 del draft, se estima en
+  el 1 y se marca (`inicioEstimado`: la app no apunta esa duración). La
+  pantalla de CARGA no está medida (ninguna captura suya); si se pareciera
+  al minimapa, el inicio saldría un minuto antes. `pruebas/fixtures/juego/
+  pantallas/` lleva 18 de esas pantallas (9 de juego no usadas en la
+  plantilla y las 9 de fuera).
+- **La voz** (`scripts/lector/voz.mjs`): `termux-tts-speak -l es|en`, el
+  texto por la ENTRADA ESTÁNDAR (como argumento, uno que empezara por «-»
+  sería una opción), sin caracteres de control, tope 400. Es el SEGUNDO y
+  último fichero del lector que lanza un programa; la prueba de seguridad lo
+  exige por forma (import exacto, una sola llamada, solo el idioma de
+  argumento). Un aviso más de `RETRASO_MAXIMO_MIN` (2) por detrás no se dice
+  (el del inicio, hasta 4). Sin Termux:API, `/final` dice `voz: 'falta'` y
+  la app lo enseña bajo el botón del lector (`lector.voz.falta`).
+- **El resultado**: con la tabla leída, `duracion` = tabla − inicio y se dice
+  el cierre de su tramo («acabó entre el 14 y el 16: el modelo os daba un
+  57%»). La partida apuntada guarda `duracion` y `fases` (las seis
+  probabilidades del héroe jugado, solo si es el del plan) y
+  `medirFasesMias` (registro.js) compara en tus partidas la probabilidad del
+  tramo en que acabó con la nota de siempre (Brier pareado con su error):
+  sale en `medir-mias`. `tramoDeMinutos` reparte IGUAL que `tramoDe` de
+  medir-fases.mjs (prueba con cada décima de minuto).
+- **El marcador** (muertes de los dos equipos y reloj, arriba en el centro:
+  x 44–58%, y 0–5%, medido en las franjas de 320 px): cada fotograma EN
+  PARTIDA lleva `marcador`, el recorte a resolución completa (o a la mitad
+  si no cabe en 12.000 caracteres), y se sube con las franjas. Todavía NO se
+  lee: con unas cuantas partidas se sacan las plantillas de los dígitos
+  (como `caras.json`), y entonces el guion podrá decir «vais +4». Hasta
+  medir con resultados qué vale una ventaja de muertes en cada minuto, eso
+  se dirá como hecho, no como probabilidad.
+- Pruebas: `motor/directo.test`, `scripts/directo-lector.test` (el recorrido
+  entero con un reloj simulado: no busca antes del minuto 1, el draft no
+  cuenta, dos capturas arrancan, cada aviso en su minuto y en su idioma, lo
+  atrasado no, la duración y el cierre de su tramo, el inicio estimado
+  marcado, la voz que falta), `app/lector.test` (guion en el aviso; de vuelta
+  duración solo con inicio visto, voz y marcador validados), `registro.test`,
+  `perfil.test` y la de seguridad del lector.
+
 ## El consejo para los compañeros
 
 Desde 1.34.0, `src/motor/equipo.js`. Con algún enemigo a la vista, para cada

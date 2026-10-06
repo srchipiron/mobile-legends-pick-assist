@@ -188,6 +188,9 @@ await prueba('con «Leer solo» y el draft completo, el lector vigila el final p
   let partidas = [];
   for (let i = 0; i < 100 && !partidas.length; i++) { await pagina.waitForTimeout(250); partidas = (await leer(pagina, 'roam-picker:partidas')) ?? []; }
   eq(partidas.length, 1, 'la partida no se apunta sola con la tabla a la vista');
+  // Con el aviso, la app le manda al lector el guion de los consejos en directo de tu pick (3.44.0).
+  const fin = await (await fetch(`http://127.0.0.1:${PUERTO}/final`, { headers: { Origin: new URL(url).origin } })).json();
+  ok(fin.desde === completoDesde && fin.avisos >= 2, `el lector no recibe el guion de los consejos en directo: ${JSON.stringify({ desde: fin.desde, avisos: fin.avisos })}`);
   const [p] = partidas;
   eq(p.pick, 'Khufra', 'la partida apuntada sola es la del nº1 de la línea, no tu pick fijado');
   ok(p.origen === 'lector' && p.gane === false && p.draft?.enemigos?.length === 5 && p.pick, `la partida apuntada sola no es la del draft, perdida y del lector: ${JSON.stringify({ origen: p.origen, gane: p.gane, pick: p.pick, enemigos: p.draft?.enemigos })}`);

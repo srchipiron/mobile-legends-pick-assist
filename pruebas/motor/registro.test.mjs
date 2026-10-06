@@ -7,7 +7,7 @@
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { sanear } from '../../src/motor/perfil.js';
-import { sanearDraft, sanearLectura, aciertosDelLector, apuntar, olvidar, corregir, calibracion, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
+import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, medirFasesMias, aciertosDelLector, apuntar, olvidar, corregir, calibracion, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
 import { maestriaDesdeRegistro, maestriaEfectiva, winrateDeReferencia } from '../../src/motor/maestria.js';
 import { nombreClave } from '../../src/motor/nombres.js';
 import { generador } from '../../src/motor/robustez.js';
@@ -355,6 +355,22 @@ test('la lectura guarda las dudas (hueco, candidato, parecido) y lo aprendido, s
   ];
   const a = aciertosDelLector(partidas);
   eq(`${a.dudas.Belerick} ${a.dudas.Saber} ${a.aprendidos.Clint} ${a.sinEncontrar.Layla}`, '2 1 1 2', `el agregado no cuenta dudas y aprendizaje: ${JSON.stringify(a)}`);
+});
+
+test('la duración y la previsión por tramo de cada partida (3.44.0): se guardan saneadas y miden si las fases aciertan en tus partidas', () => {
+  eq(sanearDuracion(14.26), 14.3); eq(sanearDuracion(0), null); eq(sanearDuracion(90), null); eq(sanearDuracion('15'), null);
+  eq(sanearFases([0.4, 0.45, 0.5, 0.55, 0.6, 0.65])?.length, 6); eq(sanearFases([0.4, 0.5]), null); eq(sanearFases([0.4, 0.45, 0.5, 0.55, 0.6, 1.2]), null);
+  const fases = [0.3, 0.35, 0.4, 0.6, 0.65, 0.7];
+  const partidas = apuntar(apuntar([], { t: 1, pick: 'A', gane: true, estimacion: 0.5, duracion: 19, fases }), { t: 2, pick: 'A', gane: false, estimacion: 0.5, duracion: 11, fases });
+  ok(partidas.every((p) => p.duracion && p.fases?.length === 6), 'apuntar pierde la duración o las fases');
+  // Ganada a los 19 (tramo 18–20: 0,65) y perdida a los 11 (10–12: 0,30): las fases aciertan mejor que el 50% de siempre.
+  const m = medirFasesMias(partidas);
+  eq(m.n, 2);
+  ok(Math.abs(m.previsto - (0.65 + 0.3) / 2) < 1e-9, `no coge la probabilidad del tramo en que acabó: ${m.previsto}`);
+  ok(m.mejora && m.mejora.dif > 0, `no ve que las fases mejoran el Brier: ${JSON.stringify(m.mejora)}`);
+  eq(m.porTramo.find((x) => x.desde === 18).n, 1);
+  eq(medirFasesMias([{ t: 3, pick: 'A', gane: true, duracion: 15 }]).n, 0, 'cuenta una partida sin previsión por tramo');
+  eq(medirFasesMias([{ t: 3, pick: 'A', gane: true, duracion: 15, fases, previa: true }]).n, 0, 'cuenta una partida previa');
 });
 
 await terminar('motor/registro');

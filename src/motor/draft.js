@@ -12,6 +12,7 @@ import { analizarDraft } from './analisis.js';
 import { planDePartida } from './plan.js';
 import { elegirVentana, elegirRango, mediaDeWinrate } from './ventana.js';
 import { centroDeFases, fasesDePartida } from './fases.js';
+import { guionEnDirecto, cierresPorTramo } from './directo.js';
 
 /**
  * El cerebro: de los ficheros de datos y el draft a todo lo que la app
@@ -276,7 +277,7 @@ export function planDePicks(datos, { linea, maestria = null, n = 3 } = {}) {
  * qué decir al equipo. Es consejo, no nota: no cambia el ranking.
  */
 export function planear(datos, { yo = null, aliados = [], enemigos = [], linea = null, baneos = [], maestria = null, rivalMarcado = null } = {}) {
-  if (!yo) return planDePartida({ yo, aliados, enemigos, meta: datos.meta });
+  if (!yo) return { ...planDePartida({ yo, aliados, enemigos, meta: datos.meta }), directo: [], cierres: [] };
   // Tu línea: la que juegas; sin ella (llamadas de antes de 3.43.0), la
   // primera del héroe. Los compañeros, repartidos SIN tu línea, y los
   // enemigos, como el rival: el mismo reparto que el resto del motor.
@@ -298,7 +299,10 @@ export function planear(datos, { yo = null, aliados = [], enemigos = [], linea =
     ellos: enemigos.map((h, i) => ({ heroe: h, linea: lineasEllos[i] ?? null })),
     datosFases: { curvaLinea: datos.meta.curvaLinea, winrateLinea: datos.meta.winrateLinea, centro: datos.meta.centroDeFases },
   }) : null;
-  return planDePartida({ yo, aliados, enemigos, meta: datos.meta, fases, rival: enemigos.find((e) => e.name === rival) ?? null });
+  const plan = planDePartida({ yo, aliados, enemigos, meta: datos.meta, fases, rival: enemigos.find((e) => e.name === rival) ?? null });
+  // Lo mismo, por minutos, para leerlo en voz alta durante la partida
+  // (3.44.0, directo.js), y lo que se dice al acabar según cuándo acabe.
+  return { ...plan, directo: guionEnDirecto(plan), cierres: cierresPorTramo(fases) };
 }
 
 /**

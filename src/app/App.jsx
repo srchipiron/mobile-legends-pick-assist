@@ -21,7 +21,7 @@ import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, cuerpoDeFotogramas, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
 import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
@@ -140,6 +140,13 @@ export default function App() {
   // suben solos al proyecto al apuntar o al empezar otro draft, para medir.
   const fotogramas = useRef([]);
   const vigilando = useRef(false);
+  // Los consejos en directo (3.44.0): lo último que se le mandó al lector
+  // (draft y huella del guion), cuánto duró la partida según él y si su voz
+  // funciona (sin Termux:API no suena y se dice debajo del botón).
+  const guionEnviado = useRef(null);
+  const duracionFinal = useRef({ desde: null, duracion: null });
+  const [vozLector, setVozLector] = useState(null);
+  const lectorConVoz = useMemo(() => ({ ...lector, voz: vozLector }), [lector, vozLector]);
   const ahora = useAhora();
   /** Sube unas pantallas (si hay). Sin token no sube: se descartan. */
   const envioActual = useRef(envio);
@@ -191,6 +198,10 @@ export default function App() {
       ...(est ? { estimacion: est.p } : {}),
       bans: draft.baneos,
       draft: { linea, enemigos: draft.enemigos, aliados: draft.aliados, rival: rec.rival.nombre },
+      // Cuánto duró (lo mide el lector) y lo que se preveía para cada duración
+      // con ESE héroe (3.44.0): con las dos se mide si las fases aciertan en tus partidas.
+      ...(duracionFinal.current.desde === draft.completoDesde && duracionFinal.current.duracion ? { duracion: duracionFinal.current.duracion } : {}),
+      ...(rec.yo?.name === pick && rec.partida?.fases?.puntos ? { fases: rec.partida.fases.puntos.map((x) => x.p) } : {}),
       // Lo que leyó el lector de la tablet: para medir cuánto acierta (3.25.0).
       // Sin los ids de sus capturas, que son del móvil.
       ...(draft.lectura ? { lector: { baneos: draft.lectura.baneos, enemigos: draft.lectura.enemigos, ...(draft.lectura.aliados ? { aliados: draft.lectura.aliados } : {}), ...(draft.lectura.tuyo ? { tuyo: draft.lectura.tuyo } : {}), ...(draft.lectura.dudas ? { dudas: draft.lectura.dudas } : {}), ...(draft.lectura.aprendizaje ? { aprendizaje: draft.lectura.aprendizaje } : {}), ...(draft.lectura.ms ? { ms: draft.lectura.ms } : {}), ...(draft.lectura.msCaptura ? { msCaptura: draft.lectura.msCaptura } : {}) } } : {}),
@@ -240,6 +251,10 @@ export default function App() {
   completoActual.current = draft.completoDesde;
   const draftActual = useRef(draft);
   draftActual.current = draft;
+  // El guion de AHORA (el héroe fijado puede cambiar con el draft completo).
+  const directo = useMemo(() => guionTraducido(rec.partida, t, idioma), [rec.partida, t, idioma]);
+  const directoActual = useRef(directo);
+  directoActual.current = directo;
   useEffect(() => {
     if (!apuntada) return undefined;
     const reloj = setTimeout(() => setApuntada((a) => (a === apuntada ? null : a)), DESHACER_APUNTADA_MS);
@@ -268,12 +283,20 @@ export default function App() {
       try {
         let f = await pedirFinal();
         if (!sigue()) return;
-        // El lector no sabe de este draft (acaba de completarse, o se reinició): se le avisa, y contesta con lo que tenga.
-        if (f.desde !== yo) f = (await avisarVigilancia({ desde: yo })) ?? f;
+        // El lector no sabe de este draft (acaba de completarse, o se reinició)
+        // o su guion de consejos ya no es el de ahora (3.44.0): se le avisa,
+        // con el guion, y contesta con lo que tenga.
+        const huella = `${yo}|${directoActual.current.huella}`;
+        if (f.desde !== yo || guionEnviado.current !== huella) {
+          const r = await avisarVigilancia({ desde: yo, directo: directoActual.current });
+          if (r) { f = r; guionEnviado.current = huella; }
+        }
         if (!sigue()) return;
-        const { suyo, fotogramas: lista, resultado, resultadoEn } = fundirFinal(fotogramas.current, f, { completoDesde: yo });
+        const { suyo, fotogramas: lista, resultado, resultadoEn, duracion, voz } = fundirFinal(fotogramas.current, f, { completoDesde: yo });
         if (!suyo) return;
         fotogramas.current = lista;
+        if (duracion) duracionFinal.current = { desde: yo, duracion };
+        setVozLector(voz);
         // La tabla de resultado con una palabra conocida (3.32.0): la partida se apunta SOLA, con «Deshacer», fechada cuando el lector vio la tabla.
         // Nunca dos veces por draft, ni la que deshiciste (marca guardada en el draft).
         if (resultado && apuntadaSola.current !== yo && draftActual.current.apuntadaSola !== yo && apuntarSolaAhora.current(resultado === 'gane', resultadoEn ?? Date.now())) apuntadaSola.current = yo;
@@ -435,7 +458,7 @@ export default function App() {
           onBanear={(h) => draft.anadir('baneos', h)}
           onQuitar={(h) => draft.quitar('baneos', h)}
           onAPicks={() => draft.setFase('picks')}
-          lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
+          lector={lectorConVoz} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
           pie={pie}
         />
         {/* El aviso y el selector en el MISMO sitio que en picks (segundo y
@@ -456,7 +479,7 @@ export default function App() {
         meta={meta} datos={datos} metaListo={metaListo} sinWinrates={sinWinrates} edadHoras={edadHoras} pro={pro}
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
         onResultado={(gane) => guardarPartida(draft.miPick ?? rec.eleccion?.heroe.name, gane)}
-        lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
+        lector={lectorConVoz} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
         pie={pie}
       />
       {deshacer}

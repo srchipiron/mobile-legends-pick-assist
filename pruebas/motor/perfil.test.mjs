@@ -191,4 +191,11 @@ test('al fundir, el rango, la línea y el idioma son los de este móvil; los de 
   eq(`${vacio.rango} ${vacio.linea} ${vacio.idioma}`, 'glory roam es', 'en un móvil sin preferencias no se rellenan con las del código');
 });
 
+test('el código de perfil lleva la duración y la previsión por tramo de cada partida, saneadas (3.44.0)', () => {
+  const fases = [0.4, 0.45, 0.5, 0.55, 0.6, 0.65];
+  const { partidas } = sanear({ partidas: [{ t: 1, pick: 'A', gane: true, duracion: 16.2, fases }, { t: 2, pick: 'A', gane: true, duracion: 'mucho', fases: [2] }] });
+  ok(partidas[0].duracion === 16.2 && partidas[0].fases.length === 6, 'el saneado pierde la duración o las fases');
+  ok(!('duracion' in partidas[1]) && !('fases' in partidas[1]), 'entra una duración o unas fases sin forma');
+});
+
 await terminar('motor/perfil');

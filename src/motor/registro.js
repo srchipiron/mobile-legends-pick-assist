@@ -1,5 +1,7 @@
 import { nombreClave } from './nombres.js';
 import { maestriaEfectiva, winrateDeReferencia } from './maestria.js';
+import { TRAMOS } from './fases.js';
+import { tramoDeMinutos } from './directo.js';
 
 /**
  * Registro de partidas: a quién cogiste, a quién recomendaba la app, la
@@ -113,6 +115,48 @@ export function aciertosDelLector(partidas = []) {
   return { partidas: con.length, leidos, acertados, acierto: leidos ? acertados / leidos : null, fallos, dudas, aprendidos, sinEncontrar, tiempos };
 }
 
+/**
+ * La duración de la partida (minutos, la mide el lector del inicio a la
+ * tabla) y la previsión por tramo de duración que había delante (las seis
+ * probabilidades de fases.js) (3.44.0): con las dos se mide si las fases
+ * aciertan en TUS partidas (`medirFasesMias`). Lo que no tenga la forma, fuera.
+ */
+export const sanearDuracion = (d) => (typeof d === 'number' && Number.isFinite(d) && d > 0 && d <= 60 ? Math.round(d * 10) / 10 : null);
+export const sanearFases = (f) => (Array.isArray(f) && f.length === TRAMOS.length && f.every((p) => typeof p === 'number' && p > 0 && p < 1)
+  ? f.map((p) => Math.round(p * 1000) / 1000) : null);
+
+/**
+ * ¿Aciertan las fases en TUS partidas? (3.44.0) De las apuntadas con
+ * duración (la mide el lector) y con la previsión por tramo, la
+ * probabilidad del tramo en que acabó frente a la nota de siempre
+ * (`estimacion`), con el mismo Brier y su error típico de la diferencia
+ * (pareada: son las mismas partidas). En pro las fases mejoran la
+ * predicción (+4,9 de logL por 1.000, fases.js); aquí se comprueba con las
+ * tuyas. Hasta tener unas decenas, el ± manda.
+ */
+export function medirFasesMias(partidas = []) {
+  const filas = (partidas ?? []).filter((p) => !esPrevia(p) && sanearDuracion(p.duracion) && sanearFases(p.fases))
+    .map((p) => {
+      const pf = p.fases[tramoDeMinutos(p.duracion)];
+      const pb = typeof p.estimacion === 'number' ? p.estimacion : null;
+      return { y: p.gane ? 1 : 0, pf, pb, tramo: tramoDeMinutos(p.duracion), duracion: p.duracion };
+    });
+  const n = filas.length;
+  if (!n) return { n: 0 };
+  const media = (l) => l.reduce((a, b) => a + b, 0) / l.length;
+  const conBase = filas.filter((f) => f.pb != null);
+  const brierFases = media(filas.map((f) => (f.pf - f.y) ** 2));
+  let mejora = null;
+  if (conBase.length >= 2) {
+    const d = conBase.map((f) => (f.pb - f.y) ** 2 - (f.pf - f.y) ** 2);
+    const m = media(d);
+    const se = Math.sqrt(d.reduce((a, x) => a + (x - m) ** 2, 0) / (d.length - 1) / d.length);
+    mejora = { n: conBase.length, dif: m, se, seVe: Math.abs(m) > 1.96 * se && se > 0 };
+  }
+  const porTramo = TRAMOS.map((desde, i) => ({ desde, n: filas.filter((f) => f.tramo === i).length }));
+  return { n, brierFases, previsto: media(filas.map((f) => f.pf)), real: media(filas.map((f) => f.y)), duracionMedia: media(filas.map((f) => f.duracion)), mejora, porTramo };
+}
+
 /** Partidas mínimas de cada rama antes de que los números signifiquen algo. */
 export const MINIMO_PARA_CONCLUIR = 30;
 
@@ -143,6 +187,8 @@ export function apuntar(partidas, entrada, tope = 500) {
       ? { bans: entrada.bans.filter((b) => typeof b === 'string' && b).slice(0, 10) } : {}),
     ...(sanearDraft(entrada.draft) ? { draft: sanearDraft(entrada.draft) } : {}),
     ...(sanearLectura(entrada.lector) ? { lector: sanearLectura(entrada.lector) } : {}),
+    ...(sanearDuracion(entrada.duracion) ? { duracion: sanearDuracion(entrada.duracion) } : {}),
+    ...(sanearFases(entrada.fases) ? { fases: sanearFases(entrada.fases) } : {}),
   };
   if (!limpia.pick) return partidas;
   return [limpia, ...(partidas ?? [])].sort((a, b) => (b.t ?? 0) - (a.t ?? 0)).slice(0, tope);

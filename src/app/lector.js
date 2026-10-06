@@ -142,12 +142,13 @@ export const tocaVigilarFinal = ({ auto, visible = true, completoDesde }) => !!a
  * el mismo que el suyo): desde entonces vigila el final por su cuenta.
  * Devuelve lo vigilado hasta ahora, o null si no hay lector. Nunca lanza.
  */
-export async function avisarVigilancia({ desde, base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+export async function avisarVigilancia({ desde, directo = null, base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
   if (!Number.isFinite(desde)) return null;
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), plazoMs);
   try {
-    const r = await pedir(`${base}/vigilar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ desde }), cache: 'no-store', signal: corte.signal });
+    // Con el guion de los consejos en directo (3.44.0), ya traducido: el lector lo dice en voz alta.
+    const r = await pedir(`${base}/vigilar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ desde, ...(directo ? { guion: directo.guion, cierres: directo.cierres, idioma: directo.idioma } : {}) }), cache: 'no-store', signal: corte.signal });
     const cuerpo = r.ok ? await r.json().catch(() => null) : null;
     return cuerpo && Array.isArray(cuerpo.fotogramas) ? cuerpo : null;
   } catch {
@@ -185,10 +186,12 @@ export async function pedirFinal({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS,
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 /** Un fotograma como lo da el lector: id `fotograma-…`, minuto, y las dos imágenes en base64 (sin nada más dentro). */
 export const fotogramaValido = (f) => !!f && typeof f.id === 'string' && /^fotograma-[\w-]{1,80}$/.test(f.id)
-  && Number.isFinite(f.minuto) && typeof f.miniatura === 'string' && BASE64.test(f.miniatura) && typeof f.tira === 'string' && BASE64.test(f.tira);
+  && Number.isFinite(f.minuto) && typeof f.miniatura === 'string' && BASE64.test(f.miniatura) && typeof f.tira === 'string' && BASE64.test(f.tira)
+  // El recorte del marcador (3.44.0), si viene, con la misma forma.
+  && (f.marcador == null || (typeof f.marcador === 'string' && BASE64.test(f.marcador)));
 
 export function fundirFinal(actuales, final, { completoDesde, maximo = MAX_FOTOGRAMAS }) {
-  if (!final || !Number.isFinite(completoDesde) || final.desde !== completoDesde) return { suyo: false, fotogramas: actuales, resultado: null, resultadoEn: null };
+  if (!final || !Number.isFinite(completoDesde) || final.desde !== completoDesde) return { suyo: false, fotogramas: actuales, resultado: null, resultadoEn: null, duracion: null, voz: null };
   const ids = new Set(actuales.map((f) => f.id));
   const fotogramas = [...actuales];
   for (const f of Array.isArray(final.fotogramas) ? final.fotogramas : []) {
@@ -197,7 +200,7 @@ export function fundirFinal(actuales, final, { completoDesde, maximo = MAX_FOTOG
     // dentro de una franja habría puesto a trabajar a Claude en el repositorio
     // con el token de Javi (claude.yml atiende a sus comentarios).
     if (!fotogramaValido(f) || ids.has(f.id)) continue;
-    const nuevo = { id: f.id, minuto: f.minuto, miniatura: f.miniatura, tira: f.tira, ...(f.tabla ? { tabla: true } : {}) };
+    const nuevo = { id: f.id, minuto: f.minuto, miniatura: f.miniatura, tira: f.tira, ...(f.marcador ? { marcador: f.marcador } : {}), ...(f.tabla ? { tabla: true } : {}) };
     if (fotogramas.length >= maximo) {
       // Las ÚLTIMAS (3.40.0), como en el lector: la nueva saca a la más vieja
       // que no sea tabla, y la tabla del resultado entra siempre (3.37.0).
@@ -211,7 +214,23 @@ export function fundirFinal(actuales, final, { completoDesde, maximo = MAX_FOTOG
     ids.add(f.id);
   }
   const resultado = final.resultado === 'gane' || final.resultado === 'perdi' ? final.resultado : null;
-  return { suyo: true, fotogramas, resultado, resultadoEn: resultado && Number.isFinite(final.resultadoEn) ? final.resultadoEn : null };
+  // Cuánto duró la partida (3.44.0, del inicio que vio el lector a la tabla)
+  // y si la voz funciona: lo de la voz se enseña, la duración se apunta.
+  const duracion = Number.isFinite(final.duracion) && final.duracion > 0 && final.duracion <= 60 && !final.inicioEstimado ? final.duracion : null;
+  const voz = ['ok', 'falta', 'otro'].includes(final.voz) ? final.voz : null;
+  return { suyo: true, fotogramas, resultado, resultadoEn: resultado && Number.isFinite(final.resultadoEn) ? final.resultadoEn : null, duracion, voz };
+}
+
+/**
+ * El guion de los consejos en directo (3.44.0), traducido para el lector:
+ * cada aviso del motor (`plan.directo`: minuto y frases con clave) a texto, y
+ * una frase de cierre por tramo de duración. Con su huella, para volver a
+ * mandarlo solo si cambia (fijaste otro pick).
+ */
+export function guionTraducido(plan, t, idioma = 'es') {
+  const guion = (plan?.directo ?? []).map((a) => ({ min: a.min, texto: a.partes.map((p) => t(p.clave, p.params)).join(' ') }));
+  const cierres = (plan?.cierres ?? []).map((c) => t(c.clave, c.params));
+  return { guion, cierres, idioma, huella: JSON.stringify([guion, cierres, idioma]) };
 }
 
 /**
@@ -255,7 +274,8 @@ export function cuerpoDeFotogramas({ fotogramas, resultado = null, version = '' 
     return validos.filter((f) => dentro.has(f));
   };
   const trozoMini = (f) => `\n\n${f.id} · minuto ${f.minuto}${f.tabla ? ' · TABLA' : ''} · pantalla entera a 160 px (PNG, base64):\n\n${VALLA}\n${f.miniatura}\n${VALLA}`;
-  const trozoTira = (f) => `\n\n${f.id} · minuto ${f.minuto}${f.tabla ? ' · TABLA' : ''}:\n\n${VALLA}\n${f.tira}\n${VALLA}`;
+  // Con el recorte del marcador a resolución completa (3.44.0): es lo que hace falta para aprender sus dígitos.
+  const trozoTira = (f) => `\n\n${f.id} · minuto ${f.minuto}${f.tabla ? ' · TABLA' : ''}:\n\n${VALLA}\n${f.tira}\n${VALLA}${f.marcador ? `\n\n${f.id} · marcador a resolución completa:\n\n${VALLA}\n${f.marcador}\n${VALLA}` : ''}`;
   const cabecera = `Fotogramas del final de una partida (${etiqueta}) · app ${version} · `;
   const enCuerpo = caben(cabecera + '000 de 000 pantallas distintas desde el minuto 00.\n', trozoMini);
   const cuerpo = `${cabecera}${enCuerpo.length} de ${validos.length} pantallas distintas desde el minuto ${DESDE_FINAL_MIN}.\n` + enCuerpo.map(trozoMini).join('');

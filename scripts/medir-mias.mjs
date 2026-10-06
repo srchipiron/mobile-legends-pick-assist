@@ -12,7 +12,7 @@
  * fallo de verdad (fichero ilegible) sí sale con código 1.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { resumen, calibracion, esPrevia, siguioConsejo, aciertosDelLector } from '../src/motor/registro.js';
+import { resumen, calibracion, esPrevia, siguioConsejo, aciertosDelLector, medirFasesMias } from '../src/motor/registro.js';
 import { prepararDatos, estimarCon, resolverNombres } from '../src/motor/draft.js';
 import { logit } from '../src/motor/modelo.js';
 import { logistica } from './medir-rival.mjs';
@@ -95,6 +95,7 @@ export function medir(registro, datos) {
   for (const p of conApp) { const k = new Date(p.t).toISOString().slice(0, 7); const m = porMes.get(k) ?? { mes: k, n: 0, ganadas: 0, siguiendo: 0 }; m.n += 1; m.ganadas += p.gane ? 1 : 0; m.siguiendo += siguioConsejo(p) ? 1 : 0; porMes.set(k, m); }
   salida.porMes = [...porMes.values()].sort((a, b) => a.mes.localeCompare(b.mes));
   salida.lector = aciertosDelLector(partidas);
+  salida.fases = medirFasesMias(partidas);
   return salida;
 }
 
@@ -136,6 +137,14 @@ export function informe(m, { generado = null, errorDatos = null } = {}) {
     const aucDice = h.auc == null || h.aucSE == null ? '' : Math.abs(h.auc - 0.5) <= 1.96 * h.aucSE ? ' Todavía no se distingue de una moneda: hacen falta más partidas, sobre todo perdidas.' : h.auc > 0.5 ? ' Ordena mejor que una moneda.' : ' Ordena PEOR que una moneda: algo está mal.';
     L.push(`- Brier ${h.brier.toFixed(3)} ± ${(1.96 * h.brierSE).toFixed(3)} · AUC ${aucTxt} (0,5 es una moneda; en pro sale 0,56–0,61).${aucDice}`);
     if (h.pendiente) L.push(`- Pendiente sobre el log-odds: ${h.pendiente.b.toFixed(2)} ± ${h.pendiente.se.toFixed(2)} (1 = la escala vale también en tu cola; con menos de 100 partidas el ± manda).`);
+  }
+  // Las fases en tus partidas (3.44.0): la probabilidad del tramo en que acabó cada una.
+  const fa = m.fases;
+  L.push('', '### ¿Aciertan las fases (cuánto dura la partida)?');
+  if (!fa?.n) L.push('- Ninguna partida lleva todavía su duración: la mide el lector con «Leer solo» desde 3.44.0.');
+  else {
+    L.push(`- ${fa.n} ${fa.n === 1 ? 'partida' : 'partidas'} con duración (media ${fa.duracionMedia.toFixed(1)} min): previsto para el tramo en que acabó ${pct(fa.previsto)}, real ${pct(fa.real)}. Por tramos: ${fa.porTramo.map((x) => `${x.desde}${x.desde === 20 ? '+' : ''}: ${x.n}`).join(' · ')}.`);
+    if (fa.mejora) L.push(`- Frente a la nota de siempre (${fa.mejora.n}): el Brier ${fa.mejora.dif >= 0 ? 'mejora' : 'empeora'} ${Math.abs(fa.mejora.dif).toFixed(3)} ± ${(1.96 * fa.mejora.se).toFixed(3)}. ${fa.mejora.seVe ? (fa.mejora.dif > 0 ? 'Las fases ayudan en tu cola.' : 'Las fases empeoran en tu cola: algo no cuadra.') : 'Todavía no se distingue: hacen falta más partidas.'}`);
   }
   // El lector de la tablet (3.25.0): de lo que metió en el draft, cuánto
   // seguía ahí al apuntar la partida. Lo que hubo que quitar a mano son sus

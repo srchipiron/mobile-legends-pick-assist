@@ -50,6 +50,9 @@ instalar
 
 # Que Android no duerma a Termux mientras espera (es un mandato de Termux, no de adb).
 command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock
+# La voz de los consejos en directo (3.44.0) la pone Termux:API: sin ella el
+# lector funciona igual, pero no habla.
+command -v termux-tts-speak >/dev/null 2>&1 || echo "Para oír los consejos en directo: instala la app Termux:API (F-Droid) y escribe: pkg install termux-api"
 
 # Lo último del proyecto, si hay red; si no, lo que haya. Si este mismo
 # guion ha cambiado con la actualización, se relanza ya actualizado (una

@@ -724,6 +724,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* «Leer solo» (3.28.0): el interruptor y, debajo, qué pasó con la última lectura. */
 .lector-auto[aria-pressed="true"] { border-color: rgba(255, 214, 10, 0.55); background: rgba(255, 214, 10, 0.12); color: var(--text); }
 .lector-estado { flex-basis: 100%; margin: 4px 0 0; font-size: 11px; line-height: 1.4; color: var(--muted); overflow-wrap: anywhere; }
+/* La voz de los consejos en directo no suena (3.44.0): en naranja, que hay que hacer algo. */
+.lector-voz { color: var(--c-balance); }
 
 /* ---------- «Deshacer» (3.23.0) ---------- */
 

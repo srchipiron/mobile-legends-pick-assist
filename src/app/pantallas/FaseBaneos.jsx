@@ -28,7 +28,7 @@ export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, 
             baneos probables e «Ir a los picks». */}
         <div className="tools">
           <button className="reset" onClick={onAbrirSelector}>{t('fase.buscarBaneo')}</button>
-          {onLeer && <BotonLector estado={lector?.estado} aviso={lector?.aviso} ultimo={lector?.ultimo} auto={lectorAuto} onAuto={onLectorAuto} onLeer={onLeer} t={t} />}
+          {onLeer && <BotonLector estado={lector?.estado} aviso={lector?.aviso} ultimo={lector?.ultimo} voz={lector?.voz} auto={lectorAuto} onAuto={onLectorAuto} onLeer={onLeer} t={t} />}
         </div>
         <button className="reset primario" onClick={onAPicks}>{baneos.length ? t('fase.aPicks') : t('fase.sinBaneosAPicks')}</button>
         {/* Tu plan antes de que salga nadie: la mitad de las veces el plan A
