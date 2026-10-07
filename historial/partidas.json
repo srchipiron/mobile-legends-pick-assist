@@ -1,6 +1,167 @@
 {
- "actualizado": "2026-10-07T19:11:28.288Z",
+ "actualizado": "2026-10-07T19:54:06.347Z",
  "partidas": [
+  {
+   "t": 1791402802972,
+   "pick": "Floryn",
+   "recomendados": [
+    "Edith",
+    "Carmilla",
+    "Gloo"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.578,
+   "origen": "lector",
+   "bans": [
+    "Lukas",
+    "Marcel",
+    "Khufra",
+    "Masha",
+    "Eudora",
+    "Estes",
+    "Rafaela",
+    "Atlas"
+   ],
+   "draft": {
+    "enemigos": [
+     "Hirara",
+     "Luo Yi",
+     "Minotaur",
+     "Melissa",
+     "Yu Zhong"
+    ],
+    "aliados": [
+     "Aulus",
+     "Zetian",
+     "Layla",
+     "Saber"
+    ],
+    "linea": "roam",
+    "rival": "Minotaur"
+   },
+   "lector": {
+    "baneos": [
+     "Lukas",
+     "Marcel",
+     "Khufra",
+     "Masha",
+     "Eudora",
+     "Estes",
+     "Rafaela",
+     "Atlas"
+    ],
+    "enemigos": [
+     "Hirara",
+     "Luo Yi",
+     "Wanwan",
+     "Yu Zhong"
+    ],
+    "aliados": [
+     "Aulus",
+     "Zetian",
+     "Layla",
+     "Saber"
+    ],
+    "tuyo": "Floryn",
+    "dudas": [
+     {
+      "hueco": "e3",
+      "candidato": "Julian",
+      "parecido": 0.74
+     }
+    ],
+    "ms": [
+     4605,
+     3787,
+     3665,
+     3755,
+     4000,
+     4446,
+     3541,
+     3785,
+     6023,
+     4676,
+     3960,
+     4551,
+     3664,
+     3573,
+     3425,
+     3199,
+     3193,
+     3384,
+     5306,
+     3287
+    ],
+    "msCaptura": [
+     3426,
+     2348,
+     2503,
+     2362,
+     2405,
+     2437,
+     2037,
+     2310,
+     3806,
+     2093,
+     2405,
+     3121,
+     2376,
+     2376,
+     2146,
+     2019,
+     2127,
+     2365,
+     3970,
+     2479
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Minotaur",
+      "Melissa",
+      "Yu Zhong",
+      "Minotaur",
+      "Melissa",
+      "Yu Zhong",
+      "Minotaur",
+      "Melissa",
+      "Yu Zhong"
+     ]
+    }
+   },
+   "duracion": 17.7,
+   "fases": [
+    0.582,
+    0.575,
+    0.573,
+    0.572,
+    0.571,
+    0.567
+   ]
+  },
   {
    "t": 1791400119247,
    "pick": "Gloo",
@@ -10356,6 +10517,12 @@
   {
    "cuando": "2026-10-07T19:11:28.288Z",
    "partidas": 177,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-07T19:54:06.347Z",
+   "partidas": 178,
    "heroes": 11,
    "incidencia": 11
   }
