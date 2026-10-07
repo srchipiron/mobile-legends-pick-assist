@@ -21,7 +21,7 @@ import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
 import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
@@ -131,6 +131,8 @@ export default function App() {
   // Los refs del lector (3.25.0+): si está leyendo ahora y cuándo fue la última.
   const leyendoAhora = useRef(false);
   const ultimaLectura = useRef(0);
+  // Lecturas seguidas con la tablet ya en partida (3.46.0).
+  const enPartidaSeguidas = useRef(0);
   // El final de la partida (3.30.0): con «Leer solo», al completar el draft
   // se avisa al lector y ÉL captura (3.33.0: la app no está a la vista
   // mientras se juega en la tablet) del minuto 8 al 25, quedándose con las
@@ -375,6 +377,10 @@ export default function App() {
       const lectura = await pedirLectura();
       const nombres = nombresDeLectura(lectura, datos.heroes);
       const n = draft.aplicarLectura({ ...nombres, id: typeof lectura.id === 'string' ? lectura.id : null, dudas: dudasDeLectura(lectura), ms: lectura.ms, msCaptura: lectura.msCaptura, formato: lectura.formato });
+      // La tablet ya está en partida (3.46.0): el draft se cierra aunque falte
+      // alguien, y con eso arrancan la voz, la vigilancia y el resultado.
+      enPartidaSeguidas.current = lecturasEnPartida(enPartidaSeguidas.current, lectura);
+      if (enPartidaSeguidas.current >= LECTURAS_EN_PARTIDA) draft.cerrarPorPartida();
       const algo = nombres.baneos.length + nombres.enemigos.length + nombres.aliados.length + (nombres.tuyo ? 1 : 0);
       const nuevos = n.baneos + n.enemigos + n.aliados + (n.tuyo ? 1 : 0);
       const aviso = nuevos ? null : (algo ? 'yaEstaba' : 'nada');
@@ -395,7 +401,7 @@ export default function App() {
   // Hasta que no hay catálogo los nombres leídos no resuelven a nadie: se espera.
   const conCatalogo = !!carga.catalogo && datos.heroes.length > 0;
   useEffect(() => {
-    const tuPick = { miPick: draft.miPick, completoDesde: draft.completoDesde };
+    const tuPick = { miPick: draft.miPick, completoDesde: draft.completoDesde, cerrado: draft.cerrado };
     if (!conCatalogo || !tocaLeerSolo({ auto: lectorAuto, hoja, completo, ...tuPick })) return undefined;
     const tic = () => { if (tocaLeerSolo({ auto: lectorAuto, visible: document.visibilityState === 'visible', hoja, completo, leyendo: leyendoAhora.current, ...tuPick })) leerDelJuego({ silencioso: true }); };
     // Al (re)arrancar, una lectura ya, salvo que acabe de haber una: la
@@ -404,7 +410,7 @@ export default function App() {
     const reloj = setInterval(tic, vacio ? INTERVALO_AUTO_VACIO_MS : INTERVALO_AUTO_MS);
     return () => clearInterval(reloj);
     // leerDelJuego cambia en cada render; lo que decide si se lee es lo de aquí.
-  }, [conCatalogo, lectorAuto, hoja, completo, vacio, draft.miPick, draft.completoDesde]);
+  }, [conCatalogo, lectorAuto, hoja, completo, vacio, draft.miPick, draft.completoDesde, draft.cerrado]);
 
   if (error) return <div className="results"><p className="notice">{t('app.errorDatos', { error })}</p></div>;
   if (!carga.catalogo) return <div className="results"><p className="empty-state">{t('app.cargando')}</p></div>;

@@ -8,6 +8,10 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.46.0
+
+- Si empieza la partida y en el draft falta alguien, la app lo da por cerrado sola y arranca todo igual: la voz, la duración y el resultado apuntado solo. Antes todo eso esperaba a tener los cinco enemigos y los cuatro compañeros, y si el lector no leía a un compañero no arrancaba nada: el 7 de octubre pasó en 2 de tus 6 partidas. Ahora, en cuanto el lector ve el minimapa en dos lecturas seguidas, el draft se cierra con lo que tenga, se sabe cuándo empezó la partida y deja de capturar la tablet mientras juegas. Si luego metes al que faltaba, sigue siendo la misma partida.
+
 ## 3.45.1
 
 - La duración de cada partida vuelve a guardarse, y la voz dice al final cómo os iba según lo que duró. El lector empezaba a buscar el inicio de la partida un minuto después de completar el draft, y la partida empieza antes (en la del 6 de octubre a las 22:25, entre 15 y 55 segundos después): como ya la veía empezada, daba el inicio por estimado y ninguna de las cuatro partidas de esa tarde se apuntó con su duración. Ahora mira desde que completas el draft.

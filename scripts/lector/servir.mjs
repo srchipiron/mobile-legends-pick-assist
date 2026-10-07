@@ -204,6 +204,23 @@ export const VIGILANCIA = { desdeMin: 8, hastaMin: 25, intervaloMs: 10000, maxFo
  * las cuatro partidas de esa tarde guardó su duración ni dijo su cierre.
  */
 export const RETRASO_MAXIMO_MIN = 2;
+/**
+ * El inicio visto por las LECTURAS del draft (3.46.0): cada `/leer` dice si
+ * la tablet ya está en partida (minimapa, como la vigilancia). Si el draft
+ * se cierra porque la partida ha empezado (la app lo da por cerrado aunque
+ * falte alguien), la vigilancia llega tarde y su primera captura ya es de
+ * juego: el inicio saldría estimado y la partida sin duración. Con una
+ * lectura FUERA y luego `LECTURAS_EN_PARTIDA` seguidas DENTRO, el inicio es
+ * el punto medio entre la última de fuera y la primera de dentro, si entre
+ * las dos no pasó más de `HUECO_MAXIMO_LECTURAS_MS` (una cada 5 s leyendo
+ * solo; con la app escondida un rato, el punto medio ya no dice nada) y la
+ * primera de dentro cae en los `MINUTOS_DEL_INICIO_LEIDO` antes del draft.
+ * Decisiones de producto, con el mismo criterio que la vigilancia (dos
+ * capturas seguidas, punto medio).
+ */
+export const LECTURAS_EN_PARTIDA = 2;
+export const HUECO_MAXIMO_LECTURAS_MS = 60000;
+export const MINUTOS_DEL_INICIO_LEIDO = 10;
 /** El primer aviso (el inicio) se dice aunque el inicio se viera tarde, hasta este minuto. */
 const RETRASO_DEL_INICIO_MIN = 4;
 /** Lo que se acepta de la app: avisos, frases de cierre. */
@@ -365,6 +382,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   };
   // El final de la partida que se está vigilando (3.33.0): uno a la vez, el del último draft completado.
   let final = null, capturandoFinal = false, relojFinal = null;
+  // Lo que dijeron las lecturas de si la tablet estaba en partida (3.46.0).
+  const leidas = { fuera: null, dentro: null, seguidas: 0 };
   const hora = (t) => new Date(t).toISOString().slice(11, 19);
   const pararVigilancia = () => { if (relojFinal) clearInterval(relojFinal); relojFinal = null; if (final) final.activa = false; };
   const estadoFinal = () => (final
@@ -566,6 +585,15 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     relojFinal = setInterval(vigilarTic, Math.min(vigilancia.intervaloMs, vigilancia.intervaloInicioMs));
     relojFinal.unref?.();
     registrar(`Draft completo a las ${hora(desde)}: busco el inicio de la partida desde el minuto ${vigilancia.inicioDesdeMin} (${final.guion.length} consejos en directo) y vigilo el final del minuto ${vigilancia.desdeMin} al ${vigilancia.hastaMin}.`);
+    // La partida ya empezó y las lecturas la vieron empezar (3.46.0).
+    const { fuera, dentro, seguidas } = leidas;
+    if (seguidas >= LECTURAS_EN_PARTIDA && fuera != null && dentro > fuera && dentro - fuera <= HUECO_MAXIMO_LECTURAS_MS
+      && dentro >= desde - MINUTOS_DEL_INICIO_LEIDO * 60000 && dentro <= ahora()) {
+      final.inicio = (fuera + dentro) / 2;
+      final.vistoFuera = true;
+      final.hasta = Math.max(final.hasta, final.inicio + vigilancia.partidaHastaMin * 60000);
+      registrar(`La partida empezó hacia las ${hora(final.inicio)} (lo vieron las lecturas del draft): ${final.guion.length} consejos en directo.`);
+    }
     return final;
   };
   const leerCuerpo = (req) => new Promise((resolver) => {
@@ -683,6 +711,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     }
     if (req.method === 'GET' && ruta === '/leer') {
       const t0 = Date.now();
+      // El instante de la lectura en el reloj de la vigilancia (inyectable en las pruebas).
+      const tLeida = ahora();
       // Comprimida o no (3.45.0, `crearElectorDeCaptura`); sin elector, comprimida como siempre.
       let formato = elector?.siguiente() ?? 'png', png = null, crudo = null, tFormato = t0, t1;
       try {
@@ -715,9 +745,12 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
           const { crudo: mc, png: mp } = elector.estado();
           registrar(`Captura ${elegido === 'crudo' ? 'SIN comprimir' : 'comprimida'}: es la más rápida en tu tablet (mediana sin comprimir ${(mc / 1000).toFixed(1)} s, comprimida ${(mp / 1000).toFixed(1)} s).`);
         }
+        // ¿Ya en partida? (3.46.0): con esto la app cierra un draft a medias y el inicio se mide.
+        const partida = enPartida(img);
+        if (partida) { leidas.seguidas += 1; if (leidas.seguidas === 1) leidas.dentro = tLeida; } else { leidas.fuera = tLeida; leidas.dentro = null; leidas.seguidas = 0; }
         const leido = lector ? await lector.leer(img, aprendido) : leerCaptura(img, caras, aprendido);
         // `ms` es lo que espera la app; `msCaptura`, lo que tardó la tablet en dar la imagen (3.39.0), y con qué formato (3.45.0).
-        const lectura = { version: VERSION_PUENTE, id, ...leido, ms: Date.now() - t0, msCaptura: t1 - tFormato, formato };
+        const lectura = { version: VERSION_PUENTE, id, ...leido, partida, ms: Date.now() - t0, msCaptura: t1 - tFormato, formato };
         if (carpeta) {
           writeFileSync(join(carpeta, `${id}.json`), JSON.stringify(lectura, null, 1));
           // El aprendizaje lee PNG: la crudo se comprime aparte, sin parar al lector.

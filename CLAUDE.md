@@ -2370,6 +2370,29 @@ VOZ en el móvil (Termux:API) y que el lector mire la tablet desde el minuto
   marcado, la voz que falta), `app/lector.test` (guion en el aviso; de vuelta
   duración solo con inicio visto, voz y marcador validados), `registro.test`,
   `perfil.test` y la de seguridad del lector.
+- **El draft cerrado por la partida (3.46.0)**, pedido por Javi tras mirar
+  las seis partidas del 7 de octubre de 2026: todo lo de la partida (voz,
+  vigilancia, resultado, duración) cuelga de `completoDesde`, que solo
+  llegaba con cinco enemigos y cuatro compañeros; el lector lee mal a los
+  compañeros (8 de 16 el día 6) y 2 de 6 partidas ese día (7 de 46 desde
+  el 2 de octubre) se quedaron sin nada. Hoy cada `/leer` lleva `partida`
+  (el minimapa, `enPartida`, 13 ms aquí con la captura entera) y con
+  `LECTURAS_EN_PARTIDA` (2, las mismas que la vigilancia; prueba de que la
+  app y el lector piden las mismas) la app llama a `cerrarConPartida`
+  (useDraft): `cerrado: true` se guarda en el draft, `draftCompleto` lo
+  cuenta como completo hasta el siguiente draft (meter después al que
+  faltaba conserva el instante) y sin ningún enemigo no se cierra (la app
+  abierta entre dos partidas). Como la vigilancia llega ya con la partida
+  empezada, el lector recuerda la última lectura FUERA y la primera DENTRO
+  (`leidas`) y, si no las separan más de `HUECO_MAXIMO_LECTURAS_MS` (60 s),
+  el inicio es su punto medio y sale medido. Cerrado, deja de leer (tampoco
+  tu fila: `tocaLeerSolo` con `cerrado`). Pruebas: `identidad-draft`,
+  `app/lector`, `directo-lector` (el inicio de las lecturas, con la primera
+  de dentro lejos de la última para que se note cuál se coge) y
+  `lector.e2e` (dos lecturas en partida cierran el draft, el lector vigila
+  ESE instante, se para de leer y sobrevive a una recarga). Seis
+  mutaciones. Sin medir: la pantalla de CARGA contra el minimapa (si se
+  pareciera, se cerraría unos segundos antes, sin más efecto).
 - **La revisión a la contra de 3.44.0 (3.44.1)**, con `silent-failure-hunter`
   y `click-path-audit` antes de la primera partida real, encontró doce cosas,
   todas arregladas; las nueve primeras con su prueba y su mutación:

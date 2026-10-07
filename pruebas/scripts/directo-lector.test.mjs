@@ -128,6 +128,7 @@ async function lectorDePrueba(opciones = {}) {
   p.vigilar = (cuerpo) => fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify(cuerpo) });
   p.resultado = async (cuerpo) => (await fetch(`${base}/resultado`, { method: 'POST', headers: cab, body: JSON.stringify(cuerpo) })).status;
   p.hasta = async (cond, ms = 8000) => { const t0 = Date.now(); while (!(await cond()) && Date.now() - t0 < ms) await new Promise((r) => setTimeout(r, 15)); return cond(); };
+  p.leer = async () => (await fetch(`${base}/leer`, { headers: cab })).json();
   p.cerrar = () => servidor.close();
   return p;
 }
@@ -182,6 +183,45 @@ test('la partida empieza a los 30 s del draft (como el 6 de octubre de 2026): el
     ok(await p.hasta(() => p.dichos.length >= 1), 'no dice el cierre');
     eq(p.dichos[0], CIERRES[tramoDeMinutos(f.duracion)]);
   } finally { p.cerrar(); }
+});
+
+test('el draft se cierra con la partida empezada (3.46.0): /leer dice si la tablet está en partida, y si las lecturas la vieron empezar el inicio sale MEDIDO aunque la vigilancia llegue tarde', async () => {
+  const juegoPng = escribirPng(ampliada(pantallas.find((p) => p.f.startsWith('juego-')).img, 15));
+  const p = await lectorDePrueba();
+  try {
+    const t0 = Date.now();
+    p.pantalla = capturaCompletaPng();
+    eq((await p.leer()).partida, false, 'el draft se lee como partida');
+    // La partida empieza; dos lecturas la ven (la app cierra el draft) y avisa al lector.
+    p.pantalla = juegoPng;
+    p.desfase = 20000;
+    eq((await p.leer()).partida, true, 'la partida no se lee como partida');
+    // (La segunda, lejos: el inicio sale de la PRIMERA de dentro, no de la última.)
+    p.desfase = 50000;
+    eq((await p.leer()).partida, true);
+    p.desfase = 55000;
+    await p.vigilar({ desde: t0 + 55000, guion: [], cierres: CIERRES });
+    const { inicio, inicioEstimado } = await p.final();
+    eq(inicioEstimado, false, 'con las lecturas viendo empezar la partida, el inicio sale estimado');
+    ok(Math.abs(inicio - (t0 + 10000)) < 5000, `el inicio no es el punto medio entre la última lectura fuera y la PRIMERA dentro: ${(inicio - t0) / 1000} s`);
+    p.desfase = inicio - t0 + 14 * 60000;
+    p.pantalla = pantallaDeFinal();
+    ok(await p.hasta(async () => (await p.final()).resultado === 'perdi'), 'no lee la tabla');
+    const f = await p.final();
+    ok(Math.abs(f.duracion - 14) < 0.5, `la duración no es la de la partida: ${f.duracion}`);
+    eq(fundirFinal([], f, { completoDesde: t0 + 55000 }).duracion, f.duracion, 'la app no apunta la duración');
+  } finally { p.cerrar(); }
+  // Sin una lectura FUERA antes (la app abierta ya en partida): no se sabe cuándo empezó.
+  const q = await lectorDePrueba();
+  try {
+    const t0 = Date.now();
+    q.pantalla = juegoPng;
+    await q.leer(); q.desfase = 5000; await q.leer();
+    q.desfase = 10000;
+    await q.vigilar({ desde: t0 + 10000, guion: [], cierres: CIERRES });
+    ok(await q.hasta(async () => (await q.final()).inicio != null), 'no da la partida por empezada');
+    eq((await q.final()).inicioEstimado, true, 'sin ver la tablet fuera, el inicio sale medido');
+  } finally { q.cerrar(); }
 });
 
 test('una partida de más de 23 minutos también se mide: con el inicio visto se vigila pasado el minuto 25 del draft, con su duración y su cierre', async () => {

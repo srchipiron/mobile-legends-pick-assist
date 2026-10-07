@@ -91,6 +91,8 @@ test('leyendo solo: cuándo toca y cuándo no, y las dudas compactas de una lect
   ok(!tocaLeerSolo({ auto: true, completo: true, completoDesde: t0, ahora: t0 + LEER_TU_PICK_MS }), 'sin tu pick sigue leyendo durante la partida');
   ok(!tocaLeerSolo({ auto: true, completo: true, completoDesde: t0, ahora: t0 + 10000, miPick: 'Clint' }), 'con tu pick ya fijado sigue leyendo el draft completo');
   ok(!tocaLeerSolo({ auto: true, completo: true, ahora: t0 }), 'sin saber desde cuándo está completo lee');
+  // Cerrado por la partida (3.46.0): ya se está jugando, no hay fila tuya que leer.
+  ok(!tocaLeerSolo({ auto: true, completo: true, cerrado: true, completoDesde: t0, ahora: t0 + 10000 }), 'con el draft cerrado por la partida sigue leyendo tu fila');
   ok(LEER_TU_PICK_MS <= 3 * 60000, 'el plazo de leer tu fila se mete en la partida');
   ok(INTERVALO_AUTO_MS >= 4000 && INTERVALO_AUTO_VACIO_MS > INTERVALO_AUTO_MS, 'los intervalos no respetan lo que tarda una lectura (4–6 s) ni van más despacio con el draft vacío');
   const dudas = dudasDeLectura({

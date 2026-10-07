@@ -32,7 +32,9 @@ function cargar() {
     miPickLeido: d.miPickLeido === true,
     // Desde cuándo el draft está COMPLETO (cinco enemigos y cuatro aliados):
     // sin pick fijado, es lo que dispara la pregunta de cómo fue (3.9.0).
-    completoDesde: Number.isFinite(d.completoDesde) && lista(d.enemies).length >= TOPES.enemigos && lista(d.allies).length >= TOPES.aliados ? d.completoDesde : null,
+    completoDesde: Number.isFinite(d.completoDesde) && (d.cerrado === true || (lista(d.enemies).length >= TOPES.enemigos && lista(d.allies).length >= TOPES.aliados)) ? d.completoDesde : null,
+    // Cerrado por la partida aunque falte alguien (3.46.0, `cerrarConPartida`).
+    cerrado: d.cerrado === true,
     // «Más tarde» sin pick fijado (3.37.0): cuándo se pospuso la pregunta.
     // Antes se reescribía `completoDesde`, que es también lo que identifica
     // el draft ante la vigilancia del lector, y posponer la reiniciaba: se
@@ -61,8 +63,25 @@ function cargar() {
  * repetir. Un nombre guardado que ya no resuelve (la API renombró al héroe)
  * se limpia al llegar el catálogo, con `limpiarDesconocidos`.
  */
-/** ¿Están los cinco enemigos y los cuatro compañeros? Entonces se está jugando. */
-export const draftCompleto = (d) => d.enemigos.length >= TOPES.enemigos && d.aliados.length >= TOPES.aliados;
+/** ¿Están los cinco enemigos y los cuatro compañeros, o ya empezó la partida? Entonces se está jugando. */
+export const draftCompleto = (d) => d.cerrado === true || (d.enemigos.length >= TOPES.enemigos && d.aliados.length >= TOPES.aliados);
+
+/**
+ * La partida ha empezado con el draft a medias (3.46.0): el lector no leyó a
+ * algún compañero (o enemigo) y nadie lo metió a mano. Todo lo de la partida
+ * (la voz, la vigilancia del final, el resultado y la duración) esperaba a
+ * que el draft estuviera completo y no arrancaba: el 7 de octubre de 2026, 2
+ * de 6 partidas, y 7 de 46 desde el 2 de octubre. Cuando el lector ve la
+ * partida (minimapa, dos lecturas seguidas), el draft se da por cerrado con
+ * lo que tenga: `cerrado` cuenta como completo hasta el siguiente draft, así
+ * que meter después al que falta es la MISMA partida (`completoDesde` no
+ * cambia). Sin ningún enemigo no se cierra (no es este draft el que se está
+ * jugando: la app abierta entre dos partidas con el draft vacío).
+ */
+export function cerrarConPartida(d, ahora) {
+  if (draftCompleto(d) || !d.enemigos.length) return d;
+  return conCompleto({ ...d, cerrado: true }, ahora);
+}
 
 /**
  * Corregir un draft completo (la × a un enemigo mal leído y meter al de
@@ -92,7 +111,7 @@ export function conCompleto(d, ahora) {
   return { ...d, completoDesde: mismo ? a.desde : ahora };
 }
 
-const VACIO = { enemigos: [], aliados: [], baneos: [], rivalMarcado: null, fase: 'baneos', miPick: null, miPickDesde: null, miPickLeido: false, completoDesde: null, ultimoCompleto: null, recordarDesde: null, apuntadaSola: null, lectura: null };
+const VACIO = { enemigos: [], aliados: [], baneos: [], rivalMarcado: null, fase: 'baneos', miPick: null, miPickDesde: null, miPickLeido: false, completoDesde: null, cerrado: false, ultimoCompleto: null, recordarDesde: null, apuntadaSola: null, lectura: null };
 
 export function useDraft() {
   const [draft, setDraft] = useState(cargar);
@@ -110,7 +129,7 @@ export function useDraft() {
   const [paraDeshacer, setParaDeshacer] = useState(null);
 
   useEffect(() => {
-    guardar(CLAVES.draft, { enemies: draft.enemigos, allies: draft.aliados, bans: draft.baneos, enemyRoam: draft.rivalMarcado, fase: draft.fase, miPick: draft.miPick, miPickDesde: draft.miPickDesde, ...(draft.miPickLeido ? { miPickLeido: true } : {}), completoDesde: draft.completoDesde, ...(draft.recordarDesde ? { recordarDesde: draft.recordarDesde } : {}), ...(draft.apuntadaSola ? { apuntadaSola: draft.apuntadaSola } : {}), ...(draft.lectura ? { lectura: draft.lectura } : {}) });
+    guardar(CLAVES.draft, { enemies: draft.enemigos, allies: draft.aliados, bans: draft.baneos, enemyRoam: draft.rivalMarcado, fase: draft.fase, miPick: draft.miPick, miPickDesde: draft.miPickDesde, ...(draft.miPickLeido ? { miPickLeido: true } : {}), completoDesde: draft.completoDesde, ...(draft.cerrado ? { cerrado: true } : {}), ...(draft.recordarDesde ? { recordarDesde: draft.recordarDesde } : {}), ...(draft.apuntadaSola ? { apuntadaSola: draft.apuntadaSola } : {}), ...(draft.lectura ? { lectura: draft.lectura } : {}) });
   }, [draft]);
 
   const anadir = useCallback((bando, heroe) => {
@@ -308,6 +327,12 @@ export function useDraft() {
     return () => clearTimeout(reloj);
   }, [creado]);
 
+  /** El lector ve la partida empezada: el draft se cierra con lo que tenga (3.46.0). El instante, FUERA del updater. */
+  const cerrarPorPartida = useCallback(() => {
+    const ahora = Date.now();
+    setDraft((d) => cerrarConPartida(d, ahora));
+  }, []);
+
   /** Fuera los nombres que el catálogo ya no conoce, y el rival si ya no está entre los enemigos. */
   const limpiarDesconocidos = useCallback((conocidos) => setDraft((d) => {
     const limpia = (lista) => (lista.every((n) => conocidos.has(n)) ? lista : lista.filter((n) => conocidos.has(n)));
@@ -319,5 +344,5 @@ export function useDraft() {
     return conCompleto(nuevo, null);
   }), []);
 
-  return { ...draft, anadir, quitar, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio, vaciarConDeshacer, quitarConDeshacer, aplicarLectura, anotarAprendizaje, deshacible, deshacer, olvidarDeshacer, foto, restaurar };
+  return { ...draft, anadir, quitar, cerrarPorPartida, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio, vaciarConDeshacer, quitarConDeshacer, aplicarLectura, anotarAprendizaje, deshacible, deshacer, olvidarDeshacer, foto, restaurar };
 }

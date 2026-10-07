@@ -244,6 +244,46 @@ await prueba('el guion de los consejos en directo llega al lector con el draft c
   await contexto.close();
 });
 
+await prueba('la partida empieza con el draft a medias (3.46.0): dos lecturas en partida lo cierran, el lector vigila ESE draft y leyendo solo se para', async () => {
+  // La primera lectura es la del lector de verdad (dos enemigos y tres
+  // compañeros: a medias); las siguientes, la misma, y desde `enJuego` con
+  // la tablet en partida (el minimapa, `partida`), sin nadie nuevo.
+  let primera = null, enJuego = false, lecturas = 0;
+  const responder = (p) => p.route(`http://127.0.0.1:${PUERTO}/leer*`, async (ruta) => {
+    lecturas += 1;
+    if (!primera) {
+      const r = await ruta.fetch();
+      primera = { status: r.status(), headers: r.headers(), body: await r.text() };
+    }
+    return ruta.fulfill(enJuego ? { ...primera, body: JSON.stringify({ ...JSON.parse(primera.body), partida: true }) } : primera);
+  });
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:lector-auto': true }, antes: responder });
+  try {
+    let d = null;
+    for (let i = 0; i < 80 && !d?.enemies?.length; i++) { await pagina.waitForTimeout(250); d = await leer(pagina); }
+    ok(d?.enemies?.length > 0 && d.enemies.length < 5, `la prueba necesita un draft a medias: ${JSON.stringify(d?.enemies)}`);
+    eq(d.completoDesde ?? null, null, 'un draft a medias ya tiene instante');
+    enJuego = true;
+    for (let i = 0; i < 120 && !d?.cerrado; i++) { await pagina.waitForTimeout(250); d = await leer(pagina); }
+    eq(d.cerrado, true, 'dos lecturas con la tablet en partida no cierran el draft');
+    ok(Number.isFinite(d.completoDesde), 'el draft cerrado no tiene instante');
+    // La app avisa al lector de ESTE draft (vigilancia, voz, resultado).
+    const final = async () => (await fetch(`http://127.0.0.1:${PUERTO}/final`, { headers: { Origin: 'https://srchipiron.github.io' } })).json();
+    let f = null;
+    for (let i = 0; i < 80 && f?.desde !== d.completoDesde; i++) { await pagina.waitForTimeout(250); f = await final(); }
+    eq(f?.desde, d.completoDesde, 'el lector no vigila el draft cerrado');
+    // Y deja de leer la tablet cada 5 s durante la partida.
+    const antes = lecturas;
+    await pagina.waitForTimeout(12000);
+    ok(lecturas - antes <= 1, `sigue leyendo la tablet en partida: ${lecturas - antes} lecturas en 12 s`);
+    // Tras recargar sigue cerrado (la app se actualiza sola en mitad de una partida).
+    await pagina.reload(); await pagina.waitForTimeout(1500);
+    const tras = await leer(pagina);
+    ok(tras.cerrado === true && tras.completoDesde === d.completoDesde, `recargar abre otra vez el draft: ${JSON.stringify({ cerrado: tras.cerrado, completoDesde: tras.completoDesde })}`);
+    ok(!errores.length, `errores de página: ${errores}`);
+  } finally { await contexto.close(); }
+});
+
 await prueba('si el lector no llega a la tablet, o no está abierto, lo dice con lo que hay que hacer', async () => {
   capturar = () => { throw new Error('device offline'); };
   let { contexto, pagina } = await paginaCon(navegador, url, { almacen });

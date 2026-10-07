@@ -45,8 +45,9 @@ export const LEER_TU_PICK_MS = 90000;
  * con los cinco enemigos y los cuatro compañeros ya no hay nada que leer, y
  * seguir haciendo capturas durante la partida sería gastar por nada.
  */
-export const tocaLeerSolo = ({ auto, visible = true, hoja = null, completo = false, leyendo = false, miPick = null, completoDesde = null, ahora = Date.now() }) => !!auto && visible && !hoja && !leyendo
-  && (!completo || (!miPick && Number.isFinite(completoDesde) && ahora - completoDesde >= 0 && ahora - completoDesde < LEER_TU_PICK_MS));
+export const tocaLeerSolo = ({ auto, visible = true, hoja = null, completo = false, cerrado = false, leyendo = false, miPick = null, completoDesde = null, ahora = Date.now() }) => !!auto && visible && !hoja && !leyendo
+  // Cerrado por la partida (3.46.0): ya no hay fila tuya que leer, se está jugando.
+  && (!completo || (!cerrado && !miPick && Number.isFinite(completoDesde) && ahora - completoDesde >= 0 && ahora - completoDesde < LEER_TU_PICK_MS));
 
 /**
  * Lo que el lector no reconoció en una lectura, compacto, para guardarlo
@@ -143,6 +144,16 @@ export const INTERVALO_FINAL_MS = 10000;
 /** Cuánto dura el «Deshacer» de una partida apuntada sola (3.32.0): más que el de un toque, porque nadie lo esperaba. */
 export const DESHACER_APUNTADA_MS = 20000;
 export const MAX_FOTOGRAMAS = 8;
+
+/**
+ * Lecturas seguidas con la tablet ya en partida (el lector lo dice por el
+ * minimapa, `partida`) para dar el draft por cerrado aunque falte alguien
+ * (3.46.0). Las mismas dos capturas seguidas con que el lector da la
+ * partida por empezada (`LECTURAS_EN_PARTIDA` de servir.mjs, con prueba).
+ */
+export const LECTURAS_EN_PARTIDA = 2;
+/** Cuenta las lecturas seguidas en partida: una que no lo está (o un lector viejo sin el dato) vuelve a cero. */
+export const lecturasEnPartida = (seguidas, lectura) => (lectura?.partida === true ? seguidas + 1 : 0);
 
 /** ¿Toca preguntar al lector por el final? Con el modo encendido, la app a la vista y el draft completo: el reloj lo lleva el lector. */
 export const tocaVigilarFinal = ({ auto, visible = true, completoDesde }) => !!auto && visible && !!completoDesde;
