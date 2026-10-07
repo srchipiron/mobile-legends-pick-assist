@@ -1,6 +1,224 @@
 {
- "actualizado": "2026-10-07T18:25:37.430Z",
+ "actualizado": "2026-10-07T18:50:06.919Z",
  "partidas": [
+  {
+   "t": 1791398990716,
+   "pick": "Floryn",
+   "recomendados": [
+    "Floryn",
+    "Selena",
+    "Rafaela"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.562,
+   "bans": [
+    "Melissa",
+    "Eudora",
+    "Hirara",
+    "Guinevere",
+    "Gloo",
+    "Belerick",
+    "Lesley",
+    "Masha",
+    "Marcel",
+    "Gord"
+   ],
+   "draft": {
+    "enemigos": [
+     "Novaria",
+     "Layla",
+     "Atlas",
+     "Zetian",
+     "Joy"
+    ],
+    "aliados": [
+     "Yi Sun-shin",
+     "Miya",
+     "Fredrinn"
+    ],
+    "linea": "roam",
+    "rival": "Atlas"
+   },
+   "lector": {
+    "baneos": [
+     "Melissa",
+     "Eudora",
+     "Hirara",
+     "Guinevere",
+     "Gloo",
+     "Belerick",
+     "Lesley",
+     "Masha",
+     "Marcel",
+     "Gord"
+    ],
+    "enemigos": [
+     "Novaria",
+     "Layla",
+     "Atlas",
+     "Zetian",
+     "Joy"
+    ],
+    "aliados": [
+     "Yi Sun-shin",
+     "Miya",
+     "Fredrinn"
+    ],
+    "tuyo": "Floryn",
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Joy",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Joy",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Bruno",
+      "parecido": 0.8
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Joy",
+      "parecido": 0.82
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Joy",
+      "parecido": 0.8
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Joy",
+      "parecido": 0.77
+     }
+    ],
+    "ms": [
+     3198,
+     3897,
+     3115,
+     3069,
+     2901,
+     3249,
+     3308,
+     2771,
+     2832,
+     2782,
+     2983,
+     4068,
+     2735,
+     3141,
+     3264,
+     3088,
+     3010,
+     3277,
+     3207,
+     3751
+    ],
+    "msCaptura": [
+     2297,
+     2737,
+     2327,
+     2038,
+     2010,
+     2384,
+     2691,
+     2056,
+     2091,
+     2025,
+     2193,
+     3072,
+     2016,
+     2222,
+     2343,
+     2190,
+     2119,
+     2309,
+     2168,
+     3062
+    ],
+    "formatos": [
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ]
+   },
+   "fases": [
+    0.636,
+    0.572,
+    0.562,
+    0.524,
+    0.495,
+    0.469
+   ]
+  },
   {
    "t": 1791397520164,
    "pick": "Rafaela",
@@ -9961,6 +10179,12 @@
   {
    "cuando": "2026-10-07T18:25:37.430Z",
    "partidas": 175,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-07T18:50:06.919Z",
+   "partidas": 176,
    "heroes": 11,
    "incidencia": 11
   }
