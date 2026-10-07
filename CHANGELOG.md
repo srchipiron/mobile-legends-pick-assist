@@ -8,6 +8,10 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.46.1
+
+- El lector ya no te pone un héroe de otra línea como tu pick. El 6 de octubre leyó tu fila como «Hayabusa» en una partida de roam: la voz se calló en esa partida y se apuntó con Hayabusa. En tus 134 partidas solo esa tiene tu héroe fuera de tu línea, así que ahora lo que lea en tu fila solo cuenta si es de tu línea.
+
 ## 3.46.0
 
 - Si empieza la partida y en el draft falta alguien, la app lo da por cerrado sola y arranca todo igual: la voz, la duración y el resultado apuntado solo. Antes todo eso esperaba a tener los cinco enemigos y los cuatro compañeros, y si el lector no leía a un compañero no arrancaba nada: el 7 de octubre pasó en 2 de tus 6 partidas. Ahora, en cuanto el lector ve el minimapa en dos lecturas seguidas, el draft se cierra con lo que tenga, se sabe cuándo empezó la partida y deja de capturar la tablet mientras juegas. Si luego metes al que faltaba, sigue siendo la misma partida.

@@ -244,6 +244,20 @@ await prueba('el guion de los consejos en directo llega al lector con el draft c
   await contexto.close();
 });
 
+await prueba('tu fila leída no se fija como tu pick si el héroe no es de tu línea (3.46.1)', async () => {
+  // La captura es de una partida de roam (tu fila, Estes): jugando jungla, Estes no puede ser tuyo.
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:linea': 'jungle' } });
+  try {
+    await boton(pagina).click();
+    await pagina.locator('.aviso-deshacer').waitFor({ timeout: 15000 });
+    const d = await leer(pagina);
+    eq(d.miPick ?? null, null, `un héroe de otra línea queda fijado como tu pick: ${d.miPick}`);
+    ok(!d.allies.includes(VERDAD.tuyo), 'tu fila entra como compañero');
+    eq(d.enemies.join(), VERDAD.enemigos.join(), 'sin tu fila se pierden los enemigos');
+    ok(!errores.length, `errores de página: ${errores}`);
+  } finally { await contexto.close(); }
+});
+
 await prueba('la partida empieza con el draft a medias (3.46.0): dos lecturas en partida lo cierran, el lector vigila ESE draft y leyendo solo se para', async () => {
   // La primera lectura es la del lector de verdad (dos enemigos y tres
   // compañeros: a medias); las siguientes, la misma, y desde `enJuego` con

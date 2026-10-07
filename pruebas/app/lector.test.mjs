@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -204,7 +204,7 @@ await test('la corrección espera a que el lector aprenda, no los 20 s de una le
   ok(PLAZO_CORREGIR_MS >= 6 * PLAZO_LECTOR_MS, `el plazo de la corrección no da para aprender de varias capturas: ${PLAZO_CORREGIR_MS}`);
 });
 
-terminar('app/lector');test('los consejos en directo (3.44.0): el guion traducido viaja al lector con el aviso, y de vuelta la duración (solo con el inicio visto), la voz y el marcador', async () => {
+test('los consejos en directo (3.44.0): el guion traducido viaja al lector con el aviso, y de vuelta la duración (solo con el inicio visto), la voz y el marcador', async () => {
   const t = (clave, params = {}) => `${clave}${params.p != null ? `:${params.p}` : ''}`;
   const plan = { directo: [{ min: 0.25, partes: [{ clave: 'directo.inicio', params: { p: 55 } }, { clave: 'partida.focus', params: { e: 'X' } }] }], cierres: [{ clave: 'directo.cierre', params: { p: 40 } }] };
   const g = guionTraducido(plan, t, 'en');
@@ -230,4 +230,16 @@ terminar('app/lector');test('los consejos en directo (3.44.0): el guion traducid
   ok(c.length <= TOPE_MENSAJE && grandes.every((f) => c.includes(`${f.id} · minuto`)), `los marcadores pasan del mensaje o quitan franjas: ${c.length}`);
 });
 
+test('tu fila leída solo cuenta si el héroe es de tu línea (3.46.1: «Hayabusa» fijado en una partida de roam)', () => {
+  const pool = new Set(['Rafaela', 'Estes', 'Floryn']);
+  const leido = { baneos: [], enemigos: ['Layla'], aliados: ['Miya'], tuyo: 'Hayabusa' };
+  const r = tuyoDeTuLinea(leido, pool);
+  eq(r.tuyo, null, 'un héroe de otra línea se fija como tu pick');
+  eq(r.aliados.join(), 'Miya', 'quitar tu fila toca a los compañeros');
+  eq(r.enemigos.join(), 'Layla');
+  eq(tuyoDeTuLinea({ ...leido, tuyo: 'Estes' }, pool).tuyo, 'Estes', 'uno de tu línea no se fija');
+  eq(tuyoDeTuLinea(leido, new Set()).tuyo, 'Hayabusa', 'sin pool conocido (aún sin datos) se descarta lo leído');
+  eq(tuyoDeTuLinea({ ...leido, tuyo: null }, pool).tuyo, null);
+});
 
+await terminar('app/lector');

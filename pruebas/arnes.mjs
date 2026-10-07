@@ -17,7 +17,7 @@ export const leerJson = (ruta) => JSON.parse(readFileSync(resolve(RAIZ, ruta), '
 /** Lee un fichero de texto del repositorio. */
 export const leerTexto = (ruta) => readFileSync(resolve(RAIZ, ruta), 'utf8');
 
-const estado = { pasadas: 0, fallos: 0, pendientes: [], nombres: new Set(), fichero: null };
+const estado = { pasadas: 0, fallos: 0, pendientes: [], nombres: new Set(), fichero: null, terminado: false };
 
 function anotarFallo(nombre, err) {
   estado.fallos += 1;
@@ -32,6 +32,10 @@ function anotarFallo(nombre, err) {
  */
 export function test(nombre, fn) {
   if (estado.nombres.has(nombre)) throw new Error(`prueba repetida: ${nombre}`);
+  // Una prueba declarada DESPUÉS de `terminar()` no se espera, y si falla
+  // tarde el código de salida ya está puesto: pasó en app/lector desde 3.44.0
+  // (`terminar(...);test(...)` en la misma línea). Es un fallo, no se corre.
+  if (estado.terminado) { anotarFallo(nombre, new Error('declarada después de terminar(): ni se espera ni cuenta')); return; }
   estado.nombres.add(nombre);
   try {
     const r = fn();
@@ -77,6 +81,7 @@ export function porNombre(nombre, sal = 31) {
  * `nombre` es el del fichero (para el resumen del runner).
  */
 export async function terminar(nombre = '') {
+  estado.terminado = true;
   await Promise.all(estado.pendientes);
   const total = estado.pasadas + estado.fallos;
   console.log(`${nombre ? `${nombre}: ` : ''}${estado.pasadas} de ${total} correctas${estado.fallos ? `, ${estado.fallos} fallos` : ''}`);

@@ -1248,6 +1248,21 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   con la primera partida de verdad: el reloj del juego estaba en el
   marcador que ya se subía.
 
+- **Tu fila leída fijando un héroe de otra línea** (3.31.0 → 3.46.1): las
+  skins hacen que la fila propia sea la peor leída, y el 6 de octubre de
+  2026 «Hayabusa» (jungla) quedó fijado como tu pick en una partida de
+  roam: la voz se calló (el plan de un pick fuera del ranking no se dice)
+  y la partida se apuntó sola con él. Javi no jugó Hayabusa. En sus 134
+  partidas con línea esa es la ÚNICA con el héroe fuera de la línea, así
+  que `tuyoDeTuLinea` (src/app/lector.js) descarta lo leído en tu fila si
+  no está en el pool de tu línea (sin pool conocido, no filtra). Y de
+  rebote: en `app/lector.test` una prueba de 3.44.0 iba DESPUÉS de
+  `terminar()` en la misma línea; no se esperaba y, si fallaba tarde, el
+  código de salida ya estaba a 0. Hoy el arnés da por fallo toda prueba
+  declarada tras `terminar()` (`scripts/arnes.test`, que lo comprueba con
+  el código de salida de un proceso aparte). Al añadir una prueba al
+  final de un fichero, va ANTES de `terminar`.
+
 ## El modelo (2.0)
 
 `src/motor/modelo.js` y `src/motor/ranking.js`. La nota de un pick ES la

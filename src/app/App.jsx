@@ -21,7 +21,7 @@ import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
 import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
@@ -375,7 +375,8 @@ export default function App() {
     setLector((l) => ({ ...l, estado: 'leyendo', aviso: silencioso ? l.aviso : null }));
     try {
       const lectura = await pedirLectura();
-      const nombres = nombresDeLectura(lectura, datos.heroes);
+      // Tu fila, solo si el héroe es de tu línea (3.46.1).
+      const nombres = tuyoDeTuLinea(nombresDeLectura(lectura, datos.heroes), poolDeLinea);
       const n = draft.aplicarLectura({ ...nombres, id: typeof lectura.id === 'string' ? lectura.id : null, dudas: dudasDeLectura(lectura), ms: lectura.ms, msCaptura: lectura.msCaptura, formato: lectura.formato });
       // La tablet ya está en partida (3.46.0): el draft se cierra aunque falte
       // alguien, y con eso arrancan la voz, la vigilancia y el resultado.

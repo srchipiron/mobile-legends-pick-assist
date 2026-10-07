@@ -87,6 +87,18 @@ export function dudasQueQuedan(previas, nuevas, reconocio) {
 export const FALLOS_DEL_LECTOR = ['sinPuente', 'plazo', 'tablet', 'emparejar', 'captura', 'error'];
 const fallo = (tipo) => Object.assign(new Error(tipo), { tipo });
 
+/**
+ * Tu fila leída, solo si el héroe es de TU línea (3.46.1). Las skins hacen
+ * que esa fila sea la peor leída, y un héroe mal reconocido ahí se fijaba
+ * como tu pick: el 6 de octubre de 2026 «Hayabusa» (jungla) quedó fijado en
+ * una partida de roam, la voz se calló (el plan de un pick fuera del ranking
+ * no se dice) y la partida se apuntó sola con Hayabusa. En tus 134 partidas
+ * con línea, esa es la ÚNICA con el héroe fuera de la línea: lo leído fuera
+ * del pool es un error del lector, no un cambio de línea. Sin pool conocido
+ * (aún sin datos), no se filtra.
+ */
+export const tuyoDeTuLinea = (nombres, pool) => (nombres?.tuyo && pool?.size && !pool.has(nombres.tuyo) ? { ...nombres, tuyo: null } : nombres);
+
 /** Pide una lectura al lector. Devuelve lo que manda (`tuyos`, `suyos`, `enemigos`) o lanza un fallo con tipo. */
 export async function pedirLectura({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
   const corte = new AbortController();
