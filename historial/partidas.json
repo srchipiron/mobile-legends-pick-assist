@@ -1,6 +1,193 @@
 {
- "actualizado": "2026-10-06T21:08:58.878Z",
+ "actualizado": "2026-10-07T18:25:37.430Z",
  "partidas": [
+  {
+   "t": 1791397520164,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Lolita",
+    "Khufra",
+    "Gloo"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.585,
+   "bans": [
+    "Eudora",
+    "Yi Sun-shin",
+    "Minotaur",
+    "Paquito",
+    "Belerick",
+    "Lukas",
+    "Atlas",
+    "Hirara",
+    "Kagura",
+    "Estes"
+   ],
+   "draft": {
+    "enemigos": [
+     "Dyrroth",
+     "Nana",
+     "Cyclops",
+     "Floryn"
+    ],
+    "aliados": [
+     "Edith",
+     "Kadita",
+     "Leomord",
+     "Wanwan"
+    ],
+    "linea": "roam",
+    "rival": "Floryn"
+   },
+   "lector": {
+    "baneos": [
+     "Eudora",
+     "Yi Sun-shin",
+     "Minotaur",
+     "Paquito",
+     "Belerick",
+     "Lukas",
+     "Atlas",
+     "Hirara",
+     "Kagura",
+     "Estes"
+    ],
+    "enemigos": [
+     "Floryn",
+     "Zetian",
+     "Natalia",
+     "Gord",
+     "Yi Sun-shin"
+    ],
+    "aliados": [
+     "Clint",
+     "Yi Sun-shin",
+     "Leomord",
+     "Edith",
+     "Wanwan"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Bane",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Saber",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Gord",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Saber",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Beatrix",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Chang'e",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Chang'e",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Carmilla",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Leomord",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Moskov",
+      "parecido": 0.64
+     }
+    ],
+    "ms": [
+     4124,
+     4339,
+     4553,
+     5109,
+     3803,
+     3197,
+     3903,
+     3075,
+     4697,
+     3036,
+     3029,
+     3461,
+     4656,
+     2918,
+     3212,
+     2697,
+     3232,
+     3997,
+     3212,
+     3243
+    ],
+    "msCaptura": [
+     2961,
+     3298,
+     3471,
+     3308,
+     2740,
+     2207,
+     2803,
+     2223,
+     3017,
+     2242,
+     2160,
+     2587,
+     3517,
+     2155,
+     2468,
+     1943,
+     2460,
+     2774,
+     2203,
+     2196
+    ],
+    "formatos": [
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "crudo",
+     "png",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ]
+   }
+  },
   {
    "t": 1791319311759,
    "pick": "Estes",
@@ -9768,6 +9955,12 @@
   {
    "cuando": "2026-10-06T21:08:58.878Z",
    "partidas": 174,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-07T18:25:37.430Z",
+   "partidas": 175,
    "heroes": 11,
    "incidencia": 11
   }
