@@ -1,6 +1,171 @@
 {
- "actualizado": "2026-10-07T18:50:06.919Z",
+ "actualizado": "2026-10-07T19:11:28.288Z",
  "partidas": [
+  {
+   "t": 1791400119247,
+   "pick": "Gloo",
+   "recomendados": [
+    "Gloo",
+    "Floryn",
+    "Rafaela"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.469,
+   "origen": "lector",
+   "bans": [
+    "Lesley",
+    "Hirara",
+    "Belerick",
+    "Eudora",
+    "Lukas",
+    "Paquito",
+    "Estes",
+    "Nolan",
+    "Aulus"
+   ],
+   "draft": {
+    "enemigos": [
+     "Marcel",
+     "Gusion",
+     "Novaria",
+     "Minsitthar",
+     "Hanabi"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Valir",
+     "Chou",
+     "Yi Sun-shin"
+    ],
+    "linea": "roam",
+    "rival": "Marcel"
+   },
+   "lector": {
+    "baneos": [
+     "Lesley",
+     "Hirara",
+     "Belerick",
+     "Eudora",
+     "Lukas",
+     "Paquito",
+     "Estes",
+     "Nolan",
+     "Aulus"
+    ],
+    "enemigos": [
+     "Marcel",
+     "Gusion",
+     "Novaria",
+     "Minsitthar",
+     "Hanabi"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Valir",
+     "Chou",
+     "Yi Sun-shin"
+    ],
+    "tuyo": "Gloo",
+    "dudas": [
+     {
+      "hueco": "s1",
+      "candidato": "Bane",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Carmilla",
+      "parecido": 0.66
+     }
+    ],
+    "ms": [
+     3332,
+     3220,
+     3038,
+     2966,
+     3107,
+     2879,
+     2879,
+     4773,
+     3134,
+     3857,
+     2886,
+     2862,
+     2953,
+     2859,
+     2902,
+     3064,
+     2909,
+     2762,
+     2741,
+     5969
+    ],
+    "msCaptura": [
+     2402,
+     2249,
+     1995,
+     2020,
+     2109,
+     1928,
+     2074,
+     3982,
+     2107,
+     2738,
+     2117,
+     2100,
+     2119,
+     2073,
+     2110,
+     2229,
+     2103,
+     2022,
+     2012,
+     2701
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Minsitthar",
+      "Hanabi",
+      "Minsitthar",
+      "Hanabi",
+      "Hanabi"
+     ]
+    }
+   },
+   "duracion": 15.3,
+   "fases": [
+    0.488,
+    0.485,
+    0.44,
+    0.462,
+    0.43,
+    0.503
+   ]
+  },
   {
    "t": 1791398990716,
    "pick": "Floryn",
@@ -10185,6 +10350,12 @@
   {
    "cuando": "2026-10-07T18:50:06.919Z",
    "partidas": 176,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-07T19:11:28.288Z",
+   "partidas": 177,
    "heroes": 11,
    "incidencia": 11
   }
