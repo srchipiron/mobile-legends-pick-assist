@@ -1,6 +1,182 @@
 {
- "actualizado": "2026-10-07T19:54:06.347Z",
+ "actualizado": "2026-10-07T20:54:58.818Z",
  "partidas": [
+  {
+   "t": 1791406464458,
+   "pick": "Floryn",
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Gloo"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.464,
+   "origen": "lector",
+   "bans": [
+    "Hirara",
+    "Masha",
+    "Lukas",
+    "Marcel",
+    "Khufra",
+    "Aulus",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Obsidia",
+     "Kaja",
+     "Joy",
+     "Chou",
+     "Zetian"
+    ],
+    "aliados": [
+     "Paquito",
+     "Granger",
+     "Ruby",
+     "Yi Sun-shin"
+    ],
+    "linea": "roam",
+    "rival": "Kaja"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Masha",
+     "Lukas",
+     "Marcel",
+     "Khufra",
+     "Aulus",
+     "Eudora"
+    ],
+    "enemigos": [
+     "Obsidia",
+     "Joy",
+     "Suyou",
+     "Chou",
+     "Zetian"
+    ],
+    "aliados": [
+     "Paquito",
+     "Granger",
+     "Yi Sun-shin"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Zetian",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Zetian",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Clint",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Nolan",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Nolan",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Joy",
+      "parecido": 0.78
+     }
+    ],
+    "ms": [
+     4118,
+     3361,
+     3086,
+     2748,
+     3267,
+     3075,
+     3423,
+     4223,
+     3031,
+     3026,
+     2502,
+     3164,
+     2893,
+     2778,
+     2789,
+     3471,
+     2634,
+     3709,
+     2627
+    ],
+    "msCaptura": [
+     2676,
+     2426,
+     2097,
+     1866,
+     2322,
+     2126,
+     2224,
+     3074,
+     2192,
+     2158,
+     1950,
+     2438,
+     2076,
+     2022,
+     2100,
+     2821,
+     2024,
+     2825,
+     1720
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo"
+    ]
+   },
+   "duracion": 16.5,
+   "fases": [
+    0.595,
+    0.462,
+    0.421,
+    0.396,
+    0.379,
+    0.372
+   ]
+  },
   {
    "t": 1791402802972,
    "pick": "Floryn",
@@ -10523,6 +10699,12 @@
   {
    "cuando": "2026-10-07T19:54:06.347Z",
    "partidas": 178,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-07T20:54:58.818Z",
+   "partidas": 179,
    "heroes": 11,
    "incidencia": 11
   }
