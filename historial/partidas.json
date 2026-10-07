@@ -1,6 +1,164 @@
 {
- "actualizado": "2026-10-07T20:54:58.818Z",
+ "actualizado": "2026-10-07T21:15:00.170Z",
  "partidas": [
+  {
+   "t": 1791407680778,
+   "pick": "Floryn",
+   "recomendados": [
+    "Floryn",
+    "Atlas",
+    "Diggie"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.36,
+   "bans": [
+    "Hirara",
+    "Eudora",
+    "Belerick",
+    "Masha",
+    "Marcel",
+    "Estes",
+    "Paquito",
+    "Hanzo",
+    "Aulus",
+    "Lukas"
+   ],
+   "draft": {
+    "enemigos": [
+     "Xavier",
+     "Popol and Kupa",
+     "Rafaela",
+     "Obsidia",
+     "Carmilla"
+    ],
+    "aliados": [
+     "Lesley",
+     "Esmeralda",
+     "Nana",
+     "Yin"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Eudora",
+     "Belerick",
+     "Masha",
+     "Marcel",
+     "Estes",
+     "Paquito",
+     "Hanzo",
+     "Aulus",
+     "Lukas"
+    ],
+    "enemigos": [
+     "Joy",
+     "Xavier",
+     "Zetian",
+     "Obsidia",
+     "Carmilla"
+    ],
+    "aliados": [
+     "Lesley",
+     "Esmeralda"
+    ],
+    "tuyo": "Floryn",
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Carmilla",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Nana",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Gord",
+      "parecido": 0.77
+     }
+    ],
+    "ms": [
+     3342,
+     3279,
+     3122,
+     3538,
+     3251,
+     3042,
+     4438,
+     3147,
+     2887,
+     3911,
+     3477,
+     4132,
+     3131,
+     2821,
+     2946,
+     2773,
+     4603,
+     2312,
+     3583,
+     3850
+    ],
+    "msCaptura": [
+     2736,
+     2476,
+     2070,
+     2252,
+     2277,
+     2211,
+     3413,
+     2220,
+     2101,
+     3126,
+     2458,
+     3387,
+     2301,
+     1997,
+     2231,
+     2104,
+     3626,
+     1666,
+     2536,
+     2888
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo"
+    ]
+   },
+   "fases": [
+    0.257,
+    0.337,
+    0.404,
+    0.414,
+    0.439,
+    0.45
+   ]
+  },
   {
    "t": 1791406464458,
    "pick": "Floryn",
@@ -10705,6 +10863,12 @@
   {
    "cuando": "2026-10-07T20:54:58.818Z",
    "partidas": 179,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-07T21:15:00.170Z",
+   "partidas": 180,
    "heroes": 11,
    "incidencia": 11
   }
