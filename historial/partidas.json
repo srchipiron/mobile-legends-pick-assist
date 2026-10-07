@@ -1,6 +1,156 @@
 {
- "actualizado": "2026-10-07T21:40:25.797Z",
+ "actualizado": "2026-10-07T22:55:30.616Z",
  "partidas": [
+  {
+   "t": 1791413711523,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Rafaela"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.614,
+   "origen": "lector",
+   "bans": [
+    "Hirara",
+    "Minotaur",
+    "Marcel",
+    "Kaja",
+    "Lukas",
+    "Atlas",
+    "Aulus",
+    "Masha",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Bane",
+     "Zetian",
+     "Selena",
+     "Carmilla",
+     "Brody"
+    ],
+    "aliados": [
+     "Wanwan",
+     "Paquito",
+     "Kimmy",
+     "Gloo"
+    ],
+    "linea": "roam",
+    "rival": "Carmilla"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Minotaur",
+     "Marcel",
+     "Kaja",
+     "Lukas",
+     "Atlas",
+     "Aulus",
+     "Masha",
+     "Yi Sun-shin",
+     "Eudora"
+    ],
+    "enemigos": [
+     "Yi Sun-shin",
+     "Joy",
+     "Selena",
+     "Bane",
+     "Zetian"
+    ],
+    "aliados": [
+     "Wanwan",
+     "Paquito",
+     "Kimmy",
+     "Gloo"
+    ],
+    "tuyo": "Estes",
+    "ms": [
+     4228,
+     3718,
+     4096,
+     4570,
+     4187,
+     4187,
+     3842,
+     4000,
+     3858,
+     3474,
+     3838,
+     3531,
+     7422,
+     3914,
+     3478,
+     3784,
+     3889,
+     3673,
+     4462,
+     4110
+    ],
+    "msCaptura": [
+     3139,
+     2633,
+     3019,
+     3387,
+     2907,
+     2950,
+     2960,
+     3053,
+     2960,
+     2601,
+     3049,
+     2561,
+     6224,
+     3055,
+     2722,
+     2939,
+     2990,
+     2927,
+     3555,
+     3265
+    ],
+    "formatos": [
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Brody"
+     ]
+    }
+   },
+   "duracion": 14,
+   "fases": [
+    0.586,
+    0.585,
+    0.588,
+    0.665,
+    0.65,
+    0.668
+   ]
+  },
   {
    "t": 1791409027729,
    "pick": "Minotaur",
@@ -11034,6 +11184,12 @@
   {
    "cuando": "2026-10-07T21:40:25.797Z",
    "partidas": 181,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-07T22:55:30.616Z",
+   "partidas": 182,
    "heroes": 11,
    "incidencia": 11
   }
