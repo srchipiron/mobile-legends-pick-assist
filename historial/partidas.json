@@ -1,6 +1,165 @@
 {
- "actualizado": "2026-10-07T21:15:00.170Z",
+ "actualizado": "2026-10-07T21:40:25.797Z",
  "partidas": [
+  {
+   "t": 1791409027729,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Diggie",
+    "Estes",
+    "Lolita"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.534,
+   "origen": "lector",
+   "bans": [
+    "Lukas",
+    "Aulus",
+    "Hirara",
+    "Khufra",
+    "Masha",
+    "Paquito",
+    "Kaja",
+    "Eudora",
+    "Marcel"
+   ],
+   "draft": {
+    "enemigos": [
+     "Badang",
+     "Kadita",
+     "Valentina",
+     "Hanabi",
+     "Cyclops"
+    ],
+    "aliados": [
+     "Carmilla",
+     "Vexana",
+     "Ixia",
+     "X.Borg"
+    ],
+    "linea": "roam"
+   },
+   "lector": {
+    "baneos": [
+     "Lukas",
+     "Aulus",
+     "Hirara",
+     "Khufra",
+     "Masha",
+     "Paquito",
+     "Kaja",
+     "Eudora",
+     "Marcel"
+    ],
+    "enemigos": [
+     "Joy",
+     "Badang",
+     "Kadita",
+     "Valentina",
+     "Hanabi"
+    ],
+    "aliados": [
+     "Carmilla",
+     "Vexana",
+     "Ixia"
+    ],
+    "dudas": [
+     {
+      "hueco": "a2",
+      "candidato": "X.Borg",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Wanwan",
+      "parecido": 0.73
+     }
+    ],
+    "ms": [
+     3565,
+     3148,
+     4002,
+     2979,
+     2853,
+     3322,
+     3683,
+     3074,
+     3307,
+     3231,
+     3012,
+     3107,
+     4853,
+     2948,
+     2744,
+     2926,
+     2755,
+     2785,
+     2796,
+     3133
+    ],
+    "msCaptura": [
+     2366,
+     2279,
+     3020,
+     2211,
+     2027,
+     2422,
+     2462,
+     2191,
+     2414,
+     2311,
+     2145,
+     2257,
+     3760,
+     2245,
+     2108,
+     2172,
+     2027,
+     2240,
+     1950,
+     2496
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Cyclops",
+      "Cyclops"
+     ]
+    }
+   },
+   "duracion": 16.5,
+   "fases": [
+    0.632,
+    0.535,
+    0.488,
+    0.454,
+    0.473,
+    0.492
+   ]
+  },
   {
    "t": 1791407680778,
    "pick": "Floryn",
@@ -10869,6 +11028,12 @@
   {
    "cuando": "2026-10-07T21:15:00.170Z",
    "partidas": 180,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-07T21:40:25.797Z",
+   "partidas": 181,
    "heroes": 11,
    "incidencia": 11
   }
