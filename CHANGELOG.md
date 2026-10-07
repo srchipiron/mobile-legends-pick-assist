@@ -8,6 +8,10 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.45.1
+
+- La duración de cada partida vuelve a guardarse, y la voz dice al final cómo os iba según lo que duró. El lector empezaba a buscar el inicio de la partida un minuto después de completar el draft, y la partida empieza antes (en la del 6 de octubre a las 22:25, entre 15 y 55 segundos después): como ya la veía empezada, daba el inicio por estimado y ninguna de las cuatro partidas de esa tarde se apuntó con su duración. Ahora mira desde que completas el draft.
+
 ## 3.45.0
 
 - El lector prueba a pedir la captura de la tablet sin comprimir y se queda

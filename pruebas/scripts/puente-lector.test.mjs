@@ -320,8 +320,9 @@ test('la vigilancia del final (3.33.0): mismos plazos que la app, y el lector ca
     ok(nuevo.desde === desde + 1000 && nuevo.fotogramas.length === 0 && nuevo.resultado === null, 'otro draft no empieza de cero');
   });
   // Antes del minuto de empezar no captura, y pasado el de parar se para (y cerrar el servidor también).
+  // (La búsqueda del inicio de la partida captura desde el minuto 0 a propósito, 3.45.1: aquí se aparta.)
   capturas = 0;
-  await conServidor({ capturar, vigilancia: { ...rapida, desdeMin: 30 } }, async (base) => {
+  await conServidor({ capturar, vigilancia: { ...rapida, desdeMin: 30, inicioDesdeMin: 30 } }, async (base) => {
     await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde: Date.now() }) });
     await new Promise((r) => setTimeout(r, 120));
     eq(capturas, 0, 'captura antes del minuto de empezar (una captura en una teamfight da un tirón)');

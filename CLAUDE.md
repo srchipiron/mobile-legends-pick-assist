@@ -1233,6 +1233,21 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   tragaba el error de leer el meta. Toda marca de frescura tiene que cubrir
   lo que DECIDE, no solo lo que se pidió.
 
+- **Buscar el inicio de la partida cuando ya había empezado** (3.44.0 →
+  3.45.1): el lector miraba la tablet desde el minuto 1 tras completar el
+  draft, y la partida empieza antes. El 6 de octubre de 2026 el marcador
+  de la cuarta partida (subido con sus pantallas, #42) decía 15:35 a las
+  20:41:11, o sea que empezó a las 20:25:37, y el draft se completó entre
+  las 20:24:42 y las 20:25:22: de 15 a 55 s antes. La primera captura ya
+  era de juego, el inicio salía estimado (bien marcado, por 3.44.1) y
+  NINGUNA de las cuatro partidas de esa tarde guardó su duración ni dijo
+  su cierre; la voz iba con un inicio aproximado. Hoy se mira desde el
+  minuto 0 (`inicioDesdeMin`) y la estimación sin ver sigue en el 1
+  (`inicioEstimadoMin`), con prueba de una partida que empieza a los 30 s.
+  Un plazo que se supone («la partida empieza pasado un minuto») se mide
+  con la primera partida de verdad: el reloj del juego estaba en el
+  marcador que ya se subía.
+
 ## El modelo (2.0)
 
 `src/motor/modelo.js` y `src/motor/ranking.js`. La nota de un pick ES la
@@ -2301,9 +2316,10 @@ VOZ en el móvil (Termux:API) y que el lector mire la tablet desde el minuto
   0,62); fuera de partida (draft, tabla, rango, MVP, estadísticas) ≤ 0,42.
   `UMBRAL_PARTIDA` 0,47 y DOS capturas seguidas; inicio = la primera menos
   medio intervalo. Sin verlo al llegar al minuto 8 del draft, se estima en
-  el 1 y se marca (`inicioEstimado`: la app no apunta esa duración). La
-  pantalla de CARGA no está medida (ninguna captura suya); si se pareciera
-  al minimapa, el inicio saldría un minuto antes. `pruebas/fixtures/juego/
+  el 1 y se marca (`inicioEstimado`: la app no apunta esa duración). Desde
+  3.45.1 se mira desde el minuto 0 del draft, no desde el 1: ver «Errores
+  ya cometidos». La pantalla de CARGA no está medida (ninguna captura
+  suya); si se pareciera al minimapa, el inicio saldría unos segundos antes. `pruebas/fixtures/juego/
   pantallas/` lleva 18 de esas pantallas (9 de juego no usadas en la
   plantilla y las 9 de fuera).
 - **La voz** (`scripts/lector/voz.mjs`): `termux-tts-speak -l es|en`, el

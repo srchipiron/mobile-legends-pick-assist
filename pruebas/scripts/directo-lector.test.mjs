@@ -72,10 +72,10 @@ test('el guion se dice en su minuto de PARTIDA (inicio visto por el minimapa), l
     const cierres = ['c10', 'c12', 'c14', 'c16', 'c18', 'c20'];
     const v = await (await fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify({ desde, guion, cierres, idioma: 'en' }) })).json();
     eq(v.avisos, 3, `no filtra los avisos sin forma: ${v.avisos}`);
-    // Minuto 0,5 del draft: aún no se mira la tablet.
+    // Minuto 0,5 del draft: ya se mira la tablet (la partida puede empezar
+    // a los 15 s del draft, 3.45.1), y el draft no cuenta como partida.
     desfase = 30000;
-    await new Promise((r) => setTimeout(r, 80));
-    eq(capturas, 0, 'mira la tablet antes del minuto 1 (decisión de Javi: desde el 1)');
+    ok(await hasta(() => capturas >= 1), 'no mira la tablet en el primer minuto tras el draft');
     // Minuto 2: en el draft (sin minimapa), nada; UNA pantalla de juego suelta
     // entre dos del draft tampoco; luego en partida: dos capturas y empieza.
     desfase = 120000;
@@ -152,6 +152,35 @@ test('ya en partida al empezar a mirar (draft completado tarde, lector reiniciad
     eq(fundirFinal([], f, { completoDesde: desde }).duracion, null, 'la app apunta una duración con el inicio sin ver');
     await new Promise((r) => setTimeout(r, 100));
     ok(!p.dichos.some((d) => d.startsWith('c')), `dice un cierre con el inicio estimado: ${p.dichos}`);
+  } finally { p.cerrar(); }
+});
+
+test('la partida empieza a los 30 s del draft (como el 6 de octubre de 2026): el inicio se ve llegar, sale MEDIDO y la app apunta la duración (3.45.1)', async () => {
+  const juegoPng = escribirPng(ampliada(pantallas.find((p) => p.f.startsWith('juego-')).img, 3));
+  const draftPng = escribirPng(ampliada(pantallas.find((p) => p.f === 'fuera-0.png').img, 3));
+  const p = await lectorDePrueba();
+  try {
+    const desde = Date.now();
+    // La app avisa a los pocos segundos de completar el draft: la tablet sigue en el draft.
+    p.pantalla = draftPng;
+    p.desfase = 10000;
+    await p.vigilar({ desde, guion: [], cierres: CIERRES });
+    await new Promise((r) => setTimeout(r, 80));
+    // A los 30 s empieza la partida; a los 60 s ya se lleva medio minuto jugando.
+    p.desfase = 30000;
+    p.pantalla = juegoPng;
+    ok(await p.hasta(async () => (await p.final()).inicio != null), 'no ve empezar la partida');
+    const { inicio, inicioEstimado } = await p.final();
+    eq(inicioEstimado, false, 'una partida que empieza antes del minuto 1 del draft sale con el inicio estimado');
+    ok(inicio > desde && inicio < desde + 60000, `el inicio no cae en el primer minuto: ${(inicio - desde) / 1000} s`);
+    p.desfase = inicio - desde + 14 * 60000;
+    p.pantalla = pantallaDeFinal();
+    ok(await p.hasta(async () => (await p.final()).resultado === 'perdi'), 'no lee la tabla');
+    const f = await p.final();
+    ok(Math.abs(f.duracion - 14) < 0.5, `la duración no es la de la partida: ${f.duracion}`);
+    eq(fundirFinal([], f, { completoDesde: desde }).duracion, f.duracion, 'la app no apunta la duración');
+    ok(await p.hasta(() => p.dichos.length >= 1), 'no dice el cierre');
+    eq(p.dichos[0], CIERRES[tramoDeMinutos(f.duracion)]);
   } finally { p.cerrar(); }
 });
 
@@ -246,7 +275,7 @@ test('sin ver empezar la partida, el inicio se estima y se marca (la app no apun
     const t0 = Date.now();
     let f;
     while (Date.now() - t0 < 8000) { f = await (await fetch(`${base}/final`, { headers: cab })).json(); if (f.inicio) break; await new Promise((r) => setTimeout(r, 20)); }
-    ok(f.inicio === desde + VIGILANCIA.inicioDesdeMin * 60000 && f.inicioEstimado === true, `el inicio no se estima y se marca: ${JSON.stringify({ inicio: f.inicio, est: f.inicioEstimado })}`);
+    ok(f.inicio === desde + VIGILANCIA.inicioEstimadoMin * 60000 && f.inicioEstimado === true, `el inicio no se estima y se marca: ${JSON.stringify({ inicio: f.inicio, est: f.inicioEstimado })}`);
     // El aviso del minuto 6,5 se dice (va al minuto 7 del inicio estimado) y la voz contesta que falta Termux:API.
     while (Date.now() - t0 < 8000 && f.voz !== 'falta') { f = await (await fetch(`${base}/final`, { headers: cab })).json(); await new Promise((r) => setTimeout(r, 20)); }
     eq(f.voz, 'falta', 'sin Termux:API /final no lo dice');

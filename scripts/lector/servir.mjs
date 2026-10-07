@@ -180,7 +180,7 @@ export function podarCapturas(carpeta, { ahora = Date.now(), retencionMs = RETEN
  * En cuanto sale la tabla se deja de mirar a los dos minutos. Decisión de
  * producto: una partida de Gloria casi nunca pasa de 30.
  */
-export const VIGILANCIA = { desdeMin: 8, hastaMin: 25, intervaloMs: 10000, maxFotogramas: 8, inicioDesdeMin: 1, intervaloInicioMs: 20000, partidaHastaMin: 40 };
+export const VIGILANCIA = { desdeMin: 8, hastaMin: 25, intervaloMs: 10000, maxFotogramas: 8, inicioDesdeMin: 0, inicioEstimadoMin: 1, intervaloInicioMs: 20000, partidaHastaMin: 40 };
 
 /**
  * Los consejos EN DIRECTO (3.44.0): con el draft completo la app manda el
@@ -188,12 +188,20 @@ export const VIGILANCIA = { desdeMin: 8, hastaMin: 25, intervaloMs: 10000, maxFo
  * contado desde que empieza la PARTIDA) y una frase de cierre por tramo de
  * duración. El lector busca el inicio de la partida desde el minuto
  * `inicioDesdeMin` tras el draft, una captura cada `intervaloInicioMs`
- * (decisión de Javi: desde el minuto 1 cada 20 s; desde el 8 sigue la
- * vigilancia del final como antes), lo reconoce por el minimapa (partida.mjs,
+ * (cada 20 s, decisión de Javi; desde el 8 sigue la vigilancia del final
+ * como antes), lo reconoce por el minimapa (partida.mjs,
  * dos capturas seguidas) y desde ahí dice cada aviso en su minuto. Un aviso
  * que se queda atrás más de `RETRASO_MAXIMO_MIN` (el inicio se vio tarde)
  * no se dice: un consejo del minuto 5 en el 9 confunde. Sin inicio visto al
- * llegar al minuto 8, se estima en el minuto 1 del draft y se marca.
+ * llegar al minuto 8, se estima en el minuto `inicioEstimadoMin` del draft
+ * y se marca.
+ *
+ * Se mira desde el minuto 0 y no desde el 1 (3.45.1): la partida empieza
+ * antes. El 6 de octubre de 2026 el marcador de una partida decía 15:35 a
+ * las 20:41:11 (empezó a las 20:25:37) y el draft se completó entre las
+ * 20:24:42 y las 20:25:22: de 15 a 55 s antes. Mirando desde el minuto 1 la
+ * primera captura ya era de juego, el inicio salía estimado y ninguna de
+ * las cuatro partidas de esa tarde guardó su duración ni dijo su cierre.
  */
 export const RETRASO_MAXIMO_MIN = 2;
 /** El primer aviso (el inicio) se dice aunque el inicio se viera tarde, hasta este minuto. */
@@ -443,7 +451,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     const finDelInicio = final.desde + vigilancia.desdeMin * 60000;
     // Sin el inicio visto al llegar a la vigilancia del final, se estima.
     if (!final.inicio && t >= finDelInicio) {
-      final.inicio = final.desde + vigilancia.inicioDesdeMin * 60000;
+      final.inicio = final.desde + vigilancia.inicioEstimadoMin * 60000;
       final.inicioEstimado = true;
       registrar(`No he visto empezar la partida: la doy por empezada hacia las ${hora(final.inicio)} (estimado).`);
     }
