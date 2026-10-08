@@ -22,10 +22,12 @@ function estadoDeEnvio(envio, t) {
   return t('hist.autoNada');
 }
 
-export function HistorialPartidas({ partidas, pool, maestria = {}, perfil = null, envio = null, onOlvidar, onCorregir, onAnadir, onCerrar, t = tPorDefecto }) {
+export function HistorialPartidas({ partidas, pool, maestria = {}, perfil = null, envio = null, onOlvidar, onCorregir, onCambiarHeroe, onAnadir, onCerrar, t = tPorDefecto }) {
   const [anadiendo, setAnadiendo] = useState(false);
   const [heroe, setHeroe] = useState(null);
   const [aviso, setAviso] = useState(null);
+  // La partida a la que se le está cambiando el héroe (3.47.0), por su instante.
+  const [cambiando, setCambiando] = useState(null);
   const conApp = partidas.filter((p) => !esPrevia(p)).length;
 
   /**
@@ -122,13 +124,26 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, perfil = null
         <hr />
         {!partidas.length && <p className="nota">{t('hist.vacio')}</p>}
         {partidas.map((p) => (
-          <div key={p.t} className="partida">
+          <div key={p.t}>
+          <div className="partida">
             <span className="partida-fecha">{new Date(p.t).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
-            <span className="partida-hero">{p.pick}</span>
+            {/* Tocar el héroe lo cambia (3.47.0): el lector puede apuntar uno que no jugaste. */}
+            <button className="partida-hero" aria-expanded={cambiando === p.t} aria-label={`${t('hist.cambiarHeroe')} · ${p.pick}`} onClick={() => setCambiando((c) => (c === p.t ? null : p.t))}>{p.pick}</button>
             <span className={p.gane ? 'partida-bien' : 'partida-mal'}>{p.gane ? t('hist.gane') : t('hist.perdi')}</span>
             <span className="partida-tipo">{esPrevia(p) ? t('hist.previa') : (siguioConsejo(p) ? t('hist.seguida') : t('hist.libre'))}</span>
             <button className="x" title={t('hist.cambiar')} aria-label={`${t('hist.cambiar')} · ${p.pick}`} onClick={() => onCorregir(p.t, !p.gane)}>⇄</button>
             <button className="x" title={t('hist.quitar')} aria-label={`${t('hist.quitar')} · ${p.pick}`} onClick={() => onOlvidar(p.t)}>×</button>
+          </div>
+          {cambiando === p.t && (
+            <div className="partida-cambiar">
+              <strong>{t('hist.cambiarHeroePregunta')}</strong>
+              <div className="hero-grid corto">
+                {pool.map((h) => (
+                  <button key={h.name} className={p.pick === h.name ? 'elegido' : ''} onClick={() => { onCambiarHeroe?.(p.t, h.name); setCambiando(null); }}>{h.name}</button>
+                ))}
+              </div>
+            </div>
+          )}
           </div>
         ))}
       </div>

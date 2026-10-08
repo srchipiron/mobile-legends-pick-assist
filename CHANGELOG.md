@@ -8,6 +8,10 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.47.0
+
+- En «Tus partidas» ya puedes cambiar el héroe de una partida: toca su nombre y elige con quién jugaste. Hasta ahora solo se podía cambiar el resultado, y una partida apuntada con el héroe equivocado (como la de Hayabusa del 6 de octubre, que fue con Diggie) se quedaba así o había que borrarla. La estimación de esa partida se quita, porque era la del otro héroe; el resultado y el draft se quedan. El cambio se sube solo al proyecto.
+
 ## 3.46.1
 
 - El lector ya no te pone un héroe de otra línea como tu pick. El 6 de octubre leyó tu fila como «Hayabusa» en una partida de roam: la voz se calló en esa partida y se apuntó con Hayabusa. En tus 134 partidas solo esa tiene tu héroe fuera de tu línea, así que ahora lo que lea en tu fila solo cuenta si es de tu línea.

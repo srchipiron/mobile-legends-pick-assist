@@ -114,6 +114,24 @@ await prueba('la maestría guardada sin fecha se fecha sola al abrir la app, y l
   await contexto.close();
 });
 
+await prueba('el héroe de una partida apuntada se cambia tocándolo, se guarda y pierde la estimación del otro héroe (3.47.0)', async () => {
+  // Como la del 6 de octubre: el lector la apuntó con Hayabusa y se jugó con Diggie.
+  const partida = { t: 3000, pick: 'Hayabusa', gane: false, origen: 'lector', recomendados: ['Diggie'], rango: 'glory', estimacion: 0.6, fases: [0.6, 0.6, 0.6, 0.6, 0.6, 0.6], draft: { linea: 'roam', enemigos: ['Layla'], aliados: [] } };
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:partidas': [partida] } });
+  try {
+    await abrirHoja(pagina, 1);
+    await pagina.locator('.partida-hero', { hasText: 'Hayabusa' }).click(); await pagina.waitForTimeout(200);
+    await pagina.locator('.partida-cambiar button', { hasText: /^Diggie$/ }).click(); await pagina.waitForTimeout(400);
+    const [p] = await leer(pagina, 'roam-picker:partidas');
+    eq(p.pick, 'Diggie', `el héroe no cambia: ${p.pick}`);
+    ok(p.t === 3000 && p.gane === false && p.origen === 'lector' && p.draft?.enemigos?.[0] === 'Layla', 'cambiar el héroe toca el resto de la partida');
+    ok(p.estimacion === undefined && p.fases === undefined, 'se queda la estimación del héroe que no se jugó');
+    eq(await pagina.locator('.partida-cambiar').count(), 0, 'la lista no se cierra al elegir');
+    ok(await pagina.locator('.partida-hero', { hasText: 'Diggie' }).count() === 1, 'la fila no enseña el héroe nuevo');
+    ok(!errores.length, `errores de página: ${errores}`);
+  } finally { await contexto.close(); }
+});
+
 await terminar('interfaz/persistencia');
 await navegador.close();
 await cerrar();

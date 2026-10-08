@@ -151,6 +151,8 @@ export default {
   'hist.previa': 'historial',
   'hist.quitar': 'Quitar esta partida',
   'hist.cambiar': 'Cambiar el resultado',
+  'hist.cambiarHeroe': 'Cambiar el héroe',
+  'hist.cambiarHeroePregunta': '¿Con qué héroe jugaste?',
   'hist.anadir': 'Añadir partidas de tu historial del juego',
   'hist.anadirPista': 'Cuentan para tu maestría y hacen la recomendación más tuya. NO cuentan para comprobar si la app acierta: cuando las jugaste no había consejo que seguir.',
   'hist.elegirHeroe': 'Con qué héroe',

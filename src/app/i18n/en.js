@@ -154,6 +154,8 @@ export default {
   'hist.previa': 'history',
   'hist.quitar': 'Remove this match',
   'hist.cambiar': 'Flip the result',
+  'hist.cambiarHeroe': 'Change the hero',
+  'hist.cambiarHeroePregunta': 'Which hero did you play?',
   'hist.anadir': 'Add matches from your in-game history',
   'hist.anadirPista': 'They count towards your mastery and make the pick more yours. They do NOT count towards checking whether the app works: when you played them there was no advice to follow.',
   'hist.elegirHeroe': 'Which hero',

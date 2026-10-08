@@ -213,6 +213,21 @@ export const olvidar = (partidas = [], t) => partidas.filter((p) => p.t !== t);
 export const corregir = (partidas = [], t, gane) => partidas.map((p) => (p.t === t ? { ...p, gane: !!gane } : p));
 
 /**
+ * Cambiar el héroe de una partida mal apuntada (3.47.0: el lector apuntó una
+ * con «Hayabusa» que se jugó con Diggie). La estimación y las fases eran las
+ * del héroe de antes: con el otro no valen y medirían el modelo con lo que no
+ * se jugó, así que se quitan; el draft, el resultado y lo leído se quedan.
+ */
+export function cambiarHeroe(partidas = [], t, pick) {
+  if (typeof pick !== 'string' || !pick.trim()) return partidas;
+  return partidas.map((p) => {
+    if (p.t !== t || p.pick === pick) return p;
+    const { estimacion, fases, ...resto } = p;
+    return { ...resto, pick };
+  });
+}
+
+/**
  * ¿Es de antes de usar la app? Cuenta para la maestría y NO para comprobar si
  * la app acierta: jugar sin la app abierta no es ignorar su consejo.
  */

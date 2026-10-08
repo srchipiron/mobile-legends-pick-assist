@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CLAVES, leer, guardar } from './almacen.js';
 import { sanear, sanearOlvidadas } from '../../motor/perfil.js';
-import { apuntar, olvidar, corregir } from '../../motor/registro.js';
+import { apuntar, olvidar, corregir, cambiarHeroe } from '../../motor/registro.js';
 import { maestriaEfectiva, fecharMaestria } from '../../motor/maestria.js';
 
 /**
@@ -55,6 +55,7 @@ export function usePersonal() {
     guardarPartidas(olvidar(ultimas.current, t));
   }, [guardarPartidas, guardarOlvidadas]);
   const corregirPartida = useCallback((t, gane) => guardarPartidas(corregir(ultimas.current, t, gane)), [guardarPartidas]);
+  const cambiarHeroePartida = useCallback((t, pick) => guardarPartidas(cambiarHeroe(ultimas.current, t, pick)), [guardarPartidas]);
 
   /**
    * Trae los datos de otro dispositivo. Vienen ya FUNDIDOS con los de aquí
@@ -66,5 +67,5 @@ export function usePersonal() {
     guardarOlvidadas(sanearOlvidadas(fundido.olvidadas));
   }, [guardarMaestria, guardarPartidas, guardarOlvidadas]);
 
-  return { maestria, maestriaUsada, partidas, olvidadas, guardarMaestria, guardarPartidas, apuntarPartida, olvidarPartida, corregirPartida, importarPerfil };
+  return { maestria, maestriaUsada, partidas, olvidadas, guardarMaestria, guardarPartidas, apuntarPartida, olvidarPartida, corregirPartida, cambiarHeroePartida, importarPerfil };
 }

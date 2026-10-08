@@ -3619,6 +3619,14 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   fuera. Devuelve la misma referencia si no hay nada que fechar (si no, el
   efecto guardaría en bucle). El diagnóstico dice cuántas partidas
   apuntadas cuentan ya.
+- **Cambiar el héroe de una partida (3.47.0)**, pedido por Javi para la
+  de «Hayabusa» del 6 de octubre de 2026 (fue Diggie): en «Tus partidas» el
+  nombre es un botón que abre el pool de la línea; `cambiarHeroe`
+  (registro.js) cambia `pick` por el instante y QUITA `estimacion` y
+  `fases`, que eran del héroe que no se jugó (con ellas, la calibración y
+  `medirFasesMias` medirían el modelo con otra partida). Se propaga como
+  corregir el resultado: mismo `t`, gana el móvil al fundir. Pruebas en
+  `registro.test` y `persistencia.e2e`, dos mutaciones.
 - Las partidas metidas del historial del juego llevan `previa: true` y quedan
   FUERA de las dos ramas de la comparación (`esPrevia`). Sin eso irían todas a
   "por libre" -no tienen `recomendados`- y meter cien partidas viejas llenaría

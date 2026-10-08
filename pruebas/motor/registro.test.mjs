@@ -7,7 +7,7 @@
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { sanear } from '../../src/motor/perfil.js';
-import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, medirFasesMias, aciertosDelLector, apuntar, olvidar, corregir, calibracion, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
+import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, medirFasesMias, aciertosDelLector, apuntar, olvidar, corregir, cambiarHeroe, calibracion, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
 import { maestriaDesdeRegistro, maestriaEfectiva, winrateDeReferencia } from '../../src/motor/maestria.js';
 import { nombreClave } from '../../src/motor/nombres.js';
 import { generador } from '../../src/motor/robustez.js';
@@ -377,6 +377,18 @@ test('la duración y la previsión por tramo de cada partida (3.44.0): se guarda
   eq(m.porTramo.find((x) => x.desde === 18).n, 1);
   eq(medirFasesMias([{ t: 3, pick: 'A', gane: true, duracion: 15 }]).n, 0, 'cuenta una partida sin previsión por tramo');
   eq(medirFasesMias([{ t: 3, pick: 'A', gane: true, duracion: 15, fases, previa: true }]).n, 0, 'cuenta una partida previa');
+});
+
+test('cambiar el héroe de una partida: solo esa, conserva draft y resultado, y quita lo que era del otro héroe (3.47.0)', () => {
+  const ps = [{ t: 1, pick: 'Hayabusa', gane: false, estimacion: 0.6, fases: [0.5], draft: { linea: 'roam' }, origen: 'lector' }, { t: 2, pick: 'Estes', gane: true, estimacion: 0.55 }];
+  const r = cambiarHeroe(ps, 1, 'Diggie');
+  eq(r[0].pick, 'Diggie');
+  ok(r[0].estimacion === undefined && r[0].fases === undefined, 'se queda la estimación del otro héroe');
+  ok(r[0].gane === false && r[0].draft.linea === 'roam' && r[0].origen === 'lector', 'cambiar el héroe toca lo demás');
+  eq(r[1], ps[1], 'cambia otra partida');
+  eq(cambiarHeroe(ps, 1, 'Hayabusa')[0], ps[0], 'el mismo héroe borra la estimación');
+  eq(cambiarHeroe(ps, 1, ''), ps, 'un nombre vacío cambia algo');
+  eq(cambiarHeroe(ps, 1, null), ps);
 });
 
 await terminar('motor/registro');
