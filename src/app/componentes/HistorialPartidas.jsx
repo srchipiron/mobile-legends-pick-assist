@@ -4,6 +4,7 @@ import { recogerPerfil, exportarPerfil } from '../../motor/perfil.js';
 import { urlDeIncidencia, TOPE_URL, tokenPlausible } from '../github.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Veredicto } from './Veredicto.jsx';
+import { TusNumeros } from './TusNumeros.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
 
 /**
@@ -79,6 +80,7 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, perfil = null
             Dentro del cuerpo que se desplaza: fijo arriba dejaba 208 px para
             la lista en un móvil de 640 de alto. */}
         <Veredicto partidas={partidas} maestria={maestria} t={t} />
+        <TusNumeros partidas={partidas} t={t} />
         <p className="nota">{t('hist.resumenLineas', { total: partidas.length, conApp, previas: partidas.length - conApp })}</p>
         {/* La base de datos del proyecto: sin tus partidas dentro, el modelo
             no se puede medir en tu cola. */}

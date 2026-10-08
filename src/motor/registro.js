@@ -287,6 +287,18 @@ function partidasNecesarias(p, base) {
 }
 
 /**
+ * Dos proporciones con el error AGRUPADO (prueba de dos proporciones): con
+ * Wald, un grupo ganado entero daría error cero. La usan el Veredicto (entre
+ * ramas) y «Tus números» (habitos.js): una sola forma de decir «se distingue».
+ */
+export function compararProporciones(a, na, b, nb) {
+  const p = (a * na + b * nb) / (na + nb);
+  const se = Math.sqrt(p * (1 - p) * (1 / na + 1 / nb));
+  const dif = a - b;
+  return { dif, margen: 1.96 * se, seVe: se > 0 && Math.abs(dif) > 1.96 * se };
+}
+
+/**
  * Las dos comparaciones del Veredicto:
  *  - siguiendo la app contra por libre: limpia en teoría, inalcanzable en la
  *    práctica (la rama «por libre» solo crece ignorando la app a propósito) y
@@ -328,11 +340,7 @@ export function resumen(partidas = [], maestria = {}) {
   // daría error cero (el mismo fallo que ya costó la otra comparación).
   let entreRamas = null;
   if (con.length >= MINIMO_PARA_CONCLUIR && sin.length >= MINIMO_PARA_CONCLUIR) {
-    const a = wrSiguiendo; const b = wr(sin);
-    const p = (a * con.length + b * sin.length) / (con.length + sin.length);
-    const se = Math.sqrt(p * (1 - p) * (1 / con.length + 1 / sin.length));
-    const dif = a - b;
-    entreRamas = { dif, margen: 1.96 * se, seVe: se > 0 && Math.abs(dif) > 1.96 * se };
+    entreRamas = compararProporciones(wrSiguiendo, con.length, wr(sin), sin.length);
   }
   return {
     total: partidas.length,

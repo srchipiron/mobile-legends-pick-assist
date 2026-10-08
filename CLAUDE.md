@@ -3627,6 +3627,23 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   `medirFasesMias` medirían el modelo con otra partida). Se propaga como
   corregir el resultado: mismo `t`, gana el móvil al fundir. Pruebas en
   `registro.test` y `persistencia.e2e`, dos mutaciones.
+- **«Tus números» (3.48.0)**, pedido por Javi («busca apps parecidas, de
+  otros juegos, e inspírate»): de los rastreadores de partidas (Dotabuff,
+  DuoBot, Blitz, mlbb.io) se cogió lo que se calcula con SUS partidas y no
+  pide datos nuevos: racha, sesión de hoy (partidas a menos de
+  `HUECO_DE_SESION_MS` 45 min, si la última es de hace menos de 12 h),
+  después de perder frente a después de ganar (la partida siguiente en la
+  misma sesión), por franja horaria (<18, 18–21, 21+, hora LOCAL del móvil),
+  por duración (solo con `duracion` posible) y por héroe (≥5 partidas,
+  intervalo de Wilson; marcado solo si deja fuera tu media). Cada grupo
+  contra el resto con `compararProporciones` (registro.js), la MISMA cuenta
+  que el Veredicto entre ramas (hay prueba). Grupos de menos de
+  `MINIMO_POR_GRUPO` (10) no se enseñan. Todos los cortes son decisiones de
+  producto, dichas en el código. Medido con sus 182 partidas el 8 de
+  octubre de 2026: tras perder 63,3% (49) frente a 63,7% (80), sin efecto
+  «tilt»; antes de las 18 h 48,6% (37) frente a 64,8%, −16 ± 18, cabe en el
+  margen. `src/motor/habitos.js`, `TusNumeros.jsx`, pruebas en
+  `motor/habitos.test` (once mutaciones) y `persistencia.e2e` (dos).
 - Las partidas metidas del historial del juego llevan `previa: true` y quedan
   FUERA de las dos ramas de la comparación (`esPrevia`). Sin eso irían todas a
   "por libre" -no tienen `recomendados`- y meter cien partidas viejas llenaría

@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.48.0
+
+- «Tus partidas» trae «Tus números»: tu racha, la sesión de hoy, cómo
+  juegas justo después de perder, por hora, por duración y con cada héroe,
+  siempre con su margen. Es lo que enseñan los rastreadores de partidas de
+  otros juegos, con la regla del Veredicto: nada se afirma mientras quepa en
+  el azar. Con tus 182 partidas: después de perder ganas el 63% y después de
+  ganar el 64% (perder no te afecta), antes de las 18 h el 49% frente al 65%
+  del resto (cabe en el margen todavía) y Rafaela 73% en 56, entre 60 y 83%.
+  Un héroe se marca en verde o en rojo solo si su margen deja fuera tu media.
+
 ## 3.47.0
 
 - En «Tus partidas» ya puedes cambiar el héroe de una partida: toca su nombre y elige con quién jugaste. Hasta ahora solo se podía cambiar el resultado, y una partida apuntada con el héroe equivocado (como la de Hayabusa del 6 de octubre, que fue con Diggie) se quedaba así o había que borrarla. La estimación de esa partida se quita, porque era la del otro héroe; el resultado y el draft se quedan. El cambio se sube solo al proyecto.

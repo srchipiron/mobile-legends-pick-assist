@@ -595,6 +595,12 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   font-variant-numeric: tabular-nums;
 }
 
+/* Tus números (3.48.0): la misma caja que el Veredicto; un héroe que se sale
+   de tu media lleva la marca de color del lado, como las frases. */
+.tus-numeros { gap: 4px; }
+.numeros-heroe.mejor { color: var(--c-comp); }
+.numeros-heroe.peor { color: var(--enemy); }
+
 /* ---------- objetos ---------- */
 
 /* El botón vive en la esquina de la tarjeta, debajo del winrate. Tiene que ser

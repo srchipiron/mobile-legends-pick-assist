@@ -8,7 +8,7 @@
  * que el perfil viaje de un dispositivo a otro fundiéndose, y que el rango y
  * el idioma sobrevivan a una recarga.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes, anchoDePagina } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
@@ -128,6 +128,34 @@ await prueba('el héroe de una partida apuntada se cambia tocándolo, se guarda 
     ok(p.estimacion === undefined && p.fases === undefined, 'se queda la estimación del héroe que no se jugó');
     eq(await pagina.locator('.partida-cambiar').count(), 0, 'la lista no se cierra al elegir');
     ok(await pagina.locator('.partida-hero', { hasText: 'Diggie' }).count() === 1, 'la fila no enseña el héroe nuevo');
+    ok(!errores.length, `errores de página: ${errores}`);
+  } finally { await contexto.close(); }
+});
+
+await prueba('«Tus números» enseña la racha, la sesión y cada héroe con su margen, sin claves crudas ni desborde a 320 px (3.48.0)', async () => {
+  // 24 partidas seguidas (una sesión), la última hace media hora: 12 Rafaela
+  // ganadas, 12 Diggie perdidas, la última de todas perdida.
+  const ahora = Date.now();
+  const partidas = [];
+  for (let i = 0; i < 24; i++) {
+    partidas.push({ t: ahora - 30 * 60 * 1000 - (23 - i) * 20 * 60 * 1000, pick: i % 2 ? 'Diggie' : 'Rafaela', gane: i % 2 === 0, recomendados: [], rango: 'glory' });
+  }
+  partidas.sort((a, b) => a.t - b.t);
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: 320, height: 640 }, almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:partidas': partidas } });
+  try {
+    await abrirHoja(pagina, 1);
+    const caja = pagina.locator('.tus-numeros');
+    eq(await caja.count(), 1, 'no sale «Tus números»');
+    const texto = await caja.innerText();
+    ok(/Racha: 1 derrota/.test(texto), `la racha no sale: ${texto}`);
+    ok(/hoy \d+ partidas/.test(texto), `la sesión de hoy no sale: ${texto}`);
+    ok(/Rafaela: 100% en 12, entre \d+ y 100%/.test(texto), `Rafaela sin su margen: ${texto}`);
+    ok(await caja.locator('.numeros-heroe.mejor', { hasText: 'Rafaela' }).count() === 1, 'Rafaela no se marca por encima de la media');
+    ok(await caja.locator('.numeros-heroe.peor', { hasText: 'Diggie' }).count() === 1, 'Diggie no se marca por debajo');
+    ok(!/numeros\.|\{/.test(texto), `claves o llaves crudas: ${texto}`);
+    ok(await anchoDePagina(pagina) <= 320, 'la página se sale a 320 px');
+    const fuera = await caja.evaluate((c) => [...c.querySelectorAll('*')].filter((e) => e.getBoundingClientRect().right > c.getBoundingClientRect().right + 1).length);
+    eq(fuera, 0, 'algo se sale de la caja');
     ok(!errores.length, `errores de página: ${errores}`);
   } finally { await contexto.close(); }
 });
