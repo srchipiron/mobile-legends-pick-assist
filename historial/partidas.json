@@ -1,5 +1,5 @@
 {
- "actualizado": "2026-10-07T22:55:30.616Z",
+ "actualizado": "2026-10-08T15:01:50.878Z",
  "partidas": [
   {
    "t": 1791413711523,
@@ -1504,7 +1504,7 @@
   },
   {
    "t": 1791317162827,
-   "pick": "Hayabusa",
+   "pick": "Diggie",
    "recomendados": [
     "Khufra",
     "Atlas",
@@ -1512,7 +1512,6 @@
    ],
    "gane": false,
    "rango": "glory",
-   "estimacion": 0.606,
    "origen": "lector",
    "bans": [
     "Lukas",
@@ -11189,6 +11188,12 @@
   },
   {
    "cuando": "2026-10-07T22:55:30.616Z",
+   "partidas": 182,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-08T15:01:50.878Z",
    "partidas": 182,
    "heroes": 11,
    "incidencia": 11
