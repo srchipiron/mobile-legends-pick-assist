@@ -181,6 +181,31 @@ test('una corrección no escribe fuera de la carpeta de capturas, ni con un id q
   ok(!aprendio, 'aprende de una captura de fuera de la carpeta');
 });
 
+test('una corrección devuelve a la app los recortes de los picks que saca el aprendizaje (3.52.0)', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'lector-recortes-'));
+  writeFileSync(join(carpeta, 'lectura-1.png'), png);
+  const recortes = [{ id: 'lectura-1', picks: 'iVBO', enemigos: [], aliados: [], tuyoFila: -1 }];
+  await conServidor({ capturar: () => png, carpeta, aprender: async () => ({ aprendido: { version: VERSION_APRENDIDO, picks: null, caras: {}, capturas: 1 }, informe: [], recortes }), guardar: () => {} }, async (base) => {
+    const r = await (await fetch(`${base}/corregir`, { method: 'POST', headers: { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: ['lectura-1'], enemigos: ['Clint'] }) })).json();
+    eq(JSON.stringify(r.recortes), JSON.stringify(recortes), 'los recortes no llegan a la app');
+  });
+  // Un aprendizaje sin recortes (o de antes de 3.52.0) contesta una lista vacía, no nada.
+  await conServidor({ capturar: () => png, carpeta, aprender: async () => ({ aprendido: { version: VERSION_APRENDIDO, picks: null, caras: {}, capturas: 1 }, informe: [] }), guardar: () => {} }, async (base) => {
+    const r = await (await fetch(`${base}/corregir`, { method: 'POST', headers: { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: ['lectura-1'], enemigos: ['Clint'] }) })).json();
+    eq(JSON.stringify(r.recortes), '[]');
+  });
+});
+
+test('un aprendizaje que falla contesta 500 y el lector sigue vivo (antes se caía el proceso entero)', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'lector-falla-'));
+  writeFileSync(join(carpeta, 'lectura-1.png'), png);
+  await conServidor({ capturar: () => png, carpeta, aprender: async () => { throw new Error('el hilo de aprendizaje salió con 134'); }, guardar: () => {} }, async (base) => {
+    const r = await fetch(`${base}/corregir`, { method: 'POST', headers: { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: ['lectura-1'], enemigos: ['Clint'] }) });
+    eq(r.status, 500, 'un aprendizaje roto no contesta 500');
+    eq((await fetch(`${base}/estado`)).status, 200, 'el lector no sigue contestando');
+  });
+});
+
 test('la app distingue «no veo la tablet» y «falta emparejar» de un fallo de captura', async () => {
   for (const tipo of ['tablet', 'emparejar']) {
     await conServidor({ capturar: async () => { throw Object.assign(new Error(tipo), { tipo }); } }, async (base) => {

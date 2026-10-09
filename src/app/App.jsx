@@ -21,7 +21,7 @@ import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
 import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
@@ -332,8 +332,19 @@ export default function App() {
     if (!draft.completoDesde || corregido.current === draft.completoDesde || !draft.lectura?.ids?.length) return;
     corregido.current = draft.completoDesde;
     const desde = draft.completoDesde;
+    // Lo de ESTE draft, ahora: la respuesta tarda (el lector aprende) y el draft puede haber cambiado.
+    const verdad = { enemigos: draft.enemigos, aliados: draft.aliados, tuyo: draft.miPick };
+    const leidos = { enemigos: draft.lectura.enemigos, aliados: draft.lectura.aliados };
     corregirLectura({ ids: draft.lectura.ids, enemigos: draft.enemigos, baneos: draft.baneos })
-      .then((r) => { if (r?.aprendido) draft.anotarAprendizaje({ aprendidos: r.aprendidos, sinEncontrar: r.sinEncontrar }, desde); });
+      .then((r) => {
+        if (r?.aprendido) draft.anotarAprendizaje({ aprendidos: r.aprendidos, sinEncontrar: r.sinEncontrar }, desde);
+        // Si a la lectura se le escapó alguien, las caras de los picks al
+        // proyecto para medir por qué (3.52.0). Sin token no sube nada.
+        const recortes = (r?.recortes ?? []).filter(recorteValido);
+        if (recortes.length && faltoAlguien(leidos, verdad) && envioActual.current.activo) {
+          envioActual.current.subirAparte({ ...cuerpoDePicks({ recortes, verdad, leidos, heroes: datos.heroes, version: __APP_VERSION__ }), etiquetas: ['pantalla'] });
+        }
+      });
   }, [draft.completoDesde, draft.lectura, draft.enemigos, draft.baneos]);
 
   /** Trae los datos de otro dispositivo: vienen fundidos, así que solo guarda. */

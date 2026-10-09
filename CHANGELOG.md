@@ -8,6 +8,19 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.52.0
+
+- Cuando el lector no reconoce a algún héroe en los picks, la app sube a la
+  incidencia de pantallas las diez caras de los picks de tus dos últimas
+  capturas del draft, junto con lo que leyó en cada hueco. Es para medir por
+  qué falla: los baneos se leen al 100%, pero de los picks solo 7 de cada 10
+  enemigos y la mitad de tu equipo, y bajar el umbral no lo arregla. Solo
+  van las caras, sin los nombres de los jugadores, y solo si tienes puesto
+  el token de subida.
+- El lector ya no se cae si falla el aprendizaje de una corrección (por
+  ejemplo, si el móvil se queda sin memoria): contesta con un error y sigue
+  leyendo.
+
 ## 3.51.0
 
 - Cada tarjeta de la nº2 para abajo dice por qué no es la nº1: cuántos

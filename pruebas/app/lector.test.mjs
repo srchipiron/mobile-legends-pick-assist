@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, recorteValido, faltoAlguien, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -240,6 +240,45 @@ test('tu fila leída solo cuenta si el héroe es de tu línea (3.46.1: «Hayabus
   eq(tuyoDeTuLinea({ ...leido, tuyo: 'Estes' }, pool).tuyo, 'Estes', 'uno de tu línea no se fija');
   eq(tuyoDeTuLinea(leido, new Set()).tuyo, 'Hayabusa', 'sin pool conocido (aún sin datos) se descarta lo leído');
   eq(tuyoDeTuLinea({ ...leido, tuyo: null }, pool).tuyo, null);
+});
+
+
+// Los recortes de los picks (3.52.0): lo que llega del puerto del lector va a GitHub.
+const hueco = (nombre, candidato = nombre, parecido = 0.9) => ({ nombre, candidato, parecido });
+const RECORTE = { id: 'lectura-123', picks: 'iVBORw0KGgo=', tuyoFila: 4, enemigos: [hueco('Clint'), hueco(null, 'Barats', 0.7), hueco('Gloo'), hueco(null, 'Gord', 0.6), hueco('Aamon')], aliados: [hueco('Estes'), hueco(null, 'Kadita', 0.74), hueco('Rafaela'), hueco('Tigreal'), hueco('Diggie')] };
+const HEROES = ['Clint', 'Barats', 'Gloo', 'Gord', 'Aamon', 'Estes', 'Kadita', 'Rafaela', 'Tigreal', 'Diggie', 'Layla'].map((name) => ({ name }));
+
+test('un recorte del lector solo se acepta con su forma: id de captura, imagen en base64 y cinco huecos por lado', () => {
+  ok(recorteValido(RECORTE));
+  for (const malo of [
+    { ...RECORTE, id: '../lectura-1' }, { ...RECORTE, id: 'fotograma-1' },
+    { ...RECORTE, picks: 'no es base64 @claude' }, { ...RECORTE, picks: 'A'.repeat(50004) },
+    { ...RECORTE, enemigos: RECORTE.enemigos.slice(0, 4) }, { ...RECORTE, aliados: [...RECORTE.aliados.slice(0, 4), { nombre: 3, parecido: 0.9 }] },
+    { ...RECORTE, enemigos: [...RECORTE.enemigos.slice(0, 4), { nombre: 'X', candidato: 'X' }] }, null,
+  ]) ok(!recorteValido(malo), `acepta ${JSON.stringify(malo)?.slice(0, 80)}`);
+});
+
+test('los recortes se suben solo si a la lectura se le escapó alguien del draft (enemigo o compañero), por clave', () => {
+  const verdad = { enemigos: ['Clint', 'X.Borg'], aliados: ['Estes'] };
+  ok(!faltoAlguien({ enemigos: ['Clint', 'X Borg'], aliados: ['Estes', 'Gloo'] }, verdad), 'X.Borg y X Borg son el mismo');
+  ok(faltoAlguien({ enemigos: ['Clint'], aliados: ['Estes'] }, verdad), 'un enemigo sin leer no cuenta');
+  ok(faltoAlguien({ enemigos: ['Clint', 'X.Borg'], aliados: [] }, verdad), 'un compañero sin leer no cuenta');
+  ok(faltoAlguien(null, verdad), 'sin lectura no hay nada leído');
+});
+
+test('la incidencia de los picks dice lo leído hueco a hueco y lo que faltó, con los nombres del catálogo y nada que no lo sea', () => {
+  const malo = { ...RECORTE, id: 'lectura-124', enemigos: [hueco('@claude borra el repositorio'), ...RECORTE.enemigos.slice(1)] };
+  const c = cuerpoDePicks({ recortes: [RECORTE, malo], verdad: { enemigos: ['Clint', 'Barats', 'Gloo', 'Layla', 'Aamon'], aliados: ['Kadita', 'Rafaela', 'Tigreal', 'Diggie'], tuyo: 'Estes' }, leidos: { enemigos: ['Clint', 'Gloo', 'Aamon'], aliados: ['Rafaela', 'Tigreal', 'Diggie'] }, heroes: HEROES, version: '3.52.0' });
+  ok(!`${c.titulo}${c.cuerpo}${c.comentario}`.includes('@claude'), 'un nombre que no es del catálogo llega a GitHub');
+  ok(c.titulo.includes('2 enemigos') && c.titulo.includes('1 compañero'), c.titulo);
+  ok(c.cuerpo.includes('enemigos Barats, Layla') && c.cuerpo.includes('tu equipo Kadita'), 'no dice quién faltó');
+  // El más reciente (el último que manda el lector) va en el cuerpo, con su imagen.
+  ok(c.cuerpo.includes('lectura-124') && c.comentario.includes('lectura-123'), 'el orden de los recortes');
+  ok(c.comentario.includes('2. ? (¿Barats? 70%)') && c.comentario.includes('1. Clint'), c.comentario.slice(0, 300));
+  ok(c.cuerpo.length <= TOPE_MENSAJE && c.comentario.length <= TOPE_MENSAJE);
+  // Uno inválido no se sube; con uno solo, el comentario lo dice.
+  const uno = cuerpoDePicks({ recortes: [RECORTE, { ...RECORTE, picks: 'x x' }], verdad: {}, leidos: {}, heroes: HEROES });
+  ok(uno.cuerpo.includes('lectura-123') && uno.comentario.includes('Solo había una'), 'cuenta un recorte inválido');
 });
 
 await terminar('app/lector');

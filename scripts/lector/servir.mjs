@@ -622,7 +622,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       return r;
     }).finally(() => { aprendiendo = null; });
     const r = await aprendiendo;
-    return { aprendido: true, aprendidos: r.informe.flatMap((l) => l.aprendidos.map((a) => a.nombre)), sinEncontrar: r.informe.flatMap((l) => l.sinEncontrar.map((x) => x.nombre)) };
+    // Con los recortes de los picks (3.52.0): la app los sube a la incidencia de pantallas para medir.
+    return { aprendido: true, aprendidos: r.informe.flatMap((l) => l.aprendidos.map((a) => a.nombre)), sinEncontrar: r.informe.flatMap((l) => l.sinEncontrar.map((x) => x.nombre)), recortes: Array.isArray(r.recortes) ? r.recortes : [] };
   };
   const servidor = createServer(async (req, res) => {
     const origen = req.headers.origin;
@@ -702,7 +703,11 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       const cuerpo = await leerCuerpo(req);
       if (!cuerpo) { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'cuerpo' })); return; }
       try {
-        res.writeHead(200, cabeceras).end(JSON.stringify(await corregir(cuerpo)));
+        // El resultado ANTES de la cabecera (3.52.0): con `writeHead(200)` delante
+        // del `await`, un aprendizaje que fallaba intentaba contestar 500 con la
+        // cabecera ya enviada y el lector entero se caía.
+        const r = await corregir(cuerpo);
+        res.writeHead(200, cabeceras).end(JSON.stringify(r));
       } catch (e) {
         registrar(`No se pudo aprender: ${e.message}`);
         res.writeHead(500, cabeceras).end(JSON.stringify({ error: 'aprender' }));

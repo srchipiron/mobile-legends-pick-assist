@@ -325,6 +325,54 @@ export function cuerpoDeFotogramas({ fotogramas, resultado = null, version = '' 
 }
 
 /**
+ * Los recortes de los picks (3.52.0): al completar el draft el lector manda,
+ * con lo aprendido, las diez caras de sus últimas capturas del draft (sin los
+ * nombres de los jugadores) y lo que leyó en cada hueco. La app los sube a la
+ * incidencia de pantallas cuando a la lectura se le escapó alguien, para
+ * medir por qué. Lo que llega del puerto del lector va a GitHub: solo se
+ * acepta con su forma (como `fotogramaValido`) y los nombres salen del
+ * catálogo; uno que no esté en él sale «?».
+ */
+const huecoValido = (h) => !!h && (h.nombre == null || typeof h.nombre === 'string') && (h.candidato == null || typeof h.candidato === 'string') && Number.isFinite(h.parecido);
+export const recorteValido = (r) => !!r && typeof r.id === 'string' && /^lectura-[\w-]{1,80}$/.test(r.id)
+  && typeof r.picks === 'string' && r.picks.length <= 50000 && BASE64.test(r.picks)
+  && Array.isArray(r.enemigos) && r.enemigos.length === 5 && r.enemigos.every(huecoValido)
+  && Array.isArray(r.aliados) && r.aliados.length === 5 && r.aliados.every(huecoValido);
+
+/** ¿Se le escapó alguien a la lectura? Algún enemigo o compañero del draft que no leyó nunca. */
+export function faltoAlguien(lectura, { enemigos = [], aliados = [] } = {}) {
+  const leidos = (l) => new Set((l ?? []).map(nombreClave));
+  const e = leidos(lectura?.enemigos), a = leidos(lectura?.aliados);
+  return enemigos.some((n) => !e.has(nombreClave(n))) || aliados.some((n) => !a.has(nombreClave(n)));
+}
+
+/**
+ * La incidencia con los recortes: el más reciente en el cuerpo y el otro en
+ * un comentario, cada uno con lo leído hueco a hueco, junto a lo que había de
+ * verdad (`verdad`) y a lo que la lectura llegó a meter en todo el draft
+ * (`leidos`, la unión de `draft.lectura`).
+ */
+export function cuerpoDePicks({ recortes, verdad = {}, leidos = {}, heroes = [], version = '' }) {
+  const porClave = new Map(heroes.map((h) => [nombreClave(h.name), h.name]));
+  const nombre = (n) => (n ? porClave.get(nombreClave(n)) ?? '?' : '—');
+  const pct = (p) => Math.round(p * 100);
+  const lista = (l) => (l ?? []).map(nombre).join(', ') || '—';
+  const validos = (recortes ?? []).filter(recorteValido).slice(-2).reverse();
+  const hueco = (h, i) => `${i + 1}. ${h.nombre ? nombre(h.nombre) : `? (¿${nombre(h.candidato)}? ${pct(h.parecido)}%)`}`;
+  const trozo = (r) => `${r.id} · tu equipo a la izquierda (fila ${r.tuyoFila >= 0 ? r.tuyoFila + 1 : '?'} eres tú), el suyo a la derecha:\n`
+    + `Leído en tu equipo: ${r.aliados.map(hueco).join(' · ')}\nLeído en el suyo: ${r.enemigos.map(hueco).join(' · ')}\n\n${VALLA}\n${r.picks}\n${VALLA}`;
+  const faltan = (lado, leidos) => (verdad[lado] ?? []).filter((n) => !new Set((leidos ?? []).map(nombreClave)).has(nombreClave(n))).map(nombre);
+  const fE = faltan('enemigos', leidos.enemigos), fA = faltan('aliados', leidos.aliados);
+  const cabecera = `Picks del draft para medir el lector · app ${version}\nDe verdad: enemigos ${lista(verdad.enemigos)}; tu equipo ${lista(verdad.aliados)}${verdad.tuyo ? ` y tú ${nombre(verdad.tuyo)}` : ''}.\n`
+    + `No leídos en todo el draft: enemigos ${fE.join(', ') || 'ninguno'}; tu equipo ${fA.join(', ') || 'ninguno'}.\n\n`;
+  return {
+    titulo: `Picks del draft: sin leer ${fE.length} enemigo${fE.length === 1 ? '' : 's'} y ${fA.length} compañero${fA.length === 1 ? '' : 's'}`,
+    cuerpo: cabecera + (validos[0] ? trozo(validos[0]) : 'Sin recortes.'),
+    comentario: validos[1] ? trozo(validos[1]) : 'Solo había una captura del draft.',
+  };
+}
+
+/**
  * Los nombres que el lector reconoció, con la grafía del catálogo (el
  * lector usa la de sus caras de referencia: «X.Borg» frente a «X Borg»).
  * Lo que sale como «?» (hueco vacío, eligiendo, skin) no se mete.

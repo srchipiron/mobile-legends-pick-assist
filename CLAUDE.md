@@ -2031,6 +2031,39 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   la misma lectura que en PNG, el PNG guardado, la vuelta a la comprimida y
   la tablet apagada) y `registro.test`. Sin medir todavía en su tablet: si
   la crudo va más rápida; lo dirán sus partidas.
+- **Los recortes de los picks (3.52.0)**, pedido por Javi el 9 de octubre de
+  2026 («le está costando bastante detectar bien los héroes en la fase de
+  picks»). Medido antes en sus 28 partidas del 5 al 9 de octubre: baneos
+  el 100%; enemigos 7 de cada 10 (los que más se escapan, Barats, Rafaela,
+  Cyclops, Minotaur), tu equipo la mitad (Kadita, Badang, Hanabi), y de lo
+  leído de más, Joy, Yi Sun-shin, Zetian y Gord. El umbral NO es el
+  problema: de las dudas con el candidato correcto, 12 pasan de 0,75; de
+  las equivocadas, 16. Y `lector.dudas` es de la ÚLTIMA lectura, que muchas
+  veces ya no es el draft (un «Gord 0,74» en todos los huecos). Sin ver
+  cómo pinta su tablet a esos héroes, cualquier cambio era a ciegas, así
+  que (preguntado: «Automático») al completar el draft el hilo de
+  aprendizaje compone, de las DOS últimas capturas que dio por pantalla del
+  draft (`recortesDelDraft`, scripts/lector/recortes.mjs), una imagen con
+  las diez caras (`CAJAS_ALIADOS` sin la caja del nombre, `CAJAS_ENEMIGOS`
+  sin la franja de abajo, donde va el nombre del jugador), a un tercio y con
+  una paleta de 256 colores sacada de la imagen (~35 mil caracteres; la
+  fija de 6×7×6 deja las caras en manchas), y lo leído hueco a hueco. Va en
+  la respuesta de `/corregir` (`recortes`) y la app lo sube como una
+  incidencia `pantalla` (`cuerpoDePicks`) SOLO si a la lectura se le escapó
+  alguien (`faltoAlguien`) y hay token; lo que llega del puerto se valida
+  por forma (`recorteValido`) y los nombres salen del catálogo (uno que no
+  esté sale «?»). Devuelto a su sitio, el lector lee las diez caras de la
+  captura de referencia igual (±0,05). Pruebas: `scripts/recortes.test`
+  (que quepa, que se lea igual, que no lleve nombres, otra resolución, las
+  dos últimas no descartadas), `app/lector.test` y `puente-lector.test`;
+  trece mutaciones (sobrevive una inofensiva: alargar la caja de tu equipo
+  sin alargar la fila; con las dos, cazada). Sin prueba de navegador: la
+  subida tras `/corregir` necesita el token y la API de GitHub. Lo
+  siguiente es mirar esas incidencias y medir con ellas. Y destapó un fallo
+  de antes: `/corregir` hacía `writeHead(200)` antes del `await`, así que
+  un aprendizaje que fallaba (un hilo sin memoria) contestaba 500 con la
+  cabecera ya enviada y TIRABA EL LECTOR entero; hoy se espera el resultado
+  antes (prueba: el aprendizaje que lanza contesta 500 y `/estado` sigue).
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el
