@@ -2,13 +2,14 @@ import { indexarPorNombre, nombreClave, buscar } from './nombres.js';
 import { fundirCatalogo, LINEAS, poolDeLinea, equilibrioEsperado } from './catalogo.js';
 import { indiceDeLineas, frecuenciaDeRoles, lineasOcupadas, detectarRivalDeLinea } from './lineas.js';
 import { cobertura } from './matrices.js';
-import { ordenarPicks, empatados } from './ranking.js';
+import { ordenarPicks, empatados, MARGEN_EMPATE } from './ranking.js';
 import { evaluarDraft } from './modelo.js';
 import { sugerirBaneos, proximosBaneos, coocurrenciaDeBaneos } from './baneos.js';
 import { simularFinales } from './robustez.js';
 import { aconsejarEquipo } from './equipo.js';
 import { analizarComposicion } from './composicion.js';
-import { analizarDraft } from './analisis.js';
+import { analizarDraft, BRECHA_CLARA } from './analisis.js';
+import { esPrevia, compararProporciones } from './registro.js';
 import { planDePartida } from './plan.js';
 import { elegirVentana, elegirRango, mediaDeWinrate } from './ventana.js';
 import { centroDeFases, fasesDePartida } from './fases.js';
@@ -330,4 +331,57 @@ export function recomendar(datos, { linea, enemigos = [], aliados = [], baneos =
     baneosSugeridos: baneosSugeridos(datos, { aliados, enemigos, baneos }),
     cobertura: cobertura(pool, datos.meta.stats, datos.meta.counters),
   };
+}
+
+/**
+ * La revisión de un draft ya jugado (3.49.0, como DraftGap en LoL): con el
+ * draft ENTERO que se guardó y los datos de HOY, ¿había en tu línea un pick
+ * con más probabilidad que el que cogiste? Lo que sabías al elegir era
+ * menos (faltaban enemigos), así que es una lectura a toro pasado, no una
+ * nota a la decisión. Los márgenes son los del ranking: empate por debajo
+ * de `MARGEN_EMPATE` y «mejor de verdad» desde `BRECHA_CLARA` puntos. null
+ * si la partida no lleva draft con línea o no se puede puntuar.
+ */
+export function revisarPartida(datos, partida, { maestria = null } = {}) {
+  const d = partida?.draft;
+  if (!d?.linea || !partida.pick) return null;
+  const enemigos = resolverNombres(datos, d.enemigos ?? []);
+  const aliados = resolverNombres(datos, d.aliados ?? []);
+  const baneos = resolverNombres(datos, partida.bans ?? []);
+  const [yo] = resolverNombres(datos, [partida.pick]);
+  if (!yo || !enemigos.length) return null;
+  const ranking = ordenar(datos, { linea: d.linea, enemigos, aliados, baneos, maestria });
+  if (!ranking.length) return null;
+  const i = ranking.findIndex((r) => nombreClave(r.heroe.name) === nombreClave(yo.name));
+  // Fuera del ranking (otra línea, o baneado en el draft guardado): se puntúa aparte.
+  const mio = i >= 0 ? ranking[i].p : estimarCon(datos, { yo, enemigos, aliados, baneos, maestria })?.p;
+  if (!(mio > 0 && mio < 1)) return null;
+  const mejor = ranking[0];
+  const dif = Math.max(0, mejor.p - mio);
+  const veredicto = i === 0 || dif < MARGEN_EMPATE ? 'bien' : dif * 100 >= BRECHA_CLARA ? 'mejor' : 'poco';
+  return {
+    t: partida.t, gane: partida.gane, pick: yo.name, puesto: i >= 0 ? i + 1 : null, de: ranking.length,
+    p: mio, mejor: veredicto === 'bien' ? null : { heroe: mejor.heroe.name, p: mejor.p }, dif, veredicto,
+  };
+}
+
+/**
+ * Todas tus partidas con draft, revisadas: cuántas veces cogiste el mejor (o
+ * empatado), cuánta probabilidad dejaste de media, y si las partidas en que
+ * había uno claramente mejor se perdieron más (dos proporciones con el error
+ * agrupado, como el Veredicto: nada se afirma dentro del margen).
+ */
+export function revisarDrafts(datos, partidas = [], { maestria = null } = {}) {
+  const filas = partidas.filter((p) => !esPrevia(p)).map((p) => revisarPartida(datos, p, { maestria })).filter(Boolean);
+  const n = filas.length;
+  if (!n) return { n: 0, filas };
+  const bien = filas.filter((f) => f.veredicto === 'bien');
+  const claro = filas.filter((f) => f.veredicto === 'mejor');
+  const resto = filas.filter((f) => f.veredicto !== 'mejor');
+  const wr = (l) => l.filter((f) => f.gane).length / l.length;
+  const MINIMO = 10;
+  const comparacion = claro.length >= MINIMO && resto.length >= MINIMO
+    ? { nClaro: claro.length, wrClaro: wr(claro), nResto: resto.length, wrResto: wr(resto), ...compararProporciones(wr(claro), claro.length, wr(resto), resto.length) }
+    : null;
+  return { n, filas, bien: bien.length, claro: claro.length, difMedia: filas.reduce((a, f) => a + f.dif, 0) / n, comparacion };
 }

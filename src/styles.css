@@ -597,7 +597,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 
 /* Tus números (3.48.0): la misma caja que el Veredicto; un héroe que se sale
    de tu media lleva la marca de color del lado, como las frases. */
-.tus-numeros { gap: 4px; }
+.tus-numeros, .revision-draft { gap: 4px; }
 .numeros-heroe.mejor { color: var(--c-comp); }
 .numeros-heroe.peor { color: var(--enemy); }
 

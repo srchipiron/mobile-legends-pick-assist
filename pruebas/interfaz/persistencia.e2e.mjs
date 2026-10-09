@@ -160,6 +160,25 @@ await prueba('«Tus números» enseña la racha, la sesión y cada héroe con su
   } finally { await contexto.close(); }
 });
 
+await prueba('la revisión del draft dice la última partida y, con el botón, todas, sin claves crudas ni desborde a 320 px (3.49.0)', async () => {
+  const draft = { linea: 'roam', enemigos: ['Layla', 'Fanny', 'Chou', 'Kagura', 'Granger'], aliados: ['Lukas', 'Pharsa'] };
+  const partidas = Array.from({ length: 3 }, (_, i) => ({ t: 1000 + i, pick: i === 2 ? 'Faramis' : 'Rafaela', gane: i !== 1, recomendados: [], rango: 'glory', draft }));
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: 320, height: 640 }, almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:partidas': partidas } });
+  try {
+    await abrirHoja(pagina, 1);
+    const caja = pagina.locator('.revision-draft');
+    eq(await caja.count(), 1, 'no sale la revisión');
+    ok(/Con Faramis: \d+% \(nº\d+ de \d+\)/.test(await caja.innerText()), `la última no es la de Faramis con su puesto: ${await caja.innerText()}`);
+    await caja.locator('button', { hasText: 'Revisar todos mis drafts' }).click();
+    await pagina.waitForFunction(() => /En 3 drafts/.test(document.querySelector('.revision-draft')?.innerText ?? ''), null, { timeout: 5000 });
+    const texto = await caja.innerText();
+    ok(/hacen falta 10 partidas/.test(texto), `con 3 drafts no debe comparar: ${texto}`);
+    ok(!/revision\.|\{/.test(texto), `claves o llaves crudas: ${texto}`);
+    ok(await anchoDePagina(pagina) <= 320, 'la página se sale a 320 px');
+    ok(!errores.length, `errores de página: ${errores}`);
+  } finally { await contexto.close(); }
+});
+
 await terminar('interfaz/persistencia');
 await navegador.close();
 await cerrar();

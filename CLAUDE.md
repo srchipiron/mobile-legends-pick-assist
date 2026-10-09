@@ -3644,6 +3644,20 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   «tilt»; antes de las 18 h 48,6% (37) frente a 64,8%, −16 ± 18, cabe en el
   margen. `src/motor/habitos.js`, `TusNumeros.jsx`, pruebas en
   `motor/habitos.test` (once mutaciones) y `persistencia.e2e` (dos).
+- **La revisión del draft (3.49.0)**, como DraftGap: `revisarPartida` y
+  `revisarDrafts` en draft.js (el único cerebro) re-puntúan el draft
+  guardado de cada partida (línea, enemigos, aliados, baneos) con los datos
+  de hoy y la maestría efectiva, y dicen el puesto del héroe jugado, el nº1
+  y la diferencia, con los márgenes del ranking (`MARGEN_EMPATE` empate,
+  `BRECHA_CLARA` «claramente mejor»). Un héroe de otra línea se puntúa
+  aparte (sin puesto). Es a toro pasado: al elegir faltaban enemigos, y la
+  pantalla lo dice. La última partida se revisa al abrir «Tus partidas» (un
+  ranking); todas, con botón (136 drafts, 0,8 s aquí y unos 4 s en el
+  móvil). Medido el 9 de octubre de 2026 con sus 136 drafts: el mejor o
+  empatado en 51, claramente mejor en 44, y en esos ganó el 64% frente al
+  60% (+4 ± 18): no se distingue. Los más «dejados» son Marcel (17) y Chip
+  (15, por su maestría del 55%). `motor/revision.test` (siete pruebas,
+  diez mutaciones) y `persistencia.e2e` (una).
 - Las partidas metidas del historial del juego llevan `previa: true` y quedan
   FUERA de las dos ramas de la comparación (`esPrevia`). Sin eso irían todas a
   "por libre" -no tienen `recomendados`- y meter cien partidas viejas llenaría

@@ -518,7 +518,7 @@ export default function App() {
       )}
       {hoja === 'historial' && (
         <HistorialPartidas
-          partidas={personal.partidas} maestria={personal.maestria} pool={rec.pool} perfil={datosPerfil} envio={envio}
+          partidas={personal.partidas} maestria={personal.maestria} maestriaUsada={personal.maestriaUsada} datos={datos} pool={rec.pool} perfil={datosPerfil} envio={envio}
           onOlvidar={personal.olvidarPartida} onCorregir={personal.corregirPartida} onCambiarHeroe={personal.cambiarHeroePartida}
           onAnadir={(heroe, gane) => personal.apuntarPartida({ pick: heroe, gane, previa: true, rango: datos.rango })}
           onCerrar={cerrar} t={t}

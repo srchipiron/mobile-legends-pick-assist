@@ -234,6 +234,25 @@ export default {
   'numeros.heroe.peor': 'por debajo de tu media',
   'numeros.heroesNota': 'Héroes con 5 partidas o más. Uno se marca solo si su margen deja fuera tu media ({media}%).',
 
+  // --- revisión del draft (3.49.0) ---
+  'revision.titulo': 'Tu último draft, revisado',
+  'revision.puesto': 'nº{puesto} de {de}',
+  'revision.fuera': 'no está en tu línea',
+  'revision.bien': 'Con {hero} cogiste el mejor de tu línea o uno empatado con él: {p}%.',
+  'revision.poco': 'Con {hero}: {p}% ({puesto}). {mejor} daba {pm}%, {dif} puntos más: casi lo mismo.',
+  'revision.mejor': 'Con {hero}: {p}% ({puesto}). {mejor} daba {pm}%: {dif} puntos más.',
+  'revision.todas': 'Revisar todos mis drafts',
+  'revision.calculando': 'Revisando…',
+  'revision.ninguna': 'Ninguna partida lleva su draft con la línea: no hay nada que revisar.',
+  'revision.resumen': 'En {n} drafts cogiste el mejor o uno empatado en {bien} ({pb}%), y en {claro} había uno claramente mejor. De media dejaste {dif} puntos.',
+  'revision.masSugeridos': 'Los que más veces habrían sido mejores: {lista}.',
+  'revision.comparacion': 'Con uno claramente mejor sin coger ganaste {a}% ({na}) frente a {b}% ({nb}) el resto: {signo}{dif} puntos ± {margen}.',
+  'revision.compNoSeVe': 'Cabe en el margen: en tus partidas no se nota haber dejado ese mejor pick.',
+  'revision.compPeor': 'Ya no cabe en el azar: pierdes más cuando no coges el claramente mejor.',
+  'revision.compMejor': 'Ya no cabe en el azar, y al revés: ganas más cuando no coges el que el modelo ve mejor.',
+  'revision.compPocas': 'Para saber si eso se nota en tus resultados hacen falta 10 partidas de cada tipo.',
+  'revision.nota': 'Con el draft entero y los datos de hoy: cuando elegiste veías menos enemigos. Es una lectura a toro pasado, no una nota a tu decisión.',
+
   // --- líneas ---
   'linea.roam': 'Roam',
   'linea.jungle': 'Jungla',

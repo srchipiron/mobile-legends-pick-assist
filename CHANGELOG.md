@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.49.0
+
+- «Tus partidas» revisa tu último draft: con el draft entero, ¿había en tu
+  línea un pick con más probabilidad que el que cogiste, y cuánta? Con un
+  botón revisa todos y dice en cuántos cogiste el mejor (o uno empatado),
+  cuánto dejaste de media y, con 10 partidas de cada tipo, si dejar el
+  mejor se nota en lo que ganas, con su margen. Es como la revisión de
+  DraftGap en LoL. Con tus 136 drafts: el mejor o empatado en 51, uno
+  claramente mejor en 44, y en esos ganaste el 64% frente al 60% del resto
+  (+4 ± 18): no se nota. Es una lectura a toro pasado y lo dice: al elegir
+  veías menos enemigos.
+
 ## 3.48.0
 
 - «Tus partidas» trae «Tus números»: tu racha, la sesión de hoy, cómo

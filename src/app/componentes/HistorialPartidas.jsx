@@ -5,6 +5,7 @@ import { urlDeIncidencia, TOPE_URL, tokenPlausible } from '../github.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Veredicto } from './Veredicto.jsx';
 import { TusNumeros } from './TusNumeros.jsx';
+import { RevisionDraft } from './RevisionDraft.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
 
 /**
@@ -23,7 +24,7 @@ function estadoDeEnvio(envio, t) {
   return t('hist.autoNada');
 }
 
-export function HistorialPartidas({ partidas, pool, maestria = {}, perfil = null, envio = null, onOlvidar, onCorregir, onCambiarHeroe, onAnadir, onCerrar, t = tPorDefecto }) {
+export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null, maestriaUsada = null, perfil = null, envio = null, onOlvidar, onCorregir, onCambiarHeroe, onAnadir, onCerrar, t = tPorDefecto }) {
   const [anadiendo, setAnadiendo] = useState(false);
   const [heroe, setHeroe] = useState(null);
   const [aviso, setAviso] = useState(null);
@@ -81,6 +82,7 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, perfil = null
             la lista en un móvil de 640 de alto. */}
         <Veredicto partidas={partidas} maestria={maestria} t={t} />
         <TusNumeros partidas={partidas} t={t} />
+        <RevisionDraft datos={datos} partidas={partidas} maestria={maestriaUsada ?? maestria} t={t} />
         <p className="nota">{t('hist.resumenLineas', { total: partidas.length, conApp, previas: partidas.length - conApp })}</p>
         {/* La base de datos del proyecto: sin tus partidas dentro, el modelo
             no se puede medir en tu cola. */}
