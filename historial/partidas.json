@@ -1,6 +1,165 @@
 {
- "actualizado": "2026-10-09T21:19:20.937Z",
+ "actualizado": "2026-10-09T21:36:27.978Z",
  "partidas": [
+  {
+   "t": 1791581769971,
+   "pick": "Estes",
+   "recomendados": [
+    "Floryn",
+    "Estes",
+    "Chip"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.49,
+   "origen": "lector",
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Eudora",
+    "Ruby",
+    "Sora",
+    "Kaja",
+    "X.Borg",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Rafaela",
+     "Aulus",
+     "Aurora",
+     "Clint",
+     "Hayabusa"
+    ],
+    "aliados": [
+     "Kadita",
+     "Badang",
+     "Lesley",
+     "Lukas"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Marcel",
+     "Eudora",
+     "Ruby",
+     "Sora",
+     "Kaja",
+     "X.Borg",
+     "Paquito"
+    ],
+    "enemigos": [
+     "Rafaela",
+     "Aulus",
+     "Aurora",
+     "Clint",
+     "Hayabusa"
+    ],
+    "aliados": [
+     "Lesley",
+     "Lukas"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "a1",
+      "candidato": "Zetian",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.78
+     }
+    ],
+    "ms": [
+     2952,
+     2978,
+     2822,
+     2658,
+     3083,
+     3340,
+     2805,
+     2882,
+     2825,
+     3242,
+     3188,
+     2915,
+     3069,
+     3484,
+     3201,
+     3478,
+     2690,
+     2826,
+     3043,
+     3556
+    ],
+    "msCaptura": [
+     2129,
+     1921,
+     1945,
+     1793,
+     2236,
+     2205,
+     1976,
+     1965,
+     1952,
+     2273,
+     2269,
+     2075,
+     2195,
+     2452,
+     2298,
+     2512,
+     1849,
+     2015,
+     2270,
+     2790
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Clint",
+      "Hayabusa",
+      "Hayabusa"
+     ]
+    }
+   },
+   "duracion": 12.8,
+   "fases": [
+    0.356,
+    0.484,
+    0.555,
+    0.547,
+    0.538,
+    0.531
+   ]
+  },
   {
    "t": 1791580731819,
    "pick": "Estes",
@@ -12070,6 +12229,12 @@
   {
    "cuando": "2026-10-09T21:19:20.937Z",
    "partidas": 186,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-09T21:36:27.978Z",
+   "partidas": 187,
    "heroes": 11,
    "incidencia": 11
   }
