@@ -183,7 +183,7 @@ test('la partida empieza a los 30 s del draft (como el 6 de octubre de 2026): el
     const { inicio, inicioEstimado } = await p.final();
     eq(inicioEstimado, false, 'una partida que empieza antes del minuto 1 del draft sale con el inicio estimado');
     ok(inicio > desde && inicio < desde + 60000, `el inicio no cae en el primer minuto: ${(inicio - desde) / 1000} s`);
-    p.desfase = inicio - desde + 14 * 60000;
+    p.desfase = inicio - Date.now() + 14 * 60000;
     p.pantalla = pantallaDeFinal();
     ok(await p.hasta(async () => (await p.final()).resultado === 'perdi'), 'no lee la tabla');
     const f = await p.final();
@@ -200,11 +200,18 @@ test('el draft se cierra con la partida empezada (3.46.0): /leer dice si la tabl
   try {
     const t0 = Date.now();
     p.pantalla = capturaCompletaPng();
+    // El reloj del lector suma el tiempo real (decodificar la captura entera
+    // cuesta segundos con la máquina cargada): cada lectura se acota con su
+    // antes y su después, no con un margen fijo.
+    const fueraAntes = Date.now() + p.desfase;
     eq((await p.leer()).partida, false, 'el draft se lee como partida');
+    const fueraDespues = Date.now() + p.desfase;
     // La partida empieza; dos lecturas la ven (la app cierra el draft) y avisa al lector.
     p.pantalla = juegoPng;
     p.desfase = 20000;
+    const dentroAntes = Date.now() + p.desfase;
     eq((await p.leer()).partida, true, 'la partida no se lee como partida');
+    const dentroDespues = Date.now() + p.desfase;
     // (La segunda, lejos: el inicio sale de la PRIMERA de dentro, no de la última.)
     p.desfase = 50000;
     eq((await p.leer()).partida, true);
@@ -212,8 +219,9 @@ test('el draft se cierra con la partida empezada (3.46.0): /leer dice si la tabl
     await p.vigilar({ desde: t0 + 55000, guion: [], cierres: CIERRES });
     const { inicio, inicioEstimado } = await p.final();
     eq(inicioEstimado, false, 'con las lecturas viendo empezar la partida, el inicio sale estimado');
-    ok(Math.abs(inicio - (t0 + 10000)) < 5000, `el inicio no es el punto medio entre la última lectura fuera y la PRIMERA dentro: ${(inicio - t0) / 1000} s`);
-    p.desfase = inicio - t0 + 14 * 60000;
+    // La segunda lectura de dentro va 30 s después: si se cogiera ella, el inicio caería 15 s más tarde, fuera de la cota.
+    ok(inicio >= (fueraAntes + dentroAntes) / 2 - 1 && inicio <= (fueraDespues + dentroDespues) / 2 + 1, `el inicio no es el punto medio entre la última lectura fuera y la PRIMERA dentro: ${(inicio - t0) / 1000} s`);
+    p.desfase = inicio - Date.now() + 14 * 60000;
     p.pantalla = pantallaDeFinal();
     ok(await p.hasta(async () => (await p.final()).resultado === 'perdi'), 'no lee la tabla');
     const f = await p.final();
@@ -248,7 +256,7 @@ test('una partida de más de 23 minutos también se mide: con el inicio visto se
     const { inicio, inicioEstimado } = await p.final();
     eq(inicioEstimado, false);
     // Minuto 26 de PARTIDA (más de 27 del draft): sigue mirando y la tabla cuenta.
-    p.desfase = inicio - desde + 26 * 60000;
+    p.desfase = inicio - Date.now() + 26 * 60000;
     await new Promise((r) => setTimeout(r, 80));
     ok((await p.final()).activa, 'deja de vigilar en el minuto 25 del draft con la partida en juego');
     p.pantalla = pantallaDeFinal();

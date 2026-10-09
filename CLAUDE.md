@@ -1276,6 +1276,15 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   lleva su propio `desde` y la tabla al 12,05. Una prueba con un reloj
   simulado que suma el real tiene que acotar con el real, no con un margen
   fijo.
+  Y tenía GEMELAS: el 9 de octubre, con tres revisores corriendo a la vez,
+  el punto medio de 3.46.0 salió a 15–18 s (margen ±5) y las duraciones de
+  14 y 26 minutos con 0,6–0,7 de más, en `npm test` y sola (2 de 4). Hoy el
+  reloj de cada duración se fija respecto al instante en que se pone
+  (`inicio - Date.now()`) y el punto medio se acota con el reloj del lector
+  antes y después de cada lectura; tres copias a la vez dan 12 de 12, y dos
+  mutaciones (la última lectura en partida, la duración desde el draft) se
+  cazan. Al arreglar una prueba de tiempos, busca sus gemelas con `grep
+  "Date.now() + desfase"`.
 
 ## El modelo (2.0)
 
