@@ -1,6 +1,218 @@
 {
- "actualizado": "2026-10-08T19:06:04.284Z",
+ "actualizado": "2026-10-09T20:09:28.699Z",
  "partidas": [
+  {
+   "t": 1791576551256,
+   "pick": "Estes",
+   "recomendados": [
+    "Gloo",
+    "Estes",
+    "Chip"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.432,
+   "origen": "lector",
+   "bans": [
+    "Sun",
+    "Masha",
+    "Hirara",
+    "Lukas",
+    "Belerick",
+    "Eudora",
+    "Fredrinn"
+   ],
+   "draft": {
+    "enemigos": [
+     "Kagura",
+     "Aulus",
+     "Yi Sun-shin",
+     "Lesley",
+     "Floryn"
+    ],
+    "aliados": [
+     "Bane",
+     "Beatrix",
+     "Novaria",
+     "Zilong"
+    ],
+    "linea": "roam",
+    "rival": "Floryn"
+   },
+   "lector": {
+    "baneos": [
+     "Bruno",
+     "Sun",
+     "Masha",
+     "Hirara",
+     "Lukas",
+     "Belerick",
+     "Eudora",
+     "Fredrinn"
+    ],
+    "enemigos": [
+     "Bruno",
+     "Joy",
+     "Kagura",
+     "Aulus",
+     "Yi Sun-shin"
+    ],
+    "aliados": [
+     "Bane",
+     "Beatrix",
+     "Novaria",
+     "Zilong"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Gord",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Novaria",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Natalia",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Julian",
+      "parecido": 0.6
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.61
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Helcurt",
+      "parecido": 0.53
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Gord",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Gord",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Gord",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Moskov",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Helcurt",
+      "parecido": 0.52
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Natan",
+      "parecido": 0.69
+     }
+    ],
+    "ms": [
+     2093,
+     3356,
+     3160,
+     5819,
+     4246,
+     3563,
+     4495,
+     2939,
+     4379,
+     2898,
+     4586,
+     3017,
+     2822,
+     4361,
+     4610
+    ],
+    "msCaptura": [
+     1078,
+     2295,
+     1974,
+     2744,
+     3070,
+     2355,
+     3116,
+     2004,
+     3177,
+     1892,
+     3307,
+     2059,
+     2016,
+     3083,
+     3391
+    ],
+    "formatos": [
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "crudo",
+     "png",
+     "crudo",
+     "png",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Yi Sun-shin",
+      "Lesley",
+      "Yi Sun-shin",
+      "Lesley",
+      "Yi Sun-shin",
+      "Lesley"
+     ]
+    }
+   },
+   "fases": [
+    0.452,
+    0.415,
+    0.404,
+    0.418,
+    0.461,
+    0.476
+   ]
+  },
   {
    "t": 1791486341894,
    "pick": "Floryn",
@@ -11428,6 +11640,12 @@
   {
    "cuando": "2026-10-08T19:06:04.284Z",
    "partidas": 183,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-09T20:09:28.699Z",
+   "partidas": 184,
    "heroes": 11,
    "incidencia": 11
   }
