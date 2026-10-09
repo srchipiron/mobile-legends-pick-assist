@@ -1,6 +1,181 @@
 {
- "actualizado": "2026-10-09T22:03:00.095Z",
+ "actualizado": "2026-10-09T22:17:36.228Z",
  "partidas": [
+  {
+   "t": 1791584238139,
+   "pick": "Diggie",
+   "recomendados": [
+    "Diggie",
+    "Gloo",
+    "Rafaela"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.54,
+   "origen": "lector",
+   "bans": [
+    "Marcel",
+    "Aamon",
+    "X.Borg",
+    "Angela",
+    "Hirara",
+    "Paquito",
+    "Estes",
+    "Lukas",
+    "Eudora",
+    "Saber"
+   ],
+   "draft": {
+    "enemigos": [
+     "Lesley",
+     "Vexana",
+     "Sora",
+     "Khufra",
+     "Yi Sun-shin"
+    ],
+    "aliados": [
+     "Yu Zhong",
+     "Suyou",
+     "Layla",
+     "Zhask"
+    ],
+    "linea": "roam",
+    "rival": "Khufra"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Aamon",
+     "X.Borg",
+     "Angela",
+     "Hirara",
+     "Paquito",
+     "Estes",
+     "Lukas",
+     "Eudora",
+     "Saber"
+    ],
+    "enemigos": [
+     "Lesley",
+     "Zetian",
+     "Vexana",
+     "Khufra",
+     "Yi Sun-shin"
+    ],
+    "aliados": [
+     "Layla"
+    ],
+    "dudas": [
+     {
+      "hueco": "e3",
+      "candidato": "Zetian",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Suyou",
+      "parecido": 0.8
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Yu Zhong",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Martis",
+      "parecido": 0.58
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Moskov",
+      "parecido": 0.6
+     }
+    ],
+    "ms": [
+     3095,
+     3901,
+     3247,
+     2990,
+     3290,
+     4212,
+     3524,
+     3155,
+     3019,
+     3176,
+     3109,
+     3181,
+     3365,
+     3381,
+     2689,
+     3883,
+     2832,
+     4902
+    ],
+    "msCaptura": [
+     1866,
+     2814,
+     2225,
+     2013,
+     2285,
+     2983,
+     2514,
+     2143,
+     2119,
+     2285,
+     2174,
+     2315,
+     2475,
+     2319,
+     1986,
+     3120,
+     2217,
+     2124
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Sora",
+      "Sora",
+      "Sora"
+     ],
+     "sinEncontrar": [
+      "Khufra",
+      "Yi Sun-shin",
+      "Khufra",
+      "Yi Sun-shin"
+     ]
+    }
+   },
+   "duracion": 10.7,
+   "fases": [
+    0.511,
+    0.546,
+    0.562,
+    0.547,
+    0.557,
+    0.514
+   ]
+  },
   {
    "t": 1791583270306,
    "pick": "Estes",
@@ -12437,6 +12612,12 @@
   {
    "cuando": "2026-10-09T22:03:00.095Z",
    "partidas": 188,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-09T22:17:36.228Z",
+   "partidas": 189,
    "heroes": 11,
    "incidencia": 11
   }
