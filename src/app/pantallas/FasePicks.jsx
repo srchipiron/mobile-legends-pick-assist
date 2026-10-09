@@ -2,6 +2,7 @@ import { Fragment, useMemo, useRef, useState } from 'react';
 import { buscar } from '../../motor/nombres.js';
 import { tic } from '../tacto.js';
 import { winrateEnLinea } from '../../motor/draft.js';
+import { porQueDetras } from '../../motor/ranking.js';
 import { MINUTOS_PARA_RECORDAR } from '../estado/useDraft.js';
 import { useAhora } from '../estado/useAhora.js';
 import { IDIOMAS } from '../i18n/index.js';
@@ -206,6 +207,8 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
               onBuild={meta ? (h) => abrir({ build: h }) : null /* también sin builds: la hoja lleva el plan (3.37.0) */}
               elegido={miPick?.name === c.heroe.name}
               onElegir={draft.fijarPick}
+              detras={ranking.indexOf(c) > 0 ? porQueDetras(c, ranking[0]) : null}
+              primero={ranking[0]?.heroe.name}
             />
             {i === 0 && <ConsejoEquipo consejos={consejos.lista} yo={consejos.yo} onElegir={anadirAliado} t={t} />}
           </Fragment>

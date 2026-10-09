@@ -3,6 +3,7 @@ import { idMotivo } from '../../motor/nombres.js';
 import { Cara } from './Imagen.jsx';
 import { Desglose } from './Desglose.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
+import { fraseDetras } from '../porque.js';
 
 /**
  * La identidad de un motivo, para las `key` de React: la MISMA que usa el
@@ -16,7 +17,7 @@ export { idMotivo };
  * Tarjeta de recomendación: la probabilidad de ganar el draft con ese pick
  * y de dónde sale, en puntos, término a término.
  */
-export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLinea = null, linea = null, onBuild, elegido = false, onElegir = null, t = tPorDefecto }) {
+export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLinea = null, linea = null, onBuild, elegido = false, onElegir = null, detras = null, primero = null, t = tPorDefecto }) {
   const pct = Math.round(candidato.p * 100);
   const heroe = candidato.heroe;
   const nombre = (
@@ -42,6 +43,9 @@ export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLi
           ) : nombre}
         </h3>
         <Desglose puntos={candidato.puntos} t={t} />
+        {/* Por qué no es el nº1 (3.51.0): solo de la nº2 para abajo, así que
+            la nº1 no gana ni un píxel (primera-pantalla.e2e). */}
+        {detras && primero && <p className="pick-detras">{fraseDetras(detras, primero, t)}</p>}
         <ul className="reasons">
           {candidato.motivos.length ? candidato.motivos.map((m) => (
             <li
@@ -82,3 +86,4 @@ export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLi
     </article>
   );
 }
+

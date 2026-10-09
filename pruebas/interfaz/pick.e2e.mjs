@@ -180,6 +180,27 @@ await prueba('con el draft completo y sin pick fijado, a los diez minutos pregun
   await contexto.close();
 });
 
+await prueba('la nº2 dice por qué no es la nº1, con la frase del motor, y la nº1 no lleva nada (3.51.0)', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const motor = await import('../../src/motor/draft.js');
+  const { porQueDetras } = await import('../../src/motor/ranking.js');
+  const { fraseDetras } = await import('../../src/app/porque.js');
+  const { crearT } = await import('../../src/app/i18n/index.js');
+  const leerJson = async (f) => JSON.parse(await readFile(new URL(`../../dist/data/${f}`, import.meta.url), 'utf8'));
+  const datos = motor.prepararDatos({ catalogo: await leerJson('heroes.json'), meta: await leerJson('roam-meta.json'), rango: 'glory' });
+  const r = (n) => motor.resolverNombres(datos, n);
+  const rk = motor.ordenar(datos, { linea: 'roam', enemigos: r(PICKS.enemies), aliados: r(PICKS.allies), baneos: r(PICKS.bans) });
+  const esperada = fraseDetras(porQueDetras(rk[1], rk[0]), rk[0].heroe.name, crearT('es'));
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS } });
+  try {
+    eq(await nombreDe(pagina.locator('.pick').nth(1)), rk[1].heroe.name, 'la app y el motor no ordenan igual: la prueba no compara lo mismo');
+    eq(await pagina.locator('.pick').first().locator('.pick-detras').count(), 0, 'la nº1 lleva la línea de por qué no es la nº1');
+    eq((await pagina.locator('.pick').nth(1).locator('.pick-detras').innerText()).trim(), esperada, 'la nº2 no dice lo que da el motor');
+    eq(await pagina.locator('.pick .pick-detras').count(), Math.min(8, rk.length) - 1, 'no todas las de detrás dicen por qué');
+    ok(!errores.length, `errores de página: ${errores}`);
+  } finally { await contexto.close(); }
+});
+
 await terminar('interfaz/pick');
 await navegador.close();
 await cerrar();

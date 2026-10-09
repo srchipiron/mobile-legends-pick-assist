@@ -3701,6 +3701,22 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   mutaciones), `scripts/ingesta.test` y `comparar.test` (siete),
   `ingesta-simulada` (la foto servida, y la de ayer conservada) y
   `hojas.e2e` (las fichas son las del motor).
+- **Por qué no es el nº1 (3.51.0)**, lo que «Candidatos descartados»
+  dejó pendiente en 3.5.0 («entrará cuando se mida cómo meterlo sin alto
+  nuevo»): va de la nº2 para abajo, así que la nº1 no se mueve
+  (`primera-pantalla.e2e` en verde). `porQueDetras` (ranking.js) resta
+  término a término el nº1 menos el candidato en la escala del desglose
+  (`ESCALA × logit × PUNTOS_POR_LOGIT`; entre candidatos del mismo draft
+  solo cambia tu héroe), y da el término en que más pierde y el que más
+  gana si pasa de `PUNTOS_A_FAVOR` (0,5, decisión de producto: por debajo
+  es redondeo del desglose); dentro de `MARGEN_EMPATE`, empate. La frase,
+  en `src/app/porque.js` (`fraseDetras`, pura). Medido el 9 de octubre de
+  2026 con 300 drafts de roam, para la nº2: empate en 86 (29%, el p25
+  documentado); en los otros 214, un término explica ≥ 60% en 164 (77%) y
+  hay algo a favor en 148; el que más pesa es la fuerza del héroe (145),
+  luego cruces (51) y parejas (18). `motor/porque.test` (cinco pruebas,
+  siete mutaciones) y `pick.e2e` (la frase es la del motor con los datos
+  servidos; comparar con la nº2 en vez de la nº1 la tumba).
 - Las partidas metidas del historial del juego llevan `previa: true` y quedan
   FUERA de las dos ramas de la comparación (`esPrevia`). Sin eso irían todas a
   "por libre" -no tienen `recomendados`- y meter cien partidas viejas llenaría

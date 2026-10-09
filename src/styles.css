@@ -261,6 +261,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .desglose { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-bottom: 6px; font-size: 11px; color: var(--muted); }
 .desglose span { white-space: nowrap; }
 .desglose b { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 600; }
+/* Por qué no es el nº1 (3.51.0): una línea discreta bajo el desglose. */
+.pick-detras { margin: -2px 0 6px; font-size: 11px; color: var(--muted); }
 .chip-pct { font-family: var(--font-num); font-size: 11px; color: var(--muted); margin-left: 4px; font-variant-numeric: tabular-nums; }
 
 /* Motivos: cápsulas rellenas, sin borde, como las etiquetas de iOS. */

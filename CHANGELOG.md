@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.51.0
+
+- Cada tarjeta de la nº2 para abajo dice por qué no es la nº1: cuántos
+  puntos le faltan, en qué pierde más y, si toca, en qué gana. Por ejemplo,
+  «1.2 puntos por detrás de Rafaela: más flojo en general (−1.5), aunque
+  mejores cruces (+0.6)». Si la diferencia cabe en el ruido del modelo,
+  dice que están empatados. Es como el «por qué no este» de los asistentes
+  de draft de LoL. Con 300 drafts de roam, la nº2 sale empatada en el 29%;
+  en el resto, un solo motivo explica casi toda la diferencia en 3 de cada
+  4. La nº1 no cambia ni un píxel.
+
 ## 3.50.0
 
 - La hoja «Meta» dice quién sube y quién baja esta semana en tu línea, y

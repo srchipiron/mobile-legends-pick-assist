@@ -1,7 +1,7 @@
 import { nombreClave, buscar, idMotivo } from './nombres.js';
 import { cruce } from './matrices.js';
 import { tuNivel, priorDeMaestria } from './maestria.js';
-import { evaluarDraft } from './modelo.js';
+import { evaluarDraft, ESCALA, PUNTOS_POR_LOGIT } from './modelo.js';
 
 /**
  * El ranking: el pool de tu línea ordenado por la probabilidad de ganar el
@@ -136,4 +136,39 @@ export const MARGEN_EMPATE = 0.004;
 export function empatados(ranking, margen = MARGEN_EMPATE) {
   if (!ranking.length) return [];
   return ranking.filter((c) => ranking[0].p - c.p <= margen).slice(0, 4);
+}
+
+/**
+ * Lo que gana el otro término en el que este va por DELANTE del nº1 tiene que
+ * pasar de medio punto para decirse: por debajo es redondeo del desglose
+ * (que va en puntos enteros). Decisión de producto.
+ */
+export const PUNTOS_A_FAVOR = 0.5;
+
+/**
+ * Por qué este candidato va detrás del nº1 (3.51.0, como el «por qué no
+ * este» de iTero en LoL): término a término, la diferencia con el nº1 en
+ * puntos de probabilidad, en la MISMA escala que el desglose de la tarjeta
+ * (`ESCALA × logit × PUNTOS_POR_LOGIT`). Entre dos candidatos del mismo
+ * draft solo cambia tu héroe, así que cada diferencia es de él: su fuerza,
+ * sus cruces, sus parejas, su daño, tu maestría y lo que falta por salir.
+ * `principal` es el término en que más pierde; `aFavor`, el que más gana si
+ * pasa de `PUNTOS_A_FAVOR`. Dentro de `MARGEN_EMPATE`, es un empate.
+ */
+export function porQueDetras(candidato, primero) {
+  if (!candidato?.terminos || !primero?.terminos || candidato === primero) return null;
+  const dif = (primero.p - candidato.p) * 100;
+  if (primero.p - candidato.p < MARGEN_EMPATE) return { empate: true, dif };
+  const partes = Object.keys(candidato.terminos).map((termino) => ({
+    termino,
+    puntos: ESCALA * ((primero.terminos[termino] ?? 0) - (candidato.terminos[termino] ?? 0)) * PUNTOS_POR_LOGIT,
+  }));
+  const contra = partes.filter((x) => x.puntos > 0).sort((a, b) => b.puntos - a.puntos);
+  const favor = partes.filter((x) => x.puntos < 0).sort((a, b) => a.puntos - b.puntos);
+  return {
+    empate: false,
+    dif,
+    principal: contra[0] ?? null,
+    aFavor: favor[0] && -favor[0].puntos >= PUNTOS_A_FAVOR ? { termino: favor[0].termino, puntos: -favor[0].puntos } : null,
+  };
 }
