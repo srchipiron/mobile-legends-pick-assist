@@ -1,6 +1,240 @@
 {
- "actualizado": "2026-10-09T22:17:36.228Z",
+ "actualizado": "2026-10-09T22:32:04.324Z",
  "partidas": [
+  {
+   "t": 1791585098838,
+   "pick": "Estes",
+   "recomendados": [
+    "Chip",
+    "Carmilla",
+    "Khufra"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.618,
+   "origen": "lector",
+   "bans": [
+    "Aulus",
+    "Marcel",
+    "Hirara",
+    "Eudora",
+    "Belerick",
+    "Minotaur",
+    "Melissa",
+    "Lukas",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Tigreal",
+     "Miya",
+     "Fredrinn",
+     "Yi Sun-shin",
+     "Gusion"
+    ],
+    "aliados": [
+     "Guinevere",
+     "Hanabi",
+     "Aurora",
+     "Suyou"
+    ],
+    "linea": "roam",
+    "rival": "Tigreal"
+   },
+   "lector": {
+    "baneos": [
+     "Aulus",
+     "Marcel",
+     "Hirara",
+     "Eudora",
+     "Belerick",
+     "Minotaur",
+     "Melissa",
+     "Lukas",
+     "Paquito"
+    ],
+    "enemigos": [
+     "Tigreal",
+     "Miya",
+     "Gusion",
+     "Fredrinn",
+     "Yi Sun-shin"
+    ],
+    "aliados": [
+     "Wanwan",
+     "Guinevere",
+     "Yi Sun-shin"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Gord",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Atlas",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Wanwan",
+      "parecido": 0.6
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Natalia",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Mathilda",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Kadita",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Hilda",
+      "parecido": 0.49
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Gord",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Gord",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Gord",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Gord",
+      "parecido": 0.62
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Fredrinn",
+      "parecido": 0.72
+     }
+    ],
+    "ms": [
+     3854,
+     3008,
+     3512,
+     4228,
+     3170,
+     3498,
+     3324,
+     3226,
+     3012,
+     3161,
+     3067,
+     2930,
+     3247,
+     4015,
+     4301,
+     3871,
+     3435,
+     3073,
+     2915,
+     3473
+    ],
+    "msCaptura": [
+     2922,
+     2148,
+     2595,
+     3007,
+     2203,
+     2488,
+     2422,
+     2392,
+     2281,
+     2239,
+     2216,
+     2130,
+     2438,
+     3084,
+     3279,
+     2596,
+     2363,
+     2245,
+     2082,
+     2410
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Fredrinn",
+      "Yi Sun-shin",
+      "Fredrinn"
+     ],
+     "sinEncontrar": [
+      "Tigreal",
+      "Miya",
+      "Yi Sun-shin",
+      "Tigreal",
+      "Miya",
+      "Yi Sun-shin"
+     ]
+    }
+   },
+   "duracion": 10.6,
+   "fases": [
+    0.747,
+    0.636,
+    0.577,
+    0.515,
+    0.515,
+    0.496
+   ]
+  },
   {
    "t": 1791584238139,
    "pick": "Diggie",
@@ -12618,6 +12852,12 @@
   {
    "cuando": "2026-10-09T22:17:36.228Z",
    "partidas": 189,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-09T22:32:04.324Z",
+   "partidas": 190,
    "heroes": 11,
    "incidencia": 11
   }
