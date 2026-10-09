@@ -14,7 +14,7 @@
  * degradado era el que acababa publicado.
  */
 import { spawn } from 'node:child_process';
-import { copyFileSync, cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
@@ -238,6 +238,12 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(d.recientes?.dias, 3, `la ventana corta no se guarda: ${JSON.stringify(d.recientes)}`);
     eq(d.recientes?.statsByRank?.glory?.Atlas?.winRate, 0.512, `la ventana corta no es la servida: ${JSON.stringify(d.recientes?.statsByRank?.glory?.Atlas)}`);
     eq(d.stats.Atlas?.winRate, 0.51, 'la ventana corta ha pisado a la de 7 días');
+    // La historia de la fuerza (3.50.0): la foto de hoy, con lo servido, de
+    // tu rango y su respaldo.
+    const hoy = new Date().toISOString().slice(0, 10);
+    eq(d.historia?.at(-1)?.fecha, hoy, `la historia no lleva la foto de hoy: ${JSON.stringify(d.historia?.map((e) => e.fecha))}`);
+    eq(d.historia?.at(-1)?.glory?.Atlas?.[0], 0.51, `la foto de Gloria no es la servida: ${JSON.stringify(d.historia?.at(-1)?.glory?.Atlas)}`);
+    eq(d.historia?.at(-1)?.mythic?.Khufra?.[0], 0.52, 'la foto de Mítico no es la servida');
     // La tier list: la servida, casada por nombre, y la huella del texto de la ficha.
     eq(d.tiers?.tiers?.Atlas, 'S', `la tier de Atlas no es la servida: ${JSON.stringify(d.tiers)}`);
     eq(d.tiers?.tiers?.Khufra, 'B', 'la tier de Khufra no es la servida');
@@ -353,6 +359,11 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     fallaCounters = false; fallaRecientes = false; fallaDetail = true; academyVacia = true; fallosCountersPendientes = 1;
     fallaLineaDe = '2'; desplazaLinea = 0.01;
     const out3 = resolve(dir, 'ficha-caida.json');
+    // Una foto de ayer en lo previo: la tercera corrida tiene que conservarla.
+    const ayer = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+    const previoConAyer = JSON.parse(readFileSync(out, 'utf8'));
+    previoConAyer.historia = [...previoConAyer.historia, { fecha: ayer, glory: { Atlas: [0.49, 0.01] }, mythic: { Atlas: [0.5, 0.01] } }];
+    writeFileSync(out, JSON.stringify(previoConAyer));
     const r3 = await correrIngesta([
       '--base', `http://127.0.0.1:${puerto}/api`,
       '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', out3, '--previo', out, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
@@ -360,6 +371,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     ]);
     eq(r3.status, 0, `la tercera corrida no acaba bien: ${(r3.stdout + r3.stderr).slice(-400)}`);
     const d3 = JSON.parse(readFileSync(out3, 'utf8'));
+    ok(d3.historia?.find((e) => e.fecha === ayer)?.glory?.Atlas?.[0] === 0.49 && new Set(d3.historia.map((e) => e.fecha)).size === d3.historia.length && d3.historia.at(-1)?.glory?.Atlas, `la historia de la corrida anterior no se conserva: ${JSON.stringify(d3.historia?.map((e) => e.fecha))}`);
     const atlas3 = d3.heroes.find((h) => h.name === 'Atlas');
     ok(atlas3?.speciality?.includes('Guard'), `con la ficha caída la speciality no se conserva: ${JSON.stringify(atlas3?.speciality)}`);
     eq(atlas3?.kitTexto, huellaTexto({ skilldesc: DESCRIPCION }), 'con la ficha caída la huella del texto no se conserva de la corrida anterior: avisaría de un rework falso');

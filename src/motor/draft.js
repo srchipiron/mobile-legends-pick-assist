@@ -11,7 +11,8 @@ import { analizarComposicion } from './composicion.js';
 import { analizarDraft, BRECHA_CLARA } from './analisis.js';
 import { esPrevia, compararProporciones } from './registro.js';
 import { planDePartida } from './plan.js';
-import { elegirVentana, elegirRango, mediaDeWinrate } from './ventana.js';
+import { elegirVentana, elegirRango, mediaDeWinrate, RANGO_DE_RESPALDO } from './ventana.js';
+import { movimientos } from './tendencia.js';
 import { centroDeFases, fasesDePartida } from './fases.js';
 import { guionEnDirecto, cierresPorTramo } from './directo.js';
 
@@ -384,4 +385,23 @@ export function revisarDrafts(datos, partidas = [], { maestria = null } = {}) {
     ? { nClaro: claro.length, wrClaro: wr(claro), nResto: resto.length, wrResto: wr(resto), ...compararProporciones(wr(claro), claro.length, wr(resto), resto.length) }
     : null;
   return { n, filas, bien: bien.length, claro: claro.length, difMedia: filas.reduce((a, f) => a + f.dif, 0) / n, comparacion };
+}
+
+/**
+ * Quién sube y quién baja esta semana (3.50.0, tendencia.js): en el rango
+ * del que sale la fuerza, confirmado por el otro del par (Gloria y Mítico),
+ * con la historia que guarda la ingesta. Con `linea`, solo su pool.
+ */
+export function movimientosDelMeta(datos, { linea = null } = {}) {
+  const crudo = datos?.crudo ?? {};
+  const rango = datos?.meta?.fuerza?.rango ?? datos?.rango;
+  const par = Object.entries(RANGO_DE_RESPALDO).find(([a, b]) => a === rango || b === rango);
+  const otro = par ? (par[0] === rango ? par[1] : par[0]) : null;
+  const hoy = typeof crudo.generatedAt === 'string' ? crudo.generatedAt.slice(0, 10) : null;
+  const r = movimientos({ historia: crudo.historia, statsByRank: crudo.statsByRank, hoy, rango, otro });
+  const salida = { ...r, rango, otro };
+  if (!linea) return salida;
+  const enLinea = new Set(poolDe(datos, linea).map((h) => nombreClave(h.name)));
+  const filtrar = (l) => l.filter((f) => enLinea.has(nombreClave(f.heroe)));
+  return { ...salida, suben: filtrar(r.suben), bajan: filtrar(r.bajan) };
 }

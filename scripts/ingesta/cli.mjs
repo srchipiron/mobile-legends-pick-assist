@@ -15,7 +15,7 @@ import {
 } from './extraccion.mjs';
 import { fetchRelations } from './relaciones.mjs';
 import {
-  anotarFrescura, conservarFichasPrevias, estadisticasFrescas, fechaDeLaCorrida, fundirBuilds, fundirWinrateLinea,
+  anotarFrescura, anotarHistoria, conservarFichasPrevias, estadisticasFrescas, fechaDeLaCorrida, fundirBuilds, fundirWinrateLinea,
   kitsRehechos, leerPrevio, relacionesPrevias, relacionesDeLaCorrida,
 } from './fusion.mjs';
 import { bajarImagenes } from './imagenes.mjs';
@@ -304,6 +304,11 @@ async function main() {
 
   const estadisticasNuevas = estadisticasFrescas(frescos, RANK, RANGO_DE_RESPALDO[RANK]);
   const generatedAt = fechaDeLaCorrida({ frescos, estadisticasNuevas, matrizNueva, previous });
+  // Quién sube y quién baja (3.50.0): una foto al día de tu rango y su
+  // respaldo, solo de lo descargado en esta corrida.
+  const historia = anotarHistoria(previous?.historia, statsByRank, frescos, new Date().toISOString().slice(0, 10), {
+    rangos: [RANK, RANGO_DE_RESPALDO[RANK]].filter(Boolean),
+  });
   const out = {
     generatedAt,
     rank: RANK,
@@ -364,6 +369,7 @@ async function main() {
     builds,
     winrateLinea,
     curvaLinea,
+    historia,
   };
 
   await mkdir(dirname(OUT), { recursive: true });

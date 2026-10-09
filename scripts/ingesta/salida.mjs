@@ -44,6 +44,10 @@ export function serializar(out) {
       builds: compactarBuilds(out.builds),
       ...(out.winrateLinea ? { winrateLinea: compactarBuilds(out.winrateLinea) } : {}),
       ...(out.curvaLinea ? { curvaLinea: compactarBuilds(out.curvaLinea) } : {}),
+      // La historia (3.50.0): una línea por rango y día, no 133 × 15.
+      ...(out.historia ? {
+        historia: out.historia.map(({ fecha, ...porRango }) => ({ fecha, ...compactarBuilds(porRango) })),
+      } : {}),
     },
     null,
     2,

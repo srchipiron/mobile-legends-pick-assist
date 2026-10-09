@@ -8,6 +8,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { OUT, PREVIO, ROOT, diagnostics } from './contexto.mjs';
 import { huellaDeKit } from '../../src/motor/catalogo.js';
+import { HISTORIA_DIAS } from '../../src/motor/tendencia.js';
 
 /**
  * Lo anterior se lee de los DATOS GUARDADOS, no de la salida: los tres
@@ -213,4 +214,44 @@ export function kitsRehechos(heroList = [], catalogo = []) {
     .filter((h) => escrito.has(h?.name) && (h.speciality ?? []).length)
     .map((h) => ({ name: h.name, antes: escrito.get(h.name), ahora: huellaDeKit(h) }))
     .filter((x) => x.antes !== x.ahora);
+}
+
+
+/**
+ * La historia de la fuerza (3.50.0): una foto por día (UTC) del winrate y
+ * la cuota de pick de la ventana de 7 días de los rangos que se comparan
+ * (el tuyo y su respaldo), para que la app diga quién sube y quién baja
+ * esta semana. Solo entra un rango DESCARGADO en esta corrida: una foto
+ * con los datos conservados de ayer bajo la fecha de hoy diría «no se ha
+ * movido» sin saberlo (el mismo fallo que ya costó `generatedAt`). La
+ * última corrida del día sustituye a la anterior de ese día; lo de hace
+ * más de `HISTORIA_DIAS` se cae. Puro: la fecha se pasa.
+ */
+export function anotarHistoria(previa, statsByRank = {}, frescos = [], fecha, { rangos = [], dias = HISTORIA_DIAS } = {}) {
+  const valida = (e) => e && typeof e.fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.fecha);
+  // Una foto por fecha: si lo previo trae dos (editado a mano), manda la última.
+  const porFecha = new Map();
+  for (const e of (Array.isArray(previa) ? previa : []).filter(valida)) porFecha.set(e.fecha, { ...e });
+  const historia = [...porFecha.values()];
+  const foto = {};
+  for (const rango of rangos) {
+    if (!frescos.includes(rango)) continue;
+    const fila = {};
+    for (const [heroe, s] of Object.entries(statsByRank?.[rango] ?? {})) {
+      const wr = Number(s?.winRate); const pick = Number(s?.pickRate);
+      if (Number.isFinite(wr) && wr > 0 && wr < 1) // Winrate a la décima de punto y cuota a cuatro decimales: el umbral
+      // es de un punto y cada cifra más es ruido que pesa en el móvil.
+      fila[heroe] = [Math.round(wr * 1e3) / 1e3, Number.isFinite(pick) ? Math.round(pick * 1e4) / 1e4 : 0];
+    }
+    if (Object.keys(fila).length) foto[rango] = fila;
+  }
+  if (Object.keys(foto).length && /^\d{4}-\d{2}-\d{2}$/.test(fecha ?? '')) {
+    const i = historia.findIndex((e) => e.fecha === fecha);
+    if (i >= 0) historia[i] = { ...historia[i], ...foto };
+    else historia.push({ fecha, ...foto });
+  }
+  const ultima = historia.map((e) => e.fecha).sort().at(-1);
+  if (!ultima) return [];
+  const limite = new Date(Date.parse(`${ultima}T00:00:00Z`) - (dias - 1) * 864e5).toISOString().slice(0, 10);
+  return historia.filter((e) => e.fecha >= limite).sort((a, b) => a.fecha.localeCompare(b.fecha));
 }

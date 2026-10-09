@@ -105,11 +105,20 @@ test('el guion se dice en su minuto de PARTIDA (inicio visto por el minimapa), l
     eq((await final()).dichos, 2, 'cuenta como dicho un aviso que no se dijo');
     ok(registro.some((l) => l.includes('sin decir (atrasado') && l.includes('Momento')), 'el aviso atrasado no deja línea en el registro');
     // Acaba hacia el minuto 15 de partida: duración y el cierre de su tramo.
+    // El reloj del lector es `Date.now() + desfase`: el tiempo REAL que pasa
+    // desde `desde` también cuenta como partida. Así que la duración se
+    // comprueba entre lo que llevaba la prueba al poner la tabla y al leerla
+    // (con 15 ± 0,5 fijo, una máquina lenta daba 15,6 y fallaba con el
+    // código bien; pasó el 9 de octubre de 2026 con la 3.49.0).
     desfase = inicio - desde + 15 * 60000;
+    const minutosReales = () => (Date.now() - desde) / 60000;
+    const antesDeLaTabla = minutosReales();
     pantalla = tablaPng;
     ok(await hasta(async () => (await final()).resultado === 'perdi'), 'no lee la tabla');
     const f = await final();
-    ok(Math.abs(f.duracion - 15) < 0.5 && f.inicioEstimado === false, `la duración no es la de la partida: ${f.duracion}`);
+    const despues = minutosReales();
+    ok(f.duracion >= 15 + antesDeLaTabla - 0.05 && f.duracion <= 15 + despues + 0.05 && f.inicioEstimado === false,
+      `la duración no es la de la partida: ${f.duracion} (entre ${(15 + antesDeLaTabla).toFixed(2)} y ${(15 + despues).toFixed(2)})`);
     ok(await hasta(() => dichos.length >= 3), 'no dice el cierre');
     eq(dichos[2], `en:${cierres[tramoDeMinutos(f.duracion)]}`, 'el cierre no es el de su tramo');
     eq(f.voz, 'ok', 'no dice que la voz va bien');
@@ -281,19 +290,23 @@ test('con la partida acabada no se dice nada más: ni tras ver la tabla, ni tras
     // Y la tabla vista sin palabra conocida (la de victoria hasta aprenderla): duración y cierre, y después nada.
     const q = await lectorDePrueba({ resultados: { ...plantillasDeSerie(), perdi: [] } });
     try {
-      await q.vigilar({ desde, guion: [{ min: 13, texto: 'tarde' }], cierres: CIERRES });
+      // Su propio instante de draft, y la tabla al 12,05: el reloj suma el
+      // tiempo real de la prueba, y con el 12,5 y el `desde` de arriba una
+      // máquina lenta pasaba del 13 antes de ver la tabla (dijo «tarde»).
+      const desdeQ = Date.now();
+      await q.vigilar({ desde: desdeQ, guion: [{ min: 13, texto: 'tarde' }], cierres: CIERRES });
       q.pantalla = draftPng; q.desfase = 2 * 60000;
       await new Promise((r2) => setTimeout(r2, 80));
       q.pantalla = juegoPng;
       ok(await q.hasta(async () => (await q.final()).inicio != null), 'no ve empezar la partida');
       const i2 = (await q.final()).inicio;
-      q.desfase = i2 - desde + 12.5 * 60000;
+      q.desfase = i2 - desdeQ + 12.05 * 60000;
       q.pantalla = pantallaDeFinal();
       ok(await q.hasta(async () => (await q.final()).duracion != null), 'una tabla sin palabra conocida no da la duración');
       eq((await q.final()).resultado, null, 'la prueba necesita una tabla SIN palabra conocida');
       ok(await q.hasta(() => q.dichos.length >= 1), 'no dice el cierre');
       q.pantalla = draftPng;
-      q.desfase = i2 - desde + 13.5 * 60000;
+      q.desfase = i2 - desdeQ + 13.5 * 60000;
       await new Promise((r2) => setTimeout(r2, 150));
       eq(q.dichos.join(), CIERRES[1], `tras la tabla sigue con los consejos de la partida: ${q.dichos}`);
     } finally { q.cerrar(); }

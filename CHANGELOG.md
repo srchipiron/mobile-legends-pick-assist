@@ -8,6 +8,20 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.50.0
+
+- La hoja «Meta» dice quién sube y quién baja esta semana en tu línea, y
+  cuántos en todo el juego, como el «trending» de mlbb.io. Solo cuenta un
+  cambio de un punto o más de winrate respecto a lo que se juega, y que se
+  vea en Gloria y en Mítico a la vez: tras el reinicio Gloria se rellena y
+  casi todos «subían» juntos, y eso no dice nada de ningún héroe. Con el
+  parche asentado de septiembre no salía casi nadie, que es la verdad: el
+  meta estaba quieto. Hoy, en roam, sube Minsitthar y bajan Chip, Baxia,
+  Helcurt, Mathilda y Selena. Es lo que ha pasado, no una predicción, y no
+  cambia ninguna recomendación.
+- Para eso los datos guardan una foto al día de los últimos diez días
+  (unos 13 KB más al descargarlos).
+
 ## 3.49.0
 
 - «Tus partidas» revisa tu último draft: con el draft entero, ¿había en tu

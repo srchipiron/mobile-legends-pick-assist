@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { LINEAS } from '../../motor/catalogo.js';
 import { terminoHeroe } from '../../motor/modelo.js';
 import { buscar } from '../../motor/nombres.js';
-import { winrateEnLinea } from '../../motor/draft.js';
+import { winrateEnLinea, movimientosDelMeta } from '../../motor/draft.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Cara } from './Imagen.jsx';
 import { ETIQUETAS_RANGO } from './SelectorDeRango.jsx';
@@ -54,6 +54,7 @@ export function Meta({ datos, linea, onCerrar, t = tPorDefecto }) {
         {conDeriva && <p className="nota">{t('meta.deriva', { dias: ventana.dias })}</p>}
         {tiers && <p className="nota">{t('meta.tierPista')}</p>}
         {datos.meta.winrateLinea && Object.keys(datos.meta.winrateLinea).length > 0 && <p className="nota">{t('meta.wrLineaPista')}</p>}
+        <EstaSemana datos={datos} linea={linea} t={t} />
         {lineas.map(({ linea: l, filas }) => (
           <section key={l} className="meta-linea">
             <h3 className="meta-titulo">{t(`linea.${l}`)}</h3>
@@ -82,5 +83,39 @@ export function Meta({ datos, linea, onCerrar, t = tPorDefecto }) {
         <p className="nota">{t('meta.resto')}</p>
       </div>
     </Hoja>
+  );
+}
+
+/**
+ * Quién sube y quién baja esta semana (3.50.0, motor/tendencia.js): en tu
+ * línea, y cuántos en todo el juego. Solo lo confirmado por los dos rangos
+ * y respecto a lo que se juega; es lo que ha pasado, no una predicción.
+ */
+function EstaSemana({ datos, linea, t }) {
+  const todo = useMemo(() => movimientosDelMeta(datos), [datos]);
+  const enLinea = useMemo(() => (linea ? movimientosDelMeta(datos, { linea }) : todo), [datos, linea, todo]);
+  if (todo.estado === 'sinOtro') return null;
+  const rango = ETIQUETAS_RANGO[todo.rango] ?? todo.rango;
+  const otro = ETIQUETAS_RANGO[todo.otro] ?? todo.otro;
+  const puntos = (v) => `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(1)}`;
+  const lista = (filas, clase) => (
+    <p className="meta-mov">
+      {filas.slice(0, 6).map((f) => (
+        <span key={f.heroe} className={`meta-mov-item ${clase}`}>{f.heroe} {puntos(f.dif)}</span>
+      ))}
+    </p>
+  );
+  return (
+    <section className="meta-semana" aria-label={t('meta.semana.titulo')}>
+      <h3 className="meta-semana-titulo">{t('meta.semana.titulo')}</h3>
+      {todo.estado === 'sinHistoria' ? <p className="nota">{t('meta.semana.sinHistoria')}</p> : (
+        <>
+          {enLinea.suben.length > 0 && <><p className="nota">{t('meta.semana.suben', { linea: t(`linea.${linea}`) })}</p>{lista(enLinea.suben, 'sube')}</>}
+          {enLinea.bajan.length > 0 && <><p className="nota">{t('meta.semana.bajan', { linea: t(`linea.${linea}`) })}</p>{lista(enLinea.bajan, 'baja')}</>}
+          {!enLinea.suben.length && !enLinea.bajan.length && <p className="nota">{t('meta.semana.quieta', { linea: t(`linea.${linea}`) })}</p>}
+          <p className="nota">{t('meta.semana.todo', { suben: todo.suben.length, bajan: todo.bajan.length, desde: todo.desde, rango, otro })}</p>
+        </>
+      )}
+    </section>
   );
 }

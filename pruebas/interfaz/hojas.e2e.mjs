@@ -239,6 +239,16 @@ await prueba('la hoja Meta enseña la tier list por línea, con la tuya primero,
   const enFila = await pagina.locator('[role=dialog] .meta-fila.top .meta-wrlinea').first().innerText().catch(() => '');
   if (esperado != null) ok(enFila.includes(`${(esperado * 100).toFixed(1)}%`) && /roam/i.test(enFila), `la fila de ${primero} no enseña su winrate en roam (${(esperado * 100).toFixed(1)}%): «${enFila}»`);
   else eq(enFila, '', `enseña un winrate en roam que el motor no tiene: «${enFila}»`);
+  // Quién sube y quién baja (3.50.0): las fichas de tu línea son las que da
+  // el motor con los datos servidos, en su orden, y sin claves crudas.
+  const mov = motor.movimientosDelMeta(datos, { linea: 'roam' });
+  if (mov.estado !== 'sinOtro') {
+    eq(await pagina.locator('[role=dialog] .meta-semana').count(), 1, 'no sale «Esta semana»');
+    const fichas = await pagina.locator('[role=dialog] .meta-semana .meta-mov-item.sube').allInnerTexts();
+    eq(fichas.map((f) => f.replace(/ [+−][\d.]+$/, '')).join(), mov.suben.slice(0, 6).map((f) => f.heroe).join(), `las que suben no son las del motor: ${fichas}`);
+    const bajan = await pagina.locator('[role=dialog] .meta-semana .meta-mov-item.baja').allInnerTexts();
+    eq(bajan.map((f) => f.replace(/ [+−][\d.]+$/, '')).join(), mov.bajan.slice(0, 6).map((f) => f.heroe).join(), `las que bajan no son las del motor: ${bajan}`);
+  }
   // Y en TODAS las filas de las cinco líneas, el de SU sección: con 60 filas
   // salen héroes de varias líneas, que es donde se ve si se cruzan.
   const secciones = pagina.locator('[role=dialog] .meta-linea');

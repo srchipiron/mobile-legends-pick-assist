@@ -18,7 +18,7 @@ import { callRoute, request } from '../../scripts/ingesta/descarga.mjs';
 import { estado } from '../../scripts/ingesta/contexto.mjs';
 import { idPrincipal, esIdDeHeroe, recogerPares, relationMap, pick } from '../../scripts/ingesta/relaciones.mjs';
 import { serializar } from '../../scripts/ingesta/salida.mjs';
-import { kitsRehechos, fundirWinrateLinea, relacionesDeLaCorrida } from '../../scripts/ingesta/fusion.mjs';
+import { kitsRehechos, fundirWinrateLinea, relacionesDeLaCorrida, anotarHistoria } from '../../scripts/ingesta/fusion.mjs';
 
 test('el rol y la línea se leen aunque vengan hondos en la respuesta', () => {
   // Forma REAL de la API: el titulo de la linea vive en el nivel 8. El limite de
@@ -446,6 +446,24 @@ test('la curva por duración (3.43.0): seis tramos en orden, la de la forma real
   const rota = structuredClone(real); rota.data.records[0].data.time_win_rate[1].win_rate = 1.4;
   eq(recogerCurva(rota), null, 'guarda una curva con un winrate imposible');
   eq(recogerCurva({ data: { records: [] } }), null, 'saca una curva de una respuesta vacía');
+});
+
+test('la historia de la fuerza: solo lo descargado, una foto por día, diez días (3.50.0)', () => {
+  const stats = { glory: { Atlas: { winRate: 0.51234, pickRate: 0.012345 } }, mythic: { Atlas: { winRate: 0.52, pickRate: 0.01 } }, epic: { Atlas: { winRate: 0.4 } } };
+  const una = anotarHistoria([], stats, ['glory', 'mythic', 'epic'], '2026-10-08', { rangos: ['glory', 'mythic'] });
+  eq(una.length, 1); eq(JSON.stringify(una[0].glory.Atlas), JSON.stringify([0.512, 0.0123]), 'redondeo');
+  ok(!una[0].epic, 'guarda rangos que no se comparan');
+  const conservado = anotarHistoria(una, stats, ['glory'], '2026-10-09', { rangos: ['glory', 'mythic'] });
+  ok(conservado.at(-1).glory && !conservado.at(-1).mythic, 'un rango conservado (no descargado) entra en la foto de hoy');
+  eq(anotarHistoria(una, stats, [], '2026-10-09', { rangos: ['glory', 'mythic'] }).length, 1, 'sin nada descargado se añade un día');
+  const mismoDia = anotarHistoria(una, { glory: { Atlas: { winRate: 0.6, pickRate: 0.02 } } }, ['glory'], '2026-10-08', { rangos: ['glory', 'mythic'] });
+  ok(mismoDia.length === 1 && mismoDia[0].glory.Atlas[0] === 0.6 && mismoDia[0].mythic, 'la última del día no sustituye solo su rango');
+  let h = [];
+  for (let d = 1; d <= 14; d++) h = anotarHistoria(h, stats, ['glory', 'mythic'], `2026-10-${String(d).padStart(2, '0')}`, { rangos: ['glory', 'mythic'] });
+  eq(h.length, 10, `se guardan ${h.length} días`); eq(h[0].fecha, '2026-10-05');
+  const dobles = anotarHistoria([{ fecha: '2026-10-01', glory: { Atlas: [0.4, 0] } }, { fecha: '2026-10-01', glory: { Atlas: [0.6, 0] } }], {}, [], '2026-10-02', { rangos: ['glory'] });
+  ok(dobles.length === 1 && dobles[0].glory.Atlas[0] === 0.6, 'dos fotos del mismo día en lo previo');
+  ok(anotarHistoria([{ fecha: 'mal' }, null], stats, ['glory'], 'tampoco', { rangos: ['glory'] }).length === 0, 'entradas o fechas sin forma');
 });
 
 await terminar('scripts/ingesta');

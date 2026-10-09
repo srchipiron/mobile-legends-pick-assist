@@ -20,6 +20,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RANGO_DE_RESPALDO } from '../src/motor/ventana.js';
+import { HISTORIA_DIAS } from '../src/motor/tendencia.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -109,6 +110,16 @@ export const MARGEN = 0.9;
 // (de ella sale el plan de partida, y la fila de salud no la llevaba).
 export const FIJAS = ['heroes', 'conLinea', 'conRol', 'conDano', 'conSpeciality', 'conHabilidades', 'cruces', 'sinergias', 'winrateLinea', 'curvaLinea'];
 
+/** Días de la historia guardada que deberían seguir en la nueva (dentro de su ventana) y faltan. */
+export function diasPerdidos(nueva, guardada) {
+  const fechas = (d) => (Array.isArray(d?.historia) ? d.historia.map((e) => e?.fecha).filter(Boolean) : []);
+  const nuevas = new Set(fechas(nueva));
+  const ultima = [...nuevas, ...fechas(guardada)].sort().at(-1);
+  if (!ultima) return [];
+  const limite = new Date(Date.parse(`${ultima}T00:00:00Z`) - (HISTORIA_DIAS - 1) * 864e5).toISOString().slice(0, 10);
+  return fechas(guardada).filter((f) => !nuevas.has(f) && f >= limite);
+}
+
 /** Máximo de cada recuento fijo en las filas de historial/salud.jsonl (líneas rotas, fuera). */
 export function maximosDelHistorial(texto) {
   const maximos = {};
@@ -127,6 +138,11 @@ export function comparar(nueva, guardada, maximos = {}) {
   const a = medir(nueva);
   const b = medir(guardada);
   const peores = [];
+  // La historia de la fuerza (3.50.0) no se compara por recuento: se poda
+  // por fecha y una corrida tras días sin bot tiene menos días con razón.
+  // Lo que no puede pasar es que pierda un día que aún está en su ventana.
+  const perdidos = diasPerdidos(nueva, guardada);
+  if (perdidos.length) peores.push({ clave: 'historia', antes: perdidos.join(', '), ahora: 'perdidos' });
   for (const clave of Object.keys(b)) {
     const referencia = FIJAS.includes(clave) ? Math.max(b[clave], maximos?.[clave] ?? 0) : b[clave];
     if (referencia > 0 && a[clave] < referencia * MARGEN) {

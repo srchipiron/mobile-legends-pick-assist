@@ -924,7 +924,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 
 /* ---------- meta: la tier list que usa la app ---------- */
 .meta-linea { margin-top: 14px; }
-.meta-titulo {
+.meta-titulo, .meta-semana-titulo {
   margin: 0 0 4px; font-family: var(--font-display); font-size: 12px; font-weight: 600; letter-spacing: 0.05em;
   text-transform: uppercase; color: var(--muted);
 }
@@ -939,6 +939,16 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .meta-delta { font-family: var(--font-num); font-size: 11px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
 .meta-delta.sube { color: var(--c-comp); }
 .meta-delta.baja { color: var(--enemy); }
+/* Quién sube y quién baja esta semana (3.50.0): fichas que se parten en
+   varias filas a 320 px en vez de salirse. */
+.meta-semana { margin-top: 10px; }
+.meta-mov { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
+.meta-mov-item {
+  padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--glass);
+  font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.meta-mov-item.sube { color: var(--c-comp); }
+.meta-mov-item.baja { color: var(--enemy); }
 .meta-uso { font-family: var(--font-num); font-size: 11px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .meta-wrlinea { color: var(--text); }
 /* La tier de mlbb.gg: una letra, opinion, al lado del dato. */

@@ -5,7 +5,7 @@
  * en el diff: mismos números y `generatedAt` nuevo. Esto llegó a producción.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { comparar, medir, maximosDelHistorial, FIJAS } from '../../scripts/comparar-ingesta.mjs';
+import { comparar, medir, maximosDelHistorial, FIJAS, diasPerdidos } from '../../scripts/comparar-ingesta.mjs';
 
 test('una corrida de ingesta degradada no llega a los datos guardados', () => {
   // Esto llego a produccion: el bot de datos commiteo una corrida con los 133
@@ -141,6 +141,17 @@ test('una corrida que pierde la curva por duración no pasa el filtro (3.43.0)',
   const viejo = { ...base }; delete viejo.curvaLinea;
   eq(comparar(base, viejo).peores.length, 0, 'la primera corrida con curvas se rechaza contra un fichero que no las tenía');
   ok(comparar(base, base, maximosDelHistorial('{"curvaLinea":30}')).peores.some((p) => p.clave === 'curvaLinea' && p.antes === 30), 'las curvas no se comparan con el máximo del historial');
+});
+
+test('la historia de la fuerza: perder un día de su ventana se rechaza, podar uno viejo no (3.50.0)', () => {
+  const h = (...fechas) => ({ historia: fechas.map((fecha) => ({ fecha, glory: { Atlas: [0.5, 0.01] } })) });
+  const guardada = h('2026-09-29', '2026-10-01', '2026-10-08');
+  eq(diasPerdidos(h('2026-10-01', '2026-10-08', '2026-10-09'), guardada).length, 0, 'podar el 29 (fuera de los 10 días) cuenta como pérdida');
+  eq(diasPerdidos(h('2026-10-08', '2026-10-09'), guardada).join(), '2026-10-01', 'perder el 1 (dentro de la ventana) no se ve');
+  eq(diasPerdidos({}, guardada).length, 3, 'una corrida sin historia no pierde nada según el comparador');
+  eq(diasPerdidos(h('2026-10-09'), guardada).length, 2, 'una corrida que solo guarda hoy no pierde nada según el comparador');
+  ok(comparar(h('2026-10-09'), guardada).peores.some((p) => p.clave === 'historia'), 'comparar no rechaza la historia perdida');
+  eq(diasPerdidos(h('2026-10-09'), {}).length, 0, 'sin historia guardada (primera corrida) se rechaza');
 });
 
 await terminar('scripts/comparar');

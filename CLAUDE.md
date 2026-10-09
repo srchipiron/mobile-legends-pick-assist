@@ -1263,6 +1263,20 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   el código de salida de un proceso aparte). Al añadir una prueba al
   final de un fichero, va ANTES de `terminar`.
 
+- **Una prueba con el tiempo real dentro de su reloj simulado** (hasta
+  3.50.0, sin llegar a tumbar un despliegue): `directo-lector.test` da al
+  lector `ahora = Date.now() + desfase`, así que los segundos que tarda la
+  propia prueba cuentan como minutos de partida. El 9 de octubre de 2026,
+  en una máquina más lenta (la prueba tardó 100 s en vez de 63), midió 15,6
+  minutos donde exigía 15 ± 0,5 y dijo un aviso del minuto 13 antes de ver
+  la tabla del 12,5, con la 3.49.0 igual que con la nueva. Congelar el reloj
+  rompe la vigilancia (programa sus capturas con él). Hoy la duración se
+  exige entre lo que llevaba la prueba al poner la tabla y al leerla (sigue
+  cazando medir desde el draft o un minuto de más), y la segunda partida
+  lleva su propio `desde` y la tabla al 12,05. Una prueba con un reloj
+  simulado que suma el real tiene que acotar con el real, no con un margen
+  fijo.
+
 ## El modelo (2.0)
 
 `src/motor/modelo.js` y `src/motor/ranking.js`. La nota de un pick ES la
@@ -3658,6 +3672,35 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   60% (+4 ± 18): no se distingue. Los más «dejados» son Marcel (17) y Chip
   (15, por su maestría del 55%). `motor/revision.test` (siete pruebas,
   diez mutaciones) y `persistencia.e2e` (una).
+- **Quién sube y quién baja (3.50.0)**, como el «trending» de mlbb.io:
+  `src/motor/tendencia.js` (`movimientos`) por `movimientosDelMeta` en
+  draft.js, en la hoja «Meta» (`EstaSemana`). La INGESTA guarda
+  `historia` en `roam-meta.json`: una foto por día UTC del winrate y la
+  cuota de pick de 7 días de tu rango y su respaldo (`anotarHistoria`,
+  fusion.mjs), SOLO de los rangos descargados en esa corrida (una foto de
+  datos conservados diría «no se movió» sin saberlo), la última del día
+  manda, `HISTORIA_DIAS` 10 (+13 KB comprimidos; con 15 eran +20), winrate
+  a la décima de punto y cuota a cuatro decimales. `comparar-ingesta`
+  rechaza una corrida que pierda un día que aún está en su ventana
+  (`diasPerdidos`, contado desde el ÚLTIMO día; contado desde el primero,
+  una corrida que solo guardara hoy pasaba). La primera tanda se rellenó a
+  mano el 9 de octubre de 2026 con las corridas de git (`anotarHistoria`
+  sobre cada commit fresco y el serializador, byte a byte igual). La app
+  compara la ventana de hoy con la foto más cercana a 7 días (entre 5 y 9)
+  y nombra a un héroe si su cambio, MENOS la media de los cambios
+  ponderada por cuota de pick, pasa de `UMBRAL_MOVIMIENTO` (1 punto) y el
+  del otro rango del par va en el mismo sentido con `CONFIRMACION` (0,5).
+  Medido en la historia de git: con el parche asentado (6–17 de
+  septiembre) el cambio semanal es σ 0,25–0,3 puntos y casa entre Gloria y
+  Mítico a r ≈ 0,7 (meta, no muestra), y con estas reglas salían 0–1
+  héroes por semana; tras el reinicio Gloria se mueve 1–5 puntos, casa a
+  0,4–0,6 y sin centrar «subían» 50 a la vez. El 8 de octubre: 9 suben y
+  12 bajan (8 suben y 15 bajan con la foto exacta de 7 días). Es
+  descripción, no predicción: no se ha medido si lo que sube sigue
+  subiendo, y no puntúa. `motor/tendencia.test` (ocho pruebas, trece
+  mutaciones), `scripts/ingesta.test` y `comparar.test` (siete),
+  `ingesta-simulada` (la foto servida, y la de ayer conservada) y
+  `hojas.e2e` (las fichas son las del motor).
 - Las partidas metidas del historial del juego llevan `previa: true` y quedan
   FUERA de las dos ramas de la comparación (`esPrevia`). Sin eso irían todas a
   "por libre" -no tienen `recomendados`- y meter cien partidas viejas llenaría
