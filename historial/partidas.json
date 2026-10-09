@@ -1,6 +1,192 @@
 {
- "actualizado": "2026-10-09T20:09:28.699Z",
+ "actualizado": "2026-10-09T21:03:34.604Z",
  "partidas": [
+  {
+   "t": 1791579676124,
+   "pick": "Estes",
+   "recomendados": [
+    "Carmilla",
+    "Atlas",
+    "Baxia"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.577,
+   "origen": "lector",
+   "bans": [
+    "Marcel",
+    "Hirara",
+    "Eudora",
+    "Lukas",
+    "Sora",
+    "Masha",
+    "Yi Sun-shin"
+   ],
+   "draft": {
+    "enemigos": [
+     "Fredrinn",
+     "Barats",
+     "Zhask",
+     "Belerick",
+     "Ixia"
+    ],
+    "aliados": [
+     "Aulus",
+     "Miya",
+     "Badang",
+     "Gord"
+    ],
+    "linea": "roam",
+    "rival": "Belerick"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Hirara",
+     "Eudora",
+     "Lukas",
+     "Sora",
+     "Masha",
+     "Yi Sun-shin"
+    ],
+    "enemigos": [
+     "Fredrinn",
+     "Ixia"
+    ],
+    "aliados": [
+     "Gord",
+     "Aulus",
+     "Miya"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Gord",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Bruno",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Pharsa",
+      "parecido": 0.61
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Fredrinn",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Gord",
+      "parecido": 0.76
+     }
+    ],
+    "ms": [
+     4768,
+     3383,
+     3403,
+     3125,
+     2892,
+     3205,
+     3248,
+     3253,
+     2975,
+     4227,
+     3083,
+     2936,
+     3892,
+     2930,
+     3223,
+     2823,
+     3245,
+     2706,
+     2934,
+     3604
+    ],
+    "msCaptura": [
+     2998,
+     2012,
+     2116,
+     2230,
+     1966,
+     2074,
+     2156,
+     2195,
+     1966,
+     3024,
+     2163,
+     1947,
+     2796,
+     2133,
+     2277,
+     2044,
+     2239,
+     1863,
+     1883,
+     2425
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Barats",
+      "Zhask",
+      "Belerick",
+      "Barats",
+      "Zhask",
+      "Belerick",
+      "Barats",
+      "Zhask",
+      "Belerick"
+     ]
+    }
+   },
+   "duracion": 21.3,
+   "fases": [
+    0.582,
+    0.586,
+    0.576,
+    0.583,
+    0.537,
+    0.527
+   ]
+  },
   {
    "t": 1791576551256,
    "pick": "Estes",
@@ -11646,6 +11832,12 @@
   {
    "cuando": "2026-10-09T20:09:28.699Z",
    "partidas": 184,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-09T21:03:34.604Z",
+   "partidas": 185,
    "heroes": 11,
    "incidencia": 11
   }
