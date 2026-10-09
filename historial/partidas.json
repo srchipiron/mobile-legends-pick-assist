@@ -1,6 +1,232 @@
 {
- "actualizado": "2026-10-09T21:03:34.604Z",
+ "actualizado": "2026-10-09T21:19:20.937Z",
  "partidas": [
+  {
+   "t": 1791580731819,
+   "pick": "Estes",
+   "recomendados": [
+    "Floryn",
+    "Estes",
+    "Chip"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.411,
+   "origen": "lector",
+   "bans": [
+    "Eudora",
+    "Hirara",
+    "Saber",
+    "Marcel",
+    "Lukas",
+    "Khufra",
+    "Sora",
+    "Belerick",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Masha",
+     "Yi Sun-shin",
+     "Kagura",
+     "Rafaela",
+     "Aulus"
+    ],
+    "aliados": [
+     "Kadita",
+     "Badang",
+     "Miya",
+     "Alucard"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   },
+   "lector": {
+    "baneos": [
+     "Eudora",
+     "Hirara",
+     "Saber",
+     "Marcel",
+     "Lukas",
+     "Khufra",
+     "Sora",
+     "Belerick",
+     "Paquito",
+     "Fredrinn"
+    ],
+    "enemigos": [
+     "Masha",
+     "Yi Sun-shin",
+     "Kagura",
+     "Fredrinn",
+     "Beatrix"
+    ],
+    "aliados": [
+     "Miya",
+     "Alpha",
+     "Natalia"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Marcel",
+      "parecido": 0.45
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Atlas",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Atlas",
+      "parecido": 0.55
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Zetian",
+      "parecido": 0.63
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Bruno",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Atlas",
+      "parecido": 0.29
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Claude",
+      "parecido": 0.45
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Atlas",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Atlas",
+      "parecido": 0.63
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Granger",
+      "parecido": 0.59
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Beatrix",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Zetian",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Fredrinn",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Fredrinn",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Gord",
+      "parecido": 0.73
+     }
+    ],
+    "ms": [
+     2962,
+     3837,
+     3137,
+     3025,
+     3549,
+     4590,
+     3574,
+     3487,
+     3749,
+     4055,
+     3678,
+     3467,
+     3688,
+     3638,
+     6899,
+     3824,
+     3450,
+     3081,
+     4055,
+     2670
+    ],
+    "msCaptura": [
+     1978,
+     2832,
+     2133,
+     2096,
+     2226,
+     2825,
+     2359,
+     2092,
+     2255,
+     2445,
+     2264,
+     2337,
+     2610,
+     2383,
+     3452,
+     2568,
+     2596,
+     2082,
+     2985,
+     1763
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Kagura"
+     ]
+    }
+   },
+   "duracion": 10.8,
+   "fases": [
+    0.298,
+    0.391,
+    0.453,
+    0.467,
+    0.505,
+    0.526
+   ]
+  },
   {
    "t": 1791579676124,
    "pick": "Estes",
@@ -11838,6 +12064,12 @@
   {
    "cuando": "2026-10-09T21:03:34.604Z",
    "partidas": 185,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-09T21:19:20.937Z",
+   "partidas": 186,
    "heroes": 11,
    "incidencia": 11
   }
