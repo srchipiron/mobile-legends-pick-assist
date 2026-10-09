@@ -1,6 +1,240 @@
 {
- "actualizado": "2026-10-09T22:32:04.324Z",
+ "actualizado": "2026-10-09T22:48:21.174Z",
  "partidas": [
+  {
+   "t": 1791586013082,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Chip",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.579,
+   "origen": "lector",
+   "bans": [
+    "Paquito",
+    "Hirara",
+    "Marcel",
+    "Lukas",
+    "Yi Sun-shin",
+    "Barats",
+    "Aulus",
+    "Eudora",
+    "Masha",
+    "Gloo"
+   ],
+   "draft": {
+    "enemigos": [
+     "Alpha",
+     "Zetian",
+     "Chou",
+     "Hylos",
+     "Novaria"
+    ],
+    "aliados": [
+     "Vexana",
+     "Lesley",
+     "Sun",
+     "Karina"
+    ],
+    "linea": "roam",
+    "rival": "Hylos"
+   },
+   "lector": {
+    "baneos": [
+     "Paquito",
+     "Hirara",
+     "Marcel",
+     "Lukas",
+     "Yi Sun-shin",
+     "Barats",
+     "Aulus",
+     "Eudora",
+     "Masha",
+     "Gloo"
+    ],
+    "enemigos": [
+     "Alpha",
+     "Fredrinn",
+     "Zetian",
+     "Wanwan"
+    ],
+    "aliados": [
+     "Vexana",
+     "Lesley",
+     "Karina",
+     "Gord"
+    ],
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Gord",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Novaria",
+      "parecido": 0.52
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Saber",
+      "parecido": 0.42
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Gord",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Lapu-Lapu",
+      "parecido": 0.54
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Valir",
+      "parecido": 0.52
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Gord",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Gord",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Gord",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Beatrix",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Ixia",
+      "parecido": 0.72
+     }
+    ],
+    "ms": [
+     2950,
+     2616,
+     2938,
+     3245,
+     2746,
+     2965,
+     4766,
+     2986,
+     2927,
+     2952,
+     2909,
+     3222,
+     3007,
+     3721,
+     3082,
+     2867,
+     3965,
+     2628,
+     6868,
+     2888
+    ],
+    "msCaptura": [
+     2237,
+     1862,
+     2213,
+     2443,
+     2102,
+     2293,
+     3600,
+     2322,
+     2191,
+     2303,
+     2224,
+     2473,
+     2340,
+     2776,
+     2357,
+     2063,
+     3007,
+     1976,
+     2874,
+     1860
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Alpha",
+      "Chou",
+      "Hylos",
+      "Alpha",
+      "Chou",
+      "Hylos",
+      "Alpha",
+      "Chou",
+      "Hylos"
+     ]
+    }
+   },
+   "duracion": 10.7,
+   "fases": [
+    0.534,
+    0.562,
+    0.585,
+    0.604,
+    0.629,
+    0.609
+   ]
+  },
   {
    "t": 1791585098838,
    "pick": "Estes",
@@ -12858,6 +13092,12 @@
   {
    "cuando": "2026-10-09T22:32:04.324Z",
    "partidas": 190,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-09T22:48:21.174Z",
+   "partidas": 191,
    "heroes": 11,
    "incidencia": 11
   }
