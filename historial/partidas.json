@@ -1,6 +1,200 @@
 {
- "actualizado": "2026-10-10T20:35:12.659Z",
+ "actualizado": "2026-10-10T21:11:51.975Z",
  "partidas": [
+  {
+   "t": 1791666677011,
+   "pick": "Estes",
+   "recomendados": [
+    "Gloo",
+    "Floryn",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.51,
+   "origen": "lector",
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Aulus",
+    "Belerick",
+    "Kaja",
+    "Masha",
+    "Lukas",
+    "Gusion",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Yu Zhong",
+     "Minotaur",
+     "Zetian",
+     "Harley",
+     "Hanabi"
+    ],
+    "aliados": [
+     "Paquito",
+     "Lesley",
+     "Gord",
+     "Selena"
+    ],
+    "linea": "roam",
+    "rival": "Minotaur"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Marcel",
+     "Aulus",
+     "Belerick",
+     "Kaja",
+     "Masha",
+     "Lukas",
+     "Gusion",
+     "Eudora"
+    ],
+    "enemigos": [
+     "Yu Zhong",
+     "Zetian",
+     "Harley",
+     "Fredrinn"
+    ],
+    "aliados": [
+     "Paquito",
+     "Lesley",
+     "Selena"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "e2",
+      "candidato": "Rafaela",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Fredrinn",
+      "parecido": 0.88
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Zetian",
+      "parecido": 0.87
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Nolan",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Zetian",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Atlas",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Wanwan",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Joy",
+      "parecido": 0.75
+     }
+    ],
+    "ms": [
+     3313,
+     3414,
+     3808,
+     5980,
+     3836,
+     3570,
+     3960,
+     3965,
+     3721,
+     3560,
+     3239,
+     3063,
+     3101,
+     4417,
+     3791,
+     3353,
+     3152,
+     2737,
+     3087,
+     7023
+    ],
+    "msCaptura": [
+     2234,
+     2343,
+     2562,
+     4083,
+     2079,
+     2067,
+     2361,
+     2466,
+     2448,
+     2318,
+     2020,
+     2182,
+     2250,
+     3252,
+     2900,
+     2495,
+     2344,
+     1949,
+     2033,
+     2460
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Minotaur",
+      "Fredrinn",
+      "Minotaur",
+      "Fredrinn",
+      "Minotaur",
+      "Fredrinn"
+     ]
+    }
+   },
+   "duracion": 13.7,
+   "fases": [
+    0.515,
+    0.498,
+    0.479,
+    0.49,
+    0.519,
+    0.542
+   ]
+  },
   {
    "t": 1791663710652,
    "pick": "Estes",
@@ -13295,6 +13489,12 @@
   {
    "cuando": "2026-10-10T20:35:12.659Z",
    "partidas": 192,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-10T21:11:51.975Z",
+   "partidas": 193,
    "heroes": 11,
    "incidencia": 11
   }
