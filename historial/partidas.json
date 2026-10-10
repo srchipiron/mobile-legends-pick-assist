@@ -1,6 +1,197 @@
 {
- "actualizado": "2026-10-09T22:48:21.174Z",
+ "actualizado": "2026-10-10T20:35:12.659Z",
  "partidas": [
+  {
+   "t": 1791663710652,
+   "pick": "Estes",
+   "recomendados": [
+    "Diggie",
+    "Estes",
+    "Baxia"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.626,
+   "origen": "lector",
+   "bans": [
+    "Paquito",
+    "Marcel",
+    "Clint",
+    "Lukas",
+    "Hirara",
+    "Eudora",
+    "Masha",
+    "Aulus"
+   ],
+   "draft": {
+    "enemigos": [
+     "Khufra",
+     "Obsidia",
+     "Wanwan",
+     "Fredrinn",
+     "Vexana"
+    ],
+    "aliados": [
+     "Aamon",
+     "Ruby",
+     "Kagura",
+     "Ixia"
+    ],
+    "linea": "roam",
+    "rival": "Khufra"
+   },
+   "lector": {
+    "baneos": [
+     "Paquito",
+     "Marcel",
+     "Clint",
+     "Lukas",
+     "Hirara",
+     "Eudora",
+     "Masha",
+     "Aulus"
+    ],
+    "enemigos": [
+     "Khufra",
+     "Obsidia",
+     "Wanwan",
+     "Fredrinn"
+    ],
+    "aliados": [
+     "Ixia",
+     "Gord",
+     "Aamon",
+     "Kagura"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "e2",
+      "candidato": "Natalia",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Carmilla",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Selena",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Chang'e",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Zetian",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Wanwan",
+      "parecido": 0.64
+     }
+    ],
+    "ms": [
+     3587,
+     3452,
+     3506,
+     4267,
+     3052,
+     3038,
+     3019,
+     3058,
+     2958,
+     3079,
+     2666,
+     3037,
+     2980,
+     4536,
+     3185,
+     3063,
+     3308,
+     3011,
+     2840,
+     2792
+    ],
+    "msCaptura": [
+     2622,
+     2488,
+     2537,
+     3019,
+     2284,
+     2246,
+     2175,
+     2189,
+     2149,
+     2268,
+     1993,
+     2307,
+     2237,
+     3523,
+     2433,
+     2297,
+     2512,
+     2294,
+     2048,
+     2060
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Fredrinn",
+      "Fredrinn"
+     ],
+     "sinEncontrar": [
+      "Wanwan",
+      "Vexana",
+      "Wanwan",
+      "Vexana",
+      "Khufra",
+      "Vexana"
+     ]
+    }
+   },
+   "duracion": 21.8,
+   "fases": [
+    0.798,
+    0.623,
+    0.542,
+    0.503,
+    0.515,
+    0.521
+   ]
+  },
   {
    "t": 1791586013082,
    "pick": "Rafaela",
@@ -13098,6 +13289,12 @@
   {
    "cuando": "2026-10-09T22:48:21.174Z",
    "partidas": 191,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-10T20:35:12.659Z",
+   "partidas": 192,
    "heroes": 11,
    "incidencia": 11
   }
