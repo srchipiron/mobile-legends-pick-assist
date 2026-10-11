@@ -1,6 +1,174 @@
 {
- "actualizado": "2026-10-11T20:01:42.140Z",
+ "actualizado": "2026-10-11T20:20:05.061Z",
  "partidas": [
+  {
+   "t": 1791749989599,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Khufra",
+    "Gloo",
+    "Minotaur"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.552,
+   "bans": [
+    "Marcel",
+    "Eudora",
+    "Lukas",
+    "Lesley",
+    "Aulus",
+    "Kaja",
+    "Masha",
+    "Hirara"
+   ],
+   "draft": {
+    "enemigos": [
+     "Clint",
+     "Chang'e",
+     "Badang",
+     "Johnson",
+     "Joy"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Kadita",
+     "Selena",
+     "Zilong"
+    ],
+    "linea": "roam",
+    "rival": "Johnson"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Eudora",
+     "Lukas",
+     "Lesley",
+     "Aulus",
+     "Kaja",
+     "Masha",
+     "Hirara"
+    ],
+    "enemigos": [
+     "Clint",
+     "Chang'e",
+     "Badang",
+     "Joy"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Zilong",
+     "Selena"
+    ],
+    "dudas": [
+     {
+      "hueco": "t3",
+      "candidato": "Gord",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Gord",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Zetian",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Rafaela",
+      "parecido": 0.78
+     }
+    ],
+    "ms": [
+     4621,
+     4720,
+     4586,
+     4174,
+     4567,
+     4522,
+     4008,
+     5037,
+     4469,
+     4522,
+     4824,
+     4386,
+     4704,
+     4841,
+     4783,
+     4771,
+     4574,
+     4451,
+     4003,
+     3531
+    ],
+    "msCaptura": [
+     3522,
+     3886,
+     3439,
+     2964,
+     3551,
+     3305,
+     3126,
+     4112,
+     3278,
+     3423,
+     3773,
+     3337,
+     3738,
+     3746,
+     3596,
+     3661,
+     3567,
+     3380,
+     3055,
+     2590
+    ],
+    "formatos": [
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Johnson",
+      "Joy",
+      "Johnson",
+      "Joy",
+      "Johnson"
+     ]
+    }
+   },
+   "fases": [
+    0.602,
+    0.59,
+    0.551,
+    0.517,
+    0.469,
+    0.462
+   ]
+  },
   {
    "t": 1791748736968,
    "pick": "Estes",
@@ -14075,6 +14243,12 @@
   {
    "cuando": "2026-10-11T20:01:42.140Z",
    "partidas": 196,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-11T20:20:05.061Z",
+   "partidas": 197,
    "heroes": 11,
    "incidencia": 11
   }
