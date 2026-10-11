@@ -1,6 +1,169 @@
 {
- "actualizado": "2026-10-11T20:51:13.333Z",
+ "actualizado": "2026-10-11T21:14:46.313Z",
  "partidas": [
+  {
+   "t": 1791753034416,
+   "pick": "Estes",
+   "recomendados": [
+    "Baxia",
+    "Gloo",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.517,
+   "origen": "lector",
+   "bans": [
+    "Marcel",
+    "Hirara",
+    "Kagura",
+    "Sora",
+    "Lesley",
+    "Wanwan",
+    "Kaja",
+    "Aulus",
+    "Masha",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Bruno",
+     "Lukas",
+     "Carmilla",
+     "Nana",
+     "Esmeralda"
+    ],
+    "aliados": [
+     "Paquito",
+     "Selena",
+     "Gord",
+     "Hanabi"
+    ],
+    "linea": "roam",
+    "rival": "Carmilla"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Hirara",
+     "Kagura",
+     "Sora",
+     "Lesley",
+     "Wanwan",
+     "Kaja",
+     "Aulus",
+     "Masha",
+     "Eudora"
+    ],
+    "enemigos": [
+     "Bruno",
+     "Fredrinn",
+     "Lukas",
+     "Carmilla",
+     "Valir"
+    ],
+    "aliados": [
+     "Paquito",
+     "Clint",
+     "Wanwan"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "a2",
+      "candidato": "Claude",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Gord",
+      "parecido": 0.76
+     }
+    ],
+    "ms": [
+     4189,
+     3885,
+     4767,
+     4721,
+     3969,
+     4507,
+     4276,
+     4617,
+     2818,
+     4938,
+     4464,
+     4307,
+     4980,
+     4416,
+     4510,
+     4340,
+     4508,
+     4236,
+     4465,
+     4121
+    ],
+    "msCaptura": [
+     2872,
+     2657,
+     3415,
+     3478,
+     2793,
+     3317,
+     2945,
+     3573,
+     1941,
+     3744,
+     3376,
+     3179,
+     4058,
+     3567,
+     3674,
+     3252,
+     3599,
+     3219,
+     3536,
+     3106
+    ],
+    "formatos": [
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Esmeralda",
+      "Esmeralda"
+     ]
+    }
+   },
+   "duracion": 12,
+   "fases": [
+    0.614,
+    0.514,
+    0.473,
+    0.444,
+    0.469,
+    0.461
+   ]
+  },
   {
    "t": 1791751753659,
    "pick": "Khufra",
@@ -14454,6 +14617,12 @@
   {
    "cuando": "2026-10-11T20:51:13.333Z",
    "partidas": 198,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-11T21:14:46.313Z",
+   "partidas": 199,
    "heroes": 11,
    "incidencia": 11
   }
