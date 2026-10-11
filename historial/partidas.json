@@ -1,6 +1,205 @@
 {
- "actualizado": "2026-10-11T20:20:05.061Z",
+ "actualizado": "2026-10-11T20:51:13.333Z",
  "partidas": [
+  {
+   "t": 1791751753659,
+   "pick": "Khufra",
+   "recomendados": [
+    "Khufra",
+    "Floryn",
+    "Chip"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.668,
+   "origen": "lector",
+   "bans": [
+    "Kaja",
+    "Hirara",
+    "Marcel",
+    "Eudora",
+    "Paquito",
+    "Aulus",
+    "Belerick",
+    "Sun"
+   ],
+   "draft": {
+    "enemigos": [
+     "Layla",
+     "Argus",
+     "Kagura",
+     "Tigreal",
+     "Wanwan"
+    ],
+    "aliados": [
+     "Lukas",
+     "Lesley",
+     "Selena",
+     "Kadita"
+    ],
+    "linea": "roam",
+    "rival": "Tigreal"
+   },
+   "lector": {
+    "baneos": [
+     "Kaja",
+     "Hirara",
+     "Marcel",
+     "Eudora",
+     "Paquito",
+     "Aulus",
+     "Belerick",
+     "Sun"
+    ],
+    "enemigos": [
+     "Layla",
+     "Kagura",
+     "Wanwan"
+    ],
+    "aliados": [
+     "Lukas",
+     "Lesley"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Wanwan",
+      "parecido": 0.8
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Fredrinn",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Natalia",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Natan",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Angela",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Fredrinn",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Bruno",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Natalia",
+      "parecido": 0.74
+     }
+    ],
+    "ms": [
+     4590,
+     3931,
+     4138,
+     3841,
+     4033,
+     4250,
+     4849,
+     4485,
+     4521,
+     3998,
+     5288,
+     4777,
+     4543,
+     4299,
+     4752,
+     3616,
+     2892,
+     5459,
+     3435,
+     4051
+    ],
+    "msCaptura": [
+     3216,
+     2742,
+     2878,
+     2822,
+     2918,
+     3196,
+     3638,
+     3571,
+     3571,
+     3016,
+     4240,
+     3569,
+     3456,
+     3256,
+     3601,
+     2575,
+     2008,
+     4068,
+     2425,
+     2902
+    ],
+    "formatos": [
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Wanwan",
+      "Wanwan"
+     ],
+     "sinEncontrar": [
+      "Argus",
+      "Tigreal",
+      "Argus",
+      "Tigreal",
+      "Layla",
+      "Argus",
+      "Kagura",
+      "Tigreal"
+     ]
+    }
+   },
+   "duracion": 23.5,
+   "fases": [
+    0.74,
+    0.702,
+    0.668,
+    0.608,
+    0.579,
+    0.581
+   ]
+  },
   {
    "t": 1791749989599,
    "pick": "Rafaela",
@@ -14249,6 +14448,12 @@
   {
    "cuando": "2026-10-11T20:20:05.061Z",
    "partidas": 197,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-11T20:51:13.333Z",
+   "partidas": 198,
    "heroes": 11,
    "incidencia": 11
   }
