@@ -1,6 +1,156 @@
 {
- "actualizado": "2026-10-11T19:43:14.357Z",
+ "actualizado": "2026-10-11T20:01:42.140Z",
  "partidas": [
+  {
+   "t": 1791748736968,
+   "pick": "Estes",
+   "recomendados": [
+    "Diggie",
+    "Chip",
+    "Lolita"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.584,
+   "origen": "lector",
+   "bans": [
+    "Marcel",
+    "Hirara",
+    "Eudora",
+    "Paquito",
+    "Khufra",
+    "Sun",
+    "Lukas",
+    "Belerick"
+   ],
+   "draft": {
+    "enemigos": [
+     "Miya",
+     "Floryn",
+     "Jawhead",
+     "Nolan",
+     "Valir"
+    ],
+    "aliados": [
+     "Aulus",
+     "Beatrix",
+     "Selena",
+     "Cecilion"
+    ],
+    "linea": "roam",
+    "rival": "Floryn"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Hirara",
+     "Eudora",
+     "Masha",
+     "Paquito",
+     "Khufra",
+     "Sun",
+     "Lukas",
+     "Belerick"
+    ],
+    "enemigos": [
+     "Miya",
+     "Floryn",
+     "Jawhead",
+     "Nolan",
+     "Valir"
+    ],
+    "aliados": [
+     "Masha",
+     "Aulus",
+     "Beatrix",
+     "Selena",
+     "Cecilion"
+    ],
+    "tuyo": "Estes",
+    "ms": [
+     3913,
+     5568,
+     4210,
+     4539,
+     4026,
+     3855,
+     4348,
+     3667,
+     5078,
+     19101,
+     4714,
+     5086,
+     4276,
+     5066,
+     4432,
+     4233,
+     4357,
+     4498,
+     4789,
+     4881
+    ],
+    "msCaptura": [
+     2882,
+     3083,
+     2998,
+     3191,
+     2845,
+     2737,
+     2917,
+     2572,
+     3805,
+     18036,
+     3655,
+     3937,
+     3215,
+     4149,
+     3255,
+     3307,
+     3253,
+     3616,
+     3968,
+     3804
+    ],
+    "formatos": [
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Valir",
+      "Valir"
+     ]
+    }
+   },
+   "duracion": 12.2,
+   "fases": [
+    0.63,
+    0.568,
+    0.56,
+    0.547,
+    0.601,
+    0.569
+   ]
+  },
   {
    "t": 1791747610345,
    "pick": "Estes",
@@ -13919,6 +14069,12 @@
   {
    "cuando": "2026-10-11T19:43:14.357Z",
    "partidas": 195,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-11T20:01:42.140Z",
+   "partidas": 196,
    "heroes": 11,
    "incidencia": 11
   }
