@@ -1,6 +1,189 @@
 {
- "actualizado": "2026-10-10T23:09:55.822Z",
+ "actualizado": "2026-10-11T19:43:14.357Z",
  "partidas": [
+  {
+   "t": 1791747610345,
+   "pick": "Estes",
+   "recomendados": [
+    "Khufra",
+    "Gloo",
+    "Chip"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.57,
+   "origen": "lector",
+   "bans": [
+    "Belerick",
+    "Eudora",
+    "Masha",
+    "Kaja",
+    "Hirara",
+    "Marcel",
+    "Paquito",
+    "Lukas",
+    "Clint"
+   ],
+   "draft": {
+    "enemigos": [
+     "Layla",
+     "Gusion",
+     "Helcurt",
+     "Bruno",
+     "Zetian"
+    ],
+    "aliados": [
+     "Wanwan",
+     "Selena"
+    ],
+    "linea": "roam",
+    "rival": "Helcurt"
+   },
+   "lector": {
+    "baneos": [
+     "Belerick",
+     "Eudora",
+     "Masha",
+     "Kaja",
+     "Hirara",
+     "Marcel",
+     "Paquito",
+     "Lukas",
+     "Clint"
+    ],
+    "enemigos": [
+     "Layla",
+     "Gusion",
+     "Helcurt",
+     "Bruno",
+     "Zetian"
+    ],
+    "aliados": [
+     "Wanwan",
+     "Selena"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Novaria",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Valir",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Beatrix",
+      "parecido": 0.47
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Joy",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Zetian",
+      "parecido": 0.5
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Joy",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Bruno",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Beatrix",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Beatrix",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Angela",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Beatrix",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Joy",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Fredrinn",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Bruno",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Aurora",
+      "parecido": 0.65
+     }
+    ],
+    "ms": [
+     4225,
+     4330,
+     4046,
+     5814,
+     5503,
+     5816
+    ],
+    "msCaptura": [
+     3371,
+     3125,
+     2967,
+     4398,
+     4016,
+     4324
+    ],
+    "formatos": [
+     "crudo",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Bruno",
+      "Zetian",
+      "Bruno",
+      "Zetian"
+     ]
+    }
+   },
+   "duracion": 9.9,
+   "fases": [
+    0.709,
+    0.599,
+    0.537,
+    0.467,
+    0.445,
+    0.458
+   ]
+  },
   {
    "t": 1791669503535,
    "pick": "Estes",
@@ -13730,6 +13913,12 @@
   {
    "cuando": "2026-10-10T23:09:55.822Z",
    "partidas": 194,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-11T19:43:14.357Z",
+   "partidas": 195,
    "heroes": 11,
    "incidencia": 11
   }
