@@ -1,6 +1,196 @@
 {
- "actualizado": "2026-10-11T21:31:51.526Z",
+ "actualizado": "2026-10-11T22:20:51.922Z",
  "partidas": [
+  {
+   "t": 1791755256720,
+   "pick": "Floryn",
+   "recomendados": [
+    "Floryn",
+    "Estes",
+    "Minotaur"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.625,
+   "origen": "lector",
+   "bans": [
+    "Lukas",
+    "Hirara",
+    "Marcel",
+    "Belerick",
+    "Gloo",
+    "Paquito",
+    "Masha",
+    "Obsidia",
+    "Kaja"
+   ],
+   "draft": {
+    "enemigos": [
+     "Kagura",
+     "Yi Sun-shin",
+     "Wanwan",
+     "Balmond",
+     "Rafaela"
+    ],
+    "aliados": [
+     "Aulus",
+     "Eudora",
+     "Guinevere",
+     "Clint"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   },
+   "lector": {
+    "baneos": [
+     "Lukas",
+     "Hirara",
+     "Marcel",
+     "Belerick",
+     "Gloo",
+     "Paquito",
+     "Masha",
+     "Obsidia",
+     "Kaja"
+    ],
+    "enemigos": [
+     "Kagura",
+     "Yi Sun-shin",
+     "Wanwan",
+     "Zetian"
+    ],
+    "aliados": [
+     "Aulus",
+     "Eudora",
+     "Guinevere",
+     "Clint"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Natalia",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Zetian",
+      "parecido": 0.81
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Bruno",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Lancelot",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Barats",
+      "parecido": 0.52
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Claude",
+      "parecido": 0.74
+     }
+    ],
+    "ms": [
+     4597,
+     4629,
+     4295,
+     4344,
+     4372,
+     4398,
+     4700,
+     4483,
+     4718,
+     4813,
+     4193,
+     4168,
+     4118,
+     7155,
+     4004,
+     3990,
+     7990,
+     5511,
+     9146,
+     5548
+    ],
+    "msCaptura": [
+     3541,
+     3468,
+     3347,
+     3142,
+     3443,
+     3221,
+     3654,
+     3425,
+     3798,
+     3650,
+     3253,
+     3211,
+     3023,
+     3426,
+     3067,
+     2899,
+     3619,
+     4202,
+     4160,
+     4369
+    ],
+    "formatos": [
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Yi Sun-shin",
+      "Yi Sun-shin"
+     ]
+    }
+   },
+   "duracion": 12.2,
+   "fases": [
+    0.76,
+    0.679,
+    0.613,
+    0.507,
+    0.457,
+    0.42
+   ]
+  },
   {
    "t": 1791754298101,
    "pick": "Estes",
@@ -14828,6 +15018,12 @@
   {
    "cuando": "2026-10-11T21:31:51.526Z",
    "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-11T22:20:51.922Z",
+   "partidas": 201,
    "heroes": 11,
    "incidencia": 11
   }
