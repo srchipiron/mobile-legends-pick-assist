@@ -1,6 +1,169 @@
 {
- "actualizado": "2026-10-12T10:50:45.813Z",
+ "actualizado": "2026-10-12T11:18:24.057Z",
  "partidas": [
+  {
+   "t": 1791803683503,
+   "pick": "Estes",
+   "recomendados": [
+    "Diggie",
+    "Estes",
+    "Saber"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.427,
+   "origen": "lector",
+   "bans": [
+    "Marcel",
+    "Hirara",
+    "Lukas",
+    "Gloo",
+    "Belerick",
+    "Selena",
+    "Khufra",
+    "Paquito",
+    "Masha"
+   ],
+   "draft": {
+    "enemigos": [
+     "Aulus",
+     "Eudora",
+     "Carmilla",
+     "Barats",
+     "Lesley"
+    ],
+    "aliados": [
+     "Ixia",
+     "Vexana",
+     "Edith",
+     "Roger"
+    ],
+    "linea": "roam",
+    "rival": "Carmilla"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Hirara",
+     "Lukas",
+     "Gloo",
+     "Belerick",
+     "Selena",
+     "Khufra",
+     "Paquito",
+     "Masha"
+    ],
+    "enemigos": [
+     "Wanwan",
+     "Eudora",
+     "Yi Sun-shin",
+     "Carmilla",
+     "Lesley"
+    ],
+    "aliados": [
+     "Ixia",
+     "Vexana",
+     "Edith",
+     "Roger"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.81
+     }
+    ],
+    "ms": [
+     3277,
+     3475,
+     2915,
+     2701,
+     2651,
+     2923,
+     2772,
+     4441,
+     3100,
+     3024,
+     2855,
+     3163,
+     2789,
+     2467,
+     2264,
+     2745,
+     2451,
+     4412,
+     2441,
+     2834
+    ],
+    "msCaptura": [
+     2280,
+     2351,
+     2030,
+     1807,
+     1769,
+     1968,
+     1926,
+     3294,
+     2240,
+     2065,
+     1962,
+     2244,
+     1895,
+     1736,
+     1592,
+     1984,
+     1660,
+     3540,
+     1737,
+     2075
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Aulus",
+      "Aulus",
+      "Aulus"
+     ],
+     "sinEncontrar": [
+      "Barats",
+      "Lesley",
+      "Barats",
+      "Barats"
+     ]
+    }
+   },
+   "duracion": 19.7,
+   "fases": [
+    0.472,
+    0.423,
+    0.429,
+    0.392,
+    0.399,
+    0.402
+   ]
+  },
   {
    "t": 1791802187222,
    "pick": "Diggie",
@@ -15226,6 +15389,12 @@
   {
    "cuando": "2026-10-12T10:50:45.813Z",
    "partidas": 202,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-12T11:18:24.057Z",
+   "partidas": 203,
    "heroes": 11,
    "incidencia": 11
   }
