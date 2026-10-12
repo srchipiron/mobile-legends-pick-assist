@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, recorteValido, faltoAlguien, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -279,6 +279,20 @@ test('la incidencia de los picks dice lo leído hueco a hueco y lo que faltó, c
   // Uno inválido no se sube; con uno solo, el comentario lo dice.
   const uno = cuerpoDePicks({ recortes: [RECORTE, { ...RECORTE, picks: 'x x' }], verdad: {}, leidos: {}, heroes: HEROES });
   ok(uno.cuerpo.includes('lectura-123') && uno.comentario.includes('Solo había una'), 'cuenta un recorte inválido');
+});
+
+test('«Voz»: callarVoz pide /voz con sí o no y nunca lanza; el aviso de vigilancia lleva el mismo callar (3.53.0)', async () => {
+  const pedidas = [];
+  const pedir = async (url, op) => { pedidas.push([url, JSON.parse(op.body)]); return { ok: true, json: async () => ({ callada: true }) }; };
+  eq((await callarVoz({ callar: true, pedir }))?.callada, true);
+  eq(pedidas[0][0].endsWith('/voz'), true); eq(pedidas[0][1].callar, true);
+  eq(await callarVoz({ callar: 'sí', pedir }), null, 'pide con un callar que no es sí o no');
+  eq(pedidas.length, 1);
+  eq(await callarVoz({ callar: false, pedir: async () => { throw new Error('sin lector'); } }), null, 'sin lector lanza');
+  await avisarVigilancia({ desde: 123, callar: true, pedir: async (url, op) => { pedidas.push([url, JSON.parse(op.body)]); return { ok: true, json: async () => ({ fotogramas: [] }) }; } });
+  eq(pedidas[1][1].callar, true, 'el aviso de vigilancia no lleva callar');
+  await avisarVigilancia({ desde: 123, pedir: async (url, op) => { pedidas.push([url, JSON.parse(op.body)]); return { ok: true, json: async () => ({ fotogramas: [] }) }; } });
+  ok(!('callar' in pedidas[2][1]), 'sin saber de la voz, el aviso la cambia');
 });
 
 await terminar('app/lector');

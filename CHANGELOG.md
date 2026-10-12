@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.53.0
+
+- Botón «Voz» para callar los consejos en directo cuando no quieras que
+  hable. Sale debajo de «Leer del juego» con «Leer solo» encendido: en la
+  fase de baneos, en la de picks cuando el draft ya está completo (que es
+  cuando habla) y siempre en Ajustes. Callada, el lector no dice nada más
+  hasta que la vuelvas a activar, también en las partidas siguientes; la
+  frase que esté sonando en ese momento sí acaba. Se recuerda al cerrar la
+  app y, si el lector se reinicia, se entera solo.
+
 ## 3.52.0
 
 - Cuando el lector no reconoce a algún héroe en los picks, la app sube a la

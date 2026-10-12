@@ -9,7 +9,7 @@ import { tPorDefecto } from './tPorDefecto.js';
  * mientras el draft esté a medias; debajo, qué pasó con la última lectura.
  * Y si la voz de los consejos en directo no suena (3.44.0), por qué.
  */
-export function BotonLector({ estado = 'libre', aviso = null, ultimo = null, voz = null, auto = false, onAuto = null, onLeer, t = tPorDefecto }) {
+export function BotonLector({ estado = 'libre', aviso = null, ultimo = null, voz = null, auto = false, onAuto = null, vozCallada = false, onVoz = null, onLeer, t = tPorDefecto }) {
   const leyendo = estado === 'leyendo';
   const estadoAuto = !auto ? null : !ultimo ? t('lector.autoBuscando') : ultimo.ok ? t('lector.autoLeido', { n: ultimo.nuevos }) : t(`lector.auto.${ultimo.tipo === 'sinPuente' ? 'sinPuente' : ultimo.tipo === 'tablet' || ultimo.tipo === 'emparejar' || ultimo.tipo === 'captura' ? 'tablet' : 'error'}`);
   return (
@@ -22,10 +22,21 @@ export function BotonLector({ estado = 'libre', aviso = null, ultimo = null, voz
           {t(auto ? 'lector.autoSi' : 'lector.autoNo')}
         </button>
       )}
+      {/* Callar los consejos en directo (3.53.0): solo leyendo solo, que es cuando el lector habla. */}
+      {auto && onVoz && <BotonVoz callada={vozCallada} onVoz={onVoz} t={t} />}
       {estadoAuto && !aviso && <p className="lector-estado">{estadoAuto}</p>}
       {aviso && <p className="lector-aviso" role="alert">{t(`lector.${aviso}`)}</p>}
       {/* La voz de los consejos en directo (3.44.0): sin Termux:API no suena, y aquí se dice cómo arreglarlo. */}
       {auto && (voz === 'falta' || voz === 'otro') && <p className="lector-estado lector-voz">{t(`lector.voz.${voz}`)}</p>}
     </>
+  );
+}
+
+/** «Voz: sí / callada» (3.53.0): calla los consejos en directo del lector; lo que ya suena acaba su frase. */
+export function BotonVoz({ callada = false, onVoz, t = tPorDefecto, style }) {
+  return (
+    <button className="reset lector-callar" style={style} aria-pressed={callada} onClick={() => { tic(); onVoz(!callada); }}>
+      {t(callada ? 'lector.vozCallada' : 'lector.vozSi')}
+    </button>
   );
 }

@@ -387,11 +387,14 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   const hora = (t) => new Date(t).toISOString().slice(11, 19);
   const pararVigilancia = () => { if (relojFinal) clearInterval(relojFinal); relojFinal = null; if (final) final.activa = false; };
   const estadoFinal = () => (final
-    ? { desde: final.desde, activa: final.activa, resultado: final.resultado, resultadoId: final.resultadoId, resultadoEn: final.resultadoEn, fotogramas: final.fotogramas, inicio: final.inicio, inicioEstimado: final.inicioEstimado, duracion: final.duracion, voz: final.voz, avisos: final.guion.length, dichos: final.dichosVoz, saltados: final.saltados }
-    : { desde: null, activa: false, resultado: null, resultadoId: null, resultadoEn: null, fotogramas: [], inicio: null, inicioEstimado: false, duracion: null, voz: null, avisos: 0, dichos: 0, saltados: 0 });
+    ? { desde: final.desde, activa: final.activa, resultado: final.resultado, resultadoId: final.resultadoId, resultadoEn: final.resultadoEn, fotogramas: final.fotogramas, inicio: final.inicio, inicioEstimado: final.inicioEstimado, duracion: final.duracion, voz: final.voz, callada, avisos: final.guion.length, dichos: final.dichosVoz, saltados: final.saltados }
+    : { desde: null, activa: false, resultado: null, resultadoId: null, resultadoEn: null, fotogramas: [], inicio: null, inicioEstimado: false, duracion: null, voz: null, callada, avisos: 0, dichos: 0, saltados: 0 });
 
   // ── La voz (3.44.0): un aviso detrás de otro, nunca dos a la vez. ──────
   let colaVoz = Promise.resolve();
+  // Voz callada desde la app (3.53.0, botón «Voz»): no se encola nada más y
+  // lo que estaba en cola no se dice. Lo que ya está sonando acaba su frase.
+  let callada = false;
   // Topes (revisión de seguridad de 3.44.0): sin ellos, repetir `/vigilar`
   // (cualquier programa del móvil puede poner el `Origin` de la app) dejaba
   // cientos de avisos en la cola y el móvil hablando horas. Por draft, como
@@ -404,10 +407,11 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   const decir = (f, texto) => {
     const t = ahora();
     while (dichosRecientes.length && t - dichosRecientes[0] > VENTANA_VOZ_MS) dichosRecientes.shift();
-    if (f !== final || (f.hablados ?? 0) >= MAX_AVISOS + 1 || dichosRecientes.length >= VOZ_POR_VENTANA) return false;
+    if (callada || f !== final || (f.hablados ?? 0) >= MAX_AVISOS + 1 || dichosRecientes.length >= VOZ_POR_VENTANA) return false;
     f.hablados = (f.hablados ?? 0) + 1;
     dichosRecientes.push(t);
-    colaVoz = colaVoz.then(() => (f === final ? hablar(texto, f.idioma) : null)).then((r) => {
+    colaVoz = colaVoz.then(() => (f === final && !callada ? hablar(texto, f.idioma) : null)).then((r) => {
+      if (r === null && callada) return;
       const antes = f.voz;
       f.voz = r ?? 'ok';
       if (r === 'falta' && antes !== 'falta') registrar('Para oír los consejos instala Termux:API (F-Droid) y ejecuta: pkg install termux-api');
@@ -429,7 +433,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       if (f.dichos.has(i) || a.min > m) return;
       f.dichos.add(i);
       const tope = i === 0 && a.min < 1 ? RETRASO_DEL_INICIO_MIN : RETRASO_MAXIMO_MIN;
-      const porque = m - a.min > tope ? `atrasado ${(m - a.min).toFixed(1)} min` : !decir(f, a.texto) ? 'tope de voz' : null;
+      const porque = m - a.min > tope ? `atrasado ${(m - a.min).toFixed(1)} min` : !decir(f, a.texto) ? (callada ? 'voz callada' : 'tope de voz') : null;
       if (porque) { f.saltados += 1; registrar(`Minuto ${m.toFixed(1)} de partida, sin decir (${porque}): «${a.texto}»`); return; }
       f.dichosVoz += 1;
       registrar(`Minuto ${m.toFixed(1)} de partida: «${a.texto}»`);
@@ -540,7 +544,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
         registrar(`Partida de unos ${final.duracion} minutos${final.inicioEstimado ? ' (inicio estimado: no se apunta ni se dice el cierre)' : ''}.`);
         // Con el inicio estimado el tramo puede ser otro: el cierre lo afirmaría como hecho.
         const cierre = final.inicioEstimado ? null : final.cierres[tramoDeMinutos(final.duracion)];
-        if (cierre && !decir(final, cierre)) registrar('El cierre no se dice: tope de voz.');
+        if (cierre && !decir(final, cierre)) registrar(`El cierre no se dice: ${callada ? 'voz callada' : 'tope de voz'}.`);
       }
       if (leido.resultado && !final.resultado) Object.assign(final, { resultado: leido.resultado, resultadoId: id, resultadoEn: t });
       podar();
@@ -570,6 +574,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   });
   /** Empieza (o sigue, si es el mismo draft) a vigilar el final del draft completado en `desde`. */
   const vigilar = (desde, cuerpo = {}) => {
+    // La app dice en cada aviso si la voz va callada: así sobrevive a un reinicio del lector.
+    if (typeof cuerpo?.callar === 'boolean') callada = cuerpo.callar;
     const nuevo = guionDe(cuerpo);
     if (final?.desde === desde) {
       // El mismo draft con otro guion (fijaste otro pick): el nuevo, sin repetir lo ya pasado.
@@ -660,6 +666,16 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       if (!Number.isFinite(desde) || desde > t + 60000 || desde < t - 24 * 3600000) { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'desde' })); return; }
       vigilar(desde, cuerpo);
       res.writeHead(200, cabeceras).end(JSON.stringify(estadoFinal()));
+      return;
+    }
+    if (req.method === 'POST' && ruta === '/voz') {
+      // Callar o volver a oír los consejos en directo (3.53.0). Solo a la app.
+      if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
+      const cuerpo = await leerCuerpo(req);
+      if (typeof cuerpo?.callar !== 'boolean') { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'callar' })); return; }
+      if (callada !== cuerpo.callar) registrar(cuerpo.callar ? 'Voz callada desde la app: no digo nada más hasta que la vuelvas a activar.' : 'Voz activada desde la app.');
+      callada = cuerpo.callar;
+      res.writeHead(200, cabeceras).end(JSON.stringify({ callada }));
       return;
     }
     if (req.method === 'GET' && ruta === '/final') {

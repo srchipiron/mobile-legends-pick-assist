@@ -21,7 +21,7 @@ import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
 import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
@@ -38,7 +38,7 @@ import { Meta } from './componentes/Meta.jsx';
  * las acciones.
  */
 export default function App() {
-  const { t, linea, setLinea, rango, setRango, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto } = useAjustes();
+  const { t, linea, setLinea, rango, setRango, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto, vozCallada, setVozCallada } = useAjustes();
   const carga = useDatos(rango);
   const { datos, meta, metaListo, pro, error, generado, edadHoras, sinWinrates } = carga;
   const draft = useDraft();
@@ -146,6 +146,11 @@ export default function App() {
   // (draft y huella del guion), cuánto duró la partida según él y si su voz
   // funciona (sin Termux:API no suena y se dice debajo del botón).
   const guionEnviado = useRef(null);
+  // La voz callada (3.53.0): el tic de la vigilancia la lee por referencia (no reinicia el efecto).
+  const vozCalladaActual = useRef(vozCallada);
+  vozCalladaActual.current = vozCallada;
+  /** «Voz: sí / callada»: se guarda y se le dice al lector en el acto; si no contesta, se lo dice el siguiente aviso. */
+  const cambiarVoz = (callar) => { setVozCallada(callar); vozCalladaActual.current = callar; callarVoz({ callar }); };
   const duracionFinal = useRef({ desde: null, duracion: null });
   const [vozLector, setVozLector] = useState(null);
   const lectorConVoz = useMemo(() => ({ ...lector, voz: vozLector }), [lector, vozLector]);
@@ -301,9 +306,10 @@ export default function App() {
         // tenga): tras recargar, el primer aviso iba con el guion VACÍO y el
         // lector daba por pasados los avisos del minuto en que llegaba el bueno.
         const d = directoActual.current;
-        const huella = `${yo}|${d.listo ? d.huella : 'sin datos'}`;
-        if (f.desde !== yo || guionEnviado.current !== huella) {
-          const r = await avisarVigilancia({ desde: yo, directo: d.listo ? d : null });
+        const callar = vozCalladaActual.current;
+        const huella = `${yo}|${d.listo ? d.huella : 'sin datos'}|${callar}`;
+        if (f.desde !== yo || guionEnviado.current !== huella || f.callada !== callar) {
+          const r = await avisarVigilancia({ desde: yo, directo: d.listo ? d : null, callar });
           if (r) { f = r; guionEnviado.current = huella; }
         }
         if (!sigue()) return;
@@ -491,7 +497,7 @@ export default function App() {
           onBanear={(h) => draft.anadir('baneos', h)}
           onQuitar={(h) => draft.quitar('baneos', h)}
           onAPicks={() => draft.setFase('picks')}
-          lector={lectorConVoz} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
+          lector={lectorConVoz} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} vozCallada={vozCallada} onVoz={cambiarVoz}
           pie={pie}
         />
         {/* El aviso y el selector en el MISMO sitio que en picks (segundo y
@@ -512,7 +518,7 @@ export default function App() {
         meta={meta} datos={datos} metaListo={metaListo} sinWinrates={sinWinrates} edadHoras={edadHoras} pro={pro}
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
         onResultado={(gane) => guardarPartida(draft.miPick ?? rec.eleccion?.heroe.name, gane)}
-        lector={lectorConVoz} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
+        lector={lectorConVoz} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} vozCallada={vozCallada} onVoz={cambiarVoz}
         pie={pie}
       />
       {deshacer}

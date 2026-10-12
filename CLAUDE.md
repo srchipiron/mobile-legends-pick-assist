@@ -2064,6 +2064,28 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   un aprendizaje que fallaba (un hilo sin memoria) contestaba 500 con la
   cabecera ya enviada y TIRABA EL LECTOR entero; hoy se espera el resultado
   antes (prueba: el aprendizaje que lanza contesta 500 y `/estado` sigue).
+- **Callar la voz (3.53.0)**, pedido por Javi («un botón para callar al
+  tts cuando no quiera que hable»): `BotonVoz` (BotonLector.jsx, «Voz: sí /
+  callada», clase `lector-callar`) guarda `vozCallada` en
+  `roam-picker:voz-callada` (clave NUEVA, sin ella habla) y llama a
+  `callarVoz` (`POST /voz {callar}`, solo con el origen de la app; 400 si
+  no es sí o no). En el lector, `callada` es GLOBAL (vale para las partidas
+  siguientes hasta reactivarla): `decir` no encola nada y lo ya encolado no
+  se dice (comprobado al sonar, como el draft que ya no es el vigilado); la
+  frase que suena acaba (cortarla pediría matar el proceso de
+  `termux-tts-speak`, y voz.mjs tiene la forma fijada por la prueba de
+  seguridad). Lo callado cuenta en `saltados` con «voz callada» en el
+  registro. Cada `/vigilar` lleva `callar` (huella y `f.callada` distinta
+  del ajuste: se vuelve a avisar), así que un lector reiniciado se entera
+  solo. En la fila de picks sale SOLO con el draft completo (`completoDesde`):
+  antes es cuando no habla y pasaría la fila a dos líneas, bajando la nº1;
+  en baneos y en Ajustes, siempre con «Leer solo». Pruebas:
+  `directo-lector.test` (cola callada, otro draft callado, reactivar, el
+  aviso con `callar` de un lector recién arrancado, 403/400),
+  `app/lector.test` y `lector.e2e` (toque, se guarda, recarga, lector que
+  no se enteró, otro toque); seis mutaciones. Y un aviso al probar: no
+  reutilizar `lector-auto` para otro botón, la prueba de «Leer solo» lo
+  busca por esa clase.
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

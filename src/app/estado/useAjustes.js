@@ -17,6 +17,8 @@ export function useAjustes() {
   // El lector leyendo solo (3.28.0): apagado hasta que se enciende una vez. Sin
   // lector, encendido solo costaría una petición fallida cada pocos segundos.
   const [lectorAuto, setLectorAuto] = useState(() => leer(CLAVES.lectorAuto, false) === true);
+  // La voz de los consejos en directo, callada (3.53.0). Clave nueva: sin ella, habla.
+  const [vozCallada, setVozCallada] = useState(() => leer(CLAVES.vozCallada, false) === true);
   const t = useMemo(() => crearT(idioma), [idioma]);
 
   useEffect(() => { if (rango) guardar(CLAVES.rango, rango); }, [rango]);
@@ -25,6 +27,7 @@ export function useAjustes() {
   useEffect(() => { document.documentElement.lang = idioma; }, [idioma]);
   useEffect(() => { activarTacto(tacto); guardar(CLAVES.tacto, tacto); }, [tacto]);
   useEffect(() => { guardar(CLAVES.lectorAuto, lectorAuto); }, [lectorAuto]);
+  useEffect(() => { guardar(CLAVES.vozCallada, vozCallada); }, [vozCallada]);
 
-  return { rango, setRango, linea, setLinea, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto, t };
+  return { rango, setRango, linea, setLinea, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto, vozCallada, setVozCallada, t };
 }

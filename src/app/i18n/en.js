@@ -456,6 +456,8 @@ export default {
   'lector.yaEstaba': 'What it read was already in the draft.',
   'lector.autoSi': 'Read by itself: yes',
   'lector.autoNo': 'Read by itself: no',
+  'lector.vozSi': 'Voice: on',
+  'lector.vozCallada': 'Voice: muted',
   'lector.autoBuscando': 'Reading by itself: checking the tablet every few seconds.',
   'lector.autoLeido': 'Reading by itself: last read fine ({n|1 new name|{n} new names}).',
   'lector.auto.sinPuente': "Reading by itself: can't find the reader. Open Termux and type: lector.",

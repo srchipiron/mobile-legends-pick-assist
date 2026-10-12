@@ -23,6 +23,7 @@ export const CLAVES = {
   tacto: 'roam-picker:tacto',
   // El lector de la tablet leyendo solo (3.28.0): false salvo que lo enciendas.
   lectorAuto: 'roam-picker:lector-auto',
+  vozCallada: 'roam-picker:voz-callada',
 };
 
 /** Lee un valor guardado; con cualquier fallo (JSON roto, sin almacén) devuelve `porDefecto`. */

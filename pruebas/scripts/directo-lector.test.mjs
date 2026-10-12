@@ -425,4 +425,58 @@ test('SEGURIDAD: lo que quedaba en la cola de voz de un draft que ya no es el vi
   } finally { soltar?.(); servidor.close(); }
 });
 
+test('el botón «Voz» calla al lector: lo que queda en cola no se dice, lo que toca después tampoco, y se vuelve a oír al activarla (3.53.0)', async () => {
+  const dichos = [];
+  let soltar = null;
+  const hablar = (texto) => new Promise((r) => { dichos.push(texto); soltar = () => r(null); });
+  const registro = [];
+  const pantallaChica = escribirPng(ampliada(pantallas.find((p) => p.f === 'fuera-0.png').img, 1));
+  const servidor = crearServidor({ capturar: () => pantallaChica, hablar, vigilancia: { ...VIGILANCIA, intervaloMs: 15, intervaloInicioMs: 15 }, enHilos: false, registrar: (l) => registro.push(l) });
+  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${servidor.address().port}`;
+  const cab = { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' };
+  const hasta = async (cond, ms = 8000) => { const t0 = Date.now(); while (!cond() && Date.now() - t0 < ms) await new Promise((r) => setTimeout(r, 15)); return cond(); };
+  const voz = (cuerpo, cabeceras = cab) => fetch(`${base}/voz`, { method: 'POST', headers: cabeceras, body: JSON.stringify(cuerpo) });
+  const final = async () => (await fetch(`${base}/final`, { headers: cab })).json();
+  try {
+    // Solo la app, y con la forma justa.
+    eq((await voz({ callar: true }, { 'Content-Type': 'application/json' })).status, 403, 'sin el origen de la app se calla');
+    eq((await voz({ callar: 'sí' })).status, 400, 'acepta un callar que no es sí o no');
+    eq((await final()).callada, false, 'una petición mala cambia la voz');
+    await fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify({ desde: Date.now() - 9 * 60000, guion: [7.5, 7.6, 7.7].map((min, i) => ({ min, texto: `aviso ${i}` })) }) });
+    ok(await hasta(() => dichos.length === 1), 'no empieza a decir el primer aviso');
+    // Con el primero sonando y dos en cola, se calla: el que suena acaba, los de la cola no se dicen.
+    eq((await (await voz({ callar: true })).json()).callada, true);
+    soltar();
+    await new Promise((r) => setTimeout(r, 300));
+    soltar?.();
+    await new Promise((r) => setTimeout(r, 300));
+    eq(dichos.join(), 'aviso 0', `callada, sigue diciendo lo que había en cola: ${dichos}`);
+    eq((await final()).callada, true, '/final no dice que la voz va callada');
+    // Otro draft con su guion, sin decir nada de la voz: sigue callada (el lector no la reactiva solo).
+    await fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify({ desde: Date.now() - 9 * 60000 + 1, guion: [{ min: 7.5, texto: 'otro' }] }) });
+    ok(await hasta(() => registro.some((l) => l.includes('voz callada') && l.includes('otro')), 2000), 'el aviso callado no deja su línea en el registro');
+    eq(dichos.join(), 'aviso 0', 'con la voz callada dice el aviso de otro draft');
+    // Se activa, y el siguiente draft se oye.
+    await voz({ callar: false });
+    await fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify({ desde: Date.now() - 9 * 60000 + 2, guion: [{ min: 7.5, texto: 'vuelve' }] }) });
+    ok(await hasta(() => dichos.includes('vuelve')), `activada, no vuelve a hablar: ${dichos}`);
+  } finally { soltar?.(); servidor.close(); }
+});
+
+test('la app manda «callar» con cada aviso de vigilancia: un lector recién arrancado empieza callado si la voz lo está (3.53.0)', async () => {
+  const dichos = [];
+  const pantallaChica = escribirPng(ampliada(pantallas.find((p) => p.f === 'fuera-0.png').img, 1));
+  const servidor = crearServidor({ capturar: () => pantallaChica, hablar: async (texto) => { dichos.push(texto); return null; }, vigilancia: { ...VIGILANCIA, intervaloMs: 15, intervaloInicioMs: 15 }, enHilos: false });
+  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${servidor.address().port}`;
+  const cab = { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' };
+  try {
+    const r = await (await fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify({ desde: Date.now() - 9 * 60000, callar: true, guion: [{ min: 7.5, texto: 'callado' }] }) })).json();
+    eq(r.callada, true, 'el aviso con callar no calla la voz');
+    await new Promise((res) => setTimeout(res, 400));
+    eq(dichos.length, 0, `habla con la voz callada: ${dichos}`);
+  } finally { servidor.close(); }
+});
+
 await terminar('scripts/directo-lector');

@@ -298,6 +298,44 @@ await prueba('la partida empieza con el draft a medias (3.46.0): dos lecturas en
   } finally { await contexto.close(); }
 });
 
+await prueba('«Voz»: con el draft completo, un toque calla al lector, se recuerda al recargar y otro toque la devuelve; antes, en la fila no está (3.53.0)', async () => {
+  const origen = { headers: { Origin: new URL(url).origin } };
+  const estadoVoz = async () => (await (await fetch(`http://127.0.0.1:${PUERTO}/final`, origen)).json()).callada;
+  // A medias: en la fila no está (no baja la nº1), pero sí en Ajustes.
+  let { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:lector-auto': true, 'roam-picker:draft': { enemies: ['Layla'], allies: [], bans: [], enemyRoam: null, fase: 'picks' } } });
+  try {
+    await pagina.waitForTimeout(500);
+    eq(await pagina.locator('.tools .lector-callar').count(), 0, 'con el draft a medias, «Voz» está en la fila de botones');
+    eq(await pagina.locator('.lector-callar').count(), 1, 'con el draft a medias, «Voz» no está en Ajustes');
+    ok(!errores.length, `errores de página: ${errores}`);
+  } finally { await contexto.close(); }
+  const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], enemyRoam: null, fase: 'picks', completoDesde: Date.now() - 2 * 60 * 1000 };
+  ({ contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:linea': 'exp', 'roam-picker:lector-auto': true, 'roam-picker:draft': draft } }));
+  try {
+    const voz = pagina.locator('.tools .lector-callar');
+    await voz.waitFor({ timeout: 5000 });
+    eq(await voz.getAttribute('aria-pressed'), 'false');
+    ok(/Voz: sí/.test(await voz.innerText()), await voz.innerText());
+    await voz.click();
+    let callada = null;
+    for (let i = 0; i < 40 && callada !== true; i++) { await pagina.waitForTimeout(100); callada = await estadoVoz(); }
+    eq(callada, true, 'el toque no calla al lector');
+    eq(await voz.getAttribute('aria-pressed'), 'true');
+    eq(await pagina.evaluate(() => localStorage.getItem('roam-picker:voz-callada')), 'true', 'callarla no se guarda');
+    // Un lector que se ha perdido el toque (reiniciado) se entera con el siguiente aviso de vigilancia.
+    await fetch(`http://127.0.0.1:${PUERTO}/voz`, { method: 'POST', headers: { ...origen.headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ callar: false }) });
+    await pagina.reload({ waitUntil: 'networkidle' });
+    eq(await pagina.locator('.tools .lector-callar').getAttribute('aria-pressed'), 'true', 'callada no se recuerda al recargar');
+    callada = null;
+    for (let i = 0; i < 80 && callada !== true; i++) { await pagina.waitForTimeout(250); callada = await estadoVoz(); }
+    eq(callada, true, 'un lector que no se enteró no recibe la voz callada con la vigilancia');
+    await pagina.locator('.tools .lector-callar').click();
+    for (let i = 0; i < 40 && callada !== false; i++) { await pagina.waitForTimeout(100); callada = await estadoVoz(); }
+    eq(callada, false, 'otro toque no devuelve la voz');
+    ok(!errores.length, `errores de página: ${errores}`);
+  } finally { await contexto.close(); }
+});
+
 await prueba('si el lector no llega a la tablet, o no está abierto, lo dice con lo que hay que hacer', async () => {
   capturar = () => { throw new Error('device offline'); };
   let { contexto, pagina } = await paginaCon(navegador, url, { almacen });

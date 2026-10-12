@@ -13,7 +13,7 @@ import { SelectorDeRango } from '../componentes/SelectorDeRango.jsx';
 import { Analisis } from '../componentes/Analisis.jsx';
 import { Tarjeta } from '../componentes/Tarjeta.jsx';
 import { useDeslizar } from '../componentes/useDeslizar.js';
-import { BotonLector } from '../componentes/BotonLector.jsx';
+import { BotonLector, BotonVoz } from '../componentes/BotonLector.jsx';
 import { ConsejoEquipo } from '../componentes/ConsejoEquipo.jsx';
 import { Leyenda } from '../componentes/Desglose.jsx';
 import { AvisoLegal } from '../componentes/AvisoLegal.jsx';
@@ -34,7 +34,7 @@ import { HORAS_DATOS_VIEJOS } from '../componentes/Pie.jsx';
  * @param d.abrir       abre una hoja: 'enemigos' | 'aliados' | 'yo' | 'maestria' | 'historial' | 'perfil' | 'meta' | 'linea' | 'apuntar' | { build }
  * @param d.onResultado (gane) apunta la partida con tu pick fijado, desde el recordatorio
  */
-export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, pie }) {
+export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, vozCallada = false, onVoz = null, pie }) {
   const { enemigos, aliados, baneos } = equipo;
   const { ranking, rival, cov, pool, analisis, composicion, consejos, yo } = rec;
   const rivalAuto = rival.marcado ? null : rival.nombre;
@@ -132,13 +132,16 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
               {t(lectorAuto ? 'lector.autoSi' : 'lector.autoNo')}
             </button>
           )}
+          {onLeer && lectorAuto && onVoz && <BotonVoz callada={vozCallada} onVoz={onVoz} t={t} style={{ marginTop: '14px' }} />}
           <button className="reset" style={{ marginTop: '14px' }} onClick={onDiagnostico}>{t('app.diagnostico')}</button>
         </details>
 
         <div className="tools">
           <button className="reset" onClick={draft.vaciarConDeshacer}>{t('app.nuevoDraft')}</button>
           <button className="reset" disabled={!ranking.length} onClick={() => abrir('apuntar')}>{t('app.apuntar')}</button>
-          {onLeer && <BotonLector estado={lector?.estado} aviso={lector?.aviso} ultimo={lector?.ultimo} voz={lector?.voz} auto={lectorAuto} onLeer={onLeer} t={t} />}
+          {/* «Voz» en la fila solo con el draft completo: es cuando habla, y antes
+              pasaría la fila a dos líneas y bajaría la nº1 (3.53.0). */}
+          {onLeer && <BotonLector estado={lector?.estado} aviso={lector?.aviso} ultimo={lector?.ultimo} voz={lector?.voz} auto={lectorAuto} vozCallada={vozCallada} onVoz={draft.completoDesde ? onVoz : null} onLeer={onLeer} t={t} />}
         </div>
       </aside>
 

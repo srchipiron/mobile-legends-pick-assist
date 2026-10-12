@@ -175,13 +175,13 @@ export const tocaVigilarFinal = ({ auto, visible = true, completoDesde }) => !!a
  * el mismo que el suyo): desde entonces vigila el final por su cuenta.
  * Devuelve lo vigilado hasta ahora, o null si no hay lector. Nunca lanza.
  */
-export async function avisarVigilancia({ desde, directo = null, base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+export async function avisarVigilancia({ desde, directo = null, callar = null, base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
   if (!Number.isFinite(desde)) return null;
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), plazoMs);
   try {
     // Con el guion de los consejos en directo (3.44.0), ya traducido: el lector lo dice en voz alta.
-    const r = await pedir(`${base}/vigilar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ desde, ...(directo ? { guion: directo.guion, cierres: directo.cierres, idioma: directo.idioma } : {}) }), cache: 'no-store', signal: corte.signal });
+    const r = await pedir(`${base}/vigilar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ desde, ...(directo ? { guion: directo.guion, cierres: directo.cierres, idioma: directo.idioma } : {}), ...(typeof callar === 'boolean' ? { callar } : {}) }), cache: 'no-store', signal: corte.signal });
     const cuerpo = r.ok ? await r.json().catch(() => null) : null;
     return cuerpo && Array.isArray(cuerpo.fotogramas) ? cuerpo : null;
   } catch {
@@ -264,6 +264,25 @@ export function guionTraducido(plan, t, idioma = 'es') {
   const guion = (plan?.directo ?? []).map((a) => ({ min: a.min, texto: a.partes.map((p) => t(p.clave, p.params)).join(' ') }));
   const cierres = (plan?.cierres ?? []).map((c) => t(c.clave, c.params));
   return { guion, cierres, idioma, huella: JSON.stringify([guion, cierres, idioma]) };
+}
+
+/**
+ * Callar (o volver a oír) los consejos en directo (3.53.0, botón «Voz»).
+ * Nunca lanza: sin lector no pasa nada, y el siguiente aviso de vigilancia
+ * lleva el mismo `callar`, así que un lector que no contestó se entera luego.
+ */
+export async function callarVoz({ callar, base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+  if (typeof callar !== 'boolean') return null;
+  const corte = new AbortController();
+  const reloj = setTimeout(() => corte.abort(), plazoMs);
+  try {
+    const r = await pedir(`${base}/voz`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ callar }), cache: 'no-store', signal: corte.signal });
+    return r.ok ? await r.json().catch(() => null) : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(reloj);
+  }
 }
 
 /**

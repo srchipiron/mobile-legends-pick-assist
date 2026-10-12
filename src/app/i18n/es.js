@@ -473,6 +473,8 @@ export default {
   'lector.yaEstaba': 'Lo que ha leído ya estaba en el draft.',
   'lector.autoSi': 'Leer solo: sí',
   'lector.autoNo': 'Leer solo: no',
+  'lector.vozSi': 'Voz: sí',
+  'lector.vozCallada': 'Voz: callada',
   'lector.autoBuscando': 'Leyendo solo: mirando la tablet cada pocos segundos.',
   'lector.autoLeido': 'Leyendo solo: última lectura bien ({n|1 nombre nuevo|{n} nombres nuevos}).',
   'lector.auto.sinPuente': 'Leyendo solo: no encuentro el lector. Abre Termux y escribe: lector.',
