@@ -1,6 +1,168 @@
 {
- "actualizado": "2026-10-12T20:34:21.370Z",
+ "actualizado": "2026-10-12T20:53:21.821Z",
  "partidas": [
+  {
+   "t": 1791838322830,
+   "pick": "Estes",
+   "recomendados": [
+    "Rafaela",
+    "Diggie",
+    "Floryn"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.534,
+   "origen": "lector",
+   "bans": [
+    "Belerick",
+    "Marcel",
+    "Hirara",
+    "Kagura",
+    "Aulus",
+    "Yi Sun-shin",
+    "Paquito",
+    "Lukas"
+   ],
+   "draft": {
+    "enemigos": [
+     "Kadita",
+     "X.Borg",
+     "Badang"
+    ],
+    "aliados": [
+     "Sora",
+     "Eudora"
+    ],
+    "linea": "roam",
+    "rival": "Badang"
+   },
+   "lector": {
+    "baneos": [
+     "Belerick",
+     "Marcel",
+     "Hirara",
+     "Kagura",
+     "Aulus",
+     "Yi Sun-shin",
+     "Paquito",
+     "Lukas"
+    ],
+    "enemigos": [
+     "X.Borg",
+     "Badang"
+    ],
+    "aliados": [
+     "Sora",
+     "Eudora"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Fredrinn",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "e3",
+      "candidato": "X.Borg",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Saber",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Beatrix",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Gord",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Chang'e",
+      "parecido": 0.72
+     }
+    ],
+    "ms": [
+     2987,
+     4168,
+     3037,
+     3011,
+     4465,
+     3368,
+     3123,
+     2881,
+     3557,
+     3117,
+     3464,
+     3293,
+     3297,
+     5739,
+     5706
+    ],
+    "msCaptura": [
+     1877,
+     3081,
+     1991,
+     1991,
+     2823,
+     2314,
+     2265,
+     1911,
+     2538,
+     2113,
+     2321,
+     2342,
+     2338,
+     4705,
+     4428
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Kadita",
+      "X.Borg",
+      "Kadita",
+      "X.Borg",
+      "Kadita",
+      "X.Borg"
+     ],
+     "sinEncontrar": [
+      "Badang",
+      "Badang"
+     ]
+    }
+   },
+   "fases": [
+    0.593,
+    0.546,
+    0.527,
+    0.487,
+    0.471,
+    0.456
+   ]
+  },
   {
    "t": 1791837245255,
    "pick": "Estes",
@@ -16859,6 +17021,12 @@
   {
    "cuando": "2026-10-12T20:34:21.370Z",
    "partidas": 211,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-12T20:53:21.821Z",
+   "partidas": 212,
    "heroes": 11,
    "incidencia": 11
   }
