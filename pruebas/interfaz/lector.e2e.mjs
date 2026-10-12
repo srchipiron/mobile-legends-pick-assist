@@ -104,6 +104,27 @@ await prueba('el héroe que un jugador solo miraba se cambia por el que coge en 
   await contexto.close();
 });
 
+await prueba('si cambian a la vez más huecos de los que pueden estar eligiendo (fase de skins), esa lectura no toca los picks (3.54.0)', async () => {
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen });
+  capturar = () => png2;
+  try {
+    await boton(pagina).click();
+    await pagina.locator('.aviso-deshacer').waitFor({ timeout: 15000 });
+    const antes = (await leer(pagina)).enemies;
+    eq([...antes].sort().join(), 'Aamon,Gloo,Lesley,Rafaela', `la primera lectura no mete la segunda columna: ${antes}`);
+    // Los cinco huecos cambian a la vez (dos a otro héroe y tres a «?»), como al pasar a las skins.
+    capturar = () => png;
+    await boton(pagina).click(); await pagina.waitForTimeout(4000);
+    const d = await leer(pagina);
+    eq(JSON.stringify(d.enemies), JSON.stringify(antes), `una lectura fuera de los picks cambia los enemigos: ${d.enemies}`);
+    ok(!d.lectura.enemigos.includes('Clint') && !d.lectura.enemigos.includes('Khufra'), `lo leído fuera de los picks cuenta como leído: ${d.lectura.enemigos}`);
+  } finally {
+    capturar = () => png;
+  }
+  ok(!errores.length, `errores de página: ${errores}`);
+  await contexto.close();
+});
+
 await prueba('lo leído viaja con la partida apuntada, para medir al lector', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, {
     almacen: { ...almacen, 'roam-picker:draft': { enemies: [], allies: ['Chou', 'Miya', 'Eudora', 'Lukas'], bans: [], enemyRoam: null, fase: 'baneos', miPick: 'Rafaela', miPickDesde: Date.now() - 11 * 60 * 1000 } },

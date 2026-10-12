@@ -8,6 +8,19 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.54.0
+
+- «Leer solo» ya no cambia los picks con lo que ve en la fase de skins. Al
+  pasar a elegir skins, cada jugador sale con la suya y el lector «veía» a
+  Wanwan, Esmeralda, Joy o Beatrix donde no estaban, y además quitaba por
+  ellos al héroe bueno que ya había leído. Ahora, si cambian a la vez más
+  jugadores de un equipo de los que pueden estar eligiendo (como mucho dos),
+  esa lectura no toca a ese equipo.
+- El lector aprende de las capturas del draft que mejor se leen, no de las
+  últimas. Las últimas solían ser ya de la fase de skins y casi no aprendía
+  nada; ahora mira las que más enemigos leen, que son las de los picks. Las
+  imágenes de los picks que se suben para medir salen también de ahí.
+
 ## 3.53.0
 
 - Botón «Voz» para callar los consejos en directo cuando no quieras que

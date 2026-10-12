@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CLAVES, leer, guardar } from './almacen.js';
 import { sanearLectura } from '../../motor/registro.js';
-import { cambiosDeHueco, dudasQueQuedan } from '../lector.js';
+import { cambiosDeHueco, dudasQueQuedan, fueraDeLosPicks } from '../lector.js';
 
 /** Cuántos caben en cada bando. */
 export const TOPES = { enemigos: 5, aliados: 4, baneos: 10 };
@@ -222,17 +222,26 @@ export function useDraft() {
    * está en otro sitio (un enemigo baneado, un compañero) no se toca. Con
    * enemigos nuevos el draft pasa a picks. Todo de una vez, con Deshacer.
    */
-  const aplicarLectura = useCallback(({ baneos = [], enemigos = [], aliados = [], tuyo = null, id = null, dudas = null, huecos = null, ms = null, msCaptura = null, formato = null }) => {
-    const reconocio = baneos.length + enemigos.length + aliados.length > 0 || !!tuyo;
+  const aplicarLectura = useCallback(({ baneos = [], enemigos: enemigosLeidos = [], aliados: aliadosLeidos = [], tuyo: tuyoLeido = null, id = null, dudas = null, huecos = null, ms = null, msCaptura = null, formato = null }) => {
     const antes = actual.current;
     const ahora = Date.now();
     // Draft nuevo: los huecos de la partida anterior no dicen nada.
     if (!antes.enemigos.length && !antes.aliados.length) huecosLeidos.current = { enemigos: [], aliados: [] };
+    // Si en un equipo cambian a la vez más huecos de los que pueden estar
+    // eligiendo, la tablet ya no enseña los picks (skins, una ventana
+    // encima): esa parte de la lectura no se usa (3.54.0, `fueraDeLosPicks`).
+    const fueraE = fueraDeLosPicks(huecosLeidos.current.enemigos, huecos?.enemigos ?? []);
+    const fueraA = fueraDeLosPicks(huecosLeidos.current.aliados, huecos?.aliados ?? []);
+    const enemigos = fueraE ? [] : enemigosLeidos;
+    const aliados = fueraA ? [] : aliadosLeidos;
+    // Tu fila va con las de tu equipo: con skins, tu héroe tampoco se lee.
+    const tuyo = fueraA ? null : tuyoLeido;
+    const reconocio = baneos.length + enemigos.length + aliados.length > 0 || !!tuyo;
     // El héroe que un jugador solo MIRABA se cambia por el que se ve ahora
     // en su hueco (3.37.0, `cambiosDeHueco`). Solo si sigue en el draft: lo
     // que ya quitaste o moviste a mano no se toca.
-    const cambioE = cambiosDeHueco(huecosLeidos.current.enemigos, huecos?.enemigos ?? []);
-    const cambioA = cambiosDeHueco(huecosLeidos.current.aliados, huecos?.aliados ?? []);
+    const cambioE = cambiosDeHueco(huecosLeidos.current.enemigos, fueraE ? [] : huecos?.enemigos ?? []);
+    const cambioA = cambiosDeHueco(huecosLeidos.current.aliados, fueraA ? [] : huecos?.aliados ?? []);
     huecosLeidos.current = { enemigos: cambioE.huecos, aliados: cambioA.huecos };
     const quitadosE = cambioE.quitar.filter((n) => antes.enemigos.includes(n) && !enemigos.includes(n));
     const quitadosA = cambioA.quitar.filter((n) => antes.aliados.includes(n) && !aliados.includes(n));

@@ -131,4 +131,21 @@ test('no aprende de una captura que no es la pantalla del draft (sin su fila de 
   eq(r.aprendido.version, VERSION_APRENDIDO, 'lo aprendido no lleva la versión actual');
 });
 
+test('aprende de las capturas que MÁS enemigos leen, no de las últimas (que suelen ser ya la fase de skins) (3.54.0)', () => {
+  // Una captura con el panel de picks y, después, dos sin él (como la fase de skins: la fila de baneos sigue).
+  const verdad = { enemigos: ['Clint', 'Khufra'], baneos: [...VERDAD.tuyos, ...VERDAD.suyos] };
+  const pares = [
+    { id: 'lectura-picks', img: capturaCompleta(), verdad },
+    { id: 'lectura-skins-1', img: capturaCompleta({ conPicks: false }), verdad },
+    { id: 'lectura-skins-2', img: capturaCompleta({ conPicks: false }), verdad },
+  ];
+  const r = aprenderDe(pares, { caras, maximo: 1 });
+  const miradas = r.informe.filter((l) => !l.descartada);
+  eq(miradas.map((l) => l.id).join(), 'lectura-picks', `mira ${miradas.map((l) => l.id)}`);
+  eq(miradas[0].aciertos, 2, 'no apunta cuántos enemigos leía');
+  // A igualdad, la más nueva.
+  const r2 = aprenderDe(pares.slice(1), { caras, maximo: 1 });
+  eq(r2.informe.filter((l) => !l.descartada).map((l) => l.id).join(), 'lectura-skins-2');
+});
+
 await terminar('scripts/aprender');

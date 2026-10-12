@@ -2086,6 +2086,35 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   no se enteró, otro toque); seis mutaciones. Y un aviso al probar: no
   reutilizar `lector-auto` para otro botón, la prueba de «Leer solo» lo
   busca por esa clase.
+- **La fase de skins, separada de la de picks (3.54.0)**, de los 11 drafts
+  de recortes subidos del 10 al 12 de octubre de 2026 (#60–#79; 22 imágenes
+  de diez caras). Lo medido: (1) la mitad de las imágenes eran ya la fase de
+  skins (o una ventana que oscurece el panel, #65): el draft se completa a
+  menudo ahí, y tanto los recortes como el aprendizaje cogían las ÚLTIMAS
+  capturas; el aprendizaje del 10–12 dejó «sin encontrar» a los cinco
+  enemigos de un draft que un momento antes se leía entero (#73) y solo
+  aprendió 3 veces en 15 partidas. Hoy `aprenderDe` mira todas las de la
+  pantalla del draft y se queda con las que más enemigos de la verdad leen
+  (`aciertos` en el informe; a igualdad, las más nuevas), y
+  `recortesDelDraft` igual. (2) En esas pantallas el lector «reconocía» a
+  imanes (Wanwan 0,81–0,87, Esmeralda 0,80–0,82, Joy 0,81, Beatrix 0,89,
+  Harley 0,90 en la oscurecida): 13 de 220 huecos con los ajustes de hoy, y
+  `cambiosDeHueco` quitaba por ellos al héroe bueno. Hoy `fueraDeLosPicks`
+  (src/app/lector.js): si en un equipo cambian a la vez más huecos ya
+  leídos que `CAMBIOS_A_LA_VEZ` (2, el orden 1-2-2-2-2-1 del juego), esa
+  lectura no toca ese equipo (ni tu fila, con el tuyo). Un «?» cuenta como
+  cambio; un hueco que se llena, no. (3) Lo que sí es de geometría:
+  buscando más ancho (±8 pasos, escalas 0,8–1,4) Johnson sale a 0,86,
+  Kadita 0,86, Selena 0,83–0,85, Hanabi 0,83, Nana 0,80 en su hueco; en
+  enemigos +6 aciertos de 110 huecos por +1 falso, en tu equipo PEOR (de 43
+  a 41 aciertos y de 6 a 13 falsos, los imanes otra vez) y cuesta 2,4 veces
+  la primera pasada. No entra: con el aprendizaje mirando ya la fase de
+  picks, Johnson y compañía deberían aprenderse solos; si no, se mide eso.
+  (4) Gord no es una cara vieja: la de la API es el mismo dibujo, encuadrado
+  distinto (0,75–0,77 en tres compañeros distintos). Medido sobre los
+  recortes a un tercio (±0,05 del original) con `variantes.mjs` y
+  `medir-recortes.mjs` del scratch de la sesión. Pruebas en `app/lector`,
+  `aprender`, `recortes` y `lector.e2e` (cinco mutaciones).
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

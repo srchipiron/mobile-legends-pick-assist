@@ -83,6 +83,9 @@ test('de las capturas del aprendizaje se recortan las DOS ÚLTIMAS que eran la p
   eq(r.map((x) => x.id).join(), 'lectura-2,lectura-4');
   eq(leidas.join(), 'lectura-2,lectura-4', 'decodifica capturas que no recorta');
   eq(recortesDelDraft([], () => img, caras).length, 0);
+  // Las que más enemigos leían (3.54.0): la última suele ser ya la fase de skins.
+  const conAciertos = [{ id: 'lectura-1', aciertos: 5 }, { id: 'lectura-2', aciertos: 1 }, { id: 'lectura-3', aciertos: 4 }, { id: 'lectura-4', aciertos: 0 }];
+  eq(recortesDelDraft(conAciertos, () => img, caras).map((x) => x.id).join(), 'lectura-1,lectura-3', 'no recorta las que más enemigos leían, en su orden');
 });
 
 await terminar('scripts/recortes');

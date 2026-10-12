@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -46,6 +46,21 @@ test('por hueco: el héroe que un jugador solo miraba se cambia por el que coge,
   eq(cambiosDeHueco(['Joy', 'Clint'], ['Clint', 'Joy']).quitar.length, 0);
   // Sin lectura anterior no hay nada que quitar.
   eq(cambiosDeHueco([], ['Clint']).quitar.length, 0);
+});
+
+test('si cambian a la vez más huecos de los que pueden estar eligiendo, la lectura ya no es la fase de picks (3.54.0)', () => {
+  eq(CAMBIOS_A_LA_VEZ, 2, 'en el draft eligen como mucho dos de un equipo a la vez');
+  const antes = ['Dyrroth', "Chang'e", 'Hanabi', 'Yi Sun-shin', 'Gloo'];
+  // Los dos que eligen a la vez cambian: sigue siendo la fase de picks.
+  ok(!fueraDeLosPicks(antes, ['Joy', 'Wanwan', 'Hanabi', 'Yi Sun-shin', 'Gloo']), 'dos cambios a la vez no son la fase de picks');
+  // Tres (o los cinco al pasar a las skins, incidencia #73): ya no.
+  ok(fueraDeLosPicks(antes, ['Joy', 'Wanwan', 'Esmeralda', 'Yi Sun-shin', 'Gloo']), 'tres cambios a la vez siguen contando como picks');
+  ok(fueraDeLosPicks(antes, [null, null, null, null, null]), 'los cinco a «?» (skins, una ventana encima) siguen contando como picks');
+  ok(fueraDeLosPicks(antes, [null, 'Wanwan', null, 'Yi Sun-shin', 'Gloo']), 'un «?» no cuenta como cambio');
+  // Lo que antes era «?» y ahora se lee no es un cambio: los picks van llegando.
+  ok(!fueraDeLosPicks([null, null, null, 'Ixia', 'Lukas'], ['Masha', 'Luo Yi', 'Minsitthar', 'Ixia', 'Lukas']), 'los huecos que se llenan cuentan como cambios');
+  ok(!fueraDeLosPicks(antes, []), 'sin huecos en esta lectura (tu fila sin saber) dice que no son picks');
+  ok(!fueraDeLosPicks([], antes), 'sin lectura anterior dice que no son picks');
 });
 
 test('cada fallo del lector tiene su tipo', async () => {

@@ -421,6 +421,32 @@ export function nombresDeLectura(lectura, heroes = []) {
 }
 
 /**
+ * Cuántos jugadores de un equipo pueden cambiar de héroe a la vez en la
+ * fase de picks: el orden es 1-2-2-2-2-1, así que como mucho dos de un
+ * mismo equipo eligen a la vez (definido por el juego).
+ */
+export const CAMBIOS_A_LA_VEZ = 2;
+
+/**
+ * ¿Esta lectura de un equipo ya no es la fase de picks? (3.54.0) Si cambian
+ * a la vez MÁS huecos ya leídos de los que pueden estar eligiendo (a otro
+ * héroe o a «?»), la tablet enseña otra cosa: la fase de skins (cada
+ * jugador con su skin), una ventana encima que oscurece el panel o la
+ * carga. Medido en los recortes que subió el lector del 10 al 12 de octubre
+ * de 2026: en esas pantallas el lector «reconocía» a Wanwan (0,81–0,87),
+ * Esmeralda, Joy, Beatrix o Harley donde no estaban, y `cambiosDeHueco`
+ * quitaba por ellos al héroe bueno. Al pasar de la última captura de picks
+ * a la primera de skins cambian los cinco. Esa lectura no toca ese equipo.
+ */
+export function fueraDeLosPicks(anteriores = [], actuales = []) {
+  let cambios = 0;
+  for (let i = 0; i < Math.min(anteriores.length, actuales.length); i += 1) {
+    if (anteriores[i] && actuales[i] !== anteriores[i]) cambios += 1;
+  }
+  return cambios > CAMBIOS_A_LA_VEZ;
+}
+
+/**
  * Qué nombres leídos antes hay que QUITAR porque su hueco enseña ahora a
  * otro (3.37.0). El juego pinta en el hueco de cada jugador el héroe que
  * está mirando antes de confirmarlo, y el lector solo sumaba: en las 29

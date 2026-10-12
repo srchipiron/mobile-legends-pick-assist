@@ -131,10 +131,12 @@ export function recorteDeDraft(img, caras, { posiciones = null, extra = [] } = {
 export const RECORTES_POR_DRAFT = 2;
 
 /**
- * Los recortes de las ÚLTIMAS capturas que el aprendizaje dio por buenas
- * (las que no descartó por no ser la pantalla del draft), con su id.
+ * Los recortes de las capturas que el aprendizaje miró (las que no descartó
+ * por no ser la pantalla del draft), las que más enemigos leían primero
+ * (3.54.0: las últimas solían ser ya la fase de skins) y en su orden.
  */
 export function recortesDelDraft(informe, leer, caras, opciones = {}, maximo = RECORTES_POR_DRAFT) {
-  const ids = (informe ?? []).filter((l) => !l.descartada && l.id).map((l) => l.id).slice(-maximo);
+  const validas = (informe ?? []).map((l, i) => ({ ...l, i })).filter((l) => !l.descartada && l.id);
+  const ids = validas.sort((a, b) => (b.aciertos ?? 0) - (a.aciertos ?? 0) || b.i - a.i).slice(0, maximo).sort((a, b) => a.i - b.i).map((l) => l.id);
   return ids.map((id) => { const r = recorteDeDraft(leer(id), caras, opciones); return r ? { id, ...r } : null; }).filter(Boolean);
 }

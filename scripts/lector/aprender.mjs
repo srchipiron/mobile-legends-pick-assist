@@ -165,7 +165,8 @@ export function huecoDe(pos, base = PICKS_ENEMIGOS) {
  * { enemigos, baneos } }] (`img` decodificada o una función que la
  * decodifica, para no tener todas en memoria a la vez); `caras` las de la
  * API ([{ nombre, v }]); `aprendido` lo de antes. De las que son la pantalla
- * del draft se aprende de las ÚLTIMAS `maximo`. Devuelve lo aprendido nuevo
+ * del draft se aprende de las `maximo` que más enemigos leen (a igualdad,
+ * las últimas). Devuelve lo aprendido nuevo
  * (acumulado) y un informe por captura (las descartadas, con su motivo).
  */
 export function aprenderDe(pares, { caras, aprendido = null, posicionesBase = PICKS_ENEMIGOS, maximo = CAPTURAS_POR_CORRECCION } = {}) {
@@ -175,21 +176,30 @@ export function aprenderDe(pares, { caras, aprendido = null, posicionesBase = PI
   const enEspejo = [...caras.map((c) => ({ ...c, v: espejo(c.v) })), ...extra];
   const informe = [];
   const hallazgos = [];
-  // De atrás adelante: las últimas capturas de un draft tienen más picks.
-  const elegidas = [];
-  for (let i = pares.length - 1; i >= 0 && elegidas.length < maximo; i--) {
+  // De las que son la pantalla del draft, las que MÁS enemigos de la verdad
+  // leen (3.54.0); a igualdad, las más nuevas. Hasta 3.53.0 se cogían las
+  // últimas, y el draft se completa muchas veces ya en la fase de skins:
+  // del 10 al 12 de octubre de 2026 el aprendizaje miró casi siempre
+  // pantallas de skins (los cinco «sin encontrar» con el draft bien leído un
+  // momento antes) y no aprendió casi nada. Una captura cada vez en memoria.
+  const candidatas = [];
+  for (let i = pares.length - 1; i >= 0; i--) {
     const { id, verdad } = pares[i];
     const enemigos = (verdad?.enemigos ?? []).map((n) => porClave.get(nombreClave(n))).filter(Boolean);
     if (!enemigos.length) continue;
     const img = typeof pares[i].img === 'function' ? pares[i].img() : pares[i].img;
     if (!esPantallaDeDraft(img, caras, verdad)) { informe.unshift({ id, descartada: 'sinBaneos', aprendidos: [], sinEncontrar: [], yaLeidos: [] }); continue; }
-    elegidas.unshift({ id, img, verdad, enemigos });
-  }
-  for (const { id, img, enemigos } of elegidas) {
     // Lo que ya sale con la geometría de ahora (la medida, y lo aprendido donde esa no lee), hueco a hueco.
     const leidos = leerPicksEnemigos(img, caras, { posiciones: aprendido?.picks ?? null, extra });
+    const claves = new Set(enemigos.map((h) => nombreClave(h.nombre)));
+    const aciertos = leidos.filter((l) => l.nombre && claves.has(nombreClave(l.nombre))).length;
+    candidatas.push({ i, id, enemigos, leidos, aciertos, img: typeof pares[i].img === 'function' ? null : img });
+  }
+  const elegidas = [...candidatas].sort((a, b) => b.aciertos - a.aciertos || b.i - a.i).slice(0, maximo).sort((a, b) => a.i - b.i);
+  for (const { i, id, enemigos, leidos, aciertos, img: guardada } of elegidas) {
+    const img = guardada ?? pares[i].img();
     const reconocidos = new Set(leidos.map((l) => l.nombre && nombreClave(l.nombre)).filter(Boolean));
-    const linea = { id, aprendidos: [], sinEncontrar: [], yaLeidos: [...reconocidos] };
+    const linea = { id, aprendidos: [], sinEncontrar: [], yaLeidos: [...reconocidos], aciertos };
     const r0 = aCaptura(img, posicionesBase[0])[2];
     for (const h of enemigos) {
       const clave = nombreClave(h.nombre);
