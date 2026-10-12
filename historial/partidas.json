@@ -1,6 +1,233 @@
 {
- "actualizado": "2026-10-12T12:10:01.753Z",
+ "actualizado": "2026-10-12T15:40:39.157Z",
  "partidas": [
+  {
+   "t": 1791819275495,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Diggie",
+    "Floryn"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.516,
+   "origen": "lector",
+   "bans": [
+    "Marcel",
+    "Aulus",
+    "Hirara",
+    "Lukas",
+    "Masha",
+    "Zetian",
+    "Belerick",
+    "Khufra",
+    "Helcurt"
+   ],
+   "draft": {
+    "enemigos": [
+     "Rafaela",
+     "Obsidia",
+     "Chou"
+    ],
+    "aliados": [
+     "Vexana",
+     "Paquito",
+     "Saber",
+     "Lesley"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Aulus",
+     "Hirara",
+     "Lukas",
+     "Masha",
+     "Zetian",
+     "Belerick",
+     "Khufra",
+     "Helcurt"
+    ],
+    "enemigos": [
+     "Rafaela",
+     "Fredrinn",
+     "Wanwan"
+    ],
+    "aliados": [
+     "Vexana",
+     "Paquito",
+     "Saber",
+     "Wanwan"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Atlas",
+      "parecido": 0.55
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Atlas",
+      "parecido": 0.63
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Atlas",
+      "parecido": 0.57
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Alucard",
+      "parecido": 0.4
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Atlas",
+      "parecido": 0.47
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Uranus",
+      "parecido": 0.4
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Atlas",
+      "parecido": 0.26
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Terizla",
+      "parecido": 0.32
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Joy",
+      "parecido": 0.28
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Joy",
+      "parecido": 0.59
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Fredrinn",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Fredrinn",
+      "parecido": 0.63
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Atlas",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Atlas",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Johnson",
+      "parecido": 0.52
+     }
+    ],
+    "ms": [
+     3431,
+     2990,
+     3417,
+     3284,
+     4814,
+     3029,
+     3309,
+     2829,
+     3046,
+     3357,
+     3310,
+     2929,
+     2988,
+     3070,
+     5278,
+     3524,
+     3073,
+     3105,
+     4010,
+     2983
+    ],
+    "msCaptura": [
+     2396,
+     2170,
+     2597,
+     2416,
+     3704,
+     2337,
+     2486,
+     2191,
+     2334,
+     2502,
+     2344,
+     2130,
+     2138,
+     2162,
+     3945,
+     2317,
+     2059,
+     2099,
+     2943,
+     1957
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Rafaela",
+      "Obsidia",
+      "Rafaela",
+      "Obsidia",
+      "Rafaela",
+      "Obsidia"
+     ]
+    }
+   },
+   "duracion": 11.4,
+   "fases": [
+    0.572,
+    0.502,
+    0.487,
+    0.469,
+    0.491,
+    0.496
+   ]
+  },
   {
    "t": 1791806883372,
    "pick": "Diggie",
@@ -15601,6 +15828,12 @@
   {
    "cuando": "2026-10-12T12:10:01.753Z",
    "partidas": 204,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-12T15:40:39.157Z",
+   "partidas": 205,
    "heroes": 11,
    "incidencia": 11
   }
