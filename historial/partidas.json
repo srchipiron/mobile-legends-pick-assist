@@ -1,6 +1,151 @@
 {
- "actualizado": "2026-10-12T18:39:50.922Z",
+ "actualizado": "2026-10-12T20:14:49.958Z",
  "partidas": [
+  {
+   "t": 1791836075772,
+   "pick": "Estes",
+   "recomendados": [
+    "Khufra",
+    "Rafaela",
+    "Carmilla"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.547,
+   "bans": [
+    "Eudora",
+    "Marcel",
+    "Kagura",
+    "Hirara",
+    "Paquito",
+    "Aulus",
+    "Belerick"
+   ],
+   "draft": {
+    "enemigos": [
+     "Hanabi",
+     "Vexana",
+     "Tigreal",
+     "Minsitthar",
+     "Aamon"
+    ],
+    "aliados": [
+     "Gord",
+     "Lesley",
+     "Nolan",
+     "Silvanna"
+    ],
+    "linea": "roam",
+    "rival": "Tigreal"
+   },
+   "lector": {
+    "baneos": [
+     "Eudora",
+     "Marcel",
+     "Kagura",
+     "Hirara",
+     "Paquito",
+     "Aulus",
+     "Belerick"
+    ],
+    "enemigos": [
+     "Hanabi",
+     "Vexana",
+     "Tigreal",
+     "Minsitthar",
+     "Aamon"
+    ],
+    "aliados": [
+     "Lesley",
+     "Harley",
+     "Nolan",
+     "Silvanna"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "a1",
+      "candidato": "Gord",
+      "parecido": 0.75
+     }
+    ],
+    "ms": [
+     3828,
+     3466,
+     3751,
+     3093,
+     4579,
+     2977,
+     2745,
+     3256,
+     2839,
+     3122,
+     3531,
+     3163,
+     3107,
+     3150,
+     4070,
+     3017,
+     3154,
+     2946
+    ],
+    "msCaptura": [
+     2944,
+     2572,
+     2874,
+     2245,
+     3349,
+     2184,
+     2040,
+     2443,
+     2163,
+     2216,
+     2778,
+     2442,
+     2399,
+     2217,
+     3196,
+     2375,
+     2508,
+     2151
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Aamon"
+     ]
+    }
+   },
+   "duracion": 12.5,
+   "fases": [
+    0.58,
+    0.561,
+    0.524,
+    0.502,
+    0.506,
+    0.529
+   ]
+  },
   {
    "t": 1791830353840,
    "pick": "Estes",
@@ -16546,6 +16691,12 @@
   {
    "cuando": "2026-10-12T18:39:50.922Z",
    "partidas": 209,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-12T20:14:49.958Z",
+   "partidas": 210,
    "heroes": 11,
    "incidencia": 11
   }
