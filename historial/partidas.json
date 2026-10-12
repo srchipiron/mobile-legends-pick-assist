@@ -1,6 +1,169 @@
 {
- "actualizado": "2026-10-12T16:02:31.235Z",
+ "actualizado": "2026-10-12T16:16:41.719Z",
  "partidas": [
+  {
+   "t": 1791821694985,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Carmilla",
+    "Floryn"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.665,
+   "origen": "lector",
+   "bans": [
+    "Kagura",
+    "Hirara",
+    "Marcel",
+    "Lukas",
+    "Estes",
+    "Nana",
+    "Aulus",
+    "Khufra",
+    "Johnson",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Miya",
+     "Tigreal",
+     "Cici",
+     "Vexana",
+     "Martis"
+    ],
+    "aliados": [
+     "Paquito",
+     "Gord",
+     "Selena",
+     "Obsidia"
+    ],
+    "linea": "roam",
+    "rival": "Tigreal"
+   },
+   "lector": {
+    "baneos": [
+     "Kagura",
+     "Hirara",
+     "Marcel",
+     "Lukas",
+     "Estes",
+     "Nana",
+     "Aulus",
+     "Khufra",
+     "Johnson",
+     "Eudora"
+    ],
+    "enemigos": [
+     "Miya",
+     "Tigreal",
+     "Cici",
+     "Vexana",
+     "Martis"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Paquito",
+     "Selena"
+    ],
+    "dudas": [
+     {
+      "hueco": "a2",
+      "candidato": "Gord",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Rafaela",
+      "parecido": 0.76
+     }
+    ],
+    "ms": [
+     3389,
+     4896,
+     2660,
+     3078,
+     3077,
+     2746,
+     3234,
+     2649,
+     3434,
+     2708,
+     3015,
+     4202,
+     2798,
+     2926,
+     3013,
+     2995,
+     2791,
+     2783,
+     2778,
+     2801
+    ],
+    "msCaptura": [
+     2400,
+     3686,
+     1847,
+     2164,
+     2191,
+     1938,
+     2143,
+     1826,
+     2436,
+     2154,
+     2272,
+     3333,
+     2047,
+     2174,
+     2211,
+     2244,
+     2039,
+     2170,
+     2024,
+     2130
+    ],
+    "formatos": [
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Martis",
+      "Martis",
+      "Martis"
+     ]
+    }
+   },
+   "duracion": 8,
+   "fases": [
+    0.746,
+    0.7,
+    0.633,
+    0.619,
+    0.59,
+    0.554
+   ]
+  },
   {
    "t": 1791820891132,
    "pick": "Rafaela",
@@ -16016,6 +16179,12 @@
   {
    "cuando": "2026-10-12T16:02:31.235Z",
    "partidas": 206,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-12T16:16:41.719Z",
+   "partidas": 207,
    "heroes": 11,
    "incidencia": 11
   }
