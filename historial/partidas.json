@@ -1,6 +1,202 @@
 {
- "actualizado": "2026-10-11T22:20:51.922Z",
+ "actualizado": "2026-10-12T10:50:45.813Z",
  "partidas": [
+  {
+   "t": 1791802187222,
+   "pick": "Diggie",
+   "recomendados": [
+    "Rafaela",
+    "Estes",
+    "Diggie"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.464,
+   "origen": "lector",
+   "bans": [
+    "Marcel",
+    "Hirara",
+    "Lukas",
+    "Belerick",
+    "Paquito",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Obsidia",
+     "Masha",
+     "Karina",
+     "Minotaur",
+     "Luo Yi"
+    ],
+    "aliados": [
+     "Ixia",
+     "Vexana",
+     "Aulus",
+     "Zhask"
+    ],
+    "linea": "roam",
+    "rival": "Minotaur"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Hirara",
+     "Lukas",
+     "Belerick",
+     "Paquito",
+     "Eudora"
+    ],
+    "enemigos": [
+     "Wanwan",
+     "Fredrinn",
+     "Obsidia",
+     "Karina"
+    ],
+    "aliados": [
+     "Ixia",
+     "Vexana",
+     "Aulus"
+    ],
+    "dudas": [
+     {
+      "hueco": "t4",
+      "candidato": "Gord",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Zetian",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Julian",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Wanwan",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Rafaela",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Kadita",
+      "parecido": 0.62
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Wanwan",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Ixia",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Fredrinn",
+      "parecido": 0.66
+     }
+    ],
+    "ms": [
+     2997,
+     4389,
+     2906,
+     4597,
+     3193,
+     3436,
+     3241,
+     4666,
+     2976,
+     2962,
+     2677,
+     2916,
+     2986,
+     2848,
+     3044,
+     3345,
+     2889,
+     4770,
+     3273,
+     3173
+    ],
+    "msCaptura": [
+     2046,
+     3239,
+     1991,
+     3324,
+     2250,
+     2518,
+     2163,
+     3472,
+     2182,
+     2222,
+     1911,
+     2067,
+     2203,
+     2047,
+     2222,
+     2416,
+     2025,
+     3468,
+     2307,
+     2269
+    ],
+    "formatos": [
+     "crudo",
+     "png",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Masha",
+      "Karina",
+      "Minotaur",
+      "Luo Yi",
+      "Masha",
+      "Karina",
+      "Minotaur",
+      "Luo Yi",
+      "Masha",
+      "Karina"
+     ]
+    }
+   },
+   "duracion": 10.2,
+   "fases": [
+    0.634,
+    0.461,
+    0.412,
+    0.362,
+    0.382,
+    0.361
+   ]
+  },
   {
    "t": 1791755256720,
    "pick": "Floryn",
@@ -15024,6 +15220,12 @@
   {
    "cuando": "2026-10-11T22:20:51.922Z",
    "partidas": 201,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-12T10:50:45.813Z",
+   "partidas": 202,
    "heroes": 11,
    "incidencia": 11
   }
