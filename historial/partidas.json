@@ -1,6 +1,206 @@
 {
- "actualizado": "2026-10-12T11:18:24.057Z",
+ "actualizado": "2026-10-12T12:10:01.753Z",
  "partidas": [
+  {
+   "t": 1791806883372,
+   "pick": "Diggie",
+   "recomendados": [
+    "Rafaela",
+    "Carmilla",
+    "Lolita"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.511,
+   "origen": "lector",
+   "bans": [
+    "Hirara",
+    "Aulus",
+    "Saber",
+    "Marcel",
+    "Khufra",
+    "Eudora",
+    "Atlas",
+    "Aamon",
+    "Masha",
+    "Estes"
+   ],
+   "draft": {
+    "enemigos": [
+     "Dyrroth",
+     "Hanabi",
+     "Chang'e",
+     "Yi Sun-shin",
+     "Gloo"
+    ],
+    "aliados": [
+     "Paquito",
+     "Luo Yi",
+     "Esmeralda",
+     "Hayabusa"
+    ],
+    "linea": "roam",
+    "rival": "Gloo"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Aulus",
+     "Saber",
+     "Marcel",
+     "Khufra",
+     "Eudora",
+     "Atlas",
+     "Aamon",
+     "Masha",
+     "Estes"
+    ],
+    "enemigos": [
+     "Dyrroth",
+     "Hanabi",
+     "Chang'e",
+     "Beatrix",
+     "Yi Sun-shin"
+    ],
+    "aliados": [
+     "Paquito",
+     "Luo Yi",
+     "Esmeralda"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Zetian",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Fanny",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Leomord",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Wanwan",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Beatrix",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Wanwan",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Nolan",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Zetian",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Leomord",
+      "parecido": 0.69
+     }
+    ],
+    "ms": [
+     2378,
+     2977,
+     2930,
+     4052,
+     3129,
+     3101,
+     2827,
+     3033,
+     3154,
+     3023,
+     3033,
+     3343,
+     2893,
+     4100,
+     2982,
+     2860,
+     3901,
+     2366,
+     2557,
+     3191
+    ],
+    "msCaptura": [
+     1547,
+     1835,
+     2037,
+     2941,
+     2201,
+     2209,
+     1855,
+     2009,
+     2371,
+     2250,
+     2200,
+     2518,
+     2014,
+     2983,
+     1937,
+     1973,
+     3287,
+     1792,
+     1919,
+     2039
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Dyrroth",
+      "Hanabi",
+      "Chang'e",
+      "Yi Sun-shin",
+      "Gloo"
+     ]
+    }
+   },
+   "duracion": 25.2,
+   "fases": [
+    0.535,
+    0.522,
+    0.515,
+    0.471,
+    0.476,
+    0.477
+   ]
+  },
   {
    "t": 1791803683503,
    "pick": "Estes",
@@ -15395,6 +15595,12 @@
   {
    "cuando": "2026-10-12T11:18:24.057Z",
    "partidas": 203,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-12T12:10:01.753Z",
+   "partidas": 204,
    "heroes": 11,
    "incidencia": 11
   }
