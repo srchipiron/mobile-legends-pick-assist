@@ -1,6 +1,191 @@
 {
- "actualizado": "2026-10-12T18:20:27.288Z",
+ "actualizado": "2026-10-12T18:39:50.922Z",
  "partidas": [
+  {
+   "t": 1791830353840,
+   "pick": "Estes",
+   "recomendados": [
+    "Minsitthar",
+    "Minotaur",
+    "Akai"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.451,
+   "origen": "lector",
+   "bans": [
+    "Marcel",
+    "Atlas",
+    "Hirara",
+    "Khufra",
+    "Kaja",
+    "Aulus",
+    "Barats",
+    "Masha"
+   ],
+   "draft": {
+    "enemigos": [
+     "Eudora",
+     "Gatotkaca",
+     "Freya",
+     "Wanwan",
+     "Paquito"
+    ],
+    "aliados": [
+     "Vexana",
+     "Selena",
+     "Karrie"
+    ],
+    "linea": "roam",
+    "rival": "Gatotkaca"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Atlas",
+     "Hirara",
+     "Khufra",
+     "Kaja",
+     "Aulus",
+     "Barats",
+     "Masha"
+    ],
+    "enemigos": [
+     "Eudora",
+     "Gatotkaca",
+     "Freya",
+     "Wanwan",
+     "Paquito"
+    ],
+    "aliados": [
+     "Vexana"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "s2",
+      "candidato": "Beatrix",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Esmeralda",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Zetian",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Natalia",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Bruno",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Wanwan",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Harith",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Esmeralda",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Hilda",
+      "parecido": 0.65
+     }
+    ],
+    "ms": [
+     4165,
+     2836,
+     2864,
+     2964,
+     4495,
+     3441,
+     3857,
+     3622,
+     3149,
+     3006,
+     3531,
+     3259
+    ],
+    "msCaptura": [
+     2881,
+     1915,
+     2262,
+     1902,
+     3308,
+     2212,
+     2743,
+     2554,
+     2091,
+     2030,
+     2311,
+     2186
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Eudora",
+      "Gatotkaca",
+      "Freya",
+      "Wanwan",
+      "Paquito",
+      "Eudora",
+      "Gatotkaca",
+      "Freya",
+      "Wanwan",
+      "Paquito"
+     ]
+    }
+   },
+   "duracion": 14.9,
+   "fases": [
+    0.45,
+    0.448,
+    0.486,
+    0.42,
+    0.448,
+    0.432
+   ]
+  },
   {
    "t": 1791829160571,
    "pick": "Estes",
@@ -16355,6 +16540,12 @@
   {
    "cuando": "2026-10-12T18:20:27.288Z",
    "partidas": 208,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-12T18:39:50.922Z",
+   "partidas": 209,
    "heroes": 11,
    "incidencia": 11
   }
