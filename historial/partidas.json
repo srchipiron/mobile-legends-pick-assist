@@ -1,6 +1,170 @@
 {
- "actualizado": "2026-10-12T16:16:41.719Z",
+ "actualizado": "2026-10-12T18:20:27.288Z",
  "partidas": [
+  {
+   "t": 1791829160571,
+   "pick": "Estes",
+   "recomendados": [
+    "Rafaela",
+    "Gloo",
+    "Estes"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.611,
+   "origen": "lector",
+   "bans": [
+    "Marcel",
+    "Hirara",
+    "Belerick",
+    "Paquito",
+    "Khufra",
+    "Masha",
+    "Obsidia",
+    "Aulus",
+    "Lukas"
+   ],
+   "draft": {
+    "enemigos": [
+     "Nana",
+     "Alpha",
+     "Minotaur",
+     "Miya",
+     "Yin"
+    ],
+    "aliados": [
+     "Eudora",
+     "Selena",
+     "Clint",
+     "Thamuz"
+    ],
+    "linea": "roam",
+    "rival": "Minotaur"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Hirara",
+     "Belerick",
+     "Paquito",
+     "Khufra",
+     "Masha",
+     "Obsidia",
+     "Aulus",
+     "Lukas"
+    ],
+    "enemigos": [
+     "Nana",
+     "Alpha",
+     "Miya",
+     "Yin"
+    ],
+    "aliados": [
+     "Julian",
+     "Eudora",
+     "Clint",
+     "Thamuz"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "e3",
+      "candidato": "Floryn",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Claude",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.7
+     }
+    ],
+    "ms": [
+     4521,
+     2944,
+     4306,
+     3298,
+     2746,
+     3983,
+     2972,
+     3021,
+     2787,
+     3050,
+     3005,
+     2744,
+     3990,
+     2916,
+     2641,
+     3115,
+     2641
+    ],
+    "msCaptura": [
+     3513,
+     1986,
+     2970,
+     2375,
+     1951,
+     2543,
+     2081,
+     2150,
+     1923,
+     2191,
+     2114,
+     1981,
+     2816,
+     2028,
+     1865,
+     2334,
+     1911
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Minotaur",
+      "Miya",
+      "Yin",
+      "Minotaur",
+      "Miya",
+      "Yin",
+      "Minotaur",
+      "Miya",
+      "Yin"
+     ]
+    }
+   },
+   "duracion": 12.8,
+   "fases": [
+    0.715,
+    0.644,
+    0.571,
+    0.513,
+    0.517,
+    0.515
+   ]
+  },
   {
    "t": 1791821694985,
    "pick": "Rafaela",
@@ -16185,6 +16349,12 @@
   {
    "cuando": "2026-10-12T16:16:41.719Z",
    "partidas": 207,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-12T18:20:27.288Z",
+   "partidas": 208,
    "heroes": 11,
    "incidencia": 11
   }
