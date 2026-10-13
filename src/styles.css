@@ -711,6 +711,12 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 
 .build-ajuste { display: flex; flex-direction: column; gap: 5px; }
 
+/* Los talentos del emblema (3.57.0): una línea entera, que no parta las cifras. */
+.build-talentos { flex-basis: 100%; overflow-wrap: anywhere; }
+/* La build elegida para este draft (3.57.0) y la marca de la más usada entre las otras. */
+.build-para-draft { margin: 0 0 4px; font-size: 13px; line-height: 1.4; }
+.build-mas-usada { font-size: 11px; color: var(--gold); font-weight: 600; }
+
 .build-otras { display: flex; flex-direction: column; gap: 6px; }
 .build-otra {
   margin: 0; display: flex; flex-direction: column; gap: 3px;

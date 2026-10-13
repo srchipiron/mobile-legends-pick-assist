@@ -349,11 +349,19 @@ function extraerDefensa(tips) {
 const EFECTOS = {
   antiCuracion: /reduc\w*[^.]{0,60}(HP Regen|Regen|healing|Heal)\b/i,
   cortaControl: /(CC and Slow Duration reduced|immune to all damage and effects|reduc\w*[^.]{0,30}\b(CC|Crowd Control)\b)/i,
+  // 3.57.0, comprobados contra los 152 objetos de la API el 13 de octubre de
+  // 2026: reduce escudos (Sea Halberd, Glowing Wand, Dominance Ice), reduce
+  // el daño crítico (Blade Armor) y da probabilidad de crítico (siete de
+  // ataque: con ellos se sabe qué enemigos van de crítico por su build).
+  antiEscudo: /reduc\w*[^.]{0,30}\bShield/i,
+  antiCritico: /Crit(ical)? Damage Reduction/i,
+  critico: /Crit(ical)? Chance/i,
 };
 
 function extraerEfectos(d) {
   const texto = Object.keys(d)
-    .filter((k) => /^equipskill/.test(k))
+    // Y `equiptips` (3.57.0): el crítico y su reducción van en las estadísticas, no en la pasiva.
+    .filter((k) => /^equipskill/.test(k) || k === 'equiptips')
     .map((k) => d[k])
     .join(' ')
     .replace(/<br\s*\/?>/gi, ' ')
@@ -453,6 +461,30 @@ export async function fetchBuilds(heroList) {
     builds: Object.values(out).reduce((a, porLinea) => a + Object.values(porLinea).reduce((b, l) => b + l.length, 0), 0),
     errores,
   };
+  return out;
+}
+
+/**
+ * Los talentos de los emblemas (3.57.0): `giftid` -> nombre, nivel (1, 2 o
+ * 3: la fila del árbol) y lo que hace, del texto del propio juego. Una sola
+ * petición. Es lo que da nombre a los `talentos` de cada build.
+ */
+export async function fetchTalentos() {
+  const out = {};
+  if (!estado.ROUTES?.talentos) return out;
+  const { rows } = await callRoute(estado.ROUTES.talentos, { size: 300, index: 1, lang: 'en' });
+  for (const row of rows) {
+    const d = row?.data ?? row;
+    const id = Number(d?.giftid);
+    const nombre = d?.emblemskill?.skillname;
+    if (!Number.isInteger(id) || id <= 0 || !nombre) continue;
+    const t = { nombre: String(nombre).trim() };
+    const nivel = Number(d?.gifttiers);
+    if ([1, 2, 3].includes(nivel)) t.nivel = nivel;
+    const texto = String(d?.emblemskill?.skilldescemblem ?? d?.emblemskill?.skilldesc ?? '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+    if (texto) t.texto = texto.slice(0, 200);
+    out[id] = t;
+  }
   return out;
 }
 
@@ -560,6 +592,11 @@ function recogerBuilds(node, depth = 0) {
         const hechizo = b?.battleskill?.data?.__data?.skillname ?? b?.battleskill?.data?.skillname;
         if (emblema) out.emblema = String(emblema);
         if (hechizo) out.hechizo = String(hechizo);
+        // Los tres talentos del emblema (3.57.0): `new_rune_skill`, ids de
+        // talento (`giftid` de /academy/emblems). Antes no se guardaban y 57
+        // de 492 builds salían repetidas en pantalla.
+        const talentos = (Array.isArray(b?.new_rune_skill) ? b.new_rune_skill : []).map(Number).filter((n) => Number.isInteger(n) && n > 0);
+        if (talentos.length) out.talentos = talentos;
         return out;
       })
       .filter((b) => b.objetos.length);

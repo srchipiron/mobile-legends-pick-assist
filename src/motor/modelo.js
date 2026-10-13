@@ -1,7 +1,7 @@
 import { nombreClave, buscar } from './nombres.js';
 import { cruce, sinergia, mediaDeSinergia, valido, CRUCE_DESTACABLE, CRUCE_MALO, CRUCE_FUERTE, CRUCE_FUERTE_EN_CONTRA, PAREJA_DESTACABLE } from './matrices.js';
 import { PRECISION_DEDUCIDA, hayQueProtegerlo, tipoDeDano } from './catalogo.js';
-import { tuNivel, priorDeMaestria } from './maestria.js';
+import { tuNivel, priorDeMaestria, motivoDeMaestria } from './maestria.js';
 import { COUNTER_RULES } from './reglas.js';
 
 /**
@@ -203,9 +203,8 @@ export function terminoTu(heroe, maestria, stats, nivel, prior) {
   const propio = (m.winRate * m.games + esperado * k) / (m.games + k);
   const sigma = Math.sqrt(0.25 / k);
   const motivos = [];
-  const params = { pct: Math.round(m.winRate * 100), n: m.games };
-  if (propio >= esperado + sigma) motivos.push({ clave: 'regla.maestriaBuena', params, bueno: true, peso: 1.4 });
-  if (propio <= esperado - sigma) motivos.push({ clave: 'regla.maestriaMala', params, bueno: false, peso: 1.4 });
+  if (propio >= esperado + sigma) motivos.push(motivoDeMaestria(m, true));
+  if (propio <= esperado - sigma) motivos.push(motivoDeMaestria(m, false));
   return { valor: logit(propio) - logit(w), dato: true, propio, motivos };
 }
 

@@ -82,6 +82,12 @@ export function medir(datos) {
     // ensenar. Mismo fallo que ya costo la matriz de counters.
     builds: Object.values(datos?.builds ?? {})
       .reduce((n, porLinea) => n + Object.values(porLinea ?? {}).reduce((m, l) => m + (l?.length ?? 0), 0), 0),
+    // Los talentos del emblema (3.57.0): cuántos tienen nombre y cuántas
+    // builds traen los suyos. Una corrida con la ruta de emblemas caída los
+    // conserva; una con las builds sin `new_rune_skill` se ve aquí.
+    talentos: Object.keys(datos?.talentos ?? {}).length,
+    buildsConTalentos: Object.values(datos?.builds ?? {})
+      .reduce((n, porLinea) => n + Object.values(porLinea ?? {}).reduce((m, l) => m + (Array.isArray(l) ? l.filter((b) => b?.talentos?.length).length : 0), 0), 0),
     // El winrate por linea (3.12.0): los PARES heroe-linea, no los heroes.
     winrateLinea: Object.values(datos?.winrateLinea ?? {}).reduce((n, porLinea) => n + Object.keys(porLinea ?? {}).length, 0),
     // La curva por duración (3.43.0): los pares héroe-línea con curva. Es lo

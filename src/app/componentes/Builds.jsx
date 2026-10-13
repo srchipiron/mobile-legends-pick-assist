@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { buildsDe, objetosDe, ajustesDeBuild } from '../../motor/builds.js';
+import { buildsDe, objetosDe, ajustesDeBuild, buildParaElDraft } from '../../motor/builds.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Icono } from './Imagen.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
@@ -11,10 +11,15 @@ import { PlanDePartida } from './PlanDePartida.jsx';
  * ajuste por el draft (un CONSEJO: de qué pega cada enemigo más cuánta
  * defensa da cada objeto, con su aviso).
  */
-export function Builds({ heroe, linea, builds, equipment, enemigos, plan = null, onCerrar, t = tPorDefecto }) {
+export function Builds({ heroe, linea, builds, equipment, talentos = null, enemigos, plan = null, onCerrar, t = tPorDefecto }) {
   const lista = useMemo(() => buildsDe(builds, heroe, linea), [builds, heroe, linea]);
-  const principal = lista[0] ?? null;
-  const ajustes = useMemo(() => (principal ? ajustesDeBuild(principal, equipment, enemigos, linea) : []), [principal, equipment, enemigos, linea]);
+  // De las que se juegan, la que mejor encaja con ESTE draft (3.57.0); sin
+  // ninguna mejor, la más usada. Las demás, debajo, con la más usada marcada.
+  const eleccion = useMemo(() => buildParaElDraft(lista, equipment, enemigos, linea, { builds }), [lista, equipment, enemigos, linea, builds]);
+  const principal = lista[eleccion.indice] ?? null;
+  const otras = lista.map((b, i) => ({ b, i })).filter(({ i }) => i !== eleccion.indice);
+  const ajustes = useMemo(() => (principal ? ajustesDeBuild(principal, equipment, enemigos, linea, { builds }) : []), [principal, equipment, enemigos, linea, builds]);
+  const nombresDeTalentos = (b) => (b.talentos ?? []).map((id) => talentos?.[id]?.nombre).filter(Boolean);
   const pct = (n) => (n * 100).toFixed(1);
   const cifras = (b) => (
     <span className="build-cifras">
@@ -26,6 +31,7 @@ export function Builds({ heroe, linea, builds, equipment, enemigos, plan = null,
     <>
       {b.emblema && <span>{t('build.emblema', { nombre: b.emblema })}</span>}
       {b.hechizo && <span>{t('build.hechizo', { nombre: b.hechizo })}</span>}
+      {nombresDeTalentos(b).length > 0 && <span className="build-talentos">{t('build.talentos', { nombres: nombresDeTalentos(b).join(' · ') })}</span>}
     </>
   );
 
@@ -40,6 +46,9 @@ export function Builds({ heroe, linea, builds, equipment, enemigos, plan = null,
         {principal && (
           <>
             <section className="build">
+              {eleccion.indice > 0 && (
+                <p className="frase bien build-para-draft">{t('build.paraEsteDraft', { pos: eleccion.indice + 1, cubre: eleccion.cubre.map((c) => t(`build.cubre.${c.replace('build.', '')}`)).join(', ') })}</p>
+              )}
               <p className="build-nucleo">{t('build.nucleo')}</p>
               <ol className="build-objetos">
                 {objetosDe(equipment, principal).map((o) => (
@@ -76,13 +85,14 @@ export function Builds({ heroe, linea, builds, equipment, enemigos, plan = null,
                 <p className="build-nota">{t('build.ajusteAviso')}</p>
               </section>
             )}
-            {lista.length > 1 && (
+            {otras.length > 0 && (
               <section className="build-otras">
                 <p className="build-nucleo">{t('build.otras')}</p>
                 {/* El emblema y el hechizo también aquí: hay builds con los mismos
                     tres objetos que solo se diferencian en el hechizo. */}
-                {lista.slice(1).map((b, i) => (
+                {otras.map(({ b, i }) => (
                   <p key={i} className="build-otra">
+                    {i === 0 && <span className="build-mas-usada">{t('build.masUsada')}</span>}
                     <span className="build-otra-objetos">
                       {objetosDe(equipment, b).map((o) => <span key={o.id}><Icono id={o.id} nombre={o.nombre} />{o.nombre}</span>)}
                     </span>

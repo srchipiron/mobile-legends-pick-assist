@@ -38,6 +38,9 @@ const WANTED = {
   // El winrate de un heroe EN UNA LINEA (3.12.0). Vive en la curva por
   // duracion de partida (`total_win_rate`), y como las builds pide `lane`.
   lineas: [/win[-_]?rate\/timeline\/?$/i],
+  // Los talentos de los emblemas (3.57.0): de aquí salen los nombres de los
+  // tres talentos de cada build (`new_rune_skill`, por `giftid`).
+  talentos: [/emblems?\/?$/i],
 };
 
 /** Rutas que llevan el heroe (o el recurso) dentro del camino, no como parametro. */

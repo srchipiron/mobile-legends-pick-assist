@@ -8,6 +8,24 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.57.0
+
+- «Plan y objetos» marca la build que mejor encaja con tu draft, no siempre la
+  más usada. Entre las builds que más se juegan con tu héroe, si otra ya
+  lleva lo que este draft pide (defensa mágica contra cuatro magos,
+  antisanación contra los que se curan…), sale arriba diciendo qué cubre; la
+  más usada sigue debajo, marcada.
+- Cada build enseña los tres talentos de su emblema, con su nombre. Antes no
+  se veían y algunas builds salían repetidas: eran la misma con otros
+  talentos.
+- Dos avisos nuevos contra el draft: si dos o más enemigos usan escudos, te
+  propone un objeto que los reduce (Sea Halberd, Glowing Wand, Dominance Ice);
+  si dos o más van de crítico (lo dice la build que se les compra en tu
+  rango), Blade Armor. Igual que los de antes, son consejo sacado de lo que
+  dice cada objeto, no una medida de builds contra drafts.
+- Tu habilidad con un héroe sale en la tarjeta con números que de verdad has
+  jugado: «con la app lo llevas al 75% en 60 partidas», no una mezcla.
+
 ## 3.56.0
 
 - Tu habilidad con cada héroe se cuenta ahora con tus partidas con la app,

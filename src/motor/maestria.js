@@ -76,9 +76,8 @@ export function notaDeMaestria(heroe, maestria, nivel, prior) {
   const sigma = Math.sqrt(0.25 / k);
   const valor = Math.max(0, Math.min(1, (encogido - base) / (4 * sigma) + 0.5));
   const motivos = [];
-  const params = { pct: Math.round(m.winRate * 100), n: m.games };
-  if (encogido >= base + sigma) motivos.push({ clave: 'regla.maestriaBuena', params, bueno: true, peso: 1.4 });
-  if (encogido <= base - sigma) motivos.push({ clave: 'regla.maestriaMala', params, bueno: false, peso: 1.4 });
+  if (encogido >= base + sigma) motivos.push(motivoDeMaestria(m, true));
+  if (encogido <= base - sigma) motivos.push(motivoDeMaestria(m, false));
   return { valor, encogido, motivos };
 }
 
@@ -155,9 +154,9 @@ export function maestriaEfectiva(maestria = {}, partidas = []) {
   }
   for (const [nombre, m] of Object.entries(maestriaDesdeRegistro((partidas ?? []).filter((p) => !p?.previa)))) {
     const k = nombreClave(nombre); const base = salida[k];
-    if (!(base?.games > 0) || base.winRate == null) { salida[k] = { ...m, apuntadas: m.games }; continue; }
+    if (!(base?.games > 0) || base.winRate == null) { salida[k] = { ...m, apuntadas: m.games, wrApuntadas: m.winRate }; continue; }
     const games = base.games + m.games;
-    salida[k] = { ...base, games, winRate: (base.winRate * base.games + m.winRate * m.games) / games, apuntadas: m.games };
+    salida[k] = { ...base, games, winRate: (base.winRate * base.games + m.winRate * m.games) / games, apuntadas: m.games, wrApuntadas: m.winRate };
   }
   return salida;
 }
@@ -180,6 +179,21 @@ export function maestriaDeSiempre(maestria = {}, partidas = []) {
     if (!siempre[k] || (m.games ?? 0) > (siempre[k].games ?? 0)) siempre[k] = m;
   }
   return siempre;
+}
+
+/**
+ * Lo que dice el motivo de maestría (3.56.0): números que de verdad has
+ * jugado, no la mezcla con la que puntúa el motor. Con partidas apuntadas,
+ * las de la app (`regla.maestria…App`); sin ellas, las de siempre enteras.
+ * «Lo llevas al 66% en 100 partidas» era la mezcla de 40 de siempre y 60
+ * con la app: ninguna de las dos cosas.
+ */
+export function motivoDeMaestria(m, bueno) {
+  if (m?.apuntadas > 0 && Number.isFinite(m.wrApuntadas)) {
+    return { clave: bueno ? 'regla.maestriaBuenaApp' : 'regla.maestriaMalaApp', params: { pct: Math.round(m.wrApuntadas * 100), n: m.apuntadas }, bueno, peso: 1.4 };
+  }
+  const n = Number.isFinite(m?.deSiempre) ? m.deSiempre : m?.games;
+  return { clave: bueno ? 'regla.maestriaBuena' : 'regla.maestriaMala', params: { pct: Math.round((m?.winRate ?? 0) * 100), n }, bueno, peso: 1.4 };
 }
 
 /** Tu winrate de referencia: la maestría ponderada por partidas (miles, frente a las pocas del registro). */

@@ -29,11 +29,12 @@ export function buildsDe(builds, heroe, linea) {
 }
 
 /** Todo lo que la app ENSEÑA de una build: dos con la misma firma son indistinguibles en pantalla. */
-const firma = (b) => [(b.objetos ?? []).join(','), b.emblema ?? '', b.hechizo ?? ''].join('|');
+const firma = (b) => [(b.objetos ?? []).join(','), b.emblema ?? '', b.hechizo ?? '', (b.talentos ?? []).join(',')].join('|');
 
 /**
- * Junta las builds que en pantalla se ven EXACTAMENTE igual: la API las
- * separa por un talento de emblema que no se descarga (57 de 492). Por
+ * Junta las builds que en pantalla se ven EXACTAMENTE igual. Hasta 3.56.0
+ * la API las separaba por un talento de emblema que no se descargaba (57 de
+ * 492); desde 3.57.0 los talentos se guardan y entran en la firma. Por
  * objetos MÁS emblema MÁS hechizo, no solo por objetos: 115 pares comparten
  * los tres objetos y cambian el hechizo, y ahí sí hay dos builds. El winrate
  * junto va PONDERADO POR USO: el uso es proporcional a la muestra.
@@ -141,7 +142,7 @@ const cuentan = (heroes) => heroes.reduce((n, h) => n + (h?.inferred ? PRECISION
  *
  * @returns [{ clave, params, objetos, peso }]
  */
-export function ajustesDeBuild(build, equipment, enemigos = [], linea = null) {
+export function ajustesDeBuild(build, equipment, enemigos = [], linea = null, { builds = null, tope = TOPE_AVISOS } = {}) {
   const avisos = [];
   const objetos = objetosDe(equipment, build);
   const tiene = (efecto) => objetos.some((o) => o.efectos?.includes(efecto));
@@ -178,7 +179,66 @@ export function ajustesDeBuild(build, equipment, enemigos = [], linea = null) {
       peso: 1,
     });
   }
-  return avisos.filter((a) => a.objetos.length).sort((a, b) => b.peso - a.peso).slice(0, TOPE_AVISOS);
+  // Escudos (3.57.0): los que se los ponen o se los dan a los suyos. Los
+  // objetos que los reducen (Sea Halberd, Glowing Wand, Dominance Ice) son
+  // también antisanación: con los dos avisos, sale primero el de curación.
+  const escudan = enemigos.filter((e) => e?.tags?.includes('shield'));
+  if (cuentan(escudan) >= ENEMIGOS_PARA_HABLAR && !tiene('antiEscudo')) {
+    avisos.push({
+      clave: 'build.ajusteEscudo',
+      params: { n: escudan.length, quien: escudan.slice(0, 2).map((e) => e.name).join(', ') },
+      objetos: conEfecto(equipment, 'antiEscudo', linea),
+      peso: 1.5,
+    });
+  }
+  // Crítico (3.57.0): quién va de crítico no es una etiqueta, es su BUILD
+  // (la más jugada de ese héroe lleva un objeto de crítico, leído del texto).
+  const criticos = builds ? enemigos.filter((e) => vaDeCritico(builds, equipment, e)) : [];
+  if (criticos.length >= ENEMIGOS_PARA_HABLAR && !tiene('antiCritico')) {
+    avisos.push({
+      clave: 'build.ajusteCritico',
+      params: { n: criticos.length, quien: criticos.slice(0, 2).map((e) => e.name).join(', ') },
+      objetos: conEfecto(equipment, 'antiCritico', linea),
+      peso: 1.5,
+    });
+  }
+  return avisos.filter((a) => a.objetos.length).sort((a, b) => b.peso - a.peso).slice(0, tope);
+}
+
+/**
+ * ¿Va de crítico este héroe? Su build más jugada (en cualquiera de sus
+ * líneas, la de más uso) lleva al menos un objeto que da probabilidad de
+ * crítico. Es lo que compra la gente con él en tu rango, no una suposición
+ * por su rol.
+ */
+export function vaDeCritico(builds, equipment, heroe) {
+  const nombre = typeof heroe === 'string' ? heroe : heroe?.name;
+  const porLinea = builds?.[nombre] ?? indice(builds)[nombreClave(nombre)];
+  if (!porLinea) return false;
+  const todas = Object.values(porLinea).flatMap((l) => (Array.isArray(l) ? l : []));
+  const mas = todas.reduce((m, b) => ((b?.pickRate ?? 0) > (m?.pickRate ?? -1) ? b : m), null);
+  return !!mas && objetosDe(equipment, mas).some((o) => o.efectos?.includes('critico'));
+}
+
+/**
+ * De las builds que se juegan (ya ordenadas por uso), la que mejor encaja con
+ * ESTE draft (3.57.0): la que deja menos por cubrir, sumando el peso de los
+ * avisos que le quedarían. A igualdad, la más usada. Devuelve el índice y lo
+ * que esa build cubre y la más usada no; `indice: 0` si no hay ninguna mejor.
+ * Sigue siendo un CONSEJO sobre un DATO: no hay winrate de builds contra
+ * drafts en ninguna parte.
+ */
+export function buildParaElDraft(lista, equipment, enemigos = [], linea = null, { builds = null } = {}) {
+  if (!Array.isArray(lista) || lista.length < 2) return { indice: 0, cubre: [] };
+  const coste = lista.map((b) => {
+    const avisos = ajustesDeBuild(b, equipment, enemigos, linea, { builds, tope: Infinity });
+    return { avisos, total: avisos.reduce((n, a) => n + a.peso, 0) };
+  });
+  let indice = 0;
+  coste.forEach((c, i) => { if (c.total < coste[indice].total) indice = i; });
+  if (indice === 0) return { indice: 0, cubre: [] };
+  const quedan = new Set(coste[indice].avisos.map((a) => a.clave));
+  return { indice, cubre: coste[0].avisos.map((a) => a.clave).filter((c) => !quedan.has(c)) };
 }
 
 /** Objetos con un efecto, por defensa total y nombre (orden estable entre recargas). */

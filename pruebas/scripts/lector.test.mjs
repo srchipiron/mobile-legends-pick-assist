@@ -13,7 +13,7 @@ import { spawnSync } from 'node:child_process';
 import { transformSync } from 'esbuild';
 import { test, ok, eq, terminar, RAIZ, leerJson, generador } from '../arnes.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
-import { LADO, muestra, normalizar, reconocer } from '../../scripts/lector/caras.mjs';
+import { LADO, muestra, normalizar, reconocer, CRIBA_PICKS } from '../../scripts/lector/caras.mjs';
 import { leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, carasGuardadas, carasDesfasadas, encontrarTablet, sinRepetidos, REFERENCIA, PICKS_ENEMIGOS, ALIADOS, BANEOS, ambasOrientaciones } from '../../scripts/lector/leer.mjs';
 import { preguntaMdns, tabletsDeRespuesta, buscarPorMdns, escanearPuertos, SERVICIO } from '../../scripts/lector/tablet.mjs';
 import { capturaCompleta, VERDAD as VERDAD_JUEGO } from '../fixtures/juego/captura.mjs';
@@ -98,14 +98,14 @@ test('lee los picks del enemigo mientras se elige: Clint y Khufra, y nada en los
 
 test('la búsqueda en dos pasadas (reducida y luego entera) decide igual que comparar con todas las caras (3.39.0)', () => {
   // La de hasta 3.38.0, tal cual: cada posición contra todas las caras a 24×24.
-  const exhaustiva = (img, [cx, cy, r], refs, { pasos = 3, escalas = [0.94, 1.06], finura = 16 } = {}) => {
+  const exhaustiva = (img, [cx, cy, r], refs, { pasos = 3, escalas = [0.94, 1.06], finura = 16, criba = [], saltoCriba = 1 } = {}) => {
     const paso = Math.max(1, Math.round(r / finura)), mejor = new Map();
     let donde = [0, 0], tope = -Infinity;
     const probar = (dx, dy, esc) => {
       const v = normalizar(muestra(img, cx + dx * paso, cy + dy * paso, r * esc));
       for (const c of refs) { let k = 0; for (let i = 0; i < v.length; i++) k += v[i] * c.v[i]; if (!(mejor.get(c.nombre) >= k)) mejor.set(c.nombre, k); if (k > tope) { tope = k; donde = [dx, dy]; } }
     };
-    for (let dx = -pasos; dx <= pasos; dx++) for (let dy = -pasos; dy <= pasos; dy++) probar(dx, dy, 1);
+    for (const ec of [1, ...criba]) for (let dx = -pasos; dx <= pasos; dx += ec === 1 ? 1 : saltoCriba) for (let dy = -pasos; dy <= pasos; dy += ec === 1 ? 1 : saltoCriba) probar(dx, dy, ec);
     const [bx, by] = donde;
     for (const esc of escalas) for (let dx = bx - 1; dx <= bx + 1; dx++) for (let dy = by - 1; dy <= by + 1; dy++) probar(dx, dy, esc);
     const [a, b] = [...mejor].sort((x, y) => y[1] - x[1]);
@@ -120,6 +120,10 @@ test('la búsqueda en dos pasadas (reducida y luego entera) decide igual que com
     // Sin el héroe que está: lo que queda son caras parecidas entre sí, que es donde una criba gruesa se equivocaría.
     [PICKS_ENEMIGOS[1], ambas.filter((c) => c.nombre !== 'Eudora'), opPicks],
     [ALIADOS[4], ambas.filter((c) => c.nombre !== 'Estes'), { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12, 1.25], finura: 8 }],
+    // Con la criba a dos tamaños de 3.55.0, las opciones de verdad de leerPicksEnemigos y leerAliados.
+    ...PICKS_ENEMIGOS.slice(0, 3).map((p) => [p, ambas, { ...opPicks, criba: CRIBA_PICKS, saltoCriba: 2 }]),
+    ...ALIADOS.slice(3).map((p) => [p, ambas, { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12, 1.25], finura: 8, criba: CRIBA_PICKS }]),
+    [PICKS_ENEMIGOS[1], ambas.filter((c) => c.nombre !== 'Eudora'), { ...opPicks, criba: CRIBA_PICKS, saltoCriba: 2 }],
   ];
   for (const [pos, refs, op] of casos) {
     // Sin afinar (eso busca MÁS que la de antes, a propósito: va en la prueba siguiente).

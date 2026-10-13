@@ -7,7 +7,7 @@
 import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
 import { catalogo, h } from '../fixtures/catalogo.mjs';
 import { buscar, nombreClave } from '../../src/motor/nombres.js';
-import { maestriaEfectiva, fecharMaestria, maestriaDesdeRegistro, notaDeMaestria, priorDeMaestria, tuNivel, maestriaDeSiempre, TOPE_DE_SIEMPRE } from '../../src/motor/maestria.js';
+import { maestriaEfectiva, fecharMaestria, maestriaDesdeRegistro, notaDeMaestria, priorDeMaestria, tuNivel, maestriaDeSiempre, TOPE_DE_SIEMPRE, motivoDeMaestria } from '../../src/motor/maestria.js';
 import { generador } from '../../src/motor/robustez.js';
 import { ordenarPicks } from '../../src/motor/ranking.js';
 import { ESCALA } from '../../src/motor/modelo.js';
@@ -287,6 +287,18 @@ test('fechar la maestría no cambia lo que cuenta: ni con pocas partidas a mano 
   const apuntadas = Array.from({ length: 40 }, (_, i) => ({ t: 1000 + i, pick: 'Kaja', gane: i % 4 !== 0, recomendados: [] }));
   eq(maestriaEfectiva(kaja, apuntadas).kaja.games, 44, '4 partidas a mano con fecha tapan 40 apuntadas antes');
   eq(maestriaEfectiva(kaja, [...apuntadas, { t: 6000, pick: 'Kaja', gane: true, recomendados: [] }]).kaja.games, 45, 'lo apuntado después no se suma');
+});
+
+test('el motivo de maestría dice números jugados de verdad, no la mezcla con la que puntúa (3.56.0)', () => {
+  const app = Array.from({ length: 60 }, (_, i) => ({ t: i, pick: 'Rafaela', gane: i < 45, recomendados: [] }));
+  const m = maestriaEfectiva({ Rafaela: { games: 564, winRate: 0.53 } }, app).rafaela;
+  const bueno = motivoDeMaestria(m, true);
+  eq(bueno.clave, 'regla.maestriaBuenaApp');
+  eq(JSON.stringify(bueno.params), JSON.stringify({ pct: 75, n: 60 }), `el motivo no dice las partidas con la app: ${JSON.stringify(bueno.params)}`);
+  // Sin partidas con la app: lo de siempre ENTERO (564), no el tope.
+  const solo = motivoDeMaestria(maestriaEfectiva({ Rafaela: { games: 564, winRate: 0.53 } }, []).rafaela, false);
+  eq(solo.clave, 'regla.maestriaMala');
+  eq(JSON.stringify(solo.params), JSON.stringify({ pct: 53, n: 564 }), `sin la app no dice lo de siempre entero: ${JSON.stringify(solo.params)}`);
 });
 
 await terminar('motor/maestria');

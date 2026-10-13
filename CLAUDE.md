@@ -2853,6 +2853,42 @@ Lo que hay medido y no conviene volver a suponer:
   simplemente no aparece-, pero `comparar-ingesta.mjs` sí rechaza una corrida que
   pierda builds u objetos respecto a la guardada.
 
+**La build para ESTE draft y los avisos nuevos (3.57.0)**, pedido por Javi
+(«mejorar el sistema que me dice qué equipamiento comprar»):
+
+- **Talentos del emblema**: la API los traía en cada build
+  (`new_rune_skill`, ids) y no se guardaban; los nombres salen de
+  `/academy/emblems` (`giftid` → `skillname`, `gifttiers`, texto),
+  `fetchTalentos` → `talentos` en roam-meta.json, conservados si la ruta
+  cae. Entran en la firma de `fundirIguales` (las 57 de 492 builds que se
+  juntaban por no tenerlos dejan de juntarse). `comparar-ingesta` cuenta
+  `talentos` y `buildsConTalentos`.
+- **Efectos nuevos leídos del texto** (`EFECTOS`, ahora también sobre
+  `equiptips`): `antiEscudo` (Sea Halberd, Glowing Wand, Dominance Ice),
+  `antiCritico` (Blade Armor) y `critico` (siete objetos de ataque).
+  Comprobados contra los 152 objetos de la API el 13 de octubre de 2026.
+- **Avisos nuevos**: `build.ajusteEscudo` (dos o más enemigos con `shield`)
+  y `build.ajusteCritico`: quién va de crítico NO es una etiqueta, es su
+  build más jugada en tu rango (`vaDeCritico`: algún objeto con `critico`).
+  Mismo tope de dos avisos, por peso (defensa 3, curación 2, escudo y
+  crítico 1,5, control 1).
+- **`buildParaElDraft`**: de las builds que se juegan, la que deja menos
+  avisos por cubrir (suma de pesos, sin tope); a igualdad, la más usada. La
+  hoja la pone arriba con «te marco la N.ª más usada: ya lleva …» y la más
+  usada queda debajo, marcada. Medido con los datos del 13 de octubre (sin
+  los efectos nuevos todavía): cambia la build en 93 de 1.500 drafts al azar
+  (6,2%), casi siempre por la antisanación (73). Sigue siendo CONSEJO sobre
+  DATO: no hay winrate de builds contra drafts en ninguna parte.
+- El motivo de maestría de la tarjeta dice números jugados de verdad
+  (`motivoDeMaestria`: con la app, las de la app; sin ellas, lo de siempre
+  ENTERO), no la mezcla acotada con la que puntúa el motor.
+- Pruebas: `motor/builds.test` (talentos en la firma, la build elegida y sus
+  empates, escudos, crítico por build), `ingesta-simulada` (talentos y
+  efectos con la forma real) y `motor/maestria.test` (el motivo); la
+  equivalencia del reconocimiento de caras cubre ya las opciones de criba de
+  3.55.0 (sobrevive una mutación inofensiva: sin cribar a 1,2 los finalistas
+  de tamaño 1 bastan en las capturas de prueba).
+
 ## El winrate por línea (3.12.0)
 
 `winrateLinea` en `roam-meta.json`: `{ héroe: { línea: winrate } }`, 165

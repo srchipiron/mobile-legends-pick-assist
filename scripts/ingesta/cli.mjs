@@ -11,7 +11,7 @@ import {
 } from './contexto.mjs';
 import { discoverRoutes, elegirRutaConMasDatos } from './descubrimiento.mjs';
 import {
-  fetchBuilds, fetchEquipo, fetchFichas, fetchHeroList, fetchStats, fetchWinrateLinea,
+  fetchBuilds, fetchEquipo, fetchTalentos, fetchFichas, fetchHeroList, fetchStats, fetchWinrateLinea,
 } from './extraccion.mjs';
 import { fetchRelations } from './relaciones.mjs';
 import {
@@ -162,6 +162,16 @@ async function main() {
     console.log(`  · objetos: ${Object.keys(equipo).length}`);
   } catch (err) {
     console.warn(`  · objetos: fallo (${err.message}); conservo los anteriores`);
+  }
+
+  // Los nombres de los talentos (3.57.0): si falla, los de antes.
+  let talentos = previous?.talentos ?? {};
+  try {
+    const fresh = await fetchTalentos();
+    if (Object.keys(fresh).length) talentos = fresh;
+    console.log(`  · talentos: ${Object.keys(talentos).length}`);
+  } catch (err) {
+    console.warn(`  · talentos: fallo (${err.message}); conservo los anteriores`);
   }
 
   let builds = previous?.builds ?? {};
@@ -367,6 +377,7 @@ async function main() {
     synergies: relations.synergies,
     equipment: equipo,
     builds,
+    talentos,
     winrateLinea,
     curvaLinea,
     historia,

@@ -75,6 +75,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     '/api/equipment/expanded': parametros('size', 'index', 'lang'),
     '/api/equipment': parametros('size', 'index', 'lang'),
     '/api/heroes/{hero_id}/builds': parametros('lane', 'rank', 'size', 'index'),
+    '/api/academy/emblems': parametros('size', 'index', 'lang'),
     '/api/academy/heroes/{hero_id}/win-rate/timeline': parametros('lane', 'rank', 'size', 'index'),
     // Las rutas de la cuenta (tras el inicio de sesión) NO se tocan nunca:
     // la cuenta de Javi vale dinero. Esta encaja con el patrón de los cruces
@@ -170,19 +171,29 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       return json({ code: 0, data: { records: [{ data: {
         equipid: 90001, equipname: 'Objeto de Prueba', equiptypename: 'Defense',
         equipicon: `http://127.0.0.1:${puerto}/img/90001.png`,
-        equiptips: '+18 Extra Magic Defense<br>+5 Extra Physical Defense', equipskill1: 'Reduces HP Regen effects by 50%',
+        equiptips: '+18 Extra Magic Defense<br>+5 Extra Physical Defense<br>+20% Crit Damage Reduction', equipskill1: 'Reduces HP Regen effects by 50%',
+        equipskill2: ' Lifebane: Dealing damage to a target will reduce the Shield and HP Regen effects on them to 60% of normal for 3s.',
       } }] } });
     }
     if (ruta === '/api/equipment') {
       marca('equipoCorto');
       return json({ code: 0, data: { records: [{ data: { equipid: 90001, equipname: 'Objeto de Prueba' } }, { data: { equipid: 90002, equipname: 'Segundo Objeto' } }] } });
     }
+    // Los talentos de los emblemas (3.57.0), con la forma real: `giftid`, `gifttiers` y el texto con etiquetas.
+    if (ruta === '/api/academy/emblems') {
+      marca('talentos');
+      return json({ code: 0, data: { records: [
+        { data: { giftid: 611, gifttiers: 1, emblemskill: { skillname: 'Inspire', skilldescemblem: 'Gain <font color="x">5%</font> extra Cooldown Reduction.' } } },
+        { data: { giftid: 621, gifttiers: 2, emblemskill: { skillname: 'Bargain Hunter', skilldescemblem: 'Equipment can be purchased at 95% of their base price.' } } },
+        { data: { giftid: 131, gifttiers: 3, emblemskill: { skillname: 'Impure Rage', skilldesc: 'Deal extra damage.' } } },
+      ], total: 3 } });
+    }
     if ((m = ruta.match(/^\/api\/heroes\/([^/]+)\/builds$/))) {
       // La misma caída que el winrate por línea: las builds se funden héroe a héroe (3.40.0).
       if (m[1] === fallaLineaDe) { res.statusCode = 500; return res.end('{}'); }
       marca(`builds:${u.searchParams.get('lane')}`);
       return json({ code: 0, data: [{ equipid: [90001, 90002, 90003], build_win_rate: 0.555, build_pick_rate: 0.1,
-        emblem: { data: { emblemname: 'Tank' } }, battleskill: { data: { skillname: 'Flicker' } } }] });
+        emblem: { data: { emblemname: 'Tank' } }, battleskill: { data: { skillname: 'Flicker' } }, new_rune_skill: [611, 621, 131] }] });
     }
     // El winrate por línea (3.12.0), con la forma real: el dato en
     // `total_win_rate`, junto a la curva por duración. Distinto por héroe
@@ -221,7 +232,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
 
     // Cada endpoint que la ingesta conoce se ha llamado. Si uno deja de
     // llamarse, la app se queda con el dato conservado sin que nadie lo vea.
-    for (const k of ['esquema', 'rank:mythic', 'rank:glory', 'rank3:glory', 'position', 'detail', 'counters', 'academy', 'academy:glory', 'academy:mythic', 'compat', 'compat:glory', 'compat:mythic', 'equipo', 'equipoCorto', 'builds:roam', 'lineas:roam', 'img', 'tiers', 'tier']) {
+    for (const k of ['esquema', 'rank:mythic', 'rank:glory', 'rank3:glory', 'position', 'detail', 'counters', 'academy', 'academy:glory', 'academy:mythic', 'compat', 'compat:glory', 'compat:mythic', 'equipo', 'equipoCorto', 'talentos', 'builds:roam', 'lineas:roam', 'img', 'tiers', 'tier']) {
       ok(golpes[k] > 0, `la ingesta no ha llamado a ${k}: ${JSON.stringify(golpes)}`);
     }
 
@@ -266,9 +277,14 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     const obj = d.equipment?.['90001'];
     ok(obj && obj.nombre === 'Objeto de Prueba' && obj.magica === 18 && obj.fisica === 5 && obj.tipo === 'Defense', `objeto servido: ${JSON.stringify(obj)}`);
     ok((obj?.efectos ?? []).includes('antiCuracion'), `efectos del objeto: ${JSON.stringify(obj?.efectos)}`);
+    // 3.57.0: la reducción de escudos (de la pasiva) y la de crítico (de las estadísticas, `equiptips`).
+    ok(['antiEscudo', 'antiCritico'].every((e) => obj?.efectos?.includes(e)) && !obj?.efectos?.includes('critico'), `efectos nuevos del objeto: ${JSON.stringify(obj?.efectos)}`);
     eq(d.equipment?.['90002']?.nombre, 'Segundo Objeto', 'la ruta corta de objetos no se funde con la larga');
     const build = d.builds?.Atlas?.roam?.[0];
     ok(build && build.objetos.join(',') === '90001,90002,90003' && build.emblema === 'Tank' && build.hechizo === 'Flicker', `build de Atlas: ${JSON.stringify(build)}`);
+    // Los talentos (3.57.0): los de la build, y su nombre, nivel y texto sin etiquetas.
+    eq(JSON.stringify(build?.talentos), '[611,621,131]', `la build no trae sus talentos: ${JSON.stringify(build)}`);
+    eq(JSON.stringify(d.talentos?.['611']), JSON.stringify({ nombre: 'Inspire', nivel: 1, texto: 'Gain 5% extra Cooldown Reduction.' }), `los talentos no son los servidos: ${JSON.stringify(d.talentos)}`);
     eq(build?.winRate, 0.555, `winrate de la build: ${build?.winRate}`);
     eq(d.winrateLinea?.Atlas?.roam, 0.4331, `winrate de Atlas en roam: ${JSON.stringify(d.winrateLinea?.Atlas)}`);
     eq(d.winrateLinea?.Khufra?.roam, 0.4341, 'el winrate por línea no es el de cada héroe');

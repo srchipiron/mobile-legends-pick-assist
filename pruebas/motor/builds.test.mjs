@@ -10,7 +10,7 @@
 import { test, ok, eq, leerJson, terminar, generador } from '../arnes.mjs';
 import {
   ajusteDefensivo, ajustesDeBuild, amenazaEnemiga, buildsDe, coberturaBuilds, conEfecto, mejoresDefensas,
-  DESEQUILIBRIO, ENEMIGOS_PARA_HABLAR, TOPE_AVISOS,
+  buildParaElDraft, vaDeCritico, DESEQUILIBRIO, ENEMIGOS_PARA_HABLAR, TOPE_AVISOS,
 } from '../../src/motor/builds.js';
 import { LINEAS } from '../../src/motor/catalogo.js';
 import { prepararDatos } from '../../src/motor/draft.js';
@@ -355,6 +355,53 @@ test('el aviso de control habla de quien ENCADENA control, no de quien controla 
   // Cinco al azar de los 133 (no uno por línea): ~45% con `cc_chain`, 99% con `cc_hard`.
   // Con equipos realistas (uno por línea, por cuota de pick) es el 33%.
   ok(conAviso / N < 0.6, `el aviso de control sale en el ${Math.round((100 * conAviso) / N)}% de los equipos: ya no distingue nada`);
+});
+
+test('los talentos distinguen dos builds con los mismos objetos, emblema y hechizo (3.57.0)', () => {
+  const builds = { Rafaela: { roam: [
+    { objetos: [1, 2, 3], pickRate: 0.04, emblema: 'Support', hechizo: 'Purify', talentos: [611, 621, 131] },
+    { objetos: [1, 2, 3], pickRate: 0.02, emblema: 'Support', hechizo: 'Purify', talentos: [511, 621, 131] },
+    { objetos: [1, 2, 3], pickRate: 0.01, emblema: 'Support', hechizo: 'Purify', talentos: [611, 621, 131] },
+  ] } };
+  const lista = buildsDe(builds, { name: 'Rafaela' }, 'roam');
+  eq(lista.length, 2, 'dos builds con talentos distintos se juntan, o dos iguales no');
+  ok(Math.abs(lista[0].pickRate - 0.05) < 1e-9, `las de los mismos talentos no suman su uso: ${lista[0].pickRate}`);
+});
+
+test('de las builds que se juegan se marca la que mejor encaja con ESTE draft, y si ninguna es mejor, la más usada (3.57.0)', () => {
+  const mag = (n) => ({ name: n, damage: { fisico: 0, magico: 6 } });
+  const equipment = { 1: { nombre: 'Athena', magica: 60 }, 2: { nombre: 'Golpe' }, 3: { nombre: 'Halberd', efectos: ['antiCuracion', 'antiEscudo'] }, 4: { nombre: 'Botas' } };
+  const lista = [{ objetos: [2, 4], pickRate: 0.2 }, { objetos: [1, 4], pickRate: 0.1 }, { objetos: [3, 4], pickRate: 0.05 }];
+  // Cuatro magos: la segunda lleva defensa mágica.
+  const r = buildParaElDraft(lista, equipment, [mag('A'), mag('B'), mag('C'), mag('D')], 'roam');
+  eq(r.indice, 1, `no marca la build con defensa mágica: ${JSON.stringify(r)}`);
+  eq(r.cubre.join(), 'build.ajusteMagica', 'no dice qué cubre');
+  // Sin nada que cubrir, la más usada.
+  eq(buildParaElDraft(lista, equipment, [{ name: 'X', damage: { fisico: 6, magico: 0 } }], 'roam').indice, 0, 'sin nada que cubrir no marca la más usada');
+  // Con una sola build, esa.
+  eq(buildParaElDraft(lista.slice(0, 1), equipment, [mag('A'), mag('B'), mag('C')], 'roam').indice, 0);
+  // Empate: la más usada, aunque otra cubra lo mismo.
+  eq(buildParaElDraft([lista[1], { ...lista[1], pickRate: 0.05 }], equipment, [mag('A'), mag('B'), mag('C')], 'roam').indice, 0, 'a igualdad no gana la más usada');
+});
+
+test('avisos nuevos: escudos y crítico, y se callan si la build ya los cubre (3.57.0)', () => {
+  const equipment = {
+    1: { nombre: 'Golpe' }, 2: { nombre: 'Sea Halberd', efectos: ['antiCuracion', 'antiEscudo'] }, 3: { nombre: 'Blade Armor', fisica: 80, efectos: ['antiCritico'] },
+    10: { nombre: 'Haas', efectos: ['critico'] }, 11: { nombre: 'Hechizo' },
+  };
+  const escudan = [{ name: 'A', tags: ['shield'] }, { name: 'B', tags: ['shield'] }];
+  const sin = ajustesDeBuild({ objetos: [1] }, equipment, escudan, 'roam');
+  ok(sin.some((a) => a.clave === 'build.ajusteEscudo' && a.objetos[0].nombre === 'Sea Halberd'), `dos que usan escudos no avisan: ${JSON.stringify(sin)}`);
+  ok(!ajustesDeBuild({ objetos: [2] }, equipment, escudan, 'roam').some((a) => a.clave === 'build.ajusteEscudo'), 'con Sea Halberd sigue avisando de los escudos');
+  ok(!ajustesDeBuild({ objetos: [1] }, equipment, escudan.slice(0, 1), 'roam').some((a) => a.clave === 'build.ajusteEscudo'), 'uno solo con escudo ya avisa');
+  // Crítico: por la build que se les juega, no por el rol.
+  const builds = { Miya: { gold: [{ objetos: [10], pickRate: 0.3 }, { objetos: [11], pickRate: 0.1 }] }, Layla: { gold: [{ objetos: [10], pickRate: 0.2 }] }, Eudora: { mid: [{ objetos: [11], pickRate: 0.4 }] } };
+  ok(vaDeCritico(builds, equipment, { name: 'Miya' }) && !vaDeCritico(builds, equipment, { name: 'Eudora' }) && !vaDeCritico(builds, equipment, { name: 'Nadie' }), 'quién va de crítico no sale de su build más usada');
+  const critico = ajustesDeBuild({ objetos: [1] }, equipment, [{ name: 'Miya' }, { name: 'Layla' }], 'roam', { builds });
+  ok(critico.some((a) => a.clave === 'build.ajusteCritico' && a.objetos[0].nombre === 'Blade Armor'), `dos de crítico no avisan: ${JSON.stringify(critico)}`);
+  ok(!ajustesDeBuild({ objetos: [3] }, equipment, [{ name: 'Miya' }, { name: 'Layla' }], 'roam', { builds }).some((a) => a.clave === 'build.ajusteCritico'), 'con Blade Armor sigue avisando del crítico');
+  ok(!ajustesDeBuild({ objetos: [1] }, equipment, [{ name: 'Miya' }, { name: 'Eudora' }], 'roam', { builds }).some((a) => a.clave === 'build.ajusteCritico'), 'uno solo de crítico ya avisa');
+  ok(ajustesDeBuild({ objetos: [1] }, equipment, [{ name: 'Miya' }, { name: 'Layla' }], 'roam', { builds, tope: 1 }).length <= 1, 'el tope no se respeta');
 });
 
 await terminar('motor/builds');
