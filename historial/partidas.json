@@ -1,6 +1,154 @@
 {
- "actualizado": "2026-10-13T19:17:57.785Z",
+ "actualizado": "2026-10-13T19:35:45.636Z",
  "partidas": [
+  {
+   "t": 1791920107621,
+   "pick": "Estes",
+   "recomendados": [
+    "Minotaur",
+    "Estes",
+    "Rafaela"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.515,
+   "origen": "lector",
+   "bans": [
+    "Kagura",
+    "Aulus",
+    "Marcel",
+    "Barats",
+    "Lukas",
+    "Kadita",
+    "Badang",
+    "Hirara"
+   ],
+   "draft": {
+    "enemigos": [
+     "Masha",
+     "Brody",
+     "Tigreal",
+     "Vexana",
+     "Yi Sun-shin"
+    ],
+    "aliados": [
+     "Paquito",
+     "Eudora",
+     "Gusion",
+     "Kimmy"
+    ],
+    "linea": "roam",
+    "rival": "Tigreal"
+   },
+   "lector": {
+    "baneos": [
+     "Kagura",
+     "Aulus",
+     "Marcel",
+     "Barats",
+     "Lukas",
+     "Kadita",
+     "Badang",
+     "Hirara"
+    ],
+    "enemigos": [
+     "Masha",
+     "Brody",
+     "Tigreal",
+     "Vexana",
+     "Yi Sun-shin"
+    ],
+    "aliados": [
+     "Paquito",
+     "Eudora",
+     "Gusion",
+     "Kimmy"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "t3",
+      "candidato": "Gord",
+      "parecido": 0.76
+     }
+    ],
+    "ms": [
+     3523,
+     3308,
+     3568,
+     3156,
+     2920,
+     3474,
+     3928,
+     3147,
+     3338,
+     3319,
+     3296,
+     2999,
+     2748,
+     3464,
+     2939,
+     2910,
+     4023,
+     3165,
+     2968,
+     2879
+    ],
+    "msCaptura": [
+     2475,
+     2103,
+     2172,
+     2146,
+     2027,
+     2519,
+     2810,
+     2212,
+     2286,
+     2358,
+     2356,
+     2120,
+     2056,
+     2488,
+     2127,
+     2181,
+     3171,
+     2370,
+     2084,
+     2121
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo"
+    ]
+   },
+   "duracion": 12.5,
+   "fases": [
+    0.554,
+    0.512,
+    0.491,
+    0.472,
+    0.484,
+    0.495
+   ]
+  },
   {
    "t": 1791919059035,
    "pick": "Rafaela",
@@ -17199,6 +17347,12 @@
   {
    "cuando": "2026-10-13T19:17:57.785Z",
    "partidas": 213,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-13T19:35:45.636Z",
+   "partidas": 214,
    "heroes": 11,
    "incidencia": 11
   }
