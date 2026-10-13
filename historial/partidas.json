@@ -1,6 +1,188 @@
 {
- "actualizado": "2026-10-13T19:35:45.636Z",
+ "actualizado": "2026-10-13T19:53:37.710Z",
  "partidas": [
+  {
+   "t": 1791921143223,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Floryn",
+    "Chip"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.71,
+   "origen": "lector",
+   "bans": [
+    "Badang",
+    "Aulus",
+    "Hirara",
+    "Kagura",
+    "Eudora",
+    "Yi Sun-shin",
+    "Marcel",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Lesley",
+     "Valentina",
+     "Belerick",
+     "Lylia",
+     "Gusion"
+    ],
+    "aliados": [
+     "Lukas",
+     "Masha",
+     "Gord",
+     "Granger"
+    ],
+    "linea": "roam",
+    "rival": "Belerick"
+   },
+   "lector": {
+    "baneos": [
+     "Badang",
+     "Aulus",
+     "Hirara",
+     "Kagura",
+     "Eudora",
+     "Yi Sun-shin",
+     "Marcel",
+     "Paquito"
+    ],
+    "enemigos": [
+     "Lesley",
+     "Valentina",
+     "Lylia",
+     "Gusion"
+    ],
+    "aliados": [
+     "Lukas",
+     "Masha",
+     "Yi Sun-shin"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Wanwan",
+      "parecido": 0.8
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Wanwan",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Wanwan",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Fredrinn",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Atlas",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Joy",
+      "parecido": 0.78
+     }
+    ],
+    "ms": [
+     3630,
+     3386,
+     3897,
+     3106,
+     3419,
+     3187,
+     4371,
+     3130,
+     3454,
+     3326,
+     3162,
+     2836,
+     3317,
+     3628,
+     3411,
+     3774,
+     4041,
+     3465,
+     3390,
+     3219
+    ],
+    "msCaptura": [
+     2639,
+     2363,
+     2803,
+     2171,
+     2470,
+     2246,
+     3304,
+     2108,
+     2576,
+     2370,
+     2199,
+     1983,
+     2065,
+     2427,
+     2173,
+     2634,
+     2639,
+     2306,
+     2190,
+     2071
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Belerick",
+      "Belerick",
+      "Belerick"
+     ],
+     "sinEncontrar": [
+      "Gusion",
+      "Gusion",
+      "Gusion"
+     ]
+    }
+   },
+   "duracion": 13.2,
+   "fases": [
+    0.766,
+    0.747,
+    0.727,
+    0.684,
+    0.637,
+    0.584
+   ]
+  },
   {
    "t": 1791920107621,
    "pick": "Estes",
@@ -17353,6 +17535,12 @@
   {
    "cuando": "2026-10-13T19:35:45.636Z",
    "partidas": 214,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-13T19:53:37.710Z",
+   "partidas": 215,
    "heroes": 11,
    "incidencia": 11
   }
