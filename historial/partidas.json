@@ -1,6 +1,172 @@
 {
- "actualizado": "2026-10-12T20:53:21.821Z",
+ "actualizado": "2026-10-13T19:17:57.785Z",
  "partidas": [
+  {
+   "t": 1791919059035,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Minotaur",
+    "Rafaela",
+    "Khaleed"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.538,
+   "bans": [
+    "Khufra",
+    "Marcel",
+    "Barats",
+    "Hirara",
+    "Yi Sun-shin",
+    "Eudora",
+    "Masha",
+    "Lukas",
+    "Aulus"
+   ],
+   "draft": {
+    "enemigos": [
+     "Paquito",
+     "Kaja",
+     "Zetian",
+     "Brody",
+     "Hayabusa"
+    ],
+    "aliados": [
+     "Clint",
+     "Kagura",
+     "Esmeralda",
+     "Harley"
+    ],
+    "linea": "roam",
+    "rival": "Kaja"
+   },
+   "lector": {
+    "baneos": [
+     "Khufra",
+     "Marcel",
+     "Barats",
+     "Hirara",
+     "Yi Sun-shin",
+     "Eudora",
+     "Masha",
+     "Lukas",
+     "Aulus"
+    ],
+    "enemigos": [
+     "Paquito",
+     "Zetian",
+     "Brody"
+    ],
+    "aliados": [
+     "Clint",
+     "Kagura",
+     "Esmeralda",
+     "Harley"
+    ],
+    "dudas": [
+     {
+      "hueco": "e2",
+      "candidato": "Kaja",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Beatrix",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Rafaela",
+      "parecido": 0.77
+     }
+    ],
+    "ms": [
+     4297,
+     4485,
+     5451,
+     4163,
+     4756,
+     3253,
+     5345,
+     3491,
+     3238,
+     3378,
+     5043,
+     3445,
+     3255,
+     3295,
+     3014,
+     3472,
+     3377,
+     3622,
+     3058,
+     3930
+    ],
+    "msCaptura": [
+     3300,
+     3059,
+     3852,
+     2876,
+     3432,
+     2351,
+     3806,
+     2353,
+     2277,
+     2468,
+     3729,
+     2433,
+     2351,
+     2160,
+     1941,
+     2196,
+     2149,
+     2344,
+     2008,
+     2590
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "png",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Kaja",
+      "Hayabusa",
+      "Kaja",
+      "Hayabusa",
+      "Kaja",
+      "Hayabusa"
+     ]
+    }
+   },
+   "fases": [
+    0.596,
+    0.536,
+    0.52,
+    0.508,
+    0.525,
+    0.509
+   ]
+  },
   {
    "t": 1791838322830,
    "pick": "Estes",
@@ -17027,6 +17193,12 @@
   {
    "cuando": "2026-10-12T20:53:21.821Z",
    "partidas": 212,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-13T19:17:57.785Z",
+   "partidas": 213,
    "heroes": 11,
    "incidencia": 11
   }
