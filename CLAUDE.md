@@ -2115,6 +2115,24 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   recortes a un tercio (±0,05 del original) con `variantes.mjs` y
   `medir-recortes.mjs` del scratch de la sesión. Pruebas en `app/lector`,
   `aprender`, `recortes` y `lector.e2e` (cinco mutaciones).
+- **La criba a dos tamaños (3.55.0)**, con las primeras partidas de 3.54.0
+  (#84–#87; el aprendizaje ya aprende: Kadita y X.Borg el 12 de octubre).
+  `reconocer` elegía los 32 finalistas solo con la cara a tamaño 1, y el
+  tamaño se buscaba después alrededor de la mejor posición de TODOS: un
+  héroe pintado un 20–30% más grande no llegaba a finalista. Medido con
+  búsqueda exhaustiva en los recortes: Hanabi 0,92 a 1,2 (salía «Wanwan»
+  0,81–0,83 en #67 y #86), Johnson 0,86 a 1,3 («?»). Hoy `criba` (escalas
+  de más en la primera pasada, `CRIBA_PICKS`, 1,2) y `saltoCriba` (en
+  los enemigos uno de cada dos pasos: mismos aciertos, la mitad de coste;
+  en tu equipo no, se pierde lo ganado). En las 16 capturas de la fase de
+  picks: enemigos 59 → 64 de 90 (falsos 1 → 0), tu equipo 51 → 53 (falsos
+  4 → 2); con 0,85 además, tu equipo 57 pero el triple de coste. Coste por
+  captura aquí, enemigos 294 → 370 ms y equipo 293 → 513 ms (van en hilos
+  a la vez). Lo que NO arregla: Gord no pasa de 0,775 a ningún tamaño ni
+  posición (mismo dibujo que la API, otro encuadre) y Barats 0,73: esos
+  necesitan su cara aprendida, y el aprendizaje de tu equipo no existe
+  (las skins). Prueba en `lector.test` (caras ampliadas a 1,2 y 1,25;
+  cuatro mutaciones).
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

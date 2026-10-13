@@ -484,4 +484,25 @@ test('la línea de mandatos funciona también por un enlace y desde una carpeta 
   eq(r.status, 2, `por un enlace sale con ${r.status} y sin el mensaje de uso: ${r.stderr}`);
 });
 
+test('una cara que el panel pinta un 20-25% más grande se sigue leyendo: la criba mira también ese tamaño (3.55.0)', () => {
+  const caras = carasGuardadas();
+  // Amplía cada hueco alrededor de su centro, como la tablet pinta a Hanabi o a Johnson (medido en los recortes del 10-12 de octubre de 2026).
+  const ampliar = (img, [cx, cy], f, [x0, y0, w, h]) => {
+    const out = { ...img, rgba: img.rgba.slice() };
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) {
+      const sx = Math.round(cx + (x - cx) / f), sy = Math.round(cy + (y - cy) / f);
+      out.rgba.set(img.rgba.subarray((sy * img.ancho + sx) * 4, (sy * img.ancho + sx) * 4 + 4), (y * img.ancho + x) * 4);
+    }
+    return out;
+  };
+  const enemigos = PICKS_ENEMIGOS.reduce((img, p, i) => ampliar(img, p, 1.2, [2020, 230 + 216 * i, 380, 216]), capturaCompleta({ columna: 2 }));
+  const leidos = leerPicksEnemigos(enemigos, caras).map((l) => l.nombre);
+  ok(leidos.includes('Lesley') && leidos.includes('Aamon'), `a 1,2 no lee a Lesley y Aamon: ${leidos}`);
+  ok(leidos.every((n) => !n || VERDAD_JUEGO.enemigos2.includes(n)), `a 1,2 lee a quien no está: ${leidos}`);
+  const aliados = ALIADOS.reduce((img, p, i) => ampliar(img, p, 1.25, [60, 228 + 216 * i, 300, 170]), capturaCompleta());
+  const companeros = leerAliados(aliados, caras).map((l) => l.nombre);
+  ok(companeros.includes('Estes'), `a 1,25 no lee a Estes en tu equipo: ${companeros}`);
+  ok(companeros.every((n) => !n || VERDAD_JUEGO.aliados.includes(n)), `a 1,25 lee en tu equipo a quien no está: ${companeros}`);
+});
+
 await terminar('scripts/lector');

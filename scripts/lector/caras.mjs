@@ -100,6 +100,17 @@ export const FINALISTAS = 32;
 export const AFINADOS = 3;
 /** El paso de tamaño al afinar y hasta dónde: un 6%, del 76% al 136% del radio medido (decisión al medir: cubre las escalas que ya se buscaban y un poco más). */
 export const PASO_DE_ESCALA = 0.06, ESCALA_MINIMA = 0.76, ESCALA_MAXIMA = 1.36;
+/**
+ * Otro tamaño en la primera pasada (3.55.0). La criba solo miraba la cara a
+ * tamaño tal cual, y un héroe que el panel pinta un 20% más grande no
+ * llegaba ni a finalista: en los recortes del 10 al 12 de octubre de 2026,
+ * Hanabi daba 0,92 a 1,2 y salía «Wanwan» (0,81), Johnson 0,86 a 1,3 y
+ * salía «?». Con 1,2 además de 1, en las capturas de la fase de picks:
+ * enemigos de 59 a 64 bien leídos de 90 huecos (falsos de 1 a 0) y tu
+ * equipo de 51 a 53 (falsos de 4 a 2). En los enemigos basta un paso de
+ * cada dos (64 igual, la mitad de coste); en tu equipo no (vuelve a 51).
+ */
+export const CRIBA_PICKS = [1.2];
 const D = LADO * LADO * 3, d = LADO_GRUESO * LADO_GRUESO * 3, BLOQUE = LADO / LADO_GRUESO;
 
 /**
@@ -152,7 +163,7 @@ function producto(v, tabla, n, largo) {
  * 1.728 números: el 80% de una lectura de 4,8 s aquí (en el móvil, varias
  * veces más).
  */
-export function reconocer(img, [cx, cy, r], caras, { pasos = 3, escalas = [0.94, 1.06], finura = 16, afinar = AFINADOS } = {}) {
+export function reconocer(img, [cx, cy, r], caras, { pasos = 3, escalas = [0.94, 1.06], finura = 16, afinar = AFINADOS, criba = [], saltoCriba = 1 } = {}) {
   const paso = Math.max(1, Math.round(r / finura));
   const ref = empaquetar(caras);
   const tomar = (dx, dy, esc) => { const bruta = muestra(img, cx + dx * paso, cy + dy * paso, r * esc); return { dx, dy, esc, v: normalizar(bruta), g: reducir(bruta) }; };
@@ -169,9 +180,13 @@ export function reconocer(img, [cx, cy, r], caras, { pasos = 3, escalas = [0.94,
     }
   };
   const finalistas = () => [...grueso].sort((a, b) => b[1] - a[1]).slice(0, FINALISTAS).flatMap(([nb]) => ref.indice.get(nb));
-  // Primero la posición a tamaño tal cual; después el tamaño alrededor de la mejor.
+  // Primero la posición a tamaño tal cual (y a los tamaños de `criba`, cada
+  // `saltoCriba` pasos); después el tamaño alrededor de la mejor.
   const primeras = [];
-  for (let dx = -pasos; dx <= pasos; dx++) for (let dy = -pasos; dy <= pasos; dy++) { const m = tomar(dx, dy, 1); cribar(m); primeras.push(m); }
+  for (const esc of [1, ...criba]) {
+    const salto = esc === 1 ? 1 : saltoCriba;
+    for (let dx = -pasos; dx <= pasos; dx += salto) for (let dy = -pasos; dy <= pasos; dy += salto) { const m = tomar(dx, dy, esc); cribar(m); primeras.push(m); }
+  }
   const filas = finalistas();
   for (const m of primeras) comparar(m, filas);
   const [bx, by] = donde;

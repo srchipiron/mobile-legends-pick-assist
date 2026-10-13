@@ -19,7 +19,7 @@ import { readFileSync, writeFileSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { leerPng } from './png.mjs';
-import { cargarCaras, reconocer, espejo } from './caras.mjs';
+import { cargarCaras, reconocer, espejo, CRIBA_PICKS } from './caras.mjs';
 import { buscarPorMdns, escanearPuertos } from './tablet.mjs';
 
 /**
@@ -89,7 +89,7 @@ export function leerPicksEnemigos(img, caras, { posiciones = null, extra = [] } 
   const referencias = [...ambasOrientaciones(caras), ...extra];
   // Búsqueda más ancha que en los baneos: cada dibujo encuadra la cara en un
   // sitio (Khufra cae a unos 20 píxeles de Clint en el mismo hueco).
-  const opciones = { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12] };
+  const opciones = { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12], criba: CRIBA_PICKS, saltoCriba: 2 };
   const medidos = PICKS_ENEMIGOS.map((pos) => reconocer(img, escalar(img, pos), referencias, opciones));
   if (!Array.isArray(posiciones)) return medidos;
   // Un hueco aprendido que lea a alguien que la medida ya leyó está mirando al vecino.
@@ -124,7 +124,7 @@ export function leerAliados(img, caras) {
   // Rejilla a r/8 (el doble de gruesa que en los picks) con ±5 pasos: mismo
   // alcance que ±8 a r/16 por la mitad de tiempo (1,3 s frente a 2,6 aquí) y
   // los cinco siguen entre 0,87 y 0,94; a r/6 con ±4 se pierden dos.
-  return ALIADOS.map((pos) => reconocer(img, escalar(img, pos), referencias, { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12, 1.25], finura: 8 }));
+  return ALIADOS.map((pos) => reconocer(img, escalar(img, pos), referencias, { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12, 1.25], finura: 8, criba: CRIBA_PICKS }));
 }
 
 /** Fracción de píxeles amarillos (el color del nombre propio) en una caja de la captura. */

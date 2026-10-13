@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.55.0
+
+- El lector reconoce más héroes en la fase de picks. Algunos (Hanabi,
+  Johnson…) el juego los pinta más grandes de lo que el lector buscaba y se
+  le escapaban, o salía otro en su lugar (Wanwan donde estaba Hanabi). Ahora
+  busca también ese tamaño. Medido con las caras que subió el lector del 10
+  al 12 de octubre: enemigos bien leídos de 59 a 64 de 90 huecos, sin ningún
+  enemigo inventado (antes uno), y en tu equipo de 51 a 53 con la mitad de
+  inventados. Cada lectura tarda un poco más (unas décimas de segundo).
+
 ## 3.54.0
 
 - «Leer solo» ya no cambia los picks con lo que ve en la fase de skins. Al
