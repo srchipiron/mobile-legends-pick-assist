@@ -1,6 +1,223 @@
 {
- "actualizado": "2026-10-13T19:53:37.710Z",
+ "actualizado": "2026-10-13T20:29:27.032Z",
  "partidas": [
+  {
+   "t": 1791922585255,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Gloo",
+    "Edith"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.505,
+   "origen": "lector",
+   "bans": [
+    "Masha",
+    "Kagura",
+    "Lukas",
+    "Marcel",
+    "Kaja",
+    "Aulus",
+    "Belerick",
+    "Atlas",
+    "Estes"
+   ],
+   "draft": {
+    "enemigos": [
+     "Hirara",
+     "Zetian",
+     "Angela",
+     "Guinevere"
+    ],
+    "aliados": [
+     "Moskov",
+     "Paquito",
+     "Nana",
+     "Fanny"
+    ],
+    "linea": "roam",
+    "rival": "Angela"
+   },
+   "lector": {
+    "baneos": [
+     "Masha",
+     "Kagura",
+     "Lukas",
+     "Marcel",
+     "Kaja",
+     "Aulus",
+     "Belerick",
+     "Atlas",
+     "Estes"
+    ],
+    "enemigos": [
+     "Wanwan",
+     "Hirara",
+     "Zetian",
+     "Angela",
+     "Guinevere"
+    ],
+    "aliados": [
+     "Moskov",
+     "Paquito",
+     "Fanny"
+    ],
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Moskov",
+      "parecido": 0.54
+     },
+     {
+      "hueco": "t2",
+      "candidato": "Atlas",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Atlas",
+      "parecido": 0.58
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Atlas",
+      "parecido": 0.39
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Atlas",
+      "parecido": 0.55
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Atlas",
+      "parecido": 0.41
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Fredrinn",
+      "parecido": 0.51
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Atlas",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Atlas",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Granger",
+      "parecido": 0.58
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Wanwan",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Zetian",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Gord",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Roger",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.77
+     }
+    ],
+    "ms": [
+     4411,
+     3465,
+     3646,
+     3612,
+     4124,
+     3123,
+     3475,
+     2997,
+     3025,
+     3185,
+     4411,
+     3265,
+     2737,
+     3362,
+     4373,
+     2884,
+     4027,
+     3221,
+     3561,
+     5668
+    ],
+    "msCaptura": [
+     2934,
+     2321,
+     2409,
+     2591,
+     2650,
+     2067,
+     2366,
+     1936,
+     2004,
+     2161,
+     3218,
+     2326,
+     1994,
+     2450,
+     3500,
+     2032,
+     2828,
+     2272,
+     2288,
+     4329
+    ],
+    "formatos": [
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png"
+    ]
+   },
+   "duracion": 18.6,
+   "fases": [
+    0.465,
+    0.476,
+    0.488,
+    0.532,
+    0.553,
+    0.562
+   ]
+  },
   {
    "t": 1791921143223,
    "pick": "Rafaela",
@@ -17541,6 +17758,12 @@
   {
    "cuando": "2026-10-13T19:53:37.710Z",
    "partidas": 215,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-13T20:29:27.032Z",
+   "partidas": 216,
    "heroes": 11,
    "incidencia": 11
   }
