@@ -453,6 +453,10 @@ test('el botón «Voz» calla al lector: lo que queda en cola no se dice, lo que
     await new Promise((r) => setTimeout(r, 300));
     eq(dichos.join(), 'aviso 0', `callada, sigue diciendo lo que había en cola: ${dichos}`);
     eq((await final()).callada, true, '/final no dice que la voz va callada');
+    // Los dos que esperaban en cola cuentan como saltados, no como dichos (3.56.0); el que sonaba, como dicho.
+    const cuenta = await final();
+    ok(cuenta.dichos === 1 && cuenta.saltados === 2, `callada, cuenta como dichos los de la cola: dichos ${cuenta.dichos}, saltados ${cuenta.saltados}`);
+    ok(registro.filter((l) => l.includes('voz callada mientras esperaba')).length === 2, 'los de la cola no dejan su línea en el registro');
     // Otro draft con su guion, sin decir nada de la voz: sigue callada (el lector no la reactiva solo).
     await fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify({ desde: Date.now() - 9 * 60000 + 1, guion: [{ min: 7.5, texto: 'otro' }] }) });
     ok(await hasta(() => registro.some((l) => l.includes('voz callada') && l.includes('otro')), 2000), 'el aviso callado no deja su línea en el registro');

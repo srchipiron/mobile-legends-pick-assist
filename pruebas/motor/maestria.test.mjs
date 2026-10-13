@@ -7,7 +7,7 @@
 import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
 import { catalogo, h } from '../fixtures/catalogo.mjs';
 import { buscar, nombreClave } from '../../src/motor/nombres.js';
-import { maestriaEfectiva, fecharMaestria, maestriaDesdeRegistro, notaDeMaestria, priorDeMaestria, tuNivel } from '../../src/motor/maestria.js';
+import { maestriaEfectiva, fecharMaestria, maestriaDesdeRegistro, notaDeMaestria, priorDeMaestria, tuNivel, maestriaDeSiempre, TOPE_DE_SIEMPRE } from '../../src/motor/maestria.js';
 import { generador } from '../../src/motor/robustez.js';
 import { ordenarPicks } from '../../src/motor/ranking.js';
 import { ESCALA } from '../../src/motor/modelo.js';
@@ -23,7 +23,7 @@ test('la maestria se lee por nombre normalizado y un winRate nulo no castiga', (
   //    motor la lee: antes 400 partidas desaparecian por un punto.
   const ef = maestriaEfectiva({ 'X.Borg': { games: 400, winRate: 0.6 } }, [{ t: 3, pick: 'X Borg', gane: true }]);
   eq(Object.keys(ef).length, 1, `dos claves para el mismo heroe: ${Object.keys(ef)}`);
-  eq(buscar(ef, 'X Borg')?.games, 400, 'buscar no encuentra la maestria por el nombre del catalogo');
+  eq(buscar(ef, 'X Borg')?.games, TOPE_DE_SIEMPRE + 1, 'buscar no encuentra la maestria por el nombre del catalogo');
   ok(notaDeMaestria({ name: 'X Borg' }, ef).valor > 0.5, 'el motor no lee la maestria escrita con otra grafia');
   // 4. winRate null importado: neutro, no 0%.
   eq(notaDeMaestria({ name: 'A' }, { A: { games: 50, winRate: null } }).valor, 0.5, 'winRate null castiga en vez de ser neutro');
@@ -224,24 +224,31 @@ test('el motivo de maestria se mide contra TU nivel, no contra un 55% fijo', () 
     'cinco partidas ganadas disparan el motivo');
 });
 
-test('maestría con fecha: las partidas apuntadas DESPUÉS se suman; las de antes, las previas y la maestría sin fecha, no', () => {
+test('mandan las recientes (3.56.0): lo de siempre cuenta como mucho TOPE_DE_SIEMPRE partidas y se suman TODAS las apuntadas con la app', () => {
   const desde = 1_000_000;
   const p = (t, gane, extra = {}) => ({ t, pick: 'Rafaela', gane, recomendados: [], ...extra });
   const partidas = [p(desde - 5, true), p(desde + 1, true), p(desde + 2, true), p(desde + 3, false), p(desde + 4, true, { previa: true })];
-  const conFecha = maestriaEfectiva({ Rafaela: { games: 100, winRate: 0.5, desde } }, partidas).rafaela;
-  // 100 al 50% + 3 apuntadas después (2 ganadas); ni la de antes ni la previa.
-  eq(conFecha.games, 103, `suma mal las partidas: ${JSON.stringify(conFecha)}`);
-  ok(Math.abs(conFecha.winRate - (50 + 2) / 103) < 1e-12, `el winrate no es el ponderado: ${conFecha.winRate}`);
-  eq(conFecha.apuntadas, 3);
-  // Sin fecha (guardada antes de 3.13.0): como siempre, gana la fuente con más partidas.
-  eq(maestriaEfectiva({ Rafaela: { games: 100, winRate: 0.5 } }, partidas).rafaela.games, 100, 'sin fecha se suman partidas que la maestría quizá ya incluye');
+  const r = maestriaEfectiva({ Rafaela: { games: 564, winRate: 0.5, desde } }, partidas).rafaela;
+  // 564 al 50% cuentan como TOPE_DE_SIEMPRE; más las 4 con la app (3 ganadas), también la de ANTES de la fecha; la previa es «de siempre».
+  eq(r.games, TOPE_DE_SIEMPRE + 4, `suma mal las partidas: ${JSON.stringify(r)}`);
+  ok(Math.abs(r.winRate - (TOPE_DE_SIEMPRE * 0.5 + 3) / (TOPE_DE_SIEMPRE + 4)) < 1e-12, `el winrate no es el ponderado: ${r.winRate}`);
+  eq(r.apuntadas, 4); eq(r.deSiempre, 564, 'no guarda cuántas eran de siempre');
+  // Lo de siempre con pocas partidas entra entero.
+  eq(maestriaEfectiva({ Rafaela: { games: 10, winRate: 0.5 } }, []).rafaela.games, 10);
+  // Las 26 de Diggie con la app pesan más que sus 3.821 de siempre (el caso que lo motivó).
+  const diggie = Array.from({ length: 26 }, (_, i) => ({ t: i, pick: 'Diggie', gane: i < 12, recomendados: [] }));
+  ok(maestriaEfectiva({ Diggie: { games: 3821, winRate: 0.54 } }, diggie).diggie.winRate < 0.515, 'las partidas de siempre siguen tapando a las de la app (antes 0,539; con el tope, (40·0,54 + 12)/66 = 0,509)');
   // Sin maestría a mano: el registro entero, previas incluidas (para eso se meten).
   eq(maestriaEfectiva({}, partidas).rafaela.games, 5);
   // Continuo: apuntar UNA partida más mueve el winrate un poco, sin saltos (la lección de tuNivel).
-  const mas = maestriaEfectiva({ Rafaela: { games: 100, winRate: 0.5, desde } }, [...partidas, p(desde + 9, true)]).rafaela;
-  ok(mas.games === 104 && Math.abs(mas.winRate - conFecha.winRate) < 0.01, `una partida más salta: ${conFecha.winRate} → ${mas.winRate}`);
+  const mas = maestriaEfectiva({ Rafaela: { games: 564, winRate: 0.5, desde } }, [...partidas, p(desde + 9, true)]).rafaela;
+  ok(mas.games === r.games + 1 && Math.abs(mas.winRate - r.winRate) < 0.02, `una partida más salta: ${r.winRate} → ${mas.winRate}`);
+  // Y cruzar el tope tampoco salta: 40 y 41 partidas de siempre dan lo mismo.
+  eq(maestriaEfectiva({ A: { games: TOPE_DE_SIEMPRE, winRate: 0.6 } }, []).a.games, maestriaEfectiva({ A: { games: TOPE_DE_SIEMPRE + 1, winRate: 0.6 } }, []).a.games);
   // Por clave normalizada, como todo: «X.Borg» a mano y «X Borg» apuntado.
   eq(maestriaEfectiva({ 'X.Borg': { games: 10, winRate: 0.5, desde } }, [{ t: desde + 1, pick: 'X Borg', gane: true, recomendados: [] }]).xborg.games, 11, 'no casa X.Borg con X Borg');
+  // El Veredicto sigue comparando con lo de siempre ENTERO.
+  eq(maestriaDeSiempre({ Diggie: { games: 3821, winRate: 0.54 } }, diggie).diggie.games, 3821);
 });
 
 test('fecharMaestria: pone la fecha a lo que no la tiene, respeta la que hay y no toca nada si no hace falta', () => {
@@ -254,7 +261,7 @@ test('fecharMaestria: pone la fecha a lo que no la tiene, respeta la que hay y n
   ok(fecharMaestria(f, 2000) === f, 'con todo fechado devuelve otra referencia (el efecto guardaría en bucle)');
   const vacia = {}; ok(fecharMaestria(vacia) === vacia, 'sin maestría devuelve otra referencia');
   // Y el efecto que buscamos: lo apuntado DESPUÉS de fechar se suma.
-  eq(maestriaEfectiva(f, [{ t: 1500, pick: 'Rafaela', gane: true, recomendados: [] }, { t: 500, pick: 'Rafaela', gane: true, recomendados: [] }]).rafaela.games, 565, 'tras fechar, lo apuntado después no se suma (o se suma lo de antes)');
+  eq(maestriaEfectiva(f, [{ t: 1500, pick: 'Rafaela', gane: true, recomendados: [] }, { t: 500, pick: 'Rafaela', gane: true, recomendados: [] }]).rafaela.games, TOPE_DE_SIEMPRE + 2, 'lo apuntado con la app no se suma entero sobre lo de siempre acotado');
 });
 
 test('fechar la maestría no cambia lo que cuenta: ni con pocas partidas a mano ni con previas', () => {
@@ -278,8 +285,8 @@ test('fechar la maestría no cambia lo que cuenta: ni con pocas partidas a mano 
   // El caso que lo destapó, y que lo apuntado DESPUÉS se suma encima.
   const kaja = { Kaja: { games: 4, winRate: 0.25, desde: 5000 } };
   const apuntadas = Array.from({ length: 40 }, (_, i) => ({ t: 1000 + i, pick: 'Kaja', gane: i % 4 !== 0, recomendados: [] }));
-  eq(maestriaEfectiva(kaja, apuntadas).kaja.games, 40, '4 partidas a mano con fecha tapan 40 apuntadas antes');
-  eq(maestriaEfectiva(kaja, [...apuntadas, { t: 6000, pick: 'Kaja', gane: true, recomendados: [] }]).kaja.games, 41, 'lo apuntado después no se suma sobre la base buena');
+  eq(maestriaEfectiva(kaja, apuntadas).kaja.games, 44, '4 partidas a mano con fecha tapan 40 apuntadas antes');
+  eq(maestriaEfectiva(kaja, [...apuntadas, { t: 6000, pick: 'Kaja', gane: true, recomendados: [] }]).kaja.games, 45, 'lo apuntado después no se suma');
 });
 
 await terminar('motor/maestria');

@@ -1286,6 +1286,19 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   cazan. Al arreglar una prueba de tiempos, busca sus gemelas con `grep
   "Date.now() + desfase"`.
 
+- **Una guarda comparada con un estado que ella misma no deja avanzar**
+  (3.54.0 → 3.56.0, cazado por `silent-failure-hunter` el día siguiente):
+  `fueraDeLosPicks` comparaba la lectura con `huecosLeidos`, que conserva el
+  nombre viejo donde ahora hay «?» (`b ?? a`, a propósito para
+  `cambiosDeHueco`). Un héroe que se miraba y se cambiaba por uno que el
+  lector no reconoce contaba como cambio PARA SIEMPRE; con tres así, todas
+  las lecturas de ese equipo se tiraban hasta el draft siguiente, sin más
+  señal que «sin nada nuevo». Hoy compara con `huecosCrudos`: los huecos tal
+  cual de la última lectura ACEPTADA. Prueba en `app/lectura-draft.test`,
+  el hook de verdad con un React mínimo empaquetado con esbuild y lecturas
+  seguidas (falla con 3.55.0). Una guarda que decide si se actualiza su
+  propia referencia se prueba con una SECUENCIA, no con una lectura.
+
 ## El modelo (2.0)
 
 `src/motor/modelo.js` y `src/motor/ranking.js`. La nota de un pick ES la
@@ -3744,6 +3757,24 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   fuera. Devuelve la misma referencia si no hay nada que fechar (si no, el
   efecto guardaría en bucle). El diagnóstico dice cuántas partidas
   apuntadas cuentan ya.
+  **Desde 3.56.0 «mandan las recientes»** (elegido por Javi, con la medida
+  delante): lo de siempre cuenta como mucho `TOPE_DE_SIEMPRE` (40) partidas
+  por héroe y se suman TODAS las apuntadas con la app (la fecha `desde` ya
+  no decide nada; `fecharMaestria` sigue, inofensiva). Medido el 13 de
+  octubre de 2026 en sus 212 partidas con la app, cada una predicha con las
+  demás: el winrate de siempre por héroe predice PEOR que una constante
+  (logL/n −0,6633 frente a −0,6603) y el de la app encogido, mejor
+  (−0,6559). Con el modelo entero (`estimarCon`, 165 drafts): −0,6825 con
+  la maestría de antes, −0,6814 sin maestría, −0,6758 con la nueva; la AUC
+  sigue en 0,50 y, recalibrando el intercepto, las tres quedan a 0,001:
+  mejora sobre todo el NIVEL (calibración), no la discriminación entre
+  partidas, y con 212 cabe en el error. Efecto: el nº1 cambia en 68 de 165
+  drafts, Rafaela nº1 en 92 (antes 41), Diggie 9 → 5, Gloo 14 → 5. El
+  Veredicto compara con `maestriaDeSiempre` (lo de siempre ENTERO), no con
+  la acotada. Vigilar: con la maestría así, la app recomienda sobre todo
+  los 3–4 héroes que mejor le van, y esos son los que más se apuntan; si
+  dentro de unas 100 partidas el winrate con ellos baja a su media, el tope
+  se vuelve a medir con `maestria-cv.mjs`/`loo-maestria.mjs` del scratch.
 - **Cambiar el héroe de una partida (3.47.0)**, pedido por Javi para la
   de «Hayabusa» del 6 de octubre de 2026 (fue Diggie): en «Tus partidas» el
   nombre es un botón que abre el pool de la línea; `cambiarHeroe`

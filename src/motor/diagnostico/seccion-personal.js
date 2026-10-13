@@ -1,6 +1,6 @@
 import { nombreClave, buscar } from '../nombres.js';
 import { ordenarPicks } from '../ranking.js';
-import { notaDeMaestria } from '../maestria.js';
+import { notaDeMaestria, TOPE_DE_SIEMPRE } from '../maestria.js';
 import { resumen, calibracion, aciertosDelLector, MINIMO_PARA_CONCLUIR } from '../registro.js';
 
 /**
@@ -18,11 +18,11 @@ export function seccionMaestria(inf, { datos, linea, maestria = {}, entorno = {}
   if (entorno.sinDatosPersonales) inf.linea('Sin acceso: la maestría vive en el móvil');
   else inf.check(conMaestria >= 5, `${conMaestria} héroes con datos tuyos`, `Solo ${conMaestria} héroes con datos tuyos: rellena más para que la app se ajuste a ti`, true);
   if (!conMaestria) return;
-  // Cuántas partidas apuntadas ya cuentan en tu maestría (3.13.0): las de
-  // después de la fecha de cada héroe escrito a mano, más las de héroes que
-  // solo tienen partidas apuntadas.
+  // Cuántas partidas apuntadas cuentan en tu maestría: desde 3.56.0, todas
+  // las de la app, y lo de siempre como mucho TOPE_DE_SIEMPRE por héroe.
   const sumadas = Object.values(maestria).reduce((n, m) => n + (m?.apuntadas ?? 0), 0);
-  if (!entorno.sinDatosPersonales) inf.linea(`Partidas apuntadas sumadas a tu maestría escrita a mano: ${sumadas}`);
+  const acotados = Object.values(maestria).filter((m) => m?.deSiempre > m?.games - (m?.apuntadas ?? 0)).length;
+  if (!entorno.sinDatosPersonales) inf.linea(`Tu maestría: ${sumadas} partidas apuntadas con la app; lo de siempre cuenta como mucho ${TOPE_DE_SIEMPRE} partidas por héroe (${acotados} héroes acotados)`);
   // TODO nombre guardado tiene que casar con el catálogo (antes solo se
   // miraba la primera clave).
   const sinCasar = Object.keys(maestria).filter((k) => !datos.heroes.some((x) => nombreClave(x.name) === nombreClave(k)));

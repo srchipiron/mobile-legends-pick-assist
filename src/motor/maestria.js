@@ -118,53 +118,68 @@ export function fecharMaestria(maestria = {}, ahora = Date.now()) {
 }
 
 /**
- * La maestría que usa el motor: la escrita a mano MÁS la de tus partidas
- * apuntadas. Claves normalizadas: 400 partidas de «X.Borg» desaparecían del
- * ranking con la clave cruda.
+ * Lo que pesan, como mucho, tus números DE SIEMPRE con un héroe (escritos a
+ * mano o metidos del historial del juego) al lado de tus partidas apuntadas
+ * con la app (3.56.0, elegido por Javi: «mandan las recientes»). Medido el
+ * 13 de octubre de 2026 en sus 212 partidas con la app, prediciendo cada una
+ * con las demás: el winrate de siempre predice PEOR que no usarlo (logL/n
+ * −0,6633 frente a −0,6603 de una constante: Diggie 54% en 3.821 partidas de
+ * siempre y 46% en 26 con la app; Rafaela 53% y 75% en 60) y el de las
+ * partidas con la app, encogido, mejor (−0,6559 con un prior de 40). Con 212
+ * partidas la mejora aún cabe en el error; lo de siempre se queda como punto
+ * de partida para los héroes que casi no has jugado con la app. Decisión de
+ * producto apoyada en esa medida, no una constante calibrada.
+ */
+export const TOPE_DE_SIEMPRE = 40;
+
+/**
+ * La maestría que usa el motor: tus números de siempre (lo escrito a mano o
+ * lo metido del historial del juego, la fuente con más partidas, como
+ * mucho `TOPE_DE_SIEMPRE`) MÁS todas tus partidas apuntadas con la app.
+ * Claves normalizadas: 400 partidas de «X.Borg» desaparecían del ranking con
+ * la clave cruda.
  *
- * Desde 3.13.0 cada héroe escrito a mano lleva `desde` (cuándo se guardó):
- * son los números del juego A ESE DÍA, así que las partidas apuntadas con la
- * app DESPUÉS se le SUMAN. Antes ganaba la fuente con más partidas «porque
- * la escrita a mano ya las incluye», y eso solo era verdad si se volvía a
- * escribir tras jugar: con 564 partidas de Rafaela a mano, las 31 apuntadas
- * al 77% no movían nada. Las previas (del historial del juego) no se suman:
- * el total del juego ya las lleva. Sin `desde` (guardada antes de 3.13.0)
- * no se sabe qué incluye y sigue ganando la que tenga más partidas.
+ * Hasta 3.55.0 lo de siempre entraba entero (3.821 partidas de Diggie
+ * tapaban las 26 jugadas con la app) y lo apuntado solo se sumaba si era
+ * posterior a la fecha de lo escrito a mano (`desde`), para no contar dos
+ * veces lo que el total del juego ya incluía. Con lo de siempre acotado ese
+ * doble recuento es como mucho `TOPE_DE_SIEMPRE` partidas y deja de importar:
+ * cuenta TODO lo apuntado con la app, también lo de antes de la fecha.
  */
 export function maestriaEfectiva(maestria = {}, partidas = []) {
+  const siempre = maestriaDeSiempre(maestria, partidas);
   const salida = {};
-  const fechada = new Map();
-  for (const [nombre, m] of Object.entries(maestria ?? {})) {
-    const k = nombreClave(nombre);
-    if (!salida[k] || (m?.games ?? 0) > (salida[k].games ?? 0)) {
-      salida[k] = m;
-      if (Number.isFinite(m?.desde) && m.desde > 0) fechada.set(k, m.desde); else fechada.delete(k);
-    }
+  for (const [k, m] of Object.entries(siempre)) {
+    if (!(Number(m?.games) > 0) || !Number.isFinite(Number(m?.winRate))) { salida[k] = m; continue; }
+    salida[k] = { ...m, games: Math.min(Number(m.games), TOPE_DE_SIEMPRE), winRate: Number(m.winRate), deSiempre: Number(m.games) };
   }
-  // Lo apuntado después de la fecha de cada héroe fechado: se suma.
-  const esDespues = (p) => !p?.previa && fechada.has(nombreClave(p?.pick)) && p.t > fechada.get(nombreClave(p.pick));
-  const despues = (partidas ?? []).filter(esDespues);
-  // La BASE de un héroe fechado es, como sin fecha, la fuente con más
-  // partidas entre lo escrito a mano y lo apuntado hasta esa fecha (con las
-  // previas). Desde 3.13.1 la app fecha sola lo escrito a mano, y sin esto
-  // 4 partidas a mano tapaban 40 apuntadas antes: la fecha no puede hacer
-  // que se pierda lo que sin fecha contaba.
-  const antes = (partidas ?? []).filter((p) => fechada.has(nombreClave(p?.pick)) && !esDespues(p));
-  for (const [nombre, m] of Object.entries(maestriaDesdeRegistro(antes))) {
-    const k = nombreClave(nombre);
-    if ((m.games ?? 0) > (salida[k].games ?? 0)) salida[k] = { ...m, desde: salida[k].desde };
-  }
-  for (const [nombre, m] of Object.entries(maestriaDesdeRegistro(despues))) {
+  for (const [nombre, m] of Object.entries(maestriaDesdeRegistro((partidas ?? []).filter((p) => !p?.previa)))) {
     const k = nombreClave(nombre); const base = salida[k];
+    if (!(base?.games > 0) || base.winRate == null) { salida[k] = { ...m, apuntadas: m.games }; continue; }
     const games = base.games + m.games;
     salida[k] = { ...base, games, winRate: (base.winRate * base.games + m.winRate * m.games) / games, apuntadas: m.games };
   }
-  // Los héroes sin fecha o sin maestría a mano: como siempre, gana la fuente con más partidas.
-  for (const [nombre, m] of Object.entries(maestriaDesdeRegistro((partidas ?? []).filter((p) => !fechada.has(nombreClave(p?.pick)))))) {
-    const k = nombreClave(nombre);
-    if (!salida[k] || (m.games ?? 0) > (salida[k].games ?? 0)) salida[k] = m;
-  }
   return salida;
+}
+
+/**
+ * Tus números de siempre, ENTEROS (sin `TOPE_DE_SIEMPRE`): con cada héroe,
+ * la fuente con más partidas entre lo escrito a mano y lo metido del
+ * historial del juego (las previas). Es la referencia del Veredicto («contra
+ * tu winrate de siempre»), que no puede llevar dentro las partidas con la
+ * app que compara.
+ */
+export function maestriaDeSiempre(maestria = {}, partidas = []) {
+  const siempre = {};
+  for (const [nombre, m] of Object.entries(maestria ?? {})) {
+    const k = nombreClave(nombre);
+    if (k && (!siempre[k] || (m?.games ?? 0) > (siempre[k].games ?? 0))) siempre[k] = m;
+  }
+  for (const [nombre, m] of Object.entries(maestriaDesdeRegistro((partidas ?? []).filter((p) => p?.previa)))) {
+    const k = nombreClave(nombre);
+    if (!siempre[k] || (m.games ?? 0) > (siempre[k].games ?? 0)) siempre[k] = m;
+  }
+  return siempre;
 }
 
 /** Tu winrate de referencia: la maestría ponderada por partidas (miles, frente a las pocas del registro). */

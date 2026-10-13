@@ -403,14 +403,25 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   // 3 en los 3 minutos más apretados); y lo encolado de un draft que ya no
   // es el vigilado no se dice.
   const dichosRecientes = [];
-  /** Encola `texto`; devuelve false si un tope no lo deja (y entonces no se dice). */
-  const decir = (f, texto) => {
+  /** Lo que la cola no llegó a decir porque la voz se calló mientras esperaba (`hablar` da null también al acabar bien). */
+  const CALLADO_EN_COLA = Symbol('callado');
+  /**
+   * Encola `texto`; devuelve false si un tope no lo deja (y entonces no se
+   * dice). Con `cuenta`, un aviso del guion: si se calla la voz mientras
+   * espera en la cola, deja de contar como dicho y pasa a saltado (3.56.0;
+   * antes `/final` y el registro lo daban por dicho).
+   */
+  const decir = (f, texto, cuenta = false) => {
     const t = ahora();
     while (dichosRecientes.length && t - dichosRecientes[0] > VENTANA_VOZ_MS) dichosRecientes.shift();
     if (callada || f !== final || (f.hablados ?? 0) >= MAX_AVISOS + 1 || dichosRecientes.length >= VOZ_POR_VENTANA) return false;
     f.hablados = (f.hablados ?? 0) + 1;
     dichosRecientes.push(t);
-    colaVoz = colaVoz.then(() => (f === final && !callada ? hablar(texto, f.idioma) : null)).then((r) => {
+    colaVoz = colaVoz.then(() => (f !== final ? null : callada ? CALLADO_EN_COLA : hablar(texto, f.idioma))).then((r) => {
+      if (r === CALLADO_EN_COLA) {
+        if (cuenta) { f.dichosVoz -= 1; f.saltados += 1; registrar(`Sin decir (voz callada mientras esperaba): «${texto}»`); }
+        return;
+      }
       if (r === null && callada) return;
       const antes = f.voz;
       f.voz = r ?? 'ok';
@@ -433,7 +444,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       if (f.dichos.has(i) || a.min > m) return;
       f.dichos.add(i);
       const tope = i === 0 && a.min < 1 ? RETRASO_DEL_INICIO_MIN : RETRASO_MAXIMO_MIN;
-      const porque = m - a.min > tope ? `atrasado ${(m - a.min).toFixed(1)} min` : !decir(f, a.texto) ? (callada ? 'voz callada' : 'tope de voz') : null;
+      const porque = m - a.min > tope ? `atrasado ${(m - a.min).toFixed(1)} min` : !decir(f, a.texto, true) ? (callada ? 'voz callada' : 'tope de voz') : null;
       if (porque) { f.saltados += 1; registrar(`Minuto ${m.toFixed(1)} de partida, sin decir (${porque}): «${a.texto}»`); return; }
       f.dichosVoz += 1;
       registrar(`Minuto ${m.toFixed(1)} de partida: «${a.texto}»`);

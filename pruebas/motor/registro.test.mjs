@@ -8,7 +8,7 @@
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { sanear } from '../../src/motor/perfil.js';
 import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, medirFasesMias, aciertosDelLector, apuntar, olvidar, corregir, cambiarHeroe, calibracion, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
-import { maestriaDesdeRegistro, maestriaEfectiva, winrateDeReferencia } from '../../src/motor/maestria.js';
+import { maestriaDesdeRegistro, maestriaEfectiva, winrateDeReferencia, TOPE_DE_SIEMPRE } from '../../src/motor/maestria.js';
 import { nombreClave } from '../../src/motor/nombres.js';
 import { generador } from '../../src/motor/robustez.js';
 
@@ -213,8 +213,8 @@ test('las partidas viejas personalizan pero NO ensucian la comparacion', () => {
   const m = new Proxy(mE, { get: (o, k) => o[typeof k === 'string' ? nombreClave(k) : k] });
   eq(m.Atlas.games, 40, 'las partidas viejas no llegan a la maestria');
   ok(Math.abs(m.Atlas.winRate - 21 / 40) < 1e-9, 'calcula mal el winrate de las viejas');
-  // La escrita a mano gana si tiene mas partidas: no se suman, se elige.
-  eq(m.Diggie.games, 3821, 'el registro pisa la maestria escrita a mano, que tiene mucho mas');
+  // Lo escrito a mano cuenta como mucho TOPE_DE_SIEMPRE y se le suman las partidas con la app (3.56.0).
+  eq(m.Diggie.games, TOPE_DE_SIEMPRE + ps.filter((p) => !esPrevia(p) && p.pick === 'Diggie').length, 'lo de siempre no se acota o no se le suman las partidas con la app');
   eq(m.Franco.games, 2, 'un heroe que solo esta en el registro no llega a la maestria');
 
   // Corregir y quitar, que es para lo que existe la pantalla.

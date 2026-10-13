@@ -8,6 +8,24 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.56.0
+
+- Tu habilidad con cada héroe se cuenta ahora con tus partidas con la app,
+  no con las de siempre. La app creía que Diggie era tu mejor héroe (54% en
+  3.821 partidas de siempre), pero con la app vas al 46% con él y al 75% con
+  Rafaela, al 68% con Estes y al 64% con Minotaur. Medido en tus 212
+  partidas: tu winrate de siempre no predice cómo te va ahora, y el de
+  ahora sí. Lo de siempre cuenta ya como mucho como 40 partidas por héroe,
+  de punto de partida para los que casi no has jugado con la app. En tus
+  drafts el nº1 cambia en 68 de 165: Rafaela pasa a ser la primera en 92
+  (antes en 41). El Veredicto sigue comparando con tu winrate de siempre
+  entero.
+- «Leer solo» ya no se queda sin meter picks de un equipo a mitad de draft.
+  Si tres jugadores enseñaban un héroe y luego cogían otro que el lector no
+  reconoce, la 3.54.0 dejaba de leer a ese equipo hasta el draft siguiente.
+- Con la voz callada, los avisos que esperaban en cola ya no cuentan como
+  dichos.
+
 ## 3.55.0
 
 - El lector reconoce más héroes en la fase de picks. Algunos (Hanabi,

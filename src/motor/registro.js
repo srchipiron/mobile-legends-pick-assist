@@ -1,5 +1,5 @@
 import { nombreClave } from './nombres.js';
-import { maestriaEfectiva, winrateDeReferencia } from './maestria.js';
+import { maestriaDeSiempre, winrateDeReferencia } from './maestria.js';
 import { TRAMOS } from './fases.js';
 import { tramoDeMinutos, esDuracionPosible } from './directo.js';
 
@@ -314,7 +314,7 @@ export function resumen(partidas = [], maestria = {}) {
   const sin = conApp.filter((p) => !siguioConsejo(p));
   const wr = (lista) => (lista.length ? lista.filter((p) => p.gane).length / lista.length : null);
   const wrSiguiendo = wr(con);
-  const referencia = winrateDeReferencia(maestriaEfectiva(maestria, partidas.filter(esPrevia)));
+  const referencia = winrateDeReferencia(maestriaDeSiempre(maestria, partidas.filter(esPrevia)));
 
   let contraReferencia = null;
   if (wrSiguiendo != null && referencia && con.length >= 5) {

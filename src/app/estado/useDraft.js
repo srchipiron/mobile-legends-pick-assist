@@ -122,6 +122,13 @@ export function useDraft() {
   // que un jugador solo miraba por el que coge. No se guarda: tras recargar
   // a medias, solo se pierde ese cambio en ese draft.
   const huecosLeidos = useRef({ enemigos: [], aliados: [] });
+  // Los huecos TAL CUAL de la última lectura aceptada de cada equipo, con los
+  // «?» como null (3.56.0): con ellos decide `fueraDeLosPicks`. Comparando
+  // con `huecosLeidos`, que conserva el nombre viejo donde ahora hay «?», un
+  // héroe que solo se miraba y que se cambió por uno que el lector no
+  // reconoce contaba como cambio PARA SIEMPRE, y con tres así se tiraban
+  // todas las lecturas de ese equipo hasta el siguiente draft.
+  const huecosCrudos = useRef({ enemigos: [], aliados: [] });
   actual.current = draft;
   // «Deshacer» (3.23.0): el draft de antes y el que dejó la acción. Solo vale
   // mientras el draft siga siendo `despues`: cualquier otro cambio lo anula
@@ -226,12 +233,16 @@ export function useDraft() {
     const antes = actual.current;
     const ahora = Date.now();
     // Draft nuevo: los huecos de la partida anterior no dicen nada.
-    if (!antes.enemigos.length && !antes.aliados.length) huecosLeidos.current = { enemigos: [], aliados: [] };
+    if (!antes.enemigos.length && !antes.aliados.length) { huecosLeidos.current = { enemigos: [], aliados: [] }; huecosCrudos.current = { enemigos: [], aliados: [] }; }
     // Si en un equipo cambian a la vez más huecos de los que pueden estar
     // eligiendo, la tablet ya no enseña los picks (skins, una ventana
     // encima): esa parte de la lectura no se usa (3.54.0, `fueraDeLosPicks`).
-    const fueraE = fueraDeLosPicks(huecosLeidos.current.enemigos, huecos?.enemigos ?? []);
-    const fueraA = fueraDeLosPicks(huecosLeidos.current.aliados, huecos?.aliados ?? []);
+    const fueraE = fueraDeLosPicks(huecosCrudos.current.enemigos, huecos?.enemigos ?? []);
+    const fueraA = fueraDeLosPicks(huecosCrudos.current.aliados, huecos?.aliados ?? []);
+    huecosCrudos.current = {
+      enemigos: !fueraE && huecos?.enemigos?.length ? huecos.enemigos : huecosCrudos.current.enemigos,
+      aliados: !fueraA && huecos?.aliados?.length ? huecos.aliados : huecosCrudos.current.aliados,
+    };
     const enemigos = fueraE ? [] : enemigosLeidos;
     const aliados = fueraA ? [] : aliadosLeidos;
     // Tu fila va con las de tu equipo: con skins, tu héroe tampoco se lee.
