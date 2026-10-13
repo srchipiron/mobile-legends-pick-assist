@@ -8,6 +8,13 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.57.1
+
+- Corregido antes de que llegara a los datos: la 3.57.0 habría tomado por
+  antisanación objetos que no lo son (Rapid Boots, Starlium Scythe, Endless
+  Battle), porque leía también sus estadísticas. Ahora las estadísticas se
+  leen solo para el crítico.
+
 ## 3.57.0
 
 - «Plan y objetos» marca la build que mejor encaja con tu draft, no siempre la

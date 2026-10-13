@@ -358,15 +358,19 @@ const EFECTOS = {
   critico: /Crit(ical)? Chance/i,
 };
 
+/**
+ * Los efectos que se leen de las ESTADÍSTICAS (`equiptips`) y no de la
+ * pasiva: el crítico y su reducción. Solo esos (3.57.1): con `equiptips`
+ * para todos, «+35% Slow Reduction +12 HP Regen» de Rapid Boots casaba con
+ * la antisanación, y salían 13 objetos «antisanación» en vez de 3.
+ */
+const DE_ESTADISTICAS = new Set(['antiCritico', 'critico']);
+
 function extraerEfectos(d) {
-  const texto = Object.keys(d)
-    // Y `equiptips` (3.57.0): el crítico y su reducción van en las estadísticas, no en la pasiva.
-    .filter((k) => /^equipskill/.test(k) || k === 'equiptips')
-    .map((k) => d[k])
-    .join(' ')
-    .replace(/<br\s*\/?>/gi, ' ')
-    .replace(/<[^>]*>/g, ' ');
-  return Object.entries(EFECTOS).filter(([, re]) => re.test(texto)).map(([k]) => k);
+  const limpio = (claves) => claves.map((k) => d[k]).join(' ').replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]*>/g, ' ');
+  const pasiva = limpio(Object.keys(d).filter((k) => /^equipskill/.test(k)));
+  const estadisticas = limpio(['equiptips'].filter((k) => k in d));
+  return Object.entries(EFECTOS).filter(([k, re]) => re.test(DE_ESTADISTICAS.has(k) ? estadisticas : pasiva)).map(([k]) => k);
 }
 
 /**

@@ -2867,6 +2867,11 @@ Lo que hay medido y no conviene volver a suponer:
   `equiptips`): `antiEscudo` (Sea Halberd, Glowing Wand, Dominance Ice),
   `antiCritico` (Blade Armor) y `critico` (siete objetos de ataque).
   Comprobados contra los 152 objetos de la API el 13 de octubre de 2026.
+  OJO (3.57.1, cazado con la ingesta real antes de que el bot la corriera):
+  `equiptips` se lee SOLO para esos dos (`DE_ESTADISTICAS`); leído para
+  todos, «+35% Slow Reduction +12 HP Regen» de Rapid Boots casaba con la
+  antisanación y salían 13 objetos en vez de 3. Al ampliar el texto que
+  lee una regla, mira qué más casa con las reglas que ya había.
 - **Avisos nuevos**: `build.ajusteEscudo` (dos o más enemigos con `shield`)
   y `build.ajusteCritico`: quién va de crítico NO es una etiqueta, es su
   build más jugada en tu rango (`vaDeCritico`: algún objeto con `critico`).
