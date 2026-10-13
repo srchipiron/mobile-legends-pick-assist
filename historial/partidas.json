@@ -1,6 +1,191 @@
 {
- "actualizado": "2026-10-13T20:29:27.032Z",
+ "actualizado": "2026-10-13T21:28:04.377Z",
  "partidas": [
+  {
+   "t": 1791926867545,
+   "pick": "Angela",
+   "recomendados": [
+    "Minotaur",
+    "Lolita",
+    "Badang"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.525,
+   "bans": [
+    "Lukas",
+    "Masha",
+    "Hirara",
+    "Marcel",
+    "Paquito",
+    "Aulus",
+    "Yi Sun-shin",
+    "Esmeralda",
+    "Eudora",
+    "Fanny"
+   ],
+   "draft": {
+    "enemigos": [
+     "Floryn",
+     "Helcurt",
+     "Kagura",
+     "Hanabi",
+     "Sun"
+    ],
+    "aliados": [
+     "Edith",
+     "Leomord",
+     "Natan",
+     "Kadita"
+    ],
+    "linea": "roam",
+    "rival": "Floryn"
+   },
+   "lector": {
+    "baneos": [
+     "Lukas",
+     "Masha",
+     "Hirara",
+     "Marcel",
+     "Paquito",
+     "Aulus",
+     "Yi Sun-shin",
+     "Esmeralda",
+     "Eudora",
+     "Fanny"
+    ],
+    "enemigos": [
+     "Floryn",
+     "Helcurt",
+     "Kagura",
+     "Hanabi",
+     "Sun"
+    ],
+    "aliados": [
+     "Edith",
+     "Masha",
+     "Leomord",
+     "Natan"
+    ],
+    "tuyo": "Angela",
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Wanwan",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Gord",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Beatrix",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Beatrix",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Gord",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Carmilla",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Gord",
+      "parecido": 0.71
+     }
+    ],
+    "ms": [
+     3242,
+     3136,
+     3465,
+     3442,
+     3111,
+     3266,
+     3128,
+     2984,
+     4683,
+     3162,
+     2659,
+     2887,
+     2555,
+     3462,
+     3180,
+     2982,
+     2591,
+     4044,
+     5010,
+     3030
+    ],
+    "msCaptura": [
+     2203,
+     2094,
+     2423,
+     2278,
+     2074,
+     2342,
+     2173,
+     2053,
+     3388,
+     2232,
+     1869,
+     2075,
+     1784,
+     2466,
+     1985,
+     2136,
+     1735,
+     2780,
+     3435,
+     1905
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo"
+    ]
+   },
+   "fases": [
+    0.593,
+    0.564,
+    0.52,
+    0.457,
+    0.446,
+    0.477
+   ]
+  },
   {
    "t": 1791922585255,
    "pick": "Rafaela",
@@ -17764,6 +17949,12 @@
   {
    "cuando": "2026-10-13T20:29:27.032Z",
    "partidas": 216,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-13T21:28:04.377Z",
+   "partidas": 217,
    "heroes": 11,
    "incidencia": 11
   }
