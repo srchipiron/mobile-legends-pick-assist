@@ -177,6 +177,13 @@ ninguna constante.
   builds frescos. En la segunda pasada una respuesta vacía no borra lo que
   ya llegó (sin prueba propia: la ingesta simulada no lo provoca).
   `diagnostics.relations.reintentados` y `recuperados` dicen cuántos.
+  `relaciones.ultima` se sembró a mano el 14 de octubre de 2026 (3.57.7)
+  con la medida de la ingesta del despliegue de las 09:42 (Mítico; cruces
+  0,82, parejas 0,61), porque la guardada era la Gloria sin comprobar del
+  12. Con la matriz guardada de Gloria y `ultima` en Mítico, un Mítico a
+  medias tira la corrida (no se funden filas de otro rango): lo correcto,
+  y el diagnóstico avisa de que se sirven cruces de un rango que la última
+  comprobación descartó.
 
 Dos constantes que se midieron y se dejaron como estaban, para no volver a
 medirlas: el umbral de «tu héroe está N puntos por encima» (`>= 0.02` en

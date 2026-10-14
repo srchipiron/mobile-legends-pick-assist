@@ -208,6 +208,10 @@ test('el diagnóstico dice de qué rango salen cruces y parejas, y avisa si no e
   const gloria = texto({ rango: 'glory', pedido: 'glory', coherencia: { counters: 0.91, synergies: 0.87 }, motivo: null });
   ok(gloria.length === 1 && !/^\[(AVISO|FALLO)/.test(gloria[0]) && /de glory.*cruces r=0\.910/.test(gloria[0]), `con Gloria coherente no lo dice tal cual: ${gloria}`);
   eq(texto(undefined).length, 0, 'sin el campo (datos de antes) inventa un rango');
+  // 3.57.7: la última comprobación eligió Mítico y se sirven los de Gloria.
+  const distinta = texto({ rango: 'glory', pedido: 'glory', coherencia: null, motivo: 'no se pudo bajar mythic entero', ultima: { rango: 'mythic', fecha: '2026-10-14T09:42:54Z' } });
+  ok(distinta.some((l) => /^\[AVISO/.test(l) && /última comprobación \(2026-10-14\) eligió mythic/.test(l)), `no avisa de que se sirven cruces de un rango que se midió peor: ${distinta}`);
+  ok(!texto({ rango: 'mythic', pedido: 'glory', coherencia: { counters: 0.64, synergies: 0.43 }, motivo: 'no se parecen', ultima: { rango: 'mythic' } }).some((l) => /última comprobación/.test(l)), 'avisa con la matriz del mismo rango que la comprobación');
 });
 
 test('un héroe recién salido sin winrate es un aviso, uno conocido sin winrate es un fallo', () => {

@@ -186,6 +186,8 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
         equiptips: '+18 Extra Magic Defense<br>+5 Extra Physical Defense<br>+20% Crit Damage Reduction', equipskill1: 'Reduces HP Regen effects by 50%',
         equipskill2: ' Lifebane: Dealing damage to a target will reduce the Shield and HP Regen effects on them to 60% of normal for 3s.',
       } }, { data: {
+        equipid: 90002, equipname: 'Segundo Objeto', equiptypename: 'Attack', equipskill1: 'Reduces the target HP Regen by 40%.',
+      } }, { data: {
         // Como Rapid Boots (3.57.1): «Slow Reduction» y «HP Regen» en las estadísticas NO son antisanación.
         equipid: 90004, equipname: 'Botas Rápidas', equiptypename: 'Movement',
         equiptips: '+65 Movement Speed<br>+35% Slow Reduction<br>+12 HP Regen', equipskill1: ' Side Effect: Loses 20 Movement Speed for 5s upon dealing or taking damage.',
@@ -193,7 +195,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     }
     if (ruta === '/api/equipment') {
       marca('equipoCorto');
-      return json({ code: 0, data: { records: [{ data: { equipid: 90001, equipname: 'Objeto de Prueba' } }, { data: { equipid: 90002, equipname: 'Segundo Objeto' } }] } });
+      // El Segundo Objeto da la antisanación por la pasiva en la ruta larga y
+      // el crítico por las estadísticas solo en esta (3.57.7: se juntan).
+      return json({ code: 0, data: { records: [{ data: { equipid: 90001, equipname: 'Objeto de Prueba' } }, { data: { equipid: 90002, equipname: 'Segundo Objeto', equiptips: '+25% Crit Chance' } }] } });
     }
     // Los talentos de los emblemas (3.57.0), con la forma real: `giftid`, `gifttiers` y el texto con etiquetas.
     if (ruta === '/api/academy/emblems') {
@@ -295,6 +299,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     ok((obj?.efectos ?? []).includes('antiCuracion'), `efectos del objeto: ${JSON.stringify(obj?.efectos)}`);
     // 3.57.0: la reducción de escudos (de la pasiva) y la de crítico (de las estadísticas, `equiptips`).
     ok(['antiEscudo', 'antiCritico'].every((e) => obj?.efectos?.includes(e)) && !obj?.efectos?.includes('critico'), `efectos nuevos del objeto: ${JSON.stringify(obj?.efectos)}`);
+    ok(['antiCuracion', 'critico'].every((e) => d.equipment?.['90002']?.efectos?.includes(e)), `los efectos de dos rutas no se juntan: ${JSON.stringify(d.equipment?.['90002'])}`);
     eq(JSON.stringify(d.equipment?.['90004']?.efectos ?? []), '[]', `las estadísticas de unas botas salen como antisanación: ${JSON.stringify(d.equipment?.['90004'])}`);
     eq(d.equipment?.['90002']?.nombre, 'Segundo Objeto', 'la ruta corta de objetos no se funde con la larga');
     const build = d.builds?.Atlas?.roam?.[0];

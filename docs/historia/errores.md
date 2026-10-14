@@ -1010,3 +1010,14 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   10:39, sin API, volvió a los del 12 por la noche. Hoy mira antes lo que ya
   sirve Pages. Lo publicado también es un estado: un paso que lo sustituye
   tiene que saber si lo que trae es peor.
+
+- **Una huella cambiada en el código y no en los datos guardados**
+  (3.57.2 → 3.57.7): 3.57.2 quitó las URL de `huellaTexto` y reescribió el
+  `kit` de los 133 en `heroes.json`, pero `roam-meta.json` seguía con el
+  `kitTexto` de la fórmula vieja: el diagnóstico publicado decía «133 kits
+  rehechos» con la API caída, y cada héroe cuya ficha falle conserva su
+  `kitTexto`, así que habría seguido dando falsas alarmas sueltas. Migrado
+  a mano el 14 de octubre de 2026 con el serializador (texto comprobado
+  idéntico con la API). Lo cazó `silent-failure-hunter`. Cuando cambia la
+  forma de calcular un valor que se CONSERVA entre corridas, hay que
+  migrar lo guardado en el mismo cambio.

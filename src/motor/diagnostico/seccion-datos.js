@@ -80,6 +80,12 @@ export function seccionDatos(inf, { datos, linea, entorno = {} }) {
   } else if (rel) {
     inf.linea(`Cruces y parejas: de ${rel.rango}${coh ? ` (coherencia con el rango de abajo: ${coh})` : ''}`);
   }
+  // La última comprobación que se pudo hacer (3.57.3) eligió otro rango que
+  // el de la matriz que se sirve: la guardada se quedó de antes y la API no
+  // ha dejado traer una entera del rango bueno (3.57.7).
+  if (rel?.ultima?.rango && rel.rango && rel.ultima.rango !== rel.rango) {
+    inf.check(false, '', `Cruces y parejas: se sirven los de ${rel.rango}, pero la última comprobación${rel.ultima.fecha ? ` (${String(rel.ultima.fecha).slice(0, 10)})` : ''} eligió ${rel.ultima.rango}: hasta que llegue una matriz entera de ${rel.ultima.rango}, los cruces salen de un rango que se midió peor`, true);
+  }
   // Las estadísticas cambian con el rango que elijas; cruces y parejas son
   // los que eligió la INGESTA (`relaciones.rango`, Mítico tras un reinicio)
   // y las builds, las del rango de la ingesta. Hasta 3.43.1 se comparaba tu

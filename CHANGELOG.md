@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.57.7
+
+- Desaparece el aviso de «133 héroes rehechos» del diagnóstico. Era un
+  falso aviso: se había cambiado la forma de calcular la huella de cada
+  kit y los datos guardados seguían con la antigua. Ya están al día, y el
+  texto de las habilidades se comprobó héroe a héroe.
+- Los objetos que dan crítico se reconocen aunque otra parte de la API
+  diga primero otra cosa de ellos, así que el aviso de «van de crítico» de
+  la build ya no se pierde.
+- El diagnóstico avisa si los cruces que usa la app son de un rango que la
+  última comprobación descartó, como pasa hoy con la API a ratos.
+
 ## 3.57.6
 
 - La app ya no vuelve a datos más viejos al publicar un arreglo cuando la

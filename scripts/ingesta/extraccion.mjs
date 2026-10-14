@@ -442,7 +442,10 @@ export async function fetchEquipo() {
       if (magica && !obj.magica) obj.magica = magica;
       if (fisica && !obj.fisica) obj.fisica = fisica;
       const efectos = extraerEfectos(d);
-      if (efectos.length && !obj.efectos) obj.efectos = efectos;
+      // Se JUNTAN los de todas las rutas (3.57.7): la primera con alguno
+      // mandaba, y una ruta sin `equiptips` que diera la antisanación por la
+      // pasiva dejaba fuera el crítico, que desde 3.57.1 solo sale de ahí.
+      if (efectos.length) obj.efectos = [...new Set([...(obj.efectos ?? []), ...efectos])];
       out[id] = obj;
     }
     await sleep(200);
