@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.57.6
+
+- La app ya no vuelve a datos más viejos al publicar un arreglo cuando la
+  API de datos está caída. Si no se pueden descargar datos nuevos, se
+  publica con los que la app ya estaba usando, siempre que sean más
+  recientes que los guardados y pasen la misma comprobación. Esta mañana
+  un arreglo hizo que la app pasara de los datos de hoy a los del lunes.
+
 ## 3.57.5
 
 - Los datos se actualizan aunque la API falle a ratos. Al bajar los cruces

@@ -35,6 +35,16 @@ CÓDIGO, porque los datos que habría publicado eran los mismos que ya servía
 Pages. Que vengan sin estadísticas o sin matriz de cruces sigue parando el
 despliegue. Lo viejo lo dice el diagnóstico (aviso a las 36 h).
 
+Sin datos nuevos (ingesta caída o rechazada), el despliegue mira antes los
+que YA sirve Pages (3.57.6, decidido por Javi): si son más nuevos que los
+del repositorio y `comparar-ingesta` los acepta, publica con ellos. El
+despliegue no commitea, así que los datos frescos que publicó uno se
+perdían en el siguiente push de código: el 14 de octubre de 2026 la app
+pasó de los datos de las 09:42 a los del 12 por la noche. Solo lee (curl a
+la propia Pages); no hace push. Prueba en `workflows.test` con un `curl`
+de pega y copias de scripts/ y src/ (por un enlace simbólico el comparador
+no se cree programa principal y sale con 0 sin comparar).
+
 ## La vigilancia automática
 
 Desde 0.9.0 la app no espera a que Javi note algo raro. `vigilancia.yml` corre

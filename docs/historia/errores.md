@@ -1002,3 +1002,11 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   corrida que depende de lo anterior lo recibe por `--previo`. Séptima vez
   de la misma lección: una prueba no puede depender de lo que haya en
   public/data, ni siquiera de un campo que hoy no existe.
+
+- **Un push de código que devolvía la app a datos viejos** (hasta 3.57.6):
+  el despliegue publica con la ingesta del momento o, si falla, con los
+  datos del repositorio, y no commitea. El 14 de octubre de 2026, con la API
+  a ratos, el despliegue de las 09:34 publicó datos de las 09:42 y el de las
+  10:39, sin API, volvió a los del 12 por la noche. Hoy mira antes lo que ya
+  sirve Pages. Lo publicado también es un estado: un paso que lo sustituye
+  tiene que saber si lo que trae es peor.

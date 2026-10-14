@@ -14,7 +14,7 @@
  * `roam-meta.json` fabricado.
  */
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, cpSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test, ok, eq, terminar, RAIZ, leerTexto, leerJson } from '../arnes.mjs';
@@ -480,6 +480,39 @@ test('revisión línea a línea de scripts y workflows: guardas que no vigilaban
   // 11. El rival de línea NO pesa doble desde 2.0 (medido: −0.56 ± 0.62 frente
   //     a 0.78 ± 0.32 los otros). Esa comprobación se porta con el motor:
   //     pruebas/motor/modelo.test.mjs, «el rival marcado sigue pesando distinto».
+});
+
+test('sin datos nuevos, el despliegue publica los que ya sirve la app si son más nuevos que los del repositorio (3.57.6)', () => {
+  // El 14 de octubre de 2026 un push de código cambió en la app los datos de
+  // las 09:42 por los del 12 por la noche: el despliegue anterior los había
+  // publicado sin commitearlos y este, sin API, volvió a los del repositorio.
+  const deploy = leerWorkflow('deploy.yml');
+  const paso = deploy.pasos.find((p) => /comparar-ingesta\.mjs \/tmp\/nueva\.json/.test(p.run ?? ''));
+  ok(paso, 'deploy.yml ya no tiene el paso que elige con qué datos se publica');
+  const caja = join(tmp, 'publicados'); mkdirSync(join(caja, 'public/data'), { recursive: true });
+  // Copias y no enlaces: por un enlace `comparar-ingesta.mjs` no se ve como
+  // programa principal, no compara nada y sale con 0 (lo cazó esta prueba).
+  for (const d of ['scripts', 'src']) cpSync(join(RAIZ, d), join(caja, d), { recursive: true });
+  const bin = join(caja, 'bin'); mkdirSync(bin);
+  // Un curl de pega: copia PUBLICADA donde diga -o (o falla si no hay).
+  writeFileSync(join(bin, 'curl'), '#!/bin/bash\n[ -n "$PUBLICADA" ] || exit 22\nwhile [ $# -gt 0 ]; do [ "$1" = -o ] && cp "$PUBLICADA" "$2"; shift; done\n');
+  chmodSync(join(bin, 'curl'), 0o755);
+  const real = leerJson('public/data/roam-meta.json');
+  const conFecha = (horas) => ({ ...real, generatedAt: new Date(Date.parse(real.generatedAt) + horas * 3.6e6).toISOString() });
+  const publicar = (repo, publicada) => {
+    writeFileSync(join(caja, 'public/data/roam-meta.json'), JSON.stringify(repo));
+    const fichero = join(caja, 'publicada.json');
+    if (publicada) writeFileSync(fichero, JSON.stringify(publicada));
+    const r = ejecutarPaso(paso.run, { cwd: caja, env: { PUBLICADA: publicada ? fichero : '' }, path: [bin] });
+    eq(r.status, 0, `el paso falla: ${r.stderr}`);
+    return JSON.parse(readFileSync(join(caja, 'public/data/roam-meta.json'), 'utf8')).generatedAt;
+  };
+  eq(publicar(real, conFecha(10)), conFecha(10).generatedAt, 'con datos publicados más nuevos se vuelve a los del repositorio');
+  eq(publicar(real, conFecha(-10)), real.generatedAt, 'se publican datos más VIEJOS que los del repositorio');
+  eq(publicar(real, null), real.generatedAt, 'sin poder leer lo publicado no se queda con los del repositorio');
+  // Más nuevos pero peores (sin la mitad de los cruces): el comparador manda.
+  const peores = { ...conFecha(10), counters: Object.fromEntries(Object.entries(real.counters).slice(0, 60)) };
+  eq(publicar(real, peores), real.generatedAt, 'se publican datos publicados que el comparador rechaza');
 });
 
 await terminar('scripts/workflows');

@@ -103,7 +103,9 @@ jobs:
       - name: Elegir con qué datos se publica
         # Tres casos:
         #   la corrida nueva es buena     -> se usa
-        #   es peor, o la API esta caida  -> se usan los datos del repositorio,
+        #   es peor, o la API esta caida  -> los que ya sirve la app si son mas
+        #                                    nuevos y el comparador los acepta;
+        #                                    si no, los datos del repositorio,
         #                                    que pasaron este mismo filtro el dia
         #                                    que se commitearon
         #   ademas estan rancios          -> se para el despliegue
@@ -124,7 +126,21 @@ jobs:
             [ -d /tmp/heroes ] && cp /tmp/heroes/*.jpg /tmp/heroes/fuentes.json public/heroes/ 2>/dev/null || true
             echo "Se publica con la corrida nueva."
           else
-            echo "::warning::La ingesta ha fallado o resuelve menos; se publica con los datos del repositorio."
+            # Antes de quedarse con los del repositorio, los que ya sirve la
+            # app (3.57.6, decidido por Javi): un despliegue anterior pudo
+            # publicar datos mas nuevos que el repositorio (el despliegue no
+            # commitea) y este los cambiaba por los viejos. El 14 de octubre
+            # de 2026, con la API a ratos, la app paso de datos de las 09:42
+            # a los del 12 por la noche en un push de codigo. Solo si son mas
+            # nuevos Y el comparador los acepta; si no, el repositorio.
+            if curl -fsS --max-time 60 "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/roam-meta.json" -o /tmp/publicada.json \
+               && node -e "const f=(p)=>Date.parse(require(p).generatedAt)||0; process.exit(f('/tmp/publicada.json') > f(process.cwd()+'/public/data/roam-meta.json') ? 0 : 1)" \
+               && node scripts/comparar-ingesta.mjs /tmp/publicada.json public/data/roam-meta.json; then
+              cp /tmp/publicada.json public/data/roam-meta.json
+              echo "::warning::La ingesta ha fallado o resuelve menos; se publica con los datos que ya servia la app, mas nuevos que los del repositorio."
+            else
+              echo "::warning::La ingesta ha fallado o resuelve menos; se publica con los datos del repositorio."
+            fi
           fi
 
       - name: Comprobar que los datos valen para publicar
