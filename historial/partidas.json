@@ -1,6 +1,205 @@
 {
- "actualizado": "2026-10-14T18:42:22.629Z",
+ "actualizado": "2026-10-14T19:04:12.602Z",
  "partidas": [
+  {
+   "t": 1792004563682,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Rafaela"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.602,
+   "origen": "lector",
+   "bans": [
+    "Khufra",
+    "Kagura",
+    "Marcel",
+    "Atlas",
+    "Aulus",
+    "Paquito",
+    "Hirara",
+    "Masha"
+   ],
+   "draft": {
+    "enemigos": [
+     "Odette",
+     "Hanabi",
+     "Minotaur",
+     "Suyou",
+     "Yu Zhong"
+    ],
+    "aliados": [
+     "Selena",
+     "Kadita",
+     "Sora",
+     "Brody"
+    ],
+    "linea": "roam",
+    "rival": "Minotaur"
+   },
+   "lector": {
+    "baneos": [
+     "Khufra",
+     "Kagura",
+     "Marcel",
+     "Atlas",
+     "Aulus",
+     "Paquito",
+     "Hirara",
+     "Masha"
+    ],
+    "enemigos": [
+     "Odette",
+     "Hanabi",
+     "Gatotkaca",
+     "Suyou",
+     "Yu Zhong"
+    ],
+    "aliados": [
+     "Sora"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "s5",
+      "candidato": "Bane",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Esmeralda",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Zetian",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Fredrinn",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Baxia",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Natalia",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Fredrinn",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Wanwan",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Fredrinn",
+      "parecido": 0.76
+     }
+    ],
+    "ms": [
+     3506,
+     3632,
+     2979,
+     3152,
+     3170,
+     4752,
+     3024,
+     2560,
+     2837,
+     3183,
+     3249,
+     3090,
+     3368,
+     2956,
+     3250,
+     4625,
+     3244,
+     2730,
+     2781,
+     3364
+    ],
+    "msCaptura": [
+     2480,
+     2369,
+     1879,
+     2073,
+     2091,
+     3209,
+     1881,
+     1512,
+     1927,
+     2115,
+     2195,
+     2070,
+     2364,
+     1995,
+     2113,
+     3474,
+     2209,
+     1878,
+     1819,
+     2253
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Minotaur",
+      "Yu Zhong",
+      "Minotaur",
+      "Minotaur"
+     ]
+    }
+   },
+   "duracion": 17,
+   "fases": [
+    0.693,
+    0.631,
+    0.572,
+    0.517,
+    0.517,
+    0.525
+   ]
+  },
   {
    "t": 1792003264760,
    "pick": "Minotaur",
@@ -19246,6 +19445,12 @@
   {
    "cuando": "2026-10-14T18:42:22.629Z",
    "partidas": 224,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-14T19:04:12.602Z",
+   "partidas": 225,
    "heroes": 11,
    "incidencia": 11
   }
