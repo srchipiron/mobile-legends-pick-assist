@@ -1,6 +1,187 @@
 {
- "actualizado": "2026-10-14T19:04:12.602Z",
+ "actualizado": "2026-10-14T20:54:40.782Z",
  "partidas": [
+  {
+   "t": 1792011143064,
+   "pick": "Mathilda",
+   "recomendados": [
+    "Minotaur",
+    "Estes",
+    "Kaja"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.606,
+   "origen": "lector",
+   "bans": [
+    "Hirara",
+    "Gloo",
+    "Lukas",
+    "Yi Sun-shin",
+    "Marcel",
+    "Aulus",
+    "Khufra",
+    "Rafaela"
+   ],
+   "draft": {
+    "enemigos": [
+     "Silvanna",
+     "Floryn",
+     "Lylia",
+     "Zetian",
+     "Layla"
+    ],
+    "aliados": [
+     "Chang'e",
+     "Fredrinn",
+     "Gord",
+     "Hanabi"
+    ],
+    "linea": "roam",
+    "rival": "Floryn"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Gloo",
+     "Lukas",
+     "Yi Sun-shin",
+     "Marcel",
+     "Aulus",
+     "Khufra",
+     "Rafaela"
+    ],
+    "enemigos": [
+     "Wanwan",
+     "Silvanna",
+     "Floryn",
+     "Lylia",
+     "Zetian"
+    ],
+    "aliados": [
+     "Chang'e",
+     "Fredrinn",
+     "Gord"
+    ],
+    "tuyo": "Mathilda",
+    "dudas": [
+     {
+      "hueco": "e4",
+      "candidato": "Fredrinn",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Guinevere",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Wanwan",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Valir",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Natalia",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Leomord",
+      "parecido": 0.79
+     }
+    ],
+    "ms": [
+     3456,
+     3474,
+     3384,
+     3769,
+     3243,
+     3476,
+     3532,
+     4863,
+     3586,
+     3404,
+     3425,
+     3525,
+     3784,
+     3008,
+     2764,
+     2868,
+     3204,
+     3584,
+     3215,
+     2971
+    ],
+    "msCaptura": [
+     2170,
+     2194,
+     2199,
+     2287,
+     2071,
+     2244,
+     2278,
+     3160,
+     2582,
+     2368,
+     2419,
+     2507,
+     2389,
+     1982,
+     1995,
+     1975,
+     2298,
+     2460,
+     2110,
+     1997
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Zetian",
+      "Layla",
+      "Zetian",
+      "Layla",
+      "Lylia"
+     ]
+    }
+   },
+   "fases": [
+    0.589,
+    0.593,
+    0.608,
+    0.634,
+    0.654,
+    0.655
+   ]
+  },
   {
    "t": 1792004563682,
    "pick": "Estes",
@@ -19451,6 +19632,12 @@
   {
    "cuando": "2026-10-14T19:04:12.602Z",
    "partidas": 225,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-14T20:54:40.782Z",
+   "partidas": 226,
    "heroes": 11,
    "incidencia": 11
   }
