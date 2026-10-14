@@ -12,7 +12,7 @@ import { readdirSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
 import { test, ok, eq, terminar, RAIZ, leerTexto } from '../arnes.mjs';
-import { extraerLineas, extraerRol, extraerHabilidades, fetchStats, recogerCurva, TRAMOS_CURVA } from '../../scripts/ingesta/extraccion.mjs';
+import { extraerLineas, extraerRol, extraerHabilidades, fetchStats, recogerCurva, TRAMOS_CURVA, huellaTexto, extraerCara, urlOriginal } from '../../scripts/ingesta/extraccion.mjs';
 import { TRAMOS } from '../../src/motor/fases.js';
 import { callRoute, request } from '../../scripts/ingesta/descarga.mjs';
 import { estado } from '../../scripts/ingesta/contexto.mjs';
@@ -464,6 +464,20 @@ test('la historia de la fuerza: solo lo descargado, una foto por día, diez día
   const dobles = anotarHistoria([{ fecha: '2026-10-01', glory: { Atlas: [0.4, 0] } }, { fecha: '2026-10-01', glory: { Atlas: [0.6, 0] } }], {}, [], '2026-10-02', { rangos: ['glory'] });
   ok(dobles.length === 1 && dobles[0].glory.Atlas[0] === 0.6, 'dos fotos del mismo día en lo previo');
   ok(anotarHistoria([{ fecha: 'mal' }, null], stats, ['glory'], 'tampoco', { rangos: ['glory'] }).length === 0, 'entradas o fechas sin forma');
+});
+
+test('las imágenes servidas por un proxy guardan la dirección de Moonton y no mueven la huella del kit (3.57.2)', () => {
+  // La forma real desde el 11 de octubre de 2026: cada imagen envuelta en wsrv.nl.
+  const moonton = 'https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_1232_1/100_da894b37bfb5cadb32307f371f31918a.png';
+  const proxy = `https://wsrv.nl/?url=${encodeURIComponent(moonton)}`;
+  eq(urlOriginal(proxy), moonton, 'no se desenvuelve el proxy');
+  eq(urlOriginal(moonton), moonton, 'una dirección normal se toca');
+  eq(urlOriginal('https://wsrv.nl/?url=javascript%3Aalert(1)'), 'https://wsrv.nl/?url=javascript%3Aalert(1)', 'se desenvuelve algo que no es una imagen http');
+  const texto = 'Miya fires arrows that deal 120 Physical Damage to enemies in a line and slow them.';
+  const ficha = (url) => ({ data: { records: [{ data: { hero: { data: { heroid: 1, head: url, skill: [{ skilldesc: texto }] } } } }] } });
+  eq(extraerCara(ficha(proxy)), moonton, 'la cara se guarda con la dirección del proxy');
+  eq(huellaTexto(ficha(proxy)), huellaTexto(ficha(moonton)), 'cambiar la dirección de una imagen mueve la huella del kit');
+  ok(huellaTexto(ficha(moonton)) !== huellaTexto({ data: { records: [{ data: { hero: { data: { heroid: 1, head: moonton, skill: [{ skilldesc: texto.replace('slow', 'stun') }] } } } }] } }), 'cambiar el texto ya no mueve la huella');
 });
 
 await terminar('scripts/ingesta');

@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.57.2
+
+- Las caras de los héroes y los iconos de los objetos vuelven a bajarse
+  del servidor del juego, con su calidad original. Desde el 11 de octubre
+  la API las sirve a través de un proxy que las recomprime, y eso hizo que
+  se bajaran de nuevo las 210 imágenes y que el lector avisara de que sus
+  133 caras estaban desfasadas.
+- El aviso de «héroe rehecho» vuelve a servir: saltaba con los 133 a la
+  vez porque la huella del kit contaba las direcciones de las imágenes.
+  El texto de las habilidades no había cambiado (comprobado héroe a héroe).
+
 ## 3.57.1
 
 - Corregido antes de que llegara a los datos: la 3.57.0 habría tomado por

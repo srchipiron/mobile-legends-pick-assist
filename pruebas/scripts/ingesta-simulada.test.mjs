@@ -22,6 +22,8 @@ import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
 import { comparar } from '../../scripts/comparar-ingesta.mjs';
 import { huellaTexto } from '../../scripts/ingesta/extraccion.mjs';
 
+/** Como sirve la API las imágenes desde el 11 de octubre de 2026: por el proxy wsrv.nl (3.57.2). */
+const proxy = (url) => `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
 const INGESTA = resolve(RAIZ, 'scripts/ingest.mjs');
 const REAL = resolve(RAIZ, 'public/data/roam-meta.json');
 
@@ -140,8 +142,8 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       const h = heroes.find((x) => String(x.id) === m[1]) ?? heroes[0];
       // La forma real (medida el 28-9-2026): el retrato de la web fuera y la
       // cara del juego dentro del objeto de configuración, junto a `heroid`.
-      return json({ code: 0, data: { records: [{ data: { head: `http://127.0.0.1:${puerto}/img/${h.id}.jpg${retratoNuevo && h.id === 1 ? '?n=2' : ''}`, hero: { data: {
-        heroid: h.id, name: h.name, head: `http://127.0.0.1:${puerto}/cara/${h.id}.png`, speciality: ['Guard', 'Crowd Control'],
+      return json({ code: 0, data: { records: [{ data: { head: proxy(`http://127.0.0.1:${puerto}/img/${h.id}.jpg${retratoNuevo && h.id === 1 ? '?n=2' : ''}`), hero: { data: {
+        heroid: h.id, name: h.name, head: proxy(`http://127.0.0.1:${puerto}/cara/${h.id}.png`), speciality: ['Guard', 'Crowd Control'],
         // Las habilidades con sus etiquetas de Moonton (3.36.0): una de
         // control en área por etiqueta y una que limpia a los aliados por
         // TEXTO (corto, para no mover la huella del kit).
@@ -170,7 +172,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       marca('equipo');
       return json({ code: 0, data: { records: [{ data: {
         equipid: 90001, equipname: 'Objeto de Prueba', equiptypename: 'Defense',
-        equipicon: `http://127.0.0.1:${puerto}/img/90001.png`,
+        equipicon: proxy(`http://127.0.0.1:${puerto}/img/90001.png`),
         equiptips: '+18 Extra Magic Defense<br>+5 Extra Physical Defense<br>+20% Crit Damage Reduction', equipskill1: 'Reduces HP Regen effects by 50%',
         equipskill2: ' Lifebane: Dealing damage to a target will reduce the Shield and HP Regen effects on them to 60% of normal for 3s.',
       } }, { data: {

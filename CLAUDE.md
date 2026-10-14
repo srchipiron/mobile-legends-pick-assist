@@ -1286,6 +1286,18 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   cazan. Al arreglar una prueba de tiempos, busca sus gemelas con `grep
   "Date.now() + desfase"`.
 
+- **Un proxy de imágenes que la API puso por su cuenta** (3.57.2): el 11
+  de octubre de 2026 cada imagen pasó a llegar como `https://wsrv.nl/?url=
+  <la de Moonton>`. `fuentes.json` guarda la URL, así que se rebajaron las
+  210 imágenes (recomprimidas: 3.795 → 2.783 bytes la de Miya), el lector
+  daba por desfasadas sus 133 caras (`carasDesfasadas` compara URL) y
+  `huellaTexto` metía las URL en la huella del kit: el aviso de rework
+  salió para los 133 héroes, con el texto idéntico (comprobado
+  desenvolviendo las URL: las 133 dan la huella del 10). Hoy `urlOriginal`
+  (extraccion.mjs) desenvuelve cara, retrato e icono, la huella ignora las
+  direcciones y `heroes.json` lleva las huellas nuevas; la API simulada
+  sirve las imágenes por el proxy. Una huella de CONTENIDO no lleva
+  direcciones dentro.
 - **Una guarda comparada con un estado que ella misma no deja avanzar**
   (3.54.0 → 3.56.0, cazado por `silent-failure-hunter` el día siguiente):
   `fueraDeLosPicks` comparaba la lectura con `huecosLeidos`, que conserva el

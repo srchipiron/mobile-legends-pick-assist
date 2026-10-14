@@ -140,10 +140,17 @@ function extraerDano(node, out = { fisico: 0, magico: 0, verdadero: 0 }, depth =
  * cada habilidad, si. Hizo falta porque la huella de tipo de dano +
  * speciality NO vio los reworks de Masha y Bruno del parche 2.2.16: Moonton
  * les reescribio las habilidades y les dejo la misma speciality.
+ *
+ * Las DIRECCIONES no cuentan (3.57.2): el 11 de octubre de 2026 la API
+ * empezo a servir todas las imagenes por un proxy (`wsrv.nl/?url=...`) y la
+ * huella de los 133 heroes cambio a la vez, con el texto de las habilidades
+ * identico (comprobado desenvolviendo las URL: las 133 dan la huella del 10).
+ * El aviso de «kit cambiado» salia para todos y dejaba de decir nada.
  */
 export function extraerTextos(node, out = [], depth = 0) {
   if (depth > HONDURA || node == null) return out;
   if (typeof node === 'string') {
+    if (/^\s*[a-z][a-z0-9+.-]*:\/\//i.test(node)) return out;
     const t = node.replace(/<[^>]*>/g, '').replace(/[0-9%.,]+/g, '').replace(/\s+/g, '').toLowerCase();
     if (t.length >= 40) out.push(t);
     return out;
@@ -215,6 +222,25 @@ export function huellaTexto(node) {
 }
 
 /**
+ * La direccion ORIGINAL de una imagen que la API sirve por un proxy (3.57.2).
+ * Desde el 11 de octubre de 2026 cada imagen llega como
+ * `https://wsrv.nl/?url=<la de Moonton>`: el proxy la recomprime (la cara
+ * de Miya pasa de 3.795 a 2.783 bytes), es un tercero mas en el camino y,
+ * como `fuentes.json` guarda la URL de la que salio cada fichero, rebajo las
+ * 210 imagenes y dejo al lector avisando de que sus 133 caras estaban
+ * desfasadas. Se guarda la de Moonton, que sigue sirviendo la misma imagen.
+ * Solo se desenvuelve si dentro va otra direccion http(s) a una imagen.
+ */
+export function urlOriginal(url) {
+  if (typeof url !== 'string') return url;
+  try {
+    const dentro = new URL(url).searchParams.get('url');
+    if (dentro && /^https?:\/\/\S+\.(png|jpe?g|webp)(\?|$)/i.test(dentro)) return dentro;
+  } catch { /* no es una URL: se devuelve tal cual */ }
+  return url;
+}
+
+/**
  * El retrato de un heroe, de la ficha que ya se descarga.
  *
  * Se busca por FORMA, no por una ruta fija -la API ya ha movido sus campos de
@@ -229,7 +255,8 @@ function extraerRetrato(node) {
   const rec = (n, clave = '', depth = 0) => {
     if (depth > HONDURA || n == null) return;
     if (typeof n === 'string') {
-      if (/^https?:\/\/\S+\.(png|jpe?g|webp)(\?|$)/i.test(n)) urls.push({ clave, url: n });
+      const url = urlOriginal(n);
+      if (/^https?:\/\/\S+\.(png|jpe?g|webp)(\?|$)/i.test(url)) urls.push({ clave, url });
       return;
     }
     if (typeof n !== 'object') return;
@@ -252,7 +279,10 @@ function extraerRetrato(node) {
  */
 export function extraerCara(node, depth = 0) {
   if (depth > HONDURA || node == null || typeof node !== 'object') return null;
-  if (!Array.isArray(node) && node.heroid != null && typeof node.head === 'string' && /^https?:\/\/\S+\.(png|jpe?g|webp)(\?|$)/i.test(node.head)) return node.head;
+  if (!Array.isArray(node) && node.heroid != null && typeof node.head === 'string') {
+    const head = urlOriginal(node.head);
+    if (/^https?:\/\/\S+\.(png|jpe?g|webp)(\?|$)/i.test(head)) return head;
+  }
   for (const v of Array.isArray(node) ? node : Object.values(node)) {
     const c = extraerCara(v, depth + 1);
     if (c) return c;
@@ -408,7 +438,7 @@ export async function fetchEquipo() {
       const obj = out[id] ?? {};
       obj.nombre ??= String(nombre).trim();
       obj.tipo ??= d.equiptypename ?? null;
-      if (d.equipicon && !obj.icono) obj.icono = String(d.equipicon);
+      if (d.equipicon && !obj.icono) obj.icono = urlOriginal(String(d.equipicon));
       if (magica && !obj.magica) obj.magica = magica;
       if (fisica && !obj.fisica) obj.fisica = fisica;
       const efectos = extraerEfectos(d);
