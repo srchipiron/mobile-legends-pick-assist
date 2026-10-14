@@ -102,11 +102,15 @@ jobs:
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(npm test),Bash(npm run build),Bash(npm ci),Bash(node scripts/diagnostico.mjs --local*),Bash(node pruebas/correr.mjs*),Bash(git diff*),Bash(git log*),Bash(git status*)"
             --max-turns 40
           prompt: |
-            Trabajas en la app de Javi para elegir roamer en Mobile Legends.
+            Trabajas en Mobile Legends Pick Assist, la app de Javi para elegir
+            héroe en cualquiera de las cinco líneas según el draft.
 
-            LEE PRIMERO CLAUDE.md. No es documentación de cortesía: lleva la
-            lista de fallos que ya llegaron a producción y las reglas del
-            proyecto. Respétalas, sobre todo estas:
+            LEE PRIMERO CLAUDE.md. No es documentación de cortesía: lleva las
+            reglas del proyecto y el índice de dónde está cada cosa (las reglas
+            de cada zona en .claude/rules/ se cargan solas al tocarla). Antes
+            de cambiar nada, lee también docs/historia/errores.md: la lista de
+            fallos que ya llegaron a producción. Respeta las reglas, sobre todo
+            estas:
 
             - Nunca propongas nada sin pasar `npm test`. Si falla, no propongas.
             - Sube la versión en package.json y documéntala en CHANGELOG.md,

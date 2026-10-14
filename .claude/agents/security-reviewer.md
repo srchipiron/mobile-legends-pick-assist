@@ -2,6 +2,7 @@
 name: security-reviewer
 description: Revisa que nada ponga en riesgo la cuenta del juego de Javi ni sus credenciales, y lo habitual de una app web estática (XSS, secretos, dependencias). Úsalo tras tocar scripts/lector/, src/app/github.js, useEnvio, los workflows o cualquier cosa que lea datos de fuera.
 tools: Read, Grep, Glob, Bash
+model: sonnet
 ---
 
 <!-- Adaptado de ECC (affaan-m/ECC, agents/security-reviewer.md, MIT). Ver .claude/ecc/README.md. -->
