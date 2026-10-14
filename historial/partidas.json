@@ -1,6 +1,198 @@
 {
- "actualizado": "2026-10-14T21:10:00.028Z",
+ "actualizado": "2026-10-14T21:31:07.652Z",
  "partidas": [
+  {
+   "t": 1792013453143,
+   "pick": "Floryn",
+   "recomendados": [
+    "Diggie",
+    "Gloo",
+    "Khufra"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.521,
+   "bans": [
+    "Marcel",
+    "Yi Sun-shin",
+    "Hirara",
+    "Eudora",
+    "Lukas",
+    "Atlas",
+    "Rafaela",
+    "Estes",
+    "Masha",
+    "Belerick"
+   ],
+   "draft": {
+    "enemigos": [
+     "Granger",
+     "Valir",
+     "Aamon"
+    ],
+    "aliados": [
+     "Ruby",
+     "Zetian"
+    ],
+    "linea": "roam"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Yi Sun-shin",
+     "Hirara",
+     "Eudora",
+     "Lukas",
+     "Atlas",
+     "Rafaela",
+     "Estes",
+     "Masha",
+     "Belerick"
+    ],
+    "enemigos": [
+     "Granger",
+     "Valir",
+     "Aamon"
+    ],
+    "aliados": [
+     "Zetian"
+    ],
+    "tuyo": "Floryn",
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "t3",
+      "candidato": "Gord",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "t4",
+      "candidato": "Gord",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Angela",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Bane",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "s3",
+      "candidato": "Beatrix",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "s4",
+      "candidato": "Beatrix",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Beatrix",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Bane",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Beatrix",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Bane",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Beatrix",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Saber",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Gord",
+      "parecido": 0.77
+     }
+    ],
+    "ms": [
+     4141,
+     3942,
+     3068,
+     3801,
+     3428,
+     3703,
+     3416,
+     4670,
+     3265,
+     3207,
+     3419,
+     3223,
+     2523,
+     4100
+    ],
+    "msCaptura": [
+     2562,
+     2944,
+     2065,
+     2419,
+     2237,
+     2582,
+     2383,
+     3240,
+     2166,
+     2011,
+     2424,
+     2437,
+     1694,
+     2747
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ]
+   },
+   "fases": [
+    0.459,
+    0.521,
+    0.565,
+    0.54,
+    0.541,
+    0.508
+   ]
+  },
   {
    "t": 1792012142582,
    "pick": "Estes",
@@ -19779,6 +19971,12 @@
   {
    "cuando": "2026-10-14T21:10:00.028Z",
    "partidas": 227,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-14T21:31:07.652Z",
+   "partidas": 228,
    "heroes": 11,
    "incidencia": 11
   }
