@@ -12,10 +12,13 @@ import { test, ok, terminar, RAIZ, leerTexto } from '../arnes.mjs';
 const FUENTES = [
   ...readdirSync(join(RAIZ, '.github/workflows')).map((f) => `.github/workflows/${f}`),
   'package.json', 'vite.config.js', 'README.md', 'CLAUDE.md',
+  // Desde el 14 de octubre de 2026 lo que era CLAUDE.md vive también aquí.
+  ...['.claude/rules', '.claude/commands', '.claude/agents', 'docs', 'docs/historia']
+    .flatMap((d) => readdirSync(join(RAIZ, d)).filter((f) => f.endsWith('.md')).map((f) => `${d}/${f}`)),
 ];
 // Rutas con la forma de un fichero del repositorio. Los nombres sueltos
 // («modelo.js») no se comprueban: en las lecciones de CLAUDE.md son historia.
-const RUTA = /\b((?:src|scripts|pruebas|public|historial|\.github)\/[\w./-]+\.(?:js|jsx|mjs|json|jsonl|yml|css|md))\b/g;
+const RUTA = /(?<![\w./-])((?:src|scripts|pruebas|public|historial|docs|\.github|\.claude)\/[\w./-]+\.(?:js|jsx|mjs|json|jsonl|yml|css|md))\b/g;
 
 test('toda ruta citada en workflows, configuración y documentación existe', () => {
   const faltan = [];

@@ -413,12 +413,15 @@ test('la vigilancia se queda con las ÚLTIMAS pantallas, no con las primeras de 
   const capturar = () => secuencia[Math.min(i++, secuencia.length - 1)];
   await conServidor({ capturar, vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 15, maxFotogramas: 4 } }, async (base) => {
     await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde: Date.now() - 60000 }) });
-    ok(await hasta(() => i > secuencia.length + 2), 'no llega a capturar la pantalla de rango');
+    // Diez capturas de 2400×1504 tardan 9,4–9,8 s aquí: con el plazo de
+    // siempre (10 s) fallaba una de cada tres veces (14 de octubre de 2026).
+    // El plazo solo cuenta si algo va mal: con todo bien sale antes.
+    ok(await hasta(() => i > secuencia.length + 2, 60000), 'no llega a capturar la pantalla de rango');
     const mini = (p) => fotogramaDe(leerPng(p)).miniatura;
     const esperadas = [A, B, A, rango].map(mini);
     // Lo capturado se procesa después: se espera a que llegue la última.
     let f = null;
-    ok(await hasta(async () => { f = await (await fetch(`${base}/final`, { headers: cab })).json(); return f.fotogramas.at(-1)?.miniatura === esperadas[3]; }), 'la pantalla del final (rango) no está entre las que se guardan');
+    ok(await hasta(async () => { f = await (await fetch(`${base}/final`, { headers: cab })).json(); return f.fotogramas.at(-1)?.miniatura === esperadas[3]; }, 60000), 'la pantalla del final (rango) no está entre las que se guardan');
     eq(f.fotogramas.length, 4, 'no se respeta el tope de pantallas');
     ok(f.fotogramas.every((x, k) => x.miniatura === esperadas[k]), 'no se guardan las cuatro ÚLTIMAS pantallas en orden (hasta 3.39.0 las cuatro primeras: la del final no entraba)');
   });
