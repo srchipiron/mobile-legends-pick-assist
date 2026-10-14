@@ -1,6 +1,193 @@
 {
- "actualizado": "2026-10-14T16:36:43.280Z",
+ "actualizado": "2026-10-14T16:55:29.045Z",
  "partidas": [
+  {
+   "t": 1791996915881,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Kaja",
+    "Floryn"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.487,
+   "bans": [
+    "Hirara",
+    "Paquito",
+    "Sun",
+    "Lukas",
+    "Yi Sun-shin",
+    "Marcel",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Estes",
+     "Kimmy",
+     "Martis",
+     "Minsitthar",
+     "Granger"
+    ],
+    "aliados": [
+     "Lesley",
+     "Balmond",
+     "Chou",
+     "Pharsa"
+    ],
+    "linea": "roam",
+    "rival": "Estes"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Paquito",
+     "Sun",
+     "Lukas",
+     "Yi Sun-shin",
+     "Marcel",
+     "Eudora"
+    ],
+    "enemigos": [
+     "Zetian",
+     "Fredrinn",
+     "Kimmy",
+     "Wanwan",
+     "Minsitthar"
+    ],
+    "aliados": [
+     "Lesley",
+     "Balmond",
+     "Chou"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Wanwan",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Vale",
+      "parecido": 0.5
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Fredrinn",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Joy",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.64
+     }
+    ],
+    "ms": [
+     3327,
+     3403,
+     3305,
+     3610,
+     3242,
+     3607,
+     3293,
+     3556,
+     3094,
+     4706,
+     3181,
+     3288,
+     3336,
+     3411,
+     4188,
+     3262,
+     3229,
+     3219,
+     3845,
+     8919
+    ],
+    "msCaptura": [
+     2329,
+     2392,
+     2308,
+     2667,
+     2372,
+     2468,
+     2338,
+     2418,
+     2255,
+     3559,
+     2294,
+     2323,
+     2398,
+     2444,
+     3279,
+     2343,
+     2142,
+     2084,
+     2363,
+     4160
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Granger",
+      "Granger",
+      "Granger"
+     ],
+     "sinEncontrar": [
+      "Estes",
+      "Martis",
+      "Estes",
+      "Martis",
+      "Estes",
+      "Martis"
+     ]
+    }
+   },
+   "fases": [
+    0.358,
+    0.465,
+    0.514,
+    0.554,
+    0.607,
+    0.601
+   ]
+  },
   {
    "t": 1791995786355,
    "pick": "Estes",
@@ -18464,6 +18651,12 @@
   {
    "cuando": "2026-10-14T16:36:43.280Z",
    "partidas": 220,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-14T16:55:29.045Z",
+   "partidas": 221,
    "heroes": 11,
    "incidencia": 11
   }
