@@ -472,6 +472,24 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(r6.status, 0, `la corrida con Mítico a medias no acaba bien: ${(r6.stdout + r6.stderr).slice(-400)}`);
     const d6 = JSON.parse(readFileSync(out6, 'utf8'));
     ok(d6.relaciones?.rango === 'glory' && /entero/.test(d6.relaciones?.motivo ?? ''), `cambia a un Mítico a medias: ${JSON.stringify(d6.relaciones)}`);
+    // Séptima (3.57.3): lo mismo, pero la corrida anterior es la cuarta, que
+    // MIDIÓ Gloria rota y eligió Mítico. Sin poder comprobar hoy se sigue con
+    // Mítico (el 11 y el 12 de octubre de 2026 se volvió a Gloria) y las
+    // filas de Mítico que llegan se funden sobre las suyas.
+    ok(d4.relaciones?.ultima?.rango === 'mythic' && d4.relaciones.ultima.coherencia?.counters < 0.8, `la corrida que mide no guarda su medida: ${JSON.stringify(d4.relaciones)}`);
+    miticosServidos = 0; // las mismas condiciones que la sexta
+    const out7 = resolve(dir, 'mitico-a-medias-tras-medir.json');
+    const r7 = await correrIngesta([
+      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', out4,
+      '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out7, '--celdas-para-comparar', '1', '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
+      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
+    ]);
+    eq(r7.status, 0, `la corrida con Mítico a medias tras medir no acaba bien: ${(r7.stdout + r7.stderr).slice(-400)}`);
+    const d7 = JSON.parse(readFileSync(out7, 'utf8'));
+    ok(d7.relaciones?.rango === 'mythic' && /última comprobación/.test(d7.relaciones?.motivo ?? ''), `vuelve a la Gloria medida como rota: ${JSON.stringify(d7.relaciones)}`);
+    eq(d7.relaciones?.ultima?.rango, 'mythic', 'se pierde la última comprobación');
+    eq(d7.counters.Atlas?.Khufra, 0.5123, `el cruce guardado no es el de Mítico: ${JSON.stringify(d7.counters.Atlas)}`);
+    eq(d7.synergies.Atlas?.Tigreal, 0.48, `la pareja guardada no es la de Mítico: ${JSON.stringify(d7.synergies.Atlas)}`);
   } finally {
     srv.close();
     rmSync(dir, { recursive: true, force: true });

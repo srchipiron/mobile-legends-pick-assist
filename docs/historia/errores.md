@@ -982,3 +982,12 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   había mirado una ruta que empezara por punto: `\b` no casa entre una
   comilla invertida y `.github/…`. Un fichero que se carga siempre tiene
   tope, o el primer año lo llena.
+
+- **Una guarda que, sin poder medir, olvidaba lo que ya había medido**
+  (3.37.0 → 3.57.3): con Mítico a medias, `elegirRangoDeRelaciones` se
+  quedaba «la pedida», Gloria, aunque la corrida anterior la acabara de
+  medir rota. El 11 y el 12 de octubre de 2026 la app volvió a decidir con
+  esos cruces, con un solo aviso en el diagnóstico. Hoy recuerda su última
+  medida (`relaciones.ultima`). Cuando una guarda no puede comprobar, su
+  respuesta por defecto es la de su última comprobación, no la del caso
+  sin guarda.

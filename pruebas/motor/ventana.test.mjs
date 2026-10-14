@@ -172,4 +172,28 @@ test('cruces y parejas: sin respaldo, sin datos o con pocas celdas en común se 
   ok(CELDAS_PARA_COMPARAR >= 200 && CELDAS_PARA_COMPARAR <= 870, `mínimo de celdas raro: ${CELDAS_PARA_COMPARAR}`);
 });
 
+test('cruces y parejas: sin poder comprobar, manda la última comprobación que sí se hizo (3.57.3)', () => {
+  // Del 6 al 10 de octubre de 2026 la guarda midió Gloria rota y usó Mítico;
+  // el 11 y el 12 Mítico llegó a medias y se volvió a Gloria sin medir nada.
+  const mitico = { counters: matriz(), synergies: matriz(1) };
+  const ruidosa = { counters: matriz(2, 3), synergies: matriz(3, 3) };
+  const midio = elegirRangoDeRelaciones({ pedidas: ruidosa, respaldo: mitico, rango: 'glory', fecha: '2026-10-10T11:00:00Z' });
+  ok(midio.rango === 'mythic' && midio.ultima?.rango === 'mythic' && midio.ultima.fecha === '2026-10-10T11:00:00Z', `no guarda lo medido: ${JSON.stringify(midio)}`);
+  const aMedias = { counters: { h0: mitico.counters.h0 }, synergies: { h0: mitico.synergies.h0 } };
+  const corrida = (respaldo, ultima) => elegirRangoDeRelaciones({ pedidas: ruidosa, respaldo, rango: 'glory', filasMinimas: 27, ultima });
+  const conMedias = corrida(aMedias, midio.ultima);
+  ok(conMedias.rango === 'mythic' && /entero/.test(conMedias.motivo) && /última comprobación \(2026-10-10\)/.test(conMedias.motivo), `con Mítico a medias vuelve a la Gloria rota: ${JSON.stringify(conMedias)}`);
+  eq(JSON.stringify(conMedias.ultima), JSON.stringify(midio.ultima), 'sin medir se pierde o cambia la última comprobación');
+  eq(corrida(null, midio.ultima).rango, 'mythic', 'sin Mítico vuelve a la Gloria rota');
+  // Pocas celdas en común tampoco es una medida.
+  eq(elegirRangoDeRelaciones({ pedidas: { counters: { h0: ruidosa.counters.h0 }, synergies: {} }, respaldo: mitico, rango: 'glory', ultima: midio.ultima }).rango, 'mythic', 'con pocas celdas vuelve a la Gloria rota');
+  // Si la última comprobación dijo que Gloria estaba bien, sin medir se queda Gloria.
+  const bien = elegirRangoDeRelaciones({ pedidas: { counters: matriz(0, 0.3), synergies: matriz(1, 0.3) }, respaldo: mitico, rango: 'glory', fecha: 'f' });
+  eq(bien.ultima?.rango, 'glory');
+  eq(corrida(aMedias, bien.ultima).rango, 'glory', 'sin medir cambia a Mítico aunque Gloria estuviera bien');
+  // Y en cuanto se puede medir, manda la medida de hoy, no la de ayer.
+  const hoy = elegirRangoDeRelaciones({ pedidas: { counters: matriz(0, 0.3), synergies: matriz(1, 0.3) }, respaldo: mitico, rango: 'glory', ultima: midio.ultima, fecha: 'hoy' });
+  ok(hoy.rango === 'glory' && hoy.ultima?.rango === 'glory' && hoy.ultima.fecha === 'hoy', `la medida de hoy no manda: ${JSON.stringify(hoy)}`);
+});
+
 await terminar('motor/ventana');

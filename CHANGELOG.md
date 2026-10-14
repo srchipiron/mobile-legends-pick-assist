@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.57.3
+
+- Los cruces y las parejas ya no vuelven a los de Gloria cuando la API
+  falla a medias. Del 6 al 10 de octubre la app los sacaba de Mítico porque
+  había medido que los de Gloria estaban rotos (pocas partidas tras el
+  reinicio de temporada). El 11 y el 12 la API solo dejó bajar una parte de
+  Mítico, no se pudo volver a comprobar y la app volvió a usar los de
+  Gloria, los mismos que acababa de medir como rotos. Ahora, si no se puede
+  comprobar, se sigue con lo que dijo la última comprobación. Se notará en
+  cuanto el bot vuelva a traer datos: hoy la API sigue caída.
+
 ## 3.57.2
 
 - Las caras de los héroes y los iconos de los objetos vuelven a bajarse

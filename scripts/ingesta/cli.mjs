@@ -255,6 +255,9 @@ async function main() {
   // De qué rango salen cruces y parejas (3.35.0): el pedido, salvo que tras
   // un reinicio de temporada no se parezca al de respaldo (ventana.js).
   let relacionesRango = { rango: RANK, pedido: RANK, coherencia: null, motivo: null };
+  // La última comprobación que sí se pudo hacer (3.57.3, ventana.js).
+  const ultima = previous?.relaciones?.ultima ?? null;
+  const guarda = (opciones) => elegirRangoDeRelaciones({ rango: RANK, filasMinimas: Math.ceil(0.9 * nombresPedir.length), ultima, fecha: new Date().toISOString(), ...(CELDAS_MINIMAS != null ? { minimo: CELDAS_MINIMAS } : {}), ...opciones });
   try {
     const fresh = await fetchRelations(nombresPedir, stats, heroList, RANK);
     let elegidas = fresh;
@@ -267,11 +270,18 @@ async function main() {
         const otras = await fetchRelations(nombresPedir, stats, heroList, respaldo);
         // El respaldo tiene que llegar casi entero (el 90%, el mismo listón
         // que `anotarFrescura`) para poder sustituir al pedido.
-        relacionesRango = elegirRangoDeRelaciones({ pedidas: fresh, respaldo: otras, rango: RANK, filasMinimas: Math.ceil(0.9 * nombresPedir.length), ...(CELDAS_MINIMAS != null ? { minimo: CELDAS_MINIMAS } : {}) });
+        relacionesRango = guarda({ pedidas: fresh, respaldo: otras });
+        // Con el respaldo elegido sin poder comprobarlo (llegó a medias), sus
+        // filas se funden sobre la matriz guardada si es de ese rango; si no,
+        // la corrida sale con menos filas y el comparador la descarta.
         if (relacionesRango.rango === respaldo) elegidas = otras; else diagnostics.relations = diagPedido;
       } catch (err) {
         diagnostics.relations = diagPedido;
-        relacionesRango = { ...relacionesRango, motivo: `no se pudo bajar ${respaldo} para comprobar ${RANK}: ${err.message}` };
+        relacionesRango = guarda({ pedidas: fresh, respaldo: null });
+        relacionesRango = { ...relacionesRango, motivo: `${relacionesRango.motivo}: ${err.message}` };
+        // Sin el respaldo y con la última comprobación diciendo que el pedido
+        // está roto, no entra nada nuevo: se conserva lo guardado.
+        if (relacionesRango.rango === respaldo) elegidas = { counters: {}, synergies: {} };
       }
       const c = relacionesRango.coherencia;
       console.log(`  · cruces y parejas de ${relacionesRango.rango}${c ? ` (r con ${respaldo}: cruces ${c.counters?.toFixed(2) ?? '-'}, parejas ${c.synergies?.toFixed(2) ?? '-'})` : ''}${relacionesRango.motivo ? `: ${relacionesRango.motivo}` : ''}`);

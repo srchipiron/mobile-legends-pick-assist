@@ -455,3 +455,18 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   (4) Los guiones de voz con tres drafts reales leen bien (nombres,
   porcentajes, sin llaves); el aviso del inicio es el más largo (unos 200
   caracteres, la mitad del tope).
+
+- **Lo examinado el 14 de octubre de 2026 (3.57.3)**: (1) el lector leyó 14
+  veces como pick a un héroe baneado en sus partidas del 1 al 13 de
+  octubre (Yi Sun-shin compañero estando baneado, el 13), y ninguno llegó
+  al draft: la app no deja meter a un baneado. `lector.enemigos/aliados` es
+  la unión de lo leído, no el draft. (2) Con la API caída (500 de
+  Cloudflare el 13; 404 de Vercel el 14 por la mañana, tras un rato
+  contestando 200) el bot rechaza cada corrida (`rangoFresco` y
+  `relacionesFrescas` 1 → 0): es lo correcto. (3) Devolver a mano al
+  repositorio la matriz de Mítico del 10 de octubre en lugar de la Gloria
+  sin comprobar de hoy: no, sería decidir sin medir con una matriz de
+  cuatro días; la próxima corrida con Mítico entero lo decide sola. (4)
+  Las lecturas de los enemigos el 13 de octubre (con la criba de 3.55.0):
+  26 de 29 en el draft final y 1 de más, frente a unas 7 de cada 10 antes;
+  seis partidas, se vuelve a mirar con más.

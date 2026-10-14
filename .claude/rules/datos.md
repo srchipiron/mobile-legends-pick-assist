@@ -159,6 +159,15 @@ ninguna constante.
   sin ninguna fila nueva, conserva la matriz CON su etiqueta (antes salía
   la de Mítico etiquetada como Gloria). Ajustes dice el rango de los cruces
   y el de las builds por separado (`rango.crucesYBuildsDe`).
+  Desde 3.57.3 la guarda recuerda su última MEDIDA (`relaciones.ultima`:
+  rango, coherencia y fecha) y, sin poder comprobar hoy (respaldo a
+  medias, caído o con pocas celdas en común), sigue con lo que dijo ella
+  en vez de volver al pedido: el 11 y el 12 de octubre de 2026 Mítico llegó
+  con 32 y 50 de 120 héroes y la app volvió a los cruces de Gloria que
+  había medido rotos del 6 al 10 (parejas a r = 0,46–0,57). Si la matriz
+  guardada es de otro rango, las filas a medias no se funden y el
+  comparador descarta la corrida: mejor estadísticas de hace dos días que
+  cruces rotos (los rotos cambiaban el nº1 en 98 de 300 drafts).
 
 Dos constantes que se midieron y se dejaron como estaban, para no volver a
 medirlas: el umbral de «tu héroe está N puntos por encima» (`>= 0.02` en

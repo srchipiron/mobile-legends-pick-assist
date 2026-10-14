@@ -159,15 +159,30 @@ export function elegirRango(statsByRank = {}, rango = null) {
  * marca en `relaciones` de roam-meta.json, que el diagnóstico enseña.
  */
 export const CELDAS_PARA_COMPARAR = 500;
-export function elegirRangoDeRelaciones({ pedidas = null, respaldo = null, rango = null, minimo = CELDAS_PARA_COMPARAR, filasMinimas = 0 } = {}) {
+/**
+ * `ultima` es la última comprobación que SÍ se pudo hacer (`{ rango,
+ * coherencia, fecha }`), y viaja en `relaciones.ultima` de roam-meta.json.
+ * Sin poder comprobar hoy (el respaldo llega a medias o no llega), se sigue
+ * con lo que dijo ella (3.57.3). Hasta entonces se quedaba la pedida: del 6
+ * al 10 de octubre de 2026 la guarda midió los cruces de Gloria rotos (las
+ * parejas, r = 0,46–0,57 con Mítico) y usó Mítico, y el 11 y el 12 la API
+ * solo dio 32 y 50 de los 120 héroes de Mítico: la app volvió a decidir con
+ * los de Gloria, los que acababa de medir como rotos, avisando solo en el
+ * diagnóstico.
+ */
+export function elegirRangoDeRelaciones({ pedidas = null, respaldo = null, rango = null, minimo = CELDAS_PARA_COMPARAR, filasMinimas = 0, ultima = null, fecha = null } = {}) {
   const rangoRespaldo = RANGO_DE_RESPALDO[rango];
-  const base = { rango, pedido: rango, coherencia: null, motivo: null };
-  if (!rangoRespaldo || !pedidas || !respaldo) return base;
+  const base = { rango, pedido: rango, coherencia: null, motivo: null, ...(ultima ? { ultima } : {}) };
+  if (!rangoRespaldo || !pedidas) return base;
+  const sinComprobar = (porque) => (ultima?.rango === rangoRespaldo
+    ? { ...base, rango: rangoRespaldo, motivo: `${porque}; se sigue con ${rangoRespaldo}, como dijo la última comprobación${ultima.fecha ? ` (${String(ultima.fecha).slice(0, 10)})` : ''}` }
+    : { ...base, motivo: porque });
+  if (!respaldo) return sinComprobar(`no se pudo bajar ${rangoRespaldo} para comprobar ${rango}`);
   // Un respaldo a medias (la API cortó a mitad de la segunda tanda) no
   // sustituye a una matriz entera (3.37.0): con 500 celdas en común bastaba
   // con cuatro héroes de Mítico para tirar los 133 de Gloria.
   const filas = Object.values(respaldo.counters ?? {}).filter((f) => Object.keys(f ?? {}).length).length;
-  if (filas < filasMinimas) return { ...base, motivo: `no se pudo bajar ${rangoRespaldo} entero (${filas} de ${filasMinimas} héroes) para comprobar ${rango}` };
+  if (filas < filasMinimas) return sinComprobar(`no se pudo bajar ${rangoRespaldo} entero (${filas} de ${filasMinimas} héroes) para comprobar ${rango}`);
   const coherencia = {};
   for (const m of ['counters', 'synergies']) {
     const xs = []; const ys = [];
@@ -181,10 +196,11 @@ export function elegirRangoDeRelaciones({ pedidas = null, respaldo = null, rango
     coherencia[m] = xs.length >= minimo ? correlacion(xs, ys) : null;
   }
   const medidas = Object.values(coherencia).filter((x) => x != null);
-  if (!medidas.length) return { ...base, coherencia, motivo: `pocos cruces en común con ${rangoRespaldo} para comprobar ${rango}` };
+  if (!medidas.length) return { ...sinComprobar(`pocos cruces en común con ${rangoRespaldo} para comprobar ${rango}`), coherencia };
   const peor = Math.min(...medidas);
-  if (peor >= COHERENCIA_DE_RANGO_MINIMA) return { ...base, coherencia };
-  return { rango: rangoRespaldo, pedido: rango, coherencia, motivo: `los cruces y parejas de ${rango} no se parecen a los de ${rangoRespaldo} (r=${peor.toFixed(2)}): pocas partidas en ${rango}, normal unos días después de un reinicio de temporada` };
+  const medida = (elegido) => ({ rango: elegido, coherencia, ...(fecha ? { fecha } : {}) });
+  if (peor >= COHERENCIA_DE_RANGO_MINIMA) return { ...base, coherencia, ultima: medida(rango) };
+  return { rango: rangoRespaldo, pedido: rango, coherencia, ultima: medida(rangoRespaldo), motivo: `los cruces y parejas de ${rango} no se parecen a los de ${rangoRespaldo} (r=${peor.toFixed(2)}): pocas partidas en ${rango}, normal unos días después de un reinicio de temporada` };
 }
 
 /** Media del winrate de un conjunto de estadísticas, como la calcula la ingesta (`avgOf`). */
