@@ -50,8 +50,8 @@ publicar no puede depender de tener un Chrome a mano, y las corre
 `pruebas-ui.yml` con el del runner. El despliegue corre `npm test` más dos
 cosas que no están dentro: que la corrida nueva de la ingesta no resuelva
 menos que la guardada (`comparar-ingesta.mjs`), y que los
-datos con los que se va a publicar no pasen de 72 horas ni vengan sin matriz de
-cruces. Si la API está caída se publica con los datos del repositorio: el
+datos con los que se va a publicar traigan estadísticas y matriz de cruces
+(con más de 72 horas se publica igual, con aviso: la app ya los sirve). Si la API está caída se publica con los datos del repositorio: el
 despliegue de código NO depende de que la API esté viva, y eso ya costó una
 versión sin publicar. Si algo falla, el despliegue se detiene y la app se queda
 con la versión anterior funcionando, que es lo correcto.

@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.57.4
+
+- Los arreglos de la app se pueden publicar aunque la API de datos lleve
+  más de tres días caída. Hasta ahora el despliegue se paraba si los datos
+  tenían más de 72 horas, y eso solo impedía publicar código: la app ya
+  estaba usando esos mismos datos. Ahora se publica igual y queda un aviso,
+  y el diagnóstico sigue diciendo de cuándo son los datos.
+
 ## 3.57.3
 
 - Los cruces y las parejas ya no vuelven a los de Gloria cuando la API

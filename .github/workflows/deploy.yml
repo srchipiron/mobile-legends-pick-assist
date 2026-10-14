@@ -128,15 +128,17 @@ jobs:
           fi
 
       - name: Comprobar que los datos valen para publicar
-        # El limite de horas es lo que sustituye a "regenerado hace menos de
-        # media hora". Un winrate de una ventana de 7 dias no se mueve en un
-        # dia; a los tres ya es otra cosa, y publicar eso seria mentir.
+        # Con datos de mas de 72 horas se publica IGUAL y queda un aviso
+        # (desde 3.57.4, decidido por Javi): la app publicada ya sirve esos
+        # mismos datos, y pararse solo impedia publicar codigo mientras la
+        # API estuviera caida (del 13 de octubre de 2026 en adelante). Lo
+        # viejo lo dicen el diagnostico (a las 36 h) y este aviso.
         run: |
           node -e "const d=require('./public/data/roam-meta.json');
           const h=(Date.now()-new Date(d.generatedAt))/3.6e6;
           const cruces=Object.values(d.counters??{}).reduce((n,f)=>n+Object.keys(f??{}).length,0);
           console.log('datos generados hace', h.toFixed(1), 'h ·', d.heroCount ?? 0, 'heroes ·', cruces, 'cruces');
-          if (h > 72) { console.error('Los datos tienen mas de 72 horas: no se publica'); process.exit(1); }
+          if (h > 72) console.log('::warning::Los datos tienen mas de 72 horas: se publica el codigo con los mismos datos que ya sirve la app');
           if (!(d.heroCount ?? 0)) { console.error('Sin estadisticas'); process.exit(1); }
           if (cruces < 1000) { console.error('Sin matriz de counters'); process.exit(1); }"
 

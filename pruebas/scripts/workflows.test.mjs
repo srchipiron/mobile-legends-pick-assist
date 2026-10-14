@@ -78,16 +78,21 @@ test('los workflows que publican datos pasan por el guardarrail', () => {
 
   // El despliegue puede seguir adelante con los datos del repositorio si la API
   // esta caida -si no, un UPSTREAM_REQUEST_FAILED impide publicar cualquier
-  // cambio de codigo-, pero NO puede publicar datos rancios sin darse cuenta.
+  // cambio de codigo-, pero NO puede publicar datos rancios sin decirlo
+  // (desde 3.57.4 los publica con un aviso: la app ya sirve esos datos).
   // El guardarrail no se lee: se EJECUTA con datos fabricados. Buscar `h > 72`
   // en el texto lo pasaba un `h > 7200` (y un comentario).
   const puerta = deploy.pasos.filter((p) => /roam-meta\.json/.test(p.run ?? '') && /process\.exit\(1\)/.test(p.run ?? ''));
   eq(puerta.length, 1, 'deploy.yml ya no comprueba si los datos valen para publicar');
   const caja = join(tmp, 'deploy'); mkdirSync(join(caja, 'public/data'), { recursive: true });
   const conDatos = (d) => { writeFileSync(join(caja, 'public/data/roam-meta.json'), JSON.stringify(d)); };
-  const publicable = (d) => { conDatos(d); return ejecutarPaso(puerta[0].run, { cwd: caja }).status; };
+  const paso = (d) => { conDatos(d); return ejecutarPaso(puerta[0].run, { cwd: caja }); };
+  const publicable = (d) => paso(d).status;
   eq(publicable(datosDe({ horas: 1 })), 0, 'deploy.yml no publica con datos recién descargados');
-  ok(publicable(datosDe({ horas: 73 })) !== 0, 'deploy.yml deja publicar datos de mas de tres dias');
+  ok(!/::warning::/.test(paso(datosDe({ horas: 1 })).stdout ?? ''), 'deploy.yml avisa de datos viejos con datos recién descargados');
+  const viejos = paso(datosDe({ horas: 73 }));
+  eq(viejos.status, 0, 'deploy.yml no publica código con datos de más de tres días (la app ya los sirve: solo impide arreglar)');
+  ok(/::warning::.*72 horas/.test(viejos.stdout ?? ''), `deploy.yml publica datos de mas de tres dias sin avisar: ${viejos.stdout}`);
   ok(publicable(datosDe({ horas: 1, cruces: 0 })) !== 0, 'deploy.yml ya no comprueba que haya matriz de counters');
   ok(publicable(datosDe({ horas: 1, heroCount: 0 })) !== 0, 'deploy.yml publica sin estadisticas');
 

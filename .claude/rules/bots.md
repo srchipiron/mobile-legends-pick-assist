@@ -28,6 +28,13 @@ reiniciaba la del anterior: cinco commits seguidos dejaron lo publicado 25
 minutos por detrás. Si ves que un despliegue tarda doce minutos, es que el bot
 lleva medio día sin traer datos, y eso es lo que hay que mirar.
 
+Con datos de más de 72 horas el despliegue publica IGUAL y deja un
+`::warning::` (3.57.4, decidido por Javi el 14 de octubre de 2026): hasta
+entonces se paraba, y con la API caída desde el 13 eso solo impedía publicar
+CÓDIGO, porque los datos que habría publicado eran los mismos que ya servía
+Pages. Que vengan sin estadísticas o sin matriz de cruces sigue parando el
+despliegue. Lo viejo lo dice el diagnóstico (aviso a las 36 h).
+
 ## La vigilancia automática
 
 Desde 0.9.0 la app no espera a que Javi note algo raro. `vigilancia.yml` corre
