@@ -1,6 +1,141 @@
 {
- "actualizado": "2026-10-14T20:54:40.782Z",
+ "actualizado": "2026-10-14T21:10:00.028Z",
  "partidas": [
+  {
+   "t": 1792012142582,
+   "pick": "Estes",
+   "recomendados": [
+    "Minotaur",
+    "Estes",
+    "Rafaela"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.539,
+   "origen": "lector",
+   "bans": [
+    "Marcel",
+    "Hirara",
+    "Obsidia",
+    "Khufra",
+    "Belerick",
+    "Lukas",
+    "Aulus",
+    "Balmond"
+   ],
+   "draft": {
+    "enemigos": [
+     "Masha",
+     "Angela",
+     "Sun"
+    ],
+    "aliados": [
+     "Vexana",
+     "Ruby",
+     "Kimmy"
+    ],
+    "linea": "roam",
+    "rival": "Sun"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Hirara",
+     "Obsidia",
+     "Khufra",
+     "Belerick",
+     "Lukas",
+     "Aulus",
+     "Balmond"
+    ],
+    "enemigos": [
+     "Masha",
+     "Angela",
+     "Sun"
+    ],
+    "aliados": [
+     "Vexana",
+     "Kimmy"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "s4",
+      "candidato": "Beatrix",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Saber",
+      "parecido": 0.68
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Saber",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Julian",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Wanwan",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Fredrinn",
+      "parecido": 0.76
+     }
+    ],
+    "ms": [
+     3486,
+     3561,
+     3417,
+     2963,
+     3540,
+     2896,
+     3065,
+     5143,
+     3716,
+     3485
+    ],
+    "msCaptura": [
+     2395,
+     2454,
+     2324,
+     1898,
+     2348,
+     2039,
+     2045,
+     4053,
+     2485,
+     2233
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo"
+    ]
+   },
+   "fases": [
+    0.754,
+    0.552,
+    0.469,
+    0.368,
+    0.377,
+    0.401
+   ]
+  },
   {
    "t": 1792011143064,
    "pick": "Mathilda",
@@ -19638,6 +19773,12 @@
   {
    "cuando": "2026-10-14T20:54:40.782Z",
    "partidas": 226,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-14T21:10:00.028Z",
+   "partidas": 227,
    "heroes": 11,
    "incidencia": 11
   }
