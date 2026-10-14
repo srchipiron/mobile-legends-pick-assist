@@ -470,3 +470,19 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   Las lecturas de los enemigos el 13 de octubre (con la criba de 3.55.0):
   26 de 29 en el draft final y 1 de más, frente a unas 7 de cada 10 antes;
   seis partidas, se vuelve a mirar con más.
+
+- **Lo examinado el 14 de octubre de 2026 por la mañana (sin cambios de
+  código)**: (1) la ingesta real de las 08:30 UTC, con la API sobrecargada
+  («Worker exceeded resource limits», 500/503), confirma 3.57.2 con datos de
+  verdad: ningún aviso de kit cambiado, los 133 `kitTexto` igual que el
+  catálogo, ninguna cara ni retrato por el proxy y la cara de Miya otra vez
+  de 3.795 bytes (77 iconos y 133 retratos rebajados UNA vez, al volver la
+  URL a la de Moonton). La corrida se rechaza por `rangoFresco` y
+  `relacionesFrescas` (Mítico 22 de 120): correcto. (2) `objetos/fuentes.json`
+  conserva la URL del icono 2004, un objeto que la API ya no sirve:
+  `bajarImagenes` solo mira los que se enseñan; sobra una línea, no falla
+  nada. (3) La puerta de 72 h del despliegue (`deploy.yml`) también para la
+  publicación de CÓDIGO cuando la API lleva tres días caída, aunque el
+  código nuevo publicaría los mismos datos que ya sirve Pages; el
+  diagnóstico ya avisa a las 36 h. Cambiarla toca un workflow que
+  despliega: se propone a Javi, no se hace solo.
