@@ -486,3 +486,14 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   código nuevo publicaría los mismos datos que ya sirve Pages; el
   diagnóstico ya avisa a las 36 h. Cambiarla toca un workflow que
   despliega: se propone a Javi, no se hace solo.
+
+- **Lo examinado el 14 de octubre de 2026 a mediodía (3.57.5)**: (1) aflojar
+  el comparador para que acepte una corrida con las estadísticas frescas y
+  la matriz al 80% (`relacionesFrescas` 1 → 0 la tira entera aunque cada
+  fila sea igual o más nueva que la guardada): no se toca un guardarraíl
+  que protege la fecha del fichero; se ataca la causa (los fallos
+  pasajeros) con la segunda pasada de 3.57.5. Si con ella siguen llegando
+  corridas al 80–89%, se reabre. (2) «Kit cambiado» de Alucard y Alice en
+  la corrida del bot de las 10:12: sus fichas fallaron y se conservó el
+  `kitTexto` guardado, calculado con la huella de antes de 3.57.2 (con las
+  URL dentro). Falso y pasajero: se apaga con la primera ficha que llegue.

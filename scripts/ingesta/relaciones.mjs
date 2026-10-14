@@ -203,10 +203,8 @@ export async function fetchRelations(roamNames, stats, heroList, rango = RANK) {
     conId: 0, porNombre: 0, ok: 0, errores: [], ejemplos: [],
   };
 
-  for (const name of roamNames) {
+  const pedir = async (name) => {
     const id = idPorNombre.get(norm(name)) ?? name;
-    if (idPorNombre.has(norm(name))) diagnostics.relations.conId++;
-    else diagnostics.relations.porNombre++;
     try {
       // size grande: por defecto la API pagina de 20 en 20 y se perdian cruces.
       const values = { days: DAYS, past_days: DAYS, rank: rango, rank_id: rango, lang: 'en', size: 200, index: 1 };
@@ -221,16 +219,20 @@ export async function fetchRelations(roamNames, stats, heroList, rango = RANK) {
           ? callRoute(estado.ROUTES.compatibility, { ...values, hero_id: id, id }, id)
           : Promise.reject(new Error('sin ruta de compatibilidad en el esquema')),
       ]);
-      counters[name] = relationMap(recogerPares(c.data), idToName);
-      synergies[name] = relationMap(recogerPares(s.data), idToName);
-      if (Object.keys(counters[name]).length) {
+      // En la segunda pasada una respuesta vacía no borra lo que ya llegó.
+      const yaTenia = Object.keys(counters[name] ?? {}).length > 0;
+      const nc = relationMap(recogerPares(c.data), idToName);
+      const ns = relationMap(recogerPares(s.data), idToName);
+      if (Object.keys(nc).length || !counters[name]) counters[name] = nc;
+      if (Object.keys(ns).length || !synergies[name]) synergies[name] = ns;
+      if (Object.keys(counters[name]).length && !yaTenia) {
         diagnostics.relations.ok++;
         if (diagnostics.relations.ejemplos.length < 2) {
           const pares = Object.entries(counters[name]).slice(0, 3)
             .map(([k, v]) => `${k} ${(v * 100).toFixed(1)}%`).join(', ');
           diagnostics.relations.ejemplos.push(`${name} vs ${pares}`);
         }
-      } else if (diagnostics.relations.errores.length < 2) {
+      } else if (!yaTenia && diagnostics.relations.errores.length < 2) {
         // Respondió pero no supimos leerlo. Guardamos un trozo de la respuesta
         // TAL CUAL: los nombres de campo son lo único que falta por saber, y
         // adivinarlos de uno en uno cuesta un despliegue por intento.
@@ -243,6 +245,30 @@ export async function fetchRelations(roamNames, stats, heroList, rango = RANK) {
       }
     }
     await sleep(250); // cortesía con una API gratuita
+  };
+  for (const name of roamNames) {
+    if (idPorNombre.has(norm(name))) diagnostics.relations.conId++;
+    else diagnostics.relations.porNombre++;
+    await pedir(name);
+  }
+  // Una segunda pasada con los que fallaron (3.57.5). Con la API a medias
+  // (500 «Worker threw exception», 503 «exceeded resource limits», 403 de
+  // Cloudflare) el 14 de octubre de 2026 el bot bajó 106 de 133: por debajo
+  // del 90% de `anotarFrescura`, el comparador tiró la corrida entera con
+  // las estadísticas, los talentos y las builds frescos. Los fallos eran
+  // pasajeros. Solo si falló como mucho la mitad (decisión de producto):
+  // con la API caída del todo, reintentarlo todo doblaría el tiempo por nada.
+  const falta = (n) => !Object.keys(counters[n] ?? {}).length || !Object.keys(synergies[n] ?? {}).length;
+  const fallidos = roamNames.filter(falta);
+  if (fallidos.length && fallidos.length <= roamNames.length / 2) {
+    console.log(`  · ${fallidos.length} sin cruces o sin parejas: se piden otra vez`);
+    await sleep(REINTENTO_RELACIONES_MS);
+    for (const name of fallidos) await pedir(name);
+    diagnostics.relations.reintentados = fallidos.length;
+    diagnostics.relations.recuperados = fallidos.filter((n) => !falta(n)).length;
   }
   return { counters, synergies };
 }
+
+/** Pausa antes de la segunda pasada: los fallos de la API vienen en rachas. Decisión de producto. */
+export const REINTENTO_RELACIONES_MS = 20000;

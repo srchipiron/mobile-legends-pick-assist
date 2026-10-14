@@ -108,6 +108,14 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   let kitSinControl = false;
   // Mítico cortado a mitad de la segunda tanda (3.37.0): solo los primeros tres héroes traen cruces.
   let miticoAMedias = false, miticosServidos = 0;
+  // La API a medias (3.57.5): los `fallarPrimeros` héroes de Gloria que se
+  // piden (menos Atlas, el del sondeo de rutas) dan 500 la PRIMERA vez.
+  let fallarPrimeros = 0; const fallaronYa = new Set();
+  const fallaUnaVez = (u, ruta, i) => {
+    const h = decodeURIComponent(ruta.split('/')[i]);
+    if (fallarPrimeros <= 0 || h === '1' || h === 'Atlas' || fallaronYa.has(h) || u.searchParams.get('rank') !== 'glory') return false;
+    fallaronYa.add(h); fallarPrimeros -= 1; return true;
+  };
   const srv = createServer((req, res) => {
     const u = new URL(req.url, 'http://x');
     const ruta = u.pathname;
@@ -161,10 +169,12 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     if (/^\/api\/(academy\/)?heroes\/[^/]+\/counters$/.test(ruta) && fallaCounters) { res.statusCode = 500; return res.end('{}'); }
     if (/^\/api\/heroes\/[^/]+\/counters$/.test(ruta)) {
       if (fallosCountersPendientes > 0) { fallosCountersPendientes -= 1; res.statusCode = 500; return res.end('{}'); }
+      if (fallaUnaVez(u, ruta, 3)) { res.statusCode = 500; return res.end('{}'); }
       marca('counters'); return json(pares(2));
     }
     const signoDelRango = gloriaRuidosa && u.searchParams.get('rank') === 'glory' ? -1 : 1;
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && miticoAMedias && u.searchParams.get('rank') === 'mythic' && ++miticosServidos > 3) return json({ data: { sub_hero: [] } });
+    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && fallaUnaVez(u, ruta, 4)) { res.statusCode = 500; return res.end('{}'); }
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta)) { marca('academy'); marca(`academy:${u.searchParams.get('rank')}`); return json(academyVacia ? { data: { sub_hero: [] } } : pares(4, signoDelRango)); }
     if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta) && parejasVacias) return json({ data: { sub_hero: [] } });
     if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta)) { marca('compat'); marca(`compat:${u.searchParams.get('rank')}`); return json(pares(3, signoDelRango)); }
@@ -449,6 +459,10 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     // Y con Gloria coherente (sirve lo mismo que Mítico), se queda Gloria.
     // Y Atlas, rehecho sin control: sus habilidades de antes no se quedan.
     gloriaRuidosa = false; kitSinControl = true;
+    // Y veinte de los 133 fallan una vez al pedir los cruces: sin la segunda
+    // pasada la matriz se quedaba en el 85%, por debajo del 90%, y el
+    // comparador tiraba la corrida entera (14 de octubre de 2026, 106 de 133).
+    fallarPrimeros = 20;
     const out5 = resolve(dir, 'gloria-buena.json');
     const r5 = await correrIngesta([
       '--base', `http://127.0.0.1:${puerto}/api`,
@@ -457,6 +471,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     ]);
     eq(r5.status, 0, `la corrida con Gloria coherente no acaba bien: ${(r5.stdout + r5.stderr).slice(-400)}`);
     const d5 = JSON.parse(readFileSync(out5, 'utf8'));
+    eq(fallaronYa.size, 20, `la prueba no ha llegado a fallar a veinte: ${fallaronYa.size}`);
+    eq(d5.diagnostics.relations?.recuperados, d5.diagnostics.relations?.reintentados, `no se recuperan en la segunda pasada: ${JSON.stringify(d5.diagnostics.relations)}`);
+    ok(d5.diagnostics.relations?.reintentados >= 20 && !d5.diagnostics.conservado && d5.diagnostics.frescosRecursos?.relaciones === d5.diagnostics.frescosRecursos?.pedidas, `con fallos pasajeros la matriz no sale fresca: ${JSON.stringify({ f: d5.diagnostics.frescosRecursos, r: d5.diagnostics.relations, c: d5.diagnostics.conservado })}`);
     ok(d5.relaciones?.rango === 'glory' && d5.relaciones?.coherencia?.counters > 0.99 && !d5.relaciones?.motivo, `con Gloria coherente no se queda Gloria: ${JSON.stringify(d5.relaciones)}`);
     eq(d5.diagnostics.imagenes?.heroes?.bajados, 0, `se vuelven a bajar retratos que no han cambiado: ${JSON.stringify(d5.diagnostics.imagenes)}`);
     eq(JSON.stringify(d5.heroes.find((h) => h.name === 'Atlas')?.habilidades), '[]', 'una ficha que llega sin habilidades deja las de antes');

@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.57.5
+
+- Los datos se actualizan aunque la API falle a ratos. Al bajar los cruces
+  de cada héroe, los que fallan se vuelven a pedir una vez al final, y así
+  una mala racha de la API ya no tira la descarga entera. Esta mañana
+  llegaron 106 de 133 héroes y se perdió todo lo demás que sí estaba bien:
+  las estadísticas de hoy, los talentos y las builds.
+
 ## 3.57.4
 
 - Los arreglos de la app se pueden publicar aunque la API de datos lleve

@@ -168,6 +168,15 @@ ninguna constante.
   guardada es de otro rango, las filas a medias no se funden y el
   comparador descarta la corrida: mejor estadísticas de hace dos días que
   cruces rotos (los rotos cambiaban el nº1 en 98 de 300 drafts).
+  Desde 3.57.5 `fetchRelations` pide OTRA VEZ, tras `REINTENTO_RELACIONES_MS`
+  (20 s), a los héroes que se quedaron sin cruces o sin parejas, si son
+  como mucho la mitad (con la API caída entera reintentarlo todo doblaría
+  el tiempo). El 14 de octubre de 2026 la API daba 500/503/403 a ratos y el
+  bot bajó 106 de 133: por debajo del 90% de `anotarFrescura`, el
+  comparador tiró la corrida con las estadísticas, los talentos y las
+  builds frescos. En la segunda pasada una respuesta vacía no borra lo que
+  ya llegó (sin prueba propia: la ingesta simulada no lo provoca).
+  `diagnostics.relations.reintentados` y `recuperados` dicen cuántos.
 
 Dos constantes que se midieron y se dejaron como estaban, para no volver a
 medirlas: el umbral de «tu héroe está N puntos por encima» (`>= 0.02` en
