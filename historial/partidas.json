@@ -1,6 +1,193 @@
 {
- "actualizado": "2026-10-14T16:55:29.045Z",
+ "actualizado": "2026-10-14T18:07:54.654Z",
  "partidas": [
+  {
+   "t": 1792001220277,
+   "pick": "Minotaur",
+   "recomendados": [
+    "Rafaela",
+    "Floryn",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.598,
+   "origen": "lector",
+   "bans": [
+    "Marcel",
+    "Khufra",
+    "Kagura",
+    "Masha",
+    "Hirara",
+    "Gloo",
+    "Aulus",
+    "Yi Sun-shin",
+    "Eudora",
+    "Saber"
+   ],
+   "draft": {
+    "enemigos": [
+     "Lapu-Lapu",
+     "Ixia",
+     "Harley",
+     "Lylia",
+     "Belerick"
+    ],
+    "aliados": [
+     "Selena",
+     "Suyou",
+     "Kadita",
+     "Brody"
+    ],
+    "linea": "roam",
+    "rival": "Belerick"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Khufra",
+     "Kagura",
+     "Masha",
+     "Hirara",
+     "Gloo",
+     "Aulus",
+     "Yi Sun-shin",
+     "Eudora",
+     "Saber"
+    ],
+    "enemigos": [
+     "Lapu-Lapu",
+     "Ixia",
+     "Harley",
+     "Lylia",
+     "Estes"
+    ],
+    "dudas": [
+     {
+      "hueco": "e2",
+      "candidato": "Rafaela",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Fredrinn",
+      "parecido": 0.79
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Barats",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Yi Sun-shin",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Natalia",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Kagura",
+      "parecido": 0.54
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Fredrinn",
+      "parecido": 0.76
+     }
+    ],
+    "ms": [
+     3577,
+     3303,
+     2950,
+     3220,
+     3587,
+     4184,
+     3208,
+     2995,
+     3012,
+     2764,
+     3491,
+     2870,
+     3064,
+     2904,
+     2945,
+     4659,
+     3124,
+     3049,
+     2651,
+     2639
+    ],
+    "msCaptura": [
+     2379,
+     2219,
+     1989,
+     2204,
+     2633,
+     2858,
+     2278,
+     2077,
+     2287,
+     1763,
+     2351,
+     2049,
+     2145,
+     2058,
+     2080,
+     3406,
+     2239,
+     2207,
+     1880,
+     1803
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Estes",
+      "Estes"
+     ]
+    }
+   },
+   "duracion": 13.3,
+   "fases": [
+    0.588,
+    0.627,
+    0.625,
+    0.596,
+    0.545,
+    0.541
+   ]
+  },
   {
    "t": 1791996915881,
    "pick": "Rafaela",
@@ -18657,6 +18844,12 @@
   {
    "cuando": "2026-10-14T16:55:29.045Z",
    "partidas": 221,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-14T18:07:54.654Z",
+   "partidas": 222,
    "heroes": 11,
    "incidencia": 11
   }
