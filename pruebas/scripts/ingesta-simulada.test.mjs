@@ -116,6 +116,37 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     if (fallarPrimeros <= 0 || h === '1' || h === 'Atlas' || fallaronYa.has(h) || u.searchParams.get('rank') !== 'glory') return false;
     fallaronYa.add(h); fallarPrimeros -= 1; return true;
   };
+  // Respuestas VACÍAS, no errores (3.57.7, lo pidió pr-test-analyzer): los
+  // `parejasVaciasPrimeras` héroes de Gloria reciben las parejas vacías la
+  // primera vez (van a la segunda pasada) y los cruces vacíos la segunda: lo
+  // que llegó bien en la primera no se puede perder.
+  // Héroes fijados de antemano: cruces y parejas se piden a la vez y, marcándolos
+  // al vuelo, los cruces de la primera pasada podían llegar antes que la marca.
+  let parejasVaciasActivas = false; const sinParejas = new Set(); const crucesPedidos = new Map();
+  const SIN_PAREJAS = ['Ruby', 'Terizla', 'Uranus', 'Yve', 'Zilong'];
+  const parejaVacia = (u, ruta) => {
+    const h = decodeURIComponent(ruta.split('/')[3]);
+    if (!parejasVaciasActivas || !SIN_PAREJAS.includes(h) || sinParejas.has(h) || u.searchParams.get('rank') !== 'glory') return false;
+    sinParejas.add(h); return true;
+  };
+  const cruceVacioAlReintentar = (u, ruta, i) => {
+    const h = decodeURIComponent(ruta.split('/')[i]);
+    if (!parejasVaciasActivas || !SIN_PAREJAS.includes(h) || u.searchParams.get('rank') !== 'glory') return false;
+    crucesPedidos.set(h, (crucesPedidos.get(h) ?? 0) + 1);
+    return crucesPedidos.get(h) >= 2;
+  };
+  // Y al revés: cruces vacíos la primera vez y parejas vacías la segunda.
+  const SIN_CRUCES = ['Vexana', 'Wanwan', 'Xavier', 'Yin', 'Yu Zhong'];
+  const pedidosSinCruces = new Map();
+  const cuenta = (m, h) => { m.set(h, (m.get(h) ?? 0) + 1); return m.get(h); };
+  const cruceVacioPrimero = (u, ruta, i) => {
+    const h = decodeURIComponent(ruta.split('/')[i]);
+    return parejasVaciasActivas && SIN_CRUCES.includes(h) && u.searchParams.get('rank') === 'glory' && cuenta(pedidosSinCruces, `c:${h}`) === 1;
+  };
+  const parejaVaciaAlReintentar = (u, ruta) => {
+    const h = decodeURIComponent(ruta.split('/')[3]);
+    return parejasVaciasActivas && SIN_CRUCES.includes(h) && u.searchParams.get('rank') === 'glory' && cuenta(pedidosSinCruces, `s:${h}`) >= 2;
+  };
   const srv = createServer((req, res) => {
     const u = new URL(req.url, 'http://x');
     const ruta = u.pathname;
@@ -170,13 +201,19 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     if (/^\/api\/heroes\/[^/]+\/counters$/.test(ruta)) {
       if (fallosCountersPendientes > 0) { fallosCountersPendientes -= 1; res.statusCode = 500; return res.end('{}'); }
       if (fallaUnaVez(u, ruta, 3)) { res.statusCode = 500; return res.end('{}'); }
+      if (cruceVacioAlReintentar(u, ruta, 3)) return json({ data: { sub_hero: [] } });
+      if (cruceVacioPrimero(u, ruta, 3)) return json({ data: { sub_hero: [] } });
       marca('counters'); return json(pares(2));
     }
     const signoDelRango = gloriaRuidosa && u.searchParams.get('rank') === 'glory' ? -1 : 1;
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && miticoAMedias && u.searchParams.get('rank') === 'mythic' && ++miticosServidos > 3) return json({ data: { sub_hero: [] } });
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && fallaUnaVez(u, ruta, 4)) { res.statusCode = 500; return res.end('{}'); }
+    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && cruceVacioAlReintentar(u, ruta, 4)) return json({ data: { sub_hero: [] } });
+    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && cruceVacioPrimero(u, ruta, 4)) return json({ data: { sub_hero: [] } });
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta)) { marca('academy'); marca(`academy:${u.searchParams.get('rank')}`); return json(academyVacia ? { data: { sub_hero: [] } } : pares(4, signoDelRango)); }
     if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta) && parejasVacias) return json({ data: { sub_hero: [] } });
+    if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta) && parejaVacia(u, ruta)) return json({ data: { sub_hero: [] } });
+    if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta) && parejaVaciaAlReintentar(u, ruta)) return json({ data: { sub_hero: [] } });
     if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta)) { marca('compat'); marca(`compat:${u.searchParams.get('rank')}`); return json(pares(3, signoDelRango)); }
     if (ruta === '/api/equipment/expanded') {
       marca('equipo');
@@ -337,6 +374,8 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     const d2 = JSON.parse(readFileSync(out2, 'utf8'));
     eq(d2.generatedAt, guardada.generatedAt, 'con la matriz conservada la corrida se fecha como si fuera nueva');
     eq(d2.diagnostics.conservado, true, 'no dice que conserva la matriz');
+    // Con la API caída del todo no hay segunda pasada: doblaría el tiempo por nada.
+    eq(d2.diagnostics.relations?.reintentados, undefined, `con todo caído se reintenta: ${JSON.stringify(d2.diagnostics.relations)}`);
     // Con la ventana corta caída no se conserva la de ayer (unos «recientes»
     // viejos son peores que ninguno): simplemente no va, y la app cae a 7.
     ok(d2.recientes === undefined, `la ventana corta caída sale conservada o inventada: ${JSON.stringify(d2.recientes)}`);
@@ -467,7 +506,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     // Y veinte de los 133 fallan una vez al pedir los cruces: sin la segunda
     // pasada la matriz se quedaba en el 85%, por debajo del 90%, y el
     // comparador tiraba la corrida entera (14 de octubre de 2026, 106 de 133).
-    fallarPrimeros = 20;
+    fallarPrimeros = 20; parejasVaciasActivas = true;
     const out5 = resolve(dir, 'gloria-buena.json');
     const r5 = await correrIngesta([
       '--base', `http://127.0.0.1:${puerto}/api`,
@@ -476,7 +515,14 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     ]);
     eq(r5.status, 0, `la corrida con Gloria coherente no acaba bien: ${(r5.stdout + r5.stderr).slice(-400)}`);
     const d5 = JSON.parse(readFileSync(out5, 'utf8'));
+    parejasVaciasActivas = false;
     eq(fallaronYa.size, 20, `la prueba no ha llegado a fallar a veinte: ${fallaronYa.size}`);
+    eq(sinParejas.size, 5, `la prueba no ha dejado sin parejas a cinco: ${sinParejas.size}`);
+    ok(crucesPedidos.size === 5 && [...crucesPedidos.values()].every((n) => n >= 2), `los que solo traían cruces no se reintentan: ${JSON.stringify([...crucesPedidos])}`);
+    const vacias = (m) => Object.entries(m ?? {}).filter(([, f]) => !Object.keys(f ?? {}).length).map(([n]) => n);
+    ok(SIN_CRUCES.every((h) => pedidosSinCruces.get(`s:${h}`) >= 2), `los que solo traían parejas no se reintentan: ${JSON.stringify([...pedidosSinCruces])}`);
+    eq(vacias(d5.counters).join(), '', 'la segunda pasada borra los cruces que ya habían llegado bien');
+    eq(vacias(d5.synergies).join(), '', 'las parejas vacías de la primera pasada no se recuperan, o la segunda pasada borra las buenas');
     eq(d5.diagnostics.relations?.recuperados, d5.diagnostics.relations?.reintentados, `no se recuperan en la segunda pasada: ${JSON.stringify(d5.diagnostics.relations)}`);
     ok(d5.diagnostics.relations?.reintentados >= 20 && !d5.diagnostics.conservado && d5.diagnostics.frescosRecursos?.relaciones === d5.diagnostics.frescosRecursos?.pedidas, `con fallos pasajeros la matriz no sale fresca: ${JSON.stringify({ f: d5.diagnostics.frescosRecursos, r: d5.diagnostics.relations, c: d5.diagnostics.conservado })}`);
     ok(d5.relaciones?.rango === 'glory' && d5.relaciones?.coherencia?.counters > 0.99 && !d5.relaciones?.motivo, `con Gloria coherente no se queda Gloria: ${JSON.stringify(d5.relaciones)}`);

@@ -495,7 +495,9 @@ test('sin datos nuevos, el despliegue publica los que ya sirve la app si son má
   for (const d of ['scripts', 'src']) cpSync(join(RAIZ, d), join(caja, d), { recursive: true });
   const bin = join(caja, 'bin'); mkdirSync(bin);
   // Un curl de pega: copia PUBLICADA donde diga -o (o falla si no hay).
-  writeFileSync(join(bin, 'curl'), '#!/bin/bash\n[ -n "$PUBLICADA" ] || exit 22\nwhile [ $# -gt 0 ]; do [ "$1" = -o ] && cp "$PUBLICADA" "$2"; shift; done\n');
+  // Apunta a qué dirección se le pide: una URL mal escrita volvía en silencio a los del repositorio.
+  writeFileSync(join(bin, 'curl'), '#!/bin/bash\necho "$@" >> "$CURL_LOG"\n[ -n "$PUBLICADA" ] || exit 22\nwhile [ $# -gt 0 ]; do [ "$1" = -o ] && cp "$PUBLICADA" "$2"; shift; done\n');
+  const curlLog = join(caja, 'curl.log');
   chmodSync(join(bin, 'curl'), 0o755);
   const real = leerJson('public/data/roam-meta.json');
   const conFecha = (horas) => ({ ...real, generatedAt: new Date(Date.parse(real.generatedAt) + horas * 3.6e6).toISOString() });
@@ -503,11 +505,13 @@ test('sin datos nuevos, el despliegue publica los que ya sirve la app si son má
     writeFileSync(join(caja, 'public/data/roam-meta.json'), JSON.stringify(repo));
     const fichero = join(caja, 'publicada.json');
     if (publicada) writeFileSync(fichero, JSON.stringify(publicada));
-    const r = ejecutarPaso(paso.run, { cwd: caja, env: { PUBLICADA: publicada ? fichero : '' }, path: [bin] });
+    const r = ejecutarPaso(paso.run, { cwd: caja, env: { PUBLICADA: publicada ? fichero : '', CURL_LOG: curlLog }, path: [bin] });
     eq(r.status, 0, `el paso falla: ${r.stderr}`);
     return JSON.parse(readFileSync(join(caja, 'public/data/roam-meta.json'), 'utf8')).generatedAt;
   };
   eq(publicar(real, conFecha(10)), conFecha(10).generatedAt, 'con datos publicados más nuevos se vuelve a los del repositorio');
+  const pedida = readFileSync(curlLog, 'utf8').split(/\s+/).find((x) => /^https:/.test(x)) ?? '';
+  ok(/\.github\.io\/[^ ]*\/data\/roam-meta\.json$/.test(pedida), `no se piden los datos que sirve Pages: ${pedida}`);
   eq(publicar(real, conFecha(-10)), real.generatedAt, 'se publican datos más VIEJOS que los del repositorio');
   eq(publicar(real, null), real.generatedAt, 'sin poder leer lo publicado no se queda con los del repositorio');
   // Más nuevos pero peores (sin la mitad de los cruces): el comparador manda.

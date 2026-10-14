@@ -175,7 +175,9 @@ ninguna constante.
   bot bajó 106 de 133: por debajo del 90% de `anotarFrescura`, el
   comparador tiró la corrida con las estadísticas, los talentos y las
   builds frescos. En la segunda pasada una respuesta vacía no borra lo que
-  ya llegó (sin prueba propia: la ingesta simulada no lo provoca).
+  ya llegó: la ingesta simulada lo provoca en los dos sentidos (parejas
+  vacías y luego cruces vacíos, y al revés) y con la API caída entera
+  comprueba que no hay segunda pasada.
   `diagnostics.relations.reintentados` y `recuperados` dicen cuántos.
   `relaciones.ultima` se sembró a mano el 14 de octubre de 2026 (3.57.7)
   con la medida de la ingesta del despliegue de las 09:42 (Mítico; cruces

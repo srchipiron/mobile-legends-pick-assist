@@ -497,3 +497,20 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   la corrida del bot de las 10:12: sus fichas fallaron y se conservó el
   `kitTexto` guardado, calculado con la huella de antes de 3.57.2 (con las
   URL dentro). Falso y pasajero: se apaga con la primera ficha que llegue.
+
+- **La revisión de pruebas de 3.57.1–3.57.6 (pr-test-analyzer, 42
+  mutaciones, 17 sobrevivían)**: cerradas las que importan, cada una con su
+  prueba (la salvaguarda de la segunda pasada en los dos sentidos, que
+  falte solo una de las dos matrices, la API caída entera sin segunda
+  pasada, la URL de los datos publicados, el crítico leído de las
+  estadísticas). Se dejan, por baja gravedad: un objeto con «Crit Chance»
+  solo en la pasiva (E5); la fecha del motivo de `ultima` (C2); la rama
+  `catch` de la guarda en cli.mjs, inalcanzable porque `fetchRelations` no
+  lanza (C3/C4); las cuentas del diagnóstico de la segunda pasada
+  (`recuperados`, `ok`, `conId`: R7–R9); `>` frente a `>=` al comparar
+  fechas con Pages (D1, inofensivo); la rama «corrida nueva buena» con los
+  publicados (D10) y `curl` sin `-f` (D11, un 404 cae igual al repositorio
+  porque `require` del HTML revienta). Y la segunda pasada puede alargar
+  la ingesta con la API lenta (hasta 66 héroes × 2 × 2 rangos a 15 s):
+  en el despliegue, un tope de 20 min que cae a los datos publicados; en
+  el bot, 40 min de job. Se mira si algún día una corrida se acerca.
