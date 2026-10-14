@@ -464,8 +464,11 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     // Mítico de tres héroes tirando la Gloria entera, y se dice por qué.
     gloriaRuidosa = true; miticoAMedias = true;
     const out6 = resolve(dir, 'mitico-a-medias.json');
+    // La anterior es la quinta, que MIDIÓ Gloria buena: sin `--previo` leía
+    // public/data, y el 14 de octubre de 2026 el despliegue metió ahí una
+    // corrida que había medido Mítico: la prueba dependía del dato del día.
     const r6 = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`,
+      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', out5,
       '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out6, '--celdas-para-comparar', '1', '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
       '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
     ]);

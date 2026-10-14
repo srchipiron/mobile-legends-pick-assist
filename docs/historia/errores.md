@@ -991,3 +991,14 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   medida (`relaciones.ultima`). Cuando una guarda no puede comprobar, su
   respuesta por defecto es la de su última comprobación, no la del caso
   sin guarda.
+
+- **Una prueba nueva que leía «lo anterior» de public/data** (3.57.3 →
+  3.57.4, tumbó un despliegue): la sexta corrida de `ingesta-simulada` no
+  llevaba `--previo` y leía `public/data/roam-meta.json`, que antes de
+  3.57.3 no tenía `relaciones.ultima`. El 14 de octubre de 2026 el
+  despliegue bajó datos que SÍ midieron Mítico (cruces 0,82, parejas 0,61),
+  los copió a public/data antes de `npm test` y la prueba, que suponía
+  «sin medida guardada», falló con el comportamiento correcto. Hoy cada
+  corrida que depende de lo anterior lo recibe por `--previo`. Séptima vez
+  de la misma lección: una prueba no puede depender de lo que haya en
+  public/data, ni siquiera de un campo que hoy no existe.
