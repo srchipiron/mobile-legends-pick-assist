@@ -122,14 +122,16 @@ export async function pedirLectura({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_M
  * Devuelve al lector lo que había de verdad (3.27.0): con los ids de sus
  * capturas y los enemigos y baneos finales (corregidos a mano), cruza el
  * pantallazo con la verdad y aprende dónde están los huecos en esa tablet
- * y qué cara pinta. Nunca lanza: si el lector no está, no pasa nada.
+ * y qué cara pinta. Desde 3.58.0 también tu equipo y tu pick, para que
+ * aprenda las caras de tus compañeros con sus skins. Nunca lanza: si el
+ * lector no está, no pasa nada.
  */
-export async function corregirLectura({ ids = [], enemigos = [], baneos = [], base = URL_LECTOR, plazoMs = PLAZO_CORREGIR_MS, pedir = (...a) => fetch(...a) } = {}) {
+export async function corregirLectura({ ids = [], enemigos = [], baneos = [], aliados = [], tuyo = null, base = URL_LECTOR, plazoMs = PLAZO_CORREGIR_MS, pedir = (...a) => fetch(...a) } = {}) {
   if (!ids.length || !enemigos.length) return null;
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), plazoMs);
   try {
-    const r = await pedir(`${base}/corregir`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, enemigos, baneos }), cache: 'no-store', signal: corte.signal });
+    const r = await pedir(`${base}/corregir`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, enemigos, baneos, aliados, ...(tuyo ? { tuyo } : {}) }), cache: 'no-store', signal: corte.signal });
     return r.ok ? await r.json().catch(() => null) : null;
   } catch {
     return null;

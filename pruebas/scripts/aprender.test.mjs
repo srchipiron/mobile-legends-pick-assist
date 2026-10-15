@@ -9,8 +9,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
 import { leerPng } from '../../scripts/lector/png.mjs';
-import { leerPicksEnemigos, carasGuardadas, PICKS_ENEMIGOS } from '../../scripts/lector/leer.mjs';
-import { aprenderDe, ajustarPosiciones, carasAprendidas, resumirAprendizaje, esPantallaDeDraft, huecoDe, APRENDER_MINIMO, VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
+import { leerPicksEnemigos, leerAliados, carasGuardadas, PICKS_ENEMIGOS, ALIADO_MINIMO } from '../../scripts/lector/leer.mjs';
+import { leerCaptura } from '../../scripts/lector/lectura.mjs';
+import { aprenderDe, ajustarPosiciones, carasAprendidas, aliadasAprendidas, etiquetarAliados, momentoDe, resumirAprendizaje, esPantallaDeDraft, huecoDe, APRENDER_MINIMO, VERSION_APRENDIDO, MINUTOS_ENTRE_DRAFTS } from '../../scripts/lector/aprender.mjs';
 import { capturaCompleta, capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
 import { aprenderEnHilo } from '../../scripts/lector/servir.mjs';
 import { mkdtempSync, writeFileSync } from 'node:fs';
@@ -146,6 +147,91 @@ test('aprende de las capturas que MÁS enemigos leen, no de las últimas (que su
   // A igualdad, la más nueva.
   const r2 = aprenderDe(pares.slice(1), { caras, maximo: 1 });
   eq(r2.informe.filter((l) => !l.descartada).map((l) => l.id).join(), 'lectura-skins-2');
+});
+
+// Tu equipo (3.58.0). En la captura de prueba la API lee a los cinco; para
+// imitar una skin que no se parece a la cara de la API, se le cambia a un
+// héroe su cara por la de otro (como en la prueba del rework).
+const sinCara = (...quienes) => caras.map((c) => (quienes.includes(c.nombre) ? { ...c, v: caras.find((x) => x.nombre === 'Layla').v } : c));
+const VERDAD_EQUIPO = { enemigos: VERDAD.enemigos2, baneos: [...VERDAD.tuyos, ...VERDAD.suyos], aliados: VERDAD.aliados.filter((n) => n !== VERDAD.tuyo), tuyo: VERDAD.tuyo };
+const idA = (min) => `lectura-${new Date(Date.UTC(2026, 9, 14, 17, 0) + min * 60000).toISOString().replace(/[:.]/g, '-')}-1`;
+const filas = (l) => l.map((x) => x.nombre ?? '?').join(',');
+
+test('tu equipo: aprende la cara de un compañero que la API no lee, y solo la usa cuando dos drafts distintos la confirman (3.58.0)', () => {
+  const sinGuinevere = sinCara('Guinevere');
+  const img = capturaCompleta({ columna: 2 });
+  eq(filas(leerAliados(img, sinGuinevere)), 'Clint,?,Novaria,Leomord,Estes', 'sin su cara la API sigue leyendo a Guinevere: la prueba no mide nada');
+  eq(momentoDe(idA(0)), Date.UTC(2026, 9, 14, 17, 0), `el instante de ${idA(0)} sale mal`);
+  // Primer draft: tres compañeros leídos, el que queda es Guinevere. Queda pendiente, no se usa.
+  const r1 = aprenderDe([{ id: idA(0), img, verdad: VERDAD_EQUIPO }], { caras: sinGuinevere });
+  eq(r1.informe[0].aliados?.pendientes.join(), 'Guinevere', `del primer draft no queda pendiente Guinevere: ${JSON.stringify(r1.informe[0].aliados)}`);
+  eq(Object.keys(r1.aprendido.aliados).length, 0, 'una cara vista en un solo draft ya se usa');
+  // Otra captura del MISMO draft (cinco minutos después) no la confirma, ni la misma captura corregida otra vez.
+  const r2 = aprenderDe([{ id: idA(5), img, verdad: VERDAD_EQUIPO }], { caras: sinGuinevere, aprendido: r1.aprendido });
+  const r2b = aprenderDe([{ id: idA(0), img, verdad: VERDAD_EQUIPO }], { caras: sinGuinevere, aprendido: r1.aprendido });
+  ok(!r2.aprendido.aliados.Guinevere && !r2b.aprendido.aliados.Guinevere, 'dos capturas del mismo draft confirman la cara');
+  eq(r2b.aprendido.aliadosPendientes.Guinevere.length, 1, 'la misma captura corregida dos veces se apunta dos veces');
+  // Otro draft, más de MINUTOS_ENTRE_DRAFTS después: confirmada, y la lectura la usa.
+  const r3 = aprenderDe([{ id: idA(MINUTOS_ENTRE_DRAFTS + 1), img, verdad: VERDAD_EQUIPO }], { caras: sinGuinevere, aprendido: r2.aprendido });
+  eq(r3.informe[0].aliados?.aprendidos.join(), 'Guinevere', `el segundo draft no la confirma: ${JSON.stringify(r3.informe[0].aliados)}`);
+  ok(!(r3.aprendido.aliadosPendientes.Guinevere ?? []).some((p) => r3.aprendido.aliados.Guinevere.some((c) => c.de === p.de)), 'confirmada, sigue pendiente');
+  const despues = leerAliados(img, sinGuinevere, { extra: aliadasAprendidas(r3.aprendido) });
+  eq(filas(despues), 'Clint,Guinevere,Novaria,Leomord,Estes', `con la cara aprendida lee ${filas(despues)}`);
+  ok(despues[1].aprendida && despues[1].parecido >= ALIADO_MINIMO, 'la lectura no marca que sale de una cara aprendida');
+  ok(resumirAprendizaje(r3).some((l) => /Aprendido en tu equipo: Guinevere/.test(l)), 'el resumen no lo dice');
+  // Y la lectura entera del lector (la de /leer) la usa.
+  const entera = leerCaptura(img, sinGuinevere, r3.aprendido);
+  eq(entera.aliados[1].nombre, 'Guinevere', `la lectura de /leer no usa lo aprendido de tu equipo: ${filas(entera.aliados)}`);
+});
+
+test('tu equipo: tu fila es tu pick; con dos compañeros sin leer no adivina; y lo aprendido no lee a quien no es (3.58.0)', () => {
+  const img = capturaCompleta({ columna: 2 });
+  // Tu fila (la amarilla) es tu pick aunque la API no lo lea.
+  const sinEstes = sinCara('Estes');
+  let a = null;
+  for (const min of [0, 30]) a = aprenderDe([{ id: idA(min), img, verdad: { ...VERDAD_EQUIPO, aliados: [] } }], { caras: sinEstes, aprendido: a }).aprendido;
+  ok(a.aliados.Estes, `no aprende tu pick en tu fila: ${JSON.stringify(Object.keys(a.aliados))}`);
+  eq(leerAliados(img, sinEstes, { extra: aliadasAprendidas(a) })[4].nombre, 'Estes', 'no lee tu pick con lo aprendido');
+  // Sin saber cuál es tu fila no se etiqueta nada (uno de ellos serías tú).
+  const sinFila = capturaCompleta({ columna: 2, filaAmarilla: -1 });
+  let b = null;
+  for (const min of [0, 30]) b = aprenderDe([{ id: idA(min), img: sinFila, verdad: VERDAD_EQUIPO }], { caras: sinEstes, aprendido: b }).aprendido;
+  eq(Object.keys(b.aliados).length + Object.keys(b.aliadosPendientes).length, 0, 'sin tu fila aprende caras de tu equipo');
+  // Dos compañeros sin leer: no se sabe quién es quién.
+  const sinDos = sinCara('Guinevere', 'Novaria');
+  const leidos = leerAliados(img, sinDos);
+  eq(etiquetarAliados(leidos, 4, { aliados: VERDAD_EQUIPO.aliados }).length, 0, 'con dos compañeros sin leer etiqueta a uno');
+  eq(etiquetarAliados(leidos, 4, { aliados: VERDAD_EQUIPO.aliados, tuyo: 'Estes' }).length, 0, 'etiqueta tu fila cuando ya se lee tu pick');
+  eq(etiquetarAliados(leidos, -1, { aliados: VERDAD_EQUIPO.aliados, tuyo: 'Estes' }).length, 0, 'sin tu fila etiqueta algo');
+  // La cara aprendida de Guinevere no lee a Clint (otro héroe sin cara de la API) ni se repite en dos huecos.
+  const sinGuinevere = sinCara('Guinevere');
+  let g = null;
+  for (const min of [0, 30]) g = aprenderDe([{ id: idA(min), img, verdad: VERDAD_EQUIPO }], { caras: sinGuinevere, aprendido: g }).aprendido;
+  ok(g.aliados.Guinevere, 'no aprende a Guinevere: el resto de la prueba no mide nada');
+  const otra = leerAliados(img, sinCara('Guinevere', 'Clint'), { extra: aliadasAprendidas(g) });
+  eq(filas(otra), '?,Guinevere,Novaria,Leomord,Estes', `la cara de Guinevere lee a otro: ${filas(otra)}`);
+  // Un nombre que ya se lee en otro hueco no se repite: una cara aprendida de Guinevere apuntada como Clint no lee el hueco de Guinevere.
+  const comoClint = aliadasAprendidas(g).map((c) => ({ ...c, nombre: 'Clint' }));
+  eq(filas(leerAliados(img, sinGuinevere, { extra: comoClint })), 'Clint,?,Novaria,Leomord,Estes', 'lo aprendido lee en dos huecos al mismo héroe');
+  // La API manda: con su cara en su sitio no se lee por la aprendida.
+  // (con la cara aprendida apuntada como otro héroe que no está, Layla: si mandara, el hueco de Guinevere saldría Layla)
+  const comoLayla = aliadasAprendidas(g).map((c) => ({ ...c, nombre: 'Layla' }));
+  eq(leerAliados(img, caras, { extra: comoLayla })[1].nombre, 'Guinevere', 'lo aprendido tapa lo que la API lee');
+});
+
+test('tu equipo: no aprende de una captura de otra partida ni con pocos enemigos leídos (3.58.0)', () => {
+  const img = capturaCompleta({ columna: 2 });
+  const sinGuinevere = sinCara('Guinevere');
+  // Un enemigo leído que no está en la verdad: es otra partida (#93) o la fase de skins.
+  const otra = { ...VERDAD_EQUIPO, enemigos: VERDAD.enemigos2.slice(1).concat('Layla') };
+  const r = aprenderDe([{ id: idA(0), img, verdad: otra }], { caras: sinGuinevere });
+  ok(!r.informe[0].aliados, `aprende tu equipo de una captura con un enemigo que no es de la verdad: ${JSON.stringify(r.informe[0].aliados)}`);
+  // Con dos enemigos leídos (la columna de Clint y Khufra) tampoco.
+  const r2 = aprenderDe([{ id: idA(0), img: capturaCompleta(), verdad: { ...VERDAD_EQUIPO, enemigos: VERDAD.enemigos } }], { caras: sinGuinevere });
+  ok(!r2.informe[0].aliados, 'aprende tu equipo con solo dos enemigos leídos');
+  // Una captura sin instante en el nombre no se puede ordenar entre drafts: no aprende.
+  const r3 = aprenderDe([{ id: 'lectura-sin-hora', img, verdad: VERDAD_EQUIPO }], { caras: sinGuinevere });
+  eq(Object.keys(r3.aprendido.aliadosPendientes).length, 0, 'aprende de una captura sin instante');
 });
 
 await terminar('scripts/aprender');

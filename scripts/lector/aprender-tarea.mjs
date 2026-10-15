@@ -8,7 +8,7 @@ import { parentPort, workerData } from 'node:worker_threads';
 import { readFileSync } from 'node:fs';
 import { leerPng } from './png.mjs';
 import { carasGuardadas } from './leer.mjs';
-import { aprenderDe, carasAprendidas } from './aprender.mjs';
+import { aprenderDe, carasAprendidas, aliadasAprendidas } from './aprender.mjs';
 import { recortesDelDraft } from './recortes.mjs';
 
 const { pares, aprendido } = workerData;
@@ -21,6 +21,6 @@ const resultado = aprenderDe(pares.map((p) => ({ id: p.id, img: () => leer(p), v
 let recortes = [];
 try {
   const porId = new Map(pares.map((p) => [p.id, p]));
-  recortes = recortesDelDraft(resultado.informe, (id) => leer(porId.get(id)), caras, { posiciones: resultado.aprendido.picks, extra: carasAprendidas(resultado.aprendido) });
+  recortes = recortesDelDraft(resultado.informe, (id) => leer(porId.get(id)), caras, { posiciones: resultado.aprendido.picks, extra: carasAprendidas(resultado.aprendido), aliadas: aliadasAprendidas(resultado.aprendido) });
 } catch { /* sin recortes: lo aprendido sale igual */ }
 parentPort.postMessage({ ...resultado, recortes });

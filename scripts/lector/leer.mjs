@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { leerPng } from './png.mjs';
 import { cargarCaras, reconocer, espejo, CRIBA_PICKS } from './caras.mjs';
 import { buscarPorMdns, escanearPuertos } from './tablet.mjs';
+import { nombreClave } from '../../src/motor/nombres.js';
 
 /**
  * Dónde están los diez baneos en una pantalla de 2400×1504, medido en las
@@ -34,7 +35,7 @@ export const BANEOS = {
   suyos: [1760, 1898, 2036, 2174, 2312].map((x) => [x, 138, 47]),
 };
 
-const escalar = (img, [x, y, r]) => {
+export const escalar = (img, [x, y, r]) => {
   const fx = img.ancho / REFERENCIA.ancho, fy = img.alto / REFERENCIA.alto;
   return [x * fx, y * fy, r * Math.min(fx, fy)];
 };
@@ -119,12 +120,40 @@ export const NOMBRES_ALIADOS = [0, 1, 2, 3, 4].map((i) => [14, 404 + 216 * i, 30
 /** Tu nombre va en amarillo: en la captura de Javi el 10,7% de su caja; en las otras cuatro, del 0,7% al 1,7%. */
 export const AMARILLO_MINIMO = 0.05;
 
-export function leerAliados(img, caras) {
+/** La búsqueda en tu equipo, con las caras de la API y con las aprendidas. */
+export const OPCIONES_ALIADOS = { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12, 1.25], finura: 8, criba: CRIBA_PICKS };
+/**
+ * Una cara de compañero APRENDIDA (3.58.0) lee su hueco si se parece al
+ * menos esto. Medido en los 30 drafts de recortes del 10 al 14 de octubre
+ * de 2026 (#56–#114): la misma skin en el mismo panel sale entre 0,93 y
+ * 1,00 (mediana 0,98), y el héroe equivocado más parecido, 0,81.
+ */
+export const ALIADO_MINIMO = 0.92;
+/** Y si ninguna cara aprendida de OTRO héroe se le parece casi igual. */
+export const MARGEN_ALIADO = 0.03;
+
+/**
+ * `extra`: las caras de compañeros aprendidas de las correcciones
+ * (aprender.mjs, 3.58.0), en la orientación de la pantalla. Como en los
+ * picks enemigos, manda lo de la API: lo aprendido solo entra en un hueco
+ * que la API no lee, a `ALIADO_MINIMO`, y nunca con un nombre ya leído en
+ * otro hueco.
+ */
+export function leerAliados(img, caras, { extra = [] } = {}) {
   const referencias = ambasOrientaciones(caras);
   // Rejilla a r/8 (el doble de gruesa que en los picks) con ±5 pasos: mismo
   // alcance que ±8 a r/16 por la mitad de tiempo (1,3 s frente a 2,6 aquí) y
   // los cinco siguen entre 0,87 y 0,94; a r/6 con ±4 se pierden dos.
-  return ALIADOS.map((pos) => reconocer(img, escalar(img, pos), referencias, { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12, 1.25], finura: 8, criba: CRIBA_PICKS }));
+  const medidos = ALIADOS.map((pos) => reconocer(img, escalar(img, pos), referencias, OPCIONES_ALIADOS));
+  if (!extra.length) return medidos;
+  const leidos = new Set(medidos.filter((l) => l.nombre).map((l) => nombreClave(l.nombre)));
+  return medidos.map((l, i) => {
+    if (l.nombre) return l;
+    const a = reconocer(img, escalar(img, ALIADOS[i]), extra, OPCIONES_ALIADOS);
+    if (a.parecido < ALIADO_MINIMO || leidos.has(nombreClave(a.candidato)) || (a.segundo?.parecido ?? 0) > a.parecido - MARGEN_ALIADO) return l;
+    leidos.add(nombreClave(a.candidato));
+    return { ...a, nombre: a.candidato, aprendida: true };
+  });
 }
 
 /** Fracción de píxeles amarillos (el color del nombre propio) en una caja de la captura. */

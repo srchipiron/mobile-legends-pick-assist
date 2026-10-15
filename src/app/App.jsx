@@ -214,7 +214,7 @@ export default function App() {
       ...(draft.lectura ? { lector: { baneos: draft.lectura.baneos, enemigos: draft.lectura.enemigos, ...(draft.lectura.aliados ? { aliados: draft.lectura.aliados } : {}), ...(draft.lectura.tuyo ? { tuyo: draft.lectura.tuyo } : {}), ...(draft.lectura.dudas ? { dudas: draft.lectura.dudas } : {}), ...(draft.lectura.aprendizaje ? { aprendizaje: draft.lectura.aprendizaje } : {}), ...(draft.lectura.ms ? { ms: draft.lectura.ms } : {}), ...(draft.lectura.msCaptura ? { msCaptura: draft.lectura.msCaptura } : {}), ...(draft.lectura.formatos ? { formatos: draft.lectura.formatos } : {}) } } : {}),
     });
     // Y al lector, lo que había de verdad, para que aprenda (3.27.0).
-    corregirLectura({ ids: draft.lectura?.ids ?? [], enemigos: draft.enemigos, baneos: draft.baneos });
+    corregirLectura({ ids: draft.lectura?.ids ?? [], enemigos: draft.enemigos, baneos: draft.baneos, aliados: draft.aliados, tuyo: pick });
     // Y el resultado con sus fotogramas, para que aprenda la palabra de la
     // tabla (3.32.0), y los fotogramas al proyecto con el resultado (3.30.0).
     // Si la partida se apuntó sola, después del plazo de su «Deshacer»
@@ -341,7 +341,7 @@ export default function App() {
     // Lo de ESTE draft, ahora: la respuesta tarda (el lector aprende) y el draft puede haber cambiado.
     const verdad = { enemigos: draft.enemigos, aliados: draft.aliados, tuyo: draft.miPick };
     const leidos = { enemigos: draft.lectura.enemigos, aliados: draft.lectura.aliados };
-    corregirLectura({ ids: draft.lectura.ids, enemigos: draft.enemigos, baneos: draft.baneos })
+    corregirLectura({ ids: draft.lectura.ids, enemigos: draft.enemigos, baneos: draft.baneos, aliados: draft.aliados, tuyo: draft.miPick })
       .then((r) => {
         if (r?.aprendido) draft.anotarAprendizaje({ aprendidos: r.aprendidos, sinEncontrar: r.sinEncontrar }, desde);
         // Si a la lectura se le escapó alguien, las caras de los picks al

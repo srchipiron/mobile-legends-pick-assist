@@ -614,6 +614,34 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   necesitan su cara aprendida, y el aprendizaje de tu equipo no existe
   (las skins). Prueba en `lector.test` (caras ampliadas a 1,2 y 1,25;
   cuatro mutaciones).
+- **Las caras de tu equipo se aprenden (3.58.0)**, con los 30 drafts de
+  recortes del 10 al 14 de octubre de 2026 (#56–#114): de tu equipo se leía
+  la mitad (18 de 37 los dos últimos días) y los que más se escapaban son
+  los que juegan con Javi a menudo, siempre con la misma skin (Selena 11
+  veces, Gord 9, Kadita 7, «¿Claude? 73%» en el hueco de Selena en cada
+  partida). La misma skin en el mismo panel sale entre 0,93 y 1,00 de una
+  partida a otra (mediana 0,98) y el héroe equivocado más parecido, 0,81:
+  `ALIADO_MINIMO` 0,92 y `MARGEN_ALIADO` 0,03 (leer.mjs). La app manda en
+  `/corregir` también `aliados` y `tuyo` (al completar el draft, el pick
+  fijado; al apuntar, el apuntado). `aprenderDe` etiqueta con
+  `etiquetarAliados`: tu fila (`filaPropia`) es tu pick, y si de los cuatro
+  compañeros se leen tres, el hueco que queda es el que falta; nada más (con
+  dos sin leer no se adivina). Solo de capturas que leen al menos
+  `ENEMIGOS_PARA_ALIADOS` (3) enemigos de la verdad y NINGUNO de fuera: el
+  13 de octubre una corrección (#93) traía una captura de la partida
+  anterior, y la fase de skins lee imanes. Cada recorte queda en
+  `aliadosPendientes` y pasa a `aliados` (hasta `RECORTES_POR_ALIADO` 4
+  por héroe) cuando otro de un draft distinto (`MINUTOS_ENTRE_DRAFTS` 10
+  entre las capturas, por el instante del nombre `lectura-…`; la misma
+  captura corregida dos veces cuenta una) se le parece a `ALIADO_MINIMO`:
+  sin confirmar, en la repetición salían 43 lecturas más con 1 falsa (la
+  verdad de #98 y #99, el mismo draft, no coincide); confirmando, 15 y 0
+  (`replay-aliados.mjs` del scratch de la sesión, con el código de verdad).
+  `leerAliados` las usa como los picks enemigos: manda la API, lo aprendido
+  solo entra en un hueco que ella no lee y nunca con un nombre ya leído.
+  Tope de `PENDIENTES_MAXIMOS` (40) recortes pendientes; con los 30 drafts,
+  aprendido.json pesa ~100 KB. Pruebas en `aprender.test`, `puente-lector`
+  y `app/lector`; dieciocho mutaciones (la de «manda la API» sobrevivía hasta probar con la cara aprendida apuntada como otro héroe).
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

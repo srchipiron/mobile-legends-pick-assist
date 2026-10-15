@@ -116,13 +116,13 @@ const plano = (l) => ({ nombre: l.nombre ?? null, candidato: l.candidato ?? l.no
  * Un recorte de una captura del draft: la imagen y lo leído hueco a hueco,
  * con lo aprendido de esa tablet (`posiciones`, `extra`) como en `/leer`.
  */
-export function recorteDeDraft(img, caras, { posiciones = null, extra = [] } = {}) {
+export function recorteDeDraft(img, caras, { posiciones = null, extra = [], aliadas = [] } = {}) {
   const picks = recorteDePicks(img);
   if (!picks) return null;
   return {
     picks,
     enemigos: leerPicksEnemigos(img, caras, { posiciones, extra }).map(plano),
-    aliados: leerAliados(img, caras).map(plano),
+    aliados: leerAliados(img, caras, { extra: aliadas }).map(plano),
     tuyoFila: filaPropia(img),
   };
 }

@@ -85,6 +85,11 @@ test('la corrección devuelve al lector los ids de sus capturas con lo que habí
   ok(/\/corregir$/.test(pedidas[0].url) && pedidas[0].opciones.method === 'POST', 'no es un POST a /corregir');
   const cuerpo = JSON.parse(pedidas[0].opciones.body);
   eq(`${cuerpo.ids.join()}|${cuerpo.enemigos.join()}|${cuerpo.baneos.join()}`, 'lectura-1,lectura-2|Clint,Khufra|Hirara', `el cuerpo no lleva ids, enemigos y baneos: ${pedidas[0].opciones.body}`);
+  // Y tu equipo y tu pick (3.58.0), para que aprenda las caras de tus compañeros.
+  await corregirLectura({ ids: ['lectura-1'], enemigos: ['Clint'], aliados: ['Saber', 'Hirara'], tuyo: 'Khufra', pedir });
+  const conEquipo = JSON.parse(pedidas[1].opciones.body);
+  eq(`${conEquipo.aliados.join()}|${conEquipo.tuyo}`, 'Saber,Hirara|Khufra', `la corrección no lleva tu equipo: ${pedidas[1].opciones.body}`);
+  pedidas.length = 1;
   // Sin ids (no se leyó nada) o sin enemigos no hay nada que cruzar: ni una petición.
   await corregirLectura({ ids: [], enemigos: ['Clint'], pedir });
   await corregirLectura({ ids: ['lectura-1'], enemigos: [], pedir });

@@ -219,7 +219,7 @@ test('una corrección de la app guarda la verdad junto a la captura, aprende de 
   const carpeta = mkdtempSync(join(tmpdir(), 'lector-aprende-'));
   const tandas = [], guardadas = [];
   // El aprendizaje de pega: devuelve unos huecos imposibles (fuera de la columna), para ver que la lectura siguiente los usa.
-  const aprender = async ({ pares, aprendido }) => { tandas.push({ pares, aprendido }); return { aprendido: { version: VERSION_APRENDIDO, picks: [[100, 100, 40], [100, 300, 40], [100, 500, 40], [100, 700, 40], [100, 900, 40]], caras: {}, capturas: (aprendido?.capturas ?? 0) + pares.length }, informe: [{ id: pares[0].id, aprendidos: [{ nombre: 'Clint', hueco: 0, parecido: 0.9, pos: [1, 2, 3] }], sinEncontrar: [], yaLeidos: [] }] }; };
+  const aprender = async ({ pares, aprendido }) => { tandas.push({ pares, aprendido }); return { aprendido: { version: VERSION_APRENDIDO, picks: [[100, 100, 40], [100, 300, 40], [100, 500, 40], [100, 700, 40], [100, 900, 40]], caras: {}, capturas: (aprendido?.capturas ?? 0) + pares.length }, informe: [{ id: pares[0].id, aprendidos: [{ nombre: 'Clint', hueco: 0, parecido: 0.9, pos: [1, 2, 3] }], sinEncontrar: [], yaLeidos: [], aliados: { aprendidos: ['Selena'], pendientes: [] } }] }; };
   await conServidor({ capturar: () => png, carpeta, aprender, guardar: (a) => guardadas.push(a) }, async (base) => {
     const cab = { Origin: 'https://srchipiron.github.io' };
     const ids = [];
@@ -229,12 +229,14 @@ test('una corrección de la app guarda la verdad junto a la captura, aprende de 
     // Sin origen (no es la app) no se escribe nada.
     const ajena = await fetch(`${base}/corregir`, { method: 'POST', body: JSON.stringify({ ids, enemigos: ['Clint'] }) });
     eq(ajena.status, 403, 'una corrección sin origen se acepta');
-    const r = await (await fetch(`${base}/corregir`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [...ids, 'lectura-que-no-existe', '../../etc'], enemigos: ['Clint', 'Khufra'], baneos: ['Hirara'] }) })).json();
-    ok(r.aprendido && r.aprendidos.join() === 'Clint', `la corrección no aprende: ${JSON.stringify(r)}`);
+    const r = await (await fetch(`${base}/corregir`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [...ids, 'lectura-que-no-existe', '../../etc'], enemigos: ['Clint', 'Khufra'], baneos: ['Hirara'], aliados: ['Saber', 'Layla', 7, 'X'.repeat(60)], tuyo: 'Estes' }) })).json();
+    ok(r.aprendido && r.aprendidos.join() === 'Clint,Selena', `la corrección no aprende (o no cuenta a tu equipo): ${JSON.stringify(r)}`);
     const ficheros = readdirSync(carpeta);
     eq(ficheros.filter((f) => f.endsWith('.verdad.json')).length, ids.length, `la verdad no se guarda junto a cada captura: ${ficheros}`);
     const verdad = JSON.parse(readFileSync(join(carpeta, `${ids[0]}.verdad.json`), 'utf8'));
     eq(verdad.enemigos.join(), 'Clint,Khufra', 'la verdad guardada no lleva los enemigos');
+    eq(`${verdad.aliados.join()}|${verdad.tuyo}`, `Saber,Layla,${'X'.repeat(40)}|Estes`, `la verdad guardada no lleva tu equipo (solo nombres, de 40 caracteres como mucho): ${JSON.stringify(verdad)}`);
+    ok(tandas[0].pares.every((p) => p.verdad.aliados?.length === 3 && p.verdad.tuyo === 'Estes'), 'tu equipo no llega al aprendizaje');
     eq(tandas.length, 1, 'no aprende una vez por corrección');
     eq(tandas[0].pares.length, CAPTURAS_A_MIRAR, `mira ${tandas[0].pares.length} capturas y no las ${CAPTURAS_A_MIRAR} últimas`);
     eq(tandas[0].pares.map((p) => p.id).join(), ids.slice(-CAPTURAS_A_MIRAR).join(), 'no mira las ÚLTIMAS capturas');

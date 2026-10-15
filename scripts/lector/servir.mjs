@@ -622,10 +622,11 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     req.on('error', () => resolver(null));
   });
   /** Guarda la verdad junto a cada captura nombrada y aprende de las últimas (una tanda a la vez). */
-  const corregir = async ({ ids, enemigos, baneos }) => {
+  const corregir = async ({ ids, enemigos, baneos, aliados, tuyo }) => {
     if (!carpeta) return { aprendido: false, motivo: 'sin carpeta de capturas' };
-    const nombres = (l) => (Array.isArray(l) ? l.filter((x) => typeof x === 'string').slice(0, 10) : []);
-    const verdad = { enemigos: nombres(enemigos).slice(0, 5), baneos: nombres(baneos), cuando: new Date().toISOString() };
+    const nombres = (l) => (Array.isArray(l) ? l.filter((x) => typeof x === 'string').slice(0, 10).map((x) => x.slice(0, 40)) : []);
+    // Tu equipo y tu pick (3.58.0): para aprender las caras de tus compañeros con sus skins.
+    const verdad = { enemigos: nombres(enemigos).slice(0, 5), baneos: nombres(baneos), aliados: nombres(aliados).slice(0, 4), tuyo: typeof tuyo === 'string' ? tuyo.slice(0, 40) : null, cuando: new Date().toISOString() };
     const validos = (Array.isArray(ids) ? ids : []).filter((id) => /^lectura-[\w-]+$/.test(id) && existsSync(join(carpeta, `${id}.png`)));
     for (const id of validos) writeFileSync(join(carpeta, `${id}.verdad.json`), JSON.stringify(verdad));
     const pares = validos.sort().slice(-CAPTURAS_A_MIRAR).map((id) => ({ id, png: join(carpeta, `${id}.png`), verdad }));
@@ -640,7 +641,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     }).finally(() => { aprendiendo = null; });
     const r = await aprendiendo;
     // Con los recortes de los picks (3.52.0): la app los sube a la incidencia de pantallas para medir.
-    return { aprendido: true, aprendidos: r.informe.flatMap((l) => l.aprendidos.map((a) => a.nombre)), sinEncontrar: r.informe.flatMap((l) => l.sinEncontrar.map((x) => x.nombre)), recortes: Array.isArray(r.recortes) ? r.recortes : [] };
+    return { aprendido: true, aprendidos: r.informe.flatMap((l) => [...l.aprendidos.map((a) => a.nombre), ...(l.aliados?.aprendidos ?? [])]), sinEncontrar: r.informe.flatMap((l) => l.sinEncontrar.map((x) => x.nombre)), recortes: Array.isArray(r.recortes) ? r.recortes : [] };
   };
   const servidor = createServer(async (req, res) => {
     const origen = req.headers.origin;
@@ -665,7 +666,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     }
     const ruta = new URL(req.url, 'http://127.0.0.1').pathname;
     if (req.method === 'GET' && ruta === '/estado') {
-      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, version: VERSION_PUENTE, aprendido: { capturas: aprendido?.capturas ?? 0, caras: Object.keys(aprendido?.caras ?? {}).length, picks: !!aprendido?.picks }, resultados: { gane: resultados.gane.length, perdi: resultados.perdi.length, tablas: resultados.tablas.length } }));
+      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, version: VERSION_PUENTE, aprendido: { capturas: aprendido?.capturas ?? 0, caras: Object.keys(aprendido?.caras ?? {}).length, aliados: Object.keys(aprendido?.aliados ?? {}).length, picks: !!aprendido?.picks }, resultados: { gane: resultados.gane.length, perdi: resultados.perdi.length, tablas: resultados.tablas.length } }));
       return;
     }
     if (req.method === 'POST' && ruta === '/vigilar') {

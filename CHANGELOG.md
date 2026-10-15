@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.58.0
+
+- El lector aprende las caras de tus compañeros. Cuando apuntas una
+  partida, aprende la cara de tu fila (tu héroe) y, si de tus cuatro
+  compañeros reconoce a tres, la del cuarto. Una cara se empieza a usar
+  cuando la ve igual en dos partidas distintas, así que los que juegan
+  contigo a menudo con la misma skin (Selena, Gord, Kadita…) se leen solos
+  a partir de la segunda partida. Medido con tus capturas del 10 al 14 de
+  octubre: 15 compañeros más leídos y ninguno equivocado.
+- El lector no aprende de tu equipo con una captura que no es de esa
+  partida (por ejemplo una de la partida anterior que seguía guardada).
+
 ## 3.57.7
 
 - Desaparece el aviso de «133 héroes rehechos» del diagnóstico. Era un

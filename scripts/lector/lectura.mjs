@@ -11,7 +11,7 @@
  */
 import { leerPng } from './png.mjs';
 import { leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, sinRepetidos } from './leer.mjs';
-import { carasAprendidas } from './aprender.mjs';
+import { carasAprendidas, aliadasAprendidas } from './aprender.mjs';
 
 /** Los tres trozos, en el orden en que se reparten entre los hilos. */
 export const PARTES = ['baneos', 'enemigos', 'aliados'];
@@ -20,7 +20,7 @@ export const PARTES = ['baneos', 'enemigos', 'aliados'];
 export function leerParte(img, parte, caras, aprendido = null) {
   if (parte === 'baneos') return leerBaneos(img, caras);
   if (parte === 'enemigos') return leerPicksEnemigos(img, caras, { posiciones: aprendido?.picks ?? undefined, extra: carasAprendidas(aprendido) });
-  if (parte === 'aliados') return { aliados: leerAliados(img, caras), tuyoFila: filaPropia(img) };
+  if (parte === 'aliados') return { aliados: leerAliados(img, caras, { extra: aliadasAprendidas(aprendido) }), tuyoFila: filaPropia(img) };
   throw new Error(`parte desconocida: ${parte}`);
 }
 

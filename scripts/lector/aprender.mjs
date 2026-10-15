@@ -28,11 +28,27 @@
  * (`PICKS_ENEMIGOS`): más lejos, el hueco al que se asigna es una
  * adivinanza, y lo aprendido no puede alejarse de la medida más que eso.
  *
+ * Y desde 3.58.0 las caras de TU EQUIPO (`aliados`), que la API no lee
+ * con las skins de cada uno (la mitad de los compañeros se quedaban en
+ * «?»; los que más, los que juegan contigo siempre con la misma skin:
+ * Selena, Gord, Kadita). Ahí no se busca por el panel: cada fila tiene su
+ * sitio, y lo que falta es saber QUIÉN es. Se sabe en dos casos: tu fila
+ * (la del nombre amarillo) es tu pick, y si de los cuatro compañeros se
+ * leen tres, el que queda es el cuarto. Solo con capturas que leen al
+ * menos `ENEMIGOS_PARA_ALIADOS` enemigos de la verdad y ninguno de fuera
+ * (el 13 de octubre de 2026 una corrección traía una captura de OTRA
+ * partida, #93), y una cara solo se usa cuando dos drafts distintos
+ * (`MINUTOS_ENTRE_DRAFTS`) la confirman a `ALIADO_MINIMO`: un compañero
+ * que cambia de héroe con otro o una verdad corregida tarde (#98/#99, el
+ * mismo draft con dos verdades) no se repiten igual en otra partida.
+ * Medido en los 30 drafts de recortes del 10 al 14 de octubre: 15 huecos
+ * más leídos y 0 falsos; sin confirmar, 43 y 1 falso.
+ *
  * Puro: recibe píxeles y verdades, devuelve lo aprendido. Sin adb, sin
  * programas, sin red.
  */
 import { LADO, muestra, normalizar, espejo, guardarCara, cargarCaras, reconocer, PARECIDO_MINIMO } from './caras.mjs';
-import { PICKS_ENEMIGOS, REFERENCIA, leerBaneos, leerPicksEnemigos } from './leer.mjs';
+import { PICKS_ENEMIGOS, REFERENCIA, ALIADOS, OPCIONES_ALIADOS, ALIADO_MINIMO, leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, escalar } from './leer.mjs';
 import { nombreClave } from '../../src/motor/nombres.js';
 
 /** Un hallazgo entra si se parece al menos esto (un acierto normal va de 0,75 a 0,99; el peor equivocado medido, 0,72). */
@@ -49,6 +65,12 @@ export const CAPTURAS_POR_CORRECCION = 3;
 export const BANEOS_PARA_APRENDER = 2;
 /** Versión de lo aprendido: la 1 (3.27.0–3.30.0) se aprendió sin estas guardas y se descarta. */
 export const VERSION_APRENDIDO = 2;
+/** Una captura enseña caras de tu equipo si lee al menos estos enemigos de la verdad, y ninguno que no esté. */
+export const ENEMIGOS_PARA_ALIADOS = 3;
+/** Dos capturas son de drafts distintos si las separa al menos esto (una partida dura más). */
+export const MINUTOS_ENTRE_DRAFTS = 10;
+/** Caras confirmadas por compañero (varias skins) y pendientes de confirmar en total. */
+export const RECORTES_POR_ALIADO = 4, PENDIENTES_MAXIMOS = 40;
 /** Ancho del hueco de un pick enemigo en la referencia (leer.mjs: x0 = 2020, ancho 380). */
 const ANCHO_HUECO = 380;
 const PASO_HUECO = PICKS_ENEMIGOS[1][1] - PICKS_ENEMIGOS[0][1];
@@ -101,6 +123,80 @@ export function carasAprendidas(aprendido) {
     for (const r of recortes) lista.push({ nombre, v: normalizar(Float32Array.from(Buffer.from(r.v, 'base64'))) });
   }
   return lista;
+}
+
+/** Las caras de tu equipo aprendidas y confirmadas, listas para `leerAliados` (3.58.0). */
+export function aliadasAprendidas(aprendido) {
+  const lista = [];
+  for (const [nombre, recortes] of Object.entries(aprendido?.aliados ?? {})) {
+    for (const r of recortes) lista.push({ nombre, v: normalizar(Float32Array.from(Buffer.from(r.v, 'base64'))) });
+  }
+  return lista;
+}
+
+/** El instante de una captura por su nombre (`lectura-2026-10-14T17-52-57-139Z-42`), o NaN. */
+export function momentoDe(id) {
+  const m = /^lectura-(\d{4}-\d\d-\d\d)T(\d\d)-(\d\d)-(\d\d)-(\d{3})Z/.exec(id ?? '');
+  return m ? Date.parse(`${m[1]}T${m[2]}:${m[3]}:${m[4]}.${m[5]}Z`) : NaN;
+}
+
+/**
+ * Quién es quién en tu equipo según la verdad: tu fila es tu pick (si la
+ * lectura no lo dice ya) y, si de los cuatro compañeros se leen tres, el
+ * hueco que queda es el que falta. Devuelve [{ i, nombre }].
+ */
+export function etiquetarAliados(leidos, fila, { aliados = [], tuyo = null } = {}) {
+  if (fila < 0) return [];
+  const clave = (l) => (l?.nombre ? nombreClave(l.nombre) : null);
+  const etiquetas = [];
+  if (tuyo && clave(leidos[fila]) !== nombreClave(tuyo)) etiquetas.push({ i: fila, nombre: tuyo });
+  if (aliados.length === 4) {
+    const resto = [0, 1, 2, 3, 4].filter((i) => i !== fila);
+    const verdad = new Set(aliados.map(nombreClave));
+    const sinLeer = resto.filter((i) => !verdad.has(clave(leidos[i])));
+    const faltan = aliados.filter((a) => !resto.some((i) => clave(leidos[i]) === nombreClave(a)));
+    if (sinLeer.length === 1 && faltan.length === 1) etiquetas.push({ i: sinLeer[0], nombre: faltan[0] });
+  }
+  return etiquetas;
+}
+
+/**
+ * Aprende las caras de tu equipo de una captura (muta `nuevo.aliados` y
+ * `nuevo.aliadosPendientes`). Cada recorte queda pendiente hasta que otro
+ * de un draft distinto se le parece a `ALIADO_MINIMO`; entonces los dos
+ * pasan a confirmados. Devuelve { aprendidos, pendientes } (nombres).
+ */
+function aprenderAliadosDe(img, id, verdad, nuevo, caras) {
+  const informe = { aprendidos: [], pendientes: [] };
+  const t = momentoDe(id);
+  if (!Number.isFinite(t)) return informe;
+  const fila = filaPropia(img);
+  const leidos = leerAliados(img, caras, { extra: aliadasAprendidas(nuevo) });
+  for (const { i, nombre } of etiquetarAliados(leidos, fila, verdad)) {
+    const pos = escalar(img, ALIADOS[i]);
+    const recorte = { v: guardarCara(muestra(img, ...pos)), de: id, t };
+    const pendientes = (nuevo.aliadosPendientes[nombre] ?? []).filter((p) => p.de !== id);
+    const deOtros = pendientes.filter((p) => Math.abs(p.t - t) >= MINUTOS_ENTRE_DRAFTS * 60000);
+    const refs = deOtros.map((p) => ({ nombre: p.de, v: normalizar(Float32Array.from(Buffer.from(p.v, 'base64'))) }));
+    const r = refs.length ? reconocer(img, pos, refs, OPCIONES_ALIADOS) : null;
+    if (r && r.parecido >= ALIADO_MINIMO) {
+      const otro = deOtros.find((p) => p.de === r.candidato);
+      nuevo.aliados[nombre] = [{ ...recorte, parecido: Math.round(r.parecido * 1000) / 1000 }, otro, ...(nuevo.aliados[nombre] ?? [])].slice(0, RECORTES_POR_ALIADO);
+      nuevo.aliadosPendientes[nombre] = pendientes.filter((p) => p !== otro);
+      informe.aprendidos.push(nombre);
+    } else {
+      nuevo.aliadosPendientes[nombre] = [recorte, ...pendientes];
+      informe.pendientes.push(nombre);
+    }
+    if (!nuevo.aliadosPendientes[nombre].length) delete nuevo.aliadosPendientes[nombre];
+  }
+  // Tope de lo pendiente: se van los más viejos.
+  const todos = Object.entries(nuevo.aliadosPendientes).flatMap(([n, l]) => l.map((p) => [n, p])).sort((a, b) => b[1].t - a[1].t);
+  for (const [n, p] of todos.slice(PENDIENTES_MAXIMOS)) {
+    nuevo.aliadosPendientes[n] = nuevo.aliadosPendientes[n].filter((x) => x !== p);
+    if (!nuevo.aliadosPendientes[n].length) delete nuevo.aliadosPendientes[n];
+  }
+  return informe;
 }
 
 const aReferencia = (img, cx, cy, r) => {
@@ -170,7 +266,7 @@ export function huecoDe(pos, base = PICKS_ENEMIGOS) {
  * (acumulado) y un informe por captura (las descartadas, con su motivo).
  */
 export function aprenderDe(pares, { caras, aprendido = null, posicionesBase = PICKS_ENEMIGOS, maximo = CAPTURAS_POR_CORRECCION } = {}) {
-  const nuevo = { version: VERSION_APRENDIDO, picks: aprendido?.picks ?? null, caras: { ...(aprendido?.caras ?? {}) }, capturas: aprendido?.capturas ?? 0 };
+  const nuevo = { version: VERSION_APRENDIDO, picks: aprendido?.picks ?? null, caras: { ...(aprendido?.caras ?? {}) }, aliados: { ...(aprendido?.aliados ?? {}) }, aliadosPendientes: { ...(aprendido?.aliadosPendientes ?? {}) }, capturas: aprendido?.capturas ?? 0 };
   const porClave = new Map(caras.map((c) => [nombreClave(c.nombre), c]));
   const extra = carasAprendidas(aprendido);
   const enEspejo = [...caras.map((c) => ({ ...c, v: espejo(c.v) })), ...extra];
@@ -193,10 +289,11 @@ export function aprenderDe(pares, { caras, aprendido = null, posicionesBase = PI
     const leidos = leerPicksEnemigos(img, caras, { posiciones: aprendido?.picks ?? null, extra });
     const claves = new Set(enemigos.map((h) => nombreClave(h.nombre)));
     const aciertos = leidos.filter((l) => l.nombre && claves.has(nombreClave(l.nombre))).length;
-    candidatas.push({ i, id, enemigos, leidos, aciertos, img: typeof pares[i].img === 'function' ? null : img });
+    const fuera = leidos.filter((l) => l.nombre && !claves.has(nombreClave(l.nombre))).length;
+    candidatas.push({ i, id, enemigos, leidos, aciertos, fuera, verdad, img: typeof pares[i].img === 'function' ? null : img });
   }
   const elegidas = [...candidatas].sort((a, b) => b.aciertos - a.aciertos || b.i - a.i).slice(0, maximo).sort((a, b) => a.i - b.i);
-  for (const { i, id, enemigos, leidos, aciertos, img: guardada } of elegidas) {
+  for (const { i, id, enemigos, leidos, aciertos, fuera, verdad, img: guardada } of elegidas) {
     const img = guardada ?? pares[i].img();
     const reconocidos = new Set(leidos.map((l) => l.nombre && nombreClave(l.nombre)).filter(Boolean));
     const linea = { id, aprendidos: [], sinEncontrar: [], yaLeidos: [...reconocidos], aciertos };
@@ -218,6 +315,10 @@ export function aprenderDe(pares, { caras, aprendido = null, posicionesBase = PI
       nuevo.caras[h.nombre] = [recorte, ...(nuevo.caras[h.nombre] ?? [])].slice(0, RECORTES_POR_HEROE);
       linea.aprendidos.push({ nombre: h.nombre, hueco, parecido: donde.parecido, pos: pos.map(Math.round) });
     }
+    // Tu equipo (3.58.0), solo de una captura que es de verdad ESTE draft.
+    const aliados = (Array.isArray(verdad?.aliados) ? verdad.aliados : []).map((n) => porClave.get(nombreClave(n))?.nombre).filter(Boolean);
+    const tuyo = porClave.get(nombreClave(verdad?.tuyo ?? ''))?.nombre ?? null;
+    if ((aliados.length || tuyo) && aciertos >= ENEMIGOS_PARA_ALIADOS && !fuera) linea.aliados = aprenderAliadosDe(img, id, { aliados, tuyo }, nuevo, caras);
     nuevo.capturas += 1;
     informe.push(linea);
   }
@@ -230,6 +331,8 @@ export function resumirAprendizaje({ aprendido, informe }) {
   const lineas = [];
   for (const l of informe) {
     if (l.descartada) { lineas.push(`${l.id} no es la pantalla del draft (no se lee su fila de baneos): no se aprende de ella.`); continue; }
+    for (const n of l.aliados?.aprendidos ?? []) lineas.push(`Aprendido en tu equipo: ${n} (confirmado en dos drafts) de ${l.id}.`);
+    for (const n of l.aliados?.pendientes ?? []) lineas.push(`Cara de ${n} en tu equipo de ${l.id}: pendiente de verla en otro draft.`);
     for (const a of l.aprendidos) lineas.push(`Aprendido: ${a.nombre} en el hueco ${a.hueco + 1} de ${l.id} (parecido ${a.parecido.toFixed(2)}).`);
     for (const s of l.sinEncontrar) lineas.push(s.fuera ? `${s.nombre} se parece (${s.parecido.toFixed(2)}) en (${s.fuera[0]}, ${s.fuera[1]}) de ${l.id}, fuera de los huecos de picks: no se aprende.` : `No encuentro a ${s.nombre} en ${l.id} (lo más parecido ${s.parecido.toFixed(2)}${s.confundible ? `, se confunde con ${s.confundible}` : ''}): manda esa captura.`);
   }
