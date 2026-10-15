@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.58.1
+
+- El lector ya no puede aprender como cara de un compañero el icono de
+  «eligiendo» (la mano blanca sobre azul) que sale en el hueco de quien
+  aún no ha elegido. Con 3.58.0, si un amigo elegía el último en dos
+  partidas, se podía quedar con ese icono como su cara y leerle en
+  cualquier hueco vacío. Lo que se hubiera aprendido así se descarta solo.
+- Tampoco aprende una cara que se parezca a la ya aprendida de otro héroe
+  (un cambio de héroe entre compañeros, o una corrección mal puesta).
+
 ## 3.58.0
 
 - El lector aprende las caras de tus compañeros. Cuando apuntas una

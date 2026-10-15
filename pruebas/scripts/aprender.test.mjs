@@ -11,7 +11,9 @@ import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
 import { leerPng } from '../../scripts/lector/png.mjs';
 import { leerPicksEnemigos, leerAliados, carasGuardadas, PICKS_ENEMIGOS, ALIADO_MINIMO } from '../../scripts/lector/leer.mjs';
 import { leerCaptura } from '../../scripts/lector/lectura.mjs';
-import { aprenderDe, ajustarPosiciones, carasAprendidas, aliadasAprendidas, etiquetarAliados, momentoDe, resumirAprendizaje, esPantallaDeDraft, huecoDe, APRENDER_MINIMO, VERSION_APRENDIDO, MINUTOS_ENTRE_DRAFTS } from '../../scripts/lector/aprender.mjs';
+import { muestra as muestraDe } from '../../scripts/lector/caras.mjs';
+import { ALIADOS as ALIADOS_REF } from '../../scripts/lector/leer.mjs';
+import { aprenderDe, ajustarPosiciones, carasAprendidas, aliadasAprendidas, etiquetarAliados, momentoDe, esHuecoVacio, VACIO_ALIADO, resumirAprendizaje, esPantallaDeDraft, huecoDe, APRENDER_MINIMO, VERSION_APRENDIDO, MINUTOS_ENTRE_DRAFTS } from '../../scripts/lector/aprender.mjs';
 import { capturaCompleta, capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
 import { aprenderEnHilo } from '../../scripts/lector/servir.mjs';
 import { mkdtempSync, writeFileSync } from 'node:fs';
@@ -153,6 +155,8 @@ test('aprende de las capturas que MÁS enemigos leen, no de las últimas (que su
 // imitar una skin que no se parece a la cara de la API, se le cambia a un
 // héroe su cara por la de otro (como en la prueba del rework).
 const sinCara = (...quienes) => caras.map((c) => (quienes.includes(c.nombre) ? { ...c, v: caras.find((x) => x.nombre === 'Layla').v } : c));
+/** El recorte (sin normalizar) del hueco `fila` de tu equipo, como lo guarda el aprendizaje. */
+const leerVacio = (img, fila = 1) => muestraDe(img, ...ALIADOS_REF[fila]);
 const VERDAD_EQUIPO = { enemigos: VERDAD.enemigos2, baneos: [...VERDAD.tuyos, ...VERDAD.suyos], aliados: VERDAD.aliados.filter((n) => n !== VERDAD.tuyo), tuyo: VERDAD.tuyo };
 const idA = (min) => `lectura-${new Date(Date.UTC(2026, 9, 14, 17, 0) + min * 60000).toISOString().replace(/[:.]/g, '-')}-1`;
 const filas = (l) => l.map((x) => x.nombre ?? '?').join(',');
@@ -232,6 +236,43 @@ test('tu equipo: no aprende de una captura de otra partida ni con pocos enemigos
   // Una captura sin instante en el nombre no se puede ordenar entre drafts: no aprende.
   const r3 = aprenderDe([{ id: 'lectura-sin-hora', img, verdad: VERDAD_EQUIPO }], { caras: sinGuinevere });
   eq(Object.keys(r3.aprendido.aliadosPendientes).length, 0, 'aprende de una captura sin instante');
+});
+
+/** La captura con el hueco `fila` de tu equipo como cuando ese jugador aún no ha elegido (el icono de la mano, incidencia #60). */
+function conHuecoVacio(fila) {
+  const g = capturaCompleta({ columna: 2 });
+  const v = leerPng(readFileSync(join(RAIZ, 'pruebas/fixtures/juego/aliado-vacio.png')));
+  for (let y = 0; y < v.alto; y++) g.rgba.set(v.rgba.subarray(y * v.ancho * 4, (y + 1) * v.ancho * 4), ((228 + 216 * fila + y) * g.ancho + 60) * 4);
+  return g;
+}
+
+test('tu equipo: el hueco de quien aún no ha elegido no se aprende como el que falta, ni lo ya aprendido así se usa (3.58.1)', () => {
+  const img = conHuecoVacio(1);
+  eq(filas(leerAliados(img, caras)), 'Clint,?,Novaria,Leomord,Estes', 'con el hueco vacío la API lee a alguien: la prueba no mide nada');
+  // Dos drafts en los que Guinevere elige la última: el que falta por eliminación es su hueco vacío.
+  let a = null, r;
+  for (const min of [0, 30]) { r = aprenderDe([{ id: idA(min), img, verdad: VERDAD_EQUIPO }], { caras, aprendido: a }); a = r.aprendido; }
+  eq(Object.keys(a.aliados).length + Object.keys(a.aliadosPendientes).length, 0, `aprende el icono del hueco vacío como Guinevere: ${JSON.stringify(Object.keys(a.aliados))}`);
+  eq(r.informe[0].aliados.vacios.join(), 'Guinevere', 'el informe no dice que el hueco estaba vacío');
+  ok(resumirAprendizaje(r).some((l) => /aún no había elegido/.test(l)), 'el resumen no lo dice');
+  // Lo que 3.58.0 ya hubiera aprendido así no se usa al leer.
+  const viejo = { aliados: { Guinevere: [{ v: Buffer.from(Uint8Array.from(leerVacio(img), (x) => Math.round(x))).toString('base64') }] } };
+  eq(aliadasAprendidas(viejo).length, 0, 'una cara aprendida que es el hueco vacío se usa al leer');
+  ok(esHuecoVacio(VACIO_ALIADO), 'el icono no se reconoce a sí mismo');
+  eq(aliadasAprendidas({ aliados: { Clint: [{ v: Buffer.from(Uint8Array.from(leerVacio(capturaCompleta({ columna: 2 }), 0), (x) => Math.round(x))).toString('base64') }] } }).length, 1, 'una cara de verdad se toma por el hueco vacío');
+});
+
+test('tu equipo: una cara que se parece a la aprendida de OTRO héroe no se aprende (3.58.1)', () => {
+  const img = capturaCompleta({ columna: 2 });
+  const sinGuinevere = sinCara('Guinevere');
+  let g = null;
+  for (const min of [0, 30]) g = aprenderDe([{ id: idA(min), img, verdad: VERDAD_EQUIPO }], { caras: sinGuinevere, aprendido: g }).aprendido;
+  ok(g.aliados.Guinevere, 'no aprende a Guinevere: la prueba no mide nada');
+  // Ahora la verdad dice que en ese hueco había otro (Layla): un cambio de héroe entre compañeros o una verdad mal puesta.
+  const otra = { ...VERDAD_EQUIPO, aliados: VERDAD_EQUIPO.aliados.map((n) => (n === 'Guinevere' ? 'Layla' : n)) };
+  const r = aprenderDe([{ id: idA(60), img, verdad: otra }], { caras: sinGuinevere, aprendido: g });
+  eq(JSON.stringify(r.informe[0].aliados.confundibles), JSON.stringify([{ nombre: 'Layla', con: 'Guinevere' }]), `no avisa de la confusión: ${JSON.stringify(r.informe[0].aliados)}`);
+  ok(!r.aprendido.aliadosPendientes.Layla && !r.aprendido.aliados.Layla, 'aprende la cara de Guinevere como Layla');
 });
 
 await terminar('scripts/aprender');

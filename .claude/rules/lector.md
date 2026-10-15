@@ -642,6 +642,18 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   Tope de `PENDIENTES_MAXIMOS` (40) recortes pendientes; con los 30 drafts,
   aprendido.json pesa ~100 KB. Pruebas en `aprender.test`, `puente-lector`
   y `app/lector`; dieciocho mutaciones (la de «manda la API» sobrevivía hasta probar con la cara aprendida apuntada como otro héroe).
+  **El hueco de quien aún no ha elegido (3.58.1)**: el juego pinta en él
+  siempre el mismo icono (mano blanca sobre azul) y, por eliminación, se
+  etiquetaba como «el que falta»: un amigo que elige último dos veces lo
+  habría confirmado como su cara. Medido: el icono contra sí mismo
+  0,96–1,00 (seis huecos), cualquier cara 0,75 como mucho:
+  `VACIO_ALIADO` (`vacio-aliado.json`, de #60) y `MINIMO_VACIO` 0,85; ni se
+  aprende ni se usa lo ya aprendido así (`aliadasAprendidas`). Y un
+  recorte que se parece a la cara aprendida o pendiente de OTRO héroe no
+  se aprende (`confundibles`). Lo mismo descarta la eliminación para los
+  ENEMIGOS: el hueco enemigo vacío (rojo) salía etiquetado Joy en un draft
+  y Esmeralda en otro a 0,985, Martis y Natan a 0,98; y las skins de los
+  rivales cambian en cada partida, así que no hay nada que confirmar.
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

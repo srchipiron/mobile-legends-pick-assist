@@ -48,7 +48,7 @@
  * programas, sin red.
  */
 import { LADO, muestra, normalizar, espejo, guardarCara, cargarCaras, reconocer, PARECIDO_MINIMO } from './caras.mjs';
-import { PICKS_ENEMIGOS, REFERENCIA, ALIADOS, OPCIONES_ALIADOS, ALIADO_MINIMO, leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, escalar } from './leer.mjs';
+import { PICKS_ENEMIGOS, REFERENCIA, ALIADOS, OPCIONES_ALIADOS, ALIADO_MINIMO, leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, escalar, vacioAliadoGuardado } from './leer.mjs';
 import { nombreClave } from '../../src/motor/nombres.js';
 
 /** Un hallazgo entra si se parece al menos esto (un acierto normal va de 0,75 a 0,99; el peor equivocado medido, 0,72). */
@@ -125,11 +125,34 @@ export function carasAprendidas(aprendido) {
   return lista;
 }
 
-/** Las caras de tu equipo aprendidas y confirmadas, listas para `leerAliados` (3.58.0). */
+const deBase64 = (v) => normalizar(Float32Array.from(Buffer.from(v, 'base64')));
+
+/**
+ * El hueco de un compañero que AÚN NO HA ELEGIDO (3.58.1): el juego pinta
+ * siempre el mismo icono (una mano blanca sobre azul), en cualquier
+ * partida. Con 3.58.0, si un amigo elegía último en dos partidas, ese
+ * icono se habría aprendido como su cara (el «que falta» por eliminación)
+ * y desde entonces cualquier hueco vacío se leería como él. Medido en los
+ * 30 drafts de recortes: el icono contra sí mismo 0,96–1,00 en seis
+ * huecos, cualquier cara real 0,75 como mucho. Recorte de la incidencia
+ * #60 (`vacio-aliado.json`).
+ */
+export const VACIO_ALIADO = deBase64(vacioAliadoGuardado());
+/** Un recorte es ese icono si se le parece al menos esto (entre 0,75 y 0,96). */
+export const MINIMO_VACIO = 0.85;
+const producto24 = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
+/** ¿Es este recorte (ya normalizado, tomado en el centro del hueco) el icono del hueco vacío? */
+export const esHuecoVacio = (v) => producto24(v, VACIO_ALIADO) >= MINIMO_VACIO;
+
+/**
+ * Las caras de tu equipo aprendidas y confirmadas, listas para `leerAliados`
+ * (3.58.0). Sin las que son el icono del hueco vacío (3.58.1): lo que
+ * aprendió 3.58.0 sin esa guarda no se usa.
+ */
 export function aliadasAprendidas(aprendido) {
   const lista = [];
   for (const [nombre, recortes] of Object.entries(aprendido?.aliados ?? {})) {
-    for (const r of recortes) lista.push({ nombre, v: normalizar(Float32Array.from(Buffer.from(r.v, 'base64'))) });
+    for (const r of recortes) { const v = deBase64(r.v); if (!esHuecoVacio(v)) lista.push({ nombre, v }); }
   }
   return lista;
 }
@@ -167,17 +190,23 @@ export function etiquetarAliados(leidos, fila, { aliados = [], tuyo = null } = {
  * pasan a confirmados. Devuelve { aprendidos, pendientes } (nombres).
  */
 function aprenderAliadosDe(img, id, verdad, nuevo, caras) {
-  const informe = { aprendidos: [], pendientes: [] };
+  const informe = { aprendidos: [], pendientes: [], vacios: [], confundibles: [] };
   const t = momentoDe(id);
   if (!Number.isFinite(t)) return informe;
   const fila = filaPropia(img);
   const leidos = leerAliados(img, caras, { extra: aliadasAprendidas(nuevo) });
   for (const { i, nombre } of etiquetarAliados(leidos, fila, verdad)) {
     const pos = escalar(img, ALIADOS[i]);
+    // El hueco aún vacío no es nadie (3.58.1).
+    if (reconocer(img, pos, [{ nombre: 'vacio', v: VACIO_ALIADO }], OPCIONES_ALIADOS).parecido >= MINIMO_VACIO) { informe.vacios.push(nombre); continue; }
+    // Y si se parece a la cara aprendida de OTRO héroe, uno de los dos está mal apuntado: no se aprende.
+    const deOtroHeroe = [...Object.entries(nuevo.aliados), ...Object.entries(nuevo.aliadosPendientes)].filter(([n]) => nombreClave(n) !== nombreClave(nombre)).flatMap(([n, l]) => l.map((p) => ({ nombre: n, v: deBase64(p.v) })));
+    const choca = deOtroHeroe.length ? reconocer(img, pos, deOtroHeroe, OPCIONES_ALIADOS) : null;
+    if (choca && choca.parecido >= ALIADO_MINIMO) { informe.confundibles.push({ nombre, con: choca.candidato }); continue; }
     const recorte = { v: guardarCara(muestra(img, ...pos)), de: id, t };
     const pendientes = (nuevo.aliadosPendientes[nombre] ?? []).filter((p) => p.de !== id);
     const deOtros = pendientes.filter((p) => Math.abs(p.t - t) >= MINUTOS_ENTRE_DRAFTS * 60000);
-    const refs = deOtros.map((p) => ({ nombre: p.de, v: normalizar(Float32Array.from(Buffer.from(p.v, 'base64'))) }));
+    const refs = deOtros.map((p) => ({ nombre: p.de, v: deBase64(p.v) }));
     const r = refs.length ? reconocer(img, pos, refs, OPCIONES_ALIADOS) : null;
     if (r && r.parecido >= ALIADO_MINIMO) {
       const otro = deOtros.find((p) => p.de === r.candidato);
@@ -333,6 +362,8 @@ export function resumirAprendizaje({ aprendido, informe }) {
     if (l.descartada) { lineas.push(`${l.id} no es la pantalla del draft (no se lee su fila de baneos): no se aprende de ella.`); continue; }
     for (const n of l.aliados?.aprendidos ?? []) lineas.push(`Aprendido en tu equipo: ${n} (confirmado en dos drafts) de ${l.id}.`);
     for (const n of l.aliados?.pendientes ?? []) lineas.push(`Cara de ${n} en tu equipo de ${l.id}: pendiente de verla en otro draft.`);
+    for (const n of l.aliados?.vacios ?? []) lineas.push(`El hueco de ${n} en ${l.id} aún no había elegido: no se aprende.`);
+    for (const c of l.aliados?.confundibles ?? []) lineas.push(`La cara de ${c.nombre} en ${l.id} se parece a la aprendida de ${c.con}: no se aprende.`);
     for (const a of l.aprendidos) lineas.push(`Aprendido: ${a.nombre} en el hueco ${a.hueco + 1} de ${l.id} (parecido ${a.parecido.toFixed(2)}).`);
     for (const s of l.sinEncontrar) lineas.push(s.fuera ? `${s.nombre} se parece (${s.parecido.toFixed(2)}) en (${s.fuera[0]}, ${s.fuera[1]}) de ${l.id}, fuera de los huecos de picks: no se aprende.` : `No encuentro a ${s.nombre} en ${l.id} (lo más parecido ${s.parecido.toFixed(2)}${s.confundible ? `, se confunde con ${s.confundible}` : ''}): manda esa captura.`);
   }

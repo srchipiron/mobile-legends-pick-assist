@@ -195,6 +195,8 @@ export function sinRepetidos(lecturas) {
   return lecturas.map((l) => (l.nombre && mejor.get(l.nombre) !== l ? { ...l, nombre: null, repetido: true } : l));
 }
 
+/** El icono del hueco de un compañero que aún no ha elegido (aprender.mjs, 3.58.1), en base64. */
+export const vacioAliadoGuardado = () => JSON.parse(readFileSync(new URL('vacio-aliado.json', import.meta.url))).v;
 export const carasGuardadas = () => cargarCaras(JSON.parse(readFileSync(new URL('caras.json', import.meta.url))).caras);
 
 /**

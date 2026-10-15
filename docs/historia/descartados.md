@@ -514,3 +514,10 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   la ingesta con la API lenta (hasta 66 héroes × 2 × 2 rangos a 15 s):
   en el despliegue, un tope de 20 min que cae a los datos publicados; en
   el bot, 40 min de job. Se mira si algún día una corrida se acerca.
+- **Aprender enemigos por eliminación (como tu equipo en 3.58.0)**, medido
+  el 15 de octubre de 2026 en los 30 drafts de recortes: de 15 huecos
+  etiquetados por descarte, cuatro eran el hueco vacío (rojo) con nombres
+  distintos (Joy/Esmeralda 0,985, Martis/Natan 0,98) y solo uno (Floryn)
+  tenía otro recorte del mismo héroe con el que confirmarse: las skins de
+  los rivales cambian en cada partida. No entra; sigue `buscarCara` con la
+  cara de la API.

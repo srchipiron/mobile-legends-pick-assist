@@ -1021,3 +1021,11 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   idéntico con la API). Lo cazó `silent-failure-hunter`. Cuando cambia la
   forma de calcular un valor que se CONSERVA entre corridas, hay que
   migrar lo guardado en el mismo cambio.
+- **El hueco vacío como cara de un compañero (3.58.0 → 3.58.1)** — el
+  aprendizaje de tu equipo etiqueta por eliminación «el que falta», y el
+  hueco de quien aún no ha elegido pinta siempre el mismo icono: un amigo
+  que eligiera último dos veces lo habría confirmado como su cara. No llegó
+  a pasar (se vio una hora después, midiendo lo mismo para los enemigos,
+  donde salía Joy y Esmeralda a 0,985 en el mismo hueco rojo). Lección:
+  lo que se etiqueta por descarte hay que compararlo antes con «el sitio
+  vacío», que es lo que más se repite entre partidas.
