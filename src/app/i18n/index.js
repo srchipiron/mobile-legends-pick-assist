@@ -33,6 +33,12 @@ export function idiomaPorDefecto() {
 export function crearT(idioma) {
   const dic = TEXTOS[idioma] ?? EN;
   const y = idioma === 'es' ? ' y ' : ' and ';
+  // En español la coma decimal (3.59.1): «57,1%», no «57.1%». Solo un número
+  // con UN punto y nada más («−4.5», «0.242»): una versión «3.58.1», una hora
+  // o un nombre no se tocan.
+  const decimal = idioma === 'es'
+    ? (v) => (typeof v === 'number' && !Number.isInteger(v) ? String(v).replace('.', ',') : typeof v === 'string' && /^[+\-−]?\d+\.\d+$/.test(v) ? v.replace('.', ',') : v)
+    : (v) => v;
   const t = (clave, params) => {
     const plantilla = dic[clave] ?? TEXTOS.es[clave] ?? clave;
     if (!params) return plantilla;
@@ -47,7 +53,7 @@ export function crearT(idioma) {
           const partes = v.map((x) => (typeof x === 'string' && (dic[x] ?? TEXTOS.es[x]) ? t(x) : x));
           return partes.length > 1 ? `${partes.slice(0, -1).join(', ')}${y}${partes.at(-1)}` : (partes[0] ?? '');
         }
-        return v ?? `{${k}}`;
+        return decimal(v ?? `{${k}}`);
       });
   };
   return t;

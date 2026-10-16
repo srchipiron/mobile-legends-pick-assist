@@ -23,7 +23,14 @@ for (const ancho of [390, 320]) {
     eq(await pagina.locator('.sheet .plan-partida').count(), 1, 'la hoja no trae el plan');
     // El plan va ARRIBA de la build.
     const orden = await pagina.locator('.build-cuerpo').evaluate((c) => [...c.children].map((e) => e.className));
-    ok(/plan-partida/.test(orden[0] ?? ''), `el plan no va el primero: ${orden.join(' | ')}`);
+    ok(/build-saltos/.test(orden[0] ?? '') && /plan-partida/.test(orden[1] ?? ''), `el plan no va el primero (tras los saltos): ${orden.join(' | ')}`);
+    // Los saltos (3.59.1): «Objetos» lleva al núcleo de la build, a la vista y sin quedar bajo la barra; «Plan», arriba otra vez.
+    const cuerpo = pagina.locator('.build-cuerpo');
+    await pagina.locator('.build-saltos button').nth(1).click(); await pagina.waitForTimeout(900);
+    const pos = await cuerpo.evaluate((c) => { const b = c.querySelector('.build').getBoundingClientRect(), n = c.querySelector('.build-saltos').getBoundingClientRect(); return { build: b.top, barra: n.bottom, alto: c.getBoundingClientRect().bottom, desplazado: c.scrollTop }; });
+    ok(pos.desplazado > 0 && pos.build >= pos.barra - 1 && pos.build < pos.barra + 40 && pos.build < pos.alto, `«Objetos» no deja la build justo bajo la barra: ${JSON.stringify(pos)}`);
+    await pagina.locator('.build-saltos button').nth(0).click(); await pagina.waitForTimeout(900);
+    eq(await cuerpo.evaluate((c) => c.scrollTop), 0, '«Plan» no vuelve arriba');
     const focus = pagina.locator('.plan-lista li[data-clave="partida.focus"]');
     eq(await focus.count(), 1, 'con tres enemigos no dice a quién hacer focus');
     const texto = await focus.textContent();

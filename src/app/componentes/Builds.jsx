@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
+import { tic } from '../tacto.js';
 import { buildsDe, objetosDe, ajustesDeBuild, buildParaElDraft } from '../../motor/builds.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Icono } from './Imagen.jsx';
@@ -21,6 +22,18 @@ export function Builds({ heroe, linea, builds, equipment, talentos = null, enemi
   const ajustes = useMemo(() => (principal ? ajustesDeBuild(principal, equipment, enemigos, linea, { builds }) : []), [principal, equipment, enemigos, linea, builds]);
   const nombresDeTalentos = (b) => (b.talentos ?? []).map((id) => talentos?.[id]?.nombre).filter(Boolean);
   const pct = (n) => (n * 100).toFixed(1);
+  // Saltos (3.59.1): con el plan arriba, los objetos empezaban a 1.118 px en
+  // una pantalla de 844 (draft completo a 390): pantalla y media de bajar
+  // con prisa. Dos botones fijos arriba llevan a cada parte.
+  const cuerpo = useRef(null), objetos = useRef(null), saltos = useRef(null);
+  const ir = (destino) => {
+    tic();
+    const caja = cuerpo.current;
+    if (!caja) return;
+    const arriba = destino ? destino.getBoundingClientRect().top - caja.getBoundingClientRect().top + caja.scrollTop - (saltos.current?.offsetHeight ?? 0) - 8 : 0;
+    const quieto = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    caja.scrollTo({ top: Math.max(0, arriba), behavior: quieto ? 'auto' : 'smooth' });
+  };
   const cifras = (b) => (
     <span className="build-cifras">
       {b.pickRate != null && <span>{t('build.uso', { pct: pct(b.pickRate) })}</span>}
@@ -40,12 +53,18 @@ export function Builds({ heroe, linea, builds, equipment, talentos = null, enemi
       <CabeceraDeHoja titulo={`${heroe?.name} · ${t('build.deLinea', { linea: t(`linea.${linea}`) })}`}>
         <button className="close" onClick={onCerrar}>{t('app.cerrar')}</button>
       </CabeceraDeHoja>
-      <div className="build-cuerpo">
+      <div className="build-cuerpo" ref={cuerpo}>
+        {plan && principal && (
+          <nav className="build-saltos" ref={saltos} aria-label={t('build.saltos')}>
+            <button onClick={() => ir(null)}>{t('build.irPlan')}</button>
+            <button onClick={() => ir(objetos.current)}>{t('build.irObjetos')}</button>
+          </nav>
+        )}
         {plan && <PlanDePartida plan={plan} yo={heroe} t={t} />}
         {!principal && <p className="build-vacio">{t('build.sinBuild')}</p>}
         {principal && (
           <>
-            <section className="build">
+            <section className="build" ref={objetos}>
               {eleccion.indice > 0 && (
                 <p className="frase bien build-para-draft">{t('build.paraEsteDraft', { pos: eleccion.indice + 1, cubre: eleccion.cubre.map((c) => t(`build.cubre.${c.replace('build.', '')}`)).join(', ') })}</p>
               )}

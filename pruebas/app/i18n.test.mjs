@@ -96,4 +96,15 @@ test('una clave que no existe se devuelve tal cual, y el idioma por defecto es u
   ok(IDIOMAS.includes(idiomaPorDefecto()), 'el idioma por defecto no es uno de los soportados');
 });
 
+test('en español los decimales llevan coma, y lo que no es un decimal no se toca (3.59.1)', () => {
+  const es = crearT('es'), en = crearT('en');
+  eq(es('pick.wr', { pct: '57.1' }), '57,1% WR', 'un decimal en texto sale con punto');
+  eq(es('pick.wr', { pct: 0.5 }), '0,5% WR', 'un decimal numérico sale con punto');
+  eq(es('pick.wr', { pct: '−4.5' }), '−4,5% WR', 'un decimal con signo sale con punto');
+  eq(es('pick.wr', { pct: 57 }), '57% WR', 'un entero cambia');
+  eq(es('pick.wr', { pct: '3.58.1' }), '3.58.1% WR', 'una versión se toca');
+  eq(es('pick.wr', { pct: '2.268 partidas' }), '2.268 partidas% WR', 'un texto con un número dentro se toca');
+  eq(en('pick.wr', { pct: '57.1' }), '57.1% WR', 'en inglés la coma también');
+});
+
 await terminar('app/i18n');

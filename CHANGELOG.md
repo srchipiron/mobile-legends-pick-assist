@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.59.1
+
+- En la hoja «Plan y objetos» hay dos botones fijos arriba, «Plan» y
+  «Objetos», que te llevan a cada parte: con el draft completo los objetos
+  empezaban pantalla y media más abajo.
+- Las tarjetas son más cortas: los motivos van debajo, a todo lo ancho, y
+  ya no se parten en dos líneas cada uno. «Plan y objetos» pasa al pie de
+  la tarjeta, a la derecha.
+- En español los decimales llevan coma: «57,1%», «−4,5 puntos».
+
 ## 3.59.0
 
 - Las caras del draft se ven más grandes (30 px en vez de 22), también en

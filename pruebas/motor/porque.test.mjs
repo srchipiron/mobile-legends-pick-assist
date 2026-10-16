@@ -56,9 +56,9 @@ test('la frase: empate, en qué pierde y en qué gana, en los dos idiomas', () =
   const es = crearT('es'); const en = crearT('en');
   eq(fraseDetras({ empate: true }, 'Rafaela', es), 'Empatado con Rafaela: la diferencia cabe en el ruido del modelo.');
   const d = { empate: false, dif: 1.24, principal: { termino: 'heroes', puntos: 1.5 }, aFavor: { termino: 'cruces', puntos: 0.6 } };
-  eq(fraseDetras(d, 'Rafaela', es), '1.2 puntos por detrás de Rafaela: más flojo en general (−1.5), aunque mejores cruces (+0.6).');
+  eq(fraseDetras(d, 'Rafaela', es), '1,2 puntos por detrás de Rafaela: más flojo en general (−1,5), aunque mejores cruces (+0,6).');
   eq(fraseDetras({ ...d, aFavor: null }, 'Rafaela', en), '1.2 points behind Rafaela: weaker overall (−1.5).');
-  eq(fraseDetras({ empate: false, dif: 1, principal: null }, 'X', es), '1.0 puntos por detrás de X.');
+  eq(fraseDetras({ empate: false, dif: 1, principal: null }, 'X', es), '1,0 puntos por detrás de X.');
   for (const k of ['heroes', 'cruces', 'parejas', 'equilibrio', 'tu', 'porVer']) {
     const f = fraseDetras({ ...d, principal: { termino: k, puntos: 1 }, aFavor: { termino: k, puntos: 1 } }, 'X', es);
     ok(!/porque\.|\{/.test(f), `clave cruda con ${k}: ${f}`);

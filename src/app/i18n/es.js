@@ -425,6 +425,9 @@ export default {
   // El winrate de una build no es causal (quien se sale de la build por defecto
   // suele ser quien mas domina el heroe), asi que se ordena por uso y el aviso
   // va SIEMPRE con el dato, no escondido en un tooltip.
+  'build.saltos': 'Ir a una parte',
+  'build.irPlan': 'Plan',
+  'build.irObjetos': 'Objetos',
   'build.titulo': 'Objetos',
   'build.deLinea': 'Build de {linea}',
   'build.uso': '{pct}% la usa',

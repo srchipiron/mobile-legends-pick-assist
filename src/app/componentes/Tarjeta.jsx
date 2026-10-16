@@ -43,22 +43,6 @@ export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLi
           ) : nombre}
         </h3>
         <Desglose puntos={candidato.puntos} t={t} />
-        {/* Por qué no es el nº1 (3.51.0): solo de la nº2 para abajo, así que
-            la nº1 no gana ni un píxel (primera-pantalla.e2e). */}
-        {detras && primero && <p className="pick-detras">{fraseDetras(detras, primero, t)}</p>}
-        <ul className="reasons">
-          {candidato.motivos.length ? candidato.motivos.map((m) => (
-            <li
-              key={idMotivo(m)}
-              /* Un motivo de EQUIPO («no hay primera línea») le vale igual a
-                 media lista: se apaga para que no compita con los que sí
-                 hablan de ESTE héroe contra ESTE draft. */
-              className={`${m.bueno ? '' : 'bad'} ${m.clave.startsWith('necesidad.') ? 'de-equipo' : ''}`.trim()}
-            >
-              {t(m.clave, m.params)}
-            </li>
-          )) : <li>{t('app.pickSolido')}</li>}
-        </ul>
       </div>
       <div>
         <div className="pick-score" title={t('pick.probTitulo')} aria-label={t('pick.probTitulo')}>{pct}%</div>
@@ -81,7 +65,29 @@ export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLi
               : t('pro.lineaSinPct', { picks: pro.picks, bans: pro.bans })}
           </span>
         )}
-        {/* Los objetos son lo siguiente que necesitas DESPUÉS de elegir: detrás de un toque. */}
+      </div>
+      {/* Debajo y a todo lo ancho (3.59.1): en la columna del nombre, de unos
+          170 px a 390, cada motivo ocupaba dos líneas y la tarjeta crecía. */}
+      <div className="pick-abajo">
+        {/* Por qué no es el nº1 (3.51.0): solo de la nº2 para abajo, así que
+            la nº1 no gana ni un píxel (primera-pantalla.e2e). */}
+        {detras && primero && <p className="pick-detras">{fraseDetras(detras, primero, t)}</p>}
+        <ul className="reasons">
+          {candidato.motivos.length ? candidato.motivos.map((m) => (
+            <li
+              key={idMotivo(m)}
+              /* Un motivo de EQUIPO («no hay primera línea») le vale igual a
+                 media lista: se apaga para que no compita con los que sí
+                 hablan de ESTE héroe contra ESTE draft. */
+              className={`${m.bueno ? '' : 'bad'} ${m.clave.startsWith('necesidad.') ? 'de-equipo' : ''}`.trim()}
+            >
+              {t(m.clave, m.params)}
+            </li>
+          )) : <li>{t('app.pickSolido')}</li>}
+        </ul>
+        {/* Los objetos son lo siguiente que necesitas DESPUÉS de elegir: detrás
+            de un toque. Al pie, a la derecha (3.59.1): en la columna de cifras
+            dejaba un hueco vacío bajo el nombre. */}
         {onBuild && <button className="pick-build" onClick={() => onBuild(heroe)}>{t('partida.boton')}</button>}
       </div>
     </article>

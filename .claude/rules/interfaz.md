@@ -201,6 +201,20 @@ plegables (`.more`, `.equipo`) llevan una flecha que gira. Prueba en
 `pick.e2e` (punto, tamaño, marcar/desmarcar, la × no marca), tres
 mutaciones.
 
+**La segunda pasada (3.59.1)**: los motivos y la frase de «detrás» van en
+una segunda fila de la tarjeta que ocupa las dos columnas (`.pick-abajo`,
+`grid-column: 2 / -1`), con «Plan y objetos» al pie a la derecha: a 390 px
+las ocho tarjetas pasan de 2.978 a 2.840 px. Se probó `display: contents`
+en la lista para que botón y motivos compartieran fila y salió peor (2.948).
+La hoja de Plan y objetos lleva `.build-saltos` (fijo arriba, con
+desenfoque porque flota sobre texto que se mueve): los objetos empezaban a
+1.118 px en una pantalla de 844. Y la coma decimal en español va en el
+TRADUCTOR (`decimal` en `crearT`): un parámetro que es solo un número con
+un punto («57.1», «−4.5», 0,5) sale con coma; una versión «3.58.1» o
+«2.268 partidas» no se tocan. Pruebas en `pick.e2e`, `plan.e2e` e
+`i18n.test`, cuatro mutaciones (la del ancho sobrevivía con un umbral de
+180 px; medido: 278 a lo ancho, 183 en la columna).
+
 ## Los idiomas
 
 Español e inglés, en `src/app/i18n/` (`es.js`, `en.js` y el traductor). Lo importante: **los motivos que salen en

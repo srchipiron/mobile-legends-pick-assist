@@ -237,7 +237,7 @@ await prueba('la hoja Meta enseña la tier list por línea, con la tuya primero,
   const { motor, datos } = await datosServidos();
   const esperado = motor.winrateEnLinea(datos, datos.porNombre.get(primero) ?? { name: primero }, 'roam');
   const enFila = await pagina.locator('[role=dialog] .meta-fila.top .meta-wrlinea').first().innerText().catch(() => '');
-  if (esperado != null) ok(enFila.includes(`${(esperado * 100).toFixed(1)}%`) && /roam/i.test(enFila), `la fila de ${primero} no enseña su winrate en roam (${(esperado * 100).toFixed(1)}%): «${enFila}»`);
+  if (esperado != null) ok(enFila.includes(`${(esperado * 100).toFixed(1).replace(".", ",")}%`) && /roam/i.test(enFila), `la fila de ${primero} no enseña su winrate en roam (${(esperado * 100).toFixed(1)}%): «${enFila}»`);
   else eq(enFila, '', `enseña un winrate en roam que el motor no tiene: «${enFila}»`);
   // Quién sube y quién baja (3.50.0): las fichas de tu línea son las que da
   // el motor con los datos servidos, en su orden, y sin claves crudas.
@@ -267,7 +267,7 @@ await prueba('la hoja Meta enseña la tier list por línea, con la tuya primero,
       if (v == null) { eq(txt, '', `${nombre} en ${l}: enseña «${txt}» sin dato`); continue; }
       comprobadas += 1;
       if (LINEAS.filter((x) => motor.winrateEnLinea(datos, heroe, x) != null).length > 1) multi += 1;
-      ok(txt.includes(`${(v * 100).toFixed(1)}%`), `${nombre} en ${l}: esperaba ${(v * 100).toFixed(1)}%, sale «${txt}»`);
+      ok(txt.includes(`${(v * 100).toFixed(1).replace(".", ",")}%`), `${nombre} en ${l}: esperaba ${(v * 100).toFixed(1)}%, sale «${txt}»`);
     }
   }
   ok(comprobadas >= 30, `solo ${comprobadas} filas con winrate por línea comprobadas`);
@@ -310,7 +310,7 @@ await prueba('la tarjeta enseña el winrate del héroe EN TU LÍNEA, el mismo qu
     const texto = await tarjetas.nth(i).locator('.pick-wrlinea').innerText().catch(() => null);
     if (esperado == null) { eq(texto, null, `${nombre} enseña un winrate en exp que el motor no tiene`); continue; }
     vistos += 1;
-    ok(texto && texto.includes(`${(esperado * 100).toFixed(1)}%`) && /exp/i.test(texto), `${nombre}: esperaba exp ${(esperado * 100).toFixed(1)}%, sale «${texto}»`);
+    ok(texto && texto.includes(`${(esperado * 100).toFixed(1).replace(".", ",")}%`) && /exp/i.test(texto), `${nombre}: esperaba exp ${(esperado * 100).toFixed(1)}%, sale «${texto}»`);
   }
   ok(vistos >= 3, `solo ${vistos} de las ocho primeras tarjetas llevan el winrate en exp: el dato no llega`);
   ok(!errores.length, `errores: ${errores}`);

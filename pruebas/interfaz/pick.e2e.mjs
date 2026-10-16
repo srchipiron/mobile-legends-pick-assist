@@ -211,6 +211,10 @@ await prueba('los huecos del draft (3.59.0): la cara marca al rival, la × quita
   // La cara es grande (30 px) también a 360.
   const caja = await pagina.locator('.side.enemy .slot-cara').first().boundingBox();
   ok(caja && caja.width >= 29, `la cara del hueco mide ${caja?.width} px de ancho`);
+  // Los motivos de la tarjeta, a todo lo ancho (3.59.1): en la columna del nombre medían unos 170 px a 390.
+  // Medido a 360: 278 px a todo lo ancho, 183 en la columna del nombre.
+  const motivos = await pagina.locator('.pick').nth(1).locator('.pick-abajo').boundingBox();
+  ok(motivos && motivos.width > 240, `los motivos de la nº2 miden ${motivos?.width} px de ancho a 360`);
   // Tocar la cara de Layla la marca como tu rival; otra vez, la desmarca.
   const layla = pagina.getByRole('button', { name: 'Marcar a Layla como tu rival' });
   await layla.click(); await pagina.waitForTimeout(300);

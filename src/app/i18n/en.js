@@ -410,6 +410,9 @@ export default {
   'analisis.faltaFisico': 'Your team is all magic damage and so is {yo}. Magic resist alone answers all of you.',
 
   // --- item builds ---
+  'build.saltos': 'Jump to a section',
+  'build.irPlan': 'Plan',
+  'build.irObjetos': 'Items',
   'build.titulo': 'Items',
   'build.deLinea': '{linea} build',
   'build.uso': '{pct}% run it',
