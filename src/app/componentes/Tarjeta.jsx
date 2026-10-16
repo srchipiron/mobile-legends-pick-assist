@@ -74,7 +74,8 @@ export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLi
         {/* Lo que hacen los profesionales con él (Liquipedia): DATO, no
             opinión. El porcentaje solo con muestra: «0% en 1 pick» no dice nada. */}
         {pro && pro.picks + pro.bans >= 3 && (
-          <span className="pick-pro" title={t('pro.titulo')}>
+          // Corto (3.59.0): «Pro: 248 picks · 57% · 263 bans» ocupaba tres líneas en la columna; los baneos van en el título.
+          <span className="pick-pro" title={`${t('pro.titulo')} · ${t('pro.detalle', { picks: pro.picks, bans: pro.bans })}`}>
             {pro.picks >= 5
               ? t('pro.linea', { picks: pro.picks, pct: Math.round((pro.ganadas / pro.picks) * 100), bans: pro.bans })
               : t('pro.lineaSinPct', { picks: pro.picks, bans: pro.bans })}

@@ -201,6 +201,32 @@ await prueba('la nº2 dice por qué no es la nº1, con la frase del motor, y la 
   } finally { await contexto.close(); }
 });
 
+await prueba('los huecos del draft (3.59.0): la cara marca al rival, la × quita, y lo que puso el lector lleva su punto', async () => {
+  const draft = { ...PICKS, lectura: { enemigos: ['Fanny'], aliados: ['Chou'], baneos: ['Hirara'] } };
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: 360, height: 640 }, almacen: { ...LINEA, 'roam-picker:draft': draft } });
+  // El punto del lector: Fanny y Chou sí, Layla (metida a mano) no.
+  eq(await pagina.locator('.side.enemy .slot.leido').count(), 1, 'los enemigos leídos por el lector no llevan su punto (o lo lleva uno metido a mano)');
+  ok((await pagina.locator('.side.enemy .slot.leido').getAttribute('title')).includes('Fanny'), 'el punto no es el de Fanny');
+  eq(await pagina.locator('.side.ally .slot.leido').count(), 1, 'Chou, leído por el lector, no lleva su punto');
+  // La cara es grande (30 px) también a 360.
+  const caja = await pagina.locator('.side.enemy .slot-cara').first().boundingBox();
+  ok(caja && caja.width >= 29, `la cara del hueco mide ${caja?.width} px de ancho`);
+  // Tocar la cara de Layla la marca como tu rival; otra vez, la desmarca.
+  const layla = pagina.getByRole('button', { name: 'Marcar a Layla como tu rival' });
+  await layla.click(); await pagina.waitForTimeout(300);
+  eq(await layla.getAttribute('aria-pressed'), 'true', 'tocar la cara no marca al rival');
+  eq((await leer(pagina, 'roam-picker:draft')).enemyRoam, 'Layla', 'el rival marcado no se guarda');
+  eq(await pagina.locator('.side.enemy .slot.marked').count(), 1, 'el hueco marcado no se distingue');
+  await layla.click(); await pagina.waitForTimeout(300);
+  ok(!(await leer(pagina, 'roam-picker:draft')).enemyRoam, 'otro toque no desmarca al rival');
+  // La × sigue quitando, y no marca de paso.
+  await pagina.getByRole('button', { name: 'Quitar Layla' }).click(); await pagina.waitForTimeout(300);
+  const d = await leer(pagina, 'roam-picker:draft');
+  ok(!d.enemies.includes('Layla') && !d.enemyRoam, `la × no quita a Layla o la marca: ${JSON.stringify(d)}`);
+  eq(errores.length, 0, `errores en la página: ${errores.join(' | ')}`);
+  await contexto.close();
+});
+
 await terminar('interfaz/pick');
 await navegador.close();
 await cerrar();

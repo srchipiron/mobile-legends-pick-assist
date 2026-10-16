@@ -8,6 +8,19 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.59.0
+
+- Las caras del draft se ven más grandes (30 px en vez de 22), también en
+  móviles de 360 px. Para marcar a tu rival basta con tocar su cara: el
+  circulito ○ de al lado ya no está. La × sigue quitando.
+- Lo que metió el lector de la tablet lleva un punto verde en la esquina
+  del hueco, para revisar de un vistazo lo que no pusiste tú.
+- «Ajustes» y «Para tus compañeros» llevan una flecha que gira al abrirlos;
+  antes, cerrados, parecían títulos de una sección vacía.
+- La línea de partidas profesionales de cada tarjeta ocupa una línea en vez
+  de tres («Pro 57% · 248 picks»). Deja fuera cuántas veces lo banean los
+  profesionales, que es lo que menos te dice en tu draft.
+
 ## 3.58.1
 
 - El lector ya no puede aprender como cara de un compañero el icono de

@@ -38,6 +38,8 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
   const { enemigos, aliados, baneos } = equipo;
   const { ranking, rival, cov, pool, analisis, composicion, consejos, yo } = rec;
   const rivalAuto = rival.marcado ? null : rival.nombre;
+  // Lo que puso el lector de la tablet (3.59.0): su hueco lleva un punto.
+  const leidos = useMemo(() => new Set([...(draft.lectura?.enemigos ?? []), ...(draft.lectura?.aliados ?? []), ...(draft.lectura?.tuyo ? [draft.lectura.tuyo] : [])]), [draft.lectura]);
   const anadirAliado = (h) => draft.anadir('aliados', h);
   // «Mis héroes»: solo los que llevas (maestría o partidas). Un héroe que
   // nunca has jugado entra en el ranking «como tu media», que es optimista;
@@ -96,12 +98,12 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
           onAnadir={() => abrir('enemigos')} onQuitar={(h) => draft.quitarConDeshacer('enemigos', h)}
           marcado={draft.rivalMarcado} onMarcar={draft.marcarRival}
           pista={rivalAuto ? t('app.tuRival', { nombre: rivalAuto }) : t('app.marcarRival')}
-          automatico={rivalAuto}
+          automatico={rivalAuto} leidos={leidos}
         />
         <Bando
           t={t} titulo={t('app.tuEquipo')} tipo="ally" picks={aliados} max={4}
           onAnadir={() => abrir('aliados')} onQuitar={(h) => draft.quitarConDeshacer('aliados', h)}
-          yo={miPick} onYo={() => abrir('yo')} onQuitarYo={() => draft.fijarPick(miPick)}
+          yo={miPick} onYo={() => abrir('yo')} onQuitarYo={() => draft.fijarPick(miPick)} leidos={leidos}
         />
         <Composicion comp={composicion} t={t} />
 

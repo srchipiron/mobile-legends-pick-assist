@@ -188,6 +188,19 @@ el selector pone al final los héroes que no se pueden tocar (otro bando,
 baneados): ocupaban caras de las doce primeras, que es donde se midió el
 orden de 3.17.0 (`rapido.e2e`). Tres mutaciones.
 
+**Los huecos del draft (3.59.0)**, pedido: «mejoramos la UI… hace mucho que
+no repasamos la interfaz». Con ○ + cara + × en fila, a 360 px la cara se
+quedaba en 22 px y se cortaba. Hoy la cara (30 px) ES el botón de marcar al
+rival en los enemigos (`.mark.slot-cuerpo`, todo el hueco menos la ×), y el
+relleno vertical baja de 6 a 4 px para que el hueco siga en 38 (4 + 30 + 4):
+la nº1 baja 4 px (360×640: 589–594 de 640). Se probó la × como insignia en
+la esquina (como iOS) y no entró: su caja de 32 px tapaba media cara (marcar
+al rival quitaba al héroe) y pisaba el texto de encima. Lo que puso el
+lector lleva un punto verde (`.slot.leido`, de `draft.lectura`). Los
+plegables (`.more`, `.equipo`) llevan una flecha que gira. Prueba en
+`pick.e2e` (punto, tamaño, marcar/desmarcar, la × no marca), tres
+mutaciones.
+
 ## Los idiomas
 
 Español e inglés, en `src/app/i18n/` (`es.js`, `en.js` y el traductor). Lo importante: **los motivos que salen en

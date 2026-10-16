@@ -101,6 +101,13 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   font-size: 12px; color: var(--muted); padding: 6px 0;
 }
 .more > summary::-webkit-details-marker { display: none; }
+/* Una flecha que gira (3.59.0): sin ella, «Ajustes» y «Para tus compañeros»
+   cerrados parecían títulos de una sección vacía. */
+.more > summary::after, .equipo > summary::after {
+  content: '›'; font-size: 18px; line-height: 1; font-weight: 400; color: var(--muted);
+  margin-left: 8px;
+}
+.more[open] > summary::after, .equipo[open] > summary::after { rotate: 90deg; }
 /* Objetivos de toque de 40 px en lo que se usa con la partida delante. */
 .more > summary, .equipo > summary { min-height: 40px; display: flex; align-items: center; }
 .rank-picker button, .ban-row button, .idiomas button { min-height: 40px; }
@@ -147,14 +154,19 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .slots { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .slot {
+  position: relative;
   min-height: 40px; min-width: 84px; flex: 1 1 84px;
   border: 1px solid var(--line); border-radius: var(--r-sm);
   background: var(--glass);
   box-shadow: var(--brillo);
-  padding: 8px 10px;
+  padding: 5px 10px;
   font-size: 13px; text-align: left;
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
 }
+/* Lo que hay en el hueco además de la ×: la cara (o el nombre), centrada. En
+   los enemigos es el botón de marcar al rival (3.59.0: antes un ○ aparte de
+   11 px que dejaba la cara en 22). */
+.slot-cuerpo { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .slot.empty { color: var(--muted); border-style: dashed; border-color: var(--line-hi); background: transparent; box-shadow: none; }
 /* Área de toque grande sin cambiar la caja: el relleno se compensa con margen
    negativo. Medido en 3.6.0 en doce tamaños de pantalla: la × salía de 27 a
@@ -174,16 +186,20 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
    bloque de movil -donde acabo por descuido- funcionaba en el movil y en
    escritorio no. */
 .slot-cara {
-  width: 24px; height: 24px; flex: 0 0 24px;
-  border-radius: 6px; object-fit: cover; background: var(--ink);
+  width: 30px; height: 30px; flex: 0 0 30px;
+  border-radius: 7px; object-fit: cover; background: var(--ink);
 }
 .slot:has(.slot-cara) .slot-name { display: none; }
-.slot .mark { color: var(--muted); font-size: 13px; line-height: 1; padding: 12px 11px; margin: -12px -10px; }
+.slot .mark { color: inherit; font-size: 13px; line-height: 1; padding: 5px 6px; margin: -5px -6px; border-radius: var(--r-sm); }
 .slot.marked { border-color: var(--gold) !important; box-shadow: 0 0 0 1px var(--gold), var(--brillo); }
 /* Deducido por la app, no marcado por ti: se distingue del marcado a mano. */
 .slot.auto { border-color: var(--gold) !important; border-style: dashed; }
-.slot.auto .mark { color: var(--gold); opacity: 0.75; }
-.slot.marked .mark { color: var(--gold); }
+/* Leído por el lector de la tablet (3.59.0): un punto en la esquina, para
+   revisar de un vistazo lo que no metiste tú. */
+.slot.leido::after {
+  content: ''; position: absolute; left: 3px; bottom: 3px; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--c-comp); box-shadow: 0 0 0 1.5px var(--ink); pointer-events: none;
+}
 /* El bando tiñe el cristal, no solo el borde. */
 .side.enemy .slot:not(.empty) { border-color: color-mix(in srgb, var(--enemy) 55%, transparent); background: color-mix(in srgb, var(--enemy) 14%, var(--glass)); }
 .side.ally  .slot:not(.empty) { border-color: color-mix(in srgb, var(--ally) 55%, transparent); background: color-mix(in srgb, var(--ally) 14%, var(--glass)); }
@@ -1034,15 +1050,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
      `flex: 1 1 0` se reparten el ancho. Medido: la tira del draft baja 50px, que
      es una recomendacion mas a la vista sin desplazarse. */
   /* Cinco huecos enemigos en 360px: (360-24-4·6)/5 = 57px por hueco. */
-  .slot { min-height: 38px; min-width: 0; flex: 1 1 0; padding: 6px 2px; font-size: 12px; gap: 1px; }
+  .slot { min-height: 38px; min-width: 0; flex: 1 1 0; padding: 4px 2px; font-size: 12px; gap: 1px; }
   /* 32 px de toque también aquí, y el relleno se compensa con el margen para
-     que la huella en la fila sea el propio signo: la × mide 15 px y el ○ 11,
-     y en el hueco enemigo de 320 px (54 px, 50 de contenido) caben justo
-     11 + 1 + 22 + 1 + 15. Con dos píxeles más de huella la × se salía del
-     hueco y de la página (medido: 321 px de ancho en 320). Las dos cajas de
-     toque (33 px) no se pisan porque entre medias va la cara (22 px). */
+     que la huella en la fila sea el propio signo: la × mide 15 px. Desde
+     3.59.0 no hay ○ (marca al rival la propia cara), así que en el hueco
+     enemigo de 320 px (54 px, 52 de contenido) caben 30 + 1 + 15 y la cara
+     pasa de 22 a 30 px sin que el hueco crezca (4 + 30 + 4 = 38). */
   .slot .x { font-size: 18px; padding: 10px 9px; margin: -10px -9px; }
-  .slot .mark { padding: 12px 11px; margin: -12px -11px; }
+  .slot .mark { padding: 4px 2px; margin: -4px -2px; }
   /* Diez baneos en UNA fila de 336 px son huecos de 28 px: la cara (22) más
      la × (27) no caben, la × se salía del hueco, pisaba al vecino y el
      décimo sacaba 8 px por el borde de la página (medido a 360 px). Con
@@ -1058,7 +1073,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   .pick { grid-template-columns: 28px 1fr auto; gap: 8px; padding: 9px 10px; }
   .pick-name { font-size: 16px; }
   .pick.top .pick-name { font-size: 20px; }
-  .slot-cara { width: 22px; height: 22px; flex-basis: 22px; }
+  .slot-cara { width: 30px; height: 30px; flex-basis: 30px; }
   .hero-cara { width: 30px; height: 30px; flex-basis: 30px; }
   .pick.top .hero-cara { width: 36px; height: 36px; flex-basis: 36px; }
   .rank { font-size: 15px; }
@@ -1073,7 +1088,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   .brand h1 { font-size: 16px; }
   .side { margin-top: 8px; }
   .side-label { font-size: 10px; margin-bottom: 3px; }
-  .slot { min-height: 34px; flex: 1 1 92px; padding: 5px 6px; font-size: 12px; gap: 3px; }
+  .slot { min-height: 34px; flex: 1 1 92px; padding: 2px 6px; font-size: 12px; gap: 3px; }
   .slot .x { font-size: 18px; padding: 10px 9px; margin: -10px -7px; }
   .pick { padding: 8px 10px; gap: 8px; margin-bottom: 6px; }
   .pick-name { font-size: 16px; }
@@ -1103,6 +1118,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 
 @media (prefers-reduced-motion: no-preference) {
   .pick { transition: border-color 120ms ease, box-shadow 160ms ease; }
+  .more > summary::after, .equipo > summary::after { transition: rotate 0.2s ease; }
   /* El toque responde como en iOS: el control se encoge un poco al pulsar.
      El pie NO: la hoja de novedades vive DENTRO de él, y un `transform` en
      el padre convierte a un `position: fixed` en relativo a ese padre, así
@@ -1127,9 +1143,9 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 }
 
 /* Teléfonos de 320 px: el hueco enemigo queda en 54 px y el contenido
-   (○, cara, ×) pide 50: un píxel menos de relleno a cada lado da margen. */
+   (cara y ×) pide 46: un píxel menos de relleno a cada lado da margen. */
 @media (max-width: 340px) {
-  .slot { padding: 6px 1px; }
+  .slot { padding: 4px 1px; }
 }
 
 @media (max-width: 420px) {
