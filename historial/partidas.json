@@ -1,6 +1,145 @@
 {
- "actualizado": "2026-10-14T21:31:07.652Z",
+ "actualizado": "2026-10-17T18:54:30.686Z",
  "partidas": [
+  {
+   "t": 1792233500699,
+   "pick": "Angela",
+   "recomendados": [
+    "Rafaela",
+    "Estes",
+    "Diggie"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.479,
+   "origen": "lector",
+   "bans": [
+    "Masha",
+    "Marcel",
+    "Hirara",
+    "Paquito",
+    "Yi Sun-shin",
+    "Eudora",
+    "Gloo",
+    "Aulus"
+   ],
+   "draft": {
+    "enemigos": [
+     "Badang",
+     "Barats",
+     "Zetian",
+     "Aamon",
+     "Brody"
+    ],
+    "aliados": [
+     "Xavier",
+     "Minsitthar",
+     "Miya",
+     "Lukas"
+    ],
+    "linea": "roam",
+    "rival": "Badang"
+   },
+   "lector": {
+    "baneos": [
+     "Masha",
+     "Marcel",
+     "Hirara",
+     "Paquito",
+     "Yi Sun-shin",
+     "Eudora",
+     "Gloo",
+     "Aulus"
+    ],
+    "enemigos": [
+     "Cecilion",
+     "Badang",
+     "Zetian",
+     "Aamon",
+     "Brody"
+    ],
+    "aliados": [
+     "Xavier",
+     "Minsitthar",
+     "Nolan",
+     "Miya",
+     "Lukas"
+    ],
+    "tuyo": "Angela",
+    "dudas": [
+     {
+      "hueco": "e2",
+      "candidato": "Bruno",
+      "parecido": 0.68
+     }
+    ],
+    "ms": [
+     6608,
+     7541,
+     6934,
+     7349,
+     7024,
+     8642,
+     7394,
+     5560,
+     5306,
+     7085,
+     6504,
+     6853,
+     5075
+    ],
+    "msCaptura": [
+     4933,
+     5890,
+     5956,
+     5935,
+     6022,
+     7236,
+     6490,
+     4624,
+     4571,
+     5768,
+     5615,
+     5910,
+     4310
+    ],
+    "formatos": [
+     "crudo",
+     "png",
+     "crudo",
+     "png",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Barats",
+      "Brody",
+      "Barats",
+      "Brody",
+      "Barats",
+      "Brody"
+     ]
+    }
+   },
+   "duracion": 14.4,
+   "fases": [
+    0.282,
+    0.451,
+    0.567,
+    0.605,
+    0.619,
+    0.572
+   ]
+  },
   {
    "t": 1792013453143,
    "pick": "Floryn",
@@ -19977,6 +20116,12 @@
   {
    "cuando": "2026-10-14T21:31:07.652Z",
    "partidas": 228,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-17T18:54:30.686Z",
+   "partidas": 229,
    "heroes": 11,
    "incidencia": 11
   }
