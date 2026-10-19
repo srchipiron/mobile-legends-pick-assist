@@ -1,6 +1,159 @@
 {
- "actualizado": "2026-10-19T22:09:32.231Z",
+ "actualizado": "2026-10-19T22:36:21.717Z",
  "partidas": [
+  {
+   "t": 1792449362715,
+   "pick": "Diggie",
+   "recomendados": [
+    "Rafaela",
+    "Estes",
+    "Gloo"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.526,
+   "origen": "lector",
+   "bans": [
+    "Uranus",
+    "Eudora",
+    "Yi Sun-shin",
+    "Lukas",
+    "Hirara",
+    "Marcel",
+    "Aulus",
+    "Sun",
+    "Masha"
+   ],
+   "draft": {
+    "enemigos": [
+     "Floryn",
+     "Valir"
+    ],
+    "aliados": [
+     "Wanwan"
+    ],
+    "linea": "roam",
+    "rival": "Floryn"
+   },
+   "lector": {
+    "baneos": [
+     "Uranus",
+     "Eudora",
+     "Yi Sun-shin",
+     "Lukas",
+     "Hirara",
+     "Marcel",
+     "Aulus",
+     "Sun",
+     "Masha"
+    ],
+    "enemigos": [
+     "Floryn",
+     "Valir"
+    ],
+    "dudas": [
+     {
+      "hueco": "e3",
+      "candidato": "Gord",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Saber",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Saber",
+      "parecido": 0.69
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Chang'e",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Leomord",
+      "parecido": 0.62
+     }
+    ],
+    "ms": [
+     2833,
+     2878,
+     3224,
+     3757,
+     3057,
+     3310,
+     3273,
+     3168,
+     3086,
+     3350,
+     3014,
+     3190,
+     3074,
+     4017,
+     2667,
+     3094,
+     2994,
+     3047,
+     4012,
+     2967
+    ],
+    "msCaptura": [
+     1754,
+     1771,
+     2064,
+     2264,
+     2002,
+     2151,
+     2170,
+     2025,
+     1912,
+     2251,
+     1951,
+     2157,
+     2105,
+     2855,
+     1713,
+     2170,
+     2054,
+     2053,
+     2717,
+     1919
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ]
+   },
+   "fases": [
+    0.471,
+    0.505,
+    0.529,
+    0.554,
+    0.573,
+    0.582
+   ]
+  },
   {
    "t": 1792447748539,
    "pick": "Estes",
@@ -21386,6 +21539,12 @@
   {
    "cuando": "2026-10-19T22:09:32.231Z",
    "partidas": 236,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-19T22:36:21.717Z",
+   "partidas": 237,
    "heroes": 11,
    "incidencia": 11
   }
