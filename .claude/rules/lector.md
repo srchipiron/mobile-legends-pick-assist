@@ -654,6 +654,21 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   ENEMIGOS: el hueco enemigo vacío (rojo) salía etiquetado Joy en un draft
   y Esmeralda en otro a 0,985, Martis y Natan a 0,98; y las skins de los
   rivales cambian en cada partida, así que no hay nada que confirmar.
+- **Las caras del panel (3.59.3)**: Minotaur, de rival, salía a
+  0,71–0,73 contra su cara de la API en sus cuatro drafts (#58, #70, #80,
+  #108) a cualquier tamaño y encuadre (±14 pasos, escalas 0,6–2,0), y
+  ninguna de sus 16 imágenes de la API pasaba de 0,72: el juego pinta un
+  dibujo rojo con cuernos que la API aún no tiene. Por eso el aprendizaje
+  tampoco lo encontraba («sin encontrar» en 5 partidas): `buscarCara`
+  busca la cara de la API. Su recorte del panel se parece a sí mismo entre
+  drafts a 0,97–0,99 y en 290 casillas sin él lo más parecido es 0,64, así
+  que va como referencia fija (`caras-panel.json`, recortes de #108 y #58,
+  en la orientación de la pantalla; `carasDelPanel` en leer.mjs, en
+  `leerPicksEnemigos` siempre). La prueba lee la columna de #80
+  (`picks-minotaur.png`, otro draft), una mutación. Barats (0,73) solo
+  aparece en un draft: sin un segundo con que confirmarlo, no entra. Para
+  añadir otro héroe: el mismo criterio (tres drafts, el recorte se parece a
+  sí mismo entre ellos y nada sin él se le acerca), nunca de una captura.
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

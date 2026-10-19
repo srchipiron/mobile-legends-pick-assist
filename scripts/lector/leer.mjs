@@ -86,8 +86,8 @@ export const ambasOrientaciones = (caras) => {
  * equivocado (el 1 de octubre de 2026 una tanda movió el panel entero y
  * los picks dejaron de leerse) ya no puede tapar lo que la medida sí ve.
  */
-export function leerPicksEnemigos(img, caras, { posiciones = null, extra = [] } = {}) {
-  const referencias = [...ambasOrientaciones(caras), ...extra];
+export function leerPicksEnemigos(img, caras, { posiciones = null, extra = [], panel = carasDelPanel() } = {}) {
+  const referencias = [...ambasOrientaciones(caras), ...panel, ...extra];
   // Búsqueda más ancha que en los baneos: cada dibujo encuadra la cara en un
   // sitio (Khufra cae a unos 20 píxeles de Clint en el mismo hueco).
   const opciones = { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12], criba: CRIBA_PICKS, saltoCriba: 2 };
@@ -197,6 +197,20 @@ export function sinRepetidos(lecturas) {
 
 /** El icono del hueco de un compañero que aún no ha elegido (aprender.mjs, 3.58.1), en base64. */
 export const vacioAliadoGuardado = () => JSON.parse(readFileSync(new URL('vacio-aliado.json', import.meta.url))).v;
+/**
+ * Las caras del PANEL (3.59.3): héroes que el panel de picks del juego pinta
+ * con un dibujo que la API aún no tiene. Minotaur salía a 0,71–0,73 contra
+ * su cara de la API en los cuatro drafts que lo tenían de rival (#58, #70,
+ * #80, #108) a cualquier tamaño y encuadre, y ninguna de las 16 imágenes
+ * suyas de la API pasaba de 0,72: en tu tablet sale un dibujo rojo con
+ * cuernos. Su recorte del panel, en cambio, se parece a sí mismo entre
+ * drafts a 0,97–0,99, y en las 290 casillas de capturas sin él lo más
+ * parecido es 0,64. Recortes de #108 y #58 (`caras-panel.json`, en la
+ * orientación de la pantalla); la prueba lee el de #80.
+ */
+let delPanel = null;
+export const carasDelPanel = () => (delPanel ??= JSON.parse(readFileSync(new URL('caras-panel.json', import.meta.url))).caras
+  .map((c) => ({ nombre: c.nombre, v: cargarCaras({ x: c.v })[0].v })));
 export const carasGuardadas = () => cargarCaras(JSON.parse(readFileSync(new URL('caras.json', import.meta.url))).caras);
 
 /**

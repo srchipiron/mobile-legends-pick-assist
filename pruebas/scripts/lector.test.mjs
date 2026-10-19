@@ -509,4 +509,20 @@ test('una cara que el panel pinta un 20-25% más grande se sigue leyendo: la cri
   ok(companeros.every((n) => !n || VERDAD_JUEGO.aliados.includes(n)), `a 1,25 lee en tu equipo a quien no está: ${companeros}`);
 });
 
+test('Minotaur con el dibujo que pinta el juego y la API aún no tiene: lo lee la cara del panel (3.59.3)', () => {
+  // La columna enemiga de #80 (Nana, Alpha, Minotaur, Miya, Yin), OTRO draft que los dos de donde salen las caras del panel (#108, #58).
+  const g = capturaCompleta({ conPicks: false });
+  const col = leerPng(readFileSync(join(RAIZ, 'pruebas/fixtures/juego/picks-minotaur.png')));
+  for (let y = 0; y < col.alto; y++) g.rgba.set(col.rgba.subarray(y * col.ancho * 4, (y + 1) * col.ancho * 4), ((230 + y) * g.ancho + 2120) * 4);
+  const caras = carasGuardadas();
+  const sin = leerPicksEnemigos(g, caras, { panel: [] });
+  ok(sin[2].nombre !== 'Minotaur' && sin[2].parecido < 0.8, `sin la cara del panel ya se lee a Minotaur (${sin[2].nombre} ${sin[2].parecido.toFixed(2)}): la prueba no mide nada`);
+  const con = leerPicksEnemigos(g, caras);
+  eq(con[2].nombre, 'Minotaur', `con la cara del panel el hueco 3 sale ${con[2].nombre ?? '?'} (${con[2].parecido.toFixed(2)})`);
+  ok(con[2].parecido >= 0.9, `Minotaur se parece solo ${con[2].parecido.toFixed(2)}`);
+  eq(con.filter((l) => l.nombre === 'Minotaur').length, 1, `Minotaur sale en más de un hueco: ${con.map((l) => l.nombre)}`);
+  // Y en la captura de siempre (Clint y Khufra, sin Minotaur) no aparece.
+  ok(!leerPicksEnemigos(capturaCompleta(), caras).some((l) => l.nombre === 'Minotaur'), 'la cara del panel lee a Minotaur donde no está');
+});
+
 await terminar('scripts/lector');

@@ -8,6 +8,13 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.59.3
+
+- El lector reconoce a Minotaur de rival. Tu juego lo pinta con un dibujo
+  nuevo (rojo, con cuernos) que la cara de la API todavía no tiene, y se
+  quedaba siempre en «?». Ahora lleva su cara sacada de tus propias
+  capturas.
+
 ## 3.59.2
 
 - Los diez huecos de baneo van siempre en dos filas de cinco; en algunos
