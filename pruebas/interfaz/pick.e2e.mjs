@@ -87,7 +87,7 @@ await prueba('«Mis héroes» filtra el ranking a los que llevas y dice quién s
   const nombres = async () => Promise.all((await pagina.locator('.pick').all()).map(nombreDe));
   const todos = await nombres();
   ok(todos.length >= 5, `el ranking sin filtro trae ${todos.length} tarjetas`);
-  const filtro = pagina.locator('.filtro');
+  const filtro = pagina.locator('.filtro-mios');
   eq(await filtro.count(), 1, 'no hay filtro «mis héroes» con maestría guardada');
   ok(/2/.test(await filtro.innerText()), 'el filtro no cuenta los dos héroes');
   await filtro.click(); await pagina.waitForTimeout(300);
@@ -99,7 +99,7 @@ await prueba('«Mis héroes» filtra el ranking a los que llevas y dice quién s
   // Sin maestría no hay filtro.
   await contexto.close();
   const sin = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS } });
-  eq(await sin.pagina.locator('.filtro').count(), 0, 'hay filtro sin maestría');
+  eq(await sin.pagina.locator('.filtro-mios').count(), 0, 'hay filtro sin maestría');
   ok(!errores.length && !sin.errores.length, `errores de página: ${errores} ${sin.errores}`);
   await sin.contexto.close();
 });
@@ -247,6 +247,30 @@ await prueba('la tier de mlbb.gg sale en las tarjetas si es de estas dos semanas
   };
   ok(await con(2) >= 3, 'con una tier de hace dos días las tarjetas no la enseñan');
   eq(await con(20), 0, 'una tier de hace veinte días sigue saliendo en las tarjetas');
+});
+
+await prueba('las sinergias (3.60.0): cada tarjeta dice su mejor pareja y «Sinergia» las ordena por cómo encajan, sin tocar su número ni su nota', async () => {
+  const draft = { enemies: ['Layla', 'Atlas', 'Lylia'], allies: ['Chou', 'Miya'], bans: [], enemyRoam: null, fase: 'picks' };
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': draft } });
+  const parejas = await pagina.locator('.pick .pick-pareja').allTextContents();
+  ok(parejas.length >= 6 && parejas.every((x) => /mejor pareja: (Chou|Miya) [+−]\d+,\d/.test(x)), `las tarjetas no dicen su mejor pareja con tu equipo: ${parejas.slice(0, 3).join(' | ')}`);
+  const antes = await pagina.locator('.pick').evaluateAll((l) => l.map((e) => `${e.dataset.heroe}|${e.querySelector('.rank').textContent}|${e.querySelector('.pick-score').textContent}`));
+  const boton = pagina.locator('.filtro-sinergia');
+  await boton.click(); await pagina.waitForTimeout(500);
+  eq(await boton.getAttribute('aria-pressed'), 'true', 'el botón no queda pulsado');
+  const despues = await pagina.locator('.pick').evaluateAll((l) => l.map((e) => `${e.dataset.heroe}|${e.querySelector('.rank').textContent}|${e.querySelector('.pick-score').textContent}`));
+  ok(despues.join() !== antes.join(), 'ordenar por sinergia no cambia el orden');
+  // Cada héroe conserva su número (su puesto de verdad) y su nota.
+  const de = (l) => Object.fromEntries(l.map((x) => [x.split('|')[0], x]));
+  const a = de(antes), d = de(despues);
+  ok(Object.keys(d).every((n) => !a[n] || a[n] === d[n]), 'ordenar por sinergia cambia el número o la nota de alguna tarjeta');
+  // Ordenadas de mejor a peor pareja con tu equipo (lo que dice el desglose «parejas»).
+  const valores = await pagina.locator('.pick').evaluateAll((l) => l.map((e) => { const m = /parejas\s*([+−-]?\d+)/.exec(e.querySelector('.desglose')?.textContent ?? ''); return m ? Number(m[1].replace('−', '-')) : 0; }));
+  ok(valores.every((v, i) => i === 0 || valores[i - 1] >= v), `no van de más a menos sinergia: ${valores.join(' ')}`);
+  await boton.click(); await pagina.waitForTimeout(500);
+  eq((await pagina.locator('.pick').evaluateAll((l) => l.map((e) => `${e.dataset.heroe}|${e.querySelector('.rank').textContent}|${e.querySelector('.pick-score').textContent}`))).join(), antes.join(), 'otro toque no vuelve al orden de siempre');
+  eq(errores.length, 0, `errores en la página: ${errores.join(' | ')}`);
+  await contexto.close();
 });
 
 await terminar('interfaz/pick');

@@ -155,6 +155,20 @@ solo si la diferencia sale del error. La prueba «el modelo: la nota es la
 probabilidad…» falla si la escala medida hoy se aleja más de 2,5 SE de la
 del código.
 
+**«Céntrate en sinergias» (3.60.0), medido antes de tocar nada** (agente
+`medidor-motor`, 19 de octubre de 2026): coeficiente libre de S 0,20 ± 0,36
+(120 días, 1.469 partidas pro) y 0,26 ± 0,23 (400 días, 2.770); logL/n
+fuera de muestra con S ×1,5/×2/×3: −0,4/−1,0/−2,4 por 1.000 a 400 días
+(quitarlo, 0); AUC 0,579 → 0,574 (×2). En las 182 partidas de Javi con ≥3
+aliados el término de su equipo sale −3,0 ± 1,4 (AUC 0,44; poco fiable:
+matrices de hoy, aliados que no elige él). ×2 cambiaría el nº1 en el 25–28%
+de 300 drafts de roam. Así que NO pesa más: se ENSEÑA. `evaluarDraft`
+devuelve `mejorPareja` (con quién de tu equipo combina mejor tu pick, en
+puntos de winrate sobre la pareja media, solo con dato) y la tarjeta la
+dice; el botón «Sinergia» (`.filtro-sinergia`) reordena por
+`terminos.parejas` sin tocar número ni nota. Pruebas en `modelo.test` y
+`pick.e2e`, dos mutaciones.
+
 ## La probabilidad estimada de ganar
 
 Desde 1.28.0, y desde 3.0 dentro de `src/motor/modelo.js` (`evaluarDraft`,

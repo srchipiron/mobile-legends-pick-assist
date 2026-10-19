@@ -303,11 +303,21 @@ export function evaluarDraft({
 
   const centro = mediaDeSinergia(meta.synergies, lineas, meta.stats ?? null);
   let parejas = 0;
+  // Con quién de tu equipo combina mejor TU pick (3.60.0, pedido por Javi:
+  // «céntrate en sinergias»). Se ENSEÑA, no cambia la nota: medido el 19 de
+  // octubre de 2026, dar más peso a las parejas predice peor en 2.770
+  // partidas pro (×2: −1,0 de logL por 1.000) y en sus 182 partidas el
+  // término no predice nada. `puntos`: lo que rinden juntos sobre la pareja
+  // media, en puntos de winrate (el dato, no el término escalado).
+  let mejorPareja = null;
   for (let i = 0; i < mios.length; i++) {
     for (let j = i + 1; j < mios.length; j++) {
       const t = terminoPareja(mios[i], mios[j], meta.synergies, centro);
       parejas += t.valor;
-      if (yo && i === 0) motivos.push(...t.motivos);
+      if (yo && i === 0) {
+        motivos.push(...t.motivos);
+        if (t.dato && (!mejorPareja || t.pareja > mejorPareja.pareja)) mejorPareja = { con: mios[j].name, pareja: t.pareja, puntos: Math.round((t.pareja - centro) * 1000) / 10 };
+      }
     }
   }
   for (let i = 0; i < enemigos.length; i++) {
@@ -333,6 +343,7 @@ export function evaluarDraft({
     terminos,
     puntos,
     motivos,
+    mejorPareja,
     vistos: mios.length + enemigos.length,
     completo: mios.length === 5 && enemigos.length === 5,
     dato: conDato,

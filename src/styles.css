@@ -287,6 +287,9 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .desglose span { white-space: nowrap; }
 .desglose b { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 600; }
 /* Por qué no es el nº1 (3.51.0): una línea discreta bajo el desglose. */
+/* La mejor pareja con tu equipo (3.60.0), en el color de las parejas del desglose. */
+.pick-pareja { margin: 0 0 6px; font-size: 12px; color: var(--c-synergy); font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.pick-pareja.mala { color: var(--enemy); }
 .pick-detras { margin: 0 0 6px; font-size: 11px; color: var(--muted); }
 /* El porqué y los motivos, en la segunda fila de la tarjeta, bajo el nombre Y
    la columna de cifras (3.59.1). Vacía (sin «detrás» ni motivos) no ocupa. */
@@ -1038,9 +1041,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .recordatorio .gane { color: #000; background: var(--gold); border-color: var(--gold); }
 /* «Mis héroes»: el filtro va en la cabecera de las tarjetas, sin fila nueva. */
 .filtro {
-  min-height: 32px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--glass);
+  min-height: 32px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--glass); white-space: nowrap;
   font-size: 12px; font-weight: 600; color: var(--muted); font-family: var(--font-display);
 }
+.filtro + .filtro { margin-left: 6px; }
+/* Los dos filtros de la cabecera no encogen (a 360 px partían su texto en dos líneas). */
+.filtro-mios, .filtro-sinergia { flex: 0 0 auto; }
+/* «Sinergia» pulsado va en el color de las parejas del desglose (3.60.0). */
+.filtro-sinergia[aria-pressed='true'] { border-color: var(--c-synergy); color: var(--c-synergy); background: color-mix(in srgb, var(--c-synergy) 12%, transparent); }
 .filtro[aria-pressed='true'] { border-color: var(--gold); color: var(--gold); background: rgba(255, 214, 10, 0.10); }
 .fuera-de-mios { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
 /* Tu plan A · B · C en la fase de baneos. */

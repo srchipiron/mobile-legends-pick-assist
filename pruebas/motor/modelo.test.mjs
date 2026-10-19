@@ -347,4 +347,19 @@ test('los motivos que se ensenan estan respaldados por el dato', () => {
   ok(sinDato.motivos.some((r) => r.bueno), 'un heroe recien salido se queda sin ningun motivo');
 });
 
+test('la mejor pareja de tu pick con tu equipo (3.60.0): la de más sinergia, en puntos sobre la media, y no cambia la nota', () => {
+  const H = (name) => ({ name, role: 'tank', tags: [] });
+  const stats = indexarPorNombre({ Y: { winRate: 0.5 }, A: { winRate: 0.5 }, B: { winRate: 0.5 }, C: { winRate: 0.5 } });
+  const synergies = indexarPorNombre({ Y: { A: 0.47, B: 0.53 }, A: { Y: 0.47, B: 0.5 }, B: { Y: 0.53, A: 0.5 } }, 2);
+  const meta = { stats, counters: {}, synergies };
+  const r = evaluarDraft({ aliados: [H('A'), H('B'), H('C')], yo: H('Y'), enemigos: [], meta });
+  eq(r.mejorPareja?.con, 'B', `la mejor pareja no es la de más sinergia: ${JSON.stringify(r.mejorPareja)}`);
+  const centro = mediaDeSinergia(synergies, null, stats);
+  ok(Math.abs(r.mejorPareja.puntos - Math.round((0.53 - centro) * 1000) / 10) < 1e-9, `los puntos no son el dato sobre la media: ${r.mejorPareja.puntos}`);
+  // Solo con dato (C no tiene ninguno con Y) y solo de TU pick, no de dos compañeros entre sí (A–B).
+  eq(evaluarDraft({ aliados: [H('C')], yo: H('Y'), enemigos: [], meta }).mejorPareja, null, 'sin dato de la pareja inventa una');
+  const sinPareja = evaluarDraft({ aliados: [H('A'), H('B')], yo: H('C'), enemigos: [], meta });
+  eq(sinPareja.mejorPareja, null, `toma por tuya una pareja entre dos compañeros: ${JSON.stringify(sinPareja.mejorPareja)}`);
+});
+
 await terminar('motor/modelo');

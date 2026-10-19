@@ -20,6 +20,9 @@ export { idMotivo };
 export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLinea = null, linea = null, onBuild, elegido = false, onElegir = null, detras = null, primero = null, t = tPorDefecto }) {
   const pct = Math.round(candidato.p * 100);
   const heroe = candidato.heroe;
+  const pareja = candidato.mejorPareja ?? null;
+  // El «combina bien con X» de los motivos lo dice ya la línea de la pareja.
+  const motivos = pareja ? candidato.motivos.filter((m) => !(m.clave === 'regla.combinaCon' && m.params?.a === pareja.con)) : candidato.motivos;
   const nombre = (
     <>
       <Cara heroe={heroe} className="hero-cara" tam={34} />
@@ -43,6 +46,13 @@ export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLi
           ) : nombre}
         </h3>
         <Desglose puntos={candidato.puntos} t={t} />
+        {/* Con quién de tu equipo combina mejor (3.60.0): el dato de la
+            pareja, se enseña siempre que haya compañeros con dato. */}
+        {pareja && (
+          <p className={`pick-pareja ${pareja.puntos < 0 ? 'mala' : ''}`.trim()} title={t('pick.parejaTitulo')}>
+            {t('pick.pareja', { nombre: pareja.con, signo: pareja.puntos >= 0 ? '+' : '−', pp: Math.abs(pareja.puntos).toFixed(1) })}
+          </p>
+        )}
       </div>
       <div>
         <div className="pick-score" title={t('pick.probTitulo')} aria-label={t('pick.probTitulo')}>{pct}%</div>
@@ -73,7 +83,7 @@ export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLi
             la nº1 no gana ni un píxel (primera-pantalla.e2e). */}
         {detras && primero && <p className="pick-detras">{fraseDetras(detras, primero, t)}</p>}
         <ul className="reasons">
-          {candidato.motivos.length ? candidato.motivos.map((m) => (
+          {motivos.length ? motivos.map((m) => (
             <li
               key={idMotivo(m)}
               /* Un motivo de EQUIPO («no hay primera línea») le vale igual a

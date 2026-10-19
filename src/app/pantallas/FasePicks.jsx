@@ -50,7 +50,14 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
   const esMio = (h) => (buscar(maestria, h.name)?.games ?? 0) > 0;
   const mios = useMemo(() => ranking.filter((c) => (buscar(maestria, c.heroe.name)?.games ?? 0) > 0), [ranking, maestria]);
   const hayMios = mios.length > 0;
-  const lista = soloMios && hayMios ? mios : ranking;
+  // Por sinergia (3.60.0, pedido por Javi): las tarjetas ordenadas por cómo
+  // encajan con tu equipo (el término de parejas). Solo cambia el ORDEN que
+  // se ve: la nota y el número de cada tarjeta son los de siempre. No se
+  // recuerda: es cosa de este draft, como «mis héroes».
+  const [porSinergia, setPorSinergia] = useState(false);
+  const conEquipo = aliados.length > 0;
+  const filtrada = soloMios && hayMios ? mios : ranking;
+  const lista = porSinergia && conEquipo ? [...filtrada].sort((a, b) => (b.terminos?.parejas ?? 0) - (a.terminos?.parejas ?? 0) || b.p - a.p) : filtrada;
   // Tu pick fijado va el primero: con ocho tarjetas a la vista, el nº22 no
   // se veía, y el consejo a los compañeros (que va tras la primera) es «si
   // tú vas con él». El número de la tarjeta sigue siendo su puesto real.
@@ -160,8 +167,11 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
           ) : !cov.conDatos ? (
             <span className="freshness">{t('app.enPool', { n: pool.length })}</span>
           ) : null}
+          {conEquipo && (
+            <button className="filtro filtro-sinergia" aria-pressed={porSinergia} onClick={() => { tic(); setPorSinergia((v) => !v); }}>{t('filtro.sinergia')}</button>
+          )}
           {hayMios && (
-            <button className="filtro" aria-pressed={soloMios} onClick={() => setSoloMios((v) => !v)}>{t('filtro.mios', { n: mios.length })}</button>
+            <button className="filtro filtro-mios" aria-pressed={soloMios} onClick={() => setSoloMios((v) => !v)}>{t('filtro.mios', { n: mios.length })}</button>
           )}
         </div>
         {preguntar && (

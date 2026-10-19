@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.60.0
+
+- Las sinergias se ven en cada recomendación: cada tarjeta dice con qué
+  compañero de tu equipo combina mejor ese héroe y cuántos puntos rinden
+  juntos por encima de una pareja normal («mejor pareja: Chou +2,1»).
+- Botón «Sinergia» junto a «Mis héroes»: ordena las tarjetas por cómo
+  encajan con tu equipo. El número y el porcentaje de cada una no cambian;
+  otro toque vuelve al orden de siempre.
+- La nota no le da más peso a las sinergias, a propósito: medido en 2.770
+  partidas profesionales, darles el doble de peso acierta peor, y en tus
+  182 partidas no predicen si ganas.
+
 ## 3.59.6
 
 - Los datos del meta vuelven a actualizarse dos veces al día. Desde el 10

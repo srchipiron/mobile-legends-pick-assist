@@ -75,7 +75,7 @@ export function ordenarPicks(pool, ctx = {}) {
     const e = evaluarDraft({ ...base, yo: heroe });
     return {
       heroe, p: e.p, logOdds: e.logOdds, terminos: e.terminos, puntos: e.puntos, dato: e.dato,
-      motivos: ordenarMotivos(e.motivos),
+      motivos: ordenarMotivos(e.motivos), mejorPareja: e.mejorPareja,
       riesgo: riesgoContrapick(heroe, ctx.meta?.counters, ctx.candidatos ?? []),
     };
   });
