@@ -1029,3 +1029,10 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   donde salía Joy y Esmeralda a 0,985 en el mismo hueco rojo). Lección:
   lo que se etiqueta por descarte hay que compararlo antes con «el sitio
   vacío», que es lo que más se repite entre partidas.
+- **Tu hueco sin elegir aprendido como Estes (3.58.0 → 3.59.5)** — la guarda
+  de 3.58.1 conocía el icono de un COMPAÑERO sin elegir (la mano), pero tu
+  propia fila pinta otro (un cuadro azul), y Javi elige el último con casi
+  siempre el mismo héroe: el aprendizaje confirmó el icono como «Estes» y
+  su fila vacía se leía Estes. Lección: un «sitio vacío» no tiene un solo
+  aspecto; antes de fiarse de lo aprendido, mirar a mano cada cara de la
+  fila propia, que es la que más se repite.

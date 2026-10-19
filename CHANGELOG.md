@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.59.5
+
+- El lector lee a tus compañeros de siempre desde la primera partida: trae
+  de serie las caras de Gord, Selena y Kadita con las skins que llevan tus
+  amigos, y la de tu Diggie, sacadas de tus drafts del 10 al 19 de octubre.
+  Gord salía siempre «?».
+- Arreglado: el lector podía tomar tu hueco vacío (el cuadro azul que sale
+  antes de que elijas) por Estes y meterlo como tu pick. Ya no lo aprende,
+  y si ya lo había aprendido en tu móvil, deja de usarlo solo.
+
 ## 3.59.4
 
 - La tier list de mlbb.gg está al día (19 de octubre): Rafaela baja de SS a

@@ -525,4 +525,18 @@ test('Minotaur con el dibujo que pinta el juego y la API aún no tiene: lo lee l
   ok(!leerPicksEnemigos(capturaCompleta(), caras).some((l) => l.nombre === 'Minotaur'), 'la cara del panel lee a Minotaur donde no está');
 });
 
+test('tu equipo con las caras de serie (3.59.5): Gord y tu Diggie de #121, un draft del que no sale ninguna de ellas', () => {
+  // La columna de tu equipo de #121: Miya, Diggie (tu fila), X.Borg, Gord, Sora; la API no leía ni a Diggie ni a Gord.
+  const g = capturaCompleta({ conAliados: false });
+  const col = leerPng(readFileSync(join(RAIZ, 'pruebas/fixtures/juego/aliados-gord.png')));
+  for (let y = 0; y < col.alto; y++) g.rgba.set(col.rgba.subarray(y * col.ancho * 4, (y + 1) * col.ancho * 4), ((228 + y) * g.ancho + 60) * 4);
+  const caras = carasGuardadas();
+  const filas = (l) => l.map((x) => x.nombre ?? '?').join(',');
+  const sin = leerAliados(g, caras, { panel: [] });
+  eq(filas(sin), 'Miya,?,?,?,Sora', `sin las caras de serie se lee ${filas(sin)}: la prueba no mide nada`);
+  const con = leerAliados(g, caras);
+  eq(filas(con), 'Miya,Diggie,?,Gord,Sora', `con las caras de serie se lee ${filas(con)}`);
+  ok(con[3].aprendida && con[3].parecido >= 0.92, `Gord no sale de una cara de serie a 0,92 o más (${con[3].parecido.toFixed(2)})`);
+});
+
 await terminar('scripts/lector');

@@ -86,7 +86,7 @@ export const ambasOrientaciones = (caras) => {
  * equivocado (el 1 de octubre de 2026 una tanda movió el panel entero y
  * los picks dejaron de leerse) ya no puede tapar lo que la medida sí ve.
  */
-export function leerPicksEnemigos(img, caras, { posiciones = null, extra = [], panel = carasDelPanel() } = {}) {
+export function leerPicksEnemigos(img, caras, { posiciones = null, extra = [], panel = carasDelPanel('enemigos') } = {}) {
   const referencias = [...ambasOrientaciones(caras), ...panel, ...extra];
   // Búsqueda más ancha que en los baneos: cada dibujo encuadra la cara en un
   // sitio (Khufra cae a unos 20 píxeles de Clint en el mismo hueco).
@@ -139,7 +139,9 @@ export const MARGEN_ALIADO = 0.03;
  * que la API no lee, a `ALIADO_MINIMO`, y nunca con un nombre ya leído en
  * otro hueco.
  */
-export function leerAliados(img, caras, { extra = [] } = {}) {
+export function leerAliados(img, caras, { extra: aprendidas = [], panel = carasDelPanel('aliados') } = {}) {
+  // Las de serie (3.59.5: las skins de quienes juegan contigo, de tus drafts) y las aprendidas en ESTE móvil, por el mismo camino.
+  const extra = [...panel, ...aprendidas];
   const referencias = ambasOrientaciones(caras);
   // Rejilla a r/8 (el doble de gruesa que en los picks) con ±5 pasos: mismo
   // alcance que ±8 a r/16 por la mitad de tiempo (1,3 s frente a 2,6 aquí) y
@@ -195,8 +197,8 @@ export function sinRepetidos(lecturas) {
   return lecturas.map((l) => (l.nombre && mejor.get(l.nombre) !== l ? { ...l, nombre: null, repetido: true } : l));
 }
 
-/** El icono del hueco de un compañero que aún no ha elegido (aprender.mjs, 3.58.1), en base64. */
-export const vacioAliadoGuardado = () => JSON.parse(readFileSync(new URL('vacio-aliado.json', import.meta.url))).v;
+/** Los iconos del hueco de tu equipo sin elegir (aprender.mjs, 3.58.1 y 3.59.5), en base64. */
+export const vaciosAliadoGuardados = () => JSON.parse(readFileSync(new URL('vacio-aliado.json', import.meta.url))).iconos.map((i) => i.v);
 /**
  * Las caras del PANEL (3.59.3): héroes que el panel de picks del juego pinta
  * con un dibujo que la API aún no tiene. Minotaur salía a 0,71–0,73 contra
@@ -209,8 +211,10 @@ export const vacioAliadoGuardado = () => JSON.parse(readFileSync(new URL('vacio-
  * orientación de la pantalla); la prueba lee el de #80.
  */
 let delPanel = null;
-export const carasDelPanel = () => (delPanel ??= JSON.parse(readFileSync(new URL('caras-panel.json', import.meta.url))).caras
-  .map((c) => ({ nombre: c.nombre, v: cargarCaras({ x: c.v })[0].v })));
+/** `panel`: 'enemigos' (dibujos que la API no tiene) o 'aliados' (skins de tus compañeros, 3.59.5). */
+export const carasDelPanel = (panel = 'enemigos') => (delPanel ??= JSON.parse(readFileSync(new URL('caras-panel.json', import.meta.url))).caras
+  .map((c) => ({ panel: c.panel ?? 'enemigos', nombre: c.nombre, v: cargarCaras({ x: c.v })[0].v })))
+  .filter((c) => c.panel === panel);
 export const carasGuardadas = () => cargarCaras(JSON.parse(readFileSync(new URL('caras.json', import.meta.url))).caras);
 
 /**

@@ -239,9 +239,9 @@ test('tu equipo: no aprende de una captura de otra partida ni con pocos enemigos
 });
 
 /** La captura con el hueco `fila` de tu equipo como cuando ese jugador aún no ha elegido (el icono de la mano, incidencia #60). */
-function conHuecoVacio(fila) {
+function conHuecoVacio(fila, fichero = 'aliado-vacio.png') {
   const g = capturaCompleta({ columna: 2 });
-  const v = leerPng(readFileSync(join(RAIZ, 'pruebas/fixtures/juego/aliado-vacio.png')));
+  const v = leerPng(readFileSync(join(RAIZ, 'pruebas/fixtures/juego', fichero)));
   for (let y = 0; y < v.alto; y++) g.rgba.set(v.rgba.subarray(y * v.ancho * 4, (y + 1) * v.ancho * 4), ((228 + 216 * fila + y) * g.ancho + 60) * 4);
   return g;
 }
@@ -260,6 +260,19 @@ test('tu equipo: el hueco de quien aún no ha elegido no se aprende como el que 
   eq(aliadasAprendidas(viejo).length, 0, 'una cara aprendida que es el hueco vacío se usa al leer');
   ok(esHuecoVacio(VACIO_ALIADO), 'el icono no se reconoce a sí mismo');
   eq(aliadasAprendidas({ aliados: { Clint: [{ v: Buffer.from(Uint8Array.from(leerVacio(capturaCompleta({ columna: 2 }), 0), (x) => Math.round(x))).toString('base64') }] } }).length, 1, 'una cara de verdad se toma por el hueco vacío');
+});
+
+test('tu equipo: TU hueco antes de elegir (el cuadro azul, otro icono) tampoco se aprende como tu pick (3.59.5)', () => {
+  // #80: tu fila (la amarilla, la quinta en la captura de prueba) con el cuadro azul; tu pick de la verdad, Estes.
+  const img = conHuecoVacio(4, 'aliado-vacio-tuyo.png');
+  ok(!leerAliados(img, caras)[4].nombre, 'la API lee a alguien en el cuadro azul: la prueba no mide nada');
+  let a = null, r;
+  for (const min of [0, 30]) { r = aprenderDe([{ id: idA(min), img, verdad: { ...VERDAD_EQUIPO, aliados: [] } }], { caras, aprendido: a }); a = r.aprendido; }
+  ok(!a.aliados.Estes && !a.aliadosPendientes.Estes, `aprende el cuadro azul como Estes (pasó con #58 y #80): ${JSON.stringify(Object.keys(a.aliados))}`);
+  eq(r.informe[0].aliados.vacios.join(), 'Estes', 'el informe no dice que tu hueco estaba sin elegir');
+  // Y lo que 3.58 ya aprendió así en el móvil de Javi no se usa al leer.
+  const viejo = { aliados: { Estes: [{ v: Buffer.from(Uint8Array.from(leerVacio(img, 4), (x) => Math.round(x))).toString('base64') }] } };
+  eq(aliadasAprendidas(viejo).length, 0, 'el cuadro azul aprendido como Estes se sigue usando al leer');
 });
 
 test('tu equipo: una cara que se parece a la aprendida de OTRO héroe no se aprende (3.58.1)', () => {

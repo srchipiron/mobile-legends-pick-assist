@@ -48,7 +48,7 @@
  * programas, sin red.
  */
 import { LADO, muestra, normalizar, espejo, guardarCara, cargarCaras, reconocer, PARECIDO_MINIMO } from './caras.mjs';
-import { PICKS_ENEMIGOS, REFERENCIA, ALIADOS, OPCIONES_ALIADOS, ALIADO_MINIMO, leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, escalar, vacioAliadoGuardado } from './leer.mjs';
+import { PICKS_ENEMIGOS, REFERENCIA, ALIADOS, OPCIONES_ALIADOS, ALIADO_MINIMO, leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, escalar, vaciosAliadoGuardados } from './leer.mjs';
 import { nombreClave } from '../../src/motor/nombres.js';
 
 /** Un hallazgo entra si se parece al menos esto (un acierto normal va de 0,75 a 0,99; el peor equivocado medido, 0,72). */
@@ -137,12 +137,22 @@ const deBase64 = (v) => normalizar(Float32Array.from(Buffer.from(v, 'base64')));
  * huecos, cualquier cara real 0,75 como mucho. Recorte de la incidencia
  * #60 (`vacio-aliado.json`).
  */
-export const VACIO_ALIADO = deBase64(vacioAliadoGuardado());
+export const VACIOS_ALIADO = vaciosAliadoGuardados().map(deBase64);
+/**
+ * Y TU hueco antes de elegir (3.59.5) pinta OTRO icono, un cuadro azul con
+ * un emblema blanco: no se parece a la mano (0,60–0,69), así que la guarda
+ * de 3.58.1 no lo paraba, y como Javi elige el último y su pick es casi
+ * siempre el mismo, en #58 y #80 se aprendió como «Estes» y se confirmó. Desde
+ * entonces su fila sin elegir se leía como Estes (#117, #119, #125, jugando
+ * Rafaela y Diggie). Medido en los 37 drafts de recortes: el icono contra sí
+ * mismo 0,95–1,00 en 12 huecos, cualquier otra cosa 0,62 como mucho.
+ */
+export const VACIO_ALIADO = VACIOS_ALIADO[0];
 /** Un recorte es ese icono si se le parece al menos esto (entre 0,75 y 0,96). */
 export const MINIMO_VACIO = 0.85;
 const producto24 = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
 /** ¿Es este recorte (ya normalizado, tomado en el centro del hueco) el icono del hueco vacío? */
-export const esHuecoVacio = (v) => producto24(v, VACIO_ALIADO) >= MINIMO_VACIO;
+export const esHuecoVacio = (v) => VACIOS_ALIADO.some((x) => producto24(v, x) >= MINIMO_VACIO);
 
 /**
  * Las caras de tu equipo aprendidas y confirmadas, listas para `leerAliados`
@@ -198,7 +208,7 @@ function aprenderAliadosDe(img, id, verdad, nuevo, caras) {
   for (const { i, nombre } of etiquetarAliados(leidos, fila, verdad)) {
     const pos = escalar(img, ALIADOS[i]);
     // El hueco aún vacío no es nadie (3.58.1).
-    if (reconocer(img, pos, [{ nombre: 'vacio', v: VACIO_ALIADO }], OPCIONES_ALIADOS).parecido >= MINIMO_VACIO) { informe.vacios.push(nombre); continue; }
+    if (reconocer(img, pos, VACIOS_ALIADO.map((v, k) => ({ nombre: `vacio${k}`, v })), OPCIONES_ALIADOS).parecido >= MINIMO_VACIO) { informe.vacios.push(nombre); continue; }
     // Y si se parece a la cara aprendida de OTRO héroe, uno de los dos está mal apuntado: no se aprende.
     const deOtroHeroe = [...Object.entries(nuevo.aliados), ...Object.entries(nuevo.aliadosPendientes)].filter(([n]) => nombreClave(n) !== nombreClave(nombre)).flatMap(([n, l]) => l.map((p) => ({ nombre: n, v: deBase64(p.v) })));
     const choca = deOtroHeroe.length ? reconocer(img, pos, deOtroHeroe, OPCIONES_ALIADOS) : null;

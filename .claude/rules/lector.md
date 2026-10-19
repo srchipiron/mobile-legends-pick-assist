@@ -669,6 +669,27 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   aparece en un draft: sin un segundo con que confirmarlo, no entra. Para
   añadir otro héroe: el mismo criterio (tres drafts, el recorte se parece a
   sí mismo entre ellos y nada sin él se le acerca), nunca de una captura.
+- **TU hueco sin elegir y las caras de tu equipo de serie (3.59.5)**, con
+  los 37 drafts de recortes (#56–#125). Tu fila antes de elegir no pinta la
+  mano de 3.58.1 sino un cuadro azul con un emblema blanco (0,60–0,69
+  contra la mano); como Javi elige el último y casi siempre lo mismo, en
+  #58 y #80 se aprendió como «Estes» y se confirmó, y desde entonces su
+  fila sin elegir se leía Estes (#117, #119, #125, jugando Rafaela y
+  Diggie). El icono contra sí mismo 0,95–1,00 en 12 huecos, cualquier otra
+  cosa 0,62: `vacio-aliado.json` lleva hoy los DOS iconos
+  (`VACIOS_ALIADO`). Y las caras de tu equipo que el lector aprendería
+  partida a partida van de serie en `caras-panel.json` (`panel:
+  'aliados'`): la repetición con `aprenderDe` sobre los 37 drafts confirma
+  Gord, Selena, Kadita y Diggie (la skin del búho, mirada a mano), dos
+  recortes de cada uno; una skin es siempre del mismo héroe, así que vale
+  quien la lleve. Aprendiendo hasta #114 y midiendo en #115–#125: Gord en
+  sus 4 huecos, 0 falsos; un lector recién instalado con las de serie lee
+  a Gord y a Diggie en #121 (draft del que no sale ninguna cara).
+  `leerAliados` las suma a las aprendidas (`panel`). Pruebas en
+  `aprender.test` (el cuadro azul de #80, `aliado-vacio-tuyo.png`) y
+  `lector.test` (la columna de #121, `aliados-gord.png`); dos mutaciones.
+  Para añadir más: repetir la repetición con los drafts nuevos y mirar a
+  mano cada cara de TU fila (es donde salen los iconos).
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el
