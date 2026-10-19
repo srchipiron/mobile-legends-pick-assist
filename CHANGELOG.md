@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.59.2
+
+- Los diez huecos de baneo van siempre en dos filas de cinco; en algunos
+  móviles salían seis y cuatro, de tamaños distintos.
+- El héroe baneado se ve en gris, y la × de quitarlo ya no sale tachada.
+- La pista de la fase de baneos cabe en dos líneas, y la cabecera de los
+  baneos probables («más baneados en Gloria») ya no se parte en el móvil.
+- Las cuentas del lector («sin encontrar», «aprendidos») cuentan cada héroe
+  una vez por partida: antes contaban una vez por captura mirada y salían
+  hasta el triple (Minotaur 14 donde eran 5).
+
 ## 3.59.1
 
 - En la hoja «Plan y objetos» hay dos botones fijos arriba, «Plan» y

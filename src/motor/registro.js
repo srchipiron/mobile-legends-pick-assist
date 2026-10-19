@@ -118,8 +118,10 @@ export function aciertosDelLector(partidas = []) {
       if (desdeC >= 0 && l.msCaptura.length === l.ms.length) porFormato[formato].msCaptura.push(l.msCaptura[desdeC + i]);
     });
     for (const d of l.dudas ?? []) dudas[d.candidato] = (dudas[d.candidato] ?? 0) + 1;
-    for (const n of l.aprendizaje?.aprendidos ?? []) aprendidos[n] = (aprendidos[n] ?? 0) + 1;
-    for (const n of l.aprendizaje?.sinEncontrar ?? []) sinEncontrar[n] = (sinEncontrar[n] ?? 0) + 1;
+    // Una vez por PARTIDA (3.59.2): el lector apunta cada héroe una vez por
+    // captura mirada (hasta tres), y «Xavier, Xavier, Xavier» contaba tres.
+    for (const n of new Set(l.aprendizaje?.aprendidos ?? [])) aprendidos[n] = (aprendidos[n] ?? 0) + 1;
+    for (const n of new Set(l.aprendizaje?.sinEncontrar ?? [])) sinEncontrar[n] = (sinEncontrar[n] ?? 0) + 1;
   }
   const mediana = (l) => (l.length ? [...l].sort((x, y) => x - y)[Math.floor((l.length - 1) / 2)] : null);
   const resumen = (x) => (x.ms.length ? { lecturas: x.ms.length, mediana: mediana(x.ms), medianaCaptura: mediana(x.msCaptura) } : null);

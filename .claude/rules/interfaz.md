@@ -215,6 +215,13 @@ un punto («57.1», «−4.5», 0,5) sale con coma; una versión «3.58.1» o
 `i18n.test`, cuatro mutaciones (la del ancho sobrevivía con un umbral de
 180 px; medido: 278 a lo ancho, 183 en la columna).
 
+**La pantalla de baneos (3.59.2)**: los diez huecos en una rejilla de
+cinco columnas (`.side.bans .slots`): con `flex-wrap` a 390 px salían seis y
+cuatro. El tachado va en `.slot-name`, no en el hueco: la decoración se
+hereda a la × y no se puede quitar desde ella (y no sale en su estilo
+calculado: la prueba mira el hueco). La cara del baneado, en gris. Prueba en
+`fases.e2e` a 320, 390 y 430, dos mutaciones.
+
 ## Los idiomas
 
 Español e inglés, en `src/app/i18n/` (`es.js`, `en.js` y el traductor). Lo importante: **los motivos que salen en

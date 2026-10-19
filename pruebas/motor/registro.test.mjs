@@ -357,8 +357,9 @@ test('la lectura guarda las dudas (hueco, candidato, parecido) y lo aprendido, s
   ok(!('dudas' in sanearLectura({ enemigos: ['Clint'] })) && !('aprendizaje' in sanearLectura({ enemigos: ['Clint'] })), 'sin dudas ni aprendizaje aparecen los campos');
   const partidas = [
     { t: 1, pick: 'A', gane: true, bans: ['Hirara'], draft: { enemigos: ['Clint'] }, lector: { enemigos: ['Clint'], dudas: [{ hueco: 'e2', candidato: 'Belerick', parecido: 0.7 }], aprendizaje: { aprendidos: ['Clint'], sinEncontrar: ['Layla'] } } },
-    { t: 2, pick: 'A', gane: true, bans: [], draft: { enemigos: ['Clint'] }, lector: { enemigos: ['Clint'], dudas: [{ hueco: 'e3', candidato: 'Belerick', parecido: 0.6 }, { hueco: 'e4', candidato: 'Saber', parecido: 0.6 }], aprendizaje: { sinEncontrar: ['Layla'] } } },
+    { t: 2, pick: 'A', gane: true, bans: [], draft: { enemigos: ['Clint'] }, lector: { enemigos: ['Clint'], dudas: [{ hueco: 'e3', candidato: 'Belerick', parecido: 0.6 }, { hueco: 'e4', candidato: 'Saber', parecido: 0.6 }], aprendizaje: { sinEncontrar: ['Layla', 'Layla', 'Layla'] } } },
   ];
+  // La segunda trae a Layla tres veces (una por captura mirada): cuenta una (3.59.2).
   const a = aciertosDelLector(partidas);
   eq(`${a.dudas.Belerick} ${a.dudas.Saber} ${a.aprendidos.Clint} ${a.sinEncontrar.Layla}`, '2 1 1 2', `el agregado no cuenta dudas y aprendizaje: ${JSON.stringify(a)}`);
 });

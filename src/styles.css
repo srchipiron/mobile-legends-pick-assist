@@ -203,7 +203,16 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* El bando tiñe el cristal, no solo el borde. */
 .side.enemy .slot:not(.empty) { border-color: color-mix(in srgb, var(--enemy) 55%, transparent); background: color-mix(in srgb, var(--enemy) 14%, var(--glass)); }
 .side.ally  .slot:not(.empty) { border-color: color-mix(in srgb, var(--ally) 55%, transparent); background: color-mix(in srgb, var(--ally) 14%, var(--glass)); }
-.side.bans  .slot:not(.empty) { border-color: color-mix(in srgb, var(--ban) 45%, transparent); text-decoration: line-through; color: var(--muted); }
+/* Los diez baneos, cinco y cinco a cualquier ancho (3.59.2): con `flex-wrap`
+   a 390 px salían seis y cuatro, de anchos distintos. */
+.side.bans .slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.side.bans .slot { min-width: 0; }
+/* El baneado se ve apagado: la cara en gris, como en el juego. */
+.side.bans .slot-cara { filter: grayscale(0.7) brightness(0.85); }
+.slot.empty { justify-content: center; text-align: center; }
+.side.bans  .slot:not(.empty) { border-color: color-mix(in srgb, var(--ban) 45%, transparent); color: var(--muted); }
+/* Tachado solo el nombre (sin cara): en el hueco entero tachaba también la ×. */
+.side.bans .slot-name { text-decoration: line-through; }
 
 /* Botón secundario: píldora de cristal, texto del sistema en semibold. */
 .reset {

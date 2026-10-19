@@ -78,6 +78,19 @@ await prueba('apuntar una partida guarda los baneos y vuelve a la fase de baneos
   await contexto.close();
 });
 
+await prueba('los diez baneos van cinco y cinco a cualquier ancho, y la × del baneado no sale tachada (3.59.2)', async () => {
+  const B = ['Hirara', 'Belerick', 'Eudora', 'Ling', 'Fanny', 'Saber'];
+  for (const ancho of [320, 390, 430]) {
+    const { contexto, pagina } = await paginaCon(navegador, url, { viewport: { width: ancho, height: 844 }, almacen: { ...LINEA, 'roam-picker:draft': { enemies: [], allies: [], bans: B, enemyRoam: null, fase: 'baneos' } } });
+    const filas = await pagina.locator('.side.bans .slot').evaluateAll((l) => { const f = {}; for (const e of l) { const y = Math.round(e.getBoundingClientRect().top); f[y] = (f[y] ?? 0) + 1; } return Object.values(f); });
+    eq(filas.join(), '5,5', `a ${ancho} px los baneos van en filas de ${filas.join(' y ')}`);
+    // El tachado se hereda sin salir en el estilo calculado de la ×: se mira en el hueco, que es de donde baja.
+    eq(await pagina.locator('.side.bans .slot:not(.empty)').first().evaluate((x) => window.getComputedStyle(x).textDecorationLine), 'none', `a ${ancho} px el hueco baneado entero va tachado (y con él la ×)`);
+    ok(await anchoDePagina(pagina) <= ancho, `a ${ancho} px la página se sale de ancho`);
+    await contexto.close();
+  }
+});
+
 await terminar('interfaz/fases');
 await navegador.close();
 await cerrar();
