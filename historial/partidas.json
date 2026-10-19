@@ -1,6 +1,182 @@
 {
- "actualizado": "2026-10-19T21:33:03.508Z",
+ "actualizado": "2026-10-19T22:09:32.231Z",
  "partidas": [
+  {
+   "t": 1792447748539,
+   "pick": "Estes",
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Gloo"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.519,
+   "origen": "lector",
+   "bans": [
+    "Marcel",
+    "Masha",
+    "Yi Sun-shin",
+    "Khufra",
+    "Obsidia",
+    "Hirara",
+    "Lukas",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Rafaela",
+     "Novaria",
+     "Lesley",
+     "Suyou",
+     "Belerick"
+    ],
+    "aliados": [
+     "Aulus",
+     "Hayabusa",
+     "Miya",
+     "Kadita"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Masha",
+     "Yi Sun-shin",
+     "Khufra",
+     "Obsidia",
+     "Hirara",
+     "Lukas",
+     "Paquito"
+    ],
+    "enemigos": [
+     "Rafaela",
+     "Novaria",
+     "Lesley",
+     "Suyou"
+    ],
+    "aliados": [
+     "Aulus",
+     "Hayabusa",
+     "Miya"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Joy",
+      "parecido": 0.8
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Zetian",
+      "parecido": 0.82
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Carmilla",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Zetian",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Valir",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Gord",
+      "parecido": 0.57
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Wanwan",
+      "parecido": 0.64
+     }
+    ],
+    "ms": [
+     3580,
+     4484,
+     3496,
+     2970,
+     3341,
+     2800,
+     3099,
+     3107,
+     3239,
+     3070,
+     4325,
+     3031,
+     2750,
+     3230,
+     3285,
+     3009,
+     2785,
+     3608,
+     2779,
+     2993
+    ],
+    "msCaptura": [
+     2377,
+     2890,
+     2525,
+     2029,
+     2368,
+     2017,
+     2149,
+     2133,
+     2261,
+     2136,
+     3296,
+     2192,
+     1921,
+     2320,
+     2330,
+     2121,
+     1765,
+     2228,
+     1882,
+     1990
+    ],
+    "formatos": [
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ]
+   },
+   "duracion": 14.2,
+   "fases": [
+    0.59,
+    0.54,
+    0.515,
+    0.492,
+    0.464,
+    0.431
+   ]
+  },
   {
    "t": 1792445118097,
    "pick": "Diggie",
@@ -21204,6 +21380,12 @@
   {
    "cuando": "2026-10-19T21:33:03.508Z",
    "partidas": 235,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-19T22:09:32.231Z",
+   "partidas": 236,
    "heroes": 11,
    "incidencia": 11
   }
