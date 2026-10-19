@@ -1,6 +1,133 @@
 {
- "actualizado": "2026-10-19T21:02:18.380Z",
+ "actualizado": "2026-10-19T21:33:03.508Z",
  "partidas": [
+  {
+   "t": 1792445118097,
+   "pick": "Diggie",
+   "recomendados": [
+    "Gloo",
+    "Chip",
+    "Khufra"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.459,
+   "origen": "lector",
+   "bans": [
+    "Aulus",
+    "Belerick",
+    "Hirara",
+    "Marcel",
+    "Yi Sun-shin",
+    "Masha",
+    "Lukas",
+    "Obsidia"
+   ],
+   "draft": {
+    "enemigos": [
+     "Ixia",
+     "Zetian",
+     "Minotaur",
+     "Nolan",
+     "Harith"
+    ],
+    "aliados": [
+     "Vexana",
+     "Thamuz",
+     "Guinevere",
+     "Lesley"
+    ],
+    "linea": "roam",
+    "rival": "Minotaur"
+   },
+   "lector": {
+    "baneos": [
+     "Aulus",
+     "Belerick",
+     "Hirara",
+     "Marcel",
+     "Yi Sun-shin",
+     "Masha",
+     "Lukas",
+     "Obsidia"
+    ],
+    "enemigos": [
+     "Ixia",
+     "Zetian",
+     "Minotaur",
+     "Nolan",
+     "Wanwan"
+    ],
+    "aliados": [
+     "Vexana",
+     "Thamuz",
+     "Guinevere",
+     "Lesley"
+    ],
+    "tuyo": "Diggie",
+    "ms": [
+     3620,
+     2744,
+     2469,
+     4386,
+     3023,
+     4266,
+     3267,
+     3430,
+     2765,
+     2694,
+     4749,
+     3079
+    ],
+    "msCaptura": [
+     2750,
+     1689,
+     1593,
+     2054,
+     2235,
+     3181,
+     2350,
+     2397,
+     2012,
+     1684,
+     1839,
+     2174
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Wanwan",
+      "Wanwan",
+      "Wanwan"
+     ],
+     "sinEncontrar": [
+      "Nolan"
+     ]
+    }
+   },
+   "duracion": 21.5,
+   "fases": [
+    0.376,
+    0.438,
+    0.476,
+    0.481,
+    0.519,
+    0.522
+   ]
+  },
   {
    "t": 1792438074120,
    "pick": "Angela",
@@ -21071,6 +21198,12 @@
   {
    "cuando": "2026-10-19T21:02:18.380Z",
    "partidas": 234,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-19T21:33:03.508Z",
+   "partidas": 235,
    "heroes": 11,
    "incidencia": 11
   }
