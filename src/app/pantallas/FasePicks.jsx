@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useRef, useState } from 'react';
 import { buscar } from '../../motor/nombres.js';
 import { tic } from '../tacto.js';
-import { winrateEnLinea } from '../../motor/draft.js';
+import { winrateEnLinea, tiersVigentes } from '../../motor/draft.js';
 import { porQueDetras } from '../../motor/ranking.js';
 import { MINUTOS_PARA_RECORDAR } from '../estado/useDraft.js';
 import { useAhora } from '../estado/useAhora.js';
@@ -38,6 +38,8 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
   const { enemigos, aliados, baneos } = equipo;
   const { ranking, rival, cov, pool, analisis, composicion, consejos, yo } = rec;
   const rivalAuto = rival.marcado ? null : rival.nombre;
+  // La tier de mlbb.gg, solo si es de estas dos semanas (3.59.4).
+  const tiers = tiersVigentes(meta);
   // Lo que puso el lector de la tablet (3.59.0): su hueco lleva un punto.
   const leidos = useMemo(() => new Set([...(draft.lectura?.enemigos ?? []), ...(draft.lectura?.aliados ?? []), ...(draft.lectura?.tuyo ? [draft.lectura.tuyo] : [])]), [draft.lectura]);
   const anadirAliado = (h) => draft.anadir('aliados', h);
@@ -206,7 +208,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
               t={t}
               stat={buscar(datos.meta.stats, c.heroe.name)}
               pro={pro?.heroes?.[c.heroe.name] ?? null}
-              tier={meta?.tiers?.tiers?.[c.heroe.name] ?? null}
+              tier={tiers?.[c.heroe.name] ?? null}
               wrLinea={linea ? winrateEnLinea(datos, c.heroe, linea) : null}
               linea={linea}
               onBuild={meta ? (h) => abrir({ build: h }) : null /* también sin builds: la hoja lleva el plan (3.37.0) */}

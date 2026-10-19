@@ -123,6 +123,9 @@ export function winrateEnLinea(datos, heroe, linea) {
   return typeof v === 'number' && v > 0 && v < 1 ? v : null;
 }
 
+// La tier de mlbb.gg vigente vive en ventana.js (la usa también el diagnóstico).
+export { tiersVigentes, TIERS_CADUCAN_DIAS } from './ventana.js';
+
 /** Los héroes de una lista de nombres guardados; los que ya no existen se ignoran. */
 export const resolverNombres = (datos, nombres = []) => nombres.map((n) => datos.porNombre.get(n)).filter(Boolean);
 

@@ -226,3 +226,19 @@ export function mediaDeWinrate(stats = {}) {
   if (sw > 0) return swr / sw;
   return n ? suma / n : 0.5;
 }
+
+/**
+ * La tier list de mlbb.gg (opinión, no puntúa) SOLO si es reciente (3.59.4).
+ * mlbb.gg empezó a contestar 403 al bot de GitHub y la ingesta conservaba la
+ * del 4 de octubre de 2026: dos semanas después seguía enseñando a Rafaela
+ * en SS con ella ya nerfeada (la de ese día la pone en S). Una opinión de
+ * hace dos parches confunde más que ninguna: pasados `TIERS_CADUCAN_DIAS`
+ * (decisión de producto, unas dos semanas de parche) no se enseña.
+ */
+export const TIERS_CADUCAN_DIAS = 14;
+export function tiersVigentes(crudo, ahora = Date.now()) {
+  const t = crudo?.tiers;
+  const fecha = Date.parse(t?.fecha ?? '');
+  if (!t?.tiers || !Number.isFinite(fecha) || ahora - fecha > TIERS_CADUCAN_DIAS * 86400000) return null;
+  return t.tiers;
+}

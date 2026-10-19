@@ -214,6 +214,18 @@ test('el diagnóstico dice de qué rango salen cruces y parejas, y avisa si no e
   ok(!texto({ rango: 'mythic', pedido: 'glory', coherencia: { counters: 0.64, synergies: 0.43 }, motivo: 'no se parecen', ultima: { rango: 'mythic' } }).some((l) => /última comprobación/.test(l)), 'avisa con la matriz del mismo rango que la comprobación');
 });
 
+test('la tier list de mlbb.gg vieja es un aviso, con por qué, y pasada su caducidad dice que no se enseña (3.59.4)', () => {
+  const entorno = { version: 'test', rango: 'glory', width: 412, height: 915, storage: true };
+  const stats = Object.fromEntries(heroes.map((x, i) => [x.name, { winRate: 0.47 + (i % 7) / 100, pickRate: 0.02 }]));
+  const hace = (dias) => new Date(Date.now() - dias * 864e5).toISOString();
+  const lineas = (tiers, diag = {}) => diagnosticar({ linea: 'roam', maestria: {}, partidas: [], entorno, datos: prepararDatos({ catalogo: { heroes: catalogo.heroes }, rango: 'glory', meta: { generatedAt: new Date().toISOString(), ranks: ['glory'], rank: 'glory', days: 7, heroCount: 133, stats, statsByRank: { glory: stats }, diagnostics: diag, tiers } }) }).texto.split('\n').filter((l) => /Tier list/.test(l));
+  const fresca = lineas({ fuente: 'mlbb.gg', fecha: hace(1), tiers: { Rafaela: 'S' } });
+  ok(fresca.length === 1 && !/^\[(AVISO|FALLO)/.test(fresca[0]), `una tier de ayer es un aviso: ${fresca}`);
+  const vieja = lineas({ fuente: 'mlbb.gg', fecha: hace(15), tiers: { Rafaela: 'SS' } }, { tiers: 'fallo: HTTP 403 en https://back.mlbb.gg/api/v1/heroes; conservo la anterior' });
+  ok(vieja.length === 1 && /^\[AVISO/.test(vieja[0]) && /hace 15 días/.test(vieja[0]) && /403/.test(vieja[0]) && /ya no se enseña/.test(vieja[0]), `no avisa de la tier de hace 15 días con su porqué: ${vieja}`);
+  eq(lineas(undefined).length, 0, 'sin tier list (datos de antes) dice algo');
+});
+
 test('un héroe recién salido sin winrate es un aviso, uno conocido sin winrate es un fallo', () => {
   // La auditoría de 3.21.1: con un héroe nuevo (sin tags escritos a mano)
   // que la API ya pone en una línea pero aún sin estadísticas, «Winrates:

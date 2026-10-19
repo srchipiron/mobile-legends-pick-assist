@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.59.4
+
+- La tier list de mlbb.gg está al día (19 de octubre): Rafaela baja de SS a
+  S tras el nerf, Estes sube a SS y cambian otros 47 héroes. La anterior
+  era del 4 de octubre: desde entonces mlbb.gg no deja descargarla al bot
+  y la app seguía enseñando la vieja sin avisar.
+- Una tier list de más de dos semanas ya no se enseña en las tarjetas ni en
+  Meta, y el diagnóstico avisa en cuanto pasa de una semana.
+- Los winrates ya recogían el nerf: Rafaela baja en Gloria del 58% al
+  54,7% en los últimos tres días, y la app ya la recomendaba con eso.
+
 ## 3.59.3
 
 - El lector reconoce a Minotaur de rival. Tu juego lo pinta con un dibujo

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { LINEAS } from '../../motor/catalogo.js';
 import { terminoHeroe } from '../../motor/modelo.js';
 import { buscar } from '../../motor/nombres.js';
-import { winrateEnLinea, movimientosDelMeta } from '../../motor/draft.js';
+import { winrateEnLinea, movimientosDelMeta, tiersVigentes } from '../../motor/draft.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Cara } from './Imagen.jsx';
 import { ETIQUETAS_RANGO } from './SelectorDeRango.jsx';
@@ -27,7 +27,7 @@ export function Meta({ datos, linea, onCerrar, t = tPorDefecto }) {
   // De qué rango sale la fuerza: el tuyo, salvo Gloria recién vaciada por un
   // reinicio de temporada (motor/ventana.js, elegirRango).
   const rangoFuerza = fuerza?.rango ?? datos.rango;
-  const tiers = datos.crudo?.tiers?.tiers ?? null;
+  const tiers = tiersVigentes(datos.crudo);
   const conDeriva = ventana?.dias && ventana.dias !== 7;
   const lineas = useMemo(() => {
     const orden = linea ? [linea, ...LINEAS.filter((l) => l !== linea)] : LINEAS;

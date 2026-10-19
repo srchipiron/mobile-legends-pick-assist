@@ -231,6 +231,24 @@ await prueba('los huecos del draft (3.59.0): la cara marca al rival, la × quita
   await contexto.close();
 });
 
+await prueba('la tier de mlbb.gg sale en las tarjetas si es de estas dos semanas, y no si es más vieja (3.59.4)', async () => {
+  const con = async (dias) => {
+    const { contexto, pagina } = await paginaCon(navegador, url, {
+      almacen: { ...LINEA, 'roam-picker:draft': PICKS },
+      antes: (p) => p.route('**/data/roam-meta.json', async (ruta) => {
+        const r = await ruta.fetch(); const m = await r.json();
+        m.tiers = { fuente: 'mlbb.gg', fecha: new Date(Date.now() - dias * 864e5).toISOString(), tiers: Object.fromEntries(m.heroes.map((h) => [h.name, 'S'])) };
+        await ruta.fulfill({ response: r, json: m });
+      }),
+    });
+    const n = await pagina.locator('.pick-tier').count();
+    await contexto.close();
+    return n;
+  };
+  ok(await con(2) >= 3, 'con una tier de hace dos días las tarjetas no la enseñan');
+  eq(await con(20), 0, 'una tier de hace veinte días sigue saliendo en las tarjetas');
+});
+
 await terminar('interfaz/pick');
 await navegador.close();
 await cerrar();

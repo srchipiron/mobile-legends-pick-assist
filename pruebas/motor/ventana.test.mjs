@@ -5,7 +5,7 @@
  * (héroes al 0% y al 100%, r = 0,09), que es la forma real de fallar.
  */
 import { test, ok, eq, casi, terminar } from '../arnes.mjs';
-import { elegirVentana, elegirRango, elegirRangoDeRelaciones, mediaDeWinrate, COHERENCIA_MINIMA, COHERENCIA_DE_RANGO_MINIMA, CELDAS_PARA_COMPARAR, WINRATE_POSIBLE } from '../../src/motor/ventana.js';
+import { elegirVentana, elegirRango, elegirRangoDeRelaciones, mediaDeWinrate, COHERENCIA_MINIMA, COHERENCIA_DE_RANGO_MINIMA, CELDAS_PARA_COMPARAR, WINRATE_POSIBLE, tiersVigentes, TIERS_CADUCAN_DIAS } from '../../src/motor/ventana.js';
 
 /** 40 héroes con winrates repartidos entre 0,44 y 0,56, como los de verdad. */
 const semana = Object.fromEntries(Array.from({ length: 40 }, (_, i) => [`h${i}`, { winRate: 0.44 + (i % 13) / 100, pickRate: 0.01, banRate: 0.1, heroId: i }]));
@@ -194,6 +194,16 @@ test('cruces y parejas: sin poder comprobar, manda la última comprobación que 
   // Y en cuanto se puede medir, manda la medida de hoy, no la de ayer.
   const hoy = elegirRangoDeRelaciones({ pedidas: { counters: matriz(0, 0.3), synergies: matriz(1, 0.3) }, respaldo: mitico, rango: 'glory', ultima: midio.ultima, fecha: 'hoy' });
   ok(hoy.rango === 'glory' && hoy.ultima?.rango === 'glory' && hoy.ultima.fecha === 'hoy', `la medida de hoy no manda: ${JSON.stringify(hoy)}`);
+});
+
+test('la tier list de mlbb.gg solo se enseña si es de estas dos semanas (3.59.4)', () => {
+  const ahora = Date.parse('2026-10-19T21:00:00Z');
+  const de = (fecha) => ({ tiers: { fuente: 'mlbb.gg', fecha, tiers: { Rafaela: 'SS' } } });
+  eq(tiersVigentes(de('2026-10-18T10:00:00Z'), ahora)?.Rafaela, 'SS', 'una tier de ayer no se enseña');
+  eq(tiersVigentes(de('2026-10-04T01:22:56Z'), ahora), null, 'la del 4 de octubre (15 días) se sigue enseñando');
+  eq(tiersVigentes(de(new Date(ahora - (TIERS_CADUCAN_DIAS - 0.5) * 864e5).toISOString()), ahora)?.Rafaela, 'SS', 'justo antes de caducar ya no sale');
+  eq(tiersVigentes(de('no es una fecha'), ahora), null, 'una tier sin fecha válida se enseña');
+  eq(tiersVigentes(null, ahora), null);
 });
 
 await terminar('motor/ventana');

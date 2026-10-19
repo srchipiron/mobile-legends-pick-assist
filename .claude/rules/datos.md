@@ -187,6 +187,18 @@ ninguna constante.
   y el diagnóstico avisa de que se sirven cruces de un rango que la última
   comprobación descartó.
 
+**La tier list de mlbb.gg y el 403 (3.59.4)**: desde el 4 de octubre de
+2026 `back.mlbb.gg` contesta 403 a los runners de GitHub (desde la sesión y
+desde un móvil contesta 200), y `fetchTiers` conservaba la anterior con su
+fecha: dos semanas enseñando a Rafaela en SS con ella nerfeada. Hoy
+`tiersVigentes` (ventana.js) no la enseña pasados `TIERS_CADUCAN_DIAS` (14) y
+el diagnóstico avisa a los 7 con el porqué (`diagnostics.tiers`). La del 19
+de octubre se bajó desde la sesión con el mismo `fetchTiers` y se escribió
+con `serializar` cambiando SOLO `tiers` (la ingesta entera de esa noche la
+tiró el comparador: la API daba error 1101 y solo bajaron cruces de 16
+héroes). Mientras el bot reciba 403, la tier hay que bajarla desde fuera de
+GitHub.
+
 Dos constantes que se midieron y se dejaron como estaban, para no volver a
 medirlas: el umbral de «tu héroe está N puntos por encima» (`>= 0.02` en
 `analisis.js`) lo supera el 63% de los pares y la σ del winrate global entre
