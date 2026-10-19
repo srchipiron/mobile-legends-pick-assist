@@ -1,6 +1,163 @@
 {
- "actualizado": "2026-10-19T19:07:08.858Z",
+ "actualizado": "2026-10-19T21:02:18.380Z",
  "partidas": [
+  {
+   "t": 1792438074120,
+   "pick": "Angela",
+   "recomendados": [
+    "Rafaela",
+    "Floryn",
+    "Natalia"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.649,
+   "origen": "lector",
+   "bans": [
+    "Hirara",
+    "Lukas",
+    "Kagura",
+    "Marcel",
+    "Masha",
+    "Diggie",
+    "Paquito",
+    "Estes",
+    "Eudora"
+   ],
+   "draft": {
+    "enemigos": [
+     "Tigreal",
+     "Vexana",
+     "X.Borg",
+     "Obsidia",
+     "Hanzo"
+    ],
+    "aliados": [
+     "Aulus",
+     "Gloo",
+     "Clint",
+     "Gord"
+    ],
+    "linea": "roam",
+    "rival": "Tigreal"
+   },
+   "lector": {
+    "baneos": [
+     "Hirara",
+     "Lukas",
+     "Kagura",
+     "Marcel",
+     "Masha",
+     "Diggie",
+     "Paquito",
+     "Estes",
+     "Eudora"
+    ],
+    "enemigos": [
+     "Tigreal",
+     "Vexana",
+     "X.Borg",
+     "Obsidia",
+     "Hanzo"
+    ],
+    "aliados": [
+     "Aulus",
+     "Gloo",
+     "Clint"
+    ],
+    "tuyo": "Angela",
+    "dudas": [
+     {
+      "hueco": "a3",
+      "candidato": "Gord",
+      "parecido": 0.76
+     }
+    ],
+    "ms": [
+     3605,
+     3492,
+     3546,
+     3457,
+     3192,
+     4769,
+     3254,
+     3298,
+     3497,
+     3089,
+     3108,
+     3173,
+     2997,
+     3205,
+     2786,
+     4244,
+     2769,
+     3370,
+     2683,
+     4437
+    ],
+    "msCaptura": [
+     2370,
+     2217,
+     2304,
+     2009,
+     1986,
+     3347,
+     2194,
+     2204,
+     2327,
+     2112,
+     2232,
+     2303,
+     2138,
+     2171,
+     1971,
+     2961,
+     1969,
+     2474,
+     1961,
+     1926
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Hanzo",
+      "Hanzo",
+      "Hanzo"
+     ]
+    }
+   },
+   "duracion": 17.2,
+   "fases": [
+    0.729,
+    0.685,
+    0.646,
+    0.606,
+    0.575,
+    0.544
+   ]
+  },
   {
    "t": 1792436696735,
    "pick": "Diggie",
@@ -20908,6 +21065,12 @@
   {
    "cuando": "2026-10-19T19:07:08.858Z",
    "partidas": 233,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-19T21:02:18.380Z",
+   "partidas": 234,
    "heroes": 11,
    "incidencia": 11
   }
