@@ -1,6 +1,200 @@
 {
- "actualizado": "2026-10-19T18:45:22.337Z",
+ "actualizado": "2026-10-19T19:07:08.858Z",
  "partidas": [
+  {
+   "t": 1792436696735,
+   "pick": "Diggie",
+   "recomendados": [
+    "Rafaela",
+    "Minotaur",
+    "Natalia"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.466,
+   "origen": "lector",
+   "bans": [
+    "Obsidia",
+    "Hirara",
+    "Kagura",
+    "Marcel",
+    "Barats",
+    "Paquito",
+    "Belerick",
+    "Aulus",
+    "Karina"
+   ],
+   "draft": {
+    "enemigos": [
+     "Novaria",
+     "Atlas",
+     "Badang",
+     "Miya",
+     "Sun"
+    ],
+    "aliados": [
+     "Clint",
+     "Eudora",
+     "Lancelot",
+     "Guinevere"
+    ],
+    "linea": "roam",
+    "rival": "Atlas"
+   },
+   "lector": {
+    "baneos": [
+     "Obsidia",
+     "Hirara",
+     "Kagura",
+     "Marcel",
+     "Barats",
+     "Paquito",
+     "Belerick",
+     "Aulus",
+     "Karina"
+    ],
+    "enemigos": [
+     "Novaria",
+     "Atlas",
+     "Badang",
+     "Miya",
+     "Sun"
+    ],
+    "aliados": [
+     "Clint",
+     "Eudora",
+     "Lancelot"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Zetian",
+      "parecido": 0.81
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Wanwan",
+      "parecido": 0.64
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Wanwan",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Lancelot",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Valir",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Fredrinn",
+      "parecido": 0.77
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Wanwan",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Fredrinn",
+      "parecido": 0.77
+     }
+    ],
+    "ms": [
+     3723,
+     3367,
+     3309,
+     3603,
+     3825,
+     4321,
+     3635,
+     3332,
+     3770,
+     3491,
+     3224,
+     3233,
+     2876,
+     2759,
+     3365,
+     4359,
+     3236,
+     2870,
+     5143,
+     3272
+    ],
+    "msCaptura": [
+     2352,
+     2245,
+     2289,
+     2530,
+     2561,
+     3043,
+     2571,
+     2154,
+     2557,
+     2246,
+     2187,
+     2410,
+     1998,
+     1735,
+     2392,
+     3125,
+     2423,
+     2057,
+     3769,
+     2073
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Diggie"
+     ],
+     "sinEncontrar": [
+      "Miya",
+      "Sun",
+      "Miya",
+      "Sun"
+     ]
+    }
+   },
+   "duracion": 13.2,
+   "fases": [
+    0.591,
+    0.5,
+    0.439,
+    0.372,
+    0.375,
+    0.37
+   ]
+  },
   {
    "t": 1792435376499,
    "pick": "Diggie",
@@ -20708,6 +20902,12 @@
   {
    "cuando": "2026-10-19T18:45:22.337Z",
    "partidas": 232,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-19T19:07:08.858Z",
+   "partidas": 233,
    "heroes": 11,
    "incidencia": 11
   }
