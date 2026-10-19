@@ -372,7 +372,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(r2.status, 0, `la ingesta sin counters no acaba bien: ${(r2.stdout + r2.stderr).slice(-400)}`);
     const guardada = JSON.parse(readFileSync(REAL, 'utf8'));
     const d2 = JSON.parse(readFileSync(out2, 'utf8'));
-    eq(d2.generatedAt, guardada.generatedAt, 'con la matriz conservada la corrida se fecha como si fuera nueva');
+    // Desde 3.59.6 la fecha sigue a las estadísticas (frescas aquí) y la matriz lleva la suya.
+    ok(d2.generatedAt !== guardada.generatedAt, 'con estadísticas nuevas y la matriz conservada la corrida no sale con fecha de hoy');
+    eq(d2.relaciones?.descargada, guardada.relaciones?.descargada ?? guardada.generatedAt, `la matriz conservada no lleva la fecha en que se descargó: ${JSON.stringify(d2.relaciones)}`);
     eq(d2.diagnostics.conservado, true, 'no dice que conserva la matriz');
     // Con la API caída del todo no hay segunda pasada: doblaría el tiempo por nada.
     eq(d2.diagnostics.relations?.reintentados, undefined, `con todo caído se reintenta: ${JSON.stringify(d2.diagnostics.relations)}`);
@@ -384,8 +386,10 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     const atlasAntes = JSON.stringify(guardada.counters?.Atlas ?? null);
     ok(atlasAntes !== 'null' && JSON.stringify(d2.counters?.Atlas) === atlasAntes, 'la fila de Atlas no se conserva héroe a héroe');
     // Y la etiqueta de rango es la de la matriz conservada, no la pedida (3.37.0: salía la de Mítico etiquetada como Gloria).
-    eq(JSON.stringify(d2.relaciones ?? null), JSON.stringify(guardada.relaciones ?? null), `la matriz conservada sale con otra etiqueta de rango: ${JSON.stringify(d2.relaciones)}`);
-    ok(comparar(d2, guardada).peores.some((p) => p.clave === 'relacionesFrescas'), 'el comparador acepta una corrida que no ha descargado la matriz');
+    eq(JSON.stringify({ ...(d2.relaciones ?? {}), descargada: undefined }), JSON.stringify({ ...(guardada.relaciones ?? {}), descargada: undefined }), `la matriz conservada sale con otra etiqueta de rango: ${JSON.stringify(d2.relaciones)}`);
+    // Y el comparador la ACEPTA (3.59.6): del 10 al 19 de octubre de 2026 tiró así 13 de 16 corridas del bot.
+    // (Contra la primera corrida simulada, la de la misma API de tres héroes.)
+    eq(comparar(d2, d).peores.map((p) => `${p.clave}:${p.antes}→${p.ahora}`).join(), '', 'el comparador tira una corrida con estadísticas nuevas por llevar la matriz conservada');
 
     // Las estadísticas de Mítico caídas con todo lo demás bien (3.43.1): la
     // guarda de rango compara Gloria con Mítico y puntúa con él, así que un
@@ -420,8 +424,15 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     ok(dP.diagnostics.frescos.includes('mythic'), `Mítico no se descargó: ${dP.diagnostics.frescos}`);
     eq(dP.diagnostics.frescosRecursos?.parejas, 0, `cuenta parejas frescas sin haberlas descargado: ${JSON.stringify(dP.diagnostics.frescosRecursos)}`);
     ok(dP.diagnostics.frescosRecursos?.relaciones > 100, `los cruces no se descargaron: ${JSON.stringify(dP.diagnostics.frescosRecursos)}`);
-    eq(dP.generatedAt, guardada.generatedAt, 'con las parejas conservadas la corrida se fecha como si fuera nueva');
-    ok(comparar(dP, guardada).peores.some((p) => p.clave === 'relacionesFrescas'), 'el comparador acepta una corrida sin parejas nuevas');
+    // Desde 3.59.6 se ACEPTA: estadísticas de hoy, y la matriz con la fecha de
+    // cuando se descargó (del 10 al 19 de octubre de 2026 el bot tiró así 13
+    // de 16 corridas con sus estadísticas frescas).
+    ok(dP.generatedAt !== guardada.generatedAt, 'con las estadísticas nuevas y las parejas conservadas la corrida no sale con fecha de hoy');
+    eq(dP.relaciones?.descargada, guardada.relaciones?.descargada ?? guardada.generatedAt, `la matriz conservada no lleva la fecha en que se descargó: ${JSON.stringify(dP.relaciones)}`);
+    // Aquí no hay parejas guardadas de estos tres héroes que conservar (la guardada es la real), así
+    // que la corrida PIERDE parejas: eso sí la tira; que no sean frescas, ya no.
+    const pP = comparar(dP, d).peores.map((p) => p.clave);
+    ok(pP.includes('sinergias') && !pP.includes('relacionesFrescas'), `el comparador no tira por perder parejas, o tira por no ser frescas: ${pP}`);
     // Las curvas en porcentaje no se leen y se conservan las de antes: se
     // cuenta (3.43.2; antes el contador ni se escribía y la app decía 37/37).
     ok(dP.diagnostics.lineas?.curvasConservadas > 0 && dP.diagnostics.lineas?.curvas === 0, `las curvas conservadas no dejan marca: ${JSON.stringify(dP.diagnostics.lineas)}`);

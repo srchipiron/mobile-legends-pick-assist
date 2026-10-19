@@ -191,7 +191,24 @@ export function estadisticasFrescas(frescos, rango, respaldo) {
 export function fechaDeLaCorrida({ frescos, estadisticasNuevas, matrizNueva, previous }) {
   diagnostics.frescos = frescos;
   diagnostics.conservado = !(estadisticasNuevas && matrizNueva);
-  return estadisticasNuevas && matrizNueva ? new Date().toISOString() : (previous?.generatedAt ?? null);
+  // Desde 3.59.6 la fecha sigue a las ESTADÍSTICAS: con cruces y parejas
+  // conservados la corrida sale con fecha de hoy y la matriz lleva la suya
+  // (`relaciones.descargada`, `fechaDeLaMatriz`). Antes hacían falta las dos
+  // cosas a la vez, y del 10 al 19 de octubre de 2026 la ruta de cruces dio
+  // error 1101 en 13 de 16 corridas del bot: el comparador las tiró enteras
+  // con sus estadísticas frescas, y el nerf de Rafaela tardó días en llegar.
+  return estadisticasNuevas ? new Date().toISOString() : (previous?.generatedAt ?? null);
+}
+
+/**
+ * Cuándo se descargó de verdad la matriz de cruces y parejas que lleva la
+ * corrida (3.59.6). Nueva: ahora. Conservada: la de la guardada; un fichero
+ * de antes de esta marca la tiene en su `generatedAt`, que hasta 3.59.6 solo
+ * avanzaba con la matriz fresca.
+ */
+export function fechaDeLaMatriz({ matrizNueva, previous, ahora = new Date().toISOString() }) {
+  if (matrizNueva) return ahora;
+  return previous?.relaciones?.descargada ?? previous?.generatedAt ?? null;
 }
 
 /**

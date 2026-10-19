@@ -15,7 +15,7 @@ import {
 } from './extraccion.mjs';
 import { fetchRelations } from './relaciones.mjs';
 import {
-  anotarFrescura, anotarHistoria, conservarFichasPrevias, estadisticasFrescas, fechaDeLaCorrida, fundirBuilds, fundirWinrateLinea,
+  anotarFrescura, anotarHistoria, conservarFichasPrevias, estadisticasFrescas, fechaDeLaCorrida, fechaDeLaMatriz, fundirBuilds, fundirWinrateLinea,
   kitsRehechos, leerPrevio, relacionesPrevias, relacionesDeLaCorrida,
 } from './fusion.mjs';
 import { bajarImagenes } from './imagenes.mjs';
@@ -333,7 +333,7 @@ async function main() {
     generatedAt,
     rank: RANK,
     // De qué rango salen cruces y parejas, y por qué (3.35.0).
-    relaciones: relacionesRango,
+    relaciones: { ...relacionesRango, descargada: fechaDeLaMatriz({ matrizNueva, previous }) },
     ranks: Object.keys(statsByRank),
     days: DAYS,
     patchAvgWinRate: avgOf(stats),

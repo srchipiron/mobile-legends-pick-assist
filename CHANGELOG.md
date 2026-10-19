@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.59.6
+
+- Los datos del meta vuelven a actualizarse dos veces al día. Desde el 10
+  de octubre la API de datos falla a ratos al dar los cruces y las
+  parejas, y por eso el bot tiraba la actualización entera, también los
+  winrates nuevos: 13 de cada 16 se perdieron, y el nerf de Rafaela tardó
+  días en llegar. Ahora se guardan las estadísticas nuevas y se conservan
+  los últimos cruces buenos, con su fecha; el diagnóstico avisa si pasan
+  de una semana.
+- La tier list de mlbb.gg, que bloquea al bot de GitHub, se baja aparte
+  con una tarea programada fuera de GitHub.
+
 ## 3.59.5
 
 - El lector lee a tus compañeros de siempre desde la primera partida: trae

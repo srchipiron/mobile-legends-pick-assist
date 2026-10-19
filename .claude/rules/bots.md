@@ -45,6 +45,24 @@ la propia Pages); no hace push. Prueba en `workflows.test` con un `curl`
 de pega y copias de scripts/ y src/ (por un enlace simbólico el comparador
 no se cree programa principal y sale con 0 sin comparar).
 
+**Una matriz conservada ya no tira la corrida (3.59.6).** Del 10 al 19 de
+octubre de 2026 el bot falló 13 de 16 veces: la ruta de cruces y parejas
+de arena.rone.dev daba «Error 1101» (10–16 de 133 héroes) y el comparador
+tiraba la corrida por `relacionesFrescas: 1 → 0`, con sus estadísticas,
+builds y tier frescas dentro (el nerf de Rafaela llegó con días de
+retraso). Hoy `generatedAt` sigue a las ESTADÍSTICAS (`fechaDeLaCorrida`),
+la matriz lleva su propia fecha (`relaciones.descargada`,
+`fechaDeLaMatriz`), el comparador no cuenta `relacionesFrescas` como
+regresión (sí PERDER cruces o parejas: `cruces`, `sinergias` en `FIJAS`) y
+el diagnóstico avisa con la matriz de más de 7 días. Prueba en
+`ingesta-simulada` (tres mutaciones) y `diagnostico.test`.
+
+**La tier list fuera de GitHub.** mlbb.gg contesta 403 a los runners de
+GitHub (y 200 a cualquier otro sitio): `scripts/actualizar-tiers.mjs`
+cambia SOLO `tiers` en roam-meta.json (sale con 1 y no escribe si falla;
+prueba contra un mlbb.gg simulado) y lo corre una tarea programada de
+Claude Code en la nube, que hace `npm test` y sube el cambio a `main`.
+
 ## La vigilancia automática
 
 Desde 0.9.0 la app no espera a que Javi note algo raro. `vigilancia.yml` corre

@@ -212,6 +212,10 @@ test('el diagnóstico dice de qué rango salen cruces y parejas, y avisa si no e
   const distinta = texto({ rango: 'glory', pedido: 'glory', coherencia: null, motivo: 'no se pudo bajar mythic entero', ultima: { rango: 'mythic', fecha: '2026-10-14T09:42:54Z' } });
   ok(distinta.some((l) => /^\[AVISO/.test(l) && /última comprobación \(2026-10-14\) eligió mythic/.test(l)), `no avisa de que se sirven cruces de un rango que se midió peor: ${distinta}`);
   ok(!texto({ rango: 'mythic', pedido: 'glory', coherencia: { counters: 0.64, synergies: 0.43 }, motivo: 'no se parecen', ultima: { rango: 'mythic' } }).some((l) => /última comprobación/.test(l)), 'avisa con la matriz del mismo rango que la comprobación');
+  // 3.59.6: la matriz lleva su fecha y, conservada más de una semana, avisa.
+  const deHace = (dias) => diagnosticar({ linea: 'roam', maestria: {}, partidas: [], entorno, datos: prepararDatos({ catalogo: { heroes: catalogo.heroes }, meta: meta({ rango: 'glory', pedido: 'glory', coherencia: null, motivo: null, descargada: new Date(Date.now() - dias * 864e5).toISOString() }), rango: 'glory' }) }).texto.split('\n').filter((l) => /descargados|de hace/.test(l) && /Cruces/.test(l));
+  ok(deHace(1).length === 1 && !/^\[AVISO/.test(deHace(1)[0]), `una matriz de ayer avisa: ${deHace(1)}`);
+  ok(deHace(9).some((l) => /^\[AVISO/.test(l) && /hace 9 días/.test(l)), `una matriz de hace 9 días no avisa: ${deHace(9)}`);
 });
 
 test('la tier list de mlbb.gg vieja es un aviso, con por qué, y pasada su caducidad dice que no se enseña (3.59.4)', () => {

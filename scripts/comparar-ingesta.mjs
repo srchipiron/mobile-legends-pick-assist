@@ -150,6 +150,11 @@ export function comparar(nueva, guardada, maximos = {}) {
   const perdidos = diasPerdidos(nueva, guardada);
   if (perdidos.length) peores.push({ clave: 'historia', antes: perdidos.join(', '), ahora: 'perdidos' });
   for (const clave of Object.keys(b)) {
+    // Una matriz conservada no tira la corrida (3.59.6): se queda la guardada
+    // héroe a héroe, con su fecha (`relaciones.descargada`), y el diagnóstico
+    // avisa si pasa de una semana. Lo que sí la tira es PERDER cruces o
+    // parejas (`cruces`, `sinergias`, en FIJAS).
+    if (clave === 'relacionesFrescas') continue;
     const referencia = FIJAS.includes(clave) ? Math.max(b[clave], maximos?.[clave] ?? 0) : b[clave];
     if (referencia > 0 && a[clave] < referencia * MARGEN) {
       peores.push({ clave, antes: referencia, ahora: a[clave] });
@@ -204,5 +209,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     console.error('\nNo se commitea: los datos de antes son mejores.');
     process.exit(1);
   }
+  if (a.relacionesFrescas < b.relacionesFrescas) console.log(`\nCruces y parejas conservados de la corrida anterior (descargados ${nueva?.relaciones?.descargada ?? '¿?'}): se acepta con las estadísticas nuevas.`);
   console.log('\nLa corrida nueva no empeora nada.');
 }

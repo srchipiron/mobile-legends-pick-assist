@@ -90,6 +90,13 @@ export function seccionDatos(inf, { datos, linea, entorno = {} }) {
   // La última comprobación que se pudo hacer (3.57.3) eligió otro rango que
   // el de la matriz que se sirve: la guardada se quedó de antes y la API no
   // ha dejado traer una entera del rango bueno (3.57.7).
+  // De cuándo es la matriz (3.59.6): desde que una corrida con cruces
+  // conservados ya no se tira, esta es la única señal de que la ruta de
+  // cruces lleva días caída.
+  if (rel?.descargada) {
+    const dias = Math.floor((Date.now() - Date.parse(rel.descargada)) / 864e5);
+    inf.check(dias < 7, `Cruces y parejas descargados hace ${dias} días`, `Cruces y parejas de hace ${dias} días: la API no los da y se conservan los últimos buenos`, true);
+  }
   if (rel?.ultima?.rango && rel.rango && rel.ultima.rango !== rel.rango) {
     inf.check(false, '', `Cruces y parejas: se sirven los de ${rel.rango}, pero la última comprobación${rel.ultima.fecha ? ` (${String(rel.ultima.fecha).slice(0, 10)})` : ''} eligió ${rel.ultima.rango}: hasta que llegue una matriz entera de ${rel.ultima.rango}, los cruces salen de un rango que se midió peor`, true);
   }
