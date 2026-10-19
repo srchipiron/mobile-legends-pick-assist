@@ -1,6 +1,184 @@
 {
- "actualizado": "2026-10-18T23:07:15.932Z",
+ "actualizado": "2026-10-19T18:45:22.337Z",
  "partidas": [
+  {
+   "t": 1792435376499,
+   "pick": "Diggie",
+   "recomendados": [
+    "Gloo",
+    "Floryn",
+    "Diggie"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.516,
+   "origen": "lector",
+   "bans": [
+    "Rafaela",
+    "Hirara",
+    "Lukas",
+    "Kagura",
+    "Marcel",
+    "Eudora",
+    "Masha",
+    "Paquito"
+   ],
+   "draft": {
+    "enemigos": [
+     "Belerick",
+     "Kaja",
+     "Nolan",
+     "Lesley",
+     "Kimmy"
+    ],
+    "aliados": [
+     "Miya",
+     "X.Borg",
+     "Gord",
+     "Sora"
+    ],
+    "linea": "roam",
+    "rival": "Kaja"
+   },
+   "lector": {
+    "baneos": [
+     "Rafaela",
+     "Hirara",
+     "Lukas",
+     "Kagura",
+     "Marcel",
+     "Eudora",
+     "Masha",
+     "Paquito"
+    ],
+    "enemigos": [
+     "Nolan",
+     "Lesley",
+     "Kimmy"
+    ],
+    "aliados": [
+     "Miya",
+     "Sora"
+    ],
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Zetian",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Kaja",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Clint",
+      "parecido": 0.62
+     },
+     {
+      "hueco": "a3",
+      "candidato": "X.Borg",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Gord",
+      "parecido": 0.76
+     }
+    ],
+    "ms": [
+     3731,
+     4766,
+     3561,
+     3479,
+     5507,
+     4233,
+     3132,
+     3023,
+     3388,
+     3455,
+     3002,
+     3143,
+     3118,
+     3242,
+     3276,
+     4130,
+     3281,
+     3523,
+     3004,
+     3480
+    ],
+    "msCaptura": [
+     2480,
+     3186,
+     2326,
+     2347,
+     2403,
+     2777,
+     2004,
+     2009,
+     2425,
+     2520,
+     2062,
+     2154,
+     2201,
+     2192,
+     2218,
+     2968,
+     2251,
+     2322,
+     1999,
+     2604
+    ],
+    "formatos": [
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Belerick",
+      "Belerick",
+      "Belerick"
+     ],
+     "sinEncontrar": [
+      "Kaja",
+      "Kimmy",
+      "Kaja",
+      "Kimmy",
+      "Kaja",
+      "Kimmy"
+     ]
+    }
+   },
+   "duracion": 18.2,
+   "fases": [
+    0.561,
+    0.526,
+    0.541,
+    0.495,
+    0.48,
+    0.43
+   ]
+  },
   {
    "t": 1792364697633,
    "pick": "Diggie",
@@ -20524,6 +20702,12 @@
   {
    "cuando": "2026-10-18T23:07:15.932Z",
    "partidas": 231,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-19T18:45:22.337Z",
+   "partidas": 232,
    "heroes": 11,
    "incidencia": 11
   }
