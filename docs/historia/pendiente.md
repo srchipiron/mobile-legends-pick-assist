@@ -235,3 +235,9 @@
 - La cobertura de la matriz de counters es del 100% desde 1.5.0: 132 rivales
   por héroe. `matchup()` y `sinergia()` siguen mirando los dos sentidos, que
   ahora solo hace falta para héroes recién salidos.
+- **El bonus de nivel de la maestría** (Javi, 20 de octubre de 2026: «más
+  adelante vamos a seguir mejorando esto»). Hoy tu winrate global entra
+  solo en los héroes jugados (+1,7 pp, `terminoTu`) y decide el nº1 más que
+  tu habilidad con cada uno. Lo que falta para decidir: partidas con héroes
+  NO jugados (¿rindes peor con uno nuevo, y cuánto?). Medida y opciones en
+  `descartados.md` («Bajar el peso de la maestría»).

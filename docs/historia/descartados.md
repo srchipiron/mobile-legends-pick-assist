@@ -521,3 +521,17 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   tenía otro recorte del mismo héroe con el que confirmarse: las skins de
   los rivales cambian en cada partida. No entra; sigue `buscarCara` con la
   cara de la API.
+- **Bajar el peso de la maestría (20 de octubre de 2026)**, preguntado por
+  Javi («no sé hasta qué punto compensa que tengan tanto peso»). Medido con
+  la maestría efectiva (11 héroes de siempre + 240 apuntadas, nivel 0,539,
+  k 290) en 193 partidas leave-one-out: λ del término `tu` libre 3,5 ± 1,9
+  (solo posteriores al 26/09: 1,4 ± 2,1); logL/n λ=1 frente a λ=0 +4,5 ±
+  2,8 ‰. Cualquier λ entre 0 y 3 cabe. Casi todo el término es el NIVEL
+  (`esperado = w + (nivel − 0,5)`): +1,7 pp a CUALQUIER héroe jugado y 0 a
+  los no jugados, el doble de la brecha nº1–nº2 (0,7–0,8 pp); lo propio de
+  cada héroe, 0,35 pp de mediana (Rafaela +0,82, Kaja −0,74). Sin maestría
+  cambia el nº1 en el 40% de sus drafts; con ella, el nº1 es héroe suyo en
+  el 91%. Javi eligió dejarlo como está («comodidad» con lo jugado) hasta
+  poder medir héroes no jugados (192 de 193 partidas eran con jugados).
+  Opciones abiertas: el nivel para todos (nº1 cambia en ~25%) o la mitad
+  del nivel a los no jugados. Ver `pendiente.md`.

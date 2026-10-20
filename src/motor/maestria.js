@@ -32,7 +32,7 @@ export function tuNivel(maestria = {}) {
  * Cuánto encoger un winrate personal hacia tu nivel, en partidas de prior.
  * No es libre: k = 0.25/σ², con σ la dispersión REAL de tu winrate entre
  * héroes, medida de tus datos descontando la varianza de muestreo (sale ±4
- * puntos, k≈156). El 20 de antes suponía ±11 puntos y cinco partidas al 90%
+ * puntos, k≈156; el 20 de octubre de 2026, k≈290). El 20 de antes suponía ±11 puntos y cinco partidas al 90%
  * puntuaban 0.87. Con corrección de Bessel; cada héroe pesa games/(games+30)
  * y la σ medida se funde con la de por defecto según cuántos héroes hay,
  * para que el quinto héroe que llega a 30 partidas no mueva k de golpe.
