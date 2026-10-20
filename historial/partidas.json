@@ -1,6 +1,159 @@
 {
- "actualizado": "2026-10-20T16:24:11.013Z",
+ "actualizado": "2026-10-20T16:47:31.449Z",
  "partidas": [
+  {
+   "t": 1792514726120,
+   "pick": "Floryn",
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Estes"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.595,
+   "modelo": 3,
+   "origen": "lector",
+   "bans": [
+    "Sora",
+    "Eudora",
+    "Aulus",
+    "Freya",
+    "Belerick",
+    "Badang",
+    "Masha",
+    "Gloo",
+    "Hirara",
+    "Fredrinn"
+   ],
+   "draft": {
+    "enemigos": [
+     "Marcel",
+     "Bane",
+     "Nana",
+     "Popol and Kupa",
+     "Terizla"
+    ],
+    "aliados": [
+     "Lukas",
+     "Brody",
+     "Zetian",
+     "Guinevere"
+    ],
+    "linea": "roam",
+    "rival": "Marcel"
+   },
+   "lector": {
+    "baneos": [
+     "Sora",
+     "Eudora",
+     "Aulus",
+     "Freya",
+     "Belerick",
+     "Badang",
+     "Masha",
+     "Gloo",
+     "Hirara",
+     "Fredrinn"
+    ],
+    "enemigos": [
+     "Fredrinn",
+     "Wanwan",
+     "Zetian",
+     "Marcel",
+     "Bane"
+    ],
+    "aliados": [
+     "Lukas",
+     "Brody",
+     "Zetian",
+     "Guinevere"
+    ],
+    "tuyo": "Floryn",
+    "ms": [
+     3297,
+     3469,
+     3740,
+     3736,
+     3514,
+     3176,
+     2886,
+     3317,
+     3174,
+     4241,
+     3404,
+     3156,
+     3248,
+     3173,
+     3313,
+     3105,
+     3284,
+     3596,
+     3277,
+     4921
+    ],
+    "msCaptura": [
+     2382,
+     2204,
+     2416,
+     2576,
+     2327,
+     2155,
+     1967,
+     2183,
+     2205,
+     3055,
+     2387,
+     2216,
+     2254,
+     2145,
+     2379,
+     2247,
+     2359,
+     2703,
+     2348,
+     3796
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Terizla",
+      "Terizla"
+     ]
+    }
+   },
+   "duracion": 13.3,
+   "fases": [
+    0.524,
+    0.628,
+    0.658,
+    0.621,
+    0.578,
+    0.52
+   ]
+  },
   {
    "t": 1792512553331,
    "pick": "Rafaela",
@@ -21710,6 +21863,12 @@
   },
   {
    "cuando": "2026-10-20T16:24:11.013Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-20T16:47:31.449Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
