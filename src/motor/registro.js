@@ -68,7 +68,9 @@ export function sanearLectura(lectura) {
     const aprendizaje = { aprendidos: nombres(a.aprendidos, 10), sinEncontrar: nombres(a.sinEncontrar, 10) };
     if (aprendizaje.aprendidos.length || aprendizaje.sinEncontrar.length) salida.aprendizaje = aprendizaje;
   }
-  return salida.baneos.length || salida.enemigos.length || salida.aliados || salida.tuyo || ids.length || dudas.length || salida.aprendizaje ? salida : null;
+  // Los tiempos solos también cuentan (3.60.2): las lecturas que no reconocen
+  // a nadie suelen ser las lentas, y sin esto se perdían de la mediana.
+  return salida.baneos.length || salida.enemigos.length || salida.aliados || salida.tuyo || ids.length || dudas.length || salida.aprendizaje || ms.length || msCaptura.length ? salida : null;
 }
 
 /**

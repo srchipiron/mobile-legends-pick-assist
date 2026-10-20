@@ -9,7 +9,7 @@
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes } from './navegador.mjs';
 import { crearServidor, PUERTO, VIGILANCIA } from '../../scripts/lector/servir.mjs';
 import { capturaCompletaPng, pantallaDeFinal, VERDAD } from '../fixtures/juego/captura.mjs';
 
@@ -241,6 +241,28 @@ await prueba('con «Leer solo» y el draft completo, el lector vigila el final p
   ok(!errores.length, `errores de página: ${errores}`);
   capturar = () => png;
   await contexto.close();
+});
+
+await prueba('la partida apuntada sola no cierra la hoja que estás usando ni pierde lo escrito (3.60.2)', async () => {
+  capturar = () => pngTabla;
+  const completoDesde = Date.now() - 9 * 60 * 1000;
+  const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], enemyRoam: null, fase: 'picks', completoDesde, miPick: 'Khufra', miPickDesde: completoDesde };
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:linea': 'exp', 'roam-picker:lector-auto': true, 'roam-picker:draft': draft } });
+  try {
+    // Ajustes → Tu maestría, y se escribe algo antes de que llegue el resultado.
+    await abrirAjustes(pagina);
+    await pagina.locator('.more .tools .reset').nth(0).click(); await pagina.waitForTimeout(300);
+    const campo = pagina.locator('.mastery-row:not(.head)').first().locator('input').nth(0);
+    await campo.fill('77');
+    let partidas = [];
+    for (let i = 0; i < 100 && !partidas.length; i++) { await pagina.waitForTimeout(250); partidas = (await leer(pagina, 'roam-picker:partidas')) ?? []; }
+    eq(partidas.length, 1, 'la partida no se apunta sola con la hoja abierta: la prueba no mide nada');
+    await pagina.waitForTimeout(500);
+    eq((await leer(pagina)).enemies.length, 0, 'el draft no se reinicia al apuntar');
+    eq(await pagina.locator('.mastery-row').count() > 0, true, 'la partida apuntada sola cierra la hoja de la maestría');
+    eq(await campo.inputValue(), '77', 'la partida apuntada sola borra lo que estabas escribiendo');
+    ok(!errores.length, `errores de página: ${errores}`);
+  } finally { capturar = () => png; await contexto.close(); }
 });
 
 await prueba('el guion de los consejos en directo llega al lector con el draft completo; y si eliges el último, se sigue leyendo tu fila un rato (3.44.1)', async () => {

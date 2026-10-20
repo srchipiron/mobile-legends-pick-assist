@@ -59,7 +59,14 @@ el diagnóstico avisa con la matriz de más de 7 días. Prueba en
 cabecera y el pie de la app cuentan la edad de lo MÁS viejo de las dos
 fechas (`edadDeLosDatos` en useDatos.js; el pie dice aparte la de la
 matriz) y el paso «Comprobar que los datos valen» de `deploy.yml` avisa
-con la matriz de más de 72 h.
+con la matriz de más de 72 h. Y al revés desde 3.60.2: con la matriz nueva
+ENTERA (`relacionesFrescas`), el comparador no tira la corrida por
+`rangoFresco`. Los winrates se conservan con su fecha, porque `generatedAt`
+sigue a las estadísticas. El 20 de octubre de 2026 la API dio los 133
+cruces y 500 en los winrates de Gloria y Mítico. Sin nada fresco se
+rechaza SIEMPRE (`nadaFresco`), aunque lo guardado tampoco lo esté: con los
+winrates guardados ya conservados, comparar solo contra lo guardado dejaba
+commitear corridas que solo cambiaban el diagnóstico.
 
 **La tier list fuera de GitHub.** mlbb.gg contesta 403 a los runners de
 GitHub (y 200 a cualquier otro sitio): `scripts/actualizar-tiers.mjs`

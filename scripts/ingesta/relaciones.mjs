@@ -169,7 +169,7 @@ export function heroeDelRegistro(data) {
  * media, y distinguirlos por su tamaño fallaba: un delta de +0.25 se tomaba por
  * un winrate del 25%. Ahora se mira QUÉ campo vino, que es lo que lo determina.
  */
-export async function fetchRelations(roamNames, stats, heroList, rango = RANK) {
+export async function fetchRelations(roamNames, stats, heroList, rango = RANK, { remedir = null } = {}) {
   const counters = {};
   const synergies = {};
 
@@ -200,9 +200,10 @@ export async function fetchRelations(roamNames, stats, heroList, rango = RANK) {
     // llegaban los counters. Los datos se salvaban (se asignan antes), pero el
     // diagnostico se llenaba de cuatro errores falsos y, con el tope de 4
     // alcanzado, tapaba los errores de verdad.
-    conId: 0, porNombre: 0, ok: 0, errores: [], ejemplos: [],
+    conId: 0, porNombre: 0, ok: 0, errores: [], ejemplos: [], rutaCambiada: [],
   };
 
+  const remedidas = {};
   const pedir = async (name) => {
     const id = idPorNombre.get(norm(name)) ?? name;
     try {
@@ -221,8 +222,22 @@ export async function fetchRelations(roamNames, stats, heroList, rango = RANK) {
       ]);
       // En la segunda pasada una respuesta vacía no borra lo que ya llegó.
       const yaTenia = Object.keys(counters[name] ?? {}).length > 0;
-      const nc = relationMap(recogerPares(c.data), idToName);
-      const ns = relationMap(recogerPares(s.data), idToName);
+      let nc = relationMap(recogerPares(c.data), idToName);
+      let ns = relationMap(recogerPares(s.data), idToName);
+      // Una fila corta (3.60.2): la ruta elegida puede ser la que da 5+5
+      // (la medida se hizo con la API fallando). Se vuelve a medir con este
+      // héroe y, si otra ruta trae más, se cambia para el resto de la corrida.
+      for (const [clave, fila] of [['counter', nc], ['compatibility', ns]]) {
+        if (!remedir || Object.keys(fila).length >= FILA_CORTA || (remedidas[clave] ?? 0) >= REMEDIDAS_MAXIMAS) continue;
+        remedidas[clave] = (remedidas[clave] ?? 0) + 1;
+        const antes = estado.ROUTES?.[clave];
+        await remedir(clave, id);
+        if (estado.ROUTES?.[clave] === antes) continue;
+        const otra = await callRoute(estado.ROUTES[clave], { ...values, hero_id: id, id }, id);
+        const nueva = relationMap(recogerPares(otra.data), idToName);
+        if (clave === 'counter') nc = nueva; else ns = nueva;
+        diagnostics.relations.rutaCambiada.push(`${clave}: ${estado.ROUTES[clave].template}`);
+      }
       if (Object.keys(nc).length || !counters[name]) counters[name] = nc;
       if (Object.keys(ns).length || !synergies[name]) synergies[name] = ns;
       if (Object.keys(counters[name]).length && !yaTenia) {
@@ -269,6 +284,13 @@ export async function fetchRelations(roamNames, stats, heroList, rango = RANK) {
   }
   return { counters, synergies };
 }
+
+/**
+ * Por debajo de tantos pares una fila es «corta» y se vuelve a medir la ruta
+ * (3.60.2), como mucho `REMEDIDAS_MAXIMAS` veces por ruta y corrida. Una fila
+ * sana trae 132; la ruta del esquema, 10. Decisión de producto, lejos de los dos.
+ */
+export const FILA_CORTA = 20, REMEDIDAS_MAXIMAS = 3;
 
 /** Pausa antes de la segunda pasada: los fallos de la API vienen en rachas. Decisión de producto. */
 export const REINTENTO_RELACIONES_MS = 20000;

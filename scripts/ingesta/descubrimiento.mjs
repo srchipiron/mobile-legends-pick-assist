@@ -159,7 +159,11 @@ export async function elegirRutaConMasDatos(clave, heroeDePrueba) {
   // traiga nada.
   if (mejor.pares < 0) { await sleep(500); mejor.pares = await medir(ruta); }
   for (const alt of ruta.alternativas) {
-    const pares = await medir(alt);
+    let pares = await medir(alt);
+    // Las alternativas también se reintentan (3.60.2): con un 500 suelto en
+    // la de academy (132 pares) ganaba la del esquema, que da 5+5 desde el
+    // 20 de octubre de 2026.
+    if (pares < 0) { await sleep(500); pares = await medir(alt); }
     await sleep(200);
     if (pares > Math.max(mejor.pares, 0)) mejor = { ruta: alt, pares };
   }

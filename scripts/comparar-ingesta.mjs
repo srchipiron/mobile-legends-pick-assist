@@ -155,11 +155,22 @@ export function comparar(nueva, guardada, maximos = {}) {
     // avisa si pasa de una semana. Lo que sí la tira es PERDER cruces o
     // parejas (`cruces`, `sinergias`, en FIJAS).
     if (clave === 'relacionesFrescas') continue;
+    // Y al revés (3.60.2): estadísticas conservadas con la matriz recién
+    // bajada entera. Se quedan las de antes CON SU FECHA (`generatedAt` sigue
+    // a las estadísticas), así que nada sale como nuevo sin serlo. El 20 de
+    // octubre de 2026 la API dio los 133 cruces y 500 en los winrates de Gloria.
+    // Sin nada fresco (API caída) se sigue rechazando.
+    if (clave === 'rangoFresco' && a.relacionesFrescas) continue;
     const referencia = FIJAS.includes(clave) ? Math.max(b[clave], maximos?.[clave] ?? 0) : b[clave];
     if (referencia > 0 && a[clave] < referencia * MARGEN) {
       peores.push({ clave, antes: referencia, ahora: a[clave] });
     }
   }
+  // Sin NADA fresco (ni las estadísticas de tu rango y su respaldo, ni la
+  // matriz) se rechaza siempre (3.60.2), aunque lo guardado tampoco lo esté:
+  // si no, tras guardar una corrida con los winrates conservados, el bot
+  // commitearía corridas que solo cambian el diagnóstico.
+  if (!a.rangoFresco && !a.relacionesFrescas) peores.push({ clave: 'nadaFresco', antes: 'algo fresco', ahora: 'nada' });
   return { nueva: a, guardada: b, peores };
 }
 

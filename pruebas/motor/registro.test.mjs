@@ -292,6 +292,8 @@ test('lo que leyó el lector viaja con la partida, saneado, y se mide contra el 
   ok(!('origen' in apuntar([], { pick: 'Estes', gane: true, origen: 'otro' })[0]), 'un origen inventado se guarda');
   eq(sanearLectura(null), null, 'una lectura vacía no es null');
   eq(sanearLectura({ baneos: [], enemigos: ['  '] }), null, 'una lectura sin nombres no es null');
+  // 3.60.2: solo con tiempos (las lecturas que no reconocen a nadie, las lentas) se queda.
+  eq(JSON.stringify(sanearLectura({ baneos: [], enemigos: [], ms: [1200, 1500], msCaptura: [800, 900], formatos: ['png', 'crudo'] })), JSON.stringify({ baneos: [], enemigos: [], ms: [1200, 1500], msCaptura: [800, 900], formatos: ['png', 'crudo'] }), 'una lectura con solo tiempos se tira');
   // Tu equipo y tu fila (3.31.0) viajan, y las dudas de tu equipo (a1–a5) también.
   const conEquipo = sanearLectura({ baneos: [], enemigos: [], aliados: ['Clint', 'Guinevere', 7, ' Novaria '], tuyo: ' Estes ', dudas: [{ hueco: 'a3', candidato: 'Tigreal', parecido: 0.63 }, { hueco: 'z1', candidato: 'X', parecido: 0.5 }] });
   eq(conEquipo?.aliados?.join(), 'Clint,Guinevere,Novaria', `los compañeros leídos no se guardan: ${JSON.stringify(conEquipo)}`);

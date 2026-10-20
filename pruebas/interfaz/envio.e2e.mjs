@@ -75,9 +75,16 @@ await prueba('con token, lo que hay sin subir se sube solo a los pocos segundos,
   ok(await esperar(async () => /incidencia #7/.test(await pagina.locator('.sheet-body').innerText())), 'el botón no dice a qué incidencia ha subido');
   // Quitar una partida (apuntada por error) deja marca, y la marca sube en el código:
   // sin ella, la base de datos del proyecto se quedaba con la partida para siempre.
-  const antesDeQuitar = peticiones.length;
+  // Desde 3.60.2 la × deja «Deshacer» unos segundos y solo después borra
+  // (antes de la subida automática, que en el proyecto ya no se deshace).
   await pagina.getByRole('button', { name: 'Quitar esta partida · Tigreal' }).click(); await pagina.waitForTimeout(200);
-  eq((await leer(pagina, 'roam-picker:olvidadas'))?.join(), String(PARTIDAS[0].t), 'quitar no guarda la marca de borrado');
+  ok(/Tigreal: quitada/.test(await pagina.locator('.partida-quitada').innerText()), 'la × no deja la fila con «Deshacer»');
+  ok(!(await leer(pagina, 'roam-picker:olvidadas'))?.length, 'la × borra en el acto, sin dar tiempo a deshacer');
+  await pagina.locator('.partida-quitada button', { hasText: 'Deshacer' }).click(); await pagina.waitForTimeout(6500);
+  ok(!(await leer(pagina, 'roam-picker:olvidadas'))?.length && await pagina.getByRole('button', { name: 'Quitar esta partida · Tigreal' }).count() === 1, '«Deshacer» no devuelve la partida');
+  const antesDeQuitar = peticiones.length;
+  await pagina.getByRole('button', { name: 'Quitar esta partida · Tigreal' }).click(); await pagina.waitForTimeout(6500);
+  eq((await leer(pagina, 'roam-picker:olvidadas'))?.join(), String(PARTIDAS[0].t), 'quitar no guarda la marca de borrado pasado el plazo');
   ok(await esperar(() => peticiones.length > antesDeQuitar), 'quitar una partida no sube');
   const olvidadas = await pagina.evaluate(async (cuerpo) => {
     const c = JSON.parse(cuerpo).body.match(/MLPA1\.[A-Za-z0-9_-]+\.[a-z0-9]+/)[0].split('.')[1];
@@ -86,6 +93,10 @@ await prueba('con token, lo que hay sin subir se sube solo a los pocos segundos,
     return JSON.parse(texto).olvidadas ?? null;
   }, peticiones[peticiones.length - 1].cuerpo);
   eq(olvidadas?.join(), String(PARTIDAS[0].t), 'el código subido no lleva la marca de la partida quitada');
+  // Quitar y cerrar la hoja antes del plazo: se quita igual (no se pierde el toque).
+  await pagina.getByRole('button', { name: 'Quitar esta partida · Atlas' }).click(); await pagina.waitForTimeout(200);
+  await pagina.keyboard.press('Escape'); await pagina.waitForTimeout(400);
+  ok((await leer(pagina, 'roam-picker:olvidadas'))?.map(String).includes(String(PARTIDAS[1].t)), 'cerrar la hoja antes del plazo deja la partida sin quitar');
   ok(!errores.length, `errores de página: ${errores}`);
   await contexto.close();
 });

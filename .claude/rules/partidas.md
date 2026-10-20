@@ -44,7 +44,12 @@ datos vivían solo en su móvil y ninguna sesión podía leerlos.
   típico), más partidas por héroe y por mes. Cuando haya unas 100 partidas
   con draft, la pendiente dice si la escala 0,44 vale en su cola; hasta
   entonces manda el ±. El fichero se puede leer en cualquier sesión y
-  `medir-mias.mjs` se puede pasar a mano.
+  `medir-mias.mjs` se puede pasar a mano. Desde 3.60.2 dice aparte las que
+  apuntó el lector solo (`soloLector`), porque las de a mano pueden llevar
+  sesgo. El 20 de octubre de 2026 salía un 55% en 56 del lector frente a un
+  64% en 181 a mano, y +1,5 ± 16 puntos contra tu winrate de siempre. Los
+  meses van en la hora de Madrid. Pendiente: guardar la versión del modelo
+  en cada partida, porque la calibración mezcla estimaciones de 3.4 y 3.56.
 - **La subida automática (3.10.0)**: `src/app/envio.js` (puro: huella
   FNV-1a de partidas+maestría, `tocaSubir`, `ESPERA_MS` 3 s, `REINTENTO_MS`
   10 min), `src/app/estado/useEnvio.js` (el estado en `roam-picker:envio`:
@@ -60,7 +65,11 @@ datos vivían solo en su móvil y ninguna sesión podía leerlos.
   cambio en partidas o maestría se sube solo a la MISMA incidencia, que el
   bot procesa igual (`edited` también dispara `partidas.yml`), así que las
   respuestas quedan en hilo. Sin token, el botón sigue abriendo el
-  formulario. Si el token caduca, la hoja lo dice y no se insiste: los
+  formulario. Desde 3.60.2 cada subida lleva solo las `PARTIDAS_POR_ENVIO`
+  (200) más recientes (`paraSubir`, envio.js); el bot funde por instante con
+  lo que tiene. Con todas, el cuerpo pasaba de 65.536 caracteres hacia las
+  350–400 partidas (237 eran 38.114) y GitHub la habría rechazado para
+  siempre. Prueba con las partidas reales repetidas hasta 600. Si el token caduca, la hoja lo dice y no se insiste: los
   mismos datos que fallaron esperan `REINTENTO_MS` o un cambio. Nació de
   que el formulario ya relleno obligaba a iniciar sesión en GitHub desde el
   móvil y ese inicio de sesión, con el código dentro de la dirección,
@@ -73,7 +82,11 @@ datos vivían solo en su móvil y ninguna sesión podía leerlos.
   base de datos del proyecto (la subida automática la manda a los 3 s) y
   volvía al importar un código viejo. Corregir un resultado ya se
   propagaba (mismo instante, gana el móvil). Pruebas en perfil, partidas
-  y `envio.e2e`, verificadas por tres mutaciones.
+  y `envio.e2e`, verificadas por tres mutaciones. Desde 3.60.2 la × del
+  historial no borra en el acto: la fila dice «Quitada · Deshacer» durante
+  `QUITAR_MS` (6 s) y solo después llama a `onOlvidar`; al cerrar la hoja
+  también. Tiene que ser ANTES de la subida, porque en el proyecto la marca
+  ya no se deshace.
 - **No se redespliega**: la app no lee `historial/partidas.json` (el bot
   no está en el `workflow_run` de `deploy.yml` a propósito). Si algún día
   la app lo enseña, hay que meterlo ahí.

@@ -98,8 +98,10 @@ export function relacionesDeLaCorrida(previous, elegidas, rango) {
   const rangoPrevio = previous?.relaciones?.rango ?? previous?.rank ?? null;
   const relations = rangoPrevio && rangoPrevio !== rango ? { counters: {}, synergies: {} } : relacionesPrevias(previous);
   const cuenta = {};
-  const frescas = fundirRelaciones(relations, elegidas, cuenta);
-  return { relations, frescas, frescasParejas: cuenta.parejas, cortas: cuenta.cortas, conservado: frescas === 0 && cuenta.parejas === 0 };
+  // Lo corto se mide contra lo guardado AUNQUE sea de otro rango (3.60.2):
+  // empezando de cero, una fila de 10 no tenía con qué compararse y entraba.
+  const frescas = fundirRelaciones(relations, elegidas, cuenta, relacionesPrevias(previous));
+  return { relations, frescas, frescasParejas: cuenta.parejas, cortas: cuenta.cortas, cortasParejas: cuenta.cortasParejas, conservado: frescas === 0 && cuenta.parejas === 0 };
 }
 
 /**
@@ -108,20 +110,25 @@ export function relacionesDeLaCorrida(previous, elegidas, rango) {
  * vacía y la de cruces bien, cada fila conservaba las parejas de la corrida
  * anterior y la corrida salía fresca, con la fecha de hoy.
  */
-export function fundirRelaciones(relations, fresh, cuenta = {}) {
+export function fundirRelaciones(relations, fresh, cuenta = {}, referencia = relations) {
   let relacionesFrescas = 0;
   let parejas = 0;
   let cortas = 0;
+  let cortasParejas = 0;
   for (const [nombre, fila] of Object.entries(fresh.counters)) {
     if (!Object.keys(fila ?? {}).length) continue;
     const parejasNuevas = fresh.synergies?.[nombre] ?? {};
-    if (Object.keys(parejasNuevas).length && !esCorta(parejasNuevas, relations.synergies[nombre])) { relations.synergies[nombre] = parejasNuevas; parejas += 1; }
-    if (esCorta(fila, relations.counters[nombre])) { cortas += 1; continue; }
+    if (Object.keys(parejasNuevas).length) {
+      if (esCorta(parejasNuevas, referencia.synergies?.[nombre])) cortasParejas += 1;
+      else { relations.synergies[nombre] = parejasNuevas; parejas += 1; }
+    }
+    if (esCorta(fila, referencia.counters?.[nombre])) { cortas += 1; continue; }
     relations.counters[nombre] = fila;
     relacionesFrescas += 1;
   }
   cuenta.parejas = parejas;
   cuenta.cortas = cortas;
+  cuenta.cortasParejas = cortasParejas;
   return relacionesFrescas;
 }
 

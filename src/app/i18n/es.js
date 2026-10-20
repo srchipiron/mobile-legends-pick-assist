@@ -161,6 +161,7 @@ export default {
   'hist.libre': 'por libre',
   'hist.previa': 'historial',
   'hist.quitar': 'Quitar esta partida',
+  'hist.quitada': '{hero}: quitada',
   'hist.cambiar': 'Cambiar el resultado',
   'hist.cambiarHeroe': 'Cambiar el héroe',
   'hist.cambiarHeroePregunta': '¿Con qué héroe jugaste?',

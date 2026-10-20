@@ -196,6 +196,20 @@ ninguna constante.
   de una copia del fichero real con las filas recortadas a sus cuatro
   rivales (`previoSim`): con las 132 celdas de verdad, las suyas serían
   cortas.
+  Desde 3.60.2, tres cosas más de la revisión de ese día:
+  - `esCorta` mide contra lo GUARDADO aunque sea de otro rango, porque la
+    corrida de otro rango empieza de cero.
+  - Las parejas cortas se cuentan (`cortasParejas`).
+  - Con una fila de menos de `FILA_CORTA` (20) pares, `fetchRelations` vuelve
+    a medir las rutas con ese héroe (`remedir`, como mucho
+    `REMEDIDAS_MAXIMAS` 3 por ruta) y, si gana otra, sigue por ella. Queda en
+    `diagnostics.relations.rutaCambiada`.
+
+  La medida de rutas también reintenta las alternativas. Antes, un 500
+  suelto en academy dejaba la corta para toda la corrida: los cruces se
+  conservaban sin avisar, y `/compatibility` da hoy 5+5 igual. La ingesta
+  simulada lo prueba: academy da 500 al medir, la corrida tiene que acabar
+  por academy y decirlo.
 
 **La tier list de mlbb.gg y el 403 (3.59.4)**: desde el 4 de octubre de
 2026 `back.mlbb.gg` contesta 403 a los runners de GitHub (desde la sesión y

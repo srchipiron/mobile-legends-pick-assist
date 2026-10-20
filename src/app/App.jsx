@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { resolverNombres, probablesDelBando, planear } from '../motor/draft.js';
+import { resolverNombres, probablesDelBando, planear, poolDe } from '../motor/draft.js';
 import { buscar } from '../motor/nombres.js';
 import { diagnosticar } from '../motor/diagnostico/index.js';
 import { IDIOMAS } from './i18n/index.js';
@@ -230,7 +230,9 @@ export default function App() {
     // Este draft ya está apuntado (a mano o sola): un tic de la vigilancia
     // que estuviera esperando al lector no lo vuelve a apuntar (3.37.0).
     if (draft.completoDesde) apuntadaSola.current = draft.completoDesde;
-    cerrar();
+    // Apuntada sola, solo se cierran los selectores del draft: la hoja que
+    // estés usando no se cierra bajo el dedo (3.60.2).
+    if (origen !== 'lector' || ['enemigos', 'aliados', 'baneos', 'yo', 'apuntar'].includes(hoja)) cerrar();
     draft.reiniciar();
   };
 
@@ -360,6 +362,18 @@ export default function App() {
     if (fundido.linea && !linea) setLinea(fundido.linea);
   };
 
+  /**
+   * Otra línea, a mano (3.60.2): un pick fijado que no se juega en ella se
+   * suelta. Seguía en el hueco «Tú» y «Apuntar partida» lo guardaba con la
+   * línea nueva sin enseñarlo en la rejilla. El que fijó el lector
+   * (`miPickLeido`) se queda: tu fila vale sea de la línea que sea (3.40.0).
+   */
+  const cambiarLinea = (l) => {
+    if (draft.miPick && !draft.miPickLeido && !poolDe(datos, l).some((h) => h.name === draft.miPick)) draft.fijarPick({ name: draft.miPick });
+    setLinea(l);
+    cerrar();
+  };
+
   const lanzarDiagnostico = async () => {
     try {
       const { publicada, historial } = await pedirPublicada();
@@ -486,6 +500,37 @@ export default function App() {
     />
   ) : null;
 
+  // Las hojas, en las DOS fases (3.60.2): una partida apuntada sola reinicia
+  // el draft a baneos y, montadas solo en picks, la que estabas usando
+  // (Ajustes → maestría, partidas, diagnóstico) desaparecía con lo escrito.
+  const hojas = (
+    <>
+      {informe && <Diagnostico t={t} resultado={informe} onCerrar={() => setInforme(null)} />}
+      {hoja?.build && (
+        <Builds heroe={hoja.build} linea={linea} builds={meta?.builds} equipment={meta?.equipment} talentos={meta?.talentos} enemigos={enemigos} plan={planear(datos, { yo: hoja.build, aliados, enemigos, linea, baneos, maestria: personal.maestriaUsada, rivalMarcado: draft.rivalMarcado })} onCerrar={cerrar} t={t} />
+      )}
+      {hoja === 'linea' && (
+        <ElegirLinea valor={linea} onElegir={cambiarLinea} onCerrar={cerrar} t={t} />
+      )}
+      {hoja === 'apuntar' && (
+        <ApuntarPartida pool={rec.pool} heroes={datos.heroes} miPick={draft.miPick} recomendados={rec.ranking.slice(0, 3).map((r) => r.heroe.name)} onGuardar={guardarPartida} onCerrar={cerrar} t={t} />
+      )}
+      {hoja === 'historial' && (
+        <HistorialPartidas
+          partidas={personal.partidas} maestria={personal.maestria} maestriaUsada={personal.maestriaUsada} datos={datos} pool={rec.pool} perfil={datosPerfil} envio={envio}
+          onOlvidar={personal.olvidarPartida} onCorregir={personal.corregirPartida} onCambiarHeroe={personal.cambiarHeroePartida}
+          onAnadir={(heroe, gane) => personal.apuntarPartida({ pick: heroe, gane, previa: true, rango: datos.rango })}
+          onCerrar={cerrar} t={t}
+        />
+      )}
+      {hoja === 'perfil' && <Perfil datos={datosPerfil} onImportar={traerPerfil} onCerrar={cerrar} t={t} />}
+      {hoja === 'meta' && <Meta datos={datos} linea={linea} onCerrar={cerrar} t={t} />}
+      {hoja === 'maestria' && (
+        <EditorDeMaestria pool={rec.pool} maestria={personal.maestria} onGuardar={personal.guardarMaestria} onCerrar={cerrar} t={t} />
+      )}
+    </>
+  );
+
   if (draft.fase === 'baneos') {
     return (
       <>
@@ -507,6 +552,7 @@ export default function App() {
             cuando una lectura en vuelo pasaba el draft a picks (3.40.0). */}
         {deshacer}
         {selector}
+        {hojas}
       </>
     );
   }
@@ -523,29 +569,7 @@ export default function App() {
       />
       {deshacer}
       {selector}
-      {informe && <Diagnostico t={t} resultado={informe} onCerrar={() => setInforme(null)} />}
-      {hoja?.build && (
-        <Builds heroe={hoja.build} linea={linea} builds={meta?.builds} equipment={meta?.equipment} talentos={meta?.talentos} enemigos={enemigos} plan={planear(datos, { yo: hoja.build, aliados, enemigos, linea, baneos, maestria: personal.maestriaUsada, rivalMarcado: draft.rivalMarcado })} onCerrar={cerrar} t={t} />
-      )}
-      {hoja === 'linea' && (
-        <ElegirLinea valor={linea} onElegir={(l) => { setLinea(l); cerrar(); }} onCerrar={cerrar} t={t} />
-      )}
-      {hoja === 'apuntar' && (
-        <ApuntarPartida pool={rec.pool} heroes={datos.heroes} miPick={draft.miPick} recomendados={rec.ranking.slice(0, 3).map((r) => r.heroe.name)} onGuardar={guardarPartida} onCerrar={cerrar} t={t} />
-      )}
-      {hoja === 'historial' && (
-        <HistorialPartidas
-          partidas={personal.partidas} maestria={personal.maestria} maestriaUsada={personal.maestriaUsada} datos={datos} pool={rec.pool} perfil={datosPerfil} envio={envio}
-          onOlvidar={personal.olvidarPartida} onCorregir={personal.corregirPartida} onCambiarHeroe={personal.cambiarHeroePartida}
-          onAnadir={(heroe, gane) => personal.apuntarPartida({ pick: heroe, gane, previa: true, rango: datos.rango })}
-          onCerrar={cerrar} t={t}
-        />
-      )}
-      {hoja === 'perfil' && <Perfil datos={datosPerfil} onImportar={traerPerfil} onCerrar={cerrar} t={t} />}
-      {hoja === 'meta' && <Meta datos={datos} linea={linea} onCerrar={cerrar} t={t} />}
-      {hoja === 'maestria' && (
-        <EditorDeMaestria pool={rec.pool} maestria={personal.maestria} onGuardar={personal.guardarMaestria} onCerrar={cerrar} t={t} />
-      )}
+      {hojas}
     </>
   );
 }

@@ -164,6 +164,7 @@ export default {
   'hist.libre': 'on your own',
   'hist.previa': 'history',
   'hist.quitar': 'Remove this match',
+  'hist.quitada': '{hero}: removed',
   'hist.cambiar': 'Flip the result',
   'hist.cambiarHeroe': 'Change the hero',
   'hist.cambiarHeroePregunta': 'Which hero did you play?',

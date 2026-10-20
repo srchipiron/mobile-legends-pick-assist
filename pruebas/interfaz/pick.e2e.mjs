@@ -6,7 +6,7 @@
  * dos ayudas que no tocan el motor: el filtro «mis héroes» y el plan A·B·C
  * de la fase de baneos.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
@@ -309,6 +309,22 @@ await prueba('revisión de 3.60.0 (3.60.1): el consejo va tras la tarjeta de la 
   eq(await pagina.locator('.filtro-sinergia').getAttribute('aria-pressed'), 'false', '«Sinergia» vuelve puesta sola con el primer compañero');
   eq(errores.length, 0, `errores en la página: ${errores.join(' | ')}`);
   await contexto.close();
+});
+
+await prueba('cambiar de línea suelta un pick fijado que no se juega en ella; uno que sí, se queda (3.60.2)', async () => {
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': { ...PICKS, miPick: 'Gloo', miPickDesde: Date.now() } } });
+  try {
+    const aLinea = async (nombre) => {
+      await abrirAjustes(pagina);
+      await pagina.locator('.more .side .reset', { hasText: '· ' }).first().click(); await pagina.waitForTimeout(300);
+      await pagina.locator('button.linea', { hasText: nombre }).click(); await pagina.waitForTimeout(400);
+    };
+    await aLinea('Exp');
+    eq((await leer(pagina, 'roam-picker:draft')).miPick, 'Gloo', 'Gloo también juega exp y se suelta');
+    await aLinea('Mid');
+    eq((await leer(pagina, 'roam-picker:draft')).miPick ?? null, null, 'el pick fijado de roam sigue fijado jugando mid');
+    ok(!errores.length, `errores de página: ${errores}`);
+  } finally { await contexto.close(); }
 });
 
 await terminar('interfaz/pick');

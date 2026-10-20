@@ -154,4 +154,11 @@ test('la historia de la fuerza: perder un día de su ventana se rechaza, podar u
   eq(diasPerdidos(h('2026-10-09'), {}).length, 0, 'sin historia guardada (primera corrida) se rechaza');
 });
 
+test('sin nada fresco se rechaza aunque lo guardado tampoco lo fuera (3.60.2)', () => {
+  const rancia = { rank: 'glory', heroes: [{ name: 'A' }], diagnostics: { frescos: [], frescosRecursos: { relaciones: 0, parejas: 0, pedidas: 133 } } };
+  ok(comparar(rancia, rancia).peores.some((p) => p.clave === 'nadaFresco'), 'una corrida sin nada nuevo pasa contra una guardada igual de rancia');
+  const conMatriz = { ...rancia, diagnostics: { ...rancia.diagnostics, frescosRecursos: { relaciones: 133, parejas: 133, pedidas: 133 } } };
+  ok(!comparar(conMatriz, rancia).peores.length, 'con la matriz nueva entera se rechaza');
+});
+
 await terminar('scripts/comparar');

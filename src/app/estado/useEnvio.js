@@ -3,7 +3,7 @@ import { CLAVES, leer, guardar } from './almacen.js';
 import { useAhora } from './useAhora.js';
 import { recogerPerfil, exportarPerfil } from '../../motor/perfil.js';
 import { subirIncidencia, comentarIncidencia } from '../github.js';
-import { huellaDe, sanearEnvio, tocaSubir, encolarAparte, vaciarCola, ESPERA_MS } from '../envio.js';
+import { huellaDe, sanearEnvio, tocaSubir, encolarAparte, vaciarCola, paraSubir, ESPERA_MS } from '../envio.js';
 
 /**
  * La subida automática de tus partidas (3.10.0). Con un token de GitHub
@@ -38,7 +38,7 @@ export function useEnvio({ perfil, t }) {
     ultimo.current.enCurso = true; setEnCurso(true);
     const h = huellaDe(p);
     try {
-      const codigo = await exportarPerfil(recogerPerfil(p));
+      const codigo = await exportarPerfil(recogerPerfil(paraSubir(p)));
       const conApp = (p.partidas ?? []).filter((x) => !x.previa).length;
       const r = await subirIncidencia({
         numero: e.incidencia,

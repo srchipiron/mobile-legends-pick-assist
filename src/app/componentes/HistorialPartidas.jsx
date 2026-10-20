@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { esPrevia, siguioConsejo } from '../../motor/registro.js';
 import { recogerPerfil, exportarPerfil } from '../../motor/perfil.js';
 import { urlDeIncidencia, TOPE_URL, tokenPlausible } from '../github.js';
+import { paraSubir } from '../envio.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Veredicto } from './Veredicto.jsx';
 import { TusNumeros } from './TusNumeros.jsx';
@@ -15,6 +16,9 @@ import { tPorDefecto } from './tPorDefecto.js';
  * NO para comprobar si la app acierta: cuando las jugaste no había consejo
  * que seguir).
  */
+/** Lo que dura el «Deshacer» de una partida quitada, como el del draft (`DESHACER_MS`, decisión de producto). */
+export const QUITAR_MS = 6000;
+
 /** Qué dice la línea de estado de la subida automática. */
 function estadoDeEnvio(envio, t) {
   if (envio.enCurso) return t('hist.autoSubiendo');
@@ -30,6 +34,33 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null,
   const [aviso, setAviso] = useState(null);
   // La partida a la que se le está cambiando el héroe (3.47.0), por su instante.
   const [cambiando, setCambiando] = useState(null);
+  // La × no borra en el acto (3.60.2): un toque en el borde de ⇄ caía en ella
+  // y la partida se perdía sin vuelta atrás. Durante QUITAR_MS la fila dice
+  // «Quitada · Deshacer»; después (o al cerrar la hoja) se borra de verdad.
+  // No antes: la subida automática manda la marca de borrado a los 3 s, y en
+  // el proyecto esa marca ya no se deshace.
+  const [quitando, setQuitando] = useState(null);
+  const pendiente = useRef(null);
+  const confirmarQuitada = () => {
+    const q = pendiente.current;
+    if (!q) return;
+    clearTimeout(q.reloj);
+    pendiente.current = null;
+    setQuitando(null);
+    onOlvidar(q.t);
+  };
+  const quitar = (t) => {
+    confirmarQuitada();
+    pendiente.current = { t, reloj: setTimeout(confirmarQuitada, QUITAR_MS) };
+    setQuitando(t);
+  };
+  const deshacerQuitada = () => {
+    if (pendiente.current) clearTimeout(pendiente.current.reloj);
+    pendiente.current = null;
+    setQuitando(null);
+  };
+  // Al cerrar la hoja, lo que estaba quitándose se quita.
+  useEffect(() => () => confirmarQuitada(), []);
   const conApp = partidas.filter((p) => !esPrevia(p)).length;
 
   /**
@@ -51,7 +82,7 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null,
       setAviso2(r?.error ? t(`hist.error.${r.error}`) : t('hist.subida', { n: conApp, numero: r?.numero ?? '?' }));
       return;
     }
-    const codigo = await exportarPerfil(recogerPerfil(perfil ?? { partidas, mastery: maestria }));
+    const codigo = await exportarPerfil(recogerPerfil(paraSubir(perfil ?? { partidas, mastery: maestria })));
     const titulo = t('hist.enviarTitulo', { n: conApp, fecha: new Date().toLocaleDateString() });
     let url = urlDeIncidencia({ titulo, etiquetas: ['partidas'], cuerpo: `${t('hist.enviarCuerpo')}\n\n\`\`\`\n${codigo}\n\`\`\`` });
     if (url.length > TOPE_URL) {
@@ -127,7 +158,12 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null,
         )}
         <hr />
         {!partidas.length && <p className="nota">{t('hist.vacio')}</p>}
-        {partidas.map((p) => (
+        {partidas.map((p) => (quitando === p.t ? (
+          <div key={p.t} className="partida partida-quitada">
+            <span>{t('hist.quitada', { hero: p.pick })}</span>
+            <button className="filtro" onClick={deshacerQuitada}>{t('deshacer.boton')}</button>
+          </div>
+        ) : (
           <div key={p.t}>
           <div className="partida">
             <span className="partida-fecha">{new Date(p.t).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
@@ -136,7 +172,7 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null,
             <span className={p.gane ? 'partida-bien' : 'partida-mal'}>{p.gane ? t('hist.gane') : t('hist.perdi')}</span>
             <span className="partida-tipo">{esPrevia(p) ? t('hist.previa') : (siguioConsejo(p) ? t('hist.seguida') : t('hist.libre'))}</span>
             <button className="x" title={t('hist.cambiar')} aria-label={`${t('hist.cambiar')} · ${p.pick}`} onClick={() => onCorregir(p.t, !p.gane)}>⇄</button>
-            <button className="x" title={t('hist.quitar')} aria-label={`${t('hist.quitar')} · ${p.pick}`} onClick={() => onOlvidar(p.t)}>×</button>
+            <button className="x" title={t('hist.quitar')} aria-label={`${t('hist.quitar')} · ${p.pick}`} onClick={() => quitar(p.t)}>×</button>
           </div>
           {cambiando === p.t && (
             <div className="partida-cambiar">
@@ -149,7 +185,7 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null,
             </div>
           )}
           </div>
-        ))}
+        )))}
       </div>
     </Hoja>
   );

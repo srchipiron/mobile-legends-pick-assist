@@ -69,6 +69,12 @@ export function medir(registro, datos) {
   const salida = { n: partidas.length, conApp: conApp.length, previas: partidas.length - conApp.length, ganadas, wr: conApp.length ? ganadas / conApp.length : null };
   salida.veredicto = resumen(partidas, maestria);
   salida.calibracion = calibracion(partidas);
+  // Solo las que apuntó el lector solo (3.60.2), como promete registro.js:
+  // las de a mano pueden llevar sesgo (se apuntan más tras ganar). Medido el
+  // 20 de octubre de 2026: 55% en 56 del lector frente al 64% en 181 a mano.
+  const delLector = conApp.filter((p) => p.origen === 'lector');
+  const ganadasLector = delLector.filter((p) => p.gane).length;
+  salida.soloLector = { n: delLector.length, ganadas: ganadasLector, wr: delLector.length ? ganadasLector / delLector.length : null, veredicto: resumen([...partidas.filter(esPrevia), ...delLector], maestria) };
   const filas = datos ? repuntuar(partidas, datos) : [];
   if (filas.length) {
     const n = filas.length;
@@ -92,7 +98,9 @@ export function medir(registro, datos) {
   for (const p of conApp) { const h = porHeroe.get(p.pick) ?? { pick: p.pick, n: 0, ganadas: 0 }; h.n += 1; h.ganadas += p.gane ? 1 : 0; porHeroe.set(p.pick, h); }
   salida.porHeroe = [...porHeroe.values()].sort((a, b) => b.n - a.n || a.pick.localeCompare(b.pick));
   const porMes = new Map();
-  for (const p of conApp) { const k = new Date(p.t).toISOString().slice(0, 7); const m = porMes.get(k) ?? { mes: k, n: 0, ganadas: 0, siguiendo: 0 }; m.n += 1; m.ganadas += p.gane ? 1 : 0; m.siguiendo += siguioConsejo(p) ? 1 : 0; porMes.set(k, m); }
+  // El mes en la hora de Javi (3.60.2): en UTC, una partida del 1 a la 01:27 contaba en el mes anterior.
+  const mesDe = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit' });
+  for (const p of conApp) { const k = mesDe.format(new Date(p.t)).slice(0, 7); const m = porMes.get(k) ?? { mes: k, n: 0, ganadas: 0, siguiendo: 0 }; m.n += 1; m.ganadas += p.gane ? 1 : 0; m.siguiendo += siguioConsejo(p) ? 1 : 0; porMes.set(k, m); }
   salida.porMes = [...porMes.values()].sort((a, b) => a.mes.localeCompare(b.mes));
   salida.lector = aciertosDelLector(partidas);
   salida.fases = medirFasesMias(partidas);
@@ -112,6 +120,11 @@ export function informe(m, { generado = null, errorDatos = null } = {}) {
     L.push(`- Contra tu winrate de siempre (${pct(c.base)} en ${c.partidasBase} partidas): ${pp(c.dif)} puntos ± ${(c.margen * 100).toFixed(1)}. ${c.seVe ? 'Se distingue del azar.' : `Todavía no se distingue del azar${c.faltan != null ? `: faltan unas ${c.faltan} partidas siguiendo la app` : ''}.`}`);
   } else {
     L.push('- Contra tu winrate de siempre: hacen falta al menos 5 partidas siguiendo la app y tu maestría escrita.');
+  }
+  const sl = m.soloLector;
+  if (sl?.n) {
+    const cl = sl.veredicto?.contraReferencia;
+    L.push(`- Solo las que apuntó el lector solo (sin el posible sesgo de apuntar más las ganadas): ${sl.n}, ${pct(sl.wr)} ganadas${cl ? `; contra tu winrate de siempre, ${pp(cl.dif)} puntos ± ${(cl.margen * 100).toFixed(1)} (${cl.seVe ? 'se distingue del azar' : 'no se distingue del azar'})` : ''}.`);
   }
   if (v.entreRamas) {
     const e = v.entreRamas;

@@ -158,4 +158,19 @@ test('medir-mias: la AUC va con su margen, y con pocas partidas dice que no se d
   ok(!/se puede concluir/.test(ramas), 'vuelve a decir «se puede concluir» sin decir qué');
 });
 
+test('medir-mias separa las apuntadas por el lector y cuenta los meses en la hora de Javi (3.60.2)', () => {
+  const t0 = Date.parse('2026-10-05T10:00:00Z');
+  const partidas = [
+    ...Array.from({ length: 40 }, (_, i) => ({ t: t0 + i * 6e5, pick: 'Atlas', gane: i % 2 === 0, origen: 'lector', recomendados: ['Atlas'] })),
+    ...Array.from({ length: 40 }, (_, i) => ({ t: t0 + (100 + i) * 6e5, pick: 'Atlas', gane: i % 5 !== 0, recomendados: ['Atlas'] })),
+    // El 1 de octubre a la 01:27 en Madrid (30 de septiembre en UTC).
+    { t: Date.parse('2026-09-30T23:27:51Z'), pick: 'Tigreal', gane: true, recomendados: [] },
+  ];
+  const m = medir({ partidas, maestria: {} }, null);
+  eq(m.soloLector.n, 40);
+  eq(m.soloLector.wr, 0.5, 'la línea del lector mezcla las de a mano');
+  ok(/apuntó el lector solo[^\n]*40, 50/.test(informe(m)), `el informe no dice las del lector: ${informe(m).split('\n').find((l) => /lector solo/.test(l))}`);
+  eq(m.porMes.map((x) => x.mes).join(), '2026-10', `los meses van en UTC: ${JSON.stringify(m.porMes)}`);
+});
+
 await terminar('scripts/partidas');

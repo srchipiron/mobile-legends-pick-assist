@@ -259,7 +259,8 @@ async function main() {
   const ultima = previous?.relaciones?.ultima ?? null;
   const guarda = (opciones) => elegirRangoDeRelaciones({ rango: RANK, filasMinimas: Math.ceil(0.9 * nombresPedir.length), ultima, fecha: new Date().toISOString(), ...(CELDAS_MINIMAS != null ? { minimo: CELDAS_MINIMAS } : {}), ...opciones });
   try {
-    const fresh = await fetchRelations(nombresPedir, stats, heroList, RANK);
+    const remedir = (clave, id) => elegirRutaConMasDatos(clave, id);
+    const fresh = await fetchRelations(nombresPedir, stats, heroList, RANK, { remedir });
     let elegidas = fresh;
     const respaldo = RANGO_DE_RESPALDO[RANK];
     // Sin nada del rango pedido (API caída) no se pide el de respaldo: no
@@ -267,7 +268,7 @@ async function main() {
     if (respaldo && filasCon(fresh)) {
       const diagPedido = diagnostics.relations;
       try {
-        const otras = await fetchRelations(nombresPedir, stats, heroList, respaldo);
+        const otras = await fetchRelations(nombresPedir, stats, heroList, respaldo, { remedir });
         // El respaldo tiene que llegar casi entero (el 90%, el mismo listón
         // que `anotarFrescura`) para poder sustituir al pedido.
         relacionesRango = guarda({ pedidas: fresh, respaldo: otras });
@@ -292,9 +293,9 @@ async function main() {
     parejasFrescas = corrida.frescasParejas;
     // Sin ninguna fila nueva se queda la matriz guardada, y con ella su etiqueta.
     if (corrida.conservado) relacionesRango = previous?.relaciones ?? { ...relacionesRango, motivo: 'sin cruces nuevos: se conservan los de la corrida anterior' };
-    if (corrida.cortas) {
-      diagnostics.relations = { ...(diagnostics.relations ?? {}), cortas: corrida.cortas };
-      console.warn(`  · relaciones: ${corrida.cortas} filas de cruces con menos de la mitad que la guardada: se conserva la guardada`);
+    if (corrida.cortas || corrida.cortasParejas) {
+      diagnostics.relations = { ...(diagnostics.relations ?? {}), cortas: corrida.cortas, cortasParejas: corrida.cortasParejas };
+      console.warn(`  · relaciones: ${corrida.cortas} filas de cruces y ${corrida.cortasParejas} de parejas con menos de la mitad que la guardada: se conserva la guardada`);
     }
     console.log(`  · relaciones: ${relacionesFrescas} héroes nuevos de ${nombresPedir.length} · ${Object.keys(relations.counters).length} con fila`);
   } catch (err) {

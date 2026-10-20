@@ -894,6 +894,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* El tipo de partida en pequeño: es lo que menos se mira y lo que mas ocupa. */
 .partida-tipo { color: var(--muted); font-size: 11px; text-align: right; }
 .partida .x { color: var(--muted); font-size: 16px; padding: 12px 10px; margin: -12px -6px; }
+/* La fila de una partida recién quitada, con su «Deshacer» (3.60.2). */
+.partida-quitada { display: flex; color: var(--muted); justify-content: space-between; }
 
 /* Al añadir partidas viejas la rejilla no puede comerse la pantalla: si no, el
    boton de Gané/Perdí queda debajo del teclado y no se alcanza. */

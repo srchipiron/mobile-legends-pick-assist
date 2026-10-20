@@ -62,6 +62,16 @@ export function tocaSubir(estado, huella, { ahora, enLinea = true, partidas = 0 
  * minuto. Como mucho `MAX_APARTE`: se tiran las más viejas, que son las que
  * menos dicen.
  */
+/**
+ * Las partidas que viajan en cada subida (3.60.2): las más recientes. El bot
+ * funde por instante con lo que ya tiene (`fundirPerfil`), así que no se
+ * pierde ninguna; mandarlas todas pasaba del límite de 65.536 caracteres del
+ * cuerpo de una incidencia hacia las 350–400 partidas (237 eran 38.114) y
+ * GitHub la rechazaba, para siempre. 200 con lector son unos 30.000.
+ */
+export const PARTIDAS_POR_ENVIO = 200;
+export const paraSubir = (perfil = {}) => ({ ...perfil, partidas: [...(perfil.partidas ?? [])].sort((a, b) => (b.t ?? 0) - (a.t ?? 0)).slice(0, PARTIDAS_POR_ENVIO) });
+
 export const MAX_APARTE = 4;
 
 export const encolarAparte = (cola, envio) => [...cola, { ...envio }].slice(-MAX_APARTE);

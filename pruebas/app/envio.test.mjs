@@ -2,9 +2,11 @@
  * La subida automática de partidas (3.10.0), la parte pura: qué se sube,
  * cuándo toca y que lo guardado no pueda reventar la app.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
-import { huellaDe, sanearEnvio, tocaSubir, encolarAparte, vaciarCola, MAX_APARTE, ESPERA_MS, REINTENTO_MS } from '../../src/app/envio.js';
-import { recogerPerfil } from '../../src/motor/perfil.js';
+import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { huellaDe, sanearEnvio, tocaSubir, encolarAparte, vaciarCola, paraSubir, PARTIDAS_POR_ENVIO, MAX_APARTE, ESPERA_MS, REINTENTO_MS } from '../../src/app/envio.js';
+import { recogerPerfil, exportarPerfil, leerPerfil, fundirPerfil } from '../../src/motor/perfil.js';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 const partidas = [{ t: 2, pick: 'Atlas', gane: true, recomendados: ['Atlas'] }, { t: 1, pick: 'Tigreal', gane: false, recomendados: [] }];
 const mastery = { Atlas: { games: 20, winRate: 0.55 } };
@@ -77,6 +79,23 @@ await test('las pantallas del final que no se pudieron subir esperan en cola y s
   let llena = [];
   for (let i = 0; i < MAX_APARTE + 2; i++) llena = encolarAparte(llena, { titulo: `T${i}` });
   eq(llena.map((e) => e.titulo).join(), Array.from({ length: MAX_APARTE }, (_, i) => `T${i + 2}`).join(), 'la cola no tiene tope o tira las nuevas');
+});
+
+test('lo que se sube cabe en una incidencia aunque haya muchas partidas, y no se pierde ninguna (3.60.2)', async () => {
+  // Con las partidas REALES repetidas hasta 600 (los 500 del móvil y más):
+  // mandarlas todas pasaba de los 65.536 caracteres del cuerpo hacia las 350–400.
+  const reales = JSON.parse(readFileSync(join(RAIZ, 'historial/partidas.json'), 'utf8')).partidas;
+  ok(reales.length > 100, 'pocas partidas reales con que probar');
+  const muchas = Array.from({ length: 600 }, (_, i) => ({ ...reales[i % reales.length], t: 1.7e12 + i * 6e5 }));
+  const todas = await exportarPerfil(recogerPerfil({ partidas: muchas, mastery: {} }));
+  ok(todas.length > 65536, `con todas no se pasa del límite: la prueba no mide nada (${todas.length})`);
+  const codigo = await exportarPerfil(recogerPerfil(paraSubir({ partidas: muchas, mastery: {} })));
+  ok(codigo.length < 60000, `el código de 600 partidas mide ${codigo.length} caracteres`);
+  const enviado = (await leerPerfil(codigo)).perfil.partidas;
+  eq(enviado.length, PARTIDAS_POR_ENVIO);
+  eq(Math.min(...enviado.map((p) => p.t)), 1.7e12 + (600 - PARTIDAS_POR_ENVIO) * 6e5, 'no van las más recientes');
+  // El bot funde con lo que ya tenía: siguen las 600.
+  eq(fundirPerfil({ partidas: enviado, mastery: {} }, { partidas: muchas, mastery: {} }).partidas.length, 600, 'al fundir se pierden partidas');
 });
 
 terminar('app/envio');

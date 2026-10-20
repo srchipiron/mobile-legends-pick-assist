@@ -206,6 +206,19 @@ tarjeta de X aunque «Sinergia» la mueva (`trasDe`; si X no está entre las
 ocho, tras la primera) y «Sinergia» se apaga sin compañeros. Prueba en
 `pick.e2e`, tres mutaciones.
 
+**Las hojas en las dos fases (3.60.2)**: desde 3.60.2 la maestría, las
+partidas, Meta, el perfil, Plan y objetos y el Diagnóstico se montan en
+baneos y en picks (`hojas` en App.jsx, en el mismo hueco del árbol), como
+ya pasaba con el aviso y el selector.
+- Una partida apuntada sola reinicia a baneos. Antes cerraba la hoja que
+  usabas y se perdía lo escrito.
+- Apuntada sola solo cierra los selectores del draft.
+- Cambiar de línea suelta un pick fijado a mano que no se juega en ella
+  (`cambiarLinea`). Uno leído (`miPickLeido`) se queda.
+- `pedirPublicada` corta a los `PLAZO_PUBLICADA_MS` (4 s).
+
+Pruebas en `lector.e2e`, `pick.e2e` y `app/publicada`.
+
 **La segunda pasada (3.59.1)**: los motivos y la frase de «detrás» van en
 una segunda fila de la tarjeta que ocupa las dos columnas (`.pick-abajo`,
 `grid-column: 2 / -1`), con «Plan y objetos» al pie a la derecha: a 390 px

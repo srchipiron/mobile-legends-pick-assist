@@ -8,6 +8,40 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.60.2
+
+- El bot de datos ya no se queda con la ruta mala de cruces. Desde el 20
+  de octubre una ruta de la API da solo 10 rivales por héroe. Si al
+  medirlas falla la buena, ahora la reintenta, y si aun así llega una fila
+  corta, cambia de ruta en plena corrida. Antes los cruces dejaban de
+  actualizarse sin avisar.
+- El bot ya no tira los cruces nuevos porque falten los winrates. Si la
+  API da la matriz entera pero falla en los winrates de tu rango, se
+  guardan los cruces y builds nuevos y se conservan los winrates de antes,
+  con su fecha. Hoy ha pasado justo eso.
+- Tus partidas se siguen subiendo cuando haya muchas. Cada subida manda
+  las 200 más recientes: con todas, el mensaje pasaría del límite de
+  GitHub hacia las 350 partidas y dejaría de subirse para siempre. El
+  proyecto no pierde ninguna, porque las junta con las que ya tenía.
+- Una partida apuntada sola por el lector ya no cierra la hoja que tengas
+  abierta (maestría, partidas, diagnóstico) ni borra lo que estabas
+  escribiendo.
+- Quitar una partida del historial deja «Deshacer» unos segundos: la × está
+  pegada a ⇄ y un toque de lado la borraba sin vuelta atrás.
+- Al cambiar de línea, tu pick fijado se suelta si no se juega en la línea
+  nueva. Antes seguía en «Tú» y «Apuntar partida» lo guardaba sin verse.
+- El Diagnóstico ya no se queda colgado sin red: espera como mucho 4
+  segundos.
+- La respuesta del bot a tus partidas:
+  - dice aparte cómo te va en las que apuntó el lector solo, que no tienen
+    el sesgo de apuntar más las ganadas;
+  - cuenta los meses en tu hora.
+- Las lecturas que no reconocen a nadie ya cuentan en lo que tarda el
+  lector.
+- Datos del 20 de octubre: matriz de cruces y parejas nueva entera, tier
+  list y builds de hoy. Los winrates siguen siendo los del 19, porque la
+  API no los dio.
+
 ## 3.60.1
 
 - Los cruces ya no se pueden estropear por un cambio de la API. Desde el

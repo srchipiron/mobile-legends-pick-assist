@@ -1053,3 +1053,10 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   fila con menos de la mitad de celdas que la guardada no la sustituye
   (`esCorta`, fusion.mjs). Lección: lo que se elige midiendo necesita
   también una guarda para cuando la medida no se puede hacer.
+- **El comparador también tiraba lo bueno por los winrates (3.59.6 →
+  3.60.2)** — 3.59.6 dejó de tirar la corrida por una matriz conservada,
+  pero no al revés. El 20 de octubre de 2026 la API dio la matriz entera y
+  500 en los winrates de Gloria y Mítico. `rangoFresco: 1 → 0` tiraba los
+  cruces y builds nuevos, aunque los winrates salieran conservados con su
+  fecha. Lección: si una regla del comparador se relaja para una mitad de
+  los datos, hay que mirar también la otra mitad.

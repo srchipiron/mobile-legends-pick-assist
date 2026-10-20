@@ -1,6 +1,6 @@
 {
   "name": "mobile-legends-pick-assist",
-  "version": "3.60.1",
+  "version": "3.60.2",
   "private": true,
   "type": "module",
   "scripts": {

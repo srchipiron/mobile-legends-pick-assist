@@ -97,6 +97,8 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   let fallaRecientes = false;
   let fallaDetail = false;
   let academyVacia = false;
+  // Academy da 500 a las primeras N peticiones: la medida de rutas (y su reintento) falla (3.60.2).
+  let academyFallaAlMedir = 0;
   let fallosCountersPendientes = 0;
   let gloriaRuidosa = false;
   // 3.43.1: las estadísticas de Mítico (el rango de respaldo) caídas, y la
@@ -206,6 +208,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       marca('counters'); return json(pares(2));
     }
     const signoDelRango = gloriaRuidosa && u.searchParams.get('rank') === 'glory' ? -1 : 1;
+    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && academyFallaAlMedir > 0) { academyFallaAlMedir -= 1; res.statusCode = 500; return res.end('{}'); }
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && miticoAMedias && u.searchParams.get('rank') === 'mythic' && ++miticosServidos > 3) return json({ data: { sub_hero: [] } });
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && fallaUnaVez(u, ruta, 4)) { res.statusCode = 500; return res.end('{}'); }
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && cruceVacioAlReintentar(u, ruta, 4)) return json({ data: { sub_hero: [] } });
@@ -415,7 +418,10 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(dM.diagnostics.frescosRecursos?.parejas > 100, true, `con la matriz entera no cuenta las parejas: ${JSON.stringify(dM.diagnostics.frescosRecursos)}`);
     eq(dM.generatedAt, guardada.generatedAt, 'con Mítico conservado la corrida se fecha como si fuera nueva');
     eq(dM.diagnostics.conservado, true, 'no dice que Mítico es de otra corrida');
-    ok(comparar(dM, guardada).peores.some((p) => p.clave === 'rangoFresco'), 'el comparador acepta una corrida sin el rango de respaldo');
+    // Desde 3.60.2 se acepta si la matriz llegó entera: Mítico se queda el de antes con su fecha.
+    // (La API simulada tiene 3 héroes: contra el fichero real los recuentos siempre son peores; se mira solo rangoFresco.)
+    ok(!comparar(dM, guardada).peores.some((p) => p.clave === 'rangoFresco'), 'con la matriz nueva entera y Mítico conservado, el comparador tira la corrida por rangoFresco');
+    ok(comparar({ ...dM, diagnostics: { ...dM.diagnostics, frescosRecursos: { ...dM.diagnostics.frescosRecursos, relaciones: 0, parejas: 0 } } }, guardada).peores.some((p) => p.clave === 'nadaFresco'), 'sin matriz nueva el comparador acepta una corrida sin el rango de respaldo');
 
     // Y la ruta de parejas sin ningún par, con los cruces bien (3.43.1): cada
     // fila conservaba las parejas de la corrida anterior y salía fresca.
@@ -579,6 +585,32 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(d7.relaciones?.ultima?.rango, 'mythic', 'se pierde la última comprobación');
     eq(d7.counters.Atlas?.Khufra, 0.5123, `el cruce guardado no es el de Mítico: ${JSON.stringify(d7.counters.Atlas)}`);
     eq(d7.synergies.Atlas?.Tigreal, 0.48, `la pareja guardada no es la de Mítico: ${JSON.stringify(d7.synergies.Atlas)}`);
+    // Octava (3.60.2): academy (la ruta larga) falla al MEDIR las rutas y gana
+    // la del esquema, que trae menos (aquí 2 de 4; en la API real, 10 de 132).
+    // La primera fila corta vuelve a medir y la corrida sigue por academy.
+    academyFallaAlMedir = 2;
+    const out8 = resolve(dir, 'ruta-corta.json');
+    const r8 = await correrIngesta([
+      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', out,
+      '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', out8, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
+      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
+    ]);
+    academyFallaAlMedir = 0;
+    eq(r8.status, 0, `la corrida con la medida de rutas fallando no acaba bien: ${(r8.stdout + r8.stderr).slice(-400)}`);
+    const d8 = JSON.parse(readFileSync(out8, 'utf8'));
+    ok(d8.counters.Atlas?.Layla != null, `con la ruta corta elegida (Layla solo la da academy), los cruces no vuelven a la larga: ${JSON.stringify(d8.counters.Atlas)}`);
+    ok(d8.diagnostics.relations?.rutaCambiada?.some((x) => /academy/.test(x)), `no cambió de ruta (la medida no se quedó con la corta, o no lo dice): ${JSON.stringify(d8.diagnostics.relations?.rutaCambiada)}`);
+    // Novena: un solo 500 al medir. La medida reintenta la larga y ni hace falta cambiar a mitad.
+    academyFallaAlMedir = 1;
+    const out9 = resolve(dir, 'ruta-un-fallo.json');
+    const r9 = await correrIngesta([
+      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', out,
+      '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', out9, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
+      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
+    ]);
+    academyFallaAlMedir = 0;
+    const d9 = JSON.parse(readFileSync(out9, 'utf8'));
+    ok(r9.status === 0 && /academy/.test(d9.diagnostics.rutasMedidas?.counter ?? '') && !d9.diagnostics.relations?.rutaCambiada?.length, `con un 500 suelto al medir no se reintenta la ruta larga: ${JSON.stringify({ m: d9.diagnostics.rutasMedidas, c: d9.diagnostics.relations?.rutaCambiada })}`);
   } finally {
     srv.close();
     rmSync(dir, { recursive: true, force: true });
@@ -629,7 +661,7 @@ test('la ingesta arranca sin errores de programación', async () => {
       eq(nueva.generatedAt, guardada.generatedAt, 'una corrida sin red se fecha como si trajera datos nuevos');
       eq(nueva.diagnostics?.conservado, true, 'la corrida no dice que conserva lo anterior');
       const veredicto = comparar(nueva, guardada);
-      ok(veredicto.peores.some((p) => p.clave === 'rangoFresco'),
+      ok(veredicto.peores.some((p) => p.clave === 'nadaFresco'),
         `el comparador acepta una corrida que no ha descargado nada: ${JSON.stringify(veredicto.peores)}`);
     }
   } finally {

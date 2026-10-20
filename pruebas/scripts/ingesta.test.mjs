@@ -447,6 +447,10 @@ test('una fila de cruces o parejas con menos de la mitad que la guardada no la s
   ok(r.frescas === 1 && r.frescasParejas === 1 && r.cortas === 1, `cuenta mal: ${JSON.stringify({ f: r.frescas, p: r.frescasParejas, c: r.cortas })}`);
   // Todas cortas: no hay nada nuevo y se conserva la guardada con su etiqueta.
   ok(relacionesDeLaCorrida(previo, { counters: { A: fila(2, 0.6), C: fila(2, 0.6) }, synergies: {} }, 'mythic').conservado, 'con todas las filas cortas no se da por conservada');
+  // 3.60.2: de OTRO rango (se empieza de cero) lo corto se mide igual contra lo guardado.
+  const otro = relacionesDeLaCorrida(previo, { counters: { A: fila(2, 0.6), C: fila(10, 0.6) }, synergies: { A: fila(2, 0.6), C: fila(3, 0.6) } }, 'glory');
+  ok(otro.frescas === 1 && !otro.relations.counters.A && otro.cortas === 1, `de otro rango entra una fila corta: ${JSON.stringify({ f: otro.frescas, c: otro.cortas, A: otro.relations.counters.A })}`);
+  eq(otro.cortasParejas, 2, 'las parejas cortas no se cuentan');
 });
 
 test('la curva por duración (3.43.0): seis tramos en orden, la de la forma real; con otros tramos o un valor imposible, nada', () => {
