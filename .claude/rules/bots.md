@@ -55,7 +55,11 @@ la matriz lleva su propia fecha (`relaciones.descargada`,
 `fechaDeLaMatriz`), el comparador no cuenta `relacionesFrescas` como
 regresión (sí PERDER cruces o parejas: `cruces`, `sinergias` en `FIJAS`) y
 el diagnóstico avisa con la matriz de más de 7 días. Prueba en
-`ingesta-simulada` (tres mutaciones) y `diagnostico.test`.
+`ingesta-simulada` (tres mutaciones) y `diagnostico.test`. Desde 3.60.1 la
+cabecera y el pie de la app cuentan la edad de lo MÁS viejo de las dos
+fechas (`edadDeLosDatos` en useDatos.js; el pie dice aparte la de la
+matriz) y el paso «Comprobar que los datos valen» de `deploy.yml` avisa
+con la matriz de más de 72 h.
 
 **La tier list fuera de GitHub.** mlbb.gg contesta 403 a los runners de
 GitHub (y 200 a cualquier otro sitio): `scripts/actualizar-tiers.mjs`

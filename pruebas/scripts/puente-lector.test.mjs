@@ -10,7 +10,7 @@ import { test, ok, eq, terminar } from '../arnes.mjs';
 import { crearServidor, lectorEnHilos, leerCaptura, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS } from '../../scripts/lector/servir.mjs';
 import { guardarResultados } from '../../scripts/lector/resultado.mjs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
-import { carasGuardadas } from '../../scripts/lector/leer.mjs';
+import { carasGuardadas, vaciosAliadoGuardados } from '../../scripts/lector/leer.mjs';
 import { PUERTO_LECTOR, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS } from '../../src/app/lector.js';
 import { capturaCompletaPng, pantallaDeFinal, VERDAD } from '../fixtures/juego/captura.mjs';
 import { leerPng } from '../../scripts/lector/png.mjs';
@@ -257,6 +257,11 @@ test('una corrección de la app guarda la verdad junto a la captura, aprende de 
   eq(leerAprendido(f), null, 'lo aprendido sin guardas (versión 1) se sigue usando');
   writeFileSync(f, JSON.stringify({ version: VERSION_APRENDIDO, picks: null, caras: {}, capturas: 1 }));
   eq(leerAprendido(f)?.capturas, 1, 'lo aprendido de la versión actual no se lee');
+  // 3.60.1: al leerlo se quita el icono del hueco vacío aprendido como un héroe
+  // (contaba en `/estado` como compañero aprendido).
+  writeFileSync(f, JSON.stringify({ version: VERSION_APRENDIDO, picks: null, caras: {}, capturas: 1, aliados: { Estes: [{ v: vaciosAliadoGuardados()[1] }] }, aliadosPendientes: { Gord: [{ v: vaciosAliadoGuardados()[0] }] } }));
+  const leido = leerAprendido(f);
+  ok(leido && !Object.keys(leido.aliados).length && !Object.keys(leido.aliadosPendientes).length, `lo aprendido conserva el icono del hueco vacío: ${JSON.stringify(Object.keys(leido?.aliados ?? {}))}`);
 });
 
 test('las imágenes reducidas: dos PNG pequeños con paleta que caben en una incidencia; y /captura ya no existe', async () => {

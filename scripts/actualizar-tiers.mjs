@@ -33,8 +33,10 @@ if (serializar(meta) + fin !== antes) {
   process.exit(1);
 }
 const anterior = meta.tiers ?? null;
-const nueva = await fetchTiers(meta.heroes ?? [], { tiers: null });
-if (!nueva?.tiers || /^fallo|apagada/.test(diagnostics.tiers ?? '')) {
+// Con la anterior: si falla no la devuelve como nueva (sale con 1 por el
+// `fallo` del diagnóstico), y los héroes que no lleguen hoy conservan la suya.
+const nueva = await fetchTiers(meta.heroes ?? [], { tiers: anterior });
+if (!nueva?.tiers || nueva === anterior || /^fallo|apagada/.test(diagnostics.tiers ?? '')) {
   console.error(`No se ha podido bajar la tier list: ${diagnostics.tiers ?? 'sin respuesta'}`);
   process.exit(1);
 }

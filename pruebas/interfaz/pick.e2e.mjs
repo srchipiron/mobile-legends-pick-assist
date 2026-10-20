@@ -273,6 +273,44 @@ await prueba('las sinergias (3.60.0): cada tarjeta dice su mejor pareja y «Sine
   await contexto.close();
 });
 
+await prueba('revisión de 3.60.0 (3.60.1): el consejo va tras la tarjeta de la que habla, el punto del lector no sale en lo metido a mano y «Sinergia» no se queda puesta a escondidas', async () => {
+  // Con Eudora de compañera, el héroe del consejo queda 4º con «Sinergia» (medido): ni el primero ni fuera.
+  const draft = { ...PICKS, allies: ['Eudora'], lectura: { enemigos: ['Layla'] } };
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': draft } });
+  // (1) Con «Sinergia» el consejo «si tú vas con X» va tras la tarjeta de X (o tras la primera si X no está).
+  const tras = () => pagina.evaluate(() => {
+    const yo = /(?:con|with) ([^:,.]+)/.exec(document.querySelector('.equipo .equipo-pista')?.textContent ?? '')?.[1]?.trim();
+    const tarjetas = [...document.querySelectorAll('.pick')].map((e) => e.dataset.heroe);
+    return { yo, tarjetas, antes: document.querySelector('.equipo')?.previousElementSibling?.dataset?.heroe };
+  });
+  const sin = await tras();
+  ok(sin.yo && sin.antes === sin.yo, `sin filtro el consejo no va tras su tarjeta: ${JSON.stringify(sin)}`);
+  await pagina.locator('.filtro-sinergia').click(); await pagina.waitForTimeout(500);
+  const con = await tras();
+  ok(con.tarjetas[0] !== con.yo && con.tarjetas.includes(con.yo), `con «Sinergia» la tarjeta del consejo es la primera o no se ve: la prueba no mide nada (${JSON.stringify(con)})`);
+  eq(con.antes, con.yo, `con «Sinergia» el consejo va tras otra tarjeta: ${JSON.stringify(con)}`);
+  // (2) Layla la puso el lector; quitada y vuelta a meter a mano, ya no lleva el punto.
+  eq(await pagina.locator('.side.enemy .slot.leido').count(), 1, 'Layla, leída por el lector, no lleva su punto');
+  await pagina.getByRole('button', { name: 'Quitar Layla' }).click(); await pagina.waitForTimeout(300);
+  await pagina.locator('.side.enemy .slot.empty').first().click(); await pagina.waitForTimeout(300);
+  await pagina.locator('.sheet input').fill('Layla'); await pagina.waitForTimeout(200);
+  await pagina.locator('.sheet .hero-grid button', { hasText: 'Layla' }).first().click(); await pagina.waitForTimeout(300);
+  await pagina.keyboard.press('Escape'); await pagina.waitForTimeout(300);
+  ok((await leer(pagina, 'roam-picker:draft')).enemies.includes('Layla'), 'no se ha vuelto a meter a Layla: la prueba no mide nada');
+  eq(await pagina.locator('.side.enemy .slot.leido').count(), 0, 'Layla, metida a mano, sigue diciendo que la puso el lector');
+  // (3) Sin compañeros «Sinergia» se apaga: con el primero nuevo no vuelve sola.
+  await pagina.getByRole('button', { name: 'Quitar Eudora' }).click(); await pagina.waitForTimeout(300);
+  eq(await pagina.locator('.filtro-sinergia').count(), 0, 'sin compañeros sigue el botón');
+  await pagina.locator('.side.ally .slot.empty:not(.yo)').first().click(); await pagina.waitForTimeout(300);
+  await pagina.locator('.sheet input').fill('Eudora'); await pagina.waitForTimeout(200);
+  await pagina.locator('.sheet .hero-grid button', { hasText: 'Eudora' }).first().click(); await pagina.waitForTimeout(300);
+  await pagina.keyboard.press('Escape'); await pagina.waitForTimeout(300);
+  ok((await leer(pagina, 'roam-picker:draft')).allies.includes('Eudora'), `no se ha vuelto a meter a Eudora: ${JSON.stringify(await leer(pagina, 'roam-picker:draft'))}`);
+  eq(await pagina.locator('.filtro-sinergia').getAttribute('aria-pressed'), 'false', '«Sinergia» vuelve puesta sola con el primer compañero');
+  eq(errores.length, 0, `errores en la página: ${errores.join(' | ')}`);
+  await contexto.close();
+});
+
 await terminar('interfaz/pick');
 await navegador.close();
 await cerrar();

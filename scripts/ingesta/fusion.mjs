@@ -99,7 +99,7 @@ export function relacionesDeLaCorrida(previous, elegidas, rango) {
   const relations = rangoPrevio && rangoPrevio !== rango ? { counters: {}, synergies: {} } : relacionesPrevias(previous);
   const cuenta = {};
   const frescas = fundirRelaciones(relations, elegidas, cuenta);
-  return { relations, frescas, frescasParejas: cuenta.parejas, conservado: false };
+  return { relations, frescas, frescasParejas: cuenta.parejas, cortas: cuenta.cortas, conservado: frescas === 0 && cuenta.parejas === 0 };
 }
 
 /**
@@ -111,15 +111,30 @@ export function relacionesDeLaCorrida(previous, elegidas, rango) {
 export function fundirRelaciones(relations, fresh, cuenta = {}) {
   let relacionesFrescas = 0;
   let parejas = 0;
+  let cortas = 0;
   for (const [nombre, fila] of Object.entries(fresh.counters)) {
     if (!Object.keys(fila ?? {}).length) continue;
+    const parejasNuevas = fresh.synergies?.[nombre] ?? {};
+    if (Object.keys(parejasNuevas).length && !esCorta(parejasNuevas, relations.synergies[nombre])) { relations.synergies[nombre] = parejasNuevas; parejas += 1; }
+    if (esCorta(fila, relations.counters[nombre])) { cortas += 1; continue; }
     relations.counters[nombre] = fila;
-    if (Object.keys(fresh.synergies?.[nombre] ?? {}).length) { relations.synergies[nombre] = fresh.synergies[nombre]; parejas += 1; }
     relacionesFrescas += 1;
   }
   cuenta.parejas = parejas;
+  cuenta.cortas = cortas;
   return relacionesFrescas;
 }
+
+/**
+ * Una fila nueva con menos de la mitad de las celdas de la guardada no la
+ * sustituye (3.60.1). El 20 de octubre de 2026 la ruta del esquema de cruces
+ * pasó a dar 5+5 rivales por héroe (la de academy sigue con los 132); con la
+ * API dando 500 al medir las rutas, la ingesta se quedó con la corta y 58
+ * filas enteras iban a salir con 10 cruces (17.556 → 10.480). El comparador
+ * lo paró, pero tiró la corrida entera. La mitad es decisión de producto: una
+ * fila sana cambia de largo en uno o dos héroes, no a la mitad.
+ */
+export const esCorta = (fila, previa) => Object.keys(fila ?? {}).length < Object.keys(previa ?? {}).length / 2;
 
 /**
  * El winrate por línea (3.12.0) fundido PAR A PAR: lo descargado hoy manda,

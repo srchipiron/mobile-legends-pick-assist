@@ -8,6 +8,30 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.60.1
+
+- Los cruces ya no se pueden estropear por un cambio de la API. Desde el
+  20 de octubre la API da solo 10 rivales por héroe en una de sus rutas,
+  y con la API fallando el bot habría cambiado 58 filas completas por
+  filas de 10. Ahora una fila mucho más corta que la guardada no la
+  sustituye.
+- La edad de los datos dice la verdad. Si los cruces son más viejos que
+  los winrates, la cabecera y el pie cuentan la edad de lo más viejo y se
+  marcan «viejos». Antes ponía «0 h» aunque los cruces fueran de hace
+  semanas. El pie dice aparte de cuándo son los cruces.
+- La tier list: si mlbb.gg no da la tier de algún héroe, se queda con la
+  anterior. Antes ese héroe se quedaba sin tier. Y el diagnóstico avisa
+  justo cuando la app la deja de enseñar, también si viene sin fecha.
+- Lector: las caras «aprendidas» que en realidad eran el icono de un hueco
+  vacío se borran solas. Ya no cuentan como compañeros aprendidos ni le
+  quitan sitio a las caras buenas.
+- «Para tus compañeros» va siempre tras la tarjeta del héroe del que habla,
+  también con «Sinergia» puesto.
+- El punto verde de «lo puso el lector» ya no sale en un héroe que quitaste
+  y volviste a meter a mano.
+- «Sinergia» se apaga sola si te quedas sin compañeros, en vez de volver
+  activada con el siguiente.
+
 ## 3.60.0
 
 - Las sinergias se ven en cada recomendación: cada tarjeta dice con qué

@@ -292,6 +292,10 @@ async function main() {
     parejasFrescas = corrida.frescasParejas;
     // Sin ninguna fila nueva se queda la matriz guardada, y con ella su etiqueta.
     if (corrida.conservado) relacionesRango = previous?.relaciones ?? { ...relacionesRango, motivo: 'sin cruces nuevos: se conservan los de la corrida anterior' };
+    if (corrida.cortas) {
+      diagnostics.relations = { ...(diagnostics.relations ?? {}), cortas: corrida.cortas };
+      console.warn(`  · relaciones: ${corrida.cortas} filas de cruces con menos de la mitad que la guardada: se conserva la guardada`);
+    }
     console.log(`  · relaciones: ${relacionesFrescas} héroes nuevos de ${nombresPedir.length} · ${Object.keys(relations.counters).length} con fila`);
   } catch (err) {
     console.warn(`  · relaciones: fallo (${err.message}); conservo las anteriores`);

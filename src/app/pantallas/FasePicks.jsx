@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { buscar } from '../../motor/nombres.js';
 import { tic } from '../tacto.js';
 import { winrateEnLinea, tiersVigentes } from '../../motor/draft.js';
@@ -41,7 +41,12 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
   // La tier de mlbb.gg, solo si es de estas dos semanas (3.59.4).
   const tiers = tiersVigentes(meta);
   // Lo que puso el lector de la tablet (3.59.0): su hueco lleva un punto.
-  const leidos = useMemo(() => new Set([...(draft.lectura?.enemigos ?? []), ...(draft.lectura?.aliados ?? []), ...(draft.lectura?.tuyo ? [draft.lectura.tuyo] : [])]), [draft.lectura]);
+  // Menos lo que se metió a mano (3.60.1): quitado y vuelto a meter, el
+  // nombre sigue en `lectura` y el punto decía que lo puso el lector.
+  const leidos = useMemo(() => {
+    const aMano = new Set(draft.aMano ?? []);
+    return new Set([...(draft.lectura?.enemigos ?? []), ...(draft.lectura?.aliados ?? [])].filter((n) => !aMano.has(n)).concat(draft.lectura?.tuyo ? [draft.lectura.tuyo] : []));
+  }, [draft.lectura, draft.aMano]);
   const anadirAliado = (h) => draft.anadir('aliados', h);
   // «Mis héroes»: solo los que llevas (maestría o partidas). Un héroe que
   // nunca has jugado entra en el ranking «como tu media», que es optimista;
@@ -56,6 +61,9 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
   // recuerda: es cosa de este draft, como «mis héroes».
   const [porSinergia, setPorSinergia] = useState(false);
   const conEquipo = aliados.length > 0;
+  // Sin compañeros el botón no se ve: tampoco se queda puesto a escondidas
+  // para volver solo con el primer compañero (3.60.1).
+  useEffect(() => { if (!conEquipo) setPorSinergia(false); }, [conEquipo]);
   const filtrada = soloMios && hayMios ? mios : ranking;
   const lista = porSinergia && conEquipo ? [...filtrada].sort((a, b) => (b.terminos?.parejas ?? 0) - (a.terminos?.parejas ?? 0) || b.p - a.p) : filtrada;
   // Tu pick fijado va el primero: con ocho tarjetas a la vista, el nº22 no
@@ -63,6 +71,11 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
   // tú vas con él». El número de la tarjeta sigue siendo su puesto real.
   const fijada = miPick ? lista.find((c) => c.heroe.name === miPick.name) : null;
   const visibles = fijada ? [fijada, ...lista.filter((c) => c !== fijada)] : lista;
+  const enPantalla = visibles.slice(0, 8);
+  // El consejo a los compañeros es «si tú vas con X»: va tras la tarjeta de X
+  // (3.60.1; con «Sinergia» X podía no ser la primera). Si X no está entre
+  // las ocho, tras la primera, que es donde se busca.
+  const trasDe = Math.max(0, enPantalla.findIndex((c) => c.heroe.name === consejos.yo?.name));
   // Las tarjetas se deslizan a su puesto nuevo (3.22.0); con otra línea,
   // otro rango o el meta recién llegado es otro ranking y no se anima.
   const resultados = useRef(null);
@@ -210,7 +223,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
         ) : null}
         {fueraDeMios && <p className="fuera-de-mios">{t('filtro.fueraDeMios', { nombre: fueraDeMios.heroe.name, pct: Math.round(fueraDeMios.p * 100) })}</p>}
 
-        {visibles.slice(0, 8).map((c, i) => (
+        {enPantalla.map((c, i) => (
           <Fragment key={c.heroe.name}>
             <Tarjeta
               candidato={c}
@@ -227,7 +240,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
               detras={ranking.indexOf(c) > 0 ? porQueDetras(c, ranking[0]) : null}
               primero={ranking[0]?.heroe.name}
             />
-            {i === 0 && <ConsejoEquipo consejos={consejos.lista} yo={consejos.yo} onElegir={anadirAliado} t={t} />}
+            {i === trasDe && <ConsejoEquipo consejos={consejos.lista} yo={consejos.yo} onElegir={anadirAliado} t={t} />}
           </Fragment>
         ))}
 

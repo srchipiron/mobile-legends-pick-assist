@@ -1036,3 +1036,20 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   su fila vacía se leía Estes. Lección: un «sitio vacío» no tiene un solo
   aspecto; antes de fiarse de lo aprendido, mirar a mano cada cara de la
   fila propia, que es la que más se repite.
+- **La edad de los datos tras partir la fecha en dos (3.59.6 → 3.60.1)** —
+  3.59.6 hizo que `generatedAt` siguiera a las estadísticas y dio a la
+  matriz su propia fecha (`relaciones.descargada`). Pero la cabecera, el pie
+  y el aviso de 72 h de `deploy.yml` se escribieron cuando «fecha de hoy»
+  quería decir «todo fresco», y siguieron leyendo solo `generatedAt`: con la
+  matriz congelada semanas, la app decía «0 h». Lo cazó
+  `silent-failure-hunter`. Lección: si un dato se parte en dos, hay que
+  repasar a cada consumidor del viejo, no solo al que lo escribe.
+- **La ruta de cruces que pasó a dar 10 rivales (20 de octubre de 2026,
+  3.60.1)** — `/api/heroes/{id}/counters` pasó a dar 5+5 rivales; la de
+  academy sigue con los 132. `elegirRutaConMasDatos` elige midiendo, pero
+  con la API dando 500 a todas las medidas (−1 todas) se quedó con la
+  principal, y 58 filas enteras de Mítico iban a salir con 10 cruces
+  (17.556 → 10.480). El comparador lo paró, como debía. Desde 3.60.1 una
+  fila con menos de la mitad de celdas que la guardada no la sustituye
+  (`esCorta`, fusion.mjs). Lección: lo que se elige midiendo necesita
+  también una guarda para cuando la medida no se puede hacer.

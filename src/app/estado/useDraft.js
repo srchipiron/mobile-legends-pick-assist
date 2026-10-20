@@ -134,6 +134,12 @@ export function useDraft() {
   // mientras el draft siga siendo `despues`: cualquier otro cambio lo anula
   // (deshacer entonces se llevaría por delante lo que metiste después).
   const [paraDeshacer, setParaDeshacer] = useState(null);
+  // Los héroes metidos A MANO en este draft (3.60.1): su hueco no lleva el
+  // punto de «lo puso el lector» aunque el lector los hubiera leído antes
+  // (quitado y vuelto a meter: `lectura` conserva el nombre para no volver a
+  // meterlo solo). No se guarda; con el draft nuevo (sin lectura) se vacía.
+  const [aMano, setAMano] = useState([]);
+  useEffect(() => { if (!draft.lectura) setAMano((l) => (l.length ? [] : l)); }, [draft.lectura]);
 
   useEffect(() => {
     guardar(CLAVES.draft, { enemies: draft.enemigos, allies: draft.aliados, bans: draft.baneos, enemyRoam: draft.rivalMarcado, fase: draft.fase, miPick: draft.miPick, miPickDesde: draft.miPickDesde, ...(draft.miPickLeido ? { miPickLeido: true } : {}), completoDesde: draft.completoDesde, ...(draft.cerrado ? { cerrado: true } : {}), ...(draft.recordarDesde ? { recordarDesde: draft.recordarDesde } : {}), ...(draft.apuntadaSola ? { apuntadaSola: draft.apuntadaSola } : {}), ...(draft.lectura ? { lectura: draft.lectura } : {}) });
@@ -150,6 +156,7 @@ export function useDraft() {
       const nuevo = { ...d, [bando]: [...lista, heroe.name], ...(sueltaPick ? { miPick: null, miPickDesde: null } : {}) };
       return conCompleto(nuevo, ahora);
     });
+    setAMano((l) => (l.includes(heroe.name) ? l : [...l, heroe.name]));
   }, []);
 
   /** «Lo cojo»: fija tu pick (segundo toque en el mismo lo suelta). El instante se calcula FUERA del updater. */
@@ -364,5 +371,5 @@ export function useDraft() {
     return conCompleto(nuevo, null);
   }), []);
 
-  return { ...draft, anadir, quitar, cerrarPorPartida, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio, vaciarConDeshacer, quitarConDeshacer, aplicarLectura, anotarAprendizaje, deshacible, deshacer, olvidarDeshacer, foto, restaurar };
+  return { ...draft, aMano, anadir, quitar, cerrarPorPartida, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio, vaciarConDeshacer, quitarConDeshacer, aplicarLectura, anotarAprendizaje, deshacible, deshacer, olvidarDeshacer, foto, restaurar };
 }

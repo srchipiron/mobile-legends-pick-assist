@@ -155,6 +155,8 @@ jobs:
           const cruces=Object.values(d.counters??{}).reduce((n,f)=>n+Object.keys(f??{}).length,0);
           console.log('datos generados hace', h.toFixed(1), 'h ·', d.heroCount ?? 0, 'heroes ·', cruces, 'cruces');
           if (h > 72) console.log('::warning::Los datos tienen mas de 72 horas: se publica el codigo con los mismos datos que ya sirve la app');
+          const hm=(Date.now()-new Date(d.relaciones?.descargada ?? d.generatedAt))/3.6e6;
+          if (hm > 72) console.log('::warning::La matriz de cruces y parejas tiene', Math.round(hm), 'horas: la API no la da entera desde entonces');
           if (!(d.heroCount ?? 0)) { console.error('Sin estadisticas'); process.exit(1); }
           if (cruces < 1000) { console.error('Sin matriz de counters'); process.exit(1); }"
 

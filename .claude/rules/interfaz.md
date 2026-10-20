@@ -199,7 +199,12 @@ al rival quitaba al héroe) y pisaba el texto de encima. Lo que puso el
 lector lleva un punto verde (`.slot.leido`, de `draft.lectura`). Los
 plegables (`.more`, `.equipo`) llevan una flecha que gira. Prueba en
 `pick.e2e` (punto, tamaño, marcar/desmarcar, la × no marca), tres
-mutaciones.
+mutaciones. Desde 3.60.1 el punto no sale en lo metido A MANO (`draft.aMano`,
+en memoria: quitado y vuelto a meter, el nombre sigue en `lectura` para que
+el lector no lo meta otra vez), el consejo «si tú vas con X» va tras la
+tarjeta de X aunque «Sinergia» la mueva (`trasDe`; si X no está entre las
+ocho, tras la primera) y «Sinergia» se apaga sin compañeros. Prueba en
+`pick.e2e`, tres mutaciones.
 
 **La segunda pasada (3.59.1)**: los motivos y la frase de «detrás» van en
 una segunda fila de la tarjeta que ocupa las dos columnas (`.pick-abajo`,

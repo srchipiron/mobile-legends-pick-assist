@@ -12,7 +12,7 @@ export const HORAS_DATOS_VIEJOS = 36;
  * Si faltan los counters, el motivo se enseña aquí: leer el JSON en un móvil
  * no es una opción razonable.
  */
-export function Pie({ meta, generado, edadHoras, rango, rangoDatos = null, diasDatos = null, cov, t = tPorDefecto }) {
+export function Pie({ meta, generado, edadHoras, edadMatrizHoras = null, rango, rangoDatos = null, diasDatos = null, cov, t = tPorDefecto }) {
   const [abierto, setAbierto] = useState(false);
   const [novedades, setNovedades] = useState(false);
   const fecha = generado ? generado.toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : null;
@@ -33,6 +33,10 @@ export function Pie({ meta, generado, edadHoras, rango, rangoDatos = null, diasD
         <div className="pie-detalle">
           <div>{t('pie.datosApi', { fecha: fecha ?? t('pie.nunca') })}</div>
           <div>{t('pie.antiguedad', { horas: edadHoras != null ? `${Math.round(edadHoras)} h` : '—' })}</div>
+          {/* La matriz de cruces y parejas puede ser más vieja que las estadísticas (3.60.1). */}
+          {edadMatrizHoras != null && generado && Math.round(edadMatrizHoras) > Math.round((Date.now() - generado) / 3.6e6) && (
+            <div className={edadMatrizHoras > HORAS_DATOS_VIEJOS ? 'pie-aviso' : undefined}>{t('pie.antiguedadMatriz', { horas: `${Math.round(edadMatrizHoras)} h` })}</div>
+          )}
           {/* La ventana y el rango que DECIDEN (ventana.js), no los de la
               ingesta: con la guarda activa decía «glory · 7 días» y los
               winrates eran de Mítico a 3. */}

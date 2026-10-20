@@ -66,6 +66,7 @@ export default {
   'pie.datosApi': 'API data: {fecha}',
   'pie.nunca': 'never',
   'pie.antiguedad': 'Age: {horas}',
+  'pie.antiguedadMatriz': 'Counters and synergies: {horas} old (the API did not serve them in the latest runs)',
   'pie.rango': 'Rank: {rango} · {dias}-day window',
   'pie.rangoFuerza': 'Rank: {rango} · win rates from {usado} (the «Meta» sheet says why) · {dias}-day window',
   'pie.heroesConStats': 'Heroes with statistics: {n}',

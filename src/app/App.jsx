@@ -40,7 +40,7 @@ import { Meta } from './componentes/Meta.jsx';
 export default function App() {
   const { t, linea, setLinea, rango, setRango, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto, vozCallada, setVozCallada } = useAjustes();
   const carga = useDatos(rango);
-  const { datos, meta, metaListo, pro, error, generado, edadHoras, sinWinrates } = carga;
+  const { datos, meta, metaListo, pro, error, generado, edadHoras, edadMatrizHoras, sinWinrates } = carga;
   const draft = useDraft();
   const personal = usePersonal();
   useActualizacion();
@@ -450,7 +450,7 @@ export default function App() {
   const etiquetaDatos = ETIQUETAS_RANGO[rangoDatos] ?? rangoDatos ?? '';
   const pie = (
     <Pie
-      t={t} meta={meta} generado={generado} edadHoras={edadHoras} rango={datos.rango} cov={rec.cov}
+      t={t} meta={meta} generado={generado} edadHoras={edadHoras} edadMatrizHoras={edadMatrizHoras} rango={datos.rango} cov={rec.cov}
       rangoDatos={rangoDatos} diasDatos={datos.meta?.ventana?.dias}
     />
   );

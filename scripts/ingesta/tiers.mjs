@@ -74,6 +74,14 @@ export async function fetchTiers(heroList, previous) {
   const n = Object.keys(tiers).length;
   // Con menos de la mitad no es una tier list, es un trozo: mejor la de ayer entera.
   if (n < heroList.length / 2) return conservar(`solo ${n} héroes con tier (${fallos} fallos)`);
-  diagnostics.tiers = `${n} héroes${fallos ? ` (${fallos} fallos)` : ''}`;
+  // Los que no han llegado hoy (una ficha que falla) conservan la de antes,
+  // héroe a héroe (3.60.1): con 70 de 133 la tier nueva sustituía a la
+  // entera y 63 héroes se quedaban sin tier sin que nada lo dijera.
+  let conservados = 0;
+  for (const h of heroList) {
+    const antes = previous?.tiers?.tiers?.[h.name];
+    if (tiers[h.name] == null && ESCALONES.includes(antes)) { tiers[h.name] = antes; conservados++; }
+  }
+  diagnostics.tiers = `${n} héroes${fallos ? ` (${fallos} fallos)` : ''}${conservados ? ` · ${conservados} con la tier anterior` : ''}`;
   return { fuente: 'mlbb.gg', fecha: new Date().toISOString(), tiers };
 }

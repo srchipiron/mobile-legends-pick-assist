@@ -167,6 +167,25 @@ export function aliadasAprendidas(aprendido) {
   return lista;
 }
 
+/**
+ * Lo aprendido sin los recortes que son el icono de un hueco vacío (3.60.1),
+ * en `aliados` y en `aliadosPendientes`. `aliadasAprendidas` ya no los usa,
+ * pero seguían en el fichero: contaban en «N compañeros aprendidos» de
+ * `/estado` y ocupaban uno de los `RECORTES_POR_ALIADO` del héroe.
+ */
+export function sinHuecosVacios(aprendido) {
+  if (!aprendido || typeof aprendido !== 'object') return aprendido;
+  const limpiar = (mapa) => {
+    const salida = {};
+    for (const [nombre, recortes] of Object.entries(mapa ?? {})) {
+      const buenos = (recortes ?? []).filter((r) => typeof r?.v === 'string' && !esHuecoVacio(deBase64(r.v)));
+      if (buenos.length) salida[nombre] = buenos;
+    }
+    return salida;
+  };
+  return { ...aprendido, aliados: limpiar(aprendido.aliados), aliadosPendientes: limpiar(aprendido.aliadosPendientes) };
+}
+
 /** El instante de una captura por su nombre (`lectura-2026-10-14T17-52-57-139Z-42`), o NaN. */
 export function momentoDe(id) {
   const m = /^lectura-(\d{4}-\d\d-\d\d)T(\d\d)-(\d\d)-(\d\d)-(\d{3})Z/.exec(id ?? '');
@@ -305,7 +324,8 @@ export function huecoDe(pos, base = PICKS_ENEMIGOS) {
  * (acumulado) y un informe por captura (las descartadas, con su motivo).
  */
 export function aprenderDe(pares, { caras, aprendido = null, posicionesBase = PICKS_ENEMIGOS, maximo = CAPTURAS_POR_CORRECCION } = {}) {
-  const nuevo = { version: VERSION_APRENDIDO, picks: aprendido?.picks ?? null, caras: { ...(aprendido?.caras ?? {}) }, aliados: { ...(aprendido?.aliados ?? {}) }, aliadosPendientes: { ...(aprendido?.aliadosPendientes ?? {}) }, capturas: aprendido?.capturas ?? 0 };
+  const limpio = sinHuecosVacios(aprendido);
+  const nuevo = { version: VERSION_APRENDIDO, picks: aprendido?.picks ?? null, caras: { ...(aprendido?.caras ?? {}) }, aliados: { ...(limpio?.aliados ?? {}) }, aliadosPendientes: { ...(limpio?.aliadosPendientes ?? {}) }, capturas: aprendido?.capturas ?? 0 };
   const porClave = new Map(caras.map((c) => [nombreClave(c.nombre), c]));
   const extra = carasAprendidas(aprendido);
   const enEspejo = [...caras.map((c) => ({ ...c, v: espejo(c.v) })), ...extra];

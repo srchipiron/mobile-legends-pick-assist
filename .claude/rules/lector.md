@@ -689,7 +689,11 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   `aprender.test` (el cuadro azul de #80, `aliado-vacio-tuyo.png`) y
   `lector.test` (la columna de #121, `aliados-gord.png`); dos mutaciones.
   Para añadir más: repetir la repetición con los drafts nuevos y mirar a
-  mano cada cara de TU fila (es donde salen los iconos).
+  mano cada cara de TU fila (es donde salen los iconos). Desde 3.60.1 los
+  recortes que son un icono vacío se PURGAN de lo aprendido
+  (`sinHuecosVacios`, al leer el fichero en `leerAprendido` y al empezar
+  `aprenderDe`): `aliadasAprendidas` ya no los usaba, pero contaban en
+  `/estado` y ocupaban sitio de `RECORTES_POR_ALIADO`.
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

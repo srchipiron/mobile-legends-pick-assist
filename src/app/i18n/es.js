@@ -61,6 +61,7 @@ export default {
   'pie.datosApi': 'Datos de la API: {fecha}',
   'pie.nunca': 'nunca',
   'pie.antiguedad': 'Antigüedad: {horas}',
+  'pie.antiguedadMatriz': 'Cruces y parejas: de hace {horas} (la API no los dio en las últimas corridas)',
   'pie.rango': 'Rango: {rango} · ventana {dias} días',
   'pie.rangoFuerza': 'Rango: {rango} · winrates de {usado} (la hoja «Meta» dice por qué) · ventana {dias} días',
   'pie.heroesConStats': 'Héroes con estadísticas: {n}',

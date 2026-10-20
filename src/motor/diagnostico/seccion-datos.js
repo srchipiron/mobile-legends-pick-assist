@@ -1,7 +1,7 @@
 import { nombreClave } from '../nombres.js';
 import { cruce, sinergia, cobertura, densidadCounters, CRUCE_DESTACABLE, PAREJA_DESTACABLE, COLA_DEL_MOTIVO } from '../matrices.js';
 import { coberturaBuilds } from '../builds.js';
-import { WINRATE_POSIBLE, RANGO_DE_RESPALDO, TIERS_CADUCAN_DIAS } from '../ventana.js';
+import { WINRATE_POSIBLE, RANGO_DE_RESPALDO, TIERS_CADUCAN_DIAS, tiersVigentes } from '../ventana.js';
 
 /**
  * Los datos con los que decide la app: que estén, que sean frescos, que
@@ -52,9 +52,18 @@ export function seccionDatos(inf, { datos, linea, entorno = {} }) {
   // La tier list de mlbb.gg (3.59.4): si deja de llegar, la ingesta conserva
   // la anterior en silencio. Del 4 al 19 de octubre de 2026 mlbb.gg contestó
   // 403 al bot y nadie se enteró; la app la deja de enseñar a los 14 días.
-  if (meta.tiers?.fecha) {
-    const dias = Math.floor((Date.now() - Date.parse(meta.tiers.fecha)) / 864e5);
-    inf.check(dias < 7, `Tier list de mlbb.gg: de hace ${dias} días`, `Tier list de mlbb.gg de hace ${dias} días (${meta.diagnostics?.tiers ?? 'no se actualiza'})${dias > TIERS_CADUCAN_DIAS ? ': ya no se enseña' : ''}`, true);
+  // «Ya no se enseña» con la MISMA cuenta que `tiersVigentes` (3.60.1): con
+  // los días redondeados hacia abajo, de 14 a 15 días la app la escondía y
+  // esto no lo decía; y sin fecha válida no decía nada.
+  if (meta.tiers?.tiers) {
+    const fecha = Date.parse(meta.tiers.fecha ?? '');
+    const vigente = !!tiersVigentes(meta);
+    if (!Number.isFinite(fecha)) {
+      inf.check(false, '', `Tier list de mlbb.gg sin fecha: no se enseña (${meta.diagnostics?.tiers ?? 'no se actualiza'})`, true);
+    } else {
+      const dias = Math.floor((Date.now() - fecha) / 864e5);
+      inf.check(dias < 7 && vigente, `Tier list de mlbb.gg: de hace ${dias} días`, `Tier list de mlbb.gg de hace ${dias} días (${meta.diagnostics?.tiers ?? 'no se actualiza'})${vigente ? '' : `: ya no se enseña (caduca a los ${TIERS_CADUCAN_DIAS})`}`, true);
+    }
   }
   if (meta.coberturaPorLinea) {
     inf.linea('Cobertura por línea: ' + Object.entries(meta.coberturaPorLinea).map(([l, c]) => `${l} ${c.conCounters}/${c.total}`).join(' · '));

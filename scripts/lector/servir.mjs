@@ -36,7 +36,7 @@ import { Worker } from 'node:worker_threads';
 import { leerPng, leerCrudo, escribirPngRapido } from './png.mjs';
 import { capturarTablet, encontrarTablet, carasGuardadas } from './leer.mjs';
 import { PARTES, leerParte, juntarLectura, leerCaptura } from './lectura.mjs';
-import { resumirAprendizaje, CAPTURAS_POR_CORRECCION, VERSION_APRENDIDO } from './aprender.mjs';
+import { resumirAprendizaje, sinHuecosVacios, CAPTURAS_POR_CORRECCION, VERSION_APRENDIDO } from './aprender.mjs';
 
 export { CAPTURAS_POR_CORRECCION };
 import { fotogramaDe } from './miniatura.mjs';
@@ -230,7 +230,7 @@ export const VOZ_POR_VENTANA = 4, VENTANA_VOZ_MS = 3 * 60000;
 
 /** Lo aprendido, si es de la versión actual: lo de 3.27.0–3.30.0 (versión 1) se aprendió sin guardas y se descarta. */
 export function leerAprendido(fichero = FICHERO_APRENDIDO) {
-  try { const a = JSON.parse(readFileSync(fichero, 'utf8')); return a && typeof a === 'object' && a.version === VERSION_APRENDIDO ? a : null; } catch { return null; }
+  try { const a = JSON.parse(readFileSync(fichero, 'utf8')); return a && typeof a === 'object' && a.version === VERSION_APRENDIDO ? sinHuecosVacios(a) : null; } catch { return null; }
 }
 export function guardarAprendido(a, fichero = FICHERO_APRENDIDO) {
   try { mkdirSync(resolve(fichero, '..'), { recursive: true }); writeFileSync(fichero, JSON.stringify(a)); } catch { /* sin disco: se aprende otra vez la próxima */ }

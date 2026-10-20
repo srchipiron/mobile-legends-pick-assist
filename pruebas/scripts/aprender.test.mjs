@@ -13,7 +13,7 @@ import { leerPicksEnemigos, leerAliados, carasGuardadas, PICKS_ENEMIGOS, ALIADO_
 import { leerCaptura } from '../../scripts/lector/lectura.mjs';
 import { muestra as muestraDe } from '../../scripts/lector/caras.mjs';
 import { ALIADOS as ALIADOS_REF } from '../../scripts/lector/leer.mjs';
-import { aprenderDe, ajustarPosiciones, carasAprendidas, aliadasAprendidas, etiquetarAliados, momentoDe, esHuecoVacio, VACIO_ALIADO, resumirAprendizaje, esPantallaDeDraft, huecoDe, APRENDER_MINIMO, VERSION_APRENDIDO, MINUTOS_ENTRE_DRAFTS } from '../../scripts/lector/aprender.mjs';
+import { aprenderDe, ajustarPosiciones, carasAprendidas, aliadasAprendidas, sinHuecosVacios, etiquetarAliados, momentoDe, esHuecoVacio, VACIO_ALIADO, resumirAprendizaje, esPantallaDeDraft, huecoDe, APRENDER_MINIMO, VERSION_APRENDIDO, MINUTOS_ENTRE_DRAFTS } from '../../scripts/lector/aprender.mjs';
 import { capturaCompleta, capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
 import { aprenderEnHilo } from '../../scripts/lector/servir.mjs';
 import { mkdtempSync, writeFileSync } from 'node:fs';
@@ -273,6 +273,16 @@ test('tu equipo: TU hueco antes de elegir (el cuadro azul, otro icono) tampoco s
   // Y lo que 3.58 ya aprendió así en el móvil de Javi no se usa al leer.
   const viejo = { aliados: { Estes: [{ v: Buffer.from(Uint8Array.from(leerVacio(img, 4), (x) => Math.round(x))).toString('base64') }] } };
   eq(aliadasAprendidas(viejo).length, 0, 'el cuadro azul aprendido como Estes se sigue usando al leer');
+  // 3.60.1: y se PURGA, en confirmados y en pendientes. Antes seguía en el
+  // fichero, contaba en «compañeros aprendidos» y ocupaba sitio del héroe.
+  const buena = Buffer.from(Uint8Array.from(leerVacio(capturaCompleta({ columna: 2 }), 0), (x) => Math.round(x))).toString('base64');
+  const sucio = { version: VERSION_APRENDIDO, aliados: { Estes: [...viejo.aliados.Estes], Clint: [{ v: buena }] }, aliadosPendientes: { Estes: [...viejo.aliados.Estes] } };
+  const limpio = sinHuecosVacios(sucio);
+  eq(Object.keys(limpio.aliados).join(), 'Clint', `no purga el icono de los aprendidos (o quita una cara de verdad): ${Object.keys(limpio.aliados)}`);
+  eq(Object.keys(limpio.aliadosPendientes).length, 0, 'no purga el icono de los pendientes');
+  // `aprenderDe` parte de lo limpio: lo que guarda ya no lleva el icono.
+  const tras = aprenderDe([{ id: idA(90), img: capturaCompleta({ columna: 2 }), verdad: VERDAD_EQUIPO }], { caras, aprendido: sucio }).aprendido;
+  ok(!tras.aliados.Estes && !tras.aliadosPendientes.Estes && tras.aliados.Clint, `lo aprendido guarda el icono: ${JSON.stringify(Object.keys(tras.aliados))}`);
 });
 
 test('tu equipo: una cara que se parece a la aprendida de OTRO héroe no se aprende (3.58.1)', () => {

@@ -187,6 +187,16 @@ ninguna constante.
   y el diagnóstico avisa de que se sirven cruces de un rango que la última
   comprobación descartó.
 
+  Desde 3.60.1 una fila nueva de cruces (o de parejas) con menos de la
+  MITAD de celdas que la guardada no la sustituye (`esCorta` en
+  `fundirRelaciones`; cuenta `diagnostics.relations.cortas`). Pasó el 20 de
+  octubre de 2026: la ruta del esquema `/api/heroes/{id}/counters` pasó a dar
+  5+5 rivales (la de academy, 132) y, con la medida de rutas caída (todas
+  −1), `elegirRutaConMasDatos` se quedó con ella. La ingesta simulada parte
+  de una copia del fichero real con las filas recortadas a sus cuatro
+  rivales (`previoSim`): con las 132 celdas de verdad, las suyas serían
+  cortas.
+
 **La tier list de mlbb.gg y el 403 (3.59.4)**: desde el 4 de octubre de
 2026 `back.mlbb.gg` contesta 403 a los runners de GitHub (desde la sesión y
 desde un móvil contesta 200), y `fetchTiers` conservaba la anterior con su
@@ -197,7 +207,10 @@ de octubre se bajó desde la sesión con el mismo `fetchTiers` y se escribió
 con `serializar` cambiando SOLO `tiers` (la ingesta entera de esa noche la
 tiró el comparador: la API daba error 1101 y solo bajaron cruces de 16
 héroes). Mientras el bot reciba 403, la tier hay que bajarla desde fuera de
-GitHub.
+GitHub. Desde 3.60.1 `fetchTiers` funde héroe a héroe: el que no llega hoy
+conserva la anterior (`· N con la tier anterior` en el diagnóstico de la
+ingesta), y el diagnóstico de la app dice «ya no se enseña» con la MISMA
+cuenta que `tiersVigentes` (y avisa de una tier sin fecha).
 
 Dos constantes que se midieron y se dejaron como estaban, para no volver a
 medirlas: el umbral de «tu héroe está N puntos por encima» (`>= 0.02` en

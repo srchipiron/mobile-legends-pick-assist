@@ -15,9 +15,11 @@ const REAL = join(RAIZ, 'public/data/roam-meta.json');
 const meta = JSON.parse(readFileSync(REAL, 'utf8'));
 const lista = meta.heroes.map((h, i) => ({ id: i + 1, name: h.name }));
 let prohibido = false;
+let fallanLasPrimeras = 0;
 const servidor = createServer((req, res) => {
   if (prohibido) { res.writeHead(403).end('{}'); return; }
   const id = /\/heroes\/(\d+)$/.exec(req.url)?.[1];
+  if (id && Number(id) <= fallanLasPrimeras) { res.writeHead(500).end('{}'); return; }
   const cuerpo = id ? { tier: lista[id - 1]?.name === 'Rafaela' ? 'B' : 'S' } : lista;
   res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(cuerpo));
 });
@@ -45,6 +47,17 @@ test('baja la tier list y cambia solo eso; con mlbb.gg cerrado no escribe nada',
   prohibido = false;
   eq(r2.code, 1, `con mlbb.gg cerrado no sale con 1: ${r2.s}`);
   eq(readFileSync(fichero, 'utf8'), readFileSync(REAL, 'utf8'), 'con mlbb.gg cerrado escribe el fichero');
+  // Con 30 fichas fallando (3.60.1): esos 30 conservan su tier anterior y el
+  // resto trae la nueva; antes los 30 se quedaban sin tier.
+  fallanLasPrimeras = 30;
+  const r3 = await lanzar();
+  fallanLasPrimeras = 0;
+  eq(r3.code, 0, `con 30 fichas fallando no acaba bien: ${r3.s}`);
+  const parcial = JSON.parse(readFileSync(fichero, 'utf8')).tiers.tiers;
+  const conAntes = lista.slice(0, 30).filter((h) => meta.tiers?.tiers?.[h.name]);
+  ok(conAntes.length > 10, 'el fichero real casi no tiene tiers con que probar');
+  ok(conAntes.every((h) => parcial[h.name] === meta.tiers.tiers[h.name]), `los que fallan no conservan su tier: ${conAntes.filter((h) => parcial[h.name] !== meta.tiers.tiers[h.name]).map((h) => h.name)}`);
+  eq(parcial[lista[40].name], lista[40].name === 'Rafaela' ? 'B' : 'S', 'los que llegan no traen la tier nueva');
   } finally {
     // Un servidor abierto en una prueba se cierra pase lo que pase.
     servidor.close();

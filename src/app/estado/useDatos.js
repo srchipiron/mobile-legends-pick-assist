@@ -29,10 +29,27 @@ export function useDatos(rango) {
 
   const datos = useMemo(() => prepararDatos({ catalogo, meta, rango }), [catalogo, meta, rango]);
 
-  const generado = meta?.generatedAt ? new Date(meta.generatedAt) : null;
-  const fechaValida = !!generado && !Number.isNaN(generado.getTime());
-  const edadHoras = fechaValida ? (Date.now() - generado) / 3.6e6 : null;
+  const { generado, edadHoras, edadMatrizHoras } = edadDeLosDatos(meta);
   const sinWinrates = metaListo && (!datos.meta.stats || !Object.keys(datos.meta.stats).length);
 
-  return { catalogo, meta, metaListo, pro, error, datos, generado: fechaValida ? generado : null, edadHoras, sinWinrates };
+  return { catalogo, meta, metaListo, pro, error, datos, generado, edadHoras, edadMatrizHoras, sinWinrates };
+}
+
+/**
+ * La antigüedad de los datos (3.60.1). Desde 3.59.6 `generatedAt` es la de
+ * las estadísticas y la matriz de cruces y parejas lleva la suya
+ * (`relaciones.descargada`): con la matriz conservada semanas, la cabecera
+ * decía «0 h» y no se marcaba vieja. `edadHoras` es la de lo MÁS viejo de
+ * las dos, que es lo que marca «viejo»; sin `descargada` (ficheros de antes)
+ * la matriz es de `generatedAt`.
+ */
+export function edadDeLosDatos(meta, ahora = Date.now()) {
+  const fecha = (v) => { const d = v ? new Date(v) : null; return d && !Number.isNaN(d.getTime()) ? d : null; };
+  const generado = fecha(meta?.generatedAt);
+  const matriz = fecha(meta?.relaciones?.descargada) ?? generado;
+  const horas = (d) => (d ? (ahora - d) / 3.6e6 : null);
+  const edadStats = horas(generado);
+  const edadMatrizHoras = horas(matriz);
+  const edadHoras = edadStats == null ? edadMatrizHoras : Math.max(edadStats, edadMatrizHoras ?? edadStats);
+  return { generado, edadHoras, edadMatrizHoras };
 }

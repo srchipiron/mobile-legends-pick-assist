@@ -274,10 +274,17 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
 
   const dir = mkdtempSync(resolve(tmpdir(), 'ingesta-simulada-'));
   const out = resolve(dir, 'roam-meta.json');
+  // Lo guardado es el fichero real con cada fila de cruces y parejas recortada
+  // a los cuatro rivales que sirve la API simulada: con las 132 celdas de
+  // verdad, las filas de cuatro serían «cortas» y no entrarían (3.60.1).
+  const previoSim = resolve(dir, 'previo.json');
+  const real = JSON.parse(readFileSync(REAL, 'utf8'));
+  const recortar = (m) => Object.fromEntries(Object.entries(m ?? {}).map(([h, f]) => [h, Object.fromEntries(Object.entries(f ?? {}).filter(([k]) => ['Khufra', 'Tigreal', 'Alice', 'Layla'].includes(k)))]));
+  writeFileSync(previoSim, JSON.stringify({ ...real, counters: recortar(real.counters), synergies: recortar(real.synergies) }));
   const antes = Date.now();
   try {
     const r = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`,
+      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', previoSim,
       '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
       '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
     ]);
@@ -365,12 +372,12 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     fallaCounters = true; fallaRecientes = true;
     const out2 = resolve(dir, 'sin-counters.json');
     const r2 = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`,
+      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', previoSim,
       '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', out2, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
       '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
     ]);
     eq(r2.status, 0, `la ingesta sin counters no acaba bien: ${(r2.stdout + r2.stderr).slice(-400)}`);
-    const guardada = JSON.parse(readFileSync(REAL, 'utf8'));
+    const guardada = JSON.parse(readFileSync(previoSim, 'utf8'));
     const d2 = JSON.parse(readFileSync(out2, 'utf8'));
     // Desde 3.59.6 la fecha sigue a las estadísticas (frescas aquí) y la matriz lleva la suya.
     ok(d2.generatedAt !== guardada.generatedAt, 'con estadísticas nuevas y la matriz conservada la corrida no sale con fecha de hoy');
@@ -397,7 +404,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     fallaCounters = false; fallaRecientes = false; fallaMitico = true;
     const outM = resolve(dir, 'sin-mitico.json');
     const rM = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`,
+      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', previoSim,
       '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', outM, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
       '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
     ]);
@@ -415,7 +422,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     fallaMitico = false; parejasVacias = true; curvaEnPorcentaje = true;
     const outP = resolve(dir, 'sin-parejas.json');
     const rP = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`,
+      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', previoSim,
       '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', outP, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
       '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
     ]);
@@ -498,7 +505,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     retratoNuevo = true;
     const out4 = resolve(dir, 'gloria-ruidosa.json');
     const r4 = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`,
+      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', previoSim,
       '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out4, '--celdas-para-comparar', '1', '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
       '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
     ]);
@@ -520,7 +527,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     fallarPrimeros = 20; parejasVaciasActivas = true;
     const out5 = resolve(dir, 'gloria-buena.json');
     const r5 = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`,
+      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', previoSim,
       '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out5, '--celdas-para-comparar', '1', '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
       '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
     ]);

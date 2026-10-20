@@ -432,6 +432,23 @@ test('la matriz de la corrida: sin filas nuevas se queda la guardada; de otro ra
   eq(relacionesDeLaCorrida({ rank: 'glory', counters: { C: { D: 0.4 } }, synergies: {} }, { counters: { A: { B: 0.6 } }, synergies: {} }, 'glory').relations.counters.C?.D, 0.4);
 });
 
+test('una fila de cruces o parejas con menos de la mitad que la guardada no la sustituye (3.60.1)', () => {
+  // El 20 de octubre de 2026 la ruta del esquema daba 5+5 rivales por héroe y
+  // la de academy los 132: con la medida de rutas caída, 58 filas enteras
+  // iban a salir con 10 cruces.
+  const fila = (n, v) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`R${i}`, v]));
+  const previo = { rank: 'glory', relaciones: { rango: 'mythic' }, counters: { A: fila(10, 0.5), C: fila(10, 0.5) }, synergies: { A: fila(10, 0.5), C: fila(10, 0.5) } };
+  const r = relacionesDeLaCorrida(previo, { counters: { A: fila(4, 0.6), C: fila(9, 0.6) }, synergies: { A: fila(10, 0.6), C: fila(3, 0.6) } }, 'mythic');
+  eq(Object.keys(r.relations.counters.A).length, 10, 'la fila corta de cruces sustituye a la entera');
+  eq(r.relations.counters.A.R0, 0.5, 'la fila corta de cruces se mezcla con la guardada');
+  eq(r.relations.counters.C.R0, 0.6, 'una fila casi entera no entra');
+  eq(r.relations.synergies.A.R0, 0.6, 'unas parejas enteras no entran porque los cruces eran cortos');
+  eq(Object.keys(r.relations.synergies.C).length, 10, 'la fila corta de parejas sustituye a la entera');
+  ok(r.frescas === 1 && r.frescasParejas === 1 && r.cortas === 1, `cuenta mal: ${JSON.stringify({ f: r.frescas, p: r.frescasParejas, c: r.cortas })}`);
+  // Todas cortas: no hay nada nuevo y se conserva la guardada con su etiqueta.
+  ok(relacionesDeLaCorrida(previo, { counters: { A: fila(2, 0.6), C: fila(2, 0.6) }, synergies: {} }, 'mythic').conservado, 'con todas las filas cortas no se da por conservada');
+});
+
 test('la curva por duración (3.43.0): seis tramos en orden, la de la forma real; con otros tramos o un valor imposible, nada', () => {
   eq(TRAMOS_CURVA.join(), TRAMOS.join(), 'la ingesta y el motor no hablan de los mismos tramos');
   const real = { code: 0, data: { records: [{ data: { total_win_rate: 0.59, time_win_rate: [

@@ -228,6 +228,14 @@ test('la tier list de mlbb.gg vieja es un aviso, con por qué, y pasada su caduc
   const vieja = lineas({ fuente: 'mlbb.gg', fecha: hace(15), tiers: { Rafaela: 'SS' } }, { tiers: 'fallo: HTTP 403 en https://back.mlbb.gg/api/v1/heroes; conservo la anterior' });
   ok(vieja.length === 1 && /^\[AVISO/.test(vieja[0]) && /hace 15 días/.test(vieja[0]) && /403/.test(vieja[0]) && /ya no se enseña/.test(vieja[0]), `no avisa de la tier de hace 15 días con su porqué: ${vieja}`);
   eq(lineas(undefined).length, 0, 'sin tier list (datos de antes) dice algo');
+  // 3.60.1: la misma cuenta que `tiersVigentes`. A 14,5 días la app ya no la
+  // enseña y con los días redondeados esto no lo decía; sin fecha, nada.
+  const justo = lineas({ fuente: 'mlbb.gg', fecha: hace(14.5), tiers: { Rafaela: 'SS' } });
+  ok(justo.length === 1 && /ya no se enseña/.test(justo[0]), `a 14,5 días no dice que ya no se enseña: ${justo}`);
+  ok(!/ya no se enseña/.test(lineas({ fuente: 'mlbb.gg', fecha: hace(13.5), tiers: { Rafaela: 'SS' } })[0]), 'a 13,5 días dice que ya no se enseña');
+  const sinFecha = lineas({ fuente: 'mlbb.gg', tiers: { Rafaela: 'SS' } });
+  ok(sinFecha.length === 1 && /^\[AVISO/.test(sinFecha[0]) && /sin fecha/.test(sinFecha[0]), `una tier sin fecha no avisa: ${sinFecha}`);
+  ok(/sin fecha/.test(lineas({ fuente: 'mlbb.gg', fecha: 'ayer', tiers: { Rafaela: 'SS' } })[0] ?? ''), 'una tier con fecha inválida no avisa');
 });
 
 test('un héroe recién salido sin winrate es un aviso, uno conocido sin winrate es un fallo', () => {
