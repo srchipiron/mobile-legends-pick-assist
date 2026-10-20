@@ -65,7 +65,9 @@ export const ALIAS = {
   esme: 'Esmeralda',
   arlot: 'Arlott',
   dyr: 'Dyrroth',
-  ceci: 'Cici',
+  // «ceci» es Cecilion, no Cici (3.60.5): en 6 de sus 20 partidas el mismo
+  // draft trae también «cici», y un héroe no sale dos veces en una partida.
+  ceci: 'Cecilion',
   haya: 'Hayabusa',
   valen: 'Valentina',
   'lapu-lapu': 'Lapu-Lapu',
@@ -157,6 +159,9 @@ export function parsearPartidas(wikitext, torneo = null) {
   const trozos = wikitext.split(/(?=\{\{(?:Match|Map)\b)/);
   for (const trozo of trozos) {
     if (trozo.startsWith('{{Match')) {
+      // Cada Match empieza de cero (3.60.5): uno sin fecha o con un solo
+      // equipo heredaba los del anterior.
+      fecha = null; equipos = [null, null];
       const f = trozo.match(/\|date=([^|\n]+)/);
       if (f) fecha = fechaISO(f[1]);
       const op = [...trozo.matchAll(/\|opponent(\d)=\{\{TeamOpponent\|([^}|]+)/g)];
@@ -178,18 +183,23 @@ export function parsearPartidas(wikitext, torneo = null) {
     const ganador = campo(bloque, 'winner');
     indice += 1;
     if (t1.length !== 5 || t2.length !== 5 || !['1', '2'].includes(ganador)) continue;
+    // Un héroe no sale dos veces en una partida (3.60.5): con un pick
+    // repetido es una errata de la fuente, y se contaba igual.
+    if (!partidaPosible([t1, t2])) continue;
     partidas.push({
       torneo,
       indice,
       fecha,
       equipos: [...equipos],
-      lado1: campo(bloque, 'team1side'),
+      // En minúsculas (3.60.5): «Blue»/«Red» se perdían en lo del lado azul.
+      lado1: campo(bloque, 'team1side')?.toLowerCase() ?? null,
       duracion: campo(bloque, 'length'),
       picks: [t1.map((s) => s.toLowerCase()), t2.map((s) => s.toLowerCase())],
-      bans: [
+      // Sin los baneos que también se eligieron o que se repiten: erratas de la fuente (3.60.5).
+      bans: limpiarBans([
         [1, 2, 3, 4, 5].map((i) => campo(bloque, `t1b${i}`)).filter(Boolean).map((s) => s.toLowerCase()),
         [1, 2, 3, 4, 5].map((i) => campo(bloque, `t2b${i}`)).filter(Boolean).map((s) => s.toLowerCase()),
-      ],
+      ], [t1, t2]),
       ganador: Number(ganador),
     });
   }
@@ -198,14 +208,33 @@ export function parsearPartidas(wikitext, torneo = null) {
 
 /**
  * La clave por la que se funden dos corridas: el CONTENIDO de la partida
- * (fecha, equipos, los diez picks y la duración), no la página de donde se
- * leyó. Una subpágina de torneo («MPL/Cambodia/Season 11/Qualifier») está
- * también en la categoría de torneos, y con la página en la clave sus 20
- * partidas entraban dos veces: en la medida y en las cifras por héroe.
- * La duración distingue dos partidas reales con el mismo draft el mismo
- * día (no se ha visto ninguna en 555, pero cuesta nada).
+ * (fecha, equipos y los diez picks, cada equipo en orden), no la página de
+ * donde se leyó. Una subpágina de torneo («MPL/Cambodia/Season 11/Qualifier»)
+ * está también en la categoría de torneos, y con la página en la clave sus 20
+ * partidas entraban dos veces. Desde 3.60.5 sin la duración: Liquipedia la
+ * rellena o la reescribe («» → «17:45», «8:54» → «08:54») y la misma partida
+ * entraba otra vez (8 en el corpus). Con la clave igual, gana la fila nueva.
  */
-export const claveDe = (p) => `${p.fecha ?? ''}|${(p.equipos ?? []).join('/')}|${p.picks[0].join(',')}|${p.picks[1].join(',')}|${p.duracion ?? ''}`;
+export const claveDe = (p) => `${p.fecha ?? ''}|${(p.equipos ?? []).join('/')}|${[...p.picks[0]].sort().join(',')}|${[...p.picks[1]].sort().join(',')}`;
+
+/** Los baneos sin los que también se eligieron ni los repetidos (entre los dos lados también). */
+export function limpiarBans(bans, picks) {
+  const elegidos = new Set(picks.flat().map((s) => String(s).toLowerCase()));
+  const vistos = new Set();
+  return bans.map((lado) => lado.filter((b) => {
+    const k = String(b).toLowerCase();
+    if (elegidos.has(k) || (vistos.has(k) && !SIN_PICK.has(k))) return false;
+    vistos.add(k);
+    return true;
+  }));
+}
+
+/** Diez picks distintos (y ninguno de los diez, a la vez baneado): si no, es una errata de la fuente. */
+export function partidaPosible(picks, bans = [[], []]) {
+  const todos = picks.flat().map((s) => String(s).toLowerCase());
+  if (new Set(todos).size !== todos.length) return false;
+  return !bans.flat().some((b) => todos.includes(String(b).toLowerCase()));
+}
 
 /**
  * Sin las subpáginas de otro título de la lista: se leen como parte de su
@@ -237,7 +266,9 @@ export function resumirPro(partidas, heroes, { desde = null } = {}) {
   let ultima = null;
   const torneos = new Set();
   for (const p of partidas) {
-    if (desde && p.fecha && p.fecha < desde) continue;
+    // Las sin fecha, fuera de la ventana, como en medir-pro (3.60.5): antes
+    // entraban siempre en la tarjeta (1.481 frente a las 1.471 medidas).
+    if (desde && !(p.fecha && p.fecha >= desde)) continue;
     usadas += 1;
     torneos.add(p.torneo);
     if (p.fecha) {

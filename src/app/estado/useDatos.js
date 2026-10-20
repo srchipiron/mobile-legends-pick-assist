@@ -25,6 +25,15 @@ export function useDatos(rango) {
     traer('./data/heroes.json').then(setCatalogo).catch((e) => setError(e.message));
     traer('./data/roam-meta.json').then(setMeta).catch(() => setMeta(null)).finally(() => setMetaListo(true));
     traer('./data/pro.json').then(setPro).catch(() => setPro(null));
+    // Con el service worker al mando, la primera respuesta es la de la caché
+    // (StaleWhileRevalidate: abre al instante, también sin cobertura) y lo
+    // nuevo llega a la caché DESPUÉS: se veían siempre los datos de la
+    // visita anterior (3.60.5). Pasados unos segundos se pide otra vez y, si
+    // son otros, se usan.
+    const otraVez = setTimeout(() => {
+      traer('./data/roam-meta.json').then((m) => setMeta((antes) => (huellaDeDatos(m) !== huellaDeDatos(antes) ? m : antes))).catch(() => {});
+    }, RELEER_DATOS_MS);
+    return () => clearTimeout(otraVez);
   }, []);
 
   const datos = useMemo(() => prepararDatos({ catalogo, meta, rango }), [catalogo, meta, rango]);
@@ -43,6 +52,12 @@ export function useDatos(rango) {
  * las dos, que es lo que marca «viejo»; sin `descargada` (ficheros de antes)
  * la matriz es de `generatedAt`.
  */
+/** Cuándo se vuelven a pedir los datos, para coger lo que la caché trajo al abrir (decisión de producto). */
+export const RELEER_DATOS_MS = 5000;
+
+/** Lo que distingue una corrida de datos de otra: sus fechas. */
+export const huellaDeDatos = (m) => (m ? `${m.generatedAt}|${m.relaciones?.descargada ?? ''}|${m.tiers?.fecha ?? ''}` : '');
+
 export function edadDeLosDatos(meta, ahora = Date.now()) {
   const fecha = (v) => { const d = v ? new Date(v) : null; return d && !Number.isNaN(d.getTime()) ? d : null; };
   const generado = fecha(meta?.generatedAt);

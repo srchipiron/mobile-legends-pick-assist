@@ -14,13 +14,14 @@
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { filasDeSalud } from './salud.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const RUTA = resolve(ROOT, 'historial/salud.jsonl');
 
 let filas;
 try {
-  filas = readFileSync(RUTA, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  ({ filas } = filasDeSalud(readFileSync(RUTA, 'utf8')));
 } catch {
   console.log('Todavía no hay historial. Lo va llenando la vigilancia, dos veces al día.');
   process.exit(0);

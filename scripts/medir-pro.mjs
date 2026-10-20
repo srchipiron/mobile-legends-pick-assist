@@ -151,6 +151,10 @@ async function main() {
   const azul = conLado.filter((p) => (p.lado1 === 'blue') === (p.ganador === 1)).length;
   resumen.azul = conLado.length ? azul / conLado.length : null;
   console.log(`Gana el lado azul: ${conLado.length ? (azul / conLado.length * 100).toFixed(1) : '—'}% (n=${conLado.length})`);
+  // La base del «acierto» (3.60.5): el equipo 1 de Liquipedia (el sembrado o
+  // local) gana más de la mitad, así que acertar el 55% no es lo que parece.
+  const gana1 = usables.filter((p) => p.ganador === 1).length;
+  console.log(`Gana el equipo 1 (la base del acierto): ${usables.length ? (gana1 / usables.length * 100).toFixed(1) : '—'}% (n=${usables.length})`);
   if (json) {
     const { writeFile } = await import('node:fs/promises');
     await writeFile(json, JSON.stringify(resumen));

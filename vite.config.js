@@ -1,5 +1,6 @@
 import { parsearChangelog } from './scripts/changelog.mjs';
 import { huellasDeImagenes } from './scripts/huellas.mjs';
+import { filasDeSalud } from './scripts/salud.mjs';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -53,8 +54,10 @@ export default defineConfig({
       generateBundle() {
         let filas = [];
         try {
-          filas = readFileSync(new URL('./historial/salud.jsonl', import.meta.url), 'utf8')
-            .split('\n').filter(Boolean).slice(-40).map((l) => JSON.parse(l));
+          // Línea a línea (3.60.5): una línea rota vaciaba el historial entero.
+          const leido = filasDeSalud(readFileSync(new URL('./historial/salud.jsonl', import.meta.url), 'utf8'), { max: 40 });
+          filas = leido.filas;
+          if (leido.rotas) this.warn(`historial/salud.jsonl: ${leido.rotas} líneas rotas, descartadas`);
         } catch { /* sin historial todavia: el diagnostico lo dice */ }
         this.emitFile({ type: 'asset', fileName: 'historial.json', source: JSON.stringify(filas) });
       },

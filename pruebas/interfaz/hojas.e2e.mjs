@@ -212,6 +212,29 @@ await prueba('Copiar del diagnóstico sin portapapeles selecciona el texto y lo 
   await contexto.close();
 });
 
+await prueba('si la caché da los datos de la visita anterior, a los pocos segundos se usan los nuevos (3.60.5)', async () => {
+  // Lo que hace el service worker (StaleWhileRevalidate): la primera vez, lo
+  // de antes; la siguiente, lo que bajó mientras tanto.
+  let veces = 0;
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, {
+    sinServiceWorker: true,
+    almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: ['Layla'], allies: [], bans: [], enemyRoam: null, fase: 'picks' } },
+    antes: (p) => p.route('**/data/roam-meta.json', async (ruta) => {
+      const r = await ruta.fetch(); const m = await r.json();
+      veces += 1;
+      const fecha = new Date(Date.now() - (veces === 1 ? 100 : 0) * 3.6e6).toISOString();
+      await ruta.fulfill({ response: r, json: { ...m, generatedAt: fecha, relaciones: { ...m.relaciones, descargada: fecha } } });
+    }),
+  });
+  try {
+    eq((await pagina.locator('.freshness').first().innerText()).trim(), '100h', 'la primera respuesta no es la vieja: la prueba no mide nada');
+    await pagina.waitForTimeout(6500);
+    ok(veces >= 2, 'no se vuelven a pedir los datos');
+    eq((await pagina.locator('.freshness').first().innerText()).trim(), '0h', 'los datos nuevos que llegan después no se usan');
+    ok(!errores.length, `errores de página: ${errores}`);
+  } finally { await contexto.close(); }
+});
+
 await prueba('un nombre guardado que ya no existe se limpia, y el rival fantasma se desmarca', async () => {
   const { contexto, pagina, errores } = await con({ enemies: ['Layla', 'NoExiste', 'Fanny'], allies: ['Chou', 'Fantasma'], bans: ['Hirara', 'Nadie'], enemyRoam: 'NoExiste', fase: 'picks' });
   await pagina.waitForTimeout(800);

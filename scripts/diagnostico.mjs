@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { appendFile, mkdir } from 'node:fs/promises';
 import { diagnosticar, medirRuido, cifrasDe } from '../src/motor/diagnostico/index.js';
 import { prepararDatos } from '../src/motor/draft.js';
+import { filasDeSalud } from './salud.mjs';
 import { medir, FIJAS } from './comparar-ingesta.mjs';
 import { LINEAS } from '../src/motor/catalogo.js';
 import { densidadCounters } from '../src/motor/matrices.js';
@@ -78,8 +79,10 @@ const datos = prepararDatos({ catalogo, meta, rango: meta.rank ?? 'glory' });
 // igual que hace la app en el móvil.
 let historialPrevio = null;
 try {
-  historialPrevio = readFileSync(resolve(ROOT, 'historial/salud.jsonl'), 'utf8')
-    .split('\n').filter(Boolean).slice(-40).map((l) => JSON.parse(l));
+  // Línea a línea (3.60.5): una rota vaciaba el historial entero.
+  const leido = filasDeSalud(readFileSync(resolve(ROOT, 'historial/salud.jsonl'), 'utf8'), { max: 40 });
+  historialPrevio = leido.filas;
+  if (leido.rotas) console.warn(`historial/salud.jsonl: ${leido.rotas} líneas rotas, descartadas`);
 } catch { /* sin historial: la sección lo dice */ }
 
 // Se comprueban LAS CINCO líneas, no solo roam: que funcione en roam no dice

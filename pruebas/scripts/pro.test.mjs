@@ -24,7 +24,7 @@ import { heroes } from '../fixtures/catalogo.mjs';
 import { leerWorkflow, mandatos, ejecuta } from '../fixtures/yaml-workflows.mjs';
 import { nombreClave } from '../../src/motor/nombres.js';
 import {
-  parsearPartidas, resumirPro, resolverHeroe, fechaISO, claveDe, sinSubpaginas, ALIAS,
+  parsearPartidas, resumirPro, resolverHeroe, fechaISO, claveDe, sinSubpaginas, ALIAS, partidaPosible,
 } from '../../scripts/ingesta-pro.mjs';
 import { evaluar, cargarPartidas, opciones } from '../../scripts/medir-pro.mjs';
 
@@ -184,6 +184,42 @@ test('el corpus profesional es el que mide el motor: fechas, picks completos y b
     for (const lado of p.picks) eq(lado.length, 5, `un equipo con ${lado.length} picks`);
     ok(p.ganador === 1 || p.ganador === 2, `ganador raro: ${p.ganador}`);
   }
+});
+
+test('revisión de 3.60.4 (3.60.5): alias, partidas repetidas o imposibles, el Match de antes, el lado y la ventana', () => {
+  // (1) Un alias que es prefijo de algún héroe lo es SOLO de su destino: «ceci» apuntaba a Cici y es Cecilion.
+  for (const [slug, nombre] of Object.entries(ALIAS)) {
+    const candidatos = heroes.filter((x) => nombreClave(x.name).startsWith(nombreClave(slug)));
+    if (candidatos.length) ok(candidatos.length === 1 && nombreClave(candidatos[0].name) === nombreClave(nombre), `el alias «${slug}» → ${nombre} es prefijo de ${candidatos.map((x) => x.name).join(', ')}`);
+  }
+  // Y en el corpus guardado ningún héroe sale dos veces en una partida, ya resuelto.
+  const indice = new Map(heroes.map((h) => [nombreClave(h.name), h]));
+  const corpus = leerTexto('historial/pro-partidas.jsonl').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  const dobles = corpus.filter((p) => { const n = p.picks.flat().map((x) => resolverHeroe(x, indice)?.name ?? x); return new Set(n).size !== n.length; });
+  eq(dobles.length, 0, `${dobles.length} partidas con un héroe dos veces: ${dobles.slice(0, 2).map((p) => p.picks.flat().join(',')).join(' | ')}`);
+  // (2) La clave no lleva la duración ni el orden de los picks: Liquipedia los reescribe.
+  const base = { fecha: '2026-09-01', equipos: ['A', 'B'], picks: [['a', 'b', 'c', 'd', 'e'], ['f', 'g', 'h', 'i', 'j']] };
+  eq(claveDe({ ...base, duracion: '' }), claveDe({ ...base, duracion: '17:45' }), 'la duración rellenada después duplica la partida');
+  eq(claveDe(base), claveDe({ ...base, picks: [['e', 'd', 'c', 'b', 'a'], base.picks[1]] }), 'otro orden de picks duplica la partida');
+  // (3) Un héroe dos veces es una errata: la partida no entra; un baneo que también se eligió, fuera.
+  ok(!partidaPosible([['a', 'b', 'c', 'd', 'e'], ['a', 'g', 'h', 'i', 'j']]) && partidaPosible(base.picks), 'partidaPosible no distingue');
+  const mapa = (t1, t2, extra = '') => `{{Map|t1h1=${t1[0]}|t1h2=${t1[1]}|t1h3=${t1[2]}|t1h4=${t1[3]}|t1h5=${t1[4]}|t2h1=${t2[0]}|t2h2=${t2[1]}|t2h3=${t2[2]}|t2h4=${t2[3]}|t2h5=${t2[4]}|winner=1${extra}}}`;
+  const w = `{{Match|date=2026-09-01|opponent1={{TeamOpponent|AE}}|opponent2={{TeamOpponent|EVOS}}
+${mapa(['layla', 'fanny', 'hylos', 'chou', 'saber'], ['tigreal', 'zilong', 'eudora', 'miya', 'layla'])}
+${mapa(['layla', 'fanny', 'hylos', 'chou', 'saber'], ['tigreal', 'zilong', 'eudora', 'miya', 'alucard'], '|t1b1=alucard|t1b2=nana|t2b1=nana|team1side=Blue')}
+}}
+{{Match|opponent1={{TeamOpponent|GEEK}}
+${mapa(['layla', 'fanny', 'hylos', 'chou', 'saber'], ['tigreal', 'zilong', 'eudora', 'miya', 'gord'])}
+}}`;
+  const ps = parsearPartidas(w, 'T');
+  eq(ps.length, 2, `la partida con Layla en los dos equipos entra: ${ps.length}`);
+  eq(ps[0].bans.flat().join(), 'nana', `los baneos imposibles se quedan: ${JSON.stringify(ps[0].bans)}`);
+  eq(ps[0].lado1, 'blue', '«Blue» no se guarda en minúsculas');
+  // (4) El Match sin fecha y con un solo equipo no hereda los del anterior.
+  ok(ps[1].fecha === null && ps[1].equipos[0] === 'GEEK' && ps[1].equipos[1] === null, `hereda del Match anterior: ${JSON.stringify({ f: ps[1].fecha, e: ps[1].equipos })}`);
+  // (5) Con ventana, una partida sin fecha no cuenta (como en medir-pro).
+  const conVentana = resumirPro([{ ...ps[1] }, { ...ps[0], fecha: '2026-09-01' }], heroes, { desde: '2026-06-01' });
+  eq(conVentana.partidas, 1, 'una partida sin fecha entra en la ventana');
 });
 
 await terminar('scripts/pro');
