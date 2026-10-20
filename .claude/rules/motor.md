@@ -148,6 +148,9 @@ se repite en cada corrida de `pro.yml` al log. NO vuelvas a suponer:
   baneado, `disponibilidad`) × (su término de héroe + sus cruces contra
   tus aliados). Sin pesos. Desde 3.4.0 esa misma función pondera el término
   «por ver» y la simulación: una sola definición de «lo que se juega».
+  Desde 3.60.4 tu pick fijado cuenta como aliado (`conTuPick` en draft.js,
+  en `baneosSugeridos`, `siguientesBaneos` y `recomendar`). Antes se
+  proponía banearlo en 34 de 1.500 drafts, y el chip lo soltaba sin aviso.
 
 **La versión del modelo (3.60.3)**: `VERSION_MODELO` va con cada partida
 apuntada para no mezclar modelos al calibrar en la cola de Javi. Si cambias

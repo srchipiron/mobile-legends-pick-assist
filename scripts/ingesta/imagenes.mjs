@@ -27,6 +27,14 @@ import { TIMEOUT_MS, UA, diagnostics, sleep } from './contexto.mjs';
  */
 export const FUENTES = 'fuentes.json';
 
+export const esIdDeImagen = (id) => /^\d{1,12}$/.test(String(id));
+export function esUrlDeImagen(url) {
+  try {
+    const u = new URL(String(url));
+    return u.protocol === 'https:' || (u.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(u.hostname));
+  } catch { return false; }
+}
+
 export async function bajarImagenes(urlPorClave, dir, ext, clave) {
   let bajados = 0;
   let fallos = 0;
@@ -45,6 +53,11 @@ export async function bajarImagenes(urlPorClave, dir, ext, clave) {
 
   for (const [id, url] of Object.entries(urlPorClave)) {
     if (!url) continue;
+    // El id y la URL vienen de la API (3.60.4): un id «../x» escribía fuera de
+    // la carpeta (en el despliegue, dentro de lo que se publica) y la URL
+    // podía ser cualquier sitio. Los ids son números; la URL, https (o la
+    // propia máquina, que es la API simulada de las pruebas).
+    if (!esIdDeImagen(id) || !esUrlDeImagen(url)) { fallos += 1; if (fallos <= 3) console.warn(`  · imagen ${String(id).slice(0, 20)}: id o dirección no válidos`); continue; }
     const esta = existentes.has(`${id}${ext}`);
     if (esta && fuentes[id] === url) continue;
     try {

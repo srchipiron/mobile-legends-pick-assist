@@ -243,11 +243,16 @@ await prueba('con «Leer solo» y el draft completo, el lector vigila el final p
   await contexto.close();
 });
 
-await prueba('la partida apuntada sola no cierra la hoja que estás usando ni pierde lo escrito (3.60.2)', async () => {
+await prueba('la partida apuntada sola no cierra la hoja que estás usando ni pierde lo escrito (3.60.2), y sin pick fijado no le dice al lector quién eras (3.60.4)', async () => {
   capturar = () => pngTabla;
   const completoDesde = Date.now() - 9 * 60 * 1000;
-  const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], enemyRoam: null, fase: 'picks', completoDesde, miPick: 'Khufra', miPickDesde: completoDesde };
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:linea': 'exp', 'roam-picker:lector-auto': true, 'roam-picker:draft': draft } });
+  // Sin pick fijado: lo que se apunta es el nº1, una SUPOSICIÓN. Con ids de lectura, para que haya /corregir.
+  const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], enemyRoam: null, fase: 'picks', completoDesde, lectura: { baneos: [], enemigos: ['Layla'], ids: ['lectura-2026-10-20T10-00-00-000Z-1'] } };
+  const corregidos = [];
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, {
+    almacen: { ...almacen, 'roam-picker:linea': 'exp', 'roam-picker:lector-auto': true, 'roam-picker:draft': draft },
+    antes: (p) => p.route('**/corregir', (ruta) => { corregidos.push(JSON.parse(ruta.request().postData() ?? '{}')); return ruta.fulfill({ status: 200, contentType: 'application/json', body: '{}', headers: { 'Access-Control-Allow-Origin': '*' } }); }),
+  });
   try {
     // Ajustes → Tu maestría, y se escribe algo antes de que llegue el resultado.
     await abrirAjustes(pagina);
@@ -261,6 +266,7 @@ await prueba('la partida apuntada sola no cierra la hoja que estás usando ni pi
     eq((await leer(pagina)).enemies.length, 0, 'el draft no se reinicia al apuntar');
     eq(await pagina.locator('.mastery-row').count() > 0, true, 'la partida apuntada sola cierra la hoja de la maestría');
     eq(await campo.inputValue(), '77', 'la partida apuntada sola borra lo que estabas escribiendo');
+    ok(corregidos.length >= 1 && corregidos.every((c) => !('tuyo' in c)), `sin pick fijado se le dice al lector que eras el nº1: ${JSON.stringify(corregidos)}`);
     ok(!errores.length, `errores de página: ${errores}`);
   } finally { capturar = () => png; await contexto.close(); }
 });

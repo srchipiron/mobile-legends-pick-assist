@@ -195,7 +195,7 @@ export default function App() {
    */
   // El draft (su `completoDesde`) cuya partida ya se apuntó: la vigilancia no la apunta otra vez.
   const apuntadaSola = useRef(null);
-  const guardarPartida = (pick, gane, { t = null, origen = null, deshacible = false } = {}) => {
+  const guardarPartida = (pick, gane, { t = null, origen = null, deshacible = false, supuesto = false } = {}) => {
     const heroe = datos.porNombre.get(pick);
     const est = heroe ? rec.estimacionCon(heroe) : null;
     personal.apuntarPartida({
@@ -214,7 +214,9 @@ export default function App() {
       ...(draft.lectura ? { lector: { baneos: draft.lectura.baneos, enemigos: draft.lectura.enemigos, ...(draft.lectura.aliados ? { aliados: draft.lectura.aliados } : {}), ...(draft.lectura.tuyo ? { tuyo: draft.lectura.tuyo } : {}), ...(draft.lectura.dudas ? { dudas: draft.lectura.dudas } : {}), ...(draft.lectura.aprendizaje ? { aprendizaje: draft.lectura.aprendizaje } : {}), ...(draft.lectura.ms ? { ms: draft.lectura.ms } : {}), ...(draft.lectura.msCaptura ? { msCaptura: draft.lectura.msCaptura } : {}), ...(draft.lectura.formatos ? { formatos: draft.lectura.formatos } : {}) } } : {}),
     });
     // Y al lector, lo que había de verdad, para que aprenda (3.27.0).
-    corregirLectura({ ids: draft.lectura?.ids ?? [], enemigos: draft.enemigos, baneos: draft.baneos, aliados: draft.aliados, tuyo: pick });
+    // `tuyo` solo si es un hecho (3.60.4): apuntada sola sin pick fijado, el
+    // pick es el nº1 SUPUESTO, y el lector aprendía tu cara con ese nombre.
+    corregirLectura({ ids: draft.lectura?.ids ?? [], enemigos: draft.enemigos, baneos: draft.baneos, aliados: draft.aliados, tuyo: supuesto ? null : pick });
     // Y el resultado con sus fotogramas, para que aprenda la palabra de la
     // tabla (3.32.0), y los fotogramas al proyecto con el resultado (3.30.0).
     // Si la partida se apuntó sola, después del plazo de su «Deshacer»
@@ -245,7 +247,7 @@ export default function App() {
     // con el nº1 delante se apuntaba otro héroe (el lector fija tu fila, sea de la línea que sea).
     const pick = draft.miPick ?? rec.eleccion?.heroe.name;
     if (!pick) return false;
-    guardarPartida(pick, gane, { t, origen: 'lector', deshacible: true });
+    guardarPartida(pick, gane, { t, origen: 'lector', deshacible: true, supuesto: !draft.miPick });
     setApuntada({ t, gane, antes });
     return true;
   };
@@ -403,12 +405,15 @@ export default function App() {
     if (leyendoAhora.current) return;
     leyendoAhora.current = true;
     ultimaLectura.current = Date.now();
+    const epoca = draft.epocaDelDraft();
     setLector((l) => ({ ...l, estado: 'leyendo', aviso: silencioso ? l.aviso : null }));
     try {
       const lectura = await pedirLectura();
       // Tu fila, solo si el héroe es de tu línea (3.46.1).
       const nombres = tuyoDeTuLinea(nombresDeLectura(lectura, datos.heroes), poolDeLinea);
-      const n = draft.aplicarLectura({ ...nombres, id: typeof lectura.id === 'string' ? lectura.id : null, dudas: dudasDeLectura(lectura), ms: lectura.ms, msCaptura: lectura.msCaptura, formato: lectura.formato });
+      const n = draft.aplicarLectura({ ...nombres, id: typeof lectura.id === 'string' ? lectura.id : null, dudas: dudasDeLectura(lectura), ms: lectura.ms, msCaptura: lectura.msCaptura, formato: lectura.formato, epoca });
+      // De otro draft: ni cuenta para cerrar este por partida ni dice nada.
+      if (n.otroDraft) { setLector((l) => ({ ...l, estado: 'libre' })); return; }
       // La tablet ya está en partida (3.46.0): el draft se cierra aunque falte
       // alguien, y con eso arrancan la voz, la vigilancia y el resultado.
       enPartidaSeguidas.current = lecturasEnPartida(enPartidaSeguidas.current, lectura);

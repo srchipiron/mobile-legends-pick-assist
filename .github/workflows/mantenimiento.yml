@@ -160,7 +160,7 @@ jobs:
           for (const nombre of ['SPECIALITY_TAGS', 'ROLE_VETO']) {
             const viejo = bloque(rules, nombre);
             const nuevo = bloque(nuevas, nombre);
-            if (viejo && nuevo && viejo !== nuevo) { salida = salida.replace(viejo, nuevo); cambio = true; }
+            if (viejo && nuevo && viejo !== nuevo) { salida = salida.replace(viejo, () => nuevo); cambio = true; }
           }
           if (cambio) fs.writeFileSync('src/motor/reglas.js', salida);
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `cambio=${cambio}\n`);

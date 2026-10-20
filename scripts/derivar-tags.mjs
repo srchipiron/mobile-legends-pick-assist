@@ -23,6 +23,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ES_SPECIALITY } from './ingesta/extraccion.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -66,6 +67,18 @@ export function derivar(catalogo, specialityDe, rolDe) {
   }
 
   return { mapa, veto };
+}
+
+/**
+ * La tabla como código de reglas.js (3.60.4). Las claves vienen de la API:
+ * solo entran con la forma de una speciality y las etiquetas con la de un tag
+ * nuestro. Antes iban tal cual entre comillas, y una con `'` metía código que
+ * `npm test` ejecutaba en el bot de mantenimiento.
+ */
+export function pintarTabla(o) {
+  return Object.entries(o)
+    .filter(([k, v]) => ES_SPECIALITY.test(k) && Array.isArray(v) && v.every((x) => /^[a-z_]{1,30}$/.test(x)))
+    .map(([k, v]) => `  '${k}': [${v.map((x) => `'${x}'`).join(', ')}],`).join('\n');
 }
 
 /** Descarga speciality de todos los héroes. Solo lo necesita este script. */
@@ -122,7 +135,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const speciality = (n) => (Array.isArray(det[n]) ? det[n] : det[n]?.speciality) ?? [];
 
   const { mapa, veto } = derivar(cat, speciality, (n) => rol.get(n) ?? '');
-  const pinta = (o) => Object.entries(o).map(([k, v]) => `  '${k}': [${v.map((x) => `'${x}'`).join(', ')}],`).join('\n');
+  const pinta = pintarTabla;
   console.log('export const SPECIALITY_TAGS = {\n' + pinta(mapa) + '\n};\n');
   console.log('export const ROLE_VETO = {\n' + pinta(veto) + '\n};');
 }

@@ -184,7 +184,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       // La forma real (medida el 28-9-2026): el retrato de la web fuera y la
       // cara del juego dentro del objeto de configuración, junto a `heroid`.
       return json({ code: 0, data: { records: [{ data: { head: proxy(`http://127.0.0.1:${puerto}/img/${h.id}.jpg${retratoNuevo && h.id === 1 ? '?n=2' : ''}`), hero: { data: {
-        heroid: h.id, name: h.name, head: proxy(`http://127.0.0.1:${puerto}/cara/${h.id}.png`), speciality: ['Guard', 'Crowd Control'],
+        heroid: h.id, name: h.name, head: proxy(`http://127.0.0.1:${puerto}/cara/${h.id}.png`), speciality: ['Guard', 'Crowd Control', "x':(globalThis.P=1),'y"],
         // Las habilidades con sus etiquetas de Moonton (3.36.0): una de
         // control en área por etiqueta y una que limpia a los aliados por
         // TEXTO (corto, para no mover la huella del kit).
@@ -365,6 +365,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(d.diagnostics.lineas?.curvas, 3, `el diagnóstico no cuenta las curvas: ${JSON.stringify(d.diagnostics.lineas)}`);
     ok(existsSync(resolve(dir, 'objetos', '90001.png')), 'no ha bajado el icono del objeto');
     ok(existsSync(resolve(dir, 'heroes', '1.jpg')), 'no ha bajado el retrato de Atlas');
+    // Una speciality con forma de código no se guarda (3.60.4): acabaría escrita en reglas.js.
+    const espAtlas = d.heroes.find((h) => h.name === 'Atlas')?.speciality ?? [];
+    ok(espAtlas.includes('Guard') && !espAtlas.some((x) => x.includes("'")), `la speciality con comillas se guarda: ${JSON.stringify(espAtlas)}`);
     for (const [k, v] of Object.entries({ speciality: d.diagnostics.speciality?.errores, builds: d.diagnostics.builds?.errores, relations: d.diagnostics.relations?.errores })) {
       ok(!(v ?? []).length, `errores de ${k} contra la API simulada: ${JSON.stringify(v)}`);
     }

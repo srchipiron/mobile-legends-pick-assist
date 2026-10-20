@@ -242,14 +242,21 @@ export function probablesDelBando(datos, { equipo = [], linea = null, bando = 'e
 }
 
 /** A quién banear por tu equipo. */
-export function baneosSugeridos(datos, { aliados = [], enemigos = [], baneos = [] } = {}) {
-  return datos.meta.stats ? sugerirBaneos(datos.heroes, { aliados, enemigos, baneos, meta: datos.meta }) : [];
+export function baneosSugeridos(datos, { aliados = [], enemigos = [], baneos = [], miPick = null } = {}) {
+  return datos.meta.stats ? sugerirBaneos(datos.heroes, { aliados: conTuPick(aliados, miPick), enemigos, baneos, meta: datos.meta }) : [];
 }
 
+/**
+ * Tus aliados con tu pick fijado dentro (3.60.4): para los baneos eres de tu
+ * equipo. Sin él, «baneos que merecen la pena» proponía banear tu propio pick
+ * (y el chip lo soltaba sin aviso), y no contaba sus cruces.
+ */
+const conTuPick = (aliados, miPick) => (miPick && !aliados.some((a) => a.name === miPick.name) ? [...aliados, miPick] : aliados);
+
 /** El siguiente baneo probable en tu rango, con la co-ocurrencia de TUS partidas. */
-export function siguientesBaneos(datos, { baneos = [], enemigos = [], aliados = [], partidas = [], historial = null, n = 10 } = {}) {
+export function siguientesBaneos(datos, { baneos = [], enemigos = [], aliados = [], miPick = null, partidas = [], historial = null, n = 10 } = {}) {
   if (!datos.meta.stats) return [];
-  return proximosBaneos(datos.heroes, { baneos, enemigos, aliados, meta: datos.meta, historial: historial ?? coocurrenciaDeBaneos(partidas), n });
+  return proximosBaneos(datos.heroes, { baneos, enemigos, aliados: conTuPick(aliados, miPick), meta: datos.meta, historial: historial ?? coocurrenciaDeBaneos(partidas), n });
 }
 
 /**
@@ -332,7 +339,7 @@ export function recomendar(datos, { linea, enemigos = [], aliados = [], baneos =
   return {
     pool, lineasAbiertas, ranking, empate, rival, eleccion, robustez, composicion, consejos, analisis,
     partida: planear(datos, { yo, aliados, enemigos, linea, baneos, maestria, rivalMarcado }),
-    baneosSugeridos: baneosSugeridos(datos, { aliados, enemigos, baneos }),
+    baneosSugeridos: baneosSugeridos(datos, { aliados, enemigos, baneos, miPick }),
     cobertura: cobertura(pool, datos.meta.stats, datos.meta.counters),
   };
 }

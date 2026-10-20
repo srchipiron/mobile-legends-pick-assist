@@ -84,12 +84,17 @@ export function extraerRol(node, depth = 0, dentro = false) {
  * clave. Se recogen tal cual: traducirlas a nuestros tags es cosa de
  * SPECIALITY_TAGS, que se deriva del catalogo y se mide.
  */
+export const ES_SPECIALITY = /^[A-Za-z][A-Za-z ]{0,28}$/;
 function extraerSpeciality(node, out = new Set(), depth = 0, dentro = false) {
   if (depth > HONDURA || node == null) return [...out];
 
   if (typeof node === 'string') {
     const s = node.trim();
-    if (dentro && s && s.length < 30) out.add(s);
+    // Solo con la FORMA de una speciality (3.60.4): «Crowd Control»,
+    // «Magic Damage»… Acaban escritas como claves en src/motor/reglas.js
+    // (derivar-tags.mjs) y una con comillas inyectaba código que corría en
+    // el bot de mantenimiento con permiso de escritura.
+    if (dentro && ES_SPECIALITY.test(s)) out.add(s);
     return [...out];
   }
   if (typeof node !== 'object') return [...out];

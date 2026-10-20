@@ -129,6 +129,10 @@ export function useDraft() {
   // reconoce contaba como cambio PARA SIEMPRE, y con tres así se tiraban
   // todas las lecturas de ese equipo hasta el siguiente draft.
   const huecosCrudos = useRef({ enemigos: [], aliados: [] });
+  // Sube con cada draft nuevo (vaciar, reiniciar, restaurar): una lectura
+  // pedida en uno no se aplica en otro. En memoria: tras recargar no hay
+  // lecturas de camino.
+  const epoca = useRef(0);
   actual.current = draft;
   // «Deshacer» (3.23.0): el draft de antes y el que dejó la acción. Solo vale
   // mientras el draft siga siendo `despues`: cualquier otro cambio lo anula
@@ -196,7 +200,7 @@ export function useDraft() {
   const setFase = useCallback((fase) => setDraft((d) => (d.fase === fase ? d : { ...d, fase })), []);
 
   /** Nuevo draft: todo vacío y a la fase de baneos. */
-  const reiniciar = useCallback(() => setDraft(VACIO), []);
+  const reiniciar = useCallback(() => { epoca.current += 1; setDraft(VACIO); }, []);
 
   /**
    * Lo que se hace con UN toque y se lleva por delante lo metido: el botón
@@ -210,6 +214,7 @@ export function useDraft() {
     // Sin nada que perder no hay nada que deshacer: el aviso sobre un draft
     // ya vacío no devolvería nada (salía igual hasta 3.24.1).
     const vacio = !antes.enemigos.length && !antes.aliados.length && !antes.baneos.length && !antes.miPick;
+    epoca.current += 1;
     if (vacio) { if (antes.fase !== 'baneos') setDraft(VACIO); return; }
     setDraft(VACIO);
     setParaDeshacer({ antes, despues: VACIO, tipo: 'vaciado', creado: Date.now() });
@@ -236,11 +241,18 @@ export function useDraft() {
    * está en otro sitio (un enemigo baneado, un compañero) no se toca. Con
    * enemigos nuevos el draft pasa a picks. Todo de una vez, con Deshacer.
    */
-  const aplicarLectura = useCallback(({ baneos = [], enemigos: enemigosLeidos = [], aliados: aliadosLeidos = [], tuyo: tuyoLeido = null, id = null, dudas = null, huecos = null, ms = null, msCaptura = null, formato = null }) => {
+  const aplicarLectura = useCallback(({ baneos = [], enemigos: enemigosLeidos = [], aliados: aliadosLeidos = [], tuyo: tuyoLeido = null, id = null, dudas = null, huecos = null, ms = null, msCaptura = null, formato = null, epoca: epocaPedida = null }) => {
+    // Pedida en otro draft (3.60.4): «Nuevo draft» o una partida apuntada
+    // mientras la lectura iba de camino. Metía el draft viejo en el nuevo,
+    // y sus ids corregían después capturas de otra partida.
+    if (Number.isFinite(epocaPedida) && epocaPedida !== epoca.current) return { baneos: 0, enemigos: 0, aliados: 0, tuyo: null, cambiados: 0, otroDraft: true };
     const antes = actual.current;
     const ahora = Date.now();
-    // Draft nuevo: los huecos de la partida anterior no dicen nada.
-    if (!antes.enemigos.length && !antes.aliados.length) { huecosLeidos.current = { enemigos: [], aliados: [] }; huecosCrudos.current = { enemigos: [], aliados: [] }; }
+    // Draft nuevo: los huecos de la partida anterior no dicen nada. También
+    // sin lectura aún (3.60.4): con un héroe metido a mano antes de la primera
+    // lectura, los cinco huecos del draft de antes contaban como «cambiados»
+    // y el bando entero se tiraba hasta el siguiente draft.
+    if (!antes.lectura || (!antes.enemigos.length && !antes.aliados.length)) { huecosLeidos.current = { enemigos: [], aliados: [] }; huecosCrudos.current = { enemigos: [], aliados: [] }; }
     // Si en un equipo cambian a la vez más huecos de los que pueden estar
     // eligiendo, la tablet ya no enseña los picks (skins, una ventana
     // encima): esa parte de la lectura no se usa (3.54.0, `fueraDeLosPicks`).
@@ -341,7 +353,9 @@ export function useDraft() {
   const olvidarDeshacer = useCallback(() => setParaDeshacer(null), []);
   /** El draft tal cual está (para devolverlo con `restaurar` si una partida apuntada sola no era) (3.32.0). */
   const foto = useCallback(() => actual.current, []);
-  const restaurar = useCallback((d) => { if (d && typeof d === 'object') setDraft(d); }, []);
+  const restaurar = useCallback((d) => { if (d && typeof d === 'object') { epoca.current += 1; setDraft(d); } }, []);
+  /** Qué draft es este, para una lectura que va de camino (3.60.4). */
+  const epocaDelDraft = useCallback(() => epoca.current, []);
   // Pasado el plazo, el aviso se va solo.
   // El plazo cuenta desde que se CREÓ el aviso (3.40.0): una lectura sin
   // nada nuevo lo reapunta al draft nuevo, y con el reloj atado al objeto
@@ -371,5 +385,5 @@ export function useDraft() {
     return conCompleto(nuevo, null);
   }), []);
 
-  return { ...draft, aMano, anadir, quitar, cerrarPorPartida, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio, vaciarConDeshacer, quitarConDeshacer, aplicarLectura, anotarAprendizaje, deshacible, deshacer, olvidarDeshacer, foto, restaurar };
+  return { ...draft, aMano, epocaDelDraft, anadir, quitar, cerrarPorPartida, alternarBaneo, marcarRival, setFase, reiniciar, limpiarDesconocidos, fijarPick, posponerRecordatorio, vaciarConDeshacer, quitarConDeshacer, aplicarLectura, anotarAprendizaje, deshacible, deshacer, olvidarDeshacer, foto, restaurar };
 }

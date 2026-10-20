@@ -694,6 +694,19 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   (`sinHuecosVacios`, al leer el fichero en `leerAprendido` y al empezar
   `aprenderDe`): `aliadasAprendidas` ya no los usaba, pero contaban en
   `/estado` y ocupaban sitio de `RECORTES_POR_ALIADO`.
+- **La revisión de 3.60.3 (3.60.4)**:
+  - `aplicarLectura` vacía los huecos de antes también sin lectura en el
+    draft (`!antes.lectura`). Con un héroe metido a mano tras «Nuevo
+    draft», los cinco huecos del draft anterior contaban como cambiados y
+    `fueraDeLosPicks` tiraba el bando hasta el siguiente draft.
+  - Cada draft tiene su época (`epocaDelDraft`, sube en `reiniciar`,
+    `vaciarConDeshacer` y `restaurar`). `leerDelJuego` la captura al pedir
+    y una lectura de otra época no se aplica (`otroDraft`).
+  - Apuntada sola SIN pick fijado, `/corregir` no lleva `tuyo` (`supuesto`
+    en `guardarPartida`): el nº1 supuesto se aprendía como tu cara.
+  - `/corregir` espera con `while`: con tres a la vez, dos aprendían juntas.
+  - Pruebas en `app/lectura-draft`, `lector.e2e` (intercepta `/corregir`) y
+    `puente-lector`; cuatro mutaciones.
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

@@ -631,7 +631,9 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     for (const id of validos) writeFileSync(join(carpeta, `${id}.verdad.json`), JSON.stringify(verdad));
     const pares = validos.sort().slice(-CAPTURAS_A_MIRAR).map((id) => ({ id, png: join(carpeta, `${id}.png`), verdad }));
     if (!pares.length || !verdad.enemigos.length) return { aprendido: false, motivo: 'nada que cruzar' };
-    if (aprendiendo) await aprendiendo.catch(() => {});
+    // `while` y no `if` (3.60.4): con tres correcciones a la vez, las dos que
+    // esperaban arrancaban juntas sobre el mismo `aprendido` y una pisaba a la otra.
+    while (aprendiendo) await aprendiendo.catch(() => {});
     registrar(`Corrección recibida (${verdad.enemigos.length} enemigos, ${verdad.baneos.length} baneos): aprendiendo de ${pares.length} capturas…`);
     aprendiendo = aprender({ pares, aprendido }).then((r) => {
       aprendido = r.aprendido;

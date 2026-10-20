@@ -231,6 +231,9 @@ export function planDePartida({ yo = null, aliados = [], enemigos = [], meta = {
     equipo: equipo.slice(0, MAX_EQUIPO),
     tuyo: [...etapas.temprano, ...etapas.medio, ...etapas.tarde, ...problemasCortados],
     fases,
+    // Si las fases se pueden AFIRMAR (tres por bando, 3.43.2): el guion de
+    // la voz lo necesita para no decir lo que el plan escrito calla (3.60.4).
+    fasesConfiables: !!fasesConfiables,
     etapas,
     problemas: problemasCortados,
   };

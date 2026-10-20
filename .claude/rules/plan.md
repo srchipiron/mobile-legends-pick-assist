@@ -159,6 +159,15 @@ las peleas, al final, problemas). Lo que conviene no volver a suponer:
   «37/37»), con aviso en el diagnóstico. Un consejo que se compone de
   frases independientes se prueba contra sí mismo: cada par de frases que
   pueden salir juntas.
+- **La voz no contradice sus cifras (3.60.4)**: `guionEnDirecto` dice
+  cada frase de fase solo si su cifra está del lado que dice, y solo con
+  `plan.fasesConfiables` (tres por bando, la misma guarda del plan escrito).
+  - «Vuestro momento» pide la corta ≥ 50%, «cada minuto en contra» la larga
+    < 50%, «aguantad» la corta < 50% y «ahora vosotros» la larga ≥ 50%.
+  - Antes salían al revés en 433 + 106 + 58 + 18 de 3.000 drafts.
+  - Con el draft cerrado por la partida y un enemigo leído, la voz afirmaba
+    fases que el plan escrito callaba.
+  - Pruebas en `directo.test`; siete mutaciones.
 - **Liquipedia** (preguntado por Javi): la ficha de un héroe trae
   estadísticas base, enfriamientos por nivel y el texto de las habilidades,
   lo mismo que la API, y nada de en qué fase es fuerte. De Liquipedia se

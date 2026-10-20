@@ -8,6 +8,31 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.60.4
+
+- La voz en partida ya no dice frases que contradicen sus cifras. Salía
+  «cada minuto juega para ellos: bajáis al 66%» o «solo un 59%, aguantad»
+  en uno de cada cuatro drafts. Tampoco afirma cómo va la partida por
+  minutos con solo uno o dos enemigos a la vista.
+- El lector ya no se bloquea tras «Nuevo draft». Si metías un héroe a mano
+  antes de su primera lectura, tiraba todo ese equipo hasta el siguiente
+  draft. Y una lectura que llega tarde, del draft anterior, ya no entra en
+  el nuevo.
+- El lector ya no aprende tu cara con un nombre equivocado. Cuando la
+  partida se apunta sola sin tu pick fijado, la app ya no le dice que
+  jugaste el nº1, que solo era una suposición.
+- Dos correcciones del lector a la vez ya no se pisan.
+- Los baneos sugeridos ya no proponen banear tu pick fijado, y cuentan sus
+  cruces como de tu equipo.
+- «Copiar» del Diagnóstico avisa cuando no puede copiar: deja el texto
+  seleccionado y dice «mantén pulsado y copia».
+- Seguridad de los bots:
+  - lo que llega de la API de datos ya no puede convertirse en código
+    dentro de la app;
+  - tampoco puede escribir imágenes fuera de su carpeta;
+  - los bots que no suben nada ya no guardan su credencial mientras
+    ejecutan el código.
+
 ## 3.60.3
 
 - Cada partida que apuntas guarda qué versión del modelo dio su

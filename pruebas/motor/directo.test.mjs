@@ -20,6 +20,7 @@ const plan = ({ tendencia = 'igual', ps = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5], cambio
   etapas: { temprano: [{ clave: 'etapa.rivalGanas', params: { e: 'Atlas', pct: 53 } }], medio: [{ clave: 'partida.quedateCon', params: { a: 'Miya' } }], tarde },
   problemas: [{ clave: 'partida.evita', params: { e: 'Lylia', pct: 46 } }],
   fases: { pBase: 0.55, tendencia, cambio, puntos: puntos(ps) },
+  fasesConfiables: true,
   ...resto,
 });
 const claves = (g) => g.flatMap((a) => a.partes.map((p) => p.clave));
@@ -87,6 +88,35 @@ test('con los datos de verdad: el plan trae su guion, con claves que existen en 
   eq(p.cierres.length, 6, 'faltan cierres');
   for (const a of p.directo) for (const parte of a.partes) ok(es[parte.clave] && en[parte.clave], `la clave ${parte.clave} no existe en los dos idiomas`);
   eq(planear(datos, { yo: null }).directo.length, 0, 'sin héroe hay guion');
+});
+
+test('cada frase de fase solo con su cifra del lado que dice, y solo si las fases se pueden afirmar (3.60.4)', () => {
+  // De early pero por delante también al final: no «cada minuto juega para ellos: bajáis al 66%».
+  const delante = claves(guionEnDirecto(plan({ tendencia: 'pronto', ps: [0.8, 0.78, 0.75, 0.72, 0.7, 0.66] })));
+  ok(delante.includes('directo.vuestroMomento') && !delante.includes('directo.cadaMinutoContra'), `dice que bajáis con un 66%: ${delante}`);
+  // De early pero por detrás desde el principio: ni «vuestro momento» con un 45%.
+  const detras = claves(guionEnDirecto(plan({ tendencia: 'pronto', ps: [0.45, 0.42, 0.4, 0.36, 0.34, 0.32] })));
+  ok(!detras.includes('directo.vuestroMomento') && detras.includes('directo.cadaMinutoContra'), `«vuestro momento» con un 45%: ${detras}`);
+  // De late con ventaja ya al principio: ni «aguantad, solo un 59%».
+  const lateBien = claves(guionEnDirecto(plan({ tendencia: 'tarde', ps: [0.59, 0.62, 0.65, 0.68, 0.71, 0.74] })));
+  ok(!lateBien.includes('directo.aguantad') && lateBien.includes('directo.ahoraVosotros'), `«aguantad» con un 59%: ${lateBien}`);
+  // De late sin llegar al 50 ni al final: ni «ya llega vuestro momento» con un 48%.
+  const lateMal = claves(guionEnDirecto(plan({ tendencia: 'tarde', ps: [0.3, 0.34, 0.38, 0.42, 0.45, 0.48] })));
+  ok(lateMal.includes('directo.aguantad') && !lateMal.includes('directo.ahoraVosotros'), `«vuestro momento» con un 48%: ${lateMal}`);
+  // Sin poder afirmar las fases (menos de tres por bando): ninguna frase de fase.
+  const sinAfirmar = claves(guionEnDirecto(plan({ tendencia: 'pronto', ps: [0.66, 0.63, 0.6, 0.55, 0.5, 0.44], fasesConfiables: false })));
+  ok(!sinAfirmar.some((c) => ['directo.vuestroMomento', 'directo.cadaMinutoContra', 'directo.aguantad', 'directo.ahoraVosotros', 'directo.veinteAFavor', 'directo.veinteEnContra'].includes(c)), `con medio draft afirma fases: ${sinAfirmar}`);
+  ok(sinAfirmar.includes('directo.inicio'), 'sin poder afirmar fases tampoco dice con cuánto salís');
+});
+
+test('con datos reales: con un solo enemigo (draft cerrado por la partida) la voz no afirma fases; con el draft completo, sí (3.60.4)', () => {
+  const datos = prepararDatos({ catalogo: JSON.parse(readFileSync(`${RAIZ}/public/data/heroes.json`, 'utf8')), meta: JSON.parse(readFileSync(`${RAIZ}/public/data/roam-meta.json`, 'utf8')), rango: 'glory' });
+  const h = (n) => datos.porNombre.get(n);
+  const fase = (p) => claves(guionEnDirecto(p)).filter((c) => ['directo.vuestroMomento', 'directo.cadaMinutoContra', 'directo.aguantad', 'directo.ahoraVosotros', 'directo.veinteAFavor', 'directo.veinteEnContra'].includes(c));
+  const uno = planear(datos, { yo: h('Tigreal'), aliados: ['Chou', 'Miya', 'Eudora'].map(h), enemigos: [h('Freya')], linea: 'roam' });
+  ok(uno.fases && uno.fasesConfiables === false && !fase(uno).length, `con un enemigo la voz afirma fases: ${fase(uno)}`);
+  const lleno = planear(datos, { yo: h('Tigreal'), aliados: ['Chou', 'Miya', 'Eudora', 'Fanny'].map(h), enemigos: ['Layla', 'Atlas', 'Lylia', 'Saber', 'Alucard'].map(h), linea: 'roam' });
+  ok(lleno.fasesConfiables === true && fase(lleno).length, 'con el draft completo la voz no dice nada de las fases');
 });
 
 await terminar('motor/directo');

@@ -58,15 +58,21 @@ export function guionEnDirecto(plan) {
     ...(etapas.medio ?? []).length ? [{ clave: 'directo.peleas', params: {} }, ...(etapas.medio ?? []).slice(0, 2)] : [],
   ]);
 
-  if (fases) {
+  // Las fases se dicen solo si se pueden afirmar (3.60.4): con un enemigo a
+  // la vista (draft cerrado por la partida) el plan escrito las callaba y la
+  // voz decía «solo un 44%, no forcéis». Y cada frase solo si su cifra está
+  // del lado que dice: «cada minuto juega para ellos: bajáis al 66%» salía
+  // en 433 de 3.000 drafts.
+  if (fases && plan.fasesConfiables === true) {
     const corto = pEn(fases, 10); const medio = pEn(fases, 14); const largo = pEn(fases, 20);
+    const momento = Math.max(corto, pEn(fases, 12) ?? corto);
     if (fases.tendencia === 'pronto') {
       // Vuestro momento es ahora; y después, que cada minuto juega en contra.
-      avisar(MINUTOS.momento, [{ clave: 'directo.vuestroMomento', params: { p: pct(Math.max(corto, pEn(fases, 12) ?? corto)) } }]);
-      avisar(MINUTOS.giro, [{ clave: 'directo.cadaMinutoContra', params: { p: pct(largo) } }]);
+      if (momento >= 0.5) avisar(MINUTOS.momento, [{ clave: 'directo.vuestroMomento', params: { p: pct(momento) } }]);
+      if (largo < 0.5) avisar(MINUTOS.giro, [{ clave: 'directo.cadaMinutoContra', params: { p: pct(largo) } }]);
     } else if (fases.tendencia === 'tarde') {
-      avisar(MINUTOS.aguanta, [{ clave: 'directo.aguantad', params: { p: pct(corto), fin: pct(largo) } }]);
-      avisar(MINUTOS.giro, [{ clave: 'directo.ahoraVosotros', params: { p: pct(largo) } }]);
+      if (corto < 0.5) avisar(MINUTOS.aguanta, [{ clave: 'directo.aguantad', params: { p: pct(corto), fin: pct(largo) } }]);
+      if (largo >= 0.5) avisar(MINUTOS.giro, [{ clave: 'directo.ahoraVosotros', params: { p: pct(largo) } }]);
     }
     // El cambio de lado (solo el que dice fases.js: con tendencia y en su
     // sentido), dos minutos antes. Si cae en otro aviso, va con él.

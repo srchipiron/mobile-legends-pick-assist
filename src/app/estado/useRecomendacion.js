@@ -67,11 +67,11 @@ export function useRecomendacion({ datos, linea, enemigos, aliados, baneos, riva
   );
   // Tu plan antes de que salga nadie (fase de baneos): el ranking con el draft vacío.
   const plan = useMemo(() => (datos.catalogo ? planDePicks(datos, { linea, maestria }) : []), [datos, linea, maestria]);
-  const sugeridos = useMemo(() => (datos.catalogo ? baneosSugeridos(datos, { aliados, enemigos, baneos }) : []), [datos, aliados, enemigos, baneos]);
+  const sugeridos = useMemo(() => (datos.catalogo ? baneosSugeridos(datos, { aliados, enemigos, baneos, miPick }) : []), [datos, aliados, enemigos, baneos, miPick]);
   const coocurrencia = useMemo(() => coocurrenciaDeBaneos(partidas), [partidas]);
   const proximos = useMemo(
-    () => (datos.catalogo ? siguientesBaneos(datos, { baneos, enemigos, aliados, historial: coocurrencia, n: 10 }) : []),
-    [datos, baneos, enemigos, aliados, coocurrencia],
+    () => (datos.catalogo ? siguientesBaneos(datos, { baneos, enemigos, aliados, miPick, historial: coocurrencia, n: 10 }) : []),
+    [datos, baneos, enemigos, aliados, miPick, coocurrencia],
   );
 
   // El plan de partida del héroe del que se habla (3.36.0): el de la hoja

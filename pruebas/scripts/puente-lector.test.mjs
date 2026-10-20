@@ -196,6 +196,25 @@ test('una corrección devuelve a la app los recortes de los picks que saca el ap
   });
 });
 
+test('tres correcciones a la vez aprenden una tras otra, sin pisarse (3.60.4)', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'lector-cola-'));
+  writeFileSync(join(carpeta, 'lectura-1.png'), png);
+  let ahora = 0, maximo = 0;
+  const guardados = [];
+  const aprender = async ({ aprendido }) => {
+    ahora += 1; maximo = Math.max(maximo, ahora);
+    await new Promise((r) => setTimeout(r, 150));
+    ahora -= 1;
+    return { aprendido: { version: VERSION_APRENDIDO, picks: null, caras: {}, capturas: (aprendido?.capturas ?? 0) + 1 }, informe: [] };
+  };
+  await conServidor({ capturar: () => png, carpeta, aprender, guardar: (a) => guardados.push(a.capturas) }, async (base) => {
+    const una = () => fetch(`${base}/corregir`, { method: 'POST', headers: { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: ['lectura-1'], enemigos: ['Clint'] }) });
+    await Promise.all([una(), una(), una()]);
+  });
+  eq(maximo, 1, `aprenden ${maximo} tandas a la vez`);
+  eq(guardados.join(), '1,2,3', `una tanda pisa a otra: ${guardados}`);
+});
+
 test('un aprendizaje que falla contesta 500 y el lector sigue vivo (antes se caía el proceso entero)', async () => {
   const carpeta = mkdtempSync(join(tmpdir(), 'lector-falla-'));
   writeFileSync(join(carpeta, 'lectura-1.png'), png);

@@ -68,6 +68,29 @@ rechaza SIEMPRE (`nadaFresco`), aunque lo guardado tampoco lo esté: con los
 winrates guardados ya conservados, comparar solo contra lo guardado dejaba
 commitear corridas que solo cambiaban el diagnóstico.
 
+**Lo que llega de la API, como dato (3.60.4)**: de la revisión de
+seguridad de los workflows.
+- La speciality solo entra con su forma (`ES_SPECIALITY`, extraccion.mjs)
+  y `pintarTabla` (derivar-tags.mjs) solo escribe claves y tags con forma.
+  Una con comillas acababa como código en `src/motor/reglas.js`, y `npm
+  test` la ejecutaba en `mantenimiento.yml`, con permiso de escritura.
+- `mantenimiento.yml` sustituye el bloque con una función: con una cadena,
+  un `$&` del texto nuevo se interpretaba.
+- `bajarImagenes` solo acepta ids numéricos y URLs https o de la propia
+  máquina. Un id «../x» escribía fuera de la carpeta, y en el despliegue
+  eso acaba en lo publicado.
+- `deploy`, `pruebas-pr` y `pruebas-ui` hacen checkout con
+  `persist-credentials: false`.
+- Prueba en `scripts/datos-de-fuera` e `ingesta-simulada`; cuatro
+  mutaciones.
+
+Queda propuesto, sin hacer:
+- proteger `main`;
+- bajar `claude.yml` a `contents: read`;
+- `git rebase --abort` entre reintentos;
+- avisar si `medir-pro` falla;
+- limpiar los nombres de la API en los textos de incidencias.
+
 **La tier list fuera de GitHub.** mlbb.gg contesta 403 a los runners de
 GitHub (y 200 a cualquier otro sitio): `scripts/actualizar-tiers.mjs`
 cambia SOLO `tiers` en roam-meta.json (sale con 1 y no escribe si falla;

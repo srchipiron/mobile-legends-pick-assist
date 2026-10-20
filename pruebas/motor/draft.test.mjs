@@ -10,7 +10,7 @@ import { catalogo, h } from '../fixtures/catalogo.mjs';
 import { LINEAS, equilibrioEsperado } from '../../src/motor/catalogo.js';
 import {
   rangoActivo, prepararDatos, resolverNombres, poolDe,
-  lineasEnemigasAbiertas, rivalDeLinea, recomendar, eleccionDe, planDePicks, ordenar, winrateEnLinea, probablesDelBando, composicionDe,
+  lineasEnemigasAbiertas, rivalDeLinea, recomendar, eleccionDe, planDePicks, ordenar, winrateEnLinea, probablesDelBando, composicionDe, baneosSugeridos, siguientesBaneos,
 } from '../../src/motor/draft.js';
 import { elegirVentana, elegirRango, mediaDeWinrate } from '../../src/motor/ventana.js';
 import { indexarPorNombre } from '../../src/motor/nombres.js';
@@ -347,6 +347,20 @@ test('el orden del selector de picks: por cuota de pick, y lo de las líneas ya 
   const despues = probablesDelBando(d, { equipo: [tirador] }).map((x) => x.name);
   const otroOro = soloOtra.filter((x) => lineasDe(x)[0] === 'gold' && x !== tirador).sort((a, b) => pr(b) - pr(a))[0];
   ok(despues.indexOf(otroOro.name) > antes.indexOf(otroOro.name), `con ${tirador.name} en oro, ${otroOro.name} no baja`);
+});
+
+test('los baneos sugeridos no proponen banear tu pick fijado, y lo cuentan de tu equipo (3.60.4)', () => {
+  const datos = prepararDatos({ catalogo, meta: leerJson('public/data/roam-meta.json'), rango: 'glory' });
+  const h = (n) => datos.porNombre.get(n);
+  const enemigos = ['Layla', 'Fanny', 'Saber'].map(h);
+  // Sin pick fijado, el héroe más sugerido; fijado, ya no puede salir ni en los sugeridos ni en los próximos.
+  const sin = baneosSugeridos(datos, { aliados: [], enemigos, baneos: [] });
+  ok(sin.length > 0, 'no sugiere baneos: la prueba no mide nada');
+  const yo = sin[0].heroe;
+  const con = baneosSugeridos(datos, { aliados: [], enemigos, baneos: [], miPick: yo });
+  ok(!con.some((b) => b.heroe.name === yo.name), `sugiere banear tu pick fijado (${yo.name})`);
+  ok(!siguientesBaneos(datos, { baneos: [], enemigos, aliados: [], miPick: yo, n: 133 }).some((b) => b.heroe.name === yo.name), `los próximos baneos llevan tu pick fijado (${yo.name})`);
+  ok(!recomendar(datos, { linea: 'roam', enemigos, aliados: [], baneos: [], miPick: yo, conSimulacion: false }).baneosSugeridos.some((b) => b.heroe.name === yo.name), 'recomendar sugiere banear tu pick fijado');
 });
 
 await terminar('motor/draft');

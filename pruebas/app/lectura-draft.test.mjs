@@ -66,4 +66,30 @@ test('la fase de skins (cambian los cinco a la vez) sigue sin tocar los picks', 
   ok(despues.includes('Lesley') && despues.includes('Aamon') && !despues.includes('Miya'), `dos cambios no se aplican: ${despues}`);
 });
 
+test('tras «Nuevo draft», un héroe metido a mano antes de la primera lectura no bloquea al bando (3.60.4)', () => {
+  reiniciar();
+  let d = render(useDraft);
+  const leer = (huecos, extra = {}) => { const r = d.aplicarLectura({ baneos: [], enemigos: [...new Set(huecos.filter(Boolean))], aliados: [], huecos: { enemigos: huecos, aliados: [] }, ...extra }); d = render(useDraft); return r; };
+  leer(['A', 'B', 'C', 'D', 'E']);
+  d.reiniciar(); d = render(useDraft);
+  d.anadir('aliados', { name: 'Mio' }); d = render(useDraft);
+  leer(['P', 'Q', 'R', null, null]);
+  leer(['P', 'Q', 'R', 'S', 'T']);
+  eq(d.enemigos.join(), 'P,Q,R,S,T', 'el bando del draft nuevo se tira por los huecos del anterior');
+});
+
+test('una lectura pedida en el draft anterior no entra en el nuevo (3.60.4)', () => {
+  reiniciar();
+  let d = render(useDraft);
+  d.aplicarLectura({ baneos: ['Hirara'], enemigos: ['A'], aliados: [], huecos: { enemigos: ['A'], aliados: [] } }); d = render(useDraft);
+  const epoca = d.epocaDelDraft();
+  d.reiniciar(); d = render(useDraft);
+  const r = d.aplicarLectura({ baneos: ['Hirara'], enemigos: ['A', 'B'], aliados: [], id: 'lectura-viejo-1', huecos: { enemigos: ['A', 'B'], aliados: [] }, epoca });
+  d = render(useDraft);
+  ok(r.otroDraft && !d.enemigos.length && !d.baneos.length && !d.lectura, `la lectura del draft anterior entra en el nuevo: ${JSON.stringify({ e: d.enemigos, b: d.baneos, l: d.lectura })}`);
+  // Pedida en ESTE draft, sí.
+  d.aplicarLectura({ baneos: [], enemigos: ['Z'], aliados: [], huecos: { enemigos: ['Z'], aliados: [] }, epoca: d.epocaDelDraft() }); d = render(useDraft);
+  eq(d.enemigos.join(), 'Z');
+});
+
 await terminar('app/lectura-draft');
