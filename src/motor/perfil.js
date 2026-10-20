@@ -12,7 +12,7 @@
  * dispositivo bueno no borra nada.
  */
 
-import { sanearDraft, sanearLectura, sanearDuracion, sanearFases } from './registro.js';
+import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, esVersionDeModelo } from './registro.js';
 
 const MARCA = 'MLPA1';
 
@@ -141,6 +141,7 @@ export function sanear(perfil) {
       if (p.previa !== true) delete limpia.previa;
       if (p.origen !== 'lector') delete limpia.origen;
       if (!(typeof p.estimacion === 'number' && p.estimacion > 0 && p.estimacion < 1)) delete limpia.estimacion;
+      if (!limpia.estimacion || !esVersionDeModelo(p.modelo)) delete limpia.modelo;
       const limpios = Array.isArray(p.bans) ? p.bans.filter((b) => typeof b === 'string' && b).slice(0, 10) : [];
       if (limpios.length) limpia.bans = limpios; else delete limpia.bans;
       const draft = sanearDraft(p.draft);

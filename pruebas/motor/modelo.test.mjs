@@ -6,11 +6,11 @@
 import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
 import { catalogo, h, crearRnd } from '../fixtures/catalogo.mjs';
 import { indexarPorNombre, nombreClave, idMotivo } from '../../src/motor/nombres.js';
-import { terminoHeroe, terminoCruce, terminoPareja, evaluarDraft, logit, ESCALA, SUB_MAX, equilibrioDe, terminoEquilibrio, esperanzaCruces, disponibilidad, PESO_EQUILIBRIO_DANO } from '../../src/motor/modelo.js';
+import { terminoHeroe, terminoCruce, terminoPareja, evaluarDraft, logit, ESCALA, SUB_MAX, VERSION_MODELO, equilibrioDe, terminoEquilibrio, esperanzaCruces, disponibilidad, PESO_EQUILIBRIO_DANO } from '../../src/motor/modelo.js';
 import { COUNTER_RULES } from '../../src/motor/reglas.js';
 import { mediaDeSinergia, cruce, CRUCE_FUERTE, CRUCE_FUERTE_EN_CONTRA } from '../../src/motor/matrices.js';
 import { LINEAS } from '../../src/motor/catalogo.js';
-import { prepararDatos, estimarCon, ordenar } from '../../src/motor/draft.js';
+import { prepararDatos, estimarCon, ordenar, recomendar } from '../../src/motor/draft.js';
 import { generador } from '../../src/motor/robustez.js';
 
 const lookupCruce = (datos, a, b) => cruce(datos.meta.counters, a.name, b.name) ?? 0.5;
@@ -360,6 +360,33 @@ test('la mejor pareja de tu pick con tu equipo (3.60.0): la de más sinergia, en
   eq(evaluarDraft({ aliados: [H('C')], yo: H('Y'), enemigos: [], meta }).mejorPareja, null, 'sin dato de la pareja inventa una');
   const sinPareja = evaluarDraft({ aliados: [H('A'), H('B')], yo: H('C'), enemigos: [], meta });
   eq(sinPareja.mejorPareja, null, `toma por tuya una pareja entre dos compañeros: ${JSON.stringify(sinPareja.mejorPareja)}`);
+});
+
+test('la huella del modelo: si cambia la estimación, sube VERSION_MODELO (3.60.3)', () => {
+  // Héroes, datos y draft INVENTADOS (nada de heroes.json ni del meta del
+  // día): la huella solo cambia si cambia el modelo, no el catálogo. Cada
+  // partida guarda VERSION_MODELO con su estimación para que la calibración
+  // no mezcle modelos; si esta prueba falla, la estimación ya no es la de
+  // esa versión. Sube VERSION_MODELO (y CAMBIOS_DE_MODELO no hace falta: es
+  // para las partidas de antes de 3.60.3) y apunta aquí la huella nueva.
+  const LIN = ['roam', 'jungle', 'mid', 'gold', 'exp'];
+  const hu = (t) => { let x = 2166136261; for (const c of t) { x ^= c.charCodeAt(0); x = Math.imul(x, 16777619) >>> 0; } return x / 4294967296; };
+  const nombres = Array.from({ length: 40 }, (_, i) => `H${String(i).padStart(2, '0')}`);
+  const heroes = nombres.map((name, i) => ({ name, id: i + 1, role: 'fighter', lanes: [LIN[i % 5]], damage: i % 2 ? { fisico: 3, magico: 0 } : { fisico: 0, magico: 3 } }));
+  const stats = Object.fromEntries(nombres.map((n, i) => [n, { winRate: 0.46 + 0.08 * hu(`${n}w`), pickRate: 1 / 40, banRate: 0.1 * hu(`${n}b`), heroId: i + 1 }]));
+  const counters = {}; const synergies = {};
+  for (const a of nombres) { counters[a] = {}; synergies[a] = {}; }
+  for (let i = 0; i < 40; i++) for (let j = i + 1; j < 40; j++) {
+    const a = nombres[i]; const b = nombres[j];
+    const c = 0.47 + 0.06 * hu(`${a}${b}c`); counters[a][b] = c; counters[b][a] = 1 - c;
+    const sn = 0.47 + 0.06 * hu(`${a}${b}s`); synergies[a][b] = sn; synergies[b][a] = sn;
+  }
+  const meta = { generatedAt: '2026-09-25T00:00:00.000Z', rank: 'glory', ranks: ['glory'], days: 7, heroCount: 40, heroes, stats, statsByRank: { glory: stats }, counters, synergies, diagnostics: {} };
+  const datos = prepararDatos({ catalogo: { heroes: nombres.map((name) => ({ name, role: 'Fighter', tags: [] })) }, meta, rango: 'glory' });
+  const r = recomendar(datos, { linea: 'roam', enemigos: ['H01', 'H02', 'H03'], aliados: ['H06', 'H07'], baneos: ['H09'], maestria: { H05: { games: 120, winRate: 0.6 } }, conSimulacion: false });
+  const huella = r.ranking.map((c) => `${c.heroe.name}:${c.p.toFixed(6)}`).join(' ');
+  const HUELLAS = { 3: 'H05:0.520020 H35:0.512588 H30:0.511246 H15:0.509890 H10:0.506061 H25:0.494137 H00:0.489856 H20:0.487107' };
+  eq(huella, HUELLAS[VERSION_MODELO], `la estimación cambió sin subir VERSION_MODELO (src/motor/modelo.js): ${huella}`);
 });
 
 await terminar('motor/modelo');

@@ -198,4 +198,12 @@ test('el código de perfil lleva la duración y la previsión por tramo de cada 
   ok(!('duracion' in partidas[1]) && !('fases' in partidas[1]), 'entra una duración o unas fases sin forma');
 });
 
+test('sanear conserva el modelo de una estimación y tira el que no vale (3.60.3)', () => {
+  const p = (x) => sanear({ partidas: [{ t: 1, pick: 'Atlas', gane: true, ...x }] }).partidas[0];
+  eq(p({ estimacion: 0.5, modelo: 3 }).modelo, 3, 'se pierde el modelo');
+  ok(!('modelo' in p({ estimacion: 0.5, modelo: 'tres' })), 'un modelo basura se queda');
+  ok(!('modelo' in p({ modelo: 3 })), 'un modelo sin estimación se queda');
+  ok(!('modelo' in p({ estimacion: 0.5, modelo: 3.5 })), 'un modelo con decimales se queda');
+});
+
 await terminar('motor/perfil');

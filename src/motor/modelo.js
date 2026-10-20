@@ -38,6 +38,27 @@ import { COUNTER_RULES } from './reglas.js';
  * 0.1 log-odds del total son ≈2,5 puntos de probabilidad alrededor del 50%.
  */
 
+/**
+ * La versión de la ESTIMACIÓN que se guarda con cada partida (3.60.3), para
+ * que la calibración no mezcle modelos distintos. Súbela cuando cambie lo que
+ * da `evaluarDraft` para el mismo draft y los mismos datos (un término, la
+ * escala, cómo se centra, cómo entra tu maestría): la huella de
+ * `modelo.test` falla hasta que se sube. 1: hasta 3.3; 2: desde 3.4.0
+ * (equilibrio de daño, disponibilidad); 3: desde 3.56.0 (tu maestría con
+ * tus partidas con la app).
+ */
+export const VERSION_MODELO = 3;
+/**
+ * Cuándo se PUBLICÓ cada cambio (el commit de su versión): las partidas de
+ * antes de 3.60.3 no llevan `modelo` y se reparten por su instante. Es
+ * aproximado en los minutos del despliegue y en un móvil que tarde en
+ * actualizarse; por eso se dice «deducida».
+ */
+export const CAMBIOS_DE_MODELO = [
+  { version: 2, desde: Date.parse('2026-09-19T21:19:15Z') },
+  { version: 3, desde: Date.parse('2026-10-13T15:23:05Z') },
+];
+
 /** Pendiente medida (regresión logística de «ganó» sobre H+C+S, 10 pliegues). */
 export const ESCALA = 0.44;
 export const ESCALA_SE = 0.12;

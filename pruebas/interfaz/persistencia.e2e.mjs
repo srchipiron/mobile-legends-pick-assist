@@ -132,6 +132,20 @@ await prueba('el héroe de una partida apuntada se cambia tocándolo, se guarda 
   } finally { await contexto.close(); }
 });
 
+await prueba('la calibración dice aparte la del modelo de hoy, y el Diagnóstico también (3.60.3)', async () => {
+  // 20 del modelo de antes (sin `modelo`, de septiembre) y 6 del de hoy.
+  const vieja = (i) => ({ t: Date.parse('2026-09-01T12:00:00Z') + i * 6e5, pick: 'Atlas', gane: i % 2 === 0, recomendados: ['Atlas'], rango: 'glory', estimacion: 0.6 });
+  const nueva = (i) => ({ t: Date.now() - (i + 1) * 6e5, pick: 'Atlas', gane: i % 2 === 0, recomendados: ['Atlas'], rango: 'glory', estimacion: 0.55, modelo: 3 });
+  const partidas = [...Array.from({ length: 6 }, (_, i) => nueva(i)), ...Array.from({ length: 20 }, (_, i) => vieja(i))];
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:partidas': partidas } });
+  try {
+    await abrirHoja(pagina, 1);
+    const texto = await pagina.locator('.calibracion').innerText();
+    ok(/26 partidas con estimación/.test(texto) && /Con el modelo de hoy: 6 partidas, previsto 55%, ganadas 50%/.test(texto), `la calibración no separa el modelo de hoy: ${texto}`);
+    ok(!errores.length, `errores de página: ${errores}`);
+  } finally { await contexto.close(); }
+});
+
 await prueba('«Tus números» enseña la racha, la sesión y cada héroe con su margen, sin claves crudas ni desborde a 320 px (3.48.0)', async () => {
   // 24 partidas seguidas (una sesión), la última hace media hora: 12 Rafaela
   // ganadas, 12 Diggie perdidas, la última de todas perdida.

@@ -7,10 +7,11 @@
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { sanear } from '../../src/motor/perfil.js';
-import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, medirFasesMias, aciertosDelLector, apuntar, olvidar, corregir, cambiarHeroe, calibracion, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
+import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, medirFasesMias, aciertosDelLector, apuntar, olvidar, corregir, cambiarHeroe, calibracion, modeloDe, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
 import { maestriaDesdeRegistro, maestriaEfectiva, winrateDeReferencia, TOPE_DE_SIEMPRE } from '../../src/motor/maestria.js';
 import { nombreClave } from '../../src/motor/nombres.js';
 import { generador } from '../../src/motor/robustez.js';
+import { VERSION_MODELO, CAMBIOS_DE_MODELO } from '../../src/motor/modelo.js';
 
 test('la calibracion compara lo previsto con lo que paso, y se guarda al apuntar', () => {
   // Al apuntar se guarda la estimacion redondeada; una invalida no se guarda.
@@ -392,6 +393,28 @@ test('cambiar el héroe de una partida: solo esa, conserva draft y resultado, y 
   eq(cambiarHeroe(ps, 1, 'Hayabusa')[0], ps[0], 'el mismo héroe borra la estimación');
   eq(cambiarHeroe(ps, 1, ''), ps, 'un nombre vacío cambia algo');
   eq(cambiarHeroe(ps, 1, null), ps);
+});
+
+test('cada partida guarda el modelo que dio su estimación; las de antes, por su fecha; y la calibración los separa (3.60.3)', () => {
+  const [con] = apuntar([], { t: 5000, pick: 'Atlas', gane: true, estimacion: 0.55 });
+  eq(con.modelo, VERSION_MODELO, 'la partida no guarda el modelo');
+  ok(!('modelo' in apuntar([], { t: 5000, pick: 'Atlas', gane: true })[0]), 'sin estimación guarda modelo');
+  eq(apuntar([], { t: 5000, pick: 'Atlas', gane: true, estimacion: 0.55, modelo: 'x' })[0].modelo, VERSION_MODELO, 'un modelo basura se guarda');
+  ok(!('modelo' in cambiarHeroe([con], 5000, 'Tigreal')[0]), 'cambiar el héroe deja el modelo de una estimación que ya no está');
+  // Las de antes, por el instante: justo antes y justo después de cada cambio.
+  for (const c of CAMBIOS_DE_MODELO) {
+    eq(modeloDe({ t: c.desde - 1 }).version, c.version - 1, `antes del cambio a ${c.version}`);
+    eq(modeloDe({ t: c.desde }).version, c.version, `desde el cambio a ${c.version}`);
+  }
+  ok(modeloDe({ t: 1, modelo: 2 }).version === 2 && !modeloDe({ t: 1, modelo: 2 }).deducido && modeloDe({ t: 1 }).deducido, 'el modelo apuntado no manda sobre la fecha');
+  // Dos modelos: el viejo optimista y el de hoy acertado. Mezclados no se ve.
+  const viejas = Array.from({ length: 20 }, (_, i) => ({ t: CAMBIOS_DE_MODELO[0].desde - 1e6 - i, pick: 'A', gane: i % 2 === 0, estimacion: 0.8, recomendados: [] }));
+  const nuevas = Array.from({ length: 20 }, (_, i) => ({ t: 9e12 + i, pick: 'A', gane: i % 2 === 0, estimacion: 0.5, modelo: VERSION_MODELO, recomendados: [] }));
+  const c = calibracion([...viejas, ...nuevas]);
+  eq(Object.keys(c.porModelo).join(), `1,${VERSION_MODELO}`, 'no separa los modelos');
+  ok(Math.abs(c.porModelo[VERSION_MODELO].brier - 0.25) < 1e-9 && Math.abs(c.porModelo[1].brier - 0.34) < 1e-9, `el Brier de cada modelo: ${JSON.stringify(c.porModelo)}`);
+  eq(c.porModelo[1].deducidas, 20); eq(c.porModelo[VERSION_MODELO].deducidas, 0);
+  eq(c.actual, VERSION_MODELO);
 });
 
 await terminar('motor/registro');

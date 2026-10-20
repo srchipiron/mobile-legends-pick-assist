@@ -238,6 +238,16 @@ test('la tier list de mlbb.gg vieja es un aviso, con por qué, y pasada su caduc
   ok(/sin fecha/.test(lineas({ fuente: 'mlbb.gg', fecha: 'ayer', tiers: { Rafaela: 'SS' } })[0] ?? ''), 'una tier con fecha inválida no avisa');
 });
 
+test('el diagnóstico dice aparte la calibración del modelo de hoy (3.60.3)', () => {
+  const entorno = { version: 'test', rango: 'glory', width: 412, height: 915, storage: true };
+  const stats = Object.fromEntries(heroes.map((x) => [x.name, { winRate: 0.5, pickRate: 0.02 }]));
+  const vieja = (i) => ({ t: Date.parse('2026-09-01T12:00:00Z') + i * 6e5, pick: 'Atlas', gane: i % 2 === 0, recomendados: [], estimacion: 0.6 });
+  const nueva = (i) => ({ t: Date.parse('2026-10-20T12:00:00Z') + i * 6e5, pick: 'Atlas', gane: true, recomendados: [], estimacion: 0.55, modelo: 3 });
+  const partidas = [...Array.from({ length: 4 }, (_, i) => nueva(i)), ...Array.from({ length: 10 }, (_, i) => vieja(i))];
+  const texto = diagnosticar({ linea: 'roam', maestria: {}, partidas, entorno, datos: prepararDatos({ catalogo: { heroes: catalogo.heroes }, rango: 'glory', meta: { generatedAt: new Date().toISOString(), ranks: ['glory'], rank: 'glory', days: 7, heroCount: 133, stats, statsByRank: { glory: stats }, diagnostics: {} } }) }).texto;
+  ok(/con el modelo de hoy \(3\): 4 partidas · previsto 55% · ganadas 100%/.test(texto), `no dice la calibración del modelo de hoy: ${texto.split('\n').filter((l) => /Estimación|modelo de hoy/.test(l)).join(' | ')}`);
+});
+
 test('un héroe recién salido sin winrate es un aviso, uno conocido sin winrate es un fallo', () => {
   // La auditoría de 3.21.1: con un héroe nuevo (sin tags escritos a mano)
   // que la API ya pone en una línea pero aún sin estadísticas, «Winrates:

@@ -149,6 +149,15 @@ se repite en cada corrida de `pro.yml` al log. NO vuelvas a suponer:
   tus aliados). Sin pesos. Desde 3.4.0 esa misma función pondera el término
   «por ver» y la simulación: una sola definición de «lo que se juega».
 
+**La versión del modelo (3.60.3)**: `VERSION_MODELO` va con cada partida
+apuntada para no mezclar modelos al calibrar en la cola de Javi. Si cambias
+lo que da `evaluarDraft` para el mismo draft (un término, la escala, cómo se
+centra, cómo entra la maestría), súbela. La prueba «la huella del modelo»
+de `modelo.test` falla hasta que se sube: corre un draft fijo sobre héroes y
+datos INVENTADOS, sin `heroes.json` ni el meta del día, para que un cambio
+de catálogo no la dispare. Se sube la versión y se apunta la huella nueva
+en `HUELLAS`.
+
 Para volver a ajustar: `node scripts/ajustar-modelo.mjs` (y `--dias 400`),
 mirar `logL/n` fuera de muestra, y cambiar `ESCALA`/`AJUSTE` en modelo.js
 solo si la diferencia sale del error. La prueba «el modelo: la nota es la

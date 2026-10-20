@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.60.3
+
+- Cada partida que apuntas guarda qué versión del modelo dio su
+  probabilidad. Así se puede medir si la versión de hoy acierta sin
+  mezclarla con las de antes. Las partidas viejas se reparten solas por su
+  fecha.
+- La calibración dice aparte la del modelo de hoy, en «Tus partidas», en el
+  Diagnóstico y en la respuesta del bot. Por ahora son 25 partidas con
+  previsto 55% y ganadas 56%. Mezcladas con las de antes salía previsto 54%
+  y ganadas 63%, porque las versiones viejas se quedaban más cortas.
+
 ## 3.60.2
 
 - El bot de datos ya no se queda con la ruta mala de cruces. Desde el 20

@@ -68,9 +68,12 @@ export function Calibracion({ partidas, t = tPorDefecto }) {
   const c = useMemo(() => calibracion(partidas), [partidas]);
   if (!c.n) return null;
   const pct = (v) => (v == null ? '—' : Math.round(v * 100));
+  const hoy = c.porModelo?.[c.actual];
   return (
     <div className="calibracion">
       <p className="veredicto-cifra">{t('estimacion.calibrada', { n: c.n, prev: pct(c.prevista), real: pct(c.real) })}</p>
+      {/* Con el modelo de hoy, aparte (3.60.3): las de antes las dio otro. */}
+      {hoy && hoy.n < c.n && <p className="frase duda">{t('estimacion.modeloDeHoy', { n: hoy.n, prev: pct(hoy.prevista), real: pct(hoy.real) })}</p>}
       {c.concluyente ? (
         <p className={`frase ${c.peorQueMoneda ? 'ojo' : 'bien'}`}>
           {t('estimacion.brier', { brier: c.brier.toFixed(3), altas: pct(c.altas.real), nAltas: c.altas.n, bajas: pct(c.bajas.real), nBajas: c.bajas.n })}

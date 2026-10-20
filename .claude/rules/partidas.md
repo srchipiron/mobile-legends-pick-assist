@@ -48,8 +48,14 @@ datos vivían solo en su móvil y ninguna sesión podía leerlos.
   apuntó el lector solo (`soloLector`), porque las de a mano pueden llevar
   sesgo. El 20 de octubre de 2026 salía un 55% en 56 del lector frente a un
   64% en 181 a mano, y +1,5 ± 16 puntos contra tu winrate de siempre. Los
-  meses van en la hora de Madrid. Pendiente: guardar la versión del modelo
-  en cada partida, porque la calibración mezcla estimaciones de 3.4 y 3.56.
+  meses van en la hora de Madrid. Desde 3.60.3 cada partida con estimación
+  guarda `modelo` (`VERSION_MODELO`, modelo.js; `sanear` lo valida y
+  `cambiarHeroe` lo quita con la estimación). Las de antes se reparten por su
+  instante con `CAMBIOS_DE_MODELO` (los commits de 3.4.0 y 3.56.0, marcadas
+  como `deducido`). `calibracion` devuelve `porModelo` y `actual`, y el bot,
+  el Diagnóstico y el Veredicto dicen aparte la del modelo de hoy. El 20 de
+  octubre de 2026: modelo 1, 29 partidas (previsto 54%, real 69%); modelo
+  2, 164 (54% / 63%); modelo 3, 25 (55% / 56%).
 - **La subida automática (3.10.0)**: `src/app/envio.js` (puro: huella
   FNV-1a de partidas+maestría, `tocaSubir`, `ESPERA_MS` 3 s, `REINTENTO_MS`
   10 min), `src/app/estado/useEnvio.js` (el estado en `roam-picker:envio`:

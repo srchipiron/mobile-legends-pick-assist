@@ -138,6 +138,13 @@ export function informe(m, { generado = null, errorDatos = null } = {}) {
   else {
     L.push(`- ${c.n} partidas con estimación: previsto ${pct(c.prevista)}, real ${pct(c.real)}. Brier ${c.brier.toFixed(3)} ± ${(1.96 * c.brierSE).toFixed(3)} (una moneda: 0.250)${c.peorQueMoneda ? ' · PEOR que una moneda' : ''}.`);
     L.push(`- Con ≥50%: ${c.altas.n} partidas, ${pct(c.altas.real)} ganadas · con <50%: ${c.bajas.n}, ${pct(c.bajas.real)}.${c.concluyente ? '' : ` Faltan ${c.faltan} para decir algo.`}`);
+    // Cada modelo por separado (3.60.3): el de hoy es el que importa.
+    const modelos = Object.entries(c.porModelo ?? {});
+    if (modelos.length > 1 || modelos.some(([, x]) => x.deducidas)) {
+      for (const [v, x] of modelos) {
+        L.push(`- Modelo ${v}${Number(v) === c.actual ? ' (el de hoy)' : ''}: ${x.n} partidas, previsto ${pct(x.prevista)}, real ${pct(x.real)}, Brier ${x.brier.toFixed(3)} ± ${(1.96 * x.brierSE).toFixed(3)}${x.deducidas ? ` (${x.deducidas} con el modelo deducido por la fecha)` : ''}.`);
+      }
+    }
   }
   const h = m.hoy;
   L.push('', `### El modelo de hoy sobre tus drafts${generado ? ` (datos del ${generado.slice(0, 10)})` : ''}`);

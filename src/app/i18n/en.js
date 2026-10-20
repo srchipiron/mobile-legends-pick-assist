@@ -389,6 +389,7 @@ export default {
   'sheet.todos': 'All',
   'sheet.soloTuLinea': 'Only bans from your lane change what I recommend',
   'estimacion.calibrada': 'Over your {n} logged {n|match|matches} with an estimate: predicted {prev}%, won {real}%.',
+  'estimacion.modeloDeHoy': 'With today\'s model: {n} {n|match|matches}, predicted {prev}%, won {real}%. Earlier ones were estimated by an older version.',
   'estimacion.brier': 'Model error {brier} (a coin: 0.250). At ≥50% you won {altas}% of {nAltas}; below it, {bajas}% of {nBajas}.',
   'estimacion.faltanCalibrar': '{n} more logged {n|match|matches} to tell whether the estimate matches reality.',
   'comp.tu': 'Your team',

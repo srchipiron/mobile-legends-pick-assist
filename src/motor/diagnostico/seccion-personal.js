@@ -62,6 +62,9 @@ export function seccionPartidas(inf, { partidas = [], maestria = {}, maestriaMan
     if (cal.n) {
       inf.linea(`Estimación vs realidad: ${cal.n} partidas · previsto ${pct(cal.prevista)} · ganadas ${pct(cal.real)} · Brier ${cal.brier.toFixed(3)} (moneda 0.250)`);
       inf.linea(`  con ≥50% ganadas ${pct(cal.altas.real)} de ${cal.altas.n} · con <50% ganadas ${pct(cal.bajas.real)} de ${cal.bajas.n}`);
+      // Por modelo (3.60.3): mezclados, el Brier medía tres modelos a la vez.
+      const hoy = cal.porModelo?.[cal.actual];
+      if (hoy && hoy.n < cal.n) inf.linea(`  con el modelo de hoy (${cal.actual}): ${hoy.n} partidas · previsto ${pct(hoy.prevista)} · ganadas ${pct(hoy.real)} · Brier ${hoy.brier.toFixed(3)}${hoy.deducidas ? ` (${hoy.deducidas} con el modelo deducido por la fecha)` : ''}`);
       if (cal.concluyente) {
         inf.check(!cal.peorQueMoneda, `La estimación no acierta menos que una moneda en tus partidas (Brier ${cal.brier.toFixed(3)} ± ${(1.96 * cal.brierSE).toFixed(3)})`,
           `La estimación acierta MENOS que una moneda en tus ${cal.n} partidas (Brier ${cal.brier.toFixed(3)} ± ${(1.96 * cal.brierSE).toFixed(3)}): no te fíes del porcentaje`, true);

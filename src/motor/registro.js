@@ -2,6 +2,7 @@ import { nombreClave } from './nombres.js';
 import { maestriaDeSiempre, winrateDeReferencia } from './maestria.js';
 import { TRAMOS } from './fases.js';
 import { tramoDeMinutos, esDuracionPosible } from './directo.js';
+import { VERSION_MODELO, CAMBIOS_DE_MODELO } from './modelo.js';
 
 /**
  * Registro de partidas: a quién cogiste, a quién recomendaba la app, la
@@ -194,8 +195,9 @@ export function apuntar(partidas, entrada, tope = 500) {
     recomendados: (Array.isArray(entrada.recomendados) ? entrada.recomendados : []).slice(0, 3),
     gane: !!entrada.gane,
     rango: entrada.rango ?? null,
+    // Con la estimación, el modelo que la dio (3.60.3).
     ...(typeof entrada.estimacion === 'number' && entrada.estimacion > 0 && entrada.estimacion < 1
-      ? { estimacion: Math.round(entrada.estimacion * 1000) / 1000 } : {}),
+      ? { estimacion: Math.round(entrada.estimacion * 1000) / 1000, modelo: esVersionDeModelo(entrada.modelo) ? entrada.modelo : VERSION_MODELO } : {}),
     ...(entrada.previa ? { previa: true } : {}),
     // Apuntada SOLA por el lector del resultado (3.32.0): se mide aparte.
     ...(entrada.origen === 'lector' ? { origen: 'lector' } : {}),
@@ -208,6 +210,19 @@ export function apuntar(partidas, entrada, tope = 500) {
   };
   if (!limpia.pick) return partidas;
   return [limpia, ...(partidas ?? [])].sort((a, b) => (b.t ?? 0) - (a.t ?? 0)).slice(0, tope);
+}
+
+export const esVersionDeModelo = (v) => Number.isInteger(v) && v >= 1 && v <= 99;
+
+/**
+ * Qué modelo dio la estimación de una partida: el apuntado (desde 3.60.3) o,
+ * en las de antes, el que estaba publicado en su instante (`deducido`).
+ */
+export function modeloDe(p) {
+  if (esVersionDeModelo(p?.modelo)) return { version: p.modelo, deducido: false };
+  let version = 1;
+  for (const c of CAMBIOS_DE_MODELO) if ((p?.t ?? 0) >= c.desde) version = c.version;
+  return { version, deducido: true };
 }
 
 /** Quitar una partida apuntada por error. */
@@ -226,7 +241,7 @@ export function cambiarHeroe(partidas = [], t, pick) {
   if (typeof pick !== 'string' || !pick.trim()) return partidas;
   return partidas.map((p) => {
     if (p.t !== t || p.pick === pick) return p;
-    const { estimacion, fases, ...resto } = p;
+    const { estimacion, fases, modelo, ...resto } = p;
     return { ...resto, pick };
   });
 }
@@ -250,7 +265,7 @@ export function siguioConsejo(partida) {
  * ≥50% se ganó más que con <50%. Sin margen, el modelo perfecto disparaba
  * «peor que una moneda» un tercio de las veces con 20 partidas.
  */
-export function calibracion(partidas = []) {
+export function calibracion(partidas = [], { porModelo = true } = {}) {
   const con = partidas.filter((p) => !esPrevia(p) && typeof p.estimacion === 'number');
   const n = con.length;
   if (!n) return { n: 0, concluyente: false, faltan: MINIMO_PARA_CALIBRAR };
@@ -272,6 +287,15 @@ export function calibracion(partidas = []) {
     bajas: { n: bajas.length, real: bajas.length ? media(bajas, ganada) : null },
     concluyente: n >= MINIMO_PARA_CALIBRAR,
     faltan: Math.max(0, MINIMO_PARA_CALIBRAR - n),
+    // Cada modelo por separado (3.60.3): mezclados, el Brier medía tres
+    // modelos a la vez. `deducidas`, las que se repartieron por su fecha.
+    ...(porModelo ? {
+      porModelo: Object.fromEntries([...new Set(con.map((p) => modeloDe(p).version))].sort((a, b) => a - b).map((v) => {
+        const suyas = con.filter((p) => modeloDe(p).version === v);
+        return [v, { ...calibracion(suyas, { porModelo: false }), deducidas: suyas.filter((p) => modeloDe(p).deducido).length }];
+      })),
+      actual: VERSION_MODELO,
+    } : {}),
   };
 }
 

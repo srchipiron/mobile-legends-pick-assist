@@ -395,6 +395,7 @@ export default {
   'sheet.todos': 'Todos',
   'sheet.soloTuLinea': 'Solo los de tu línea cambian lo que te recomiendo',
   'estimacion.calibrada': 'En {n|tu|tus} {n} {n|partida|partidas} con estimación: previsto {prev}%, ganadas {real}%.',
+  'estimacion.modeloDeHoy': 'Con el modelo de hoy: {n} {n|partida|partidas}, previsto {prev}%, ganadas {real}%. Las de antes las estimó una versión anterior.',
   'estimacion.brier': 'Error del modelo {brier} (una moneda: 0.250). Con ≥50% ganaste el {altas}% de {nAltas}; con menos, el {bajas}% de {nBajas}.',
   'estimacion.faltanCalibrar': '{n|Falta|Faltan} {n} {n|partida apuntada|partidas apuntadas} para saber si la estimación se parece a lo que pasa.',
   'comp.tu': 'Tu equipo',
