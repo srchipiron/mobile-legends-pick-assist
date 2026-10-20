@@ -1,5 +1,5 @@
 {
- "actualizado": "2026-10-20T17:42:07.031Z",
+ "actualizado": "2026-10-20T17:53:48.593Z",
  "partidas": [
   {
    "t": 1792517985614,
@@ -22059,6 +22059,12 @@
   },
   {
    "cuando": "2026-10-20T17:42:07.031Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-20T17:53:48.593Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
