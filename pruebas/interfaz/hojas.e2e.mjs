@@ -193,6 +193,25 @@ await prueba('el botón Cerrar del diagnóstico cabe en 360px aunque haya botón
   await contexto.close();
 });
 
+await prueba('Copiar del diagnóstico sin portapapeles selecciona el texto y lo dice (3.60.4)', async () => {
+  const contexto = await navegador.newContext({ viewport: { width: 360, height: 640 }, locale: 'es-ES' });
+  const pagina = await contexto.newPage();
+  // Sin permiso de portapapeles y sin el camino viejo: lo de un Chrome de Android sin permiso.
+  await pagina.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: () => Promise.reject(new Error('sin permiso')) } });
+    document.execCommand = () => false;
+    localStorage.setItem('roam-picker:linea', JSON.stringify('roam'));
+    localStorage.setItem('roam-picker:draft', JSON.stringify({ enemies: ['Layla'], allies: [], bans: [], enemyRoam: null, fase: 'picks' }));
+  });
+  await pagina.goto(url, { waitUntil: 'networkidle' }); await pagina.waitForTimeout(600);
+  await pagina.locator('.more summary').click(); await pagina.waitForTimeout(200);
+  await pagina.getByRole('button', { name: 'Diagnóstico' }).click(); await pagina.waitForTimeout(2000);
+  await pagina.locator('[role=dialog] .close', { hasText: 'Copiar' }).click(); await pagina.waitForTimeout(300);
+  ok(/mantén pulsado/.test(await pagina.locator('[role=dialog] .sheet-head').innerText()), 'sin portapapeles el botón no dice que hay que copiar a mano');
+  ok((await pagina.evaluate(() => window.getSelection().toString().length)) > 500, 'sin portapapeles no se selecciona el informe');
+  await contexto.close();
+});
+
 await prueba('un nombre guardado que ya no existe se limpia, y el rival fantasma se desmarca', async () => {
   const { contexto, pagina, errores } = await con({ enemies: ['Layla', 'NoExiste', 'Fanny'], allies: ['Chou', 'Fantasma'], bans: ['Hirara', 'Nadie'], enemyRoam: 'NoExiste', fase: 'picks' });
   await pagina.waitForTimeout(800);

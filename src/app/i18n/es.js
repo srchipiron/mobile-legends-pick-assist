@@ -56,6 +56,7 @@ export default {
   'diag.aGitHub': 'A GitHub',
   'diag.copiar': 'Copiar',
   'diag.copiado': 'Copiado',
+  'diag.copiarAMano': 'Seleccionado: mantén pulsado y copia',
   'diag.tituloIncidencia': 'Diagnóstico {fecha}: {titular}',
   'diag.cuerpoIncidencia': 'Enviado desde el móvil con el botón Diagnóstico.',
   'pie.datosApi': 'Datos de la API: {fecha}',

@@ -6,22 +6,27 @@ import { tPorDefecto } from './tPorDefecto.js';
 
 /** El informe del diagnóstico, listo para copiar, compartir o dejar como incidencia en GitHub. */
 export function Diagnostico({ resultado, onCerrar, t = tPorDefecto }) {
-  const [copiado, setCopiado] = useState(false);
+  // `ok` copiado; `mano` (3.60.4): sin portapapeles se selecciona el texto y
+  // el botón lo dice. Antes no cambiaba y no se sabía que había que copiar a mano.
+  const [copiado, setCopiado] = useState(null);
 
   const copiar = async () => {
     try {
       await navigator.clipboard.writeText(resultado.texto);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2000);
+      setCopiado('ok');
     } catch {
-      // Sin permiso de portapapeles: se selecciona el texto para copiar a mano.
       const el = document.getElementById('selftest-texto');
       const sel = window.getSelection();
       const rango = document.createRange();
       rango.selectNodeContents(el);
       sel.removeAllRanges();
       sel.addRange(rango);
+      // El camino viejo, que en algunos navegadores aún copia lo seleccionado.
+      let hecho = false;
+      try { hecho = document.execCommand?.('copy') === true; } catch { /* no hay */ }
+      setCopiado(hecho ? 'ok' : 'mano');
     }
+    setTimeout(() => setCopiado(null), 4000);
   };
   const compartir = () => navigator.share?.({ text: resultado.texto }).catch(() => {});
 
@@ -47,7 +52,7 @@ export function Diagnostico({ resultado, onCerrar, t = tPorDefecto }) {
         <strong style={{ flex: 1, alignSelf: 'center' }}>{titular(resultado.fallos, resultado.avisos)}</strong>
         {navigator.share && <button className="close" onClick={compartir}>{t('diag.enviar')}</button>}
         <button className="close" onClick={aGitHub}>{t('diag.aGitHub')}</button>
-        <button className="close" style={{ color: 'var(--gold)' }} onClick={copiar}>{copiado ? t('diag.copiado') : t('diag.copiar')}</button>
+        <button className="close" style={{ color: 'var(--gold)' }} onClick={copiar}>{copiado === 'ok' ? t('diag.copiado') : copiado === 'mano' ? t('diag.copiarAMano') : t('diag.copiar')}</button>
         <button className="close" onClick={onCerrar}>{t('app.cerrar')}</button>
       </div>
       <pre id="selftest-texto" className="selftest">{resultado.texto}</pre>
