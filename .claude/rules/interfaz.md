@@ -310,6 +310,14 @@ horas dormida y el navegador no comprueba por su cuenta; en la prueba no se
 distingue, porque ahí el navegador ya revalida solo. La recarga lleva pestillo:
 sin él, un navegador que reinstale el worker podría dejarla en bucle.
 
+Los datos van con `StaleWhileRevalidate`: la primera respuesta es la de la
+caché y lo nuevo llega a la caché DESPUÉS. Por eso desde 3.60.5
+`useDatos` vuelve a pedir `roam-meta.json` a los `RELEER_DATOS_MS` (5 s) y,
+si su huella (`huellaDeDatos`: las tres fechas) cambia, lo usa. No se pasó
+a `NetworkFirst` porque con poca cobertura la app tardaría segundos en
+abrir al empezar un draft. Prueba en `hojas.e2e` (`sinServiceWorker`: las
+peticiones del service worker no pasan por `route`).
+
 Recargar es seguro porque el draft, la maestría y las partidas se guardan en
 `localStorage` en cada cambio. Si algún día se añade estado que NO se guarde,
 esto hay que revisarlo antes.

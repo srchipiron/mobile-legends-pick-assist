@@ -91,6 +91,31 @@ Queda propuesto, sin hacer:
 - avisar si `medir-pro` falla;
 - limpiar los nombres de la API en los textos de incidencias.
 
+**La revisión de la vigilancia (3.60.5)**:
+- Las matrices se validan por VALOR (`valoresDeMatrices`, seccion-datos.js):
+  - una celda fuera de 0–1 o menos del 99% de pares que sumen 1 es FALLO;
+  - menos del 98% de celdas con nombres del catálogo es aviso.
+  Hoy cumplen las 17.556. Antes, cruces invertidos o simétricos daban
+  idéntico a la base.
+- Se avisa de `diagnostics.failed`, de las imágenes que fallaron y de los
+  héroes sin id.
+- `diagnostico.mjs` acaba con un `=== RESUMEN ===` de todos los avisos y
+  fallos. La vigilancia sube los últimos 5.000 caracteres y el informe mide
+  11 KB: un FALLO de roam se quedaba fuera.
+- `filasDeSalud` (scripts/salud.mjs) lee el historial línea a línea, y lo
+  usan los tres sitios que lo leen. Una línea rota lo vaciaba.
+- El falso FALLO «tu maestría no se aplica», con un héroe justo en tu nivel,
+  ya no sale.
+
+Queda propuesto, sin hacer, porque cambia cuándo saltan las alarmas:
+- Un canal para los AVISOS: hoy solo un FALLO abre incidencia, y la caída
+  del 10 al 19 de octubre dejó 353 filas sin un solo fallo. La propuesta es
+  abrirla si el mismo aviso dura N corridas o si los datos pasan de 72 h.
+- Hacer FALLO los valores imposibles de winrate, cuotas y ban.
+- La mediana del historial, solo con filas sanas.
+- `tendencia.mjs` con más campos y por tramos.
+- Validar todos los rangos y no solo el de la ingesta.
+
 **La tier list fuera de GitHub.** mlbb.gg contesta 403 a los runners de
 GitHub (y 200 a cualquier otro sitio): `scripts/actualizar-tiers.mjs`
 cambia SOLO `tiers` en roam-meta.json (sale con 1 y no escribe si falla;
@@ -150,6 +175,24 @@ aquí: pidiéndole datos, no leyendo su README.
   `{{Match}}` (`date`, `opponentN`) en las SUBPÁGINAS del torneo (Regular
   Season, Playoffs...), no en la portada. La portada trae `sdate`/`edate`/
   `patch` en la infobox.
+- **La revisión de 3.60.4 (3.60.5)**, con el corpus de 2.850 partidas:
+  - «ceci» es Cecilion, no Cici: en 6 de 20 partidas iba con «cici». La
+    prueba de alias exige ahora que un alias que es prefijo de algún héroe
+    lo sea SOLO de su destino.
+  - `claveDe` sin la duración y con los picks ordenados: Liquipedia la
+    rellena o la reescribe, y había 8 repetidas.
+  - `partidaPosible` descarta un héroe repetido (13 erratas) y
+    `limpiarBans` quita el baneo que también se eligió (47).
+  - Cada `{{Match}}` empieza sin la fecha ni los equipos del anterior, y
+    `lado1` va en minúsculas.
+  - `resumirPro` deja fuera de la ventana las partidas sin fecha, como
+    `medir-pro`.
+  - El corpus se limpió una vez (2.850 → 2.829) y `pro.json` se rehízo
+    con `--max-peticiones 0`.
+  - `medir-pro` dice la base del acierto: el equipo 1 gana el 54%.
+
+  Pendiente de Javi: la línea «Pro» de la tarjeta enseña porcentaje desde 5
+  picks (±22 puntos), y mezcla seis parches.
 - **Los nombres son slugs y abreviaturas** (`yss`, `lance`, `esme`, `gatot`,
   `luo yi`). `ALIAS` en el script solo lleva lo visto en wikitext real, y un
   slug sin mapear descarta la partida y aparece en `pro.json` y en el

@@ -8,6 +8,27 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.60.5
+
+- La app usa los datos más nuevos que tenga. Al abrirla sale al instante
+  con los que guardó la última vez, también sin cobertura, y antes se
+  quedaba con esos aunque ya hubieran llegado otros. Ahora, a los pocos
+  segundos, vuelve a mirar y cambia a los nuevos.
+- La línea «Pro» de las tarjetas cuenta bien:
+  - Cecilion y Cici ya no se mezclan: 20 partidas de Cecilion contaban
+    para Cici;
+  - quita 8 partidas repetidas y 13 con un héroe dos veces, que eran
+    erratas de la fuente;
+  - reconoce a X.Borg y a Wanwan cuando la fuente los abrevia.
+- El Diagnóstico ya no dice que tu maestría no se aplica cuando tienes un
+  héroe justo en tu winrate medio.
+- El Diagnóstico vigila más cosas:
+  - comprueba que los cruces sean posibles, que A contra B y B contra A
+    sumen 1 y que los nombres casen;
+  - avisa de lo que la descarga dice que falló;
+  - acaba con un resumen de todos los avisos.
+- Una línea rota del historial de la vigilancia ya no lo vacía entero.
+
 ## 3.60.4
 
 - La voz en partida ya no dice frases que contradicen sus cifras. Salía

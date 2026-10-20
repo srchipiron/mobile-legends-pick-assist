@@ -5,8 +5,10 @@
  * rota se nota en los VALORES), caídas frente a su propio historial, el
  * porqué del nº1 y una medición pro que falta.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { seccionPro } from '../../src/motor/diagnostico/seccion-pro.js';
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
 import { catalogo, heroes, poolRoam, crearRnd, h } from '../fixtures/catalogo.mjs';
 import { prepararDatos } from '../../src/motor/draft.js';
 import { diagnosticar, titular } from '../../src/motor/diagnostico/index.js';
@@ -371,6 +373,31 @@ test('el diagnóstico dice cuántos de tu línea tienen curva por duración, y a
   const pocas = Object.fromEntries(pool.slice(0, 2).map((x) => [x.name, { roam: curva }]));
   ok(lineas({ ...meta, curvaLinea: pocas }).some((l) => /^\[AVISO\]/.test(l)), `con dos curvas no avisa: ${lineas({ ...meta, curvaLinea: pocas })}`);
   ok(lineas({ ...meta, curvaLinea: undefined }).some((l) => /^\[AVISO\].*sin curvas/.test(l)), `sin curvas no avisa: ${lineas({ ...meta, curvaLinea: undefined })}`);
+});
+
+test('revisión de la vigilancia (3.60.5): matrices imposibles, nombres que no casan, lo que la ingesta declaró y la maestría al 50%', () => {
+  const real = JSON.parse(readFileSync(join(RAIZ, 'public/data/roam-meta.json'), 'utf8'));
+  const entorno = { version: 'test', rango: 'glory', width: 412, height: 915, storage: true, sinDatosPersonales: true };
+  const informe = (meta, extra = {}) => diagnosticar({ linea: 'roam', maestria: {}, partidas: [], entorno, datos: prepararDatos({ catalogo, meta, rango: 'glory' }), ...extra });
+  const base = informe(real);
+  const lineas = (r, re) => r.texto.split('\n').filter((l) => re.test(l));
+  ok(!lineas(base, /^\[FALLO/).some((l) => /cruces|matriz/i.test(l)), `los datos reales dan un FALLO de matriz: ${lineas(base, /^\[FALLO/)}`);
+  const mapa = (m, f) => Object.fromEntries(Object.entries(m).map(([a, fila]) => [a, Object.fromEntries(Object.entries(fila).map(([b, x]) => [b, f(x, a, b)]))]));
+  // Cruces invertidos y simétricos: rompen A+B = 1 sin una celda fuera de rango.
+  const simetricos = informe({ ...real, counters: mapa(real.counters, (x, a, b) => (a < b ? x : real.counters[b][a])) });
+  ok(lineas(simetricos, /^\[FALLO.*antisimétric|^\[FALLO.*A contra B/).length, 'unos cruces simétricos no dan FALLO');
+  // Una celda imposible.
+  const fuera = structuredClone(real); const [a0] = Object.keys(fuera.counters); const [b0] = Object.keys(fuera.counters[a0]); fuera.counters[a0][b0] = 5;
+  ok(lineas(informe(fuera), /^\[FALLO.*fuera de 0-1/).length, 'una celda a 5 no da FALLO');
+  // Doce héroes con otra grafía SOLO en la matriz: aviso.
+  const renombra = (m) => Object.fromEntries(Object.entries(m).map(([a, fila], i) => [i < 12 ? `${a}_x` : a, fila]));
+  ok(lineas(informe({ ...real, counters: renombra(real.counters) }), /^\[AVISO.*no casan|^\[AVISO.*casan con el catálogo/).length, 'nombres de la matriz que no casan no avisan');
+  // Lo que la ingesta declaró que falló, y héroes sin id.
+  const dg = informe({ ...real, diagnostics: { ...real.diagnostics, failed: ['stats', 'builds'], imagenes: { heroes: { fallos: 40 } } }, heroes: real.heroes.map((x, i) => (i < 2 ? { ...x, id: undefined } : x)) });
+  ok(lineas(dg, /^\[AVISO.*no pudo bajar: stats/).length && lineas(dg, /^\[AVISO.*Imágenes \(heroes\): 40/).length && lineas(dg, /^\[AVISO.*sin id/).length, 'lo que la ingesta declaró que falló no avisa');
+  // La maestría con un héroe justo en tu nivel (winrate = tu media) se aplica: no es FALLO.
+  const conMaestria = diagnosticar({ linea: 'roam', maestria: { Atlas: { winRate: 0.5, games: 200 } }, partidas: [], entorno: { ...entorno, sinDatosPersonales: false }, datos: prepararDatos({ catalogo, meta: real, rango: 'glory' }) });
+  ok(!lineas(conMaestria, /^\[FALLO.*maestría NO se aplica/).length, 'una maestría al 50% da un FALLO falso');
 });
 
 await terminar('motor/diagnostico');

@@ -41,7 +41,9 @@ export function seccionMaestria(inf, { datos, linea, maestria = {}, entorno = {}
   const con = ordenarPicks(pool, { meta: datos.meta, maestria }).findIndex((r) => r.heroe.name === h.name);
   const m = buscar(maestria, h.name);
   inf.linea(`Ejemplo: ${h.name} ${Math.round(m.winRate * 100)}% en ${m.games} partidas · puesto ${sin + 1} -> ${con + 1}`);
-  inf.check(notaDeMaestria(h, maestria).valor !== 0.5, 'Tu maestría se está aplicando', 'Tu maestría NO se aplica: los nombres guardados no casan con el catálogo');
+  // Se aplica si el motor la ENCUENTRA (3.60.5): mirando si la nota no era
+  // 0,5, un héroe con tu winrate justo en tu nivel daba un FALLO falso.
+  inf.check(notaDeMaestria(h, maestria).encogido != null, 'Tu maestría se está aplicando', 'Tu maestría NO se aplica: los nombres guardados no casan con el catálogo');
 }
 
 /** Las partidas apuntadas: calibración de la estimación y el Veredicto. */

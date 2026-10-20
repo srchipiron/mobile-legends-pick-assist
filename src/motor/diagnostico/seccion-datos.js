@@ -161,10 +161,46 @@ export function seccionDatos(inf, { datos, linea, entorno = {} }) {
       return v.length > 20 && v.every((x) => Math.abs(x - 0.5) < 1e-6);
     }).map(([n]) => n);
     inf.check(!planas.length, 'Ninguna fila de counters plana', `Filas de counters planas (todo 0.5): ${planas.slice(0, 5).join(', ')}`, true);
+    // Los VALORES de las matrices (3.60.5): solo se miraba la fila plana, y
+    // una celda a 5, los cruces invertidos o simétricos pasaban sin nada.
+    // Lo imposible es FALLO; está medido que hoy los 17.556 cumplen.
+    const v = valoresDeMatrices(meta);
+    inf.check(!v.fuera, 'Cruces y parejas entre 0 y 1', `${v.fuera} cruces o parejas fuera de 0-1: la matriz está rota`);
+    inf.check(!v.pares || v.antisimetricos / v.pares >= 0.99, `Cruces antisimétricos (${v.antisimetricos} de ${v.pares})`,
+      `Solo ${v.antisimetricos} de ${v.pares} cruces cumplen A contra B + B contra A = 1: la matriz está rota o del revés`);
+    // Y que sus nombres sean héroes del catálogo: con otra grafía la fila
+    // existe, se cuenta, y el motor no la encuentra.
+    inf.check(v.celdas === 0 || v.conocidas / v.celdas >= 0.98, `Nombres de la matriz: ${v.conocidas} de ${v.celdas} celdas casan con el catálogo`,
+      `Solo ${v.conocidas} de ${v.celdas} celdas de la matriz casan con el catálogo: ¿la API ha cambiado cómo escribe los nombres?`, true);
   }
+  // Lo que la propia ingesta declara que falló (3.60.5): se escribía y no se leía.
+  const dg = meta.diagnostics ?? {};
+  if (Array.isArray(dg.failed) && dg.failed.length) inf.add('AVISO', `La ingesta no pudo bajar: ${dg.failed.slice(0, 6).join(', ')}`);
+  for (const [k, im] of Object.entries(dg.imagenes ?? {})) if (im?.fallos > 0) inf.add('AVISO', `Imágenes (${k}): ${im.fallos} fallaron al bajar`);
+  const sinId = (meta.heroes ?? []).filter((h) => h?.id == null).map((h) => h?.name);
+  if (sinId.length) inf.add('AVISO', `Héroes sin id (sin cara en el draft): ${sinId.slice(0, 6).join(', ')}`);
   for (const [r, v] of Object.entries(meta.diagnostics?.rangos ?? {})) {
     if (String(v).startsWith('fallo')) inf.add('AVISO', `Rango ${r}: ${v}`);
   }
+}
+
+/** Cuántas celdas de cruces y parejas son imposibles, cuántos pares de cruces son antisimétricos y cuántos nombres casan con el catálogo. */
+export function valoresDeMatrices(meta) {
+  const nombres = new Set((meta?.heroes ?? []).map((h) => nombreClave(h?.name ?? '')));
+  const C = meta?.counters ?? {}; const S = meta?.synergies ?? {};
+  let fuera = 0, pares = 0, antisimetricos = 0, celdas = 0, conocidas = 0;
+  const fueraDe = (x) => typeof x === 'number' && !(x >= 0 && x <= 1);
+  for (const [a, fila] of Object.entries(C)) {
+    for (const [b, x] of Object.entries(fila ?? {})) {
+      celdas += 1;
+      if (nombres.has(nombreClave(a)) && nombres.has(nombreClave(b))) conocidas += 1;
+      if (fueraDe(x)) fuera += 1;
+      const y = C[b]?.[a];
+      if (typeof x === 'number' && typeof y === 'number') { pares += 1; if (Math.abs(x + y - 1) < 0.01) antisimetricos += 1; }
+    }
+  }
+  for (const fila of Object.values(S)) for (const x of Object.values(fila ?? {})) if (fueraDe(x)) fuera += 1;
+  return { fuera, pares, antisimetricos, celdas, conocidas };
 }
 
 /** Cobertura del pool de tu línea: winrates, cruces, builds, objetos y nombres. */

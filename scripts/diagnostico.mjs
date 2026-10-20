@@ -185,6 +185,15 @@ if (rutaHistorial) {
   console.log(`Anotado en ${rutaHistorial}`);
 }
 
+// El resumen, AL FINAL (3.60.5): la vigilancia sube los últimos 5.000
+// caracteres a la incidencia y el informe mide 11 KB, así que un FALLO de la
+// primera línea se quedaba fuera y la incidencia no decía qué había fallado.
+const unicas = (tipo) => [...new Set(partes.flatMap((p) => p.texto.split('\n').filter((l) => l.startsWith(`[${tipo}`))))];
+console.log('\n=== RESUMEN ===');
+for (const l of unicas('FALLO')) console.log(l);
+for (const l of unicas('AVISO')) console.log(l);
+if (!fallosTotales && !unicas('AVISO').length) console.log('Todo bien.');
+
 if (fallosTotales) {
   console.error(`\n${fallosTotales} FALLOS repartidos por las cinco líneas.`);
   process.exit(1);

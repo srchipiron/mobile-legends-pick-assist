@@ -69,6 +69,9 @@ export const ALIAS = {
   // draft trae también «cici», y un héroe no sale dos veces en una partida.
   ceci: 'Cecilion',
   haya: 'Hayabusa',
+  // Vistos en baneos de la MPL de octubre de 2026 (MY S18, KH S11), 3.60.5.
+  xb: 'X.Borg',
+  wan: 'Wanwan',
   valen: 'Valentina',
   'lapu-lapu': 'Lapu-Lapu',
   lapulapu: 'Lapu-Lapu',

@@ -353,6 +353,12 @@ test('la vigilancia arranca de verdad contra los datos del repositorio', () => {
   const distintos = new Set((r.stdout || '').split('\n').filter((l) => l.startsWith('[AVISO]'))).size;
   ok(fila.avisos <= distintos, `la fila de salud cuenta ${fila.avisos} avisos y el informe tiene ${distintos} distintos: suma las cinco líneas`);
   ok(/Fuente: public\/data/.test(r.stdout + r.stderr), 'el diagnóstico local no llega al final');
+  // La vigilancia sube los ÚLTIMOS 5.000 caracteres (3.60.5): todo aviso y
+  // fallo tiene que estar ahí, en el resumen del final.
+  const cola = (r.stdout || '').slice(-5000);
+  const todos = [...new Set((r.stdout || '').split('\n').filter((l) => /^\[(AVISO|FALLO)/.test(l)))];
+  const resumen = cola.split('=== RESUMEN ===')[1] ?? '';
+  ok(resumen && todos.every((l) => resumen.includes(l)), `el resumen del final no lleva todos los avisos: faltan ${todos.filter((l) => !resumen.includes(l)).length}`);
   ok(existsSync(salud) && /"cruces":\d+/.test(readFileSync(salud, 'utf8')), 'no deja la fila de salud con sus cifras');
   // Cada recuento de FIJAS que el comparador mira contra el historial tiene
   // que estar en la fila, o su máximo es siempre 0 y el trinquete no existe.
