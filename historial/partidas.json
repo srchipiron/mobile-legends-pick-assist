@@ -1,6 +1,166 @@
 {
- "actualizado": "2026-10-19T22:36:21.717Z",
+ "actualizado": "2026-10-20T16:24:11.013Z",
  "partidas": [
+  {
+   "t": 1792512553331,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Diggie",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.535,
+   "modelo": 3,
+   "origen": "lector",
+   "bans": [
+    "Eudora",
+    "Hirara",
+    "Marcel",
+    "Lukas",
+    "Aulus",
+    "Belerick"
+   ],
+   "draft": {
+    "enemigos": [
+     "Obsidia",
+     "Masha",
+     "Kadita",
+     "Lolita",
+     "Fanny"
+    ],
+    "aliados": [
+     "Balmond",
+     "Novaria",
+     "Popol and Kupa",
+     "Layla"
+    ],
+    "linea": "roam",
+    "rival": "Lolita"
+   },
+   "lector": {
+    "baneos": [
+     "Eudora",
+     "Hirara",
+     "Marcel",
+     "Lukas",
+     "Aulus",
+     "Belerick"
+    ],
+    "enemigos": [
+     "Obsidia",
+     "Kadita",
+     "Fanny"
+    ],
+    "aliados": [
+     "Balmond",
+     "Novaria",
+     "Popol and Kupa",
+     "Layla"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "t5",
+      "candidato": "Gord",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e1",
+      "candidato": "Zetian",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Valir",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Rafaela",
+      "parecido": 0.76
+     }
+    ],
+    "ms": [
+     6074,
+     3336,
+     3349,
+     3825,
+     2895,
+     4587,
+     3490,
+     3680,
+     3411,
+     3249,
+     3369,
+     3840,
+     3454,
+     3473,
+     3562,
+     4379
+    ],
+    "msCaptura": [
+     5012,
+     2291,
+     2276,
+     2496,
+     1825,
+     3338,
+     2348,
+     2395,
+     2267,
+     2241,
+     2111,
+     2709,
+     2369,
+     2401,
+     2294,
+     3198
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Masha",
+      "Fanny",
+      "Masha",
+      "Fanny",
+      "Masha"
+     ],
+     "sinEncontrar": [
+      "Lolita",
+      "Lolita",
+      "Lolita"
+     ]
+    }
+   },
+   "duracion": 12.3,
+   "fases": [
+    0.548,
+    0.509,
+    0.507,
+    0.516,
+    0.566,
+    0.584
+   ]
+  },
   {
    "t": 1792449362715,
    "pick": "Diggie",
@@ -21545,6 +21705,12 @@
   {
    "cuando": "2026-10-19T22:36:21.717Z",
    "partidas": 237,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-20T16:24:11.013Z",
+   "partidas": 200,
    "heroes": 11,
    "incidencia": 11
   }
