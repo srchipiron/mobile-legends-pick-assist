@@ -1,6 +1,193 @@
 {
- "actualizado": "2026-10-20T17:53:48.593Z",
+ "actualizado": "2026-10-20T21:55:53.149Z",
  "partidas": [
+  {
+   "t": 1792533317305,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Rafaela",
+    "Gloo",
+    "Angela"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.676,
+   "modelo": 3,
+   "origen": "lector",
+   "bans": [
+    "Aulus",
+    "Lukas",
+    "Hirara",
+    "Atlas",
+    "Eudora",
+    "Paquito",
+    "Marcel",
+    "Estes",
+    "Aamon"
+   ],
+   "draft": {
+    "enemigos": [
+     "Hanabi",
+     "Khufra",
+     "Leomord",
+     "Selena",
+     "Lapu-Lapu"
+    ],
+    "aliados": [
+     "Masha",
+     "Obsidia",
+     "Alpha",
+     "Kagura"
+    ],
+    "linea": "roam",
+    "rival": "Khufra"
+   },
+   "lector": {
+    "baneos": [
+     "Aulus",
+     "Lukas",
+     "Hirara",
+     "Atlas",
+     "Eudora",
+     "Paquito",
+     "Marcel",
+     "Estes",
+     "Aamon"
+    ],
+    "enemigos": [
+     "Hanabi",
+     "Khufra",
+     "Leomord",
+     "Fredrinn",
+     "Yi Sun-shin"
+    ],
+    "aliados": [
+     "Masha",
+     "Obsidia",
+     "Alpha",
+     "Kagura"
+    ],
+    "dudas": [
+     {
+      "hueco": "e2",
+      "candidato": "Chang'e",
+      "parecido": 0.61
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Zetian",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Leomord",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Joy",
+      "parecido": 0.78
+     },
+     {
+      "hueco": "a4",
+      "candidato": "Fredrinn",
+      "parecido": 0.66
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Natalia",
+      "parecido": 0.73
+     }
+    ],
+    "ms": [
+     3344,
+     3247,
+     3522,
+     3437,
+     3047,
+     4529,
+     2980,
+     3026,
+     3440,
+     3496,
+     3208,
+     2904,
+     3319,
+     3383,
+     2981,
+     3475,
+     3355,
+     3299,
+     2984,
+     2954
+    ],
+    "msCaptura": [
+     2409,
+     2285,
+     2462,
+     2442,
+     2142,
+     3354,
+     2150,
+     2094,
+     2428,
+     2539,
+     2244,
+     2062,
+     2401,
+     2427,
+     2090,
+     2286,
+     2342,
+     2278,
+     2025,
+     2074
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Selena",
+      "Selena",
+      "Selena"
+     ],
+     "sinEncontrar": [
+      "Lapu-Lapu",
+      "Lapu-Lapu",
+      "Lapu-Lapu"
+     ]
+    }
+   },
+   "duracion": 15.7,
+   "fases": [
+    0.675,
+    0.675,
+    0.668,
+    0.683,
+    0.685,
+    0.682
+   ]
+  },
   {
    "t": 1792517985614,
    "pick": "Gloo",
@@ -22065,6 +22252,12 @@
   },
   {
    "cuando": "2026-10-20T17:53:48.593Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-20T21:55:53.149Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
