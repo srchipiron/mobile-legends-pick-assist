@@ -269,10 +269,13 @@ const fallo = (tipo, mensaje) => Object.assign(new Error(mensaje), { tipo });
  * contesta pero se sabe la IP, los puertos abiertos de esa IP. Cada
  * candidata se comprueba con `adb connect`: solo se devuelve una que
  * conecte. «failed to authenticate» es que falta emparejar, y se dice
- * distinto de «no la veo».
+ * distinto de «no la veo». `descartar`: direcciones cuya captura acaba de
+ * fallar; no se prueban, porque adb contesta «already connected» a una
+ * conexión vieja que ya está «offline» (3.60.6: el lector volvía a la
+ * misma una y otra vez).
  */
-export async function encontrarTablet({ memoria = {}, registrar = () => {}, probar = (d) => conectarTablet(d, { ms: 6000 }), buscar = buscarPorMdns, escanear = escanearPuertos, maxPuertos = 8 } = {}) {
-  const vistas = new Set();
+export async function encontrarTablet({ memoria = {}, registrar = () => {}, probar = (d) => conectarTablet(d, { ms: 6000 }), buscar = buscarPorMdns, escanear = escanearPuertos, maxPuertos = 8, descartar = [] } = {}) {
+  const vistas = new Set(descartar);
   let faltaEmparejar = false;
   const intentar = (c) => {
     const clave = `${c.ip}:${c.puerto}`;

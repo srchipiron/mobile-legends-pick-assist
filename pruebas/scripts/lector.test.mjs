@@ -423,6 +423,10 @@ test('encontrarTablet prueba por orden: la última que funcionó, la anunciada e
   // 5) «failed to authenticate» es que falta emparejar, no que no esté.
   e = await encontrarTablet({ memoria: { ip: '10.0.0.5', puerto: 40000 }, probar: probar({ '10.0.0.5:40000': "failed to authenticate to 10.0.0.5:40000" }), buscar: async () => [], escanear: async () => [] }).catch((x) => x);
   eq(e.tipo, 'emparejar', `falta emparejar y dice ${e.tipo}`);
+  // 6) La que acaba de fallar la captura no se prueba aunque adb diga «already connected» (3.60.6).
+  dicho.length = 0;
+  t = await encontrarTablet({ memoria: { ip: '10.0.0.5', puerto: 39043 }, descartar: ['10.0.0.5:39043'], probar: probar({ '10.0.0.5:39043': 'already connected to 10.0.0.5:39043', '10.0.0.5:45555': 'connected to 10.0.0.5:45555' }), buscar: async () => [{ ip: '10.0.0.5', puerto: 39043 }, { ip: '10.0.0.5', puerto: 45555 }], escanear: async () => [] });
+  eq(`${t.puerto} ${dicho.join()}`, '45555 10.0.0.5:45555', 'vuelve a la tablet que acaba de fallar');
 });
 
 test('«lector» (lector.sh) se instala solo, cierra el lector anterior, trae lo último y arranca el servidor guardando capturas', () => {

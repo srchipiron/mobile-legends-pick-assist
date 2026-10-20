@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.60.6
+
+- El lector ya no se queda atascado en la tablet «offline». Cuando apagas
+  y enciendes la depuración inalámbrica, adb se queda con la conexión
+  vieja y seguía contestando «ya conectada». Por eso el lector volvía al
+  mismo puerto una y otra vez y nunca sacaba la captura. Ahora, si una
+  captura falla, busca la tablet en otro puerto. Si no hay otro, Termux
+  te dice qué escribir para soltar la conexión vieja.
+
 ## 3.60.5
 
 - La app usa los datos más nuevos que tenga. Al abrirla sale al instante

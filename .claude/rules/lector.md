@@ -707,6 +707,13 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   - `/corregir` espera con `while`: con tres a la vez, dos aprendían juntas.
   - Pruebas en `app/lectura-draft`, `lector.e2e` (intercepta `/corregir`) y
     `puente-lector`; cuatro mutaciones.
+- **La conexión vieja «offline» (3.60.6)**: tras apagar y encender la
+  depuración, adb contesta «already connected» a la dirección de antes
+  aunque esté `offline`, así que `encontrarTablet` la daba por buena desde
+  la memoria y el lector reintentaba la misma sin fin (20 de octubre de
+  2026, 192.168.68.116:39043). Hoy la que acaba de fallar va en
+  `descartar` y, si no hay otra, `conPista` dice en Termux «adb disconnect»
+  y «adb kill-server»: el lector NO los lanza (solo conecta y captura).
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

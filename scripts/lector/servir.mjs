@@ -262,10 +262,20 @@ export function guardarMemoria(m, fichero = FICHERO_MEMORIA) {
  * sale (3.33.1: si no, el siguiente `lector` a secas volvía a buscar en la IP
  * de antes, que es lo que le pasó a Javi en otra wifi).
  */
+/**
+ * «device offline»: adb guarda una conexión vieja con la tablet (se apagó la
+ * depuración, cambió la wifi) y solo se arregla soltándola. El lector no lo
+ * hace (solo conecta y captura), así que lo dice en Termux.
+ */
+export function conPista(e, tablet) {
+  if (!/offline/i.test(String(e?.message))) return e;
+  return Object.assign(new Error(`adb tiene la tablet ${tablet} como «offline» (una conexión vieja). Para el lector (Ctrl+C), escribe «adb disconnect» y «adb kill-server», y vuelve a arrancar «lector».`), { tipo: 'captura' });
+}
+
 export function capturaAutomatica({ fija = null, memoria = {}, recordar = () => {}, encontrar = encontrarTablet, capturar = capturarTablet, registrar = () => {} }) {
   let tablet = fija, buscando = null;
-  const localizar = () => {
-    buscando ??= encontrar({ memoria, registrar }).then((c) => {
+  const localizar = (descartar = []) => {
+    buscando ??= encontrar({ memoria, registrar, descartar }).then((c) => {
       tablet = `${c.ip}:${c.puerto}`;
       Object.assign(memoria, { ip: c.ip, puerto: c.puerto, nombre: c.nombre ?? memoria.nombre ?? null });
       recordar(memoria);
@@ -287,9 +297,12 @@ export function capturaAutomatica({ fija = null, memoria = {}, recordar = () => 
       }
       return png;
     } catch (e) {
-      if (fija || segunda) throw e;
-      registrar(`La tablet no contesta en ${tablet}: la busco otra vez.`);
+      if (fija || segunda) throw conPista(e, tablet);
+      const fallida = tablet;
+      registrar(`La tablet no contesta en ${fallida}: la busco otra vez.`);
       tablet = null;
+      // La que acaba de fallar no vale aunque adb diga «already connected».
+      try { await localizar([fallida]); } catch (e2) { throw e2?.tipo === 'tablet' ? conPista(e, fallida) : e2; }
       return ahora(opciones, true);
     }
   };

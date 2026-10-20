@@ -138,9 +138,19 @@ test('la captura automática busca la tablet sola, la recuerda y la vuelve a bus
   eq(`${busquedas} ${capturas.slice(1).join(' ')}`, '2 10.0.0.5:40000 10.0.0.5:41111', 'al fallar la captura no busca la tablet otra vez');
   eq(memoria.puerto, 41111, 'no recuerda el puerto nuevo');
   // Con la tablet fijada a mano no se busca nada, y un fallo es un fallo.
-  const fija = capturaAutomatica({ fija: '10.0.0.9:1', encontrar: async () => { throw new Error('no debía buscar'); }, capturar: () => { throw new Error('device offline'); } });
+  const fija = capturaAutomatica({ fija: '10.0.0.9:1', encontrar: async () => { throw new Error('no debía buscar'); }, capturar: () => { throw new Error('error: closed'); } });
   const e = await fija().catch((x) => x);
-  eq(e.message, 'device offline', `con --tablet fija hace otra cosa: ${e.message}`);
+  eq(e.message, 'error: closed', `con --tablet fija hace otra cosa: ${e.message}`);
+  // 3.60.6: adb contesta «already connected» a una conexión vieja «offline».
+  // La búsqueda de después no puede volver a la que acaba de fallar, y si no
+  // hay otra, Termux dice cómo soltarla (adb disconnect / kill-server).
+  const descartadas = [];
+  const atascada = capturaAutomatica({ memoria: {}, encontrar: async ({ descartar = [] }) => { descartadas.push(descartar.join()); if (descartar.includes('10.0.0.5:39043')) throw Object.assign(new Error('no la veo'), { tipo: 'tablet' }); return { ip: '10.0.0.5', puerto: 39043, via: 'memoria' }; }, capturar: () => { throw new Error('error: device offline'); } });
+  const ea = await atascada().catch((x) => x);
+  eq(descartadas.join('|'), '|10.0.0.5:39043', 'al fallar la captura vuelve a probar la misma tablet');
+  ok(/adb kill-server/.test(ea.message) && ea.tipo === 'captura', `«offline» sin pista: ${ea.message}`);
+  const fijaOffline = await capturaAutomatica({ fija: '10.0.0.9:1', capturar: () => { throw new Error('error: device offline'); } })().catch((x) => x);
+  ok(/adb disconnect/.test(fijaOffline.message), `«offline» con --tablet sin pista: ${fijaOffline.message}`);
   // Y la fijada que SÍ funciona se recuerda (una vez) para el siguiente arranque sin --tablet (3.33.1).
   const memoriaFija = { ip: '10.0.0.1', puerto: 5 }, recordadasFija = [];
   const fijaBuena = capturaAutomatica({ fija: '10.0.0.9:2', memoria: memoriaFija, recordar: (m) => recordadasFija.push({ ...m }), encontrar: async () => { throw new Error('no debía buscar'); }, capturar: () => png });
