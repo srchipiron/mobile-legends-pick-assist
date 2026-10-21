@@ -13,7 +13,18 @@ export function EditorDeMaestria({ pool, maestria, onGuardar, onCerrar, t = tPor
   const [borrador, setBorrador] = useState(() => Object.fromEntries(
     Object.entries(maestria).map(([nombre, m]) => [nombre, { games: String(m.games ?? ''), wr: m.winRate != null ? String(+(m.winRate * 100).toFixed(1)) : '' }]),
   ));
-  const poner = (nombre, campo, valor) => setBorrador((prev) => ({ ...prev, [nombre]: { games: '', wr: '', ...(prev[nombre] ?? {}), [campo]: valor } }));
+  const poner = (nombre, campo, valor) => setBorrador((prev) => ({ ...prev, [nombre]: { games: '', wr: '', ...(prev[nombre] ?? {}), [campo]: valor, tocada: true } }));
+
+  const invalido = (crudo, max) => {
+    if (!crudo) return false;
+    const n = leerDecimal(crudo);
+    return Number.isNaN(n) || n <= 0 || (max && n > max);
+  };
+  // Una fila con un campo y sin el otro (3.60.7): se marca el que falta y la
+  // hoja no se cierra. Antes se guardaba sin ella y sin decir nada.
+  const falta = (e, campo) => !!e?.tocada && !(e[campo] ?? '') && !!(e[campo === 'games' ? 'wr' : 'games'] ?? '');
+  const faltanPartidas = (e) => falta(e, 'games');
+  const faltaWinrate = (e) => falta(e, 'wr');
 
   const guardar = () => {
     const limpia = {};
@@ -22,7 +33,11 @@ export function EditorDeMaestria({ pool, maestria, onGuardar, onCerrar, t = tPor
     // (motor/maestria.js). Un héroe que no has tocado y ya tenía fecha la
     // conserva: sus números siguen siendo los de aquel día.
     const ahora = Date.now();
+    if (Object.values(borrador).some((e) => e.tocada && (faltanPartidas(e) || faltaWinrate(e) || invalido(e.games) || invalido(e.wr, 100)))) return;
     for (const [nombre, e] of Object.entries(borrador)) {
+      // Una fila sin tocar se queda tal cual: el campo enseña el winrate a un
+      // decimal, y guardarlo de vuelta lo redondeaba y le cambiaba la fecha.
+      if (!e.tocada) { if (maestria?.[nombre]) limpia[nombre] = maestria[nombre]; continue; }
       const games = leerDecimal(e.games);
       const wr = leerDecimal(e.wr);
       const antes = maestria?.[nombre];
@@ -43,12 +58,6 @@ export function EditorDeMaestria({ pool, maestria, onGuardar, onCerrar, t = tPor
     return relleno(a) - relleno(b) || a.name.localeCompare(b.name);
   }), [pool, maestria]);
 
-  const invalido = (crudo, max) => {
-    if (!crudo) return false;
-    const n = leerDecimal(crudo);
-    return Number.isNaN(n) || n <= 0 || (max && n > max);
-  };
-
   return (
     <Hoja etiqueta={t('app.maestria')} onCerrar={onCerrar}>
       <div className="sheet-head">
@@ -64,8 +73,8 @@ export function EditorDeMaestria({ pool, maestria, onGuardar, onCerrar, t = tPor
         {ordenados.map((h) => (
           <div className="mastery-row" key={h.name}>
             <span>{h.name}</span>
-            <input type="text" inputMode="numeric" placeholder="0" className={invalido(borrador[h.name]?.games) ? 'bad' : ''} value={borrador[h.name]?.games ?? ''} onChange={(e) => poner(h.name, 'games', e.target.value)} />
-            <input type="text" inputMode="decimal" placeholder={t('maestria.placeholderWr')} className={invalido(borrador[h.name]?.wr, 100) ? 'bad' : ''} value={borrador[h.name]?.wr ?? ''} onChange={(e) => poner(h.name, 'wr', e.target.value)} />
+            <input type="text" inputMode="numeric" placeholder="0" className={invalido(borrador[h.name]?.games) || faltanPartidas(borrador[h.name]) ? 'bad' : ''} value={borrador[h.name]?.games ?? ''} onChange={(e) => poner(h.name, 'games', e.target.value)} />
+            <input type="text" inputMode="decimal" placeholder={t('maestria.placeholderWr')} className={invalido(borrador[h.name]?.wr, 100) || faltaWinrate(borrador[h.name]) ? 'bad' : ''} value={borrador[h.name]?.wr ?? ''} onChange={(e) => poner(h.name, 'wr', e.target.value)} />
           </div>
         ))}
       </div>

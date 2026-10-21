@@ -85,13 +85,41 @@ await prueba('vaciar un draft que ya está vacío no ofrece deshacer (no hay nad
   await contexto.close();
 });
 
-await prueba('apuntar la partida vacía el draft SIN «Deshacer» (la partida ya está guardada)', async () => {
+const partidas = (pagina) => pagina.evaluate(() => JSON.parse(localStorage.getItem('roam-picker:partidas') ?? '[]'));
+
+// 3.60.7: Gané/Perdí a mano también tiene «Deshacer», que desapunta la
+// partida y devuelve el draft. Antes un toque equivocado solo se arreglaba
+// buscando la partida en Ajustes, que en baneos (adonde vuelve) ni sale.
+await prueba('apuntar la partida a mano vacía el draft y deja un «Deshacer» que la desapunta', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, {
     almacen: { ...almacen, 'roam-picker:draft': { ...DRAFT, miPickDesde: Date.now() - 11 * 60 * 1000 } },
   });
   await pagina.locator('.recordatorio .gane').click(); await pagina.waitForTimeout(300);
   eq((await leer(pagina)).enemies.length, 0, '«Gané» no vacía el draft');
-  eq(await aviso(pagina).count(), 0, 'apuntar la partida ofrece deshacer');
+  eq((await partidas(pagina)).length, 1, '«Gané» no apunta la partida');
+  ok(/apuntada: ganada/.test(await aviso(pagina).innerText()), 'apuntar a mano no ofrece deshacer (o dice que fue sola)');
+  await aviso(pagina).getByRole('button', { name: 'Deshacer' }).click(); await pagina.waitForTimeout(300);
+  eq((await partidas(pagina)).length, 0, '«Deshacer» no desapunta la partida');
+  eq(clave(await leer(pagina)), clave(DRAFT), '«Deshacer» no devuelve el draft');
+  ok(!errores.length, `errores de página: ${errores}`);
+  await contexto.close();
+});
+
+// 3.60.7: el draft vacío era un objeto compartido, así que apuntar una
+// partida dentro de los segundos de «Nuevo draft» devolvía el draft justo a
+// ese objeto y resucitaba el «Deshacer» del vaciado (con el draft viejo).
+await prueba('apuntar una partida tras «Nuevo draft» no resucita el «Deshacer» del vaciado', async () => {
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen });
+  await pagina.getByRole('button', { name: 'Nuevo draft' }).click(); await pagina.waitForTimeout(200);
+  await pagina.evaluate(() => {
+    const d = JSON.parse(localStorage.getItem('roam-picker:draft'));
+    if (d.enemies.length) throw new Error('no se vació');
+  });
+  await pagina.locator('.reset.primario').click(); await pagina.waitForTimeout(200);
+  await pagina.getByRole('button', { name: 'Apuntar partida' }).click(); await pagina.waitForTimeout(300);
+  await pagina.locator('.sheet').getByRole('button', { name: 'Gané' }).click(); await pagina.waitForTimeout(400);
+  const texto = await aviso(pagina).innerText().catch(() => '');
+  ok(!/vaciado/.test(texto), `tras apuntar vuelve el aviso del vaciado: «${texto}»`);
   ok(!errores.length, `errores de página: ${errores}`);
   await contexto.close();
 });

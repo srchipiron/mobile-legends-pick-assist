@@ -5,7 +5,7 @@
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { nombreClave, indexarPorNombre } from '../../src/motor/nombres.js';
-import { analizarDraft } from '../../src/motor/analisis.js';
+import { analizarDraft, BRECHA_CLARA } from '../../src/motor/analisis.js';
 import { CRUCE_MALO, CRUCE_FUERTE_EN_CONTRA } from '../../src/motor/matrices.js';
 
 test('el analisis dice si el pick aguanta lo que falta, y se calla con el draft completo', () => {
@@ -179,6 +179,18 @@ test('un pick fijado que no es el nº1: sin la frase de robustez, y se dice cuan
   ok(!otrosBaneos.includes('analisis.pickRobusto'), 'acepta una simulación hecha con otros baneos');
   //   Y una sin marca de baneos (simulación vieja) se acepta.
   ok(analizarDraft({ ...base, robustez: { ...robustez, baneos: undefined } }).some((f) => f.clave === 'analisis.pickRobusto'), 'rechaza una simulación sin marca de baneos');
+});
+
+test('«pick claro» salta con la brecha de verdad, no con la redondeada (3.60.7)', () => {
+  // Redondeando antes de comparar, 1,5 puntos ya eran «claro +2».
+  const H = (name) => ({ name, tags: [] });
+  const claro = (dif) => {
+    const ranking = [{ heroe: H('A'), p: 0.5 + dif, terminos: {} }, { heroe: H('B'), p: 0.5, terminos: {} }];
+    return analizarDraft({ eleccion: ranking[0], ranking, enemigos: [], aliados: [], baneos: [], meta: {} }).find((f) => f.clave === 'analisis.pickClaro');
+  };
+  const umbral = BRECHA_CLARA / 100;
+  ok(!claro(umbral - 0.004), 'con 1,6 puntos ya dice «pick claro»');
+  eq(claro(umbral + 0.004)?.params.puntos, 2, 'con 2,4 puntos no dice «pick claro +2»');
 });
 
 await terminar('motor/analisis');

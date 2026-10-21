@@ -464,6 +464,7 @@ export default {
   'deshacer.leido': '{b} {b|ban|bans}, {e} {e|enemy|enemies} and {a} {a|teammate|teammates} read from the game.',
   'deshacer.leidoTuyo': 'You: {nombre}.',
   'deshacer.apuntada': 'Game recorded by itself: {resultado} (read from the tablet).',
+  'deshacer.apuntadaMano': 'Game recorded: {resultado}.',
   'deshacer.ganada': 'won',
   'deshacer.perdida': 'lost',
   'lector.voz.falta': 'Live tips are silent: install the Termux:API app (from F-Droid) and in Termux type: pkg install termux-api',

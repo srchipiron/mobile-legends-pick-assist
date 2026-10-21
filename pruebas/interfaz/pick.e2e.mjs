@@ -96,8 +96,18 @@ await prueba('«Mis héroes» filtra el ranking a los que llevas y dice quién s
   if (!['Franco', 'Minotaur'].includes(todos[0])) ok((await pagina.locator('.fuera-de-mios').innerText()).includes(todos[0]), 'no dice quién sería el nº1 fuera de tus héroes');
   await filtro.click(); await pagina.waitForTimeout(300);
   eq((await nombres()).length, todos.length, 'quitar el filtro no devuelve el ranking entero');
-  // Sin maestría no hay filtro.
   await contexto.close();
+  // 3.60.7: tu pick fijado sin partidas sigue arriba con el filtro puesto
+  // (desaparecía, y el hueco «Tú» seguía hablando de él).
+  const fijo = await paginaCon(navegador, url, {
+    almacen: { ...LINEA, 'roam-picker:draft': { ...PICKS, miPick: 'Khufra', miPickDesde: Date.now() }, 'roam-picker:mastery': { Franco: { games: 200, winRate: 0.5 }, Minotaur: { games: 100, winRate: 0.5 } } },
+  });
+  await fijo.pagina.locator('.filtro-mios').click(); await fijo.pagina.waitForTimeout(300);
+  const conFijo = await Promise.all((await fijo.pagina.locator('.pick').all()).map(nombreDe));
+  eq(conFijo.join(), 'Khufra,' + conFijo.filter((n) => n !== 'Khufra').join(), `con «Mis héroes» tu pick fijado no va el primero: ${conFijo}`);
+  ok(!fijo.errores.length, `errores de página: ${fijo.errores}`);
+  await fijo.contexto.close();
+  // Sin maestría no hay filtro.
   const sin = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS } });
   eq(await sin.pagina.locator('.filtro-mios').count(), 0, 'hay filtro sin maestría');
   ok(!errores.length && !sin.errores.length, `errores de página: ${errores} ${sin.errores}`);

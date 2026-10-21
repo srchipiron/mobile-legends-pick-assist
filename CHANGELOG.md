@@ -8,6 +8,22 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.60.7
+
+- Gané y Perdí tienen «Deshacer». Si te equivocas al apuntar una partida,
+  durante unos segundos puedes deshacerlo: la partida se borra y el draft
+  vuelve como estaba. Antes había que buscarla en Ajustes.
+- Tu pick fijado ya no desaparece con «Mis héroes»: sigue arriba aunque aún
+  no tengas partidas con él.
+- La maestría ya no pierde filas sin avisar. Si rellenas las partidas sin
+  el winrate (o al revés), el campo que falta sale en rojo y la hoja no se
+  cierra hasta que lo completes. Guardar sin tocar una fila ya no le
+  cambia los números.
+- «Pick claro» sale solo cuando el nº1 saca de verdad 2 puntos al
+  siguiente. Antes bastaba con 1,5 y salía en uno de cada cuatro drafts.
+- Arreglado un «Deshacer» de «Nuevo draft» que podía volver a salir tras
+  apuntar una partida y devolver el draft viejo.
+
 ## 3.60.6
 
 - El lector ya no se queda atascado en la tablet «offline». Cuando apagas

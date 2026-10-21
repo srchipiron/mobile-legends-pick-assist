@@ -53,7 +53,9 @@ const ROL_TIPICO = 0.10;
 /** Probabilidad aproximada de que un héroe sea el de esa línea en su equipo. Solo tiene que ORDENAR. */
 export function probabilidadDeLinea(heroe, info, linea, frecuencias = {}) {
   const lanes = info?.lanes ?? [];
-  const rol = (info?.role ?? heroe?.role ?? '').toLowerCase();
+  // `||`: el índice guarda '' sin rol de la API, y con `??` ese '' tapaba
+  // el del catálogo (3.60.7; Khufra en roam de 0,95 a 0,60).
+  const rol = (info?.role || heroe?.role || '').toLowerCase();
   let p = 0;
   if (lanes.includes(linea)) p += 0.6 + 0.25 / Math.max(1, lanes.length);
   const frec = frecuencias[linea] ?? {};

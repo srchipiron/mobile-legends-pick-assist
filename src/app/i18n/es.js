@@ -481,6 +481,7 @@ export default {
   'deshacer.leido': '{b} {b|baneo|baneos}, {e} {e|enemigo|enemigos} y {a} {a|compañero|compañeros} leídos del juego.',
   'deshacer.leidoTuyo': 'Tú: {nombre}.',
   'deshacer.apuntada': 'Partida apuntada sola: {resultado} (leído de la tablet).',
+  'deshacer.apuntadaMano': 'Partida apuntada: {resultado}.',
   'deshacer.ganada': 'ganada',
   'deshacer.perdida': 'perdida',
   'lector.voz.falta': 'Los consejos en directo no suenan: instala la app Termux:API (de F-Droid) y en Termux escribe: pkg install termux-api',

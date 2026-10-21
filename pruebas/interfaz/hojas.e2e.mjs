@@ -85,6 +85,30 @@ await prueba('Intro elige el prefijo y la fila de maestría no salta al escribir
   await contexto.close();
 });
 
+// 3.60.7: una fila con partidas y sin winrate se descartaba sin decir nada,
+// y guardar sin tocar redondeaba a un decimal lo guardado.
+await prueba('el editor de maestría no cierra con una fila a medias y no toca las filas sin tocar', async () => {
+  const guardada = { Khufra: { games: 40, winRate: 0.50637, desde: 1000 } };
+  const { contexto, pagina, errores } = await con(PICKS, { 'roam-picker:mastery': guardada });
+  const leerMaestria = () => pagina.evaluate(() => JSON.parse(localStorage.getItem('roam-picker:mastery') ?? 'null'));
+  const abrir = async () => { await pagina.locator('.more summary').click(); await pagina.waitForTimeout(200); await pagina.locator('.more .tools .reset').nth(0).click(); await pagina.waitForTimeout(300); };
+  const guardar = () => pagina.locator('.sheet-head .close').nth(1).click();
+  await abrir();
+  const fila = pagina.locator('.mastery-row', { hasText: 'Tigreal' }).first();
+  await fila.locator('input').first().fill('30');
+  await guardar(); await pagina.waitForTimeout(300);
+  eq(await pagina.locator('.mastery-list').count(), 1, 'la hoja se cierra con una fila sin winrate');
+  ok(/bad/.test(await fila.locator('input').nth(1).getAttribute('class')), 'no se marca el winrate que falta');
+  await fila.locator('input').nth(1).fill('55');
+  await guardar(); await pagina.waitForTimeout(300);
+  eq(await pagina.locator('.mastery-list').count(), 0, 'con la fila completa no se cierra');
+  const m = await leerMaestria();
+  eq(m.Tigreal?.games, 30, 'la fila completada no se guarda');
+  eq(JSON.stringify(m.Khufra), JSON.stringify(guardada.Khufra), `la fila sin tocar cambia al guardar: ${JSON.stringify(m.Khufra)}`);
+  ok(!errores.length, `errores de página: ${errores}`);
+  await contexto.close();
+});
+
 await prueba('los chips del siguiente baneo no se mueven: el tocado se queda tachado y el nuevo entra al final', async () => {
   const { contexto, pagina } = await con({ enemies: [], allies: [], bans: [], enemyRoam: null, fase: 'baneos' });
   const chips = pagina.locator('.proximos .chip');

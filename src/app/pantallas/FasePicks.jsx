@@ -69,7 +69,10 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
   // Tu pick fijado va el primero: con ocho tarjetas a la vista, el nº22 no
   // se veía, y el consejo a los compañeros (que va tras la primera) es «si
   // tú vas con él». El número de la tarjeta sigue siendo su puesto real.
-  const fijada = miPick ? lista.find((c) => c.heroe.name === miPick.name) : null;
+  // Del ranking entero si el filtro lo deja fuera (3.60.7): con «Mis héroes»
+  // y un pick fijado sin partidas, su tarjeta desaparecía y el hueco «Tú»
+  // seguía hablando de él.
+  const fijada = miPick ? (lista.find((c) => c.heroe.name === miPick.name) ?? ranking.find((c) => c.heroe.name === miPick.name) ?? null) : null;
   const visibles = fijada ? [fijada, ...lista.filter((c) => c !== fijada)] : lista;
   const enPantalla = visibles.slice(0, 8);
   // El consejo a los compañeros es «si tú vas con X»: va tras la tarjeta de X

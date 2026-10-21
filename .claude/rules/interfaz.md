@@ -142,8 +142,11 @@ ofrece «Deshacer» durante `DESHACER_MS` (6 s, decisión de producto; Material
 dice 4–10). Solo vale mientras el draft siga siendo el que dejó la acción:
 cualquier otro cambio lo anula, porque deshacer entonces se llevaría lo
 nuevo. Se prefirió a un «¿Seguro?»: una confirmación cuesta un toque cada
-vez que SÍ quieres vaciar, que es casi siempre. El reinicio tras apuntar una
-partida (`reiniciar`) NO lo ofrece: deshacer no desapuntaría la partida. La
+vez que SÍ quieres vaciar, que es casi siempre. Desde 3.60.7 apuntar a mano
+(Gané/Perdí del recordatorio y de «Apuntar partida») deja el MISMO aviso que
+la apuntada sola (`apuntarAMano`, `aMano`): desapunta la partida y devuelve
+el draft. Y el draft vacío es un objeto NUEVO cada vez (`{ ...VACIO }`): con
+el compartido, apuntar en los segundos de «Nuevo draft» resucitaba su aviso. La
 foto se saca de una referencia al último draft, FUERA del updater.
 `deshacer.e2e.mjs`, seis mutaciones. Desde 3.24.1 vaciar un draft que ya
 está vacío no ofrece deshacer (salía el aviso sin nada que devolver).

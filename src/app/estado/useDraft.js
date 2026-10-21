@@ -200,7 +200,10 @@ export function useDraft() {
   const setFase = useCallback((fase) => setDraft((d) => (d.fase === fase ? d : { ...d, fase })), []);
 
   /** Nuevo draft: todo vacío y a la fase de baneos. */
-  const reiniciar = useCallback(() => { epoca.current += 1; setDraft(VACIO); }, []);
+  // Un objeto NUEVO cada vez (3.60.7): el «Deshacer» de «Nuevo draft» vale
+  // mientras el draft sea el que dejó (`despues === draft`), y con el VACIO
+  // compartido, apuntar una partida dentro de esos segundos lo resucitaba.
+  const reiniciar = useCallback(() => { epoca.current += 1; setDraft({ ...VACIO }); }, []);
 
   /**
    * Lo que se hace con UN toque y se lleva por delante lo metido: el botón
@@ -215,9 +218,10 @@ export function useDraft() {
     // ya vacío no devolvería nada (salía igual hasta 3.24.1).
     const vacio = !antes.enemigos.length && !antes.aliados.length && !antes.baneos.length && !antes.miPick;
     epoca.current += 1;
-    if (vacio) { if (antes.fase !== 'baneos') setDraft(VACIO); return; }
-    setDraft(VACIO);
-    setParaDeshacer({ antes, despues: VACIO, tipo: 'vaciado', creado: Date.now() });
+    if (vacio) { if (antes.fase !== 'baneos') setDraft({ ...VACIO }); return; }
+    const despues = { ...VACIO };
+    setDraft(despues);
+    setParaDeshacer({ antes, despues, tipo: 'vaciado', creado: Date.now() });
   }, []);
 
   const quitarConDeshacer = useCallback((bando, heroe) => {

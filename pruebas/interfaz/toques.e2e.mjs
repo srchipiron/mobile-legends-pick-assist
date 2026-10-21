@@ -224,7 +224,9 @@ await prueba('las pantallas del final que no suben por falta de red esperan y su
   });
   // La app recoge lo vigilado (cada 10 s) y después se contesta «Gané» sin red.
   await pagina.waitForTimeout(11000);
+  // Cerrar el aviso de «Deshacer» (3.60.7) es aceptar: sube sin esperar su plazo.
   await pagina.locator('.recordatorio button.gane').click();
+  await pagina.locator('.aviso-deshacer .x').click();
   await pagina.waitForTimeout(1500);
   eq(pantallas.length, 0, 'sube sin red (la prueba no prueba nada)');
   red = true;
@@ -275,6 +277,7 @@ await prueba('«Nuevo draft» y «Deshacer»: las pantallas del final no se sube
   eq(pantallas.length, 0, 'las pantallas se suben sin resultado aunque el draft volvió con «Deshacer»');
   // Y siguen con su partida: al contestar «Gané» suben con el resultado.
   await pagina.locator('.recordatorio button.gane').click();
+  await pagina.locator('.aviso-deshacer .x').click();
   for (let i = 0; i < 40 && !pantallas.length; i++) await pagina.waitForTimeout(250);
   eq(pantallas.length, 1, 'las pantallas no suben al apuntar la partida');
   ok(/ganada/.test(pantallas[0]?.title ?? '') && /2 de 2/.test(pantallas[0]?.title ?? ''), `no suben las dos, con el resultado: ${pantallas[0]?.title}`);

@@ -5,7 +5,7 @@
  */
 import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
 import { catalogo, h, crearRnd } from '../fixtures/catalogo.mjs';
-import { detectarRivalDeLinea, indiceDeLineas, frecuenciaDeRoles, asignarLineas, lanesDe } from '../../src/motor/lineas.js';
+import { detectarRivalDeLinea, probabilidadDeLinea, indiceDeLineas, frecuenciaDeRoles, asignarLineas, lanesDe } from '../../src/motor/lineas.js';
 import { LINEAS } from '../../src/motor/catalogo.js';
 import { prepararDatos, rivalDeLinea } from '../../src/motor/draft.js';
 
@@ -147,6 +147,14 @@ test('revision linea a linea del motor: las dos lecturas de lineas son la misma'
   eq(frecuenciaDeRoles([{ role: 'mage', lane: 'Mid,Exp' }]).mid?.mage, 1, 'frecuenciaDeRoles no lee `lane` en cadena ni mayúsculas');
   eq(indiceDeLineas([{ name: 'Z', role: 'Mage', lanes: ['Mid'] }]).get('z')?.lanes.join(), 'mid', 'indiceDeLineas no pasa a minúsculas');
   eq(lanesDe({ lanes: [' Gold '] }).join(), 'gold', 'lanesDe no recorta');
+});
+
+test('un rol vacío de la API no tapa el del catálogo (3.60.7)', () => {
+  // El índice guarda '' cuando la API no trae rol; con `??` ese '' ganaba.
+  const heroe = { name: 'X', role: 'tank' };
+  const frecuencias = { roam: { tank: 0.6 }, exp: { fighter: 0.6 } };
+  const conRol = probabilidadDeLinea(heroe, { role: 'tank', lanes: ['roam'] }, 'roam', frecuencias);
+  eq(probabilidadDeLinea(heroe, { role: '', lanes: ['roam'] }, 'roam', frecuencias), conRol, 'el rol vacío de la API cambia la línea');
 });
 
 await terminar('motor/lineas');

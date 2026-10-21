@@ -251,6 +251,16 @@ export default function App() {
     setApuntada({ t, gane, antes });
     return true;
   };
+  // Gané/Perdí a mano también se pueden deshacer (3.60.7): sin aviso, un
+  // toque equivocado solo se arreglaba buscando la partida en Ajustes, que
+  // en la fase de baneos (adonde vuelve la app) ni sale.
+  const apuntarAMano = (gane, elegido = null) => {
+    const pick = elegido ?? draft.miPick ?? rec.eleccion?.heroe.name;
+    if (!pick) return;
+    const t = Date.now(), antes = draft.foto();
+    guardarPartida(pick, gane, { t, deshacible: true });
+    setApuntada({ t, gane, antes, aMano: true });
+  };
   // El tic de abajo vive en un efecto que no se rehace con cada render: tiene
   // que llamar a la ÚLTIMA apuntarSola (con el ranking de ahora), no a la del
   // render en que se creó, cuando el meta aún no había llegado y no había
@@ -476,7 +486,7 @@ export default function App() {
   // «Deshacer» tras vaciar el draft o quitar con la × (3.23.0). Con una hoja
   // abierta no se enseña: la hoja lo taparía y ahí se quita tocando otra vez.
   const deshacer = hoja ? null : apuntada && !draft.deshacible ? (
-    <AvisoDeshacer deshacible={{ tipo: 'apuntada', gane: apuntada.gane }} onDeshacer={deshacerApuntada} onCerrar={() => setApuntada(null)} t={t} />
+    <AvisoDeshacer deshacible={{ tipo: 'apuntada', gane: apuntada.gane, aMano: apuntada.aMano }} onDeshacer={deshacerApuntada} onCerrar={() => { setApuntada(null); diferido.current.ejecutar(); }} t={t} />
   ) : (
     <AvisoDeshacer deshacible={draft.deshacible} onDeshacer={draft.deshacer} onCerrar={draft.olvidarDeshacer} t={t} />
   );
@@ -518,7 +528,7 @@ export default function App() {
         <ElegirLinea valor={linea} onElegir={cambiarLinea} onCerrar={cerrar} t={t} />
       )}
       {hoja === 'apuntar' && (
-        <ApuntarPartida pool={rec.pool} heroes={datos.heroes} miPick={draft.miPick} recomendados={rec.ranking.slice(0, 3).map((r) => r.heroe.name)} onGuardar={guardarPartida} onCerrar={cerrar} t={t} />
+        <ApuntarPartida pool={rec.pool} heroes={datos.heroes} miPick={draft.miPick} recomendados={rec.ranking.slice(0, 3).map((r) => r.heroe.name)} onGuardar={(pick, gane) => apuntarAMano(gane, pick)} onCerrar={cerrar} t={t} />
       )}
       {hoja === 'historial' && (
         <HistorialPartidas
@@ -568,7 +578,7 @@ export default function App() {
         t={t} linea={linea} rango={datos.rango} idioma={idioma} onIdioma={setIdioma} tacto={tacto} onTacto={setTacto} onRango={setRango}
         meta={meta} datos={datos} metaListo={metaListo} sinWinrates={sinWinrates} edadHoras={edadHoras} pro={pro}
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
-        onResultado={(gane) => guardarPartida(draft.miPick ?? rec.eleccion?.heroe.name, gane)}
+        onResultado={apuntarAMano}
         lector={lectorConVoz} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} vozCallada={vozCallada} onVoz={cambiarVoz}
         pie={pie}
       />

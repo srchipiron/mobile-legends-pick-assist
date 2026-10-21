@@ -167,13 +167,16 @@ export function analizarDraft({
   //    decide si merece la pena pensárselo o coger y tirar.
   const segundo = ranking.find((r) => r.heroe.name !== heroe.name);
   if (segundo && top.p != null && segundo.p != null) {
-    const brecha = Math.round((top.p - segundo.p) * 100);
+    // Se compara SIN redondear (3.60.7): redondeando antes, 1,5 puntos ya
+    // eran «pick claro» y la frase salía en un draft de cada cuatro, no en
+    // el p85 medido; `revisarPartida` compara igual. Se redondea al decirlo.
+    const brecha = (top.p - segundo.p) * 100;
     // Con un pick fijado que NO es el nº1, «el siguiente» es el nº1: se dice
     // cuánto le falta, con el mismo umbral, para que se sepa lo que cuesta.
     if (!esElNumeroUno && -brecha >= BRECHA_CLARA) {
-      salida.push({ tono: 'duda', clave: 'analisis.tuPickPorDebajo', params: { yo: heroe.name, puntos: -brecha, mejor: segundo.heroe.name } });
+      salida.push({ tono: 'duda', clave: 'analisis.tuPickPorDebajo', params: { yo: heroe.name, puntos: Math.round(-brecha), mejor: segundo.heroe.name } });
     } else if (brecha >= BRECHA_CLARA) {
-      salida.push({ tono: 'bien', clave: 'analisis.pickClaro', params: { yo: heroe.name, puntos: brecha } });
+      salida.push({ tono: 'bien', clave: 'analisis.pickClaro', params: { yo: heroe.name, puntos: Math.round(brecha) } });
     } else if (empate.length > 1 && empate.some((x) => x.heroe.name === heroe.name)) {
       const otros = empate.map((x) => x.heroe.name).filter((n) => n !== heroe.name);
       if (otros.length) salida.push({ tono: 'duda', clave: 'analisis.empatadoCon', params: { otros: otros.slice(0, 2).join(' / ') } });
