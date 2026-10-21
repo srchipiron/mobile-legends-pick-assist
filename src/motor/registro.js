@@ -183,7 +183,10 @@ export const MINIMO_PARA_CALIBRAR = 20;
 /**
  * Una partida nueva al principio de la lista, recortada a `tope`. Dos toques
  * rápidos caían en el mismo milisegundo y borrar una se llevaba las dos:
- * los instantes repetidos se desempatan.
+ * los instantes repetidos se desempatan. Las de tu historial del juego
+ * (`previa`) no se recortan nunca (3.60.8, decisión de Javi): al pasar de
+ * `tope` se iban las más viejas, y esas son las más viejas por definición;
+ * el tope solo recorta las apuntadas con la app.
  */
 export function apuntar(partidas, entrada, tope = 500) {
   const ocupados = new Set((partidas ?? []).map((p) => p.t));
@@ -209,7 +212,10 @@ export function apuntar(partidas, entrada, tope = 500) {
     ...(sanearFases(entrada.fases) ? { fases: sanearFases(entrada.fases) } : {}),
   };
   if (!limpia.pick) return partidas;
-  return [limpia, ...(partidas ?? [])].sort((a, b) => (b.t ?? 0) - (a.t ?? 0)).slice(0, tope);
+  const todas = [limpia, ...(partidas ?? [])].sort((a, b) => (b.t ?? 0) - (a.t ?? 0));
+  const previas = todas.filter((p) => p.previa).length;
+  let caben = Math.max(0, tope - previas);
+  return todas.filter((p) => p.previa || caben-- > 0);
 }
 
 export const esVersionDeModelo = (v) => Number.isInteger(v) && v >= 1 && v <= 99;

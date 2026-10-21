@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.60.8
+
+- Las partidas de tu historial del juego ya no se borran nunca. La app
+  guarda como mucho 500 partidas, y al pasar borraba las más viejas, que
+  eran justo las de tu historial. Ahora el límite solo recorta las
+  apuntadas con la app; esas siguen guardadas en el proyecto aunque salgan
+  del móvil.
+
 ## 3.60.7
 
 - Gané y Perdí tienen «Deshacer». Si te equivocas al apuntar una partida,

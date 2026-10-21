@@ -99,3 +99,9 @@ datos vivían solo en su móvil y ninguna sesión podía leerlos.
 - **Privacidad**: es su repositorio público y lo manda él con un botón
   que lo dice; la promesa «tus datos no salen de tu móvil» sigue: salen
   porque los saca él. No hay servidor ni credencial en la app.
+
+**El tope de 500 (3.60.8)**: `apuntar` recorta a `tope` por fecha y se
+llevaba primero las `previa` (tu historial del juego, las más viejas). Desde
+3.60.8, decisión de Javi, las previas no se recortan nunca: el tope cuenta
+con ellas y solo quita apuntadas con la app. Prueba en `registro.test`, dos
+mutaciones.

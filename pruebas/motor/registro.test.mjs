@@ -417,4 +417,15 @@ test('cada partida guarda el modelo que dio su estimación; las de antes, por su
   eq(c.actual, VERSION_MODELO);
 });
 
+test('el tope de partidas no se lleva las de tu historial del juego (3.60.8)', () => {
+  // Las previas son las más viejas: recortando por fecha, eran las primeras en irse.
+  let ps = [];
+  for (let i = 0; i < 3; i++) ps = apuntar(ps, { t: 1000 + i, pick: 'Diggie', gane: true, previa: true });
+  for (let i = 0; i < 12; i++) ps = apuntar(ps, { t: 5000 + i, pick: 'Khufra', gane: i % 2 === 0 }, 10);
+  eq(ps.filter(esPrevia).length, 3, 'el tope borra partidas de tu historial');
+  eq(ps.filter((p) => !esPrevia(p)).length, 7, 'el tope no recorta las de la app');
+  eq(ps.filter((p) => !esPrevia(p)).at(-1).t, 5005, 'el tope no quita las más viejas de la app');
+  eq(ps.length, 10, 'el tope deja de contar');
+});
+
 await terminar('motor/registro');
