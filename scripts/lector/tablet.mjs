@@ -115,23 +115,49 @@ export function buscarPorMdns({ ms = 1500, servicio = SERVICIO } = {}) {
  * Qué puertos de `ip` aceptan una conexión, en el rango dado. Para una
  * tablet en la misma wifi un puerto cerrado contesta al momento; el plazo
  * solo pesa si la tablet duerme. Devuelve los puertos abiertos, ordenados.
+ *
+ * Un fallo del MÓVIL (sin descriptores libres, sin búferes) no dice nada del
+ * puerto: se vuelve a probar (3.60.9). Con 1.024 conexiones a la vez, en
+ * Termux (tope de 1.024 ficheros abiertos por proceso en Android) muchos
+ * puertos salían «cerrados» por EMFILE y el de la tablet (40461, 21 de
+ * octubre de 2026) no se encontraba. Por eso van 256 a la vez y, al primer
+ * fallo del móvil, menos: las que tenía abiertas en ese momento.
  */
-export function escanearPuertos(ip, { desde = PUERTOS_EFIMEROS[0], hasta = PUERTOS_EFIMEROS[1], aLaVez = 1024, ms = 1500 } = {}) {
+const FALLOS_DEL_MOVIL = new Set(['EMFILE', 'ENFILE', 'ENOBUFS', 'EAGAIN', 'EADDRNOTAVAIL', 'ENOMEM']);
+const REINTENTOS_POR_PUERTO = 5;
+export function escanearPuertos(ip, { desde = PUERTOS_EFIMEROS[0], hasta = PUERTOS_EFIMEROS[1], aLaVez = 256, ms = 1500, conectar = connect } = {}) {
   return new Promise((resolver) => {
     const abiertos = [];
-    let siguiente = desde, enCurso = 0;
+    const pendientes = [];
+    const intentos = new Map();
+    let siguiente = desde, enCurso = 0, limite = aLaVez;
     const probar = (puerto) => new Promise((fin) => {
-      const s = connect({ host: ip, port: puerto });
-      const cerrar = (abierto) => { s.destroy(); fin(abierto); };
-      s.setTimeout(ms, () => cerrar(false));
-      s.once('connect', () => cerrar(true));
-      s.once('error', () => cerrar(false));
+      let s;
+      try { s = conectar({ host: ip, port: puerto }); } catch (e) { fin(FALLOS_DEL_MOVIL.has(e?.code) ? 'otra' : 'no'); return; }
+      const cerrar = (r) => { s.destroy(); fin(r); };
+      s.setTimeout(ms, () => cerrar('no'));
+      s.once('connect', () => cerrar('si'));
+      s.once('error', (e) => cerrar(FALLOS_DEL_MOVIL.has(e?.code) ? 'otra' : 'no'));
     });
+    const quedan = () => pendientes.length || siguiente <= hasta;
     const lanzar = () => {
-      while (enCurso < aLaVez && siguiente <= hasta) {
-        const puerto = siguiente++;
+      while (enCurso < limite && quedan()) {
+        const puerto = pendientes.length ? pendientes.shift() : siguiente++;
         enCurso += 1;
-        probar(puerto).then((abierto) => { if (abierto) abiertos.push(puerto); enCurso -= 1; if (siguiente > hasta && enCurso === 0) resolver(abiertos.sort((x, y) => x - y)); else lanzar(); });
+        probar(puerto).then((r) => {
+          enCurso -= 1;
+          if (r === 'si') abiertos.push(puerto);
+          if (r === 'otra') {
+            // Lo que había abierto al fallar es lo que el móvil aguanta: se baja a eso.
+            limite = Math.max(8, Math.min(limite, enCurso));
+            const n = (intentos.get(puerto) ?? 0) + 1;
+            intentos.set(puerto, n);
+            if (n < REINTENTOS_POR_PUERTO) pendientes.push(puerto);
+          }
+          if (!quedan() && enCurso === 0) resolver(abiertos.sort((x, y) => x - y));
+          // Tras un fallo del móvil se deja respirar un momento antes de seguir.
+          else if (r === 'otra') setTimeout(lanzar, 20); else lanzar();
+        });
       }
     };
     if (desde > hasta) resolver([]); else lanzar();

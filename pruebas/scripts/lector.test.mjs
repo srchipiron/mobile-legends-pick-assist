@@ -398,6 +398,22 @@ test('la tablet se encuentra sola: la pregunta mDNS pide respuesta unicast y la 
     ok(puertos.includes(abierto), `el escaneo da ${puertos} y el puerto abierto es ${abierto}`);
     ok(puertos.length <= 5, `el escaneo da abiertos de más: ${puertos}`);
   } finally { servidor.close(); }
+  // 3.60.9: un fallo del MÓVIL (EMFILE: sin descriptores, con muchas conexiones
+  // a la vez en Termux) no es un puerto cerrado. Se vuelve a probar.
+  const { EventEmitter } = await import('node:events');
+  let vivos = 0, maxVivos = 0, intentosDelBueno = 0;
+  const conectar = ({ port }) => {
+    const s = new EventEmitter();
+    s.setTimeout = () => {}; s.destroy = () => { vivos -= 1; };
+    vivos += 1; maxVivos = Math.max(maxVivos, vivos);
+    // El puerto bueno cae siempre en el primer intento: tiene que reintentarse.
+    const lleno = vivos > 40 || (port === 40461 && ++intentosDelBueno === 1);
+    setTimeout(() => (lleno ? s.emit('error', Object.assign(new Error('EMFILE'), { code: 'EMFILE' })) : port === 40461 ? s.emit('connect') : s.emit('error', Object.assign(new Error('rechazado'), { code: 'ECONNREFUSED' }))), 0);
+    return s;
+  };
+  const conFallos = await escanearPuertos('10.0.0.5', { desde: 40000, hasta: 41000, aLaVez: 256, conectar });
+  eq(conFallos.join(), '40461', `con el móvil sin descriptores no encuentra el puerto: ${conFallos}`);
+  ok(maxVivos <= 256, `abre más conexiones de las que dice: ${maxVivos}`);
 });
 
 test('encontrarTablet prueba por orden: la última que funcionó, la anunciada en la wifi, los puertos abiertos; y distingue «falta emparejar»', async () => {

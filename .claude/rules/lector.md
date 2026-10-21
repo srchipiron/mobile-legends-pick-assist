@@ -714,6 +714,14 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   2026, 192.168.68.116:39043). Hoy la que acaba de fallar va en
   `descartar` y, si no hay otra, `conPista` dice en Termux «adb disconnect»
   y «adb kill-server»: el lector NO los lanza (solo conecta y captura).
+- **El escaneo que no veía el puerto (3.60.9)**: el 21 de octubre de 2026
+  la tablet estaba en 192.168.68.116:40461 y `escanearPuertos` no lo
+  encontró. Abría 1.024 conexiones a la vez y Android deja 1.024 ficheros
+  por proceso: los EMFILE contaban como puerto cerrado. Hoy van 256, un
+  fallo del MÓVIL (`FALLOS_DEL_MOVIL`) baja el límite a lo que había
+  abierto y el puerto se reintenta (`REINTENTOS_POR_PUERTO` 5). Prueba con
+  un `conectar` de pega que se queda sin descriptores; tres mutaciones (la
+  del 256 por defecto sobrevive, inofensiva: el límite se adapta).
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

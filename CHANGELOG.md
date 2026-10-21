@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.60.9
+
+- El lector vuelve a encontrar la tablet solo cuando cambia el puerto de
+  la depuración inalámbrica. Probaba 1.024 puertos a la vez, más de los
+  que Termux deja abrir, y muchos salían cerrados sin estarlo; entre ellos
+  el de tu tablet. Ahora prueba menos a la vez, baja el ritmo si el móvil
+  no da más y vuelve a probar los que no pudo comprobar.
+
 ## 3.60.8
 
 - Las partidas de tu historial del juego ya no se borran nunca. La app
