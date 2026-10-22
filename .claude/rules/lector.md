@@ -749,10 +749,13 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   de contenido mixto a una IP local). Los avisos dicen qué hacer en la
   tablet, no en Termux (`claveDeFallo`). Termux sigue valiendo: «Usar el de
   Termux» desvincula. La APK se compila y publica sola (`apk.yml`, release
-  `lector-vX.Y.Z` con `lector-mlbb.apk`); la firma va cifrada en
-  `android/firma.jks.cifrado` y su contraseña en el secreto
-  `LECTOR_FIRMA_CLAVE` (sin él no publica: otra firma obliga a desinstalar
-  y se pierde lo aprendido); el zip de nodejs-mobile y Gradle van con su
+  `lector-vX.Y.Z` con `lector-mlbb.apk`). La contraseña de la firma la
+  inventa Javi y solo vive en el secreto `LECTOR_FIRMA_CLAVE` (una
+  contraseña generada aquí no se le puede enseñar: el chat no lleva
+  credenciales); la primera corrida crea la clave, la sube cifrada
+  (`android/firma.jks.cifrado`, por la API) y las siguientes la descifran.
+  Sin el secreto no publica: otra firma obliga a desinstalar y se pierde lo
+  aprendido; el zip de nodejs-mobile y Gradle van con su
   suma. Lo demás de la revisión de seguridad: la captura y el secreto del
   puerto interno son de PROCESO (`Interno`, como Node, que no se reinicia:
   con uno por servicio, Parar y Empezar dejaba a Node pidiendo a un puerto

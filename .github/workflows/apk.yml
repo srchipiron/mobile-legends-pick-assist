@@ -4,9 +4,12 @@
 # Android, el lector o el motor que importa) y a mano.
 #
 # La FIRMA tiene que ser siempre la misma o Android no deja actualizar sin
-# desinstalar (y se perdería lo aprendido en la tablet): la clave va cifrada
-# en el repositorio (android/firma.jks.cifrado) y su contraseña en el
-# secreto LECTOR_FIRMA_CLAVE. Sin el secreto no se publica nada.
+# desinstalar (y se perdería lo aprendido en la tablet). La contraseña la
+# inventa Javi y solo vive en el secreto LECTOR_FIRMA_CLAVE: nadie más la
+# ve, tampoco quien programa. La primera corrida con el secreto CREA la
+# clave de firma, la guarda cifrada con esa contraseña
+# (android/firma.jks.cifrado) y la sube al repositorio; las siguientes la
+# descifran. Sin el secreto no se publica nada.
 name: APK del lector
 
 on:
@@ -15,7 +18,7 @@ on:
     paths: ['android/**', 'scripts/lector/**', 'src/motor/**', '.github/workflows/apk.yml']
   workflow_dispatch:
 
-# Publicar la release necesita escribir; no se hace push de nada.
+# Publicar la release, y la primera vez subir la clave de firma cifrada.
 permissions:
   contents: write
 
@@ -31,6 +34,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          ref: main
       - name: ¿Está la contraseña de la firma?
         env:
           CLAVE: ${{ secrets.LECTOR_FIRMA_CLAVE }}
@@ -39,6 +43,24 @@ jobs:
           if [ -z "$CLAVE" ]; then
             echo "::error::Falta el secreto LECTOR_FIRMA_CLAVE (Settings → Secrets and variables → Actions). Sin él la APK saldría con otra firma y no se podría actualizar."
             exit 1
+          fi
+      - name: La clave de firma (se crea la primera vez)
+        env:
+          CLAVE: ${{ secrets.LECTOR_FIRMA_CLAVE }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ ${#CLAVE} -lt 20 ]; then
+            echo "::error::La contraseña de LECTOR_FIRMA_CLAVE es corta: pon 20 caracteres o más, al azar."
+            exit 1
+          fi
+          if [ ! -f android/firma.jks.cifrado ]; then
+            keytool -genkeypair -keystore "$RUNNER_TEMP/nueva.jks" -storetype PKCS12 -alias lector -keyalg RSA -keysize 4096 -validity 20000 -storepass:env CLAVE -keypass:env CLAVE -dname "CN=Lector MLBB"
+            openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -in "$RUNNER_TEMP/nueva.jks" -out android/firma.jks.cifrado -pass env:CLAVE
+            rm -f "$RUNNER_TEMP/nueva.jks"
+            # Al repositorio por la API (sin guardar el token en .git): solo este fichero, cifrado.
+            gh api -X PUT "repos/${GITHUB_REPOSITORY}/contents/android/firma.jks.cifrado" -f message="APK: la clave de firma del lector, cifrada" -f content="$(base64 -w0 android/firma.jks.cifrado)" -f branch=main > /dev/null
+            echo "Clave de firma creada y guardada cifrada en android/firma.jks.cifrado."
           fi
       - name: Node embebido (nodejs-mobile 18.20.4)
         shell: bash
