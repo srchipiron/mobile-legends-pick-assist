@@ -8,6 +8,20 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.61.0
+
+- El lector puede ir dentro de la tablet, sin Termux. La nueva app «Lector
+  MLBB» se instala en la tablet y lee el draft de su propia pantalla, con
+  el permiso normal de grabar pantalla: ya no hace falta la depuración
+  inalámbrica, ni emparejar, ni puertos que cambian.
+- Para vincularla, escanea con la cámara del móvil el QR que enseña la app
+  de la tablet. La app del móvil se abre ya vinculada y con «Leer solo»
+  encendido. También se puede escribir a mano en Ajustes → «Lector en la
+  tablet».
+- Solo la app vinculada puede pedirle nada a la tablet: hace falta el
+  código, y tras varios códigos equivocados se bloquea unos minutos.
+- Termux sigue valiendo. En Ajustes, «Usar el de Termux» vuelve a él.
+
 ## 3.60.9
 
 - El lector vuelve a encontrar la tablet solo cuando cambia el puerto de

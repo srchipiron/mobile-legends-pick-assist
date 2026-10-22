@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  El lector en la tablet. Permisos, y por qué:
+  - INTERNET: escuchar en la wifi para la app del móvil (con código) y hablar
+    con Node dentro de la propia app (127.0.0.1).
+  - FOREGROUND_SERVICE + _MEDIA_PROJECTION: seguir grabando la pantalla con el
+    juego delante (Android pide el permiso de grabar al empezar).
+  - POST_NOTIFICATIONS: la notificación fija que Android exige a ese servicio.
+  - ACCESS_NETWORK_STATE: saber la IP de la tablet para enseñarla.
+  Nada de accesibilidad, ni de tocar la pantalla, ni de otras apps.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:label="Lector MLBB"
+        android:icon="@drawable/icono"
+        android:allowBackup="false"
+        android:theme="@android:style/Theme.DeviceDefault">
+        <activity android:name=".Principal" android:exported="true" android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <service
+            android:name=".Lector"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+    </application>
+</manifest>

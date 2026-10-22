@@ -277,7 +277,10 @@ test('SEGURIDAD: todo lo que el lector ejecuta (su carpeta y lo que importa de f
   // Los módulos de Node que puede importar cada fichero (lo de hoy): lanzar programas, solo leer.mjs.
   const DE_NODE = {
     'scripts/lector/leer.mjs': ['node:child_process', 'node:fs', 'node:path', 'node:url'],
-    'scripts/lector/servir.mjs': ['node:http', 'node:fs', 'node:os', 'node:path', 'node:url', 'node:worker_threads'],
+    // node:crypto: comparar el código de vinculación en tiempo constante (3.61.0).
+    'scripts/lector/servir.mjs': ['node:http', 'node:fs', 'node:os', 'node:path', 'node:url', 'node:worker_threads', 'node:crypto'],
+    // El lector dentro de la tablet (3.61.0): ni lanza programas ni abre conexiones propias (la captura, por fetch a 127.0.0.1).
+    'scripts/lector/en-tablet.mjs': ['node:fs', 'node:path'],
     'scripts/lector/tablet.mjs': ['node:dgram', 'node:net'],
     'scripts/lector/png.mjs': ['node:zlib'],
     'scripts/lector/sacar-caras.mjs': ['node:fs', 'node:path'],

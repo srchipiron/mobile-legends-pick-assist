@@ -30,6 +30,7 @@
 import { createServer } from 'node:http';
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, statSync, unlinkSync, existsSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
+import { timingSafeEqual } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Worker } from 'node:worker_threads';
@@ -98,12 +99,14 @@ export const ORIGENES = ['https://srchipiron.github.io'];
 export const VERSION_PUENTE = 1;
 /** Fallos de captura que la app distingue: la tablet no está, falta emparejar, o adb no consigue la captura. */
 export const FALLOS_DE_CAPTURA = ['tablet', 'emparejar', 'captura'];
+/** La casa del lector: la de Termux, o la carpeta de la app en la tablet (`LECTOR_CASA`, 3.61.0). */
+const CASA = process.env.LECTOR_CASA || homedir();
 /** Dónde se recuerda la última tablet que funcionó (ip y puerto). */
-export const FICHERO_MEMORIA = join(homedir(), '.config', 'lector', 'tablet.json');
+export const FICHERO_MEMORIA = join(CASA, '.config', 'lector', 'tablet.json');
 /** Lo aprendido de las correcciones (aprender.mjs): huecos de picks y caras de esta tablet. */
-export const FICHERO_APRENDIDO = join(homedir(), '.config', 'lector', 'aprendido.json');
+export const FICHERO_APRENDIDO = join(CASA, '.config', 'lector', 'aprendido.json');
 /** Las plantillas de VICTORIA / DERROTA aprendidas de lo que contesta Javi (resultado.mjs, 3.32.0). */
-export const FICHERO_RESULTADOS = join(homedir(), '.config', 'lector', 'resultados.json');
+export const FICHERO_RESULTADOS = join(CASA, '.config', 'lector', 'resultados.json');
 /** Las de serie: la tabla de una derrota (incidencia #15, nombres tapados). */
 export const plantillasDeSerie = () => plantillasIniciales(leerPng(readFileSync(new URL('tabla-derrota.png', import.meta.url))));
 export function leerResultados(fichero = FICHERO_RESULTADOS) {
@@ -310,8 +313,44 @@ export function capturaAutomatica({ fija = null, memoria = {}, recordar = () => 
   return ahora;
 }
 
-/** El `Host` de una petición al lector: 127.0.0.1 o localhost, con o sin puerto. */
-export const hostPermitido = (h) => typeof h === 'string' && /^(127\.0\.0\.1|localhost)(:\d{1,5})?$/.test(h);
+/**
+ * El `Host` de una petición al lector: 127.0.0.1 o localhost, con o sin
+ * puerto. Con `red` (el lector en la tablet, 3.61.0) también una IP privada
+ * escrita tal cual: nunca un nombre, que es lo que usa el DNS rebinding.
+ */
+const IP_PRIVADA = /^(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(:\d{1,5})?$/;
+export const hostPermitido = (h, { red = false } = {}) => typeof h === 'string' && (/^(127\.0\.0\.1|localhost)(:\d{1,5})?$/.test(h) || (red && IP_PRIVADA.test(h)));
+
+/**
+ * El código de vinculación del lector en la tablet (3.61.0): escucha en la
+ * wifi y solo contesta a quien lo lleve en `X-Lector-Codigo`. Comparado en
+ * tiempo constante y con tope de intentos fallidos POR APARATO (la IP que
+ * llama): tras `FALLOS_CODIGO` en `VENTANA_CODIGO_MS`, ese aparato no entra
+ * hasta que pase la ventana, ni con el bueno (así adivinarlo por fuerza
+ * bruta no compensa). Por aparato y no global: con un contador global,
+ * cualquiera en la wifi dejaba fuera al móvil de Javi con diez códigos
+ * malos (revisión de seguridad de 3.61.0). Se recuerdan `APARATOS_MAXIMOS`.
+ */
+export const FALLOS_CODIGO = 10;
+export const VENTANA_CODIGO_MS = 10 * 60 * 1000;
+const APARATOS_MAXIMOS = 256;
+export function crearPortero(codigo, { ahora = () => Date.now() } = {}) {
+  const esperado = Buffer.from(String(codigo ?? ''));
+  const fallos = new Map();
+  return (dado, aparato = '') => {
+    const t = ahora();
+    const suyos = (fallos.get(aparato) ?? []).filter((f) => t - f < VENTANA_CODIGO_MS);
+    if (suyos.length >= FALLOS_CODIGO) return 'bloqueado';
+    const recibido = Buffer.from(String(dado ?? ''));
+    const bueno = esperado.length > 0 && recibido.length === esperado.length && timingSafeEqual(recibido, esperado);
+    if (!bueno) {
+      fallos.delete(aparato);
+      fallos.set(aparato, [...suyos, t]);
+      if (fallos.size > APARATOS_MAXIMOS) fallos.delete(fallos.keys().next().value);
+    }
+    return bueno ? 'si' : 'no';
+  };
+}
 
 export const origenPermitido = (o) => !!o && (ORIGENES.includes(o) || /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(o));
 
@@ -379,7 +418,9 @@ export function lectorEnHilos({ caras, registrar = () => {}, tarea = new URL('le
  * El servidor, con la captura inyectada: en Termux es `capturarTablet`, en
  * las pruebas una captura de fichero.
  */
-export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux }) {
+export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux, codigo = null }) {
+  // En la tablet (3.61.0) escucha en la wifi: con código, y aceptando su IP como `Host`.
+  const portero = codigo ? crearPortero(codigo, { ahora }) : null;
   // Lo que no se pida, como siempre (las pruebas encogen solo algunos plazos).
   const vigilancia = { ...VIGILANCIA, ...vigilanciaPedida };
   // Las lecturas, en tres hilos a la vez (3.39.0); `enHilos: false` las hace aquí.
@@ -663,7 +704,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     const cabeceras = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', Vary: 'Origin' };
     // Solo peticiones dirigidas a ESTE aparato (3.40.0): con otro `Host` es
     // una web que ha hecho apuntar su dominio a 127.0.0.1 (DNS rebinding).
-    if (!hostPermitido(req.headers.host)) {
+    if (!hostPermitido(req.headers.host, { red: !!portero })) {
       res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'host no permitido' }));
       return;
     }
@@ -676,8 +717,12 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     }
     if (req.method === 'OPTIONS') {
       // Comprobación previa (CORS y red privada): sí, pero solo para GET.
-      res.writeHead(204, { ...cabeceras, 'Access-Control-Allow-Methods': 'GET, POST', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Private-Network': 'true', 'Access-Control-Max-Age': '600' }).end();
+      res.writeHead(204, { ...cabeceras, 'Access-Control-Allow-Methods': 'GET, POST', 'Access-Control-Allow-Headers': 'Content-Type, X-Lector-Codigo', 'Access-Control-Allow-Private-Network': 'true', 'Access-Control-Max-Age': '600' }).end();
       return;
+    }
+    if (portero) {
+      const r = portero(req.headers['x-lector-codigo'], req.socket.remoteAddress ?? '');
+      if (r !== 'si') { res.writeHead(r === 'bloqueado' ? 429 : 401, cabeceras).end(JSON.stringify({ error: r === 'bloqueado' ? 'bloqueado' : 'codigo' })); return; }
     }
     const ruta = new URL(req.url, 'http://127.0.0.1').pathname;
     if (req.method === 'GET' && ruta === '/estado') {
@@ -825,6 +870,16 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   return servidor;
 }
 
+/** Lo aprendido y las plantillas del resultado, de disco, diciendo qué hay. Lo usan Termux y la tablet. */
+export function cargarLoAprendido(registrar) {
+  const aprendido = leerAprendido();
+  if (!aprendido && existsSync(FICHERO_APRENDIDO)) registrar('Lo aprendido con una versión anterior del lector se descarta: se aprendió sin las guardas de 3.30.1 y movía el panel de picks. Se vuelve a aprender solo.');
+  if (aprendido) registrar(`Con lo aprendido de ${aprendido.capturas} capturas: ${Object.keys(aprendido.caras ?? {}).length} caras de esta tablet${aprendido.picks ? ' y los huecos de picks medidos aquí' : ''}.`);
+  const resultados = leerResultados();
+  registrar(resultados ? `Resultados: ${resultados.gane.length} plantillas de victoria y ${resultados.perdi.length} de derrota aprendidas de tus partidas.` : 'Resultados: solo la derrota de serie; la victoria se aprende de tu primera partida ganada en la que se vea la tabla.');
+  return { aprendido, resultados };
+}
+
 async function principal() {
   const arg = (n) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : null; };
   const tablet = arg('--tablet');
@@ -845,12 +900,7 @@ async function principal() {
   const memoria = leerMemoria();
   if (tablet && !fija) memoria.ip = tablet;
   const capturar = capturaAutomatica({ fija, memoria, recordar: guardarMemoria, registrar });
-  const aprendido = leerAprendido();
-  if (!aprendido && existsSync(FICHERO_APRENDIDO)) registrar('Lo aprendido con una versión anterior del lector se descarta: se aprendió sin las guardas de 3.30.1 y movía el panel de picks. Se vuelve a aprender solo.');
-  if (aprendido) registrar(`Con lo aprendido de ${aprendido.capturas} capturas: ${Object.keys(aprendido.caras ?? {}).length} caras de esta tablet${aprendido.picks ? ' y los huecos de picks medidos aquí' : ''}.`);
-  const resultados = leerResultados();
-  registrar(resultados ? `Resultados: ${resultados.gane.length} plantillas de victoria y ${resultados.perdi.length} de derrota aprendidas de tus partidas.` : 'Resultados: solo la derrota de serie; la victoria se aprende de tu primera partida ganada en la que se vea la tabla.');
-  const servidor = crearServidor({ capturar, elector: crearElectorDeCaptura(), carpeta, registrar, aprendido, resultados });
+  const servidor = crearServidor({ capturar, elector: crearElectorDeCaptura(), carpeta, registrar, ...cargarLoAprendido(registrar) });
   servidor.on('error', (e) => {
     console.error(e.code === 'EADDRINUSE' ? `El puerto ${puerto} ya está en uso: hay otro lector abierto. Ciérralo, o arranca con «lector», que lo cierra solo.` : e.message);
     process.exit(1);

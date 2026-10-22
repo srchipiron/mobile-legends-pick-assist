@@ -61,6 +61,45 @@ await prueba('«Leer del juego» mete los baneos y los picks enemigos de la tabl
   await contexto.close();
 });
 
+// 3.61.0: el QR de la app «Lector MLBB» abre la app con la tablet ya
+// vinculada. Se guarda, el enlace sale de la barra, «Leer solo» se enciende y
+// las lecturas van a la tablet con el código (aquí, al lector de prueba).
+await prueba('el enlace del QR de la tablet vincula la app: lee de la tablet con su código y sin enseñar el enlace', async () => {
+  const vistas = [];
+  const { contexto, pagina, errores } = await paginaCon(navegador, `${url}#lector=192.168.68.116:47323&codigo=ABCDEFGH23`, {
+    almacen,
+    antes: (p) => p.context().route('http://192.168.68.116:47323/**', async (ruta) => {
+      const q = ruta.request();
+      const cab = { 'Access-Control-Allow-Origin': q.headers().origin ?? '*', 'Access-Control-Allow-Headers': 'Content-Type, X-Lector-Codigo', 'Access-Control-Allow-Methods': 'GET, POST' };
+      if (q.method() === 'OPTIONS') return ruta.fulfill({ status: 204, headers: cab });
+      const camino = new URL(q.url()).pathname;
+      vistas.push({ camino, codigo: q.headers()['x-lector-codigo'] });
+      const r = await fetch(`http://127.0.0.1:${PUERTO}${camino}`, { method: q.method(), headers: { Origin: q.headers().origin ?? 'http://127.0.0.1', 'Content-Type': 'application/json' }, body: q.postData() ?? undefined });
+      return ruta.fulfill({ status: r.status, headers: { ...cab, 'Content-Type': 'application/json' }, body: await r.text() });
+    }),
+  });
+  // Sin el toque no se vincula nada: un enlace así puede venir de cualquier mensaje.
+  await pagina.waitForTimeout(1500);
+  eq(vistas.length, 0, 'el enlace vincula y lee sin preguntar');
+  eq(await leer(pagina, 'roam-picker:lector-tablet'), null, 'el enlace se guarda sin preguntar');
+  ok(/192\.168\.68\.116/.test(await pagina.locator('.aviso-deshacer').innerText()), 'no pregunta con qué tablet se vincula');
+  await pagina.locator('.aviso-deshacer').getByRole('button', { name: 'Vincular' }).click();
+  for (let i = 0; i < 60 && !vistas.some((v) => v.camino === '/leer'); i++) await pagina.waitForTimeout(250);
+  ok(vistas.some((v) => v.camino === '/leer'), 'vinculada por el QR no lee sola de la tablet');
+  ok(vistas.every((v) => v.codigo === 'ABCDEFGH23'), `alguna petición a la tablet va sin el código: ${JSON.stringify(vistas)}`);
+  eq(await pagina.evaluate(() => window.location.hash), '', 'el enlace con el código se queda en la barra de direcciones');
+  eq(JSON.stringify(await leer(pagina, 'roam-picker:lector-tablet')), JSON.stringify({ direccion: '192.168.68.116:47323', codigo: 'ABCDEFGH23' }), 'la vinculación no se guarda');
+  eq(await leer(pagina, 'roam-picker:lector-auto'), true, 'vincular no enciende «Leer solo»');
+  for (let i = 0; i < 40 && !(await leer(pagina)).bans.length; i++) await pagina.waitForTimeout(250);
+  ok((await leer(pagina)).bans.length > 0, 'lo leído de la tablet no entra en el draft');
+  // Desvincular vuelve al de Termux (127.0.0.1).
+  await abrirAjustes(pagina);
+  await pagina.getByRole('button', { name: 'Usar el de Termux' }).click();
+  eq(await leer(pagina, 'roam-picker:lector-tablet'), null, 'desvincular no se guarda');
+  ok(!errores.length, `errores de página: ${errores}`);
+  await contexto.close();
+});
+
 await prueba('leer no quita nada ni repite: lo que ya había se queda, y una segunda lectura no añade lo mismo', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, {
     almacen: { ...almacen, 'roam-picker:draft': { enemies: ['Layla'], allies: ['Chou'], bans: ['Saber', 'Fanny'], enemyRoam: null, fase: 'picks' } },

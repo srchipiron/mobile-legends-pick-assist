@@ -14,6 +14,7 @@ import { Analisis } from '../componentes/Analisis.jsx';
 import { Tarjeta } from '../componentes/Tarjeta.jsx';
 import { useDeslizar } from '../componentes/useDeslizar.js';
 import { BotonLector, BotonVoz } from '../componentes/BotonLector.jsx';
+import { LectorTablet } from '../componentes/LectorTablet.jsx';
 import { ConsejoEquipo } from '../componentes/ConsejoEquipo.jsx';
 import { Leyenda } from '../componentes/Desglose.jsx';
 import { AvisoLegal } from '../componentes/AvisoLegal.jsx';
@@ -34,7 +35,7 @@ import { HORAS_DATOS_VIEJOS } from '../componentes/Pie.jsx';
  * @param d.abrir       abre una hoja: 'enemigos' | 'aliados' | 'yo' | 'maestria' | 'historial' | 'perfil' | 'meta' | 'linea' | 'apuntar' | { build }
  * @param d.onResultado (gane) apunta la partida con tu pick fijado, desde el recordatorio
  */
-export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, vozCallada = false, onVoz = null, pie }) {
+export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, vozCallada = false, onVoz = null, lectorTablet = null, onLectorTablet = null, pie }) {
   const { enemigos, aliados, baneos } = equipo;
   const { ranking, rival, cov, pool, analisis, composicion, consejos, yo } = rec;
   const rivalAuto = rival.marcado ? null : rival.nombre;
@@ -160,6 +161,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
             </button>
           )}
           {onLeer && lectorAuto && onVoz && <BotonVoz callada={vozCallada} onVoz={onVoz} t={t} style={{ marginTop: '14px' }} />}
+          {onLeer && onLectorTablet && <LectorTablet vinculo={lectorTablet} onVinculo={onLectorTablet} t={t} />}
           <button className="reset" style={{ marginTop: '14px' }} onClick={onDiagnostico}>{t('app.diagnostico')}</button>
         </details>
 

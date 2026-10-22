@@ -21,6 +21,7 @@ import { AvisoLegal } from './componentes/AvisoLegal.jsx';
 import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
+import { ConfirmarVinculo } from './componentes/LectorTablet.jsx';
 import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
 import { crearDiferido } from './diferido.js';
@@ -38,7 +39,7 @@ import { Meta } from './componentes/Meta.jsx';
  * las acciones.
  */
 export default function App() {
-  const { t, linea, setLinea, rango, setRango, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto, vozCallada, setVozCallada } = useAjustes();
+  const { t, linea, setLinea, rango, setRango, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto, vozCallada, setVozCallada, lectorTablet, setLectorTablet, vinculoPendiente, confirmarVinculo } = useAjustes();
   const carga = useDatos(rango);
   const { datos, meta, metaListo, pro, error, generado, edadHoras, edadMatrizHoras, sinWinrates } = carga;
   const draft = useDraft();
@@ -130,6 +131,9 @@ export default function App() {
 
   // Los refs del lector (3.25.0+): si está leyendo ahora y cuándo fue la última.
   const leyendoAhora = useRef(false);
+  // La tablet no acepta el código (3.61.0): no se lee solo hasta volver a vincular.
+  const codigoMalo = useRef(false);
+  useEffect(() => { codigoMalo.current = false; }, [lectorTablet]);
   const ultimaLectura = useRef(0);
   // Lecturas seguidas con la tablet ya en partida (3.46.0).
   const enPartidaSeguidas = useRef(0);
@@ -434,7 +438,10 @@ export default function App() {
       setLector({ estado: 'libre', aviso: silencioso ? null : aviso, ultimo: { cuando: Date.now(), ok: true, nuevos } });
     } catch (e) {
       const tipo = FALLOS_DEL_LECTOR.includes(e?.tipo) ? e.tipo : 'error';
-      setLector({ estado: 'libre', aviso: silencioso ? null : tipo, ultimo: { cuando: Date.now(), ok: false, tipo } });
+      // Con el código de la tablet mal (3.61.0), leer solo se para: seguir
+      // insistiendo cada 5 s acabaría bloqueando al móvil en la tablet.
+      if (tipo === 'codigo' || tipo === 'bloqueado') codigoMalo.current = true;
+      setLector({ estado: 'libre', aviso: silencioso && !codigoMalo.current ? null : tipo, ultimo: { cuando: Date.now(), ok: false, tipo } });
     } finally {
       leyendoAhora.current = false;
     }
@@ -450,14 +457,14 @@ export default function App() {
   useEffect(() => {
     const tuPick = { miPick: draft.miPick, completoDesde: draft.completoDesde, cerrado: draft.cerrado };
     if (!conCatalogo || !tocaLeerSolo({ auto: lectorAuto, hoja, completo, ...tuPick })) return undefined;
-    const tic = () => { if (tocaLeerSolo({ auto: lectorAuto, visible: document.visibilityState === 'visible', hoja, completo, leyendo: leyendoAhora.current, ...tuPick })) leerDelJuego({ silencioso: true }); };
+    const tic = () => { if (!codigoMalo.current && tocaLeerSolo({ auto: lectorAuto, visible: document.visibilityState === 'visible', hoja, completo, leyendo: leyendoAhora.current, ...tuPick })) leerDelJuego({ silencioso: true }); };
     // Al (re)arrancar, una lectura ya, salvo que acabe de haber una: la
     // primera lectura cambia el draft de vacío a lleno y eso rearma esto.
     if (Date.now() - ultimaLectura.current >= INTERVALO_AUTO_MS) tic();
     const reloj = setInterval(tic, vacio ? INTERVALO_AUTO_VACIO_MS : INTERVALO_AUTO_MS);
     return () => clearInterval(reloj);
     // leerDelJuego cambia en cada render; lo que decide si se lee es lo de aquí.
-  }, [conCatalogo, lectorAuto, hoja, completo, vacio, draft.miPick, draft.completoDesde, draft.cerrado]);
+  }, [conCatalogo, lectorAuto, hoja, completo, vacio, draft.miPick, draft.completoDesde, draft.cerrado, lectorTablet]);
 
   if (error) return <div className="results"><p className="notice">{t('app.errorDatos', { error })}</p></div>;
   if (!carga.catalogo) return <div className="results"><p className="empty-state">{t('app.cargando')}</p></div>;
@@ -485,6 +492,8 @@ export default function App() {
   );
   // «Deshacer» tras vaciar el draft o quitar con la × (3.23.0). Con una hoja
   // abierta no se enseña: la hoja lo taparía y ahí se quita tocando otra vez.
+  // El enlace del QR de la tablet espera un toque (3.61.0): no se vincula solo.
+  const vinculo = vinculoPendiente ? <ConfirmarVinculo vinculo={vinculoPendiente} onResponder={confirmarVinculo} t={t} /> : null;
   const deshacer = hoja ? null : apuntada && !draft.deshacible ? (
     <AvisoDeshacer deshacible={{ tipo: 'apuntada', gane: apuntada.gane, aMano: apuntada.aMano }} onDeshacer={deshacerApuntada} onCerrar={() => { setApuntada(null); diferido.current.ejecutar(); }} t={t} />
   ) : (
@@ -566,6 +575,7 @@ export default function App() {
             reinicia el draft a baneos) y el selector de baneos se CERRABA
             cuando una lectura en vuelo pasaba el draft a picks (3.40.0). */}
         {deshacer}
+        {vinculo}
         {selector}
         {hojas}
       </>
@@ -580,9 +590,11 @@ export default function App() {
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
         onResultado={apuntarAMano}
         lector={lectorConVoz} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} vozCallada={vozCallada} onVoz={cambiarVoz}
+        lectorTablet={lectorTablet} onLectorTablet={setLectorTablet}
         pie={pie}
       />
       {deshacer}
+      {vinculo}
       {selector}
       {hojas}
     </>

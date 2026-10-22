@@ -1,0 +1,81 @@
+# La APK del lector para la tablet (3.61.0, android/): se compila aquí y se
+# publica como «release» de GitHub para instalarla desde el navegador de la
+# tablet, sin ordenador. Corre cuando cambia lo que va dentro (la app de
+# Android, el lector o el motor que importa) y a mano.
+#
+# La FIRMA tiene que ser siempre la misma o Android no deja actualizar sin
+# desinstalar (y se perdería lo aprendido en la tablet): la clave va cifrada
+# en el repositorio (android/firma.jks.cifrado) y su contraseña en el
+# secreto LECTOR_FIRMA_CLAVE. Sin el secreto no se publica nada.
+name: APK del lector
+
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', 'scripts/lector/**', 'src/motor/**', '.github/workflows/apk.yml']
+  workflow_dispatch:
+
+# Publicar la release necesita escribir; no se hace push de nada.
+permissions:
+  contents: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: ¿Está la contraseña de la firma?
+        env:
+          CLAVE: ${{ secrets.LECTOR_FIRMA_CLAVE }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CLAVE" ]; then
+            echo "::error::Falta el secreto LECTOR_FIRMA_CLAVE (Settings → Secrets and variables → Actions). Sin él la APK saldría con otra firma y no se podría actualizar."
+            exit 1
+          fi
+      - name: Node embebido (nodejs-mobile 18.20.4)
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL -o nm.zip https://github.com/nodejs-mobile/nodejs-mobile/releases/download/v18.20.4/nodejs-mobile-v18.20.4-android.zip
+          # La suma conocida (21 de octubre de 2026): lo que va dentro de la APK firmada no puede cambiar sin que se vea.
+          echo "bd7321eaa1a7602fbe0bb87302df2d79d87835cf4363fbdd17c350dbb485c2af  nm.zip" | sha256sum -c -
+          mkdir -p android/app/libnode
+          unzip -q nm.zip -d android/app/libnode
+          test -f android/app/libnode/bin/arm64-v8a/libnode.so
+      - name: NDK y CMake
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0" > /dev/null
+      - name: Compilar y firmar
+        env:
+          CLAVE: ${{ secrets.LECTOR_FIRMA_CLAVE }}
+        run: |
+          set -euo pipefail
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in android/firma.jks.cifrado -out "$RUNNER_TEMP/firma.jks" -pass env:CLAVE
+          cd android
+          LECTOR_FIRMA="$RUNNER_TEMP/firma.jks" LECTOR_FIRMA_CLAVE="$CLAVE" ./gradlew --no-daemon assembleRelease
+          rm -f "$RUNNER_TEMP/firma.jks"
+          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/lector-mlbb.apk"
+      - name: Publicar
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="lector-v$VERSION"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" "$RUNNER_TEMP/lector-mlbb.apk" --clobber
+          else
+            gh release create "$TAG" "$RUNNER_TEMP/lector-mlbb.apk" --title "Lector MLBB $VERSION" --notes "La app del lector para la tablet. Instálala desde el navegador de la tablet: descarga lector-mlbb.apk y ábrela." --latest
+          fi

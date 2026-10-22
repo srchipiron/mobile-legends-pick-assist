@@ -2,6 +2,25 @@ import { useEffect, useMemo, useState } from 'react';
 import { CLAVES, leer, guardar } from './almacen.js';
 import { crearT, idiomaPorDefecto } from '../i18n/index.js';
 import { activarTacto } from '../tacto.js';
+import { sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet } from '../lector.js';
+
+/**
+ * El enlace del QR de la tablet (`#lector=IP:PUERTO&codigo=…`), una vez: se
+ * quita de la barra de direcciones (que no se quede a la vista ni en el
+ * historial) y queda PENDIENTE de un toque: cualquier mensaje podría traer
+ * un enlace así hacia otro aparato de la wifi (revisión de seguridad de
+ * 3.61.0). Al confirmarlo se guarda y se enciende «Leer solo».
+ */
+let enlaceLeido;
+function vinculoDelEnlace() {
+  // Una sola vez por carga: el modo estricto llama dos veces al inicializador y la segunda ya no vería el enlace.
+  if (enlaceLeido !== undefined) return enlaceLeido;
+  try {
+    enlaceLeido = lectorTabletDeEnlace(window.location.hash);
+    if (enlaceLeido) window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  } catch { enlaceLeido = null; }
+  return enlaceLeido;
+}
 
 /**
  * Lo que se toca UNA vez y se recuerda: la línea que juegas (sin ella la app
@@ -17,6 +36,16 @@ export function useAjustes() {
   // El lector leyendo solo (3.28.0): apagado hasta que se enciende una vez. Sin
   // lector, encendido solo costaría una petición fallida cada pocos segundos.
   const [lectorAuto, setLectorAuto] = useState(() => leer(CLAVES.lectorAuto, false) === true);
+  // El lector en la tablet (3.61.0): null es el de Termux, en este móvil.
+  const [lectorTablet, setLectorTabletCrudo] = useState(() => sanearLectorTablet(leer(CLAVES.lectorTablet, null)));
+  const setLectorTablet = (x) => setLectorTabletCrudo(sanearLectorTablet(x));
+  const [vinculoPendiente, setVinculoPendiente] = useState(vinculoDelEnlace);
+  const confirmarVinculo = (si) => {
+    if (si && vinculoPendiente) { setLectorTablet(vinculoPendiente); setLectorAuto(true); }
+    setVinculoPendiente(null);
+  };
+  // Antes de que nada pida al lector (efectos incluidos): es un valor del módulo.
+  ponerLectorEnTablet(lectorTablet);
   // La voz de los consejos en directo, callada (3.53.0). Clave nueva: sin ella, habla.
   const [vozCallada, setVozCallada] = useState(() => leer(CLAVES.vozCallada, false) === true);
   const t = useMemo(() => crearT(idioma), [idioma]);
@@ -28,6 +57,7 @@ export function useAjustes() {
   useEffect(() => { activarTacto(tacto); guardar(CLAVES.tacto, tacto); }, [tacto]);
   useEffect(() => { guardar(CLAVES.lectorAuto, lectorAuto); }, [lectorAuto]);
   useEffect(() => { guardar(CLAVES.vozCallada, vozCallada); }, [vozCallada]);
+  useEffect(() => { guardar(CLAVES.lectorTablet, lectorTablet); }, [lectorTablet]);
 
-  return { rango, setRango, linea, setLinea, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto, vozCallada, setVozCallada, t };
+  return { rango, setRango, linea, setLinea, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto, vozCallada, setVozCallada, lectorTablet, setLectorTablet, vinculoPendiente, confirmarVinculo, t };
 }

@@ -24,6 +24,8 @@ export const CLAVES = {
   // El lector de la tablet leyendo solo (3.28.0): false salvo que lo enciendas.
   lectorAuto: 'roam-picker:lector-auto',
   vozCallada: 'roam-picker:voz-callada',
+  // El lector en la tablet (3.61.0): dirección y código de vinculación. Clave NUEVA: sin ella, el de Termux.
+  lectorTablet: 'roam-picker:lector-tablet',
 };
 
 /** Lee un valor guardado; con cualquier fallo (JSON roto, sin almacén) devuelve `porDefecto`. */

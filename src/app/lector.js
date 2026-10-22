@@ -12,6 +12,38 @@ import { esDuracionPosible } from '../motor/directo.js';
  */
 export const PUERTO_LECTOR = 47323;
 export const URL_LECTOR = `http://127.0.0.1:${PUERTO_LECTOR}`;
+
+/**
+ * El lector EN LA TABLET (3.61.0, la APK «Lector MLBB»): escucha en la wifi
+ * y solo contesta con su código de vinculación. Se vincula escaneando el QR
+ * de la tablet, que abre la app con `#lector=IP:PUERTO&codigo=…`, o a mano
+ * en Ajustes. Solo una IP PRIVADA escrita tal cual: Chrome exime del bloqueo
+ * de contenido mixto las peticiones a una IP local (y `targetAddressSpace`
+ * lo declara), y así el código no puede acabar en otro sitio de internet.
+ */
+const IP_PRIVADA = /^(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})$/;
+export function sanearLectorTablet(x) {
+  if (!x || typeof x !== 'object') return null;
+  const [ip, puerto = String(PUERTO_LECTOR)] = String(x.direccion ?? '').trim().split(':');
+  const codigo = String(x.codigo ?? '').replace(/[\s-]/g, '').toUpperCase();
+  const p = Number(puerto);
+  if (!IP_PRIVADA.test(ip) || !(Number.isInteger(p) && p > 0 && p < 65536) || !/^[A-Z0-9]{8,64}$/.test(codigo)) return null;
+  return { direccion: `${ip}:${p}`, codigo };
+}
+/** Lo que trae el enlace del QR de la tablet (`#lector=IP:PUERTO&codigo=…`), o null. */
+export function lectorTabletDeEnlace(hash) {
+  const q = new URLSearchParams(String(hash ?? '').replace(/^#/, ''));
+  return q.has('lector') ? sanearLectorTablet({ direccion: q.get('lector'), codigo: q.get('codigo') }) : null;
+}
+let enTablet = null;
+/** La app dice aquí dónde está el lector (null: el de Termux, en este móvil). */
+export const ponerLectorEnTablet = (x) => { enTablet = sanearLectorTablet(x); };
+export const lectorEnTablet = () => enTablet;
+export const baseLector = () => (enTablet ? `http://${enTablet.direccion}` : URL_LECTOR);
+/** `fetch` al lector: en la tablet, con el código y declarando que el destino es la red local. */
+export const pedirAlLector = (url, opciones = {}) => fetch(url, enTablet
+  ? { ...opciones, headers: { ...(opciones.headers ?? {}), 'X-Lector-Codigo': enTablet.codigo }, targetAddressSpace: 'local' }
+  : opciones);
 /** Decisión de producto: la captura por wifi más el reconocimiento tardan 2–4 s; 20 s es «no está». */
 export const PLAZO_LECTOR_MS = 20000;
 /**
@@ -84,7 +116,17 @@ export function dudasQueQuedan(previas, nuevas, reconocio) {
  * `plazo`, `tablet` (el lector no la ve en la wifi), `emparejar` (la tablet
  * no deja entrar al móvil), `captura` (adb no consigue la captura) o `error`.
  */
-export const FALLOS_DEL_LECTOR = ['sinPuente', 'plazo', 'tablet', 'emparejar', 'captura', 'error'];
+export const FALLOS_DEL_LECTOR = ['sinPuente', 'plazo', 'tablet', 'emparejar', 'captura', 'codigo', 'bloqueado', 'error'];
+/** El fallo por la respuesta: 401 es el código de vinculación de la tablet, 429 que lo ha bloqueado tras varios malos. */
+const falloDe = (respuesta, cuerpo) => (respuesta.status === 401 ? 'codigo' : respuesta.status === 429 ? 'bloqueado'
+  : ['tablet', 'emparejar', 'captura'].includes(cuerpo?.error) ? cuerpo.error : 'error');
+/** La clave del aviso de un fallo: con el lector en la tablet, lo que hay que hacer es otra cosa (abrir su app, no Termux). */
+export const claveDeFallo = (tipo, { auto = false, tablet = !!enTablet } = {}) => {
+  if (tablet && ['sinPuente', 'captura', 'tablet', 'emparejar'].includes(tipo)) return `lector.enTablet.${auto ? 'auto.' : ''}${tipo === 'sinPuente' ? 'sinPuente' : 'captura'}`;
+  if (['codigo', 'bloqueado'].includes(tipo)) return `lector.${tipo}`;
+  if (auto) return `lector.auto.${tipo === 'sinPuente' ? 'sinPuente' : ['tablet', 'emparejar', 'captura'].includes(tipo) ? 'tablet' : 'error'}`;
+  return `lector.${tipo}`;
+};
 const fallo = (tipo) => Object.assign(new Error(tipo), { tipo });
 
 /**
@@ -100,7 +142,7 @@ const fallo = (tipo) => Object.assign(new Error(tipo), { tipo });
 export const tuyoDeTuLinea = (nombres, pool) => (nombres?.tuyo && pool?.size && !pool.has(nombres.tuyo) ? { ...nombres, tuyo: null } : nombres);
 
 /** Pide una lectura al lector. Devuelve lo que manda (`tuyos`, `suyos`, `enemigos`) o lanza un fallo con tipo. */
-export async function pedirLectura({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+export async function pedirLectura({ base = baseLector(), plazoMs = PLAZO_LECTOR_MS, pedir = pedirAlLector } = {}) {
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), plazoMs);
   let respuesta;
@@ -113,7 +155,7 @@ export async function pedirLectura({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_M
   }
   let cuerpo = null;
   try { cuerpo = await respuesta.json(); } catch { /* cuerpo vacío */ }
-  if (!respuesta.ok) throw fallo(['tablet', 'emparejar', 'captura'].includes(cuerpo?.error) ? cuerpo.error : 'error');
+  if (!respuesta.ok) throw fallo(falloDe(respuesta, cuerpo));
   if (!cuerpo || !Array.isArray(cuerpo.enemigos)) throw fallo('error');
   return cuerpo;
 }
@@ -126,7 +168,7 @@ export async function pedirLectura({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_M
  * aprenda las caras de tus compañeros con sus skins. Nunca lanza: si el
  * lector no está, no pasa nada.
  */
-export async function corregirLectura({ ids = [], enemigos = [], baneos = [], aliados = [], tuyo = null, base = URL_LECTOR, plazoMs = PLAZO_CORREGIR_MS, pedir = (...a) => fetch(...a) } = {}) {
+export async function corregirLectura({ ids = [], enemigos = [], baneos = [], aliados = [], tuyo = null, base = baseLector(), plazoMs = PLAZO_CORREGIR_MS, pedir = pedirAlLector } = {}) {
   if (!ids.length || !enemigos.length) return null;
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), plazoMs);
@@ -177,7 +219,7 @@ export const tocaVigilarFinal = ({ auto, visible = true, completoDesde }) => !!a
  * el mismo que el suyo): desde entonces vigila el final por su cuenta.
  * Devuelve lo vigilado hasta ahora, o null si no hay lector. Nunca lanza.
  */
-export async function avisarVigilancia({ desde, directo = null, callar = null, base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+export async function avisarVigilancia({ desde, directo = null, callar = null, base = baseLector(), plazoMs = PLAZO_LECTOR_MS, pedir = pedirAlLector } = {}) {
   if (!Number.isFinite(desde)) return null;
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), plazoMs);
@@ -194,7 +236,7 @@ export async function avisarVigilancia({ desde, directo = null, callar = null, b
 }
 
 /** Lo vigilado por el lector: `{ desde, activa, resultado, resultadoId, resultadoEn, fotogramas }`. Lanza con tipo si no hay lector. */
-export async function pedirFinal({ base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+export async function pedirFinal({ base = baseLector(), plazoMs = PLAZO_LECTOR_MS, pedir = pedirAlLector } = {}) {
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), plazoMs);
   let respuesta;
@@ -273,7 +315,7 @@ export function guionTraducido(plan, t, idioma = 'es') {
  * Nunca lanza: sin lector no pasa nada, y el siguiente aviso de vigilancia
  * lleva el mismo `callar`, así que un lector que no contestó se entera luego.
  */
-export async function callarVoz({ callar, base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+export async function callarVoz({ callar, base = baseLector(), plazoMs = PLAZO_LECTOR_MS, pedir = pedirAlLector } = {}) {
   if (typeof callar !== 'boolean') return null;
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), plazoMs);
@@ -292,7 +334,7 @@ export async function callarVoz({ callar, base = URL_LECTOR, plazoMs = PLAZO_LEC
  * partida, para que el lector aprenda la palabra de la tabla (3.32.0).
  * Nunca lanza; sin fotogramas no pide nada.
  */
-export async function ensenarResultado({ ids = [], gane, desde = null, base = URL_LECTOR, plazoMs = PLAZO_LECTOR_MS, pedir = (...a) => fetch(...a) } = {}) {
+export async function ensenarResultado({ ids = [], gane, desde = null, base = baseLector(), plazoMs = PLAZO_LECTOR_MS, pedir = pedirAlLector } = {}) {
   // Con `desde` (3.44.1) el lector deja también de vigilar y de hablar de esa partida, aunque no haya fotogramas.
   if ((!ids.length && !Number.isFinite(desde)) || typeof gane !== 'boolean') return null;
   const corte = new AbortController();

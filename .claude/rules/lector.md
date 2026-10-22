@@ -722,6 +722,52 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   abierto y el puerto se reintenta (`REINTENTOS_POR_PUERTO` 5). Prueba con
   un `conectar` de pega que se queda sin descriptores; tres mutaciones (la
   del 256 por defecto sobrevive, inofensiva: el límite se adapta).
+- **El lector EN LA TABLET (3.61.0)**, elegido por Javi («B») tras otra
+  tarde de puertos y conexiones `offline`: la APK `android/` («Lector
+  MLBB», Kotlin) graba la pantalla de la propia tablet con MediaProjection
+  (el permiso normal de grabar pantalla, un toque al empezar) y corre el
+  MISMO lector con Node embebido (nodejs-mobile 18.20.4, `Nodo.kt` +
+  `cpp/nodo.cpp`): `scripts/lector/en-tablet.mjs` crea el servidor de
+  siempre con la captura de la APK (`capturaDeLaApk`, siempre en crudo con
+  la cabecera de `screencap`, por 127.0.0.1 con un secreto por arranque) y
+  la voz de Android (`vozDeLaApk`, TextToSpeech). Sin depuración
+  inalámbrica, ni adb, ni puertos que cambian. Escucha en la wifi, así que:
+  `crearPortero` exige el código de vinculación (`X-Lector-Codigo`, 10
+  letras de la tablet, comparado en tiempo constante; tras `FALLOS_CODIGO`
+  en `VENTANA_CODIGO_MS` ese APARATO no entra, ni con el bueno: contado por
+  IP, porque con un contador global cualquiera en la wifi dejaba fuera al
+  móvil de Javi; y la app deja de leer sola con un 401/429, o se bloquearía
+  ella misma con un código viejo) y `hostPermitido`
+  con `red` acepta solo una IP PRIVADA escrita tal cual (nunca un nombre:
+  DNS rebinding). La app se vincula escaneando el QR de la tablet con la
+  cámara del móvil (`#lector=IP:PUERTO&codigo=…`, `lectorTabletDeEnlace`:
+  se quita de la barra y PREGUNTA, `ConfirmarVinculo`, porque cualquier
+  mensaje podría traer un enlace así hacia otro aparato; al confirmar se
+  guarda en `roam-picker:lector-tablet` y enciende «Leer solo») o a mano en
+  Ajustes (`LectorTablet.jsx`); `pedirAlLector`
+  añade el código y `targetAddressSpace: 'local'` (Chrome exime del bloqueo
+  de contenido mixto a una IP local). Los avisos dicen qué hacer en la
+  tablet, no en Termux (`claveDeFallo`). Termux sigue valiendo: «Usar el de
+  Termux» desvincula. La APK se compila y publica sola (`apk.yml`, release
+  `lector-vX.Y.Z` con `lector-mlbb.apk`); la firma va cifrada en
+  `android/firma.jks.cifrado` y su contraseña en el secreto
+  `LECTOR_FIRMA_CLAVE` (sin él no publica: otra firma obliga a desinstalar
+  y se pierde lo aprendido); el zip de nodejs-mobile y Gradle van con su
+  suma. Lo demás de la revisión de seguridad: la captura y el secreto del
+  puerto interno son de PROCESO (`Interno`, como Node, que no se reinicia:
+  con uno por servicio, Parar y Empezar dejaba a Node pidiendo a un puerto
+  muerto), ese puerto atiende 8 conexiones con plazo de 5 s y 50 cabeceras,
+  «Código nuevo» cierra y reabre la app (Node leyó el viejo al arrancar) y
+  la app no permite tráfico en claro (no lo necesita: el puerto interno es
+  un socket). El código viaja en claro por la wifi (no hay HTTPS con una
+  IP privada): solo en una wifi de confianza. Pruebas: `en-tablet.test` (captura y voz solo
+  de 127.0.0.1, portero, Host, la lectura entera con una APK de pega, ocho
+  mutaciones), `app/lector.test` y `lector.e2e` (el enlace del QR vincula,
+  lee de la tablet con el código y desvincula). Las pruebas del lector
+  corren también con Node 18 (el de la APK). NO medible desde aquí: la APK
+  en un Android de verdad (no hay emulador sin KVM), si el juego deja
+  grabar su pantalla (si saliera negra, sería FLAG_SECURE) y el permiso de
+  red local de Chrome hacia una IP de la wifi.
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

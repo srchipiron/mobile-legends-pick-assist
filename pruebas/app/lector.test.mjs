@@ -3,6 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
+import { sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, URL_LECTOR } from '../../src/app/lector.js';
 import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
@@ -313,6 +314,42 @@ test('«Voz»: callarVoz pide /voz con sí o no y nunca lanza; el aviso de vigil
   eq(pedidas[1][1].callar, true, 'el aviso de vigilancia no lleva callar');
   await avisarVigilancia({ desde: 123, pedir: async (url, op) => { pedidas.push([url, JSON.parse(op.body)]); return { ok: true, json: async () => ({ fotogramas: [] }) }; } });
   ok(!('callar' in pedidas[2][1]), 'sin saber de la voz, el aviso la cambia');
+});
+
+test('el lector en la tablet (3.61.0): solo IP privada y código decente; el enlace del QR; las peticiones llevan el código', async () => {
+  eq(JSON.stringify(sanearLectorTablet({ direccion: '192.168.68.116', codigo: 'abcde-fgh23' })), JSON.stringify({ direccion: '192.168.68.116:47323', codigo: 'ABCDEFGH23' }));
+  eq(sanearLectorTablet({ direccion: '10.0.0.5:5000', codigo: 'ABCDEFGH' })?.direccion, '10.0.0.5:5000');
+  for (const malo of [{ direccion: '8.8.8.8', codigo: 'ABCDEFGH' }, { direccion: 'atacante.example', codigo: 'ABCDEFGH' }, { direccion: '192.168.1.2:99999', codigo: 'ABCDEFGH' }, { direccion: '192.168.1.2', codigo: 'ABC' }, { direccion: '192.168.1.2', codigo: 'ABC<DEFGH' }, null, 'x']) {
+    eq(sanearLectorTablet(malo), null, `acepta ${JSON.stringify(malo)}`);
+  }
+  eq(lectorTabletDeEnlace('#lector=192.168.68.116:47323&codigo=ABCDEFGH23')?.codigo, 'ABCDEFGH23');
+  eq(lectorTabletDeEnlace('#otra=cosa'), null);
+  eq(lectorTabletDeEnlace('#lector=evil.example:47323&codigo=ABCDEFGH23'), null, 'el enlace manda el código a cualquier sitio');
+  const vistas = [];
+  const fetchDeVerdad = globalThis.fetch;
+  globalThis.fetch = async (url, op) => { vistas.push({ url, op }); return { ok: true, status: 200, json: async () => ({ enemigos: [] }) }; };
+  try {
+    ponerLectorEnTablet({ direccion: '192.168.68.116', codigo: 'ABCDEFGH23' });
+    eq(baseLector(), 'http://192.168.68.116:47323');
+    await pedirLectura();
+    eq(vistas[0].url, 'http://192.168.68.116:47323/leer', 'la lectura no va a la tablet');
+    eq(vistas[0].op.headers['X-Lector-Codigo'], 'ABCDEFGH23', 'la lectura no lleva el código');
+    eq(vistas[0].op.targetAddressSpace, 'local', 'no declara que va a la red local');
+    eq(claveDeFallo('sinPuente'), 'lector.enTablet.sinPuente');
+    eq(claveDeFallo('captura', { auto: true }), 'lector.enTablet.auto.captura');
+    ponerLectorEnTablet(null);
+    eq(baseLector(), URL_LECTOR);
+    await pedirAlLector(`${URL_LECTOR}/estado`, { cache: 'no-store' });
+    eq(JSON.stringify(vistas[1].op), JSON.stringify({ cache: 'no-store' }), 'con el de Termux manda el código o la red local');
+    eq(claveDeFallo('sinPuente'), 'lector.sinPuente');
+    eq(claveDeFallo('emparejar', { auto: true }), 'lector.auto.tablet');
+  } finally { globalThis.fetch = fetchDeVerdad; ponerLectorEnTablet(null); }
+  // 401 es el código y 429 el bloqueo, con su aviso.
+  for (const [estado, tipo] of [[401, 'codigo'], [429, 'bloqueado']]) {
+    const e = await pedirLectura({ pedir: async () => ({ ok: false, status: estado, json: async () => ({}) }) }).catch((x) => x);
+    eq(e.tipo, tipo, `un ${estado} no se distingue`);
+    eq(claveDeFallo(e.tipo), `lector.${tipo}`);
+  }
 });
 
 await terminar('app/lector');

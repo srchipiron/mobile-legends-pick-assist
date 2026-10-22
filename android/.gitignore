@@ -1,0 +1,11 @@
+.gradle/
+build/
+app/build/
+app/.cxx/
+local.properties
+# Node embebido: lo baja la compilación (nodejs-mobile), no va al repositorio (60 MB por arquitectura).
+app/libnode/
+# El código del lector se copia al compilar desde scripts/lector y src/motor.
+app/src/main/assets/
+*.keystore
+*.jks

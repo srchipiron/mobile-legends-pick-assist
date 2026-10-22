@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(lector)
+# Node embebido (nodejs-mobile): la biblioteca la baja la compilación a app/libnode.
+set(LIBNODE ${CMAKE_SOURCE_DIR}/../../../libnode)
+add_library(node SHARED IMPORTED)
+set_target_properties(node PROPERTIES IMPORTED_LOCATION ${LIBNODE}/bin/${ANDROID_ABI}/libnode.so)
+include_directories(${LIBNODE}/include/node)
+add_library(lector SHARED nodo.cpp)
+find_library(log-lib log)
+target_link_libraries(lector node ${log-lib})
