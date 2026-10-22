@@ -1,6 +1,181 @@
 {
- "actualizado": "2026-10-22T18:01:57.008Z",
+ "actualizado": "2026-10-22T19:37:44.544Z",
  "partidas": [
+  {
+   "t": 1792693523641,
+   "pick": "Floryn",
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Angela"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.475,
+   "modelo": 3,
+   "origen": "lector",
+   "bans": [
+    "Atlas",
+    "Lukas",
+    "Masha",
+    "Hirara",
+    "Carmilla",
+    "Belerick",
+    "Kadita",
+    "Marcel",
+    "Lesley",
+    "Aulus"
+   ],
+   "draft": {
+    "enemigos": [
+     "Rafaela",
+     "Miya",
+     "Zhask",
+     "Suyou",
+     "Phoveus"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Selena",
+     "Arlott",
+     "Hanzo"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   },
+   "lector": {
+    "baneos": [
+     "Atlas",
+     "Lukas",
+     "Masha",
+     "Hirara",
+     "Carmilla",
+     "Belerick",
+     "Kadita",
+     "Marcel",
+     "Lesley",
+     "Aulus"
+    ],
+    "enemigos": [
+     "Rafaela",
+     "Miya",
+     "Suyou"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Selena",
+     "Esmeralda"
+    ],
+    "tuyo": "Floryn",
+    "dudas": [
+     {
+      "hueco": "e1",
+      "candidato": "Joy",
+      "parecido": 0.8
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Yin",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Zetian",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Zetian",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a1",
+      "candidato": "Zetian",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Joy",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Beatrix",
+      "parecido": 0.7
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Nolan",
+      "parecido": 0.64
+     }
+    ],
+    "ms": [
+     6190,
+     3614,
+     3274,
+     2937,
+     2791,
+     3028,
+     3988,
+     2945,
+     2921,
+     3414,
+     3275,
+     3602
+    ],
+    "msCaptura": [
+     3034,
+     2454,
+     2215,
+     2010,
+     1879,
+     2142,
+     2616,
+     1842,
+     1745,
+     2378,
+     2185,
+     2339
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Zhask",
+      "Suyou",
+      "Phoveus",
+      "Zhask",
+      "Suyou",
+      "Phoveus",
+      "Zhask",
+      "Suyou",
+      "Phoveus"
+     ]
+    }
+   },
+   "duracion": 16.7,
+   "fases": [
+    0.464,
+    0.511,
+    0.49,
+    0.468,
+    0.43,
+    0.416
+   ]
+  },
   {
    "t": 1792692086623,
    "pick": "Estes",
@@ -22573,6 +22748,12 @@
   },
   {
    "cuando": "2026-10-22T18:01:57.008Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-22T19:37:44.544Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
