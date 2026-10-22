@@ -21,7 +21,8 @@ android {
         versionCode = mayor * 10000 + menor * 100 + parche
         versionName = versionApp
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
-        externalNativeBuild { cmake { cppFlags += "-std=c++17" } }
+        // libnode.so (nodejs-mobile) pide libc++_shared.so: sin él la app se cerraba nada más abrirse (3.61.1).
+        externalNativeBuild { cmake { cppFlags += "-std=c++17"; arguments += "-DANDROID_STL=c++_shared" } }
     }
 
     // La firma: SIEMPRE la misma clave, o Android no deja actualizar la app

@@ -9,9 +9,13 @@ import java.io.File
  * del mismo, así que si se para, la app se cierra y se abre de cero.
  */
 object Nodo {
-    init {
+    /** Si las bibliotecas no cargan, la app lo dice en pantalla en vez de cerrarse (3.61.1). */
+    val fallo: String? = try {
         System.loadLibrary("node")
         System.loadLibrary("lector")
+        null
+    } catch (e: Throwable) {
+        "No se pudo cargar el lector: ${e.message}"
     }
 
     private external fun variable(nombre: String, valor: String)
@@ -25,6 +29,7 @@ object Nodo {
     @Synchronized
     fun arrancar(contexto: Context, variables: Map<String, String>, alSalir: (Int) -> Unit) {
         if (arrancado) return
+        fallo?.let { throw IllegalStateException(it) }
         arrancado = true
         val proyecto = copiarProyecto(contexto)
         val log = registro(contexto)

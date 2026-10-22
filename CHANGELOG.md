@@ -8,6 +8,12 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.61.1
+
+- «Lector MLBB» ya abre en la tablet. Se cerraba nada más abrirla porque le
+  faltaba una pieza de Android que necesita el lector. Y si algún día vuelve
+  a cerrarse, al abrirla otra vez enseña por qué.
+
 ## 3.61.0
 
 - El lector puede ir dentro de la tablet, sin Termux. La nueva app «Lector

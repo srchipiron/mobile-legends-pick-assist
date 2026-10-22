@@ -44,6 +44,12 @@ class Principal : Activity() {
 
     override fun onCreate(guardado: Bundle?) {
         super.onCreate(guardado)
+        // Si algo cierra la app, la próxima vez se enseña por qué (sin ordenador no hay otra forma de verlo).
+        val previo = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { hilo, e ->
+            try { java.io.File(filesDir, "fallo.txt").writeText(android.util.Log.getStackTraceString(e).take(4000)) } catch (x: Throwable) {}
+            previo?.uncaughtException(hilo, e)
+        }
         if (Build.VERSION.SDK_INT >= 33) requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
         val pad = (16 * resources.displayMetrics.density).toInt()
         val columna = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(pad, pad, pad, pad); setBackgroundColor(Color.BLACK) }
@@ -99,7 +105,8 @@ class Principal : Activity() {
     }
 
     private fun refrescar() {
-        estado.text = Lector.estado
+        val caida = java.io.File(filesDir, "fallo.txt").takeIf { it.exists() }?.readText()?.lines()?.take(6)?.joinToString("\n")
+        estado.text = listOfNotNull(Nodo.fallo, Lector.estado, caida?.let { "La última vez se cerró por:\n$it" }).joinToString("\n\n")
         boton.text = if (Lector.grabando) "Parar" else "Empezar a leer"
         val codigo = Vinculo.codigo(this)
         val dir = ip()

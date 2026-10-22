@@ -763,7 +763,12 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   «Código nuevo» cierra y reabre la app (Node leyó el viejo al arrancar) y
   la app no permite tráfico en claro (no lo necesita: el puerto interno es
   un socket). El código viaja en claro por la wifi (no hay HTTPS con una
-  IP privada): solo en una wifi de confianza. Pruebas: `en-tablet.test` (captura y voz solo
+  IP privada): solo en una wifi de confianza. La 3.61.0 se cerraba al
+  abrirse: `libnode.so` pide `libc++_shared.so` y la APK no lo llevaba
+  (`-DANDROID_STL=c++_shared` en build.gradle.kts; mirar las NEEDED con
+  `llvm-readelf -d`). Desde 3.61.1 un fallo al cargar se enseña en la
+  pantalla (`Nodo.fallo`) y un cierre deja `fallo.txt`, que la app enseña al
+  volver a abrirla: sin ordenador no hay logcat. Pruebas: `en-tablet.test` (captura y voz solo
   de 127.0.0.1, portero, Host, la lectura entera con una APK de pega, ocho
   mutaciones), `app/lector.test` y `lector.e2e` (el enlace del QR vincula,
   lee de la tablet con el código y desvincula). Las pruebas del lector

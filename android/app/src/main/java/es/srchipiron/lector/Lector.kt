@@ -76,6 +76,7 @@ class Lector : Service() {
         voz = TextToSpeech(this) { s -> vozLista = s == TextToSpeech.SUCCESS }
         Interno.decir = ::decir
         val puerto = Interno.arrancar()
+        if (Nodo.fallo != null) { estado = Nodo.fallo!!; return }
         Nodo.arrancar(this, mapOf(
             "LECTOR_INTERNO" to "http://127.0.0.1:$puerto",
             "LECTOR_SECRETO" to Interno.secreto,
