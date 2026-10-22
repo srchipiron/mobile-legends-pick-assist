@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.64.0
+
+- «Lector MLBB» se actualiza sola, sin preguntar: al abrirla o al dejar de
+  leer mira si hay una versión nueva en GitHub y la instala. Nunca mientras
+  lee, para no cortarte una partida. La primera vez Android aún te pide
+  confirmar; desde ahí, ya no.
+- «Lector MLBB» trae una guía paso a paso para quien la instala por primera
+  vez. Cada paso se marca solo cuando está hecho y tiene su botón al lado:
+  avisos, ahorro de batería, burbuja, empezar a leer y vincular el móvil.
+- El README explica cómo instalar y usar Lector MLBB, qué hace y qué no.
+
 ## 3.63.0
 
 - La tablet manda un parte de salud al proyecto, sin que hagas nada. Con la

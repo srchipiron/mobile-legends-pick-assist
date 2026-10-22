@@ -104,7 +104,11 @@ class Lector : Service() {
                 val codigo = intent.getIntExtra(CODIGO_RESULTADO, Activity.RESULT_CANCELED)
                 if (datos != null && codigo == Activity.RESULT_OK) empezar(codigo, datos) else { estado = "Sin permiso para grabar la pantalla"; stopSelf() }
             }
-            PARAR -> { parar(); stopForeground(STOP_FOREGROUND_REMOVE); stopSelf() }
+            PARAR -> {
+                parar(); stopForeground(STOP_FOREGROUND_REMOVE); stopSelf()
+                // Al dejar de leer es cuando se puede actualizar sin cortar nada (3.64.0).
+                thread(isDaemon = true) { try { Actualizar.sola(applicationContext) } catch (e: Throwable) {} }
+            }
         }
         return START_NOT_STICKY
     }

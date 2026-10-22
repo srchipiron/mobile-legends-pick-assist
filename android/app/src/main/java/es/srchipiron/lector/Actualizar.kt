@@ -11,10 +11,13 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Que la app se actualice sola (3.62.0): mira la última versión publicada
- * en GitHub y, si es más nueva, la descarga y se la pasa al instalador de
- * Android, que SIEMPRE pide confirmar. Android solo la instala si va firmada
- * con la misma clave: nadie más puede colar otra app por aquí.
+ * Que la app se actualice sola (3.62.0; sin preguntar desde 3.64.0): mira
+ * la última versión publicada en GitHub y, si es más nueva y NO está
+ * leyendo (actualizar cierra la app: en mitad de una partida se perdería
+ * la lectura), la descarga y la instala. Desde Android 12, si la última
+ * instalación la hizo la propia app, no hace falta confirmar
+ * (USER_ACTION_NOT_REQUIRED); la primera vez sí. Android solo la instala si
+ * va firmada con la misma clave: nadie más puede colar otra app por aquí.
  */
 object Actualizar {
     private const val API = "https://api.github.com/repos/srchipiron/mobile-legends-pick-assist/releases/latest"
@@ -54,7 +57,10 @@ object Actualizar {
     /** Descarga e instala. Bloquea: fuera del hilo principal. */
     fun instalar(contexto: Context, nueva: Nueva) {
         val instalador = contexto.packageManager.packageInstaller
-        val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply { setAppPackageName(contexto.packageName) }
+        val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
+            setAppPackageName(contexto.packageName)
+            if (android.os.Build.VERSION.SDK_INT >= 31) setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
+        }
         val id = instalador.createSession(params)
         instalador.openSession(id).use { sesion ->
             val c = URL(nueva.url).openConnection() as HttpURLConnection
@@ -64,6 +70,14 @@ object Actualizar {
             val aviso = PendingIntent.getBroadcast(contexto, id, Intent(contexto, Instalado::class.java), PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
             sesion.commit(aviso.intentSender)
         }
+    }
+
+    /** Busca y, si hay una más nueva y no está leyendo, la instala. Una vez por versión y arranque. Bloquea. */
+    @Volatile private var intentada: String? = null
+    fun sola(contexto: Context): Nueva? {
+        val n = buscar(contexto) ?: return null
+        if (!Lector.grabando && intentada != n.version) { intentada = n.version; instalar(contexto, n) }
+        return n
     }
 
     /** Si algo falla, el enlace en el navegador, como se hacía a mano. */

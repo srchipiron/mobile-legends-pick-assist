@@ -23,6 +23,27 @@ En el móvil, abre la app en Chrome y elige **Añadir a pantalla de inicio**. Se
 instala como app, funciona sin conexión con los últimos datos descargados y se
 actualiza sola al volver a abrirla. La versión sale en el pie.
 
+## Que lea el draft solo: Lector MLBB (opcional)
+
+Si juegas en una **tablet o un móvil Android** y miras Pick Assist en **otro**
+móvil, la app **Lector MLBB** lee el draft de la pantalla del juego y lo mete
+en Pick Assist sin que toques nada. Tu nº1 sale además en una burbuja encima
+del juego, y al acabar cada partida te llega un resumen.
+
+1. En el aparato donde juegas, descarga e instala
+   [lector-mlbb.apk](https://github.com/srchipiron/mobile-legends-pick-assist/releases/latest/download/lector-mlbb.apk)
+   (Android pedirá permiso para instalar apps de fuera de Play Store).
+2. Ábrela y sigue su **paso a paso**: cada paso se marca solo cuando está
+   hecho (avisos, ahorro de batería, burbuja, empezar a leer).
+3. En el móvil donde usas Pick Assist, escanea con la cámara el QR que enseña
+   Lector MLBB y toca **Vincular**. Los dos, en la misma wifi.
+
+Después se actualiza sola. **Qué hace y qué no:** solo MIRA la pantalla (el
+permiso normal de grabar pantalla de Android); no toca el juego, no usa
+accesibilidad ni se conecta a tu cuenta. La imagen no sale del aparato: al
+móvil solo van nombres de héroes, y solo al móvil vinculado con su código.
+Aun así es una herramienta de terceros: **úsala bajo tu responsabilidad**.
+
 ## Usar
 
 1. **Línea y rango**: arriba. El rango por defecto es Gloria Mítica.

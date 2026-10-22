@@ -820,6 +820,15 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   señales en 5 min) y quita cualquier IP. Para mirar cómo va: la incidencia
   con la etiqueta `tablet` del repositorio. Pruebas en `en-tablet.test`,
   `app/lector.test`, `app/envio.test` y `diagnostico.test`; siete mutaciones.
+- **Actualización sin preguntar y guía (3.64.0)**: `Actualizar.sola` mira
+  GitHub al abrir la app y al parar de leer, y si hay una más nueva y NO
+  está leyendo (instalar cierra la app), la instala con
+  `USER_ACTION_NOT_REQUIRED` (Android 12+, permiso
+  `UPDATE_PACKAGES_WITHOUT_USER_ACTION`): sin confirmar solo si la versión
+  instalada la puso la propia app, así que la primera vez Android pregunta.
+  La pantalla es una GUÍA: seis pasos que se marcan solos (avisos, batería,
+  burbuja, grabando, el móvil ya lee —`/estado` con lecturas— y jugar), cada
+  uno con su botón. El README explica Lector MLBB para quien no es Javi.
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el
