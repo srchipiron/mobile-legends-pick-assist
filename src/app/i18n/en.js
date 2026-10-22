@@ -470,7 +470,7 @@ export default {
   'lector.voz.falta': 'Live tips are silent: install the Termux:API app (from F-Droid) and in Termux type: pkg install termux-api',
   'lector.voz.otro': 'Live tips did not play: check Termux:API has permission and restart the reader.',
   'lector.boton': 'Read from game',
-  'lector.enTablet.sinPuente': "Can't find the tablet. On the tablet, open «Lector MLBB» and tap «Empezar a leer», with the tablet and the phone on the same wifi. If Chrome asks about the local network, allow it.",
+  'lector.enTablet.sinPuente': "Can't find the tablet. On the tablet, open «Lector MLBB» and tap «Empezar a leer», with the tablet and the phone on the same wifi. If the address the tablet shows has changed, scan its QR again. If Chrome asks about the local network, allow it.",
   'lector.enTablet.captura': 'The tablet is not recording the screen: on the tablet, open «Lector MLBB» and tap «Empezar a leer».',
   'lector.enTablet.auto.sinPuente': "Reading by itself: can't find the tablet. Is «Lector MLBB» open and on the same wifi?",
   'lector.enTablet.auto.captura': 'Reading by itself: the tablet is not recording. Tap «Empezar a leer» in «Lector MLBB».',

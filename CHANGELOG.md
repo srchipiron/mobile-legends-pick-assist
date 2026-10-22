@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.61.4
+
+- El Diagnóstico dice ahora cómo está el lector: si es el de la tablet o el
+  de Termux, si contesta en este momento, lo que ha aprendido y cómo fue la
+  última lectura. Si no contesta, dice qué hacer. Así, «Copiar» basta para
+  saber por qué no lee, sin capturas de Termux.
+- Si la tablet cambia de dirección en la wifi, el aviso de la app ya dice
+  que vuelvas a escanear su QR.
+
 ## 3.61.3
 
 - La app estrena icono, a juego con el de «Lector MLBB»: el mismo escudo

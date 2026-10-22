@@ -10,6 +10,9 @@
  * @property {boolean} storage
  * @property {string} sw
  * @property {boolean} [sinDatosPersonales]   en el bot no hay móvil: maestría y partidas no se juzgan
+ * @property {{ donde: string|null, auto: boolean, estado: object|null, ultimo: object|null, ahora: number }|null} [lector]
+ *   el lector de la tablet (3.61.4): dónde está (la IP de la tablet, o null si es el de Termux), si lee solo,
+ *   si contesta ahora y cómo fue la última lectura. NUNCA el código de vinculación.
  */
 
 /** @param {import('./informe.js').Informe} inf */
@@ -28,5 +31,21 @@ export function seccionEntorno(inf, entorno = {}) {
       `Es la última publicada (${entorno.versionPublicada})`,
       `Estás usando la ${entorno.version} y la publicada es la ${entorno.versionPublicada}: cierra la app y vuelve a abrirla`,
       true);
+  }
+  // El lector (3.61.4): desde el móvil no hay otra forma de saber si contesta y qué pasó.
+  const lec = entorno.lector;
+  if (lec) {
+    inf.linea(`Lector: ${lec.donde ? `en la tablet (${lec.donde})` : 'el de Termux, en este móvil'} · leer solo: ${lec.auto ? 'sí' : 'no'}`);
+    if (lec.estado) {
+      const a = lec.estado.aprendido;
+      inf.check(lec.estado.ok,
+        `El lector contesta${a ? ` (aprendido de ${a.capturas} capturas: ${a.caras} caras de rivales, ${a.aliados} de tu equipo)` : ''}`,
+        `El lector no contesta (${lec.estado.tipo}): ${lec.donde ? 'abre «Lector MLBB» en la tablet y toca «Empezar a leer»; si cambió de wifi, vuelve a escanear su QR' : 'abre Termux y escribe: lector'}`,
+        true);
+    }
+    if (lec.ultimo) {
+      const min = Math.max(0, Math.round((lec.ahora - lec.ultimo.cuando) / 60000));
+      inf.linea(`Última lectura: hace ${min} min · ${lec.ultimo.ok ? `bien (${lec.ultimo.nuevos} nuevos)` : `falló (${lec.ultimo.tipo})`}`);
+    }
   }
 }

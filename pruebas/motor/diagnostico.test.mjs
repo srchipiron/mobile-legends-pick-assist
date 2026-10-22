@@ -13,6 +13,8 @@ import { catalogo, heroes, poolRoam, crearRnd, h } from '../fixtures/catalogo.mj
 import { prepararDatos } from '../../src/motor/draft.js';
 import { diagnosticar, titular } from '../../src/motor/diagnostico/index.js';
 import { ESCALA } from '../../src/motor/modelo.js';
+import { seccionEntorno } from '../../src/motor/diagnostico/seccion-entorno.js';
+import { crearInforme } from '../../src/motor/diagnostico/informe.js';
 import { metaSintetica } from '../fixtures/meta-sintetico.mjs';
 import { medirColas } from '../../src/motor/diagnostico/seccion-datos.js';
 import { COLA_DEL_MOTIVO } from '../../src/motor/matrices.js';
@@ -398,6 +400,20 @@ test('revisión de la vigilancia (3.60.5): matrices imposibles, nombres que no c
   // La maestría con un héroe justo en tu nivel (winrate = tu media) se aplica: no es FALLO.
   const conMaestria = diagnosticar({ linea: 'roam', maestria: { Atlas: { winRate: 0.5, games: 200 } }, partidas: [], entorno: { ...entorno, sinDatosPersonales: false }, datos: prepararDatos({ catalogo, meta: real, rango: 'glory' }) });
   ok(!lineas(conMaestria, /^\[FALLO.*maestría NO se aplica/).length, 'una maestría al 50% da un FALLO falso');
+});
+
+test('el diagnóstico dice dónde está el lector, si contesta y cómo fue la última lectura, sin el código (3.61.4)', () => {
+  const informe = (lector) => { const inf = crearInforme(); seccionEntorno(inf, { version: '1', storage: true, lector }); return inf; };
+  const caido = informe({ donde: '192.168.68.116:47323', auto: true, estado: { ok: false, tipo: 'sinPuente' }, ultimo: { cuando: 0, ok: false, tipo: 'sinPuente' }, ahora: 5 * 60000 });
+  const texto = caido.lineas.join('\n');
+  ok(/en la tablet \(192\.168\.68\.116:47323\)/.test(texto), `no dice dónde está el lector: ${texto}`);
+  ok(/no contesta \(sinPuente\).*QR/.test(texto), 'no dice que la tablet no contesta ni qué hacer');
+  ok(/hace 5 min · falló \(sinPuente\)/.test(texto), 'no dice cómo fue la última lectura');
+  eq(caido.avisos(), 1, 'que no conteste no cuenta como aviso');
+  const bien = informe({ donde: null, auto: true, estado: { ok: true, aprendido: { capturas: 640, caras: 27, aliados: 8 } }, ultimo: null, ahora: 0 });
+  ok(/el de Termux/.test(bien.lineas.join('\n')) && /aprendido de 640 capturas/.test(bien.lineas.join('\n')), `con el de Termux no lo dice: ${bien.lineas.join('\n')}`);
+  eq(bien.avisos(), 0);
+  ok(!/Lector/.test(informe(null).lineas.join('\n')), 'sin lector en uso habla del lector');
 });
 
 await terminar('motor/diagnostico');

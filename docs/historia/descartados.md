@@ -535,3 +535,10 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   poder medir héroes no jugados (192 de 193 partidas eran con jugados).
   Opciones abiertas: el nivel para todos (nº1 cambia en ~25%) o la mitad
   del nivel a los no jugados. Ver `pendiente.md`.
+- **Pausar la grabación de la tablet entre capturas (iteración del 22 de
+  octubre de 2026)**: la APK mantiene la pantalla virtual de MediaProjection
+  componiendo a resolución completa mientras el juego corre, lo que PODRÍA
+  restar fotogramas al juego. Pausarla (`setSurface(null)`) entre capturas
+  no entra a ciegas: con la pantalla quieta (el draft) puede no llegar
+  ningún fotograma nuevo tras reenganchar, y la lectura fallaría. Primero
+  se mide en su tablet: FPS del juego con el lector grabando y sin él.

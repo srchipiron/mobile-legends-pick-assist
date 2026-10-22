@@ -22,7 +22,7 @@ import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
 import { ConfirmarVinculo } from './componentes/LectorTablet.jsx';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
+import { pedirLectura, pedirEstadoLector, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
 import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
@@ -392,7 +392,8 @@ export default function App() {
 
   const lanzarDiagnostico = async () => {
     try {
-      const { publicada, historial } = await pedirPublicada();
+      // El lector solo se pregunta si se usa: sin él, Chrome sacaría el aviso de red local a cualquiera.
+      const [{ publicada, historial }, estadoLector] = await Promise.all([pedirPublicada(), lectorAuto || lectorTablet ? pedirEstadoLector() : null]);
       setInforme(diagnosticar({
         datos, linea,
         maestria: personal.maestriaUsada, maestriaManual: personal.maestria, partidas: personal.partidas,
@@ -402,7 +403,10 @@ export default function App() {
           estimaciones: rec.ranking.slice(0, 3).map((r) => ({ yo: r.heroe.name, p: r.p, puntos: r.puntos, terminos: r.terminos, vistos: aliados.length + enemigos.length + 1 })),
         },
         historial, pro,
-        entorno: leerEntorno({ version: __APP_VERSION__, buildTime: __BUILD_TIME__, rango: datos.rango, publicada }),
+        entorno: leerEntorno({
+          version: __APP_VERSION__, buildTime: __BUILD_TIME__, rango: datos.rango, publicada,
+          lector: lectorAuto || lectorTablet ? { donde: lectorTablet?.direccion ?? null, auto: lectorAuto, estado: estadoLector, ultimo: lector.ultimo, ahora: Date.now() } : null,
+        }),
       }));
     } catch (err) {
       // Que el diagnóstico falle no debe dejar la app en blanco: el propio error es información útil.

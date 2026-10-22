@@ -161,6 +161,25 @@ export async function pedirLectura({ base = baseLector(), plazoMs = PLAZO_LECTOR
 }
 
 /**
+ * El estado del lector para el Diagnóstico (3.61.4): si contesta, y qué ha
+ * aprendido. Sin él, «el lector no va» solo se veía tocando el botón. Nunca
+ * lanza; plazo corto, que el diagnóstico no espere.
+ */
+export async function pedirEstadoLector({ base = baseLector(), plazoMs = 3000, pedir = pedirAlLector } = {}) {
+  const corte = new AbortController();
+  const reloj = setTimeout(() => corte.abort(), plazoMs);
+  try {
+    const r = await pedir(`${base}/estado`, { cache: 'no-store', signal: corte.signal });
+    let cuerpo = null;
+    try { cuerpo = await r.json(); } catch { /* vacío */ }
+    if (!r.ok) return { ok: false, tipo: falloDe(r, cuerpo) };
+    return { ok: true, aprendido: cuerpo?.aprendido ?? null, resultados: cuerpo?.resultados ?? null };
+  } catch {
+    return { ok: false, tipo: corte.signal.aborted ? 'plazo' : 'sinPuente' };
+  } finally { clearTimeout(reloj); }
+}
+
+/**
  * Devuelve al lector lo que había de verdad (3.27.0): con los ids de sus
  * capturas y los enemigos y baneos finales (corregidos a mano), cruza el
  * pantallazo con la verdad y aprende dónde están los huecos en esa tablet

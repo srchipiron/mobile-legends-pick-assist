@@ -4,8 +4,9 @@ import { hayAlmacen } from './estado/almacen.js';
  * Datos del entorno que solo existen en el navegador, para el diagnóstico.
  * Vive en la app y no en el motor: el motor no sabe de `window`.
  */
-export function leerEntorno({ version, buildTime, rango, publicada = null }) {
+export function leerEntorno({ version, buildTime, rango, publicada = null, lector = null }) {
   return {
+    lector,
     version,
     versionPublicada: publicada?.version ?? null,
     buildTime: buildTime ? new Date(buildTime).toLocaleString('es-ES') : null,

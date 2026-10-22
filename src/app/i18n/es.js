@@ -487,7 +487,7 @@ export default {
   'lector.voz.falta': 'Los consejos en directo no suenan: instala la app Termux:API (de F-Droid) y en Termux escribe: pkg install termux-api',
   'lector.voz.otro': 'Los consejos en directo no han sonado: revisa que Termux:API tenga permiso y vuelve a abrir el lector.',
   'lector.boton': 'Leer del juego',
-  'lector.enTablet.sinPuente': 'No encuentro la tablet. En la tablet, abre «Lector MLBB» y toca «Empezar a leer», con la tablet y el móvil en la misma wifi. Si Chrome pregunta por la red local, permítelo.',
+  'lector.enTablet.sinPuente': 'No encuentro la tablet. En la tablet, abre «Lector MLBB» y toca «Empezar a leer», con la tablet y el móvil en la misma wifi. Si la dirección que enseña la tablet ha cambiado, vuelve a escanear su QR. Si Chrome pregunta por la red local, permítelo.',
   'lector.enTablet.captura': 'La tablet no está grabando la pantalla: en la tablet, abre «Lector MLBB» y toca «Empezar a leer».',
   'lector.enTablet.auto.sinPuente': 'Leyendo solo: no encuentro la tablet. ¿Está abierta «Lector MLBB» y en la misma wifi?',
   'lector.enTablet.auto.captura': 'Leyendo solo: la tablet no está grabando. Toca «Empezar a leer» en «Lector MLBB».',

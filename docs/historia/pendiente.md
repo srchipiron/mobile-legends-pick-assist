@@ -241,3 +241,8 @@
   tu habilidad con cada uno. Lo que falta para decidir: partidas con héroes
   NO jugados (¿rindes peor con uno nuevo, y cuánto?). Medida y opciones en
   `descartados.md` («Bajar el peso de la maestría»).
+- **El lector en la tablet, sin probar en un Android de verdad**
+  (3.61.0–3.61.4). Lo primero que diga Javi al usarlo: si la captura sale
+  (o negra: FLAG_SECURE), si el juego pierde fotogramas con la grabación
+  puesta (ver «Pausar la grabación» en `descartados.md`) y si Chrome deja
+  pedir a la IP de la tablet (permiso de red local).
