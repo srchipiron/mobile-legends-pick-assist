@@ -246,3 +246,8 @@
   (o negra: FLAG_SECURE), si el juego pierde fotogramas con la grabación
   puesta (ver «Pausar la grabación» en `descartados.md`) y si Chrome deja
   pedir a la IP de la tablet (permiso de red local).
+- **Proponer mejoras de fondo sin esperar a Javi** (22 de octubre de 2026):
+  la APK del lector la propuso él, tras semanas peleando con Termux y adb.
+  Pidió que esas ideas salgan de aquí. Cada `/iterar` cierra con una
+  propuesta de fondo, y cualquier sesión que vea a Javi repetir un paso a
+  mano o tropezar dos veces con lo mismo la plantea sin que la pida.

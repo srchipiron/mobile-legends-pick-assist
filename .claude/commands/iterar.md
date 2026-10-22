@@ -98,6 +98,13 @@ Si no puedes responder las cinco, no es un cambio: es un candidato descartado (v
    - **No tocado y por qué**: candidatos descartados.
    - **Pendiente de tu decisión**: lo que el semáforo te impidió hacer.
    - **Siguiente iteración**: dónde mirarías primero.
+   - **Una propuesta de fondo**: no un arreglo, sino un cambio de herramienta,
+     de arquitectura o de flujo que quite fricción de RAÍZ (de qué depende Javi
+     cada partida, qué hace a mano, qué le ha fallado más de una vez), con su
+     coste y su riesgo para la cuenta. Se propone, no se hace. Nace de que la
+     app del lector en la tablet (3.61.0) la tuvo que proponer Javi tras
+     semanas de puertos y Termux: «piensa por ti mismo y que no tenga que ser
+     yo el que propone este tipo de mejoras» (22 de octubre de 2026).
 
 ---
 
