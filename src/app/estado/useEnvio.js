@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CLAVES, leer, guardar } from './almacen.js';
 import { useAhora } from './useAhora.js';
 import { recogerPerfil, exportarPerfil } from '../../motor/perfil.js';
-import { subirIncidencia, comentarIncidencia } from '../github.js';
+import { subirIncidencia, comentarIncidencia, escribirFichero } from '../github.js';
 import { huellaDe, sanearEnvio, tocaSubir, tocaParte, encolarAparte, vaciarCola, paraSubir, ESPERA_MS } from '../envio.js';
 
 /**
@@ -98,6 +98,16 @@ export function useEnvio({ perfil, t }) {
     return r;
   }, [cambiar]);
 
+  /**
+   * Escribir un fichero del repositorio con el token (3.65.0: la
+   * administración publica `licencias.json`). El token tampoco sale de aquí:
+   * la administración recibe esta función, no el token.
+   */
+  const escribir = useCallback((fichero) => {
+    const { estado: e } = ultimo.current;
+    return e.token ? escribirFichero(fichero, e.token) : Promise.resolve({ error: 'sinToken' });
+  }, []);
+
   const subirAparte = useCallback((envio) => {
     cola.current = encolarAparte(cola.current, envio);
     return vaciar();
@@ -130,6 +140,6 @@ export function useEnvio({ perfil, t }) {
   const pendiente = !!estado.token && (perfil.partidas?.length ?? 0) > 0 && huella !== estado.huella;
   return {
     activo: !!estado.token, incidencia: estado.incidencia, url: estado.url, cuando: estado.cuando, error: estado.error,
-    enCurso, pendiente, enviar, guardarToken, subirAparte, subirParte,
+    enCurso, pendiente, enviar, guardarToken, subirAparte, subirParte, escribir,
   };
 }

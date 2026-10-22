@@ -80,6 +80,20 @@ bash scripts/lector/lector.sh       # después basta con: lector
 En la app, activa **Leer solo**. Activa la depuración inalámbrica solo para jugar
 y quítala después.
 
+## Acceso por invitación
+
+La app puede pedir una clave para entrar. Quien la administra da a cada
+persona un enlace con su clave (con nombre y, si quiere, caducidad) y puede
+retirarla cuando quiera. Las claves van firmadas (ECDSA P-256) y la app las
+comprueba con la clave pública de `public/licencias.json`, sin servidor. Es
+una puerta, no una caja fuerte: la app es estática y su código está a la
+vista.
+
+## Licencia
+
+[PolyForm Noncommercial 1.0.0](LICENSE.md): puedes usarla, copiarla y
+modificarla para cualquier fin no comercial. Para un uso comercial, pregunta.
+
 ## Contribuir
 
 ```bash

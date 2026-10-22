@@ -3,7 +3,7 @@
  * repositorio sale de la dirección de Pages y el cuerpo va codificado.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { repositorioDe, urlDeIncidencia, TOPE_URL, subirIncidencia, comentarIncidencia, tokenPlausible, API_GITHUB } from '../../src/app/github.js';
+import { repositorioDe, urlDeIncidencia, TOPE_URL, subirIncidencia, comentarIncidencia, escribirFichero, tokenPlausible, API_GITHUB } from '../../src/app/github.js';
 
 test('el repositorio se deduce de la dirección de Pages', () => {
   const pages = repositorioDe({ hostname: 'srchipiron.github.io', pathname: '/mobile-legends-pick-assist/' });
@@ -79,6 +79,34 @@ test('un comentario en una incidencia va por POST a /comments con el token solo 
   eq(JSON.parse(pedidas[0].body).body, 'hola');
   ok(!pedidas[0].url.includes(TOKEN) && !pedidas[0].body.includes(TOKEN) && pedidas[0].headers.Authorization === `Bearer ${TOKEN}`, 'el token viaja fuera de la cabecera');
   eq((await comentarIncidencia({ numero: 12, cuerpo: 'x' }, TOKEN, { location: PAGES, fetch })).error, 'token', 'un 401 no es «token»');
+});
+
+test('escribirFichero (3.65.0): solo public/*.json, lee el sha y lo manda al escribir en main; el token solo en la cabecera y solo a api.github.com', async () => {
+  for (const ruta of ['src/app/App.jsx', '.github/workflows/deploy.yml', 'public/../package.json', 'public/sub/x.json', 'public/licencias.js']) {
+    const { fetch, pedidas } = fetchFalso([]);
+    eq((await escribirFichero({ ruta, contenido: 'x', mensaje: 'm' }, TOKEN, { location: PAGES, fetch })).error, 'ruta', `deja escribir ${ruta}`);
+    eq(pedidas.length, 0, `con ${ruta} llega a pedir algo`);
+  }
+  const { fetch, pedidas } = fetchFalso([{ status: 200, datos: { sha: 'abc123' } }, { status: 200, datos: {} }]);
+  const contenido = '{ "exigir": true, "nombre": "Ñandú" }\n';
+  eq((await escribirFichero({ ruta: 'public/licencias.json', contenido, mensaje: 'Licencias' }, TOKEN, { location: PAGES, fetch })).ok, true);
+  eq(pedidas.length, 2);
+  eq(pedidas[0].method, 'GET'); eq(pedidas[1].method, 'PUT');
+  for (const p of pedidas) {
+    ok(p.url.startsWith(`${API_GITHUB}/repos/srchipiron/mobile-legends-pick-assist/contents/public/licencias.json`), `pide a otro sitio: ${p.url}`);
+    ok(!p.url.includes(TOKEN) && !(p.body ?? '').includes(TOKEN) && p.headers.Authorization === `Bearer ${TOKEN}`, 'el token viaja fuera de la cabecera');
+  }
+  const cuerpo = JSON.parse(pedidas[1].body);
+  eq(cuerpo.sha, 'abc123', 'sin el sha GitHub rechaza la escritura');
+  eq(cuerpo.branch, 'main');
+  eq(Buffer.from(cuerpo.content, 'base64').toString('utf8'), contenido, 'el contenido no llega tal cual (UTF-8)');
+  // Fichero nuevo: sin sha. Y los errores con nombre.
+  const nuevo = fetchFalso([{ status: 404 }, { status: 201, datos: {} }]);
+  eq((await escribirFichero({ ruta: 'public/licencias.json', contenido: '{}', mensaje: 'm' }, TOKEN, { location: PAGES, fetch: nuevo.fetch })).ok, true);
+  eq(JSON.parse(nuevo.pedidas[1].body).sha, undefined);
+  eq((await escribirFichero({ ruta: 'public/licencias.json', contenido: '{}', mensaje: 'm' }, TOKEN, { location: PAGES, fetch: fetchFalso([{ status: 403 }]).fetch })).error, 'permiso');
+  eq((await escribirFichero({ ruta: 'public/licencias.json', contenido: '{}', mensaje: 'm' }, TOKEN, { location: PAGES, fetch: fetchFalso([{ status: 200, datos: { sha: 's' } }, { status: 403 }]).fetch })).error, 'permiso');
+  eq((await escribirFichero({ ruta: 'public/licencias.json', contenido: '{}', mensaje: 'm' }, TOKEN, { location: PAGES, fetch: fetchFalso([new Error('sin red')]).fetch })).error, 'red');
 });
 
 await terminar('app/github');

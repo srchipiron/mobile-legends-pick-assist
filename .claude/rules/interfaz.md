@@ -350,3 +350,33 @@ una errata a la alta (5640 donde era 564) no se corrige sola en
 código viejo en el dispositivo bueno borraría la maestría de verdad. Hay una
 prueba que lo comprueba EN LAS DOS DIRECCIONES: la primera versión solo miraba
 la fácil y pasaba aunque se quitara el mecanismo entero.
+
+## Las claves de invitación (3.65.0)
+
+Pedido de Javi: «perfiles de usuario, administración, gestión y claves»;
+eligió «controlar quién la usa», sin servidor y licencia no comercial
+(`LICENSE.md`, PolyForm Noncommercial 1.0.0).
+
+- `src/app/licencia.js` (puro): la clave de administrador es un par ECDSA
+  P-256 de WebCrypto; cada clave de invitado es
+  `base64url(JSON{id,n,e,c?}).base64url(firma)` y viaja en un enlace
+  `#clave=…`. `comprobarClave` nunca lanza y dice el motivo (formato,
+  sinPublica, firma, caducada, revocada).
+- `public/licencias.json` lleva `{version, publica, exigir, revocadas}`. Pasa
+  SIEMPRE por `sanearLicencias`, que reconstruye la pública con
+  `kty/crv/x/y`: aunque alguien le pase la privada, `d` no se publica.
+  Exigir sin pública no se puede (cerraría la puerta a todos para siempre).
+- `useLicencia` (estado): la privada vive solo en `roam-picker:admin`, con
+  copia de seguridad que Javi guarda fuera. Publicar es `escribir` de
+  `useEnvio` → `escribirFichero` (github.js, solo `public/*.json`, GET del
+  sha y PUT a `main`). El token sigue sin salir de useEnvio. Necesita
+  «Contents: Read and write» además de «Issues».
+- La puerta (`PuertaDeLicencia`) va en App DESPUÉS de todos los hooks. Sin
+  `licencias.json` (sin red la primera vez) se deja pasar; el administrador
+  siempre pasa. La Administración solo se ve con el token o con la clave de
+  administrador. Es una puerta, no una caja fuerte: la app es estática.
+- Pruebas: `app/licencia.test` y `app/github.test` (diez mutaciones, todas
+  cazadas) y `licencias.e2e` (tres de cuatro; la que sobrevive, publicar la
+  privada desde `useLicencia`, la para `sanearLicencias`). En el e2e, la ruta
+  de `licencias.json` va con el origen de la app: `**/licencias.json*`
+  también atrapaba el PUT a la API de GitHub.

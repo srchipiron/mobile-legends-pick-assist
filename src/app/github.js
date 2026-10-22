@@ -61,6 +61,23 @@ async function pedir(metodo, ruta, token, cuerpo, fetchImpl) {
   return { error: 'otro', estado: r.status };
 }
 
+/**
+ * Escribe un fichero del repositorio en `main` (3.65.0: `licencias.json`,
+ * desde el panel de administración de Javi). Con el token de siempre, que
+ * necesita además permiso de «Contents: write»; sin él contesta 'permiso'.
+ * Solo rutas fijas que pide el código, nunca una que venga de fuera.
+ */
+export async function escribirFichero({ ruta, contenido, mensaje }, token, { location = globalThis.location, fetch = globalThis.fetch } = {}) {
+  if (!/^public\/[\w.-]+\.json$/.test(ruta)) return { error: 'ruta' };
+  const { duenno, repo } = repositorioDe(location);
+  const base = `/repos/${duenno}/${repo}/contents/${ruta}`;
+  const actual = await pedir('GET', `${base}?ref=main`, token, undefined, fetch);
+  if (actual.error && actual.error !== 'noExiste') return { error: actual.error, estado: actual.estado };
+  const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(contenido)));
+  const r = await pedir('PUT', base, token, { message: mensaje, content: b64, branch: 'main', ...(actual.datos?.sha ? { sha: actual.datos.sha } : {}) }, fetch);
+  return r.error ? { error: r.error, estado: r.estado } : { ok: true };
+}
+
 /** Un comentario en una incidencia existente. Devuelve { url } o { error }. */
 export async function comentarIncidencia({ numero, cuerpo }, token, { location = globalThis.location, fetch = globalThis.fetch } = {}) {
   const { duenno, repo } = repositorioDe(location);

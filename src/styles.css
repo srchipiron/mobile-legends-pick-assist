@@ -877,6 +877,22 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .nota.bien { color: var(--c-comp); }
 .nota.mal { color: var(--enemy); }
 .nota-relaciones { margin-top: 2px; }
+/* Las claves de invitación (3.65.0): los campos de la administración y la
+   puerta, que sustituye a la app entera cuando se exige clave. */
+.admin-campo {
+  width: 100%; box-sizing: border-box; padding: 10px 12px; min-height: 44px;
+  background: var(--field); border: 1px solid transparent; border-radius: var(--r-sm);
+  color: var(--text); font-size: 16px;
+}
+.admin-campo:focus { outline: none; border-color: var(--gold); }
+.admin-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.admin-lista li { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; overflow-wrap: anywhere; }
+.puerta {
+  max-width: 420px; margin: 0 auto; min-height: 100dvh; box-sizing: border-box;
+  padding: 48px 16px; display: flex; flex-direction: column; justify-content: center; gap: 14px;
+}
+.puerta h1 { font-size: 24px; margin: 0; letter-spacing: -0.02em; }
+.puerta p { margin: 0; line-height: 1.5; }
 /* La subida automática de partidas (3.10.0), dentro de «Tus partidas». */
 .envio-auto { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--glass); box-shadow: var(--brillo); }
 .envio-auto a { color: var(--gold); }

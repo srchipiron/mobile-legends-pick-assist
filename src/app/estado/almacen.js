@@ -26,6 +26,11 @@ export const CLAVES = {
   vozCallada: 'roam-picker:voz-callada',
   // El lector en la tablet (3.61.0): dirección y código de vinculación. Clave NUEVA: sin ella, el de Termux.
   lectorTablet: 'roam-picker:lector-tablet',
+  // Las claves de invitación (3.65.0). Claves NUEVAS: sin ellas no cambia nada.
+  clave: 'roam-picker:clave',            // la clave de este usuario
+  licencias: 'roam-picker:licencias',    // la última licencias.json vista (sin red se usa esta)
+  admin: 'roam-picker:admin',            // la clave de administrador de Javi (privada: SOLO en su móvil)
+  emitidas: 'roam-picker:emitidas',      // las claves que ha dado Javi: nombre, id, fechas
 };
 
 /** Lee un valor guardado; con cualquier fallo (JSON roto, sin almacén) devuelve `porDefecto`. */

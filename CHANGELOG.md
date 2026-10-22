@@ -8,6 +8,20 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.65.0
+
+- La app puede ser solo por invitación: decides quién la usa. En Ajustes →
+  Administración (solo te sale a ti, con tu token de GitHub) creas tu clave
+  de administrador, das una clave a cada persona con su nombre y, si
+  quieres, cuántos días vale, y se la mandas como enlace: al abrirlo, entra.
+  Puedes quitársela cuando quieras. Mientras no actives «Pedir clave para
+  entrar», la app sigue abierta para todos como hasta ahora.
+- Guarda la copia de seguridad de tu clave de administrador fuera del
+  móvil: sin ella, al cambiar de móvil tendrías que crear otra y las claves
+  que diste dejarían de valer.
+- El proyecto tiene licencia: PolyForm Noncommercial. Se puede usar,
+  copiar y modificar, pero no para ganar dinero con él.
+
 ## 3.64.1
 
 - La tablet ya puede reconocer si ganaste o perdiste. Lector MLBB empezó

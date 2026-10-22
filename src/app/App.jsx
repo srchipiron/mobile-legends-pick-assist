@@ -8,6 +8,7 @@ import { useDatos } from './estado/useDatos.js';
 import { useDraft, TOPES } from './estado/useDraft.js';
 import { usePersonal } from './estado/usePersonal.js';
 import { useEnvio } from './estado/useEnvio.js';
+import { useLicencia } from './estado/useLicencia.js';
 import { useRecomendacion } from './estado/useRecomendacion.js';
 import { useActualizacion } from './estado/useActualizacion.js';
 import { leerEntorno, pedirPublicada } from './entorno.js';
@@ -31,6 +32,7 @@ import { HistorialPartidas } from './componentes/HistorialPartidas.jsx';
 import { Perfil } from './componentes/Perfil.jsx';
 import { EditorDeMaestria } from './componentes/EditorDeMaestria.jsx';
 import { Meta } from './componentes/Meta.jsx';
+import { Administracion, PuertaDeLicencia } from './componentes/Administracion.jsx';
 
 /**
  * La app: estado (hooks de ./estado), motor (src/motor, por useRecomendacion)
@@ -120,6 +122,10 @@ export default function App() {
   );
   // La subida automática de partidas (3.10.0): con token, cada cambio se sube solo.
   const envio = useEnvio({ perfil: datosPerfil, t });
+  // Las claves de invitación (3.65.0). La administración solo se ve con el
+  // token de la subida (el móvil de Javi) o ya con la clave de administrador.
+  const licencia = useLicencia({ escribir: envio.activo ? envio.escribir : null });
+  const verAdmin = envio.activo || licencia.esAdministrador;
 
   const elegirEnSelector = (h) => {
     if (hoja === 'baneos') { draft.alternarBaneo(h); return; }
@@ -585,11 +591,15 @@ export default function App() {
       )}
       {hoja === 'perfil' && <Perfil datos={datosPerfil} onImportar={traerPerfil} onCerrar={cerrar} t={t} />}
       {hoja === 'meta' && <Meta datos={datos} linea={linea} onCerrar={cerrar} t={t} />}
+      {hoja === 'admin' && verAdmin && <Administracion licencia={licencia} onCerrar={cerrar} t={t} />}
       {hoja === 'maestria' && (
         <EditorDeMaestria pool={rec.pool} maestria={personal.maestria} onGuardar={personal.guardarMaestria} onCerrar={cerrar} t={t} />
       )}
     </>
   );
+
+  // La puerta va DESPUÉS de todos los hooks: cerrarla no puede cambiar su orden.
+  if (!licencia.pasa) return <PuertaDeLicencia licencia={licencia} t={t} />;
 
   if (draft.fase === 'baneos') {
     return (
@@ -626,7 +636,7 @@ export default function App() {
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
         onResultado={apuntarAMano}
         lector={lectorConVoz} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} vozCallada={vozCallada} onVoz={cambiarVoz}
-        lectorTablet={lectorTablet} onLectorTablet={setLectorTablet}
+        lectorTablet={lectorTablet} onLectorTablet={setLectorTablet} onAdministracion={verAdmin ? () => abrir('admin') : null}
         pie={pie}
       />
       {deshacer}
