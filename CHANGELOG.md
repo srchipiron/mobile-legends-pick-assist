@@ -8,6 +8,13 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.61.3
+
+- La app estrena icono, a juego con el de «Lector MLBB»: el mismo escudo
+  dorado, con la diana de siempre dentro. Si la tienes instalada, Android lo
+  cambia solo al actualizarse (a veces tarda un día; desinstalar e instalar
+  lo cambia en el acto, sin perder nada si antes copias tu perfil).
+
 ## 3.61.2
 
 - «Lector MLBB» estrena icono: un escudo hexagonal dorado con un ojo que
