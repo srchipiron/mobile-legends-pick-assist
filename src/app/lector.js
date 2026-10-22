@@ -349,6 +349,51 @@ export async function callarVoz({ callar, base = baseLector(), plazoMs = PLAZO_L
 }
 
 /**
+ * Lo que la tablet enseña (3.62.0): tu nº1 en la burbuja sobre el juego y,
+ * al apuntar una partida, su resumen como notificación. Solo con el lector
+ * EN LA TABLET (el de Termux no tiene pantalla). Nunca lanza.
+ */
+export async function mandarALaTablet(cuerpo, { base = baseLector(), plazoMs = PLAZO_LECTOR_MS, pedir = pedirAlLector } = {}) {
+  if (!enTablet) return false;
+  const corte = new AbortController();
+  const reloj = setTimeout(() => corte.abort(), plazoMs);
+  try {
+    const r = await pedir(`${base}/consejo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo), cache: 'no-store', signal: corte.signal });
+    return r.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(reloj);
+  }
+}
+
+/**
+ * El consejo de la burbuja: tu pick (el fijado o el nº1) con su
+ * probabilidad, y debajo los dos siguientes. Sin ranking, nada.
+ */
+export function consejoParaLaTablet({ eleccion, ranking = [] }, t) {
+  if (!eleccion?.heroe || !ranking.length) return null;
+  const pct = (p) => `${Math.round(p * 100)}%`;
+  const otros = ranking.filter((r) => r.heroe.name !== eleccion.heroe.name).slice(0, 2).map((r) => `${r.heroe.name} ${pct(r.p)}`);
+  return { titulo: `${eleccion.heroe.name} ${pct(eleccion.p)}`, detalle: otros.length ? t('tablet.siguientes', { lista: otros.join(' · ') }) : null };
+}
+
+/** El resumen de la partida recién apuntada: con quién, si era el consejo y cómo vas en las últimas. */
+export function resumenParaLaTablet({ t: instante, pick, gane, recomendados = [], estimacion = null, ultimas = [] }, t) {
+  const primero = recomendados[0];
+  const ganadas = ultimas.filter((p) => p.gane).length;
+  return {
+    id: `partida-${instante}`,
+    titulo: t(gane ? 'tablet.resumen.ganada' : 'tablet.resumen.perdida', { pick }),
+    texto: [
+      primero && nombreClave(primero) === nombreClave(pick) ? t('tablet.resumen.eraPrimero') : primero ? t('tablet.resumen.otroPrimero', { primero }) : null,
+      estimacion != null ? t('tablet.resumen.daba', { p: Math.round(estimacion * 100) }) : null,
+      ultimas.length ? t('tablet.resumen.ultimas', { n: ultimas.length, g: ganadas }) : null,
+    ].filter(Boolean).join(' '),
+  };
+}
+
+/**
  * Lo que contestó Javi (o lo que se apuntó solo) con los fotogramas de esa
  * partida, para que el lector aprenda la palabra de la tabla (3.32.0).
  * Nunca lanza; sin fotogramas no pide nada.

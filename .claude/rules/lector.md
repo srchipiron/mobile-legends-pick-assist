@@ -784,6 +784,26 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   en un Android de verdad (no hay emulador sin KVM), si el juego deja
   grabar su pantalla (si saliera negra, sería FLAG_SECURE) y el permiso de
   red local de Chrome hacia una IP de la wifi.
+- **La tablet enseña el consejo (3.62.0)**, de las tres propuestas de fondo
+  que Javi aprobó («haz las tres»): la app del móvil manda a la tablet
+  (`POST /consejo`, solo con el lector en la tablet, `mandarALaTablet`) tu
+  pick con los dos siguientes cada vez que cambian (`consejoParaLaTablet`,
+  por su huella) y, al apuntar, el resumen de la partida
+  (`resumenParaLaTablet`). El lector lo guarda en memoria, saneado a texto
+  plano con tope (`sanearConsejo`, `sanearResumen`); la APK lo lee cada 2 s
+  (`GET /consejo`, desde 127.0.0.1 con el código) y pinta la BURBUJA
+  (`Burbuja.kt`: TYPE_APPLICATION_OVERLAY, FLAG_NOT_TOUCHABLE y opacidad
+  0,8, el máximo con el que Android 12+ deja pasar los toques al juego;
+  esquina elegible, abajo por defecto, donde no lee nada el lector) y la
+  NOTIFICACIÓN del resumen, una vez por partida. Y la APK se ACTUALIZA SOLA
+  (`Actualizar.kt`: `releases/latest`, `PackageInstaller`, Android pide
+  confirmar y solo acepta la misma firma; si falla, el enlace en el
+  navegador). Pruebas: `en-tablet.test` (/consejo: solo la app escribe, la
+  APK lee con código, texto limpio, un id raro no pisa), `app/lector.test`
+  y `lector.e2e` (la app manda el consejo a la tablet con el código). Lo
+  de Kotlin solo se compila aquí. Sin medir: si la burbuja molesta en algún
+  momento del draft o de la partida, y si el juego la tolera (como con la
+  depuración, no hay constancia de que mire las superposiciones).
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

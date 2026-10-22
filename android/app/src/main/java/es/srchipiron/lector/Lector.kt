@@ -67,6 +67,7 @@ class Lector : Service() {
     private var ultima: Image? = null
     private var hiloImagenes: HandlerThread? = null
     private var voz: TextToSpeech? = null
+    private var burbuja: Burbuja? = null
     @Volatile private var vozLista = false
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -138,6 +139,7 @@ class Lector : Service() {
         pantalla = p.createVirtualDisplay("lector", ancho, alto, resources.displayMetrics.densityDpi,
             DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, r.surface, null, manejador)
         Interno.captura = ::captura
+        burbuja = Burbuja(this).also { it.empezar() }
         grabando = true
         estado = "Grabando la pantalla (${ancho}×${alto})"
     }
@@ -145,6 +147,7 @@ class Lector : Service() {
     private fun parar() {
         grabando = false
         Interno.captura = null
+        burbuja?.parar(); burbuja = null
         pantalla?.release(); pantalla = null
         synchronized(cerrojo) { ultima?.close(); ultima = null }
         lector?.close(); lector = null

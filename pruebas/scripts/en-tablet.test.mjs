@@ -117,4 +117,31 @@ test('la voz va a la APK, limpia y en es|en; sin voz en la APK dice «falta»', 
   } finally { apk.cerrar(); }
 });
 
+test('el consejo y el resumen que manda la app (3.62.0): solo la app los escribe, la APK los lee, y llegan como texto plano', async () => {
+  const apk = await apkDePega();
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-consejo-'));
+  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1' });
+  const puerto = servidor.address().port;
+  const mandar = (cuerpo, { origen = 'https://srchipiron.github.io' } = {}) => new Promise((r, x) => {
+    const q = request({ host: '127.0.0.1', port: puerto, path: '/consejo', method: 'POST', headers: { Host: `192.168.68.116:${puerto}`, 'X-Lector-Codigo': CODIGO, 'Content-Type': 'application/json', ...(origen ? { Origin: origen } : {}) } }, (res) => { res.resume(); res.on('end', () => r(res.statusCode)); });
+    q.on('error', x); q.end(JSON.stringify(cuerpo));
+  });
+  // Lo que lee la APK: desde 127.0.0.1, sin Origin y con el código.
+  const leerApk = async () => JSON.parse((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
+  try {
+    eq(JSON.stringify(await leerApk()), JSON.stringify({ consejo: null, resumen: null }));
+    eq(await mandar({ consejo: { titulo: 'Khufra 54%\u0007', detalle: 'nº2 Atlas · nº3 Franco' } }), 200);
+    eq(JSON.stringify((await leerApk()).consejo), JSON.stringify({ titulo: 'Khufra 54%', detalle: 'nº2 Atlas · nº3 Franco' }), 'el consejo no llega limpio');
+    eq(await mandar({ consejo: { titulo: 'x' } }, { origen: null }), 403, 'sin la app se escribe el consejo');
+    eq(await mandar({ resumen: { id: 'p-1', titulo: 'Ganada con Khufra', texto: 'Era tu nº1 (54%).' } }), 200);
+    eq((await leerApk()).resumen?.id, 'p-1', 'el resumen no llega');
+    await mandar({ resumen: { id: '../x', titulo: 'a', texto: 'b' } });
+    eq((await leerApk()).resumen?.id, 'p-1', 'un resumen con un id raro pisa al bueno');
+    eq((await leerApk()).consejo?.titulo, 'Khufra 54%', 'mandar solo el resumen borra el consejo');
+    await mandar({ consejo: null });
+    eq((await leerApk()).consejo, null, 'el consejo no se borra');
+    eq((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: null, codigo: null })).estado, 401, 'el consejo se lee sin el código');
+  } finally { servidor.close(); apk.cerrar(); }
+});
+
 await terminar('scripts/en-tablet');

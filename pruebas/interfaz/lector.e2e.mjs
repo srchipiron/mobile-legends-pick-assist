@@ -87,6 +87,9 @@ await prueba('el enlace del QR de la tablet vincula la app: lee de la tablet con
   for (let i = 0; i < 60 && !vistas.some((v) => v.camino === '/leer'); i++) await pagina.waitForTimeout(250);
   ok(vistas.some((v) => v.camino === '/leer'), 'vinculada por el QR no lee sola de la tablet');
   ok(vistas.every((v) => v.codigo === 'ABCDEFGH23'), `alguna petición a la tablet va sin el código: ${JSON.stringify(vistas)}`);
+  // Y la burbuja de la tablet recibe tu nº1 (3.62.0).
+  for (let i = 0; i < 40 && !vistas.some((v) => v.camino === '/consejo'); i++) await pagina.waitForTimeout(250);
+  ok(vistas.some((v) => v.camino === '/consejo'), 'la app no manda el consejo a la tablet');
   eq(await pagina.evaluate(() => window.location.hash), '', 'el enlace con el código se queda en la barra de direcciones');
   eq(JSON.stringify(await leer(pagina, 'roam-picker:lector-tablet')), JSON.stringify({ direccion: '192.168.68.116:47323', codigo: 'ABCDEFGH23' }), 'la vinculación no se guarda');
   eq(await leer(pagina, 'roam-picker:lector-auto'), true, 'vincular no enciende «Leer solo»');

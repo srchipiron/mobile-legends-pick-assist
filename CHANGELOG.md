@@ -8,6 +8,19 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.62.0
+
+- Tu nº1 sale en la tablet, encima del juego. Una burbuja pequeña con tu
+  pick y los dos siguientes, que se pone al día sola mientras metes el
+  draft: ya no hace falta mirar el móvil. No se puede tocar (los toques
+  pasan al juego) y en «Lector MLBB» eliges dónde va, o quitarla. La
+  primera vez hay que darle el permiso de mostrarse sobre otras apps.
+- Al apuntar cada partida, la tablet te avisa con un resumen: con quién
+  jugaste, si era el nº1, qué os daba el modelo y cómo vas en las últimas.
+- «Lector MLBB» se actualiza sola: si hay una versión nueva sale un botón
+  «Actualizar», y Android te pide confirmar. Se acabó descargarla a mano.
+  Esta vez todavía hay que instalarla a mano; desde aquí, ya no.
+
 ## 3.61.5
 
 - «Lector MLBB» dice por qué se cerró la última vez: si Android la cerró

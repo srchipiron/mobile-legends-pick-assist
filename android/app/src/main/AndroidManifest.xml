@@ -9,6 +9,10 @@
   - ACCESS_NETWORK_STATE: saber la IP de la tablet para enseñarla.
   - REQUEST_IGNORE_BATTERY_OPTIMIZATIONS: pedir (con un botón, y Android
     pregunta) que el ahorro de batería no la cierre con el juego delante.
+  - SYSTEM_ALERT_WINDOW: la burbuja con tu nº1 sobre el juego (3.62.0). No se
+    puede tocar: los toques pasan al juego.
+  - REQUEST_INSTALL_PACKAGES: actualizarse sola desde GitHub (3.62.0). Android
+    pide confirmar cada vez y solo acepta una versión con la misma firma.
   Nada de accesibilidad, ni de tocar la pantalla, ni de otras apps.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -18,6 +22,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:label="Lector MLBB"
@@ -34,5 +40,6 @@
             android:name=".Lector"
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
+        <receiver android:name=".Instalado" android:exported="false" />
     </application>
 </manifest>

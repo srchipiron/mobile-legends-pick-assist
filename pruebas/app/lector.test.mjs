@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, URL_LECTOR } from '../../src/app/lector.js';
+import { mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, URL_LECTOR } from '../../src/app/lector.js';
 import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
@@ -358,6 +358,27 @@ test('el estado del lector para el Diagnóstico: contesta, no está, o no acepta
   eq((await pedirEstadoLector({ pedir: async () => { throw new Error('red'); } })).tipo, 'sinPuente');
   eq((await pedirEstadoLector({ pedir: async () => ({ ok: false, status: 401, json: async () => ({}) }) })).tipo, 'codigo');
   eq((await pedirEstadoLector({ plazoMs: 20, pedir: (u, { signal }) => new Promise((_, x) => signal.addEventListener('abort', () => x(new Error('corte')))) })).tipo, 'plazo');
+});
+
+test('lo que se manda a la tablet (3.62.0): tu pick con los dos siguientes, el resumen de la partida, y nada sin lector en la tablet', async () => {
+  const t = (k, p = {}) => `${k}${Object.keys(p).length ? JSON.stringify(p) : ''}`;
+  const H = (name, p) => ({ heroe: { name }, p });
+  const ranking = [H('Atlas', 0.55), H('Khufra', 0.54), H('Franco', 0.52)];
+  const c = consejoParaLaTablet({ eleccion: ranking[1], ranking }, t);
+  eq(c.titulo, 'Khufra 54%', 'la burbuja no dice tu pick fijado');
+  ok(/Atlas 55%.*Franco 52%/.test(c.detalle), `los siguientes no salen por orden: ${c.detalle}`);
+  eq(consejoParaLaTablet({ eleccion: null, ranking }, t), null);
+  const r = resumenParaLaTablet({ t: 7, pick: 'Khufra', gane: true, recomendados: ['Khufra'], estimacion: 0.54, ultimas: [{ gane: true }, { gane: false }] }, t);
+  eq(r.id, 'partida-7');
+  ok(/ganada/.test(r.titulo) && /eraPrimero/.test(r.texto) && /"p":54/.test(r.texto) && /"g":1/.test(r.texto), `el resumen no cuenta lo que pasó: ${JSON.stringify(r)}`);
+  ok(/otroPrimero.*Atlas/.test(resumenParaLaTablet({ t: 8, pick: 'Khufra', gane: false, recomendados: ['Atlas'] }, t).texto), 'no dice cuál era el nº1');
+  let pedidas = 0;
+  const pedir = async () => { pedidas += 1; return { ok: true }; };
+  ponerLectorEnTablet(null);
+  eq(await mandarALaTablet({ consejo: c }, { pedir }), false);
+  eq(pedidas, 0, 'con el de Termux manda cosas para una tablet que no hay');
+  ponerLectorEnTablet({ direccion: '192.168.68.116', codigo: 'ABCDEFGH23' });
+  try { eq(await mandarALaTablet({ consejo: c }, { pedir }), true); } finally { ponerLectorEnTablet(null); }
 });
 
 await terminar('app/lector');

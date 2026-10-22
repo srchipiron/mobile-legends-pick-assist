@@ -22,7 +22,7 @@ import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
 import { ConfirmarVinculo } from './componentes/LectorTablet.jsx';
-import { pedirLectura, pedirEstadoLector, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
+import { pedirLectura, pedirEstadoLector, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
 import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
@@ -40,6 +40,8 @@ import { Meta } from './componentes/Meta.jsx';
  */
 export default function App() {
   const { t, linea, setLinea, rango, setRango, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto, vozCallada, setVozCallada, lectorTablet, setLectorTablet, vinculoPendiente, confirmarVinculo } = useAjustes();
+  // `t` es también el instante de una partida dentro de guardarPartida: allí se traduce con este.
+  const traducir = t;
   const carga = useDatos(rango);
   const { datos, meta, metaListo, pro, error, generado, edadHoras, edadMatrizHoras, sinWinrates } = carga;
   const draft = useDraft();
@@ -217,6 +219,9 @@ export default function App() {
       // Sin los ids de sus capturas, que son del móvil.
       ...(draft.lectura ? { lector: { baneos: draft.lectura.baneos, enemigos: draft.lectura.enemigos, ...(draft.lectura.aliados ? { aliados: draft.lectura.aliados } : {}), ...(draft.lectura.tuyo ? { tuyo: draft.lectura.tuyo } : {}), ...(draft.lectura.dudas ? { dudas: draft.lectura.dudas } : {}), ...(draft.lectura.aprendizaje ? { aprendizaje: draft.lectura.aprendizaje } : {}), ...(draft.lectura.ms ? { ms: draft.lectura.ms } : {}), ...(draft.lectura.msCaptura ? { msCaptura: draft.lectura.msCaptura } : {}), ...(draft.lectura.formatos ? { formatos: draft.lectura.formatos } : {}) } } : {}),
     });
+    // Y a la tablet, el resumen para su notificación (3.62.0): con quién, si era el consejo y cómo vas.
+    const ultimas = [{ gane }, ...personal.partidas.filter((p) => !p.previa).slice(0, 19)];
+    mandarALaTablet({ resumen: resumenParaLaTablet({ t: t ?? Date.now(), pick, gane, recomendados: rec.ranking.slice(0, 3).map((r) => r.heroe.name), estimacion: est?.p ?? null, ultimas }, traducir) });
     // Y al lector, lo que había de verdad, para que aprenda (3.27.0).
     // `tuyo` solo si es un hecho (3.60.4): apuntada sola sin pick fijado, el
     // pick es el nº1 SUPUESTO, y el lector aprendía tu cara con ese nombre.
@@ -450,6 +455,17 @@ export default function App() {
       leyendoAhora.current = false;
     }
   };
+
+  // La burbuja de la tablet (3.62.0): tu pick y los dos siguientes, cada vez
+  // que cambian. Solo con el lector en la tablet; si no llega, el siguiente
+  // cambio lo vuelve a mandar.
+  const consejoTablet = lectorTablet ? consejoParaLaTablet({ eleccion: rec.eleccion, ranking: rec.ranking }, t) : null;
+  const huellaConsejo = consejoTablet ? `${consejoTablet.titulo}|${consejoTablet.detalle}` : '';
+  useEffect(() => {
+    if (!lectorTablet) return;
+    mandarALaTablet({ consejo: consejoTablet });
+    // consejoTablet cambia de objeto en cada render: lo que decide es su huella.
+  }, [huellaConsejo, lectorTablet]);
 
   // Leyendo solo (3.28.0): mientras el draft no esté completo, la app a la
   // vista y sin hoja abierta, se pide una lectura cada pocos segundos. Con

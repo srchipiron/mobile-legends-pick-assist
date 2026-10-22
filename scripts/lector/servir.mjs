@@ -352,6 +352,22 @@ export function crearPortero(codigo, { ahora = () => Date.now() } = {}) {
   };
 }
 
+/**
+ * Lo que la app del móvil manda a la tablet (3.62.0): tu nº1 para la
+ * burbuja que la APK pinta sobre el juego, y el resumen de la partida que
+ * se acaba de apuntar, que la APK enseña como notificación. Solo texto
+ * plano, sin caracteres de control y con tope: la APK lo pinta tal cual.
+ */
+const textoPlano = (x, tope) => (typeof x === 'string' && limpiarTexto(x) ? limpiarTexto(x).slice(0, tope) : null);
+export function sanearConsejo(c) {
+  const titulo = textoPlano(c?.titulo, 80);
+  return titulo ? { titulo, detalle: textoPlano(c?.detalle, 160) } : null;
+}
+export function sanearResumen(r) {
+  const titulo = textoPlano(r?.titulo, 80), texto = textoPlano(r?.texto, 300);
+  return titulo && texto && typeof r?.id === 'string' && /^[\w-]{1,60}$/.test(r.id) ? { id: r.id, titulo, texto } : null;
+}
+
 export const origenPermitido = (o) => !!o && (ORIGENES.includes(o) || /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(o));
 
 export { leerCaptura };
@@ -421,6 +437,8 @@ export function lectorEnHilos({ caras, registrar = () => {}, tarea = new URL('le
 export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux, codigo = null, estadoExtra = null }) {
   // En la tablet (3.61.0) escucha en la wifi: con código, y aceptando su IP como `Host`.
   const portero = codigo ? crearPortero(codigo, { ahora }) : null;
+  // Lo último que mandó la app para la tablet (3.62.0): en memoria, se pierde al reiniciar (la app lo vuelve a mandar).
+  let consejoActual = null, resumenActual = null;
   // Lo que no se pida, como siempre (las pruebas encogen solo algunos plazos).
   const vigilancia = { ...VIGILANCIA, ...vigilanciaPedida };
   // Las lecturas, en tres hilos a la vez (3.39.0); `enHilos: false` las hace aquí.
@@ -748,6 +766,21 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       if (callada !== cuerpo.callar) registrar(cuerpo.callar ? 'Voz callada desde la app: no digo nada más hasta que la vuelvas a activar.' : 'Voz activada desde la app.');
       callada = cuerpo.callar;
       res.writeHead(200, cabeceras).end(JSON.stringify({ callada }));
+      return;
+    }
+    if (req.method === 'POST' && ruta === '/consejo') {
+      // La app manda tu nº1 y el resumen de la partida (3.62.0). Solo la app.
+      if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
+      const cuerpo = await leerCuerpo(req);
+      if (!cuerpo || typeof cuerpo !== 'object') { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'cuerpo' })); return; }
+      if ('consejo' in cuerpo) consejoActual = sanearConsejo(cuerpo.consejo);
+      if ('resumen' in cuerpo) resumenActual = sanearResumen(cuerpo.resumen) ?? resumenActual;
+      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true }));
+      return;
+    }
+    if (req.method === 'GET' && ruta === '/consejo') {
+      // Lo lee la APK de la tablet (3.62.0) para la burbuja y la notificación: sin `Origin`, desde 127.0.0.1 y con el código.
+      res.writeHead(200, cabeceras).end(JSON.stringify({ consejo: consejoActual, resumen: resumenActual }));
       return;
     }
     if (req.method === 'GET' && ruta === '/final') {

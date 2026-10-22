@@ -21,6 +21,7 @@ import android.widget.TextView
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import java.net.Inet4Address
+import kotlin.concurrent.thread
 
 /**
  * La pantalla de la app en la tablet: un botón para empezar a leer, la
@@ -39,6 +40,10 @@ class Principal : Activity() {
     private lateinit var qr: ImageView
     private lateinit var boton: Button
     private lateinit var bateria: Button
+    private lateinit var permisoBurbuja: Button
+    private lateinit var esquinaBurbuja: Button
+    private lateinit var actualizar: Button
+    @Volatile private var nueva: Actualizar.Nueva? = null
     private lateinit var registro: TextView
     private val reloj = Handler(Looper.getMainLooper())
     private var qrDe: String? = null
@@ -69,6 +74,17 @@ class Principal : Activity() {
             }
         }
         columna.addView(bateria)
+        // La burbuja sobre el juego (3.62.0): el permiso, y en qué esquina va (o ninguna).
+        permisoBurbuja = Button(this).apply {
+            text = "Permitir la burbuja sobre el juego"
+            setOnClickListener { startActivity(Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:$packageName"))) }
+        }
+        columna.addView(permisoBurbuja)
+        esquinaBurbuja = Button(this).apply { setOnClickListener { Burbuja.siguienteEsquina(this@Principal); refrescar() } }
+        columna.addView(esquinaBurbuja)
+        // Actualizarse sola (3.62.0): sale solo si hay una versión más nueva publicada.
+        actualizar = Button(this).apply { visibility = android.view.View.GONE; setOnClickListener { instalarNueva() } }
+        columna.addView(actualizar)
         vinculo = texto(18f).apply { typeface = Typeface.MONOSPACE }.also { columna.addView(it) }
         qr = ImageView(this).apply { adjustViewBounds = true }
         columna.addView(qr, LinearLayout.LayoutParams((240 * resources.displayMetrics.density).toInt(), (240 * resources.displayMetrics.density).toInt()).apply { gravity = Gravity.START })
@@ -81,7 +97,21 @@ class Principal : Activity() {
         setContentView(ScrollView(this).apply { addView(columna); setBackgroundColor(Color.BLACK) })
     }
 
-    override fun onResume() { super.onResume(); tic() }
+    override fun onResume() {
+        super.onResume()
+        tic()
+        thread(isDaemon = true) { val n = try { Actualizar.buscar(this) } catch (e: Throwable) { null }; nueva = n; runOnUiThread { refrescar() } }
+    }
+
+    private fun instalarNueva() {
+        val n = nueva ?: return
+        actualizar.isEnabled = false
+        actualizar.text = "Descargando la ${n.version}…"
+        thread(isDaemon = true) {
+            try { Actualizar.instalar(this, n) } catch (e: Throwable) { runOnUiThread { Actualizar.enNavegador(this) } }
+            runOnUiThread { actualizar.isEnabled = true }
+        }
+    }
     override fun onPause() { reloj.removeCallbacksAndMessages(null); super.onPause() }
 
     private fun tic() { refrescar(); reloj.postDelayed({ tic() }, 1000) }
@@ -120,6 +150,9 @@ class Principal : Activity() {
         val salida = ultimaSalida ?: Salidas.ultima(this).also { ultimaSalida = it }
         estado.text = listOfNotNull(Nodo.fallo, Lector.estado, salida, caida?.let { "La última vez se cerró por:\n$it" }).joinToString("\n\n")
         boton.text = if (Lector.grabando) "Parar" else "Empezar a leer"
+        permisoBurbuja.visibility = if (android.provider.Settings.canDrawOverlays(this)) android.view.View.GONE else android.view.View.VISIBLE
+        esquinaBurbuja.text = "Burbuja con tu nº1: ${Burbuja.esquina(this)}"
+        nueva?.let { if (actualizar.isEnabled) { actualizar.text = "Actualizar a la ${it.version}"; actualizar.visibility = android.view.View.VISIBLE } } ?: run { actualizar.visibility = android.view.View.GONE }
         bateria.visibility = if (getSystemService(android.os.PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)) android.view.View.GONE else android.view.View.VISIBLE
         val codigo = Vinculo.codigo(this)
         val dir = ip()
