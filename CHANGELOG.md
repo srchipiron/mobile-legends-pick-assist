@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.63.0
+
+- La tablet manda un parte de salud al proyecto, sin que hagas nada. Con la
+  subida de partidas activada, la app del móvil pregunta a «Lector MLBB»
+  cómo va y lo sube a una incidencia «Salud de la tablet»: uno al día si va
+  bien, y en el acto si algo falla (un cierre por memoria, la grabación
+  parada, capturas que fallan, el ahorro de batería). Así se ve si todo va
+  bien sin pedirte capturas. No lleva ni tu código ni la IP de casa.
+- El Diagnóstico enseña también esa salud: lecturas, fallos, memoria y
+  permisos de la tablet.
+
 ## 3.62.0
 
 - Tu nº1 sale en la tablet, encima del juego. Una burbuja pequeña con tu

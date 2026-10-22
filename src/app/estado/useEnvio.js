@@ -3,7 +3,7 @@ import { CLAVES, leer, guardar } from './almacen.js';
 import { useAhora } from './useAhora.js';
 import { recogerPerfil, exportarPerfil } from '../../motor/perfil.js';
 import { subirIncidencia, comentarIncidencia } from '../github.js';
-import { huellaDe, sanearEnvio, tocaSubir, encolarAparte, vaciarCola, paraSubir, ESPERA_MS } from '../envio.js';
+import { huellaDe, sanearEnvio, tocaSubir, tocaParte, encolarAparte, vaciarCola, paraSubir, ESPERA_MS } from '../envio.js';
 
 /**
  * La subida automática de tus partidas (3.10.0). Con un token de GitHub
@@ -78,6 +78,26 @@ export function useEnvio({ perfil, t }) {
       subiendoCola.current = false;
     }
   }, []);
+  /**
+   * El parte de salud de la tablet (3.63.0): a SU incidencia (etiqueta
+   * `tablet`), creada la primera vez y comentada después, cuando toca
+   * (`tocaParte`). El token no sale de aquí.
+   */
+  const subirParte = useCallback(async (parte) => {
+    const { estado: e } = ultimo.current;
+    if (!tocaParte(e, parte, { ahora: Date.now() })) return null;
+    cambiar({ tabletCuando: Date.now(), tabletHuella: parte.huella });
+    let numero = e.tablet;
+    if (!numero) {
+      const r = await subirIncidencia({ numero: null, titulo: 'Salud de la tablet (Lector MLBB)', cuerpo: 'Partes automáticos de la app del móvil sobre el lector de la tablet: uno al día, y en el acto si algo va mal.', etiquetas: ['tablet'] }, e.token);
+      if (r.error) { cambiar({ tabletCuando: null, tabletHuella: null }); return r; }
+      numero = r.numero; cambiar({ tablet: numero });
+    }
+    const r = await comentarIncidencia({ numero, cuerpo: parte.texto }, e.token);
+    if (r.error) cambiar({ tabletCuando: null, tabletHuella: null, ...(r.error === 'noExiste' ? { tablet: null } : {}) });
+    return r;
+  }, [cambiar]);
+
   const subirAparte = useCallback((envio) => {
     cola.current = encolarAparte(cola.current, envio);
     return vaciar();
@@ -110,6 +130,6 @@ export function useEnvio({ perfil, t }) {
   const pendiente = !!estado.token && (perfil.partidas?.length ?? 0) > 0 && huella !== estado.huella;
   return {
     activo: !!estado.token, incidencia: estado.incidencia, url: estado.url, cuando: estado.cuando, error: estado.error,
-    enCurso, pendiente, enviar, guardarToken, subirAparte,
+    enCurso, pendiente, enviar, guardarToken, subirAparte, subirParte,
   };
 }

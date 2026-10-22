@@ -75,6 +75,8 @@ class Lector : Service() {
     override fun onCreate() {
         super.onCreate()
         voz = TextToSpeech(this) { s -> vozLista = s == TextToSpeech.SUCCESS }
+        // La salud de la tablet (3.63.0): cada 15 s, para que el lector la cuente y la app del móvil la suba.
+        thread(isDaemon = true, name = "salud") { while (true) { try { escribirSalud() } catch (e: Throwable) {}; Thread.sleep(15000) } }
         Interno.decir = ::decir
         val puerto = Interno.arrancar()
         if (Nodo.fallo != null) { estado = Nodo.fallo!!; return }
@@ -154,6 +156,26 @@ class Lector : Service() {
         proyeccion?.stop(); proyeccion = null
         hiloImagenes?.quitSafely(); hiloImagenes = null
         if (estado.startsWith("Grabando")) estado = "Parado"
+    }
+
+    private fun escribirSalud() {
+        val am = getSystemService(android.app.ActivityManager::class.java)
+        val mem = android.app.ActivityManager.MemoryInfo().also { am.getMemoryInfo(it) }
+        val j = org.json.JSONObject()
+            .put("apk", packageManager.getPackageInfo(packageName, 0).versionName ?: "?")
+            .put("modelo", "${Build.MANUFACTURER} ${Build.MODEL}")
+            .put("android", Build.VERSION.SDK_INT)
+            .put("grabando", grabando)
+            .put("burbuja", android.provider.Settings.canDrawOverlays(this))
+            .put("esquina", Burbuja.esquina(this))
+            .put("bateriaLibre", getSystemService(android.os.PowerManager::class.java).isIgnoringBatteryOptimizations(packageName))
+            .put("memoriaLibreMB", mem.availMem / 1_000_000)
+            .put("memoriaBaja", mem.lowMemory)
+            .put("memoriaAppMB", android.os.Debug.getPss() / 1000)
+            .put("cuando", System.currentTimeMillis())
+        val tmp = java.io.File(filesDir, "salud.json.tmp")
+        tmp.writeText(j.toString())
+        tmp.renameTo(java.io.File(filesDir, "salud.json"))
     }
 
     /** La captura como la da `screencap` sin -p: 16 bytes de cabecera (ancho, alto, RGBA_8888, espacio de color) y los píxeles. */

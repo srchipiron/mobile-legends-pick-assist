@@ -3,7 +3,7 @@
  * cuándo toca y que lo guardado no pueda reventar la app.
  */
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { huellaDe, sanearEnvio, tocaSubir, encolarAparte, vaciarCola, paraSubir, PARTIDAS_POR_ENVIO, MAX_APARTE, ESPERA_MS, REINTENTO_MS } from '../../src/app/envio.js';
+import { tocaParte, PARTE_CADA_MS, PARTE_MINIMO_MS, huellaDe, sanearEnvio, tocaSubir, encolarAparte, vaciarCola, paraSubir, PARTIDAS_POR_ENVIO, MAX_APARTE, ESPERA_MS, REINTENTO_MS } from '../../src/app/envio.js';
 import { recogerPerfil, exportarPerfil, leerPerfil, fundirPerfil } from '../../src/motor/perfil.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -96,6 +96,18 @@ test('lo que se sube cabe en una incidencia aunque haya muchas partidas, y no se
   eq(Math.min(...enviado.map((p) => p.t)), 1.7e12 + (600 - PARTIDAS_POR_ENVIO) * 6e5, 'no van las más recientes');
   // El bot funde con lo que ya tenía: siguen las 600.
   eq(fundirPerfil({ partidas: enviado, mastery: {} }, { partidas: muchas, mastery: {} }).partidas.length, 600, 'al fundir se pierden partidas');
+});
+
+test('el parte de la tablet (3.63.0): uno al día si todo sigue igual, en el acto si cambian los avisos, nunca dos seguidos', () => {
+  const base = { token: 't', tabletCuando: 1_000_000, tabletHuella: 'v|a|' };
+  const parte = (huella) => ({ huella, texto: 'x' });
+  ok(!tocaParte({ ...base, token: null }, parte('otra'), { ahora: 9e12 }), 'sin token sube');
+  ok(tocaParte({ token: 't' }, parte('v|a|'), { ahora: 5 }), 'el primero no sube');
+  ok(!tocaParte(base, parte('v|a|'), { ahora: base.tabletCuando + PARTE_CADA_MS - 1 }), 'sube antes del día sin que cambie nada');
+  ok(tocaParte(base, parte('v|a|'), { ahora: base.tabletCuando + PARTE_CADA_MS }), 'no sube al día');
+  ok(tocaParte(base, parte('v|a|memoria baja'), { ahora: base.tabletCuando + PARTE_MINIMO_MS }), 'con un aviso nuevo no sube en el acto');
+  ok(!tocaParte(base, parte('v|a|memoria baja'), { ahora: base.tabletCuando + PARTE_MINIMO_MS - 1 }), 'un aviso que va y viene sube sin pausa');
+  eq(sanearEnvio({ tablet: 7, tabletHuella: 'h', tabletCuando: 3 }).tablet, 7, 'la incidencia del parte no se guarda');
 });
 
 terminar('app/envio');

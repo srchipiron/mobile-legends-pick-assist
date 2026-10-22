@@ -804,6 +804,22 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   de Kotlin solo se compila aquí. Sin medir: si la burbuja molesta en algún
   momento del draft o de la partida, y si el juego la tolera (como con la
   depuración, no hay constancia de que mire las superposiciones).
+- **El parte de salud de la tablet (3.63.0)**, pedido por Javi («algún
+  diagnóstico que te pueda llegar directamente»): la APK escribe cada 15 s
+  `salud.json` (versión, modelo, si graba, permisos de burbuja y batería,
+  memoria libre y la suya); el lector lo lee con campos y tipos fijos
+  (`leerSaludDeLaApk`) y lo añade a `/estado` con sus contadores (`lector`:
+  minutos, lecturas, capturas fallidas y la última, memoria de Node). La
+  app del móvil lo pide cada 10 min y, con la subida activada, lo sube a
+  SU incidencia (etiqueta `tablet`, «Salud de la tablet»; `subirParte` en
+  useEnvio, con el token de siempre, que no sale de ahí): uno al día si
+  todo va igual (`PARTE_CADA_MS`) y en el acto si cambian los avisos, nunca
+  dos en `PARTE_MINIMO_MS` (`tocaParte`). `parteDeLaTablet` escribe los
+  avisos (cierre que no sea una actualización o tuyo, sin grabar, ahorro
+  de batería, memoria baja, más del 20% de capturas fallidas, la APK sin
+  señales en 5 min) y quita cualquier IP. Para mirar cómo va: la incidencia
+  con la etiqueta `tablet` del repositorio. Pruebas en `en-tablet.test`,
+  `app/lector.test`, `app/envio.test` y `diagnostico.test`; siete mutaciones.
 - Lo que NO hace, a propósito: aprender a ciegas por orden (asignar el
   enemigo N al hueco N sin encontrarlo): un recorte mal etiquetado
   enseña a confundir a dos héroes para siempre. Si en la tablet de Javi el

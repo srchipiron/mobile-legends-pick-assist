@@ -444,6 +444,9 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   // Las lecturas, en tres hilos a la vez (3.39.0); `enHilos: false` las hace aquí.
   const lector = enHilos ? lectorEnHilos({ caras, registrar }) : null;
   let n = 0, aprendiendo = null;
+  // La salud del lector (3.63.0): cuántas lecturas, cuántas capturas fallaron y la última, desde que arrancó.
+  const arranque = ahora();
+  const salud = { lecturas: 0, fallosCaptura: 0, ultimoFallo: null };
   resultados = resultados ?? plantillasDeSerie();
   /** Guarda una captura y borra las que ya no hacen falta (3.34.0). */
   const podar = () => { if (carpeta) podarCapturas(carpeta, { ahora: ahora(), maximos, proteger: new Set((final?.fotogramas ?? []).map((f) => f.id)) }); };
@@ -744,7 +747,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     }
     const ruta = new URL(req.url, 'http://127.0.0.1').pathname;
     if (req.method === 'GET' && ruta === '/estado') {
-      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, version: VERSION_PUENTE, aprendido: { capturas: aprendido?.capturas ?? 0, caras: Object.keys(aprendido?.caras ?? {}).length, aliados: Object.keys(aprendido?.aliados ?? {}).length, picks: !!aprendido?.picks }, resultados: { gane: resultados.gane.length, perdi: resultados.perdi.length, tablas: resultados.tablas.length }, ...(estadoExtra ?? {}) }));
+      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, version: VERSION_PUENTE, aprendido: { capturas: aprendido?.capturas ?? 0, caras: Object.keys(aprendido?.caras ?? {}).length, aliados: Object.keys(aprendido?.aliados ?? {}).length, picks: !!aprendido?.picks }, resultados: { gane: resultados.gane.length, perdi: resultados.perdi.length, tablas: resultados.tablas.length }, lector: { minutos: Math.round((ahora() - arranque) / 60000), ...salud, memoriaMB: Math.round(process.memoryUsage().rss / 1e6) }, ...(typeof estadoExtra === 'function' ? estadoExtra() : estadoExtra ?? {}) }));
       return;
     }
     if (req.method === 'POST' && ruta === '/vigilar') {
@@ -839,6 +842,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       const t0 = Date.now();
       // El instante de la lectura en el reloj de la vigilancia (inyectable en las pruebas).
       const tLeida = ahora();
+      salud.lecturas += 1;
       // Comprimida o no (3.45.0, `crearElectorDeCaptura`); sin elector, comprimida como siempre.
       let formato = elector?.siguiente() ?? 'png', png = null, crudo = null, tFormato = t0, t1;
       try {
@@ -857,6 +861,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
         if (formato === 'png' && !png) png = await capturar();
       } catch (e) {
         registrar(`No se pudo hacer la captura: ${String(e.message).split('\n')[0]}`);
+        salud.fallosCaptura += 1;
+        salud.ultimoFallo = { cuando: ahora(), que: String(e.message).split('\n')[0].slice(0, 160) };
         res.writeHead(502, cabeceras).end(JSON.stringify({ error: FALLOS_DE_CAPTURA.includes(e?.tipo) ? e.tipo : 'captura' }));
         return;
       }

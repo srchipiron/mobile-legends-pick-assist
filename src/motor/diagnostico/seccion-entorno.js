@@ -44,6 +44,10 @@ export function seccionEntorno(inf, entorno = {}) {
         true);
       // Por qué se cerró la app de la tablet la última vez (3.61.5): «se cierra sola» tiene varias causas.
       if (lec.estado.salida) inf.linea(`Tablet: ${lec.estado.salida.replace(/\n/g, ' · ')}`);
+      // Lo que cuentan el lector y la APK de sí mismos (3.63.0).
+      const l = lec.estado.lector, tb = lec.estado.tablet;
+      if (l) inf.linea(`Lector: encendido hace ${l.minutos} min · ${l.lecturas} lecturas · ${l.fallosCaptura} capturas fallidas · ${l.memoriaMB} MB`);
+      if (tb) inf.linea(`Lector MLBB ${tb.apk ?? '?'}: grabando ${tb.grabando ? 'sí' : 'no'} · burbuja ${tb.burbuja ? 'sí' : 'sin permiso'} · ahorro de batería ${tb.bateriaLibre ? 'quitado' : 'puesto'} · memoria libre ${tb.memoriaLibreMB ?? '?'} MB${tb.memoriaBaja ? ' (BAJA)' : ''}`);
     }
     if (lec.ultimo) {
       const min = Math.max(0, Math.round((lec.ahora - lec.ultimo.cuando) / 60000));

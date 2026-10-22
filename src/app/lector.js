@@ -173,7 +173,8 @@ export async function pedirEstadoLector({ base = baseLector(), plazoMs = 3000, p
     let cuerpo = null;
     try { cuerpo = await r.json(); } catch { /* vacío */ }
     if (!r.ok) return { ok: false, tipo: falloDe(r, cuerpo) };
-    return { ok: true, aprendido: cuerpo?.aprendido ?? null, resultados: cuerpo?.resultados ?? null, salida: typeof cuerpo?.salida === 'string' ? cuerpo.salida.slice(0, 500) : null };
+    const objeto = (x) => (x && typeof x === 'object' && !Array.isArray(x) ? x : null);
+    return { ok: true, aprendido: cuerpo?.aprendido ?? null, resultados: cuerpo?.resultados ?? null, salida: typeof cuerpo?.salida === 'string' ? cuerpo.salida.slice(0, 500) : null, lector: objeto(cuerpo?.lector), tablet: objeto(cuerpo?.tablet) };
   } catch {
     return { ok: false, tipo: corte.signal.aborted ? 'plazo' : 'sinPuente' };
   } finally { clearTimeout(reloj); }
@@ -346,6 +347,36 @@ export async function callarVoz({ callar, base = baseLector(), plazoMs = PLAZO_L
   } finally {
     clearTimeout(reloj);
   }
+}
+
+/**
+ * El parte de salud de la tablet (3.63.0), para la incidencia «tablet» del
+ * proyecto: así quien mantiene la app ve si todo va bien sin pedirle a Javi
+ * capturas. Solo texto de estado: ni el código de vinculación ni la IP.
+ * `avisos` dice lo que no va bien; con alguno, el parte sube en el acto.
+ */
+export function parteDeLaTablet(estado, { version = '', ahora = Date.now() } = {}) {
+  if (!estado?.ok) return null;
+  const l = estado.lector ?? {}, tb = estado.tablet ?? {};
+  const avisos = [];
+  if (estado.salida && !/se actualizó|la cerraste tú|forzaste/.test(estado.salida)) avisos.push(estado.salida.split('\n')[0]);
+  if (tb.grabando === false) avisos.push('la tablet no está grabando la pantalla');
+  if (tb.bateriaLibre === false) avisos.push('el ahorro de batería puede cerrarla');
+  if (tb.memoriaBaja) avisos.push(`memoria baja en la tablet (${tb.memoriaLibreMB} MB libres)`);
+  if (l.lecturas >= 10 && l.fallosCaptura / l.lecturas > 0.2) avisos.push(`fallan ${l.fallosCaptura} de ${l.lecturas} capturas`);
+  if (Number.isFinite(tb.cuando) && ahora - tb.cuando > 5 * 60000) avisos.push('la app de la tablet no da señales desde hace más de 5 min');
+  const filas = [
+    `Versión de la app: ${version} · de Lector MLBB: ${tb.apk ?? '?'} · ${tb.modelo ?? '?'} (Android API ${tb.android ?? '?'})`,
+    `Lector: encendido hace ${l.minutos ?? '?'} min · ${l.lecturas ?? '?'} lecturas · ${l.fallosCaptura ?? '?'} capturas fallidas${l.ultimoFallo ? ` (la última: «${l.ultimoFallo.que}»)` : ''} · Node ${l.memoriaMB ?? '?'} MB`,
+    `Tablet: grabando ${tb.grabando ? 'sí' : 'no'} · burbuja ${tb.burbuja ? `sí (${tb.esquina})` : 'sin permiso'} · ahorro de batería ${tb.bateriaLibre ? 'quitado' : 'puesto'} · memoria libre ${tb.memoriaLibreMB ?? '?'} MB${tb.memoriaBaja ? ' (BAJA)' : ''} · la app usa ${tb.memoriaAppMB ?? '?'} MB`,
+    `Aprendido: ${estado.aprendido?.capturas ?? 0} capturas, ${estado.aprendido?.caras ?? 0} caras de rivales, ${estado.aprendido?.aliados ?? 0} de tu equipo`,
+    ...(estado.salida ? [`Último cierre: ${estado.salida.replace(/\n/g, ' · ')}`] : []),
+  ];
+  // Va a una incidencia pública: ninguna dirección de la casa, aunque venga dentro de un mensaje de error.
+  const sinIp = (x) => x.replace(/\b\d{1,3}(\.\d{1,3}){3}(:\d+)?\b/g, '(IP)');
+  const texto = sinIp(`${avisos.length ? `**Avisos:** ${avisos.join('; ')}` : '**Todo bien.**'}\n\n${filas.map((f) => `- ${f}`).join('\n')}`);
+  // La huella no cuenta lo que cambia solo (minutos, lecturas, memoria): solo si cambian los avisos o la versión, sube antes de tiempo.
+  return { texto, avisos, huella: `${version}|${tb.apk}|${avisos.join('|')}` };
 }
 
 /**

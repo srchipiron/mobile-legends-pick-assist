@@ -16,7 +16,7 @@
  * Variables (las pone la APK): LECTOR_INTERNO (http://127.0.0.1:PUERTO),
  * LECTOR_SECRETO, LECTOR_CODIGO, LECTOR_CASA (carpeta de la app).
  */
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas, PUERTO } from './servir.mjs';
 import { limpiarTexto } from './voz.mjs';
@@ -57,6 +57,21 @@ export function vozDeLaApk(base, secreto, { pedir = fetch } = {}) {
   };
 }
 
+/**
+ * Lo que la APK escribe de la tablet (`salud.json`): solo los campos
+ * conocidos, con su tipo. Un fichero roto o ausente es null.
+ */
+export function leerSaludDeLaApk(fichero) {
+  try {
+    const j = JSON.parse(readFileSync(fichero, 'utf8'));
+    const salida = {};
+    for (const k of ['apk', 'modelo', 'esquina']) if (typeof j[k] === 'string') salida[k] = j[k].slice(0, 60);
+    for (const k of ['android', 'memoriaLibreMB', 'memoriaAppMB', 'cuando']) if (Number.isFinite(j[k])) salida[k] = Math.round(j[k]);
+    for (const k of ['grabando', 'burbuja', 'bateriaLibre', 'memoriaBaja']) if (typeof j[k] === 'boolean') salida[k] = j[k];
+    return Object.keys(salida).length ? salida : null;
+  } catch { return null; }
+}
+
 export async function principal(env = process.env) {
   const registrar = (m) => console.log(m);
   const base = env.LECTOR_INTERNO, secreto = env.LECTOR_SECRETO, codigo = env.LECTOR_CODIGO;
@@ -67,7 +82,8 @@ export async function principal(env = process.env) {
   const servidor = crearServidor({
     capturar: capturaDeLaApk(base, secreto), hablar: vozDeLaApk(base, secreto), codigo,
     // Por qué se cerró la app la última vez (3.61.5, lo dice Android): el Diagnóstico del móvil lo enseña.
-    estadoExtra: { salida: String(env.LECTOR_ULTIMA_SALIDA ?? '').slice(0, 500) || null },
+    // Y lo que la APK sabe de la tablet (3.63.0: versión, si graba, permisos, memoria), que escribe cada pocos segundos.
+    estadoExtra: () => ({ salida: String(env.LECTOR_ULTIMA_SALIDA ?? '').slice(0, 500) || null, tablet: leerSaludDeLaApk(join(env.LECTOR_CASA || '.', 'salud.json')) }),
     elector: crearElectorDeCaptura(), carpeta, registrar, ...cargarLoAprendido(registrar),
   });
   const puerto = Number(env.LECTOR_PUERTO ?? PUERTO);

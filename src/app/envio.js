@@ -37,6 +37,10 @@ export function sanearEnvio(x) {
     error: texto(o.error),
     intento: num(o.intento),
     huellaIntentada: texto(o.huellaIntentada),
+    // El parte de salud de la tablet (3.63.0): su incidencia y el último que subió.
+    tablet: num(o.tablet),
+    tabletHuella: texto(o.tabletHuella),
+    tabletCuando: num(o.tabletCuando),
   };
 }
 
@@ -51,6 +55,18 @@ export function tocaSubir(estado, huella, { ahora, enLinea = true, partidas = 0 
   if (huella === estado.huella) return false;
   if (estado.error && estado.huellaIntentada === huella && estado.intento && ahora - estado.intento < REINTENTO_MS) return false;
   return true;
+}
+
+/** Cada cuánto sube el parte de la tablet si todo sigue igual: uno al día basta para ver que va. Decisión de producto. */
+export const PARTE_CADA_MS = 24 * 60 * 60 * 1000;
+/** Ni con avisos más de uno cada tanto: un aviso que va y viene no puede llenar la incidencia. Decisión de producto. */
+export const PARTE_MINIMO_MS = 30 * 60 * 1000;
+/** ¿Toca subir el parte? Con token; si cambian los avisos (y hace más de PARTE_MINIMO_MS), o si hace un día del último. */
+export function tocaParte(estado, parte, { ahora }) {
+  if (!estado?.token || !parte) return false;
+  const desde = estado.tabletCuando ? ahora - estado.tabletCuando : Infinity;
+  if (desde < PARTE_MINIMO_MS) return false;
+  return parte.huella !== estado.tabletHuella || desde >= PARTE_CADA_MS;
 }
 
 /**

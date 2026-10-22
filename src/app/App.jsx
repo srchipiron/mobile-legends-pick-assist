@@ -22,7 +22,7 @@ import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
 import { ConfirmarVinculo } from './componentes/LectorTablet.jsx';
-import { pedirLectura, pedirEstadoLector, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
+import { pedirLectura, pedirEstadoLector, parteDeLaTablet, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
 import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
@@ -466,6 +466,22 @@ export default function App() {
     mandarALaTablet({ consejo: consejoTablet });
     // consejoTablet cambia de objeto en cada render: lo que decide es su huella.
   }, [huellaConsejo, lectorTablet]);
+
+  // El parte de salud de la tablet (3.63.0): cada 10 min, con el lector en la
+  // tablet y la subida activada, se le pregunta cómo está y, si toca
+  // (uno al día, o en el acto si algo va mal), se sube a su incidencia.
+  const subirParte = envio.subirParte;
+  useEffect(() => {
+    if (!lectorTablet || !envio.activo) return undefined;
+    const tic = async () => {
+      const estado = await pedirEstadoLector();
+      const parte = parteDeLaTablet(estado, { version: __APP_VERSION__ });
+      if (parte) subirParte(parte);
+    };
+    tic();
+    const reloj = setInterval(tic, 10 * 60 * 1000);
+    return () => clearInterval(reloj);
+  }, [lectorTablet, envio.activo, subirParte]);
 
   // Leyendo solo (3.28.0): mientras el draft no esté completo, la app a la
   // vista y sin hoja abierta, se pide una lectura cada pocos segundos. Con

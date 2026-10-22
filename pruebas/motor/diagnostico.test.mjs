@@ -412,6 +412,8 @@ test('el diagnóstico dice dónde está el lector, si contesta y cómo fue la ú
   eq(caido.avisos(), 1, 'que no conteste no cuenta como aviso');
   const bien = informe({ donde: null, auto: true, estado: { ok: true, aprendido: { capturas: 640, caras: 27, aliados: 8 }, salida: 'Último cierre (hace 3 min): Android la cerró por falta de memoria' }, ultimo: null, ahora: 0 });
   ok(/Tablet: Último cierre .*falta de memoria/.test(bien.lineas.join('\n')), 'no dice por qué se cerró la app de la tablet');
+  const conSalud = informe({ donde: 'x', auto: true, estado: { ok: true, lector: { minutos: 5, lecturas: 12, fallosCaptura: 1, memoriaMB: 200 }, tablet: { apk: '3.63.0', grabando: true, burbuja: false, bateriaLibre: true, memoriaLibreMB: 900, memoriaBaja: true } }, ultimo: null, ahora: 0 }).lineas.join('\n');
+  ok(/12 lecturas · 1 capturas fallidas/.test(conSalud) && /Lector MLBB 3\.63\.0: grabando sí · burbuja sin permiso/.test(conSalud) && /\(BAJA\)/.test(conSalud), `no cuenta la salud de la tablet: ${conSalud}`);
   ok(/el de Termux/.test(bien.lineas.join('\n')) && /aprendido de 640 capturas/.test(bien.lineas.join('\n')), `con el de Termux no lo dice: ${bien.lineas.join('\n')}`);
   eq(bien.avisos(), 0);
   ok(!/Lector/.test(informe(null).lineas.join('\n')), 'sin lector en uso habla del lector');

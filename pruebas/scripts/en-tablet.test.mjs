@@ -9,7 +9,8 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { principal, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido } from '../../scripts/lector/en-tablet.mjs';
+import { principal, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk } from '../../scripts/lector/en-tablet.mjs';
+import { writeFileSync } from 'node:fs';
 import { crearPortero, hostPermitido, FALLOS_CODIGO, VENTANA_CODIGO_MS } from '../../scripts/lector/servir.mjs';
 import { capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
 import { leerPng } from '../../scripts/lector/png.mjs';
@@ -141,6 +142,23 @@ test('el consejo y el resumen que manda la app (3.62.0): solo la app los escribe
     await mandar({ consejo: null });
     eq((await leerApk()).consejo, null, 'el consejo no se borra');
     eq((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: null, codigo: null })).estado, 401, 'el consejo se lee sin el código');
+  } finally { servidor.close(); apk.cerrar(); }
+});
+
+test('la salud de la tablet (3.63.0): /estado cuenta lecturas y fallos, y lo que la APK escribe, solo con campos conocidos', async () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-salud-'));
+  writeFileSync(join(casa, 'salud.json'), JSON.stringify({ apk: '3.63.0', grabando: true, memoriaLibreMB: 1500.7, memoriaBaja: false, raro: '<script>', burbuja: 'sí' }));
+  eq(JSON.stringify(leerSaludDeLaApk(join(casa, 'salud.json'))), JSON.stringify({ apk: '3.63.0', memoriaLibreMB: 1501, grabando: true, memoriaBaja: false }), 'la salud de la APK pasa campos que no conoce o con otro tipo');
+  eq(leerSaludDeLaApk(join(casa, 'no-existe.json')), null);
+  const apk = await apkDePega();
+  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1' });
+  const puerto = servidor.address().port;
+  try {
+    await pedir(puerto, '/leer');
+    const e = JSON.parse((await pedir(puerto, '/estado')).cuerpo);
+    eq(e.lector?.lecturas, 1, `/estado no cuenta las lecturas: ${JSON.stringify(e.lector)}`);
+    ok(Number.isFinite(e.lector?.memoriaMB) && e.lector.memoriaMB > 0, 'no dice la memoria del lector');
+    eq(e.tablet?.apk, '3.63.0', 'no lleva lo que escribió la APK');
   } finally { servidor.close(); apk.cerrar(); }
 });
 
