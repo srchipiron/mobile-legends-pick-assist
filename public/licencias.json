@@ -1,11 +1,6 @@
 {
   "version": 1,
-  "publica": {
-    "kty": "EC",
-    "crv": "P-256",
-    "x": "ZM_Mod30SUw220oeJVn_ai-Rs_mSGDzPdz8YKm_BhJc",
-    "y": "ISf4bM7_f8ZvhKgqVzIvFE2LUg7YI_l7tpr_ntj_718"
-  },
+  "publica": null,
   "exigir": false,
   "revocadas": []
 }
