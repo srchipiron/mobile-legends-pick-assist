@@ -354,7 +354,7 @@ test('el lector en la tablet (3.61.0): solo IP privada y código decente; el enl
 
 test('el estado del lector para el Diagnóstico: contesta, no está, o no acepta el código; nunca lanza (3.61.4)', async () => {
   const bien = await pedirEstadoLector({ pedir: async () => ({ ok: true, status: 200, json: async () => ({ ok: true, aprendido: { capturas: 3, caras: 1, aliados: 0 } }) }) });
-  eq(JSON.stringify(bien), JSON.stringify({ ok: true, aprendido: { capturas: 3, caras: 1, aliados: 0 }, resultados: null }));
+  eq(JSON.stringify(bien), JSON.stringify({ ok: true, aprendido: { capturas: 3, caras: 1, aliados: 0 }, resultados: null, salida: null }));
   eq((await pedirEstadoLector({ pedir: async () => { throw new Error('red'); } })).tipo, 'sinPuente');
   eq((await pedirEstadoLector({ pedir: async () => ({ ok: false, status: 401, json: async () => ({}) }) })).tipo, 'codigo');
   eq((await pedirEstadoLector({ plazoMs: 20, pedir: (u, { signal }) => new Promise((_, x) => signal.addEventListener('abort', () => x(new Error('corte')))) })).tipo, 'plazo');

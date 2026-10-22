@@ -768,7 +768,15 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   (`-DANDROID_STL=c++_shared` en build.gradle.kts; mirar las NEEDED con
   `llvm-readelf -d`). Desde 3.61.1 un fallo al cargar se enseña en la
   pantalla (`Nodo.fallo`) y un cierre deja `fallo.txt`, que la app enseña al
-  volver a abrirla: sin ordenador no hay logcat. Pruebas: `en-tablet.test` (captura y voz solo
+  volver a abrirla: sin ordenador no hay logcat. «Se cierra sola y deja
+  de leer» (22 de octubre de 2026): desde 3.61.5 `Salidas.kt` lee de
+  Android por qué se cerró la última vez (ApplicationExitInfo: memoria,
+  fallo nativo, ahorro de batería…, con los MB que usaba) y si Node se paró
+  (`salida-nodo.txt`); va en la pantalla de la app y, por
+  `LECTOR_ULTIMA_SALIDA` y `estadoExtra`, en el `/estado` que lee el
+  Diagnóstico del móvil. Node con el lector gasta ~200 MB aquí (Node 18,
+  12 lecturas; con hilos o sin ellos casi igual). Hay botón para quitar el
+  ahorro de batería y el ImageReader guarda 2 imágenes, no 3. Pruebas: `en-tablet.test` (captura y voz solo
   de 127.0.0.1, portero, Host, la lectura entera con una APK de pega, ocho
   mutaciones), `app/lector.test` y `lector.e2e` (el enlace del QR vincula,
   lee de la tablet con el código y desvincula). Las pruebas del lector

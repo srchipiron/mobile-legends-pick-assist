@@ -7,6 +7,8 @@
     juego delante (Android pide el permiso de grabar al empezar).
   - POST_NOTIFICATIONS: la notificación fija que Android exige a ese servicio.
   - ACCESS_NETWORK_STATE: saber la IP de la tablet para enseñarla.
+  - REQUEST_IGNORE_BATTERY_OPTIMIZATIONS: pedir (con un botón, y Android
+    pregunta) que el ahorro de batería no la cierre con el juego delante.
   Nada de accesibilidad, ni de tocar la pantalla, ni de otras apps.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -15,6 +17,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
         android:label="Lector MLBB"

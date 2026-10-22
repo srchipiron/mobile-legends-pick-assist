@@ -410,7 +410,8 @@ test('el diagnóstico dice dónde está el lector, si contesta y cómo fue la ú
   ok(/no contesta \(sinPuente\).*QR/.test(texto), 'no dice que la tablet no contesta ni qué hacer');
   ok(/hace 5 min · falló \(sinPuente\)/.test(texto), 'no dice cómo fue la última lectura');
   eq(caido.avisos(), 1, 'que no conteste no cuenta como aviso');
-  const bien = informe({ donde: null, auto: true, estado: { ok: true, aprendido: { capturas: 640, caras: 27, aliados: 8 } }, ultimo: null, ahora: 0 });
+  const bien = informe({ donde: null, auto: true, estado: { ok: true, aprendido: { capturas: 640, caras: 27, aliados: 8 }, salida: 'Último cierre (hace 3 min): Android la cerró por falta de memoria' }, ultimo: null, ahora: 0 });
+  ok(/Tablet: Último cierre .*falta de memoria/.test(bien.lineas.join('\n')), 'no dice por qué se cerró la app de la tablet');
   ok(/el de Termux/.test(bien.lineas.join('\n')) && /aprendido de 640 capturas/.test(bien.lineas.join('\n')), `con el de Termux no lo dice: ${bien.lineas.join('\n')}`);
   eq(bien.avisos(), 0);
   ok(!/Lector/.test(informe(null).lineas.join('\n')), 'sin lector en uso habla del lector');

@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.61.5
+
+- «Lector MLBB» dice por qué se cerró la última vez: si Android la cerró
+  por falta de memoria, por el ahorro de batería o por un fallo del lector.
+  Sale en su pantalla y en el Diagnóstico de la app del móvil.
+- Nuevo botón en la tablet para que el ahorro de batería no la cierre con
+  el juego delante.
+- Gasta algo menos de memoria mientras graba la pantalla.
+
 ## 3.61.4
 
 - El Diagnóstico dice ahora cómo está el lector: si es el de la tablet o el

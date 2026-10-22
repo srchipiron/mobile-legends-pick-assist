@@ -418,7 +418,7 @@ export function lectorEnHilos({ caras, registrar = () => {}, tarea = new URL('le
  * El servidor, con la captura inyectada: en Termux es `capturarTablet`, en
  * las pruebas una captura de fichero.
  */
-export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux, codigo = null }) {
+export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux, codigo = null, estadoExtra = null }) {
   // En la tablet (3.61.0) escucha en la wifi: con código, y aceptando su IP como `Host`.
   const portero = codigo ? crearPortero(codigo, { ahora }) : null;
   // Lo que no se pida, como siempre (las pruebas encogen solo algunos plazos).
@@ -726,7 +726,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     }
     const ruta = new URL(req.url, 'http://127.0.0.1').pathname;
     if (req.method === 'GET' && ruta === '/estado') {
-      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, version: VERSION_PUENTE, aprendido: { capturas: aprendido?.capturas ?? 0, caras: Object.keys(aprendido?.caras ?? {}).length, aliados: Object.keys(aprendido?.aliados ?? {}).length, picks: !!aprendido?.picks }, resultados: { gane: resultados.gane.length, perdi: resultados.perdi.length, tablas: resultados.tablas.length } }));
+      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, version: VERSION_PUENTE, aprendido: { capturas: aprendido?.capturas ?? 0, caras: Object.keys(aprendido?.caras ?? {}).length, aliados: Object.keys(aprendido?.aliados ?? {}).length, picks: !!aprendido?.picks }, resultados: { gane: resultados.gane.length, perdi: resultados.perdi.length, tablas: resultados.tablas.length }, ...(estadoExtra ?? {}) }));
       return;
     }
     if (req.method === 'POST' && ruta === '/vigilar') {

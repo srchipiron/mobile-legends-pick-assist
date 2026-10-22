@@ -79,7 +79,7 @@ test('el Host en la tablet: IP privada tal cual, nunca un nombre', () => {
 test('el lector en la tablet: lee con la captura de la APK y solo con el código, desde la app y con su IP', async () => {
   const apk = await apkDePega();
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-'));
-  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1' });
+  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_ULTIMA_SALIDA: 'Último cierre (hace 2 min): Android la cerró por falta de memoria' });
   const puerto = servidor.address().port;
   try {
     const leida = await pedir(puerto, '/leer');
@@ -89,6 +89,7 @@ test('el lector en la tablet: lee con la captura de la APK y solo con el código
     // Y en PNG (las pantallas del final): comprimida aquí, se lee igual.
     const comprimida = await capturaDeLaApk(apk.base, SECRETO)();
     eq(JSON.stringify(leerPng(comprimida).ancho), '2400', 'la captura en PNG no sale de la crudo');
+    eq(JSON.parse((await pedir(puerto, '/estado')).cuerpo).salida, 'Último cierre (hace 2 min): Android la cerró por falta de memoria', '/estado no dice por qué se cerró la app la última vez');
     eq((await pedir(puerto, '/estado', { codigo: null })).estado, 401, 'sin código contesta');
     eq((await pedir(puerto, '/estado', { codigo: 'OTRO12345' })).estado, 401, 'con otro código contesta');
     eq((await pedir(puerto, '/estado', { host: 'atacante.example' })).estado, 403, 'contesta con un nombre como Host');

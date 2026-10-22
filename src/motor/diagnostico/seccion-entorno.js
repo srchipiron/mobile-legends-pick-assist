@@ -42,6 +42,8 @@ export function seccionEntorno(inf, entorno = {}) {
         `El lector contesta${a ? ` (aprendido de ${a.capturas} capturas: ${a.caras} caras de rivales, ${a.aliados} de tu equipo)` : ''}`,
         `El lector no contesta (${lec.estado.tipo}): ${lec.donde ? 'abre «Lector MLBB» en la tablet y toca «Empezar a leer»; si cambió de wifi, vuelve a escanear su QR' : 'abre Termux y escribe: lector'}`,
         true);
+      // Por qué se cerró la app de la tablet la última vez (3.61.5): «se cierra sola» tiene varias causas.
+      if (lec.estado.salida) inf.linea(`Tablet: ${lec.estado.salida.replace(/\n/g, ' · ')}`);
     }
     if (lec.ultimo) {
       const min = Math.max(0, Math.round((lec.ahora - lec.ultimo.cuando) / 60000));

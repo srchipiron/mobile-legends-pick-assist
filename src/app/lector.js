@@ -173,7 +173,7 @@ export async function pedirEstadoLector({ base = baseLector(), plazoMs = 3000, p
     let cuerpo = null;
     try { cuerpo = await r.json(); } catch { /* vacío */ }
     if (!r.ok) return { ok: false, tipo: falloDe(r, cuerpo) };
-    return { ok: true, aprendido: cuerpo?.aprendido ?? null, resultados: cuerpo?.resultados ?? null };
+    return { ok: true, aprendido: cuerpo?.aprendido ?? null, resultados: cuerpo?.resultados ?? null, salida: typeof cuerpo?.salida === 'string' ? cuerpo.salida.slice(0, 500) : null };
   } catch {
     return { ok: false, tipo: corte.signal.aborted ? 'plazo' : 'sinPuente' };
   } finally { clearTimeout(reloj); }

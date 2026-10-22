@@ -66,6 +66,8 @@ export async function principal(env = process.env) {
   podarCapturas(carpeta);
   const servidor = crearServidor({
     capturar: capturaDeLaApk(base, secreto), hablar: vozDeLaApk(base, secreto), codigo,
+    // Por qué se cerró la app la última vez (3.61.5, lo dice Android): el Diagnóstico del móvil lo enseña.
+    estadoExtra: { salida: String(env.LECTOR_ULTIMA_SALIDA ?? '').slice(0, 500) || null },
     elector: crearElectorDeCaptura(), carpeta, registrar, ...cargarLoAprendido(registrar),
   });
   const puerto = Number(env.LECTOR_PUERTO ?? PUERTO);

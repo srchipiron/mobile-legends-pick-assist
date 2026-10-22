@@ -38,9 +38,11 @@ class Principal : Activity() {
     private lateinit var vinculo: TextView
     private lateinit var qr: ImageView
     private lateinit var boton: Button
+    private lateinit var bateria: Button
     private lateinit var registro: TextView
     private val reloj = Handler(Looper.getMainLooper())
     private var qrDe: String? = null
+    private var ultimaSalida: String? = null
 
     override fun onCreate(guardado: Bundle?) {
         super.onCreate(guardado)
@@ -58,6 +60,15 @@ class Principal : Activity() {
         estado = texto(16f).also { columna.addView(it) }
         boton = Button(this).apply { textSize = 18f; setOnClickListener { alternar() } }
         columna.addView(boton)
+        // El ahorro de batería puede cerrar la app con el juego delante (3.61.5): se pide quitarlo, una vez.
+        bateria = Button(this).apply {
+            text = "Que el ahorro de batería no la cierre"
+            setOnClickListener {
+                @Suppress("BatteryLife")
+                startActivity(Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, android.net.Uri.parse("package:$packageName")))
+            }
+        }
+        columna.addView(bateria)
         vinculo = texto(18f).apply { typeface = Typeface.MONOSPACE }.also { columna.addView(it) }
         qr = ImageView(this).apply { adjustViewBounds = true }
         columna.addView(qr, LinearLayout.LayoutParams((240 * resources.displayMetrics.density).toInt(), (240 * resources.displayMetrics.density).toInt()).apply { gravity = Gravity.START })
@@ -106,8 +117,10 @@ class Principal : Activity() {
 
     private fun refrescar() {
         val caida = java.io.File(filesDir, "fallo.txt").takeIf { it.exists() }?.readText()?.lines()?.take(6)?.joinToString("\n")
-        estado.text = listOfNotNull(Nodo.fallo, Lector.estado, caida?.let { "La última vez se cerró por:\n$it" }).joinToString("\n\n")
+        val salida = ultimaSalida ?: Salidas.ultima(this).also { ultimaSalida = it }
+        estado.text = listOfNotNull(Nodo.fallo, Lector.estado, salida, caida?.let { "La última vez se cerró por:\n$it" }).joinToString("\n\n")
         boton.text = if (Lector.grabando) "Parar" else "Empezar a leer"
+        bateria.visibility = if (getSystemService(android.os.PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)) android.view.View.GONE else android.view.View.VISIBLE
         val codigo = Vinculo.codigo(this)
         val dir = ip()
         vinculo.text = if (dir == null) "Sin wifi: conecta la tablet a la misma wifi que el móvil." else

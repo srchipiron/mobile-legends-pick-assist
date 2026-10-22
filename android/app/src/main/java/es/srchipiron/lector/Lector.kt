@@ -82,8 +82,10 @@ class Lector : Service() {
             "LECTOR_SECRETO" to Interno.secreto,
             "LECTOR_CODIGO" to Vinculo.codigo(this),
             "LECTOR_CASA" to filesDir.absolutePath,
+            "LECTOR_ULTIMA_SALIDA" to (Salidas.ultima(this) ?: ""),
         )) { codigo ->
             estado = "El lector se ha parado ($codigo). Vuelve a abrir la app."
+            Salidas.apuntarNodo(this, codigo)
             android.os.Process.killProcess(android.os.Process.myPid())
         }
     }
@@ -127,7 +129,7 @@ class Lector : Service() {
             else @Suppress("DEPRECATION") android.util.DisplayMetrics().also { getSystemService(WindowManager::class.java).defaultDisplay.getRealMetrics(it) }.let { it.widthPixels to it.heightPixels }
         val ancho = maxOf(w, h)
         val alto = minOf(w, h)
-        val r = ImageReader.newInstance(ancho, alto, PixelFormat.RGBA_8888, 3)
+        val r = ImageReader.newInstance(ancho, alto, PixelFormat.RGBA_8888, 2)
         r.setOnImageAvailableListener({ lr ->
             val nueva = try { lr.acquireLatestImage() } catch (e: IllegalStateException) { null } ?: return@setOnImageAvailableListener
             synchronized(cerrojo) { ultima?.close(); ultima = nueva }
