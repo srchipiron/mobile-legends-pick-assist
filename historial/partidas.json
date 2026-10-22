@@ -1,6 +1,164 @@
 {
- "actualizado": "2026-10-22T19:37:44.544Z",
+ "actualizado": "2026-10-22T21:56:40.156Z",
  "partidas": [
+  {
+   "t": 1792706184311,
+   "pick": "Gloo",
+   "recomendados": [
+    "Gloo",
+    "Carmilla",
+    "Edith"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.481,
+   "modelo": 3,
+   "bans": [
+    "Marcel",
+    "Hirara",
+    "Masha",
+    "Lukas",
+    "Aulus",
+    "Rafaela",
+    "Belerick"
+   ],
+   "draft": {
+    "enemigos": [
+     "Vexana",
+     "Kaja",
+     "Bruno",
+     "Saber",
+     "Esmeralda"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Sun",
+     "Ling",
+     "Gusion"
+    ],
+    "linea": "roam",
+    "rival": "Kaja"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Hirara",
+     "Masha",
+     "Lukas",
+     "Aulus",
+     "Rafaela",
+     "Belerick"
+    ],
+    "enemigos": [
+     "Vexana",
+     "Kaja",
+     "Bruno",
+     "Saber",
+     "Esmeralda"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Ling",
+     "Gusion"
+    ],
+    "tuyo": "Gloo",
+    "dudas": [
+     {
+      "hueco": "s1",
+      "candidato": "Bane",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Sun",
+      "parecido": 0.78
+     }
+    ],
+    "ms": [
+     1125,
+     1118,
+     1253,
+     1128,
+     1242,
+     1148,
+     1974,
+     1271,
+     1054,
+     1023,
+     1091,
+     1004,
+     1116,
+     1097,
+     956,
+     977,
+     1809,
+     1110,
+     944,
+     1031
+    ],
+    "msCaptura": [
+     83,
+     82,
+     93,
+     82,
+     94,
+     69,
+     795,
+     83,
+     97,
+     91,
+     76,
+     95,
+     79,
+     74,
+     85,
+     90,
+     773,
+     83,
+     74,
+     68
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Esmeralda",
+      "Esmeralda",
+      "Esmeralda"
+     ]
+    }
+   },
+   "duracion": 12.7,
+   "fases": [
+    0.261,
+    0.429,
+    0.514,
+    0.615,
+    0.622,
+    0.634
+   ]
+  },
   {
    "t": 1792693523641,
    "pick": "Floryn",
@@ -22754,6 +22912,12 @@
   },
   {
    "cuando": "2026-10-22T19:37:44.544Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-22T21:56:40.156Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
