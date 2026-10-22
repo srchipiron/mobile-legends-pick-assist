@@ -8,6 +8,21 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.65.1
+
+- La Administración enseña al momento lo que acabas de cambiar. Antes leía
+  la copia de la web, que tarda unos minutos en ponerse al día tras cada
+  cambio: al volver a abrirla veías lo de antes («abierta» después de pedir
+  clave), y un segundo cambio podía deshacer el primero. Ahora lo lee del
+  repositorio con tu token, y cada cambio parte de lo último guardado.
+- Arreglado: «Pedir clave para entrar» borraba tu clave pública y dejaba la
+  app abierta. Tu clave está restaurada; vuelve a pulsar «Pedir clave para
+  entrar» si lo quieres. Si alguna vez faltara la pública, la Administración
+  lo dice y la vuelve a poner sola.
+- Si ya hay una clave de administrador publicada, «Crear» te avisa antes de
+  pisarla: crear otra deja sin valor todas las claves que diste. Lo normal
+  es pegar tu copia de seguridad.
+
 ## 3.65.0
 
 - La app puede ser solo por invitación: decides quién la usa. En Ajustes →

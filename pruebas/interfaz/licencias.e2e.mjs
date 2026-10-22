@@ -14,12 +14,13 @@ const navegador = await abrirNavegador();
 const TOKEN = 'github_pat_PRUEBA_0123456789abcdefghij';
 const LINEA = { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: ['Layla'], allies: [], bans: [], enemyRoam: null, fase: 'picks' } };
 const admin = await crearClaveDeAdministrador();
+const otro = await crearClaveDeAdministrador();
 const buena = await firmarClave({ nombre: 'Lucía', privada: admin.privada });
 const { datos: deBuena } = await comprobarClave(buena, { publica: admin.publica });
 const esperar = async (cond, ms = 9000) => { const fin = Date.now() + ms; while (Date.now() < fin) { if (await cond()) return true; await new Promise((r) => setTimeout(r, 200)); } return cond(); };
 
 /** licencias.json de mentira (el service worker bloqueado: si no, sus peticiones no pasan por aquí). */
-const conLicencias = (licencias) => (p) => p.route(`${url}licencias.json*`, (ruta) => ruta.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(licencias) }));
+const conLicencias = (licencias, retraso = 0) => (p) => p.route(`${url}licencias.json*`, async (ruta) => { if (retraso) await new Promise((r) => setTimeout(r, retraso)); await ruta.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(licencias) }); });
 const EXIGIDA = sanearLicencias({ publica: admin.publica, exigir: true });
 const enLaPuerta = (pagina) => pagina.locator('main.puerta').count().then((n) => n === 1);
 const enLaApp = (pagina) => pagina.locator('.app').count().then((n) => n > 0);
@@ -61,23 +62,38 @@ await prueba('sin clave exigida la app está abierta, y la Administración solo 
   await contexto.close();
 });
 
-await prueba('con el token: crear la clave de administrador publica SOLO la pública, y las claves que da la app las acepta', async () => {
-  const sinNada = sanearLicencias({});
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:envio': { token: TOKEN } }, sinServiceWorker: true, antes: conLicencias(sinNada) });
-  const puestas = [];
+/** El repositorio de mentira: GET da lo que hay AHORA, PUT lo cambia (la API de verdad hace eso). */
+async function simularRepositorio(contexto, inicial) {
+  const repo = { texto: inicial === null ? null : JSON.stringify(inicial), puestas: [] };
   await contexto.route('https://api.github.com/**', async (ruta) => {
     const r = ruta.request();
-    if (r.url().includes('/contents/')) {
-      if (r.method() === 'PUT') puestas.push({ url: r.url(), auth: r.headers().authorization, cuerpo: JSON.parse(r.postData()) });
-      await ruta.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sha: 'abc' }) });
-    } else await ruta.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ number: 7, html_url: 'https://github.com/x/y/issues/7' }) });
+    if (!r.url().includes('/contents/')) { await ruta.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ number: 7, html_url: 'https://github.com/x/y/issues/7' }) }); return; }
+    if (r.method() === 'PUT') {
+      const cuerpo = JSON.parse(r.postData());
+      repo.texto = Buffer.from(cuerpo.content, 'base64').toString('utf8');
+      repo.puestas.push({ url: r.url(), auth: r.headers().authorization, cuerpo, json: JSON.parse(repo.texto) });
+      await ruta.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+    } else if (repo.texto === null) await ruta.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
+    else await ruta.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sha: `s${repo.puestas.length}`, content: Buffer.from(repo.texto).toString('base64') }) });
   });
+  return repo;
+}
+const CON_TOKEN = { ...LINEA, 'roam-picker:envio': { token: TOKEN } };
+const abrirAdministracion = async (pagina) => {
   await abrirAjustes(pagina);
   await pagina.getByRole('button', { name: 'Administración' }).click();
+  await pagina.waitForTimeout(300);
+};
+
+await prueba('con el token: crear la clave de administrador publica SOLO la pública, y las claves que da la app las acepta', async () => {
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: CON_TOKEN, sinServiceWorker: true, antes: conLicencias(sanearLicencias({})) });
+  const repo = await simularRepositorio(contexto, sanearLicencias({}));
+  const puestas = repo.puestas;
+  await abrirAdministracion(pagina);
   await pagina.getByRole('button', { name: 'Crear mi clave de administrador' }).click();
   ok(await esperar(() => puestas.length === 1), `no publica licencias.json: ${await pagina.locator('.sheet-body').textContent()}`);
   ok(puestas[0].url.endsWith('/contents/public/licencias.json') && puestas[0].auth === `Bearer ${TOKEN}`, `publica a otro sitio: ${puestas[0].url}`);
-  const publicado = JSON.parse(Buffer.from(puestas[0].cuerpo.content, 'base64').toString());
+  const publicado = puestas[0].json;
   ok(publicado.publica?.x && publicado.publica.d === undefined, 'publica la parte privada de la clave de administrador');
   ok(!JSON.stringify(puestas[0].cuerpo).includes(TOKEN), 'el token va dentro de lo publicado');
   await pagina.getByRole('textbox', { name: 'Nombre de la persona' }).fill('Lucía');
@@ -86,11 +102,61 @@ await prueba('con el token: crear la clave de administrador publica SOLO la púb
   ok(enlace.includes('#clave='), `no sale el enlace: ${enlace}`);
   const r = await comprobarClave(enlace.split('#clave=')[1], { publica: publicado.publica });
   ok(r.valida && r.datos.nombre === 'Lucía', `la clave dada no vale con la pública publicada: ${JSON.stringify(r)}`);
-  // Revocar publica su id.
+  // Exigir y LUEGO revocar: lo segundo no puede deshacer lo primero.
+  await pagina.getByRole('button', { name: 'Pedir clave para entrar' }).click();
+  ok(await esperar(() => puestas.length === 2), 'exigir no publica');
   await pagina.locator('.admin-lista').getByRole('button', { name: 'Quitar', exact: true }).click();
-  ok(await esperar(() => puestas.length === 2), 'revocar no publica');
-  eq(JSON.parse(Buffer.from(puestas[1].cuerpo.content, 'base64').toString()).revocadas[0], r.datos.id, 'revoca otra cosa');
+  ok(await esperar(() => puestas.length === 3), 'revocar no publica');
+  eq(puestas[2].json.revocadas[0], r.datos.id, 'revoca otra cosa');
+  eq(puestas[2].json.exigir, true, 'revocar deshace «pedir clave»');
+  eq(puestas[2].json.publica.x, publicado.publica.x, 'revocar cambia la clave pública');
   eq(errores.length, 0, `errores: ${errores.join(' | ')}`);
+  await contexto.close();
+});
+
+await prueba('el administrador ve lo que hay en el REPOSITORIO aunque Pages siga con lo de antes, y cada cambio parte de ahí', async () => {
+  // Pages, viejo: abierta. El repositorio: ya exige y tiene una revocada.
+  const enRepo = sanearLicencias({ publica: admin.publica, exigir: true, revocadas: ['viejaaa1'] });
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, {
+    almacen: { ...CON_TOKEN, 'roam-picker:admin': admin }, sinServiceWorker: true, // Pages contesta DESPUÉS que la API: lo viejo no puede pisar lo leído del repositorio.
+    antes: conLicencias(sanearLicencias({ publica: admin.publica }), 1500),
+  });
+  const repo = await simularRepositorio(contexto, enRepo);
+  await pagina.reload({ waitUntil: 'networkidle' });
+  await abrirAdministracion(pagina);
+  ok(await esperar(async () => (await pagina.locator('.sheet-body').textContent()).includes('Sí: quien no tenga')), 'enseña lo de Pages (abierta) y no lo del repositorio');
+  await pagina.getByRole('button', { name: 'Abrir la app a todos' }).click();
+  ok(await esperar(() => repo.puestas.length === 1), 'no publica');
+  eq(repo.puestas[0].json.exigir, false);
+  eq(repo.puestas[0].json.revocadas[0], 'viejaaa1', 'abrir la app pierde las revocadas del repositorio');
+  eq(errores.length, 0, `errores: ${errores.join(' | ')}`);
+  await contexto.close();
+});
+
+await prueba('crear otra clave de administrador cuando ya hay una publicada pide confirmación y, sin ella, no pisa nada', async () => {
+  const enRepo = sanearLicencias({ publica: otro.publica });
+  const { contexto, pagina } = await paginaCon(navegador, url, { almacen: CON_TOKEN, sinServiceWorker: true, antes: conLicencias(enRepo) });
+  const repo = await simularRepositorio(contexto, enRepo);
+  let preguntado = false;
+  pagina.on('dialog', (d) => { preguntado = true; d.dismiss(); });
+  await abrirAdministracion(pagina);
+  await pagina.getByRole('button', { name: 'Crear mi clave de administrador' }).click();
+  ok(await esperar(async () => (await pagina.locator('.sheet-body').textContent()).includes('Ya hay una clave de administrador publicada')), 'no dice que ya hay una');
+  ok(preguntado, 'no pregunta antes de pisar la clave publicada');
+  eq(repo.puestas.length, 0, 'pisa la clave publicada sin confirmar');
+  await contexto.close();
+});
+
+await prueba('si una copia vieja dejó el repositorio sin pública, el administrador la vuelve a poner (lo que pasó en 3.65.0)', async () => {
+  const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { ...CON_TOKEN, 'roam-picker:admin': admin }, sinServiceWorker: true, antes: conLicencias(sanearLicencias({})) });
+  const repo = await simularRepositorio(contexto, sanearLicencias({}));
+  await pagina.reload({ waitUntil: 'networkidle' });
+  await abrirAdministracion(pagina);
+  ok((await pagina.locator('.sheet-body').textContent()).includes('no está publicada'), 'no avisa de que falta la pública');
+  await pagina.getByRole('button', { name: 'Pedir clave para entrar' }).click();
+  ok(await esperar(() => repo.puestas.length === 1), 'no publica');
+  eq(repo.puestas[0].json.publica?.x, admin.publica.x, 'exigir sin pública no la vuelve a poner');
+  eq(repo.puestas[0].json.exigir, true, 'sin pública, «pedir clave» no se queda');
   await contexto.close();
 });
 

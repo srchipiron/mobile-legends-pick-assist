@@ -3,7 +3,7 @@
  * repositorio sale de la dirección de Pages y el cuerpo va codificado.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { repositorioDe, urlDeIncidencia, TOPE_URL, subirIncidencia, comentarIncidencia, escribirFichero, tokenPlausible, API_GITHUB } from '../../src/app/github.js';
+import { repositorioDe, urlDeIncidencia, TOPE_URL, subirIncidencia, comentarIncidencia, escribirFichero, leerFichero, tokenPlausible, API_GITHUB } from '../../src/app/github.js';
 
 test('el repositorio se deduce de la dirección de Pages', () => {
   const pages = repositorioDe({ hostname: 'srchipiron.github.io', pathname: '/mobile-legends-pick-assist/' });
@@ -107,6 +107,26 @@ test('escribirFichero (3.65.0): solo public/*.json, lee el sha y lo manda al esc
   eq((await escribirFichero({ ruta: 'public/licencias.json', contenido: '{}', mensaje: 'm' }, TOKEN, { location: PAGES, fetch: fetchFalso([{ status: 403 }]).fetch })).error, 'permiso');
   eq((await escribirFichero({ ruta: 'public/licencias.json', contenido: '{}', mensaje: 'm' }, TOKEN, { location: PAGES, fetch: fetchFalso([{ status: 200, datos: { sha: 's' } }, { status: 403 }]).fetch })).error, 'permiso');
   eq((await escribirFichero({ ruta: 'public/licencias.json', contenido: '{}', mensaje: 'm' }, TOKEN, { location: PAGES, fetch: fetchFalso([new Error('sin red')]).fetch })).error, 'red');
+});
+
+test('leerFichero y escribirFichero con función (3.65.1): el cambio parte de lo que hay AHORA en el repositorio', async () => {
+  const b64 = (t) => Buffer.from(t).toString('base64').replace(/(.{20})/g, '$1\n');
+  const ahora = '{ "exigir": true, "nombre": "Ñandú" }';
+  const l = fetchFalso([{ status: 200, datos: { sha: 's1', content: b64(ahora) } }]);
+  const leido = await leerFichero({ ruta: 'public/licencias.json' }, TOKEN, { location: PAGES, fetch: l.fetch });
+  eq(leido.contenido, ahora, 'no decodifica lo del repositorio (base64 con saltos, UTF-8)');
+  eq(leido.sha, 's1');
+  eq((await leerFichero({ ruta: 'src/x.json' }, TOKEN, { location: PAGES, fetch: fetchFalso([]).fetch })).error, 'ruta');
+  eq((await leerFichero({ ruta: 'public/licencias.json' }, TOKEN, { location: PAGES, fetch: fetchFalso([{ status: 404 }]).fetch })).contenido, null);
+  const { fetch, pedidas } = fetchFalso([{ status: 200, datos: { sha: 's1', content: b64(ahora) } }, { status: 200, datos: {} }]);
+  let visto;
+  const r = await escribirFichero({ ruta: 'public/licencias.json', contenido: (a) => { visto = a; return a.replace('true', 'false'); }, mensaje: 'm' }, TOKEN, { location: PAGES, fetch });
+  eq(visto, ahora, 'la función no recibe lo que hay en el repositorio');
+  eq(Buffer.from(JSON.parse(pedidas[1].body).content, 'base64').toString('utf8'), ahora.replace('true', 'false'));
+  eq(r.contenido, ahora.replace('true', 'false'));
+  const pisar = fetchFalso([{ status: 200, datos: { sha: 's1', content: b64(ahora) } }]);
+  eq((await escribirFichero({ ruta: 'public/licencias.json', contenido: () => { throw new Error('yaHay'); }, mensaje: 'm' }, TOKEN, { location: PAGES, fetch: pisar.fetch })).error, 'yaHay');
+  eq(pisar.pedidas.length, 1, 'escribe aunque la función se niegue');
 });
 
 await terminar('app/github');

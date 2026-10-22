@@ -1070,3 +1070,13 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   Lección: al cambiar dónde corre algo que aprende, lo aprendido es parte
   de la migración, no un detalle.
 
+- **«Pedir clave para entrar» borró la clave pública (3.65.0)**: la
+  Administración partía de la copia de `licencias.json` de Pages, que tarda
+  minutos en rehacerse. Tras crear la clave de administrador, Pages aún decía
+  `publica: null`. Exigir publicó esa copia con `exigir: true`, y
+  `sanearLicencias` (sin pública no se exige) dejó el repositorio sin pública
+  y abierto. Javi: «lo de administración no funciona». Hoy cada cambio es una
+  función sobre lo que hay AHORA en el repositorio (`escribirFichero` con
+  función), y el administrador lee de la API. Lección: un cambio que se
+  publica parte de la fuente de verdad, nunca de una copia que se refresca
+  sola.

@@ -61,21 +61,43 @@ async function pedir(metodo, ruta, token, cuerpo, fetchImpl) {
   return { error: 'otro', estado: r.status };
 }
 
+const deBase64 = (b64) => new TextDecoder().decode(Uint8Array.from(atob(String(b64).replace(/\s/g, '')), (c) => c.charCodeAt(0)));
+const RUTA_ESCRIBIBLE = /^public\/[\w.-]+\.json$/;
+
+/**
+ * Lee un fichero del repositorio tal como está AHORA en `main` (3.65.1): la
+ * copia de Pages tarda minutos en rehacerse tras cada cambio, y la
+ * administración enseñaba lo de antes. `{ contenido }` (null si no existe) o
+ * `{ error }`. Las mismas rutas que `escribirFichero`.
+ */
+export async function leerFichero({ ruta }, token, { location = globalThis.location, fetch = globalThis.fetch } = {}) {
+  if (!RUTA_ESCRIBIBLE.test(ruta)) return { error: 'ruta' };
+  const { duenno, repo } = repositorioDe(location);
+  const r = await pedir('GET', `/repos/${duenno}/${repo}/contents/${ruta}?ref=main`, token, undefined, fetch);
+  if (r.error === 'noExiste') return { contenido: null, sha: null };
+  if (r.error) return { error: r.error, estado: r.estado };
+  try { return { contenido: deBase64(r.datos?.content ?? ''), sha: r.datos?.sha ?? null }; } catch { return { error: 'otro' }; }
+}
+
 /**
  * Escribe un fichero del repositorio en `main` (3.65.0: `licencias.json`,
  * desde el panel de administración de Javi). Con el token de siempre, que
  * necesita además permiso de «Contents: write»; sin él contesta 'permiso'.
  * Solo rutas fijas que pide el código, nunca una que venga de fuera.
+ * `contenido` puede ser una función del contenido ACTUAL del repositorio
+ * (3.65.1): así un cambio parte de lo último guardado y no de una copia vieja.
  */
 export async function escribirFichero({ ruta, contenido, mensaje }, token, { location = globalThis.location, fetch = globalThis.fetch } = {}) {
-  if (!/^public\/[\w.-]+\.json$/.test(ruta)) return { error: 'ruta' };
+  if (!RUTA_ESCRIBIBLE.test(ruta)) return { error: 'ruta' };
   const { duenno, repo } = repositorioDe(location);
   const base = `/repos/${duenno}/${repo}/contents/${ruta}`;
-  const actual = await pedir('GET', `${base}?ref=main`, token, undefined, fetch);
-  if (actual.error && actual.error !== 'noExiste') return { error: actual.error, estado: actual.estado };
-  const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(contenido)));
-  const r = await pedir('PUT', base, token, { message: mensaje, content: b64, branch: 'main', ...(actual.datos?.sha ? { sha: actual.datos.sha } : {}) }, fetch);
-  return r.error ? { error: r.error, estado: r.estado } : { ok: true };
+  const actual = await leerFichero({ ruta }, token, { location, fetch });
+  if (actual.error) return { error: actual.error, estado: actual.estado };
+  let texto;
+  try { texto = typeof contenido === 'function' ? contenido(actual.contenido) : contenido; } catch (e) { return { error: e?.message === 'yaHay' ? 'yaHay' : 'otro' }; }
+  const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(texto)));
+  const r = await pedir('PUT', base, token, { message: mensaje, content: b64, branch: 'main', ...(actual.sha ? { sha: actual.sha } : {}) }, fetch);
+  return r.error ? { error: r.error, estado: r.estado } : { ok: true, contenido: texto };
 }
 
 /** Un comentario en una incidencia existente. Devuelve { url } o { error }. */

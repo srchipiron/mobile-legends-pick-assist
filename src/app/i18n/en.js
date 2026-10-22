@@ -636,4 +636,8 @@ export default {
   'puerta.motivo.firma': 'That key is not for this app.',
   'puerta.motivo.caducada': 'Your key has expired. Ask for a new one.',
   'puerta.motivo.revocada': 'Your key is no longer valid. Ask for a new one.',
+  'admin.error.yaHay': 'An admin key is already published. If it is yours, paste your backup below.',
+  'admin.pisar': 'An admin key is already published. If you create another, every key you gave will stop working. Create another anyway?',
+  'admin.sinPublica': 'Your public key is not published: the keys you give cannot be checked.',
+  'admin.republicar': 'Publish my key again',
 };

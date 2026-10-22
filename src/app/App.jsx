@@ -124,7 +124,7 @@ export default function App() {
   const envio = useEnvio({ perfil: datosPerfil, t });
   // Las claves de invitación (3.65.0). La administración solo se ve con el
   // token de la subida (el móvil de Javi) o ya con la clave de administrador.
-  const licencia = useLicencia({ escribir: envio.activo ? envio.escribir : null });
+  const licencia = useLicencia({ escribir: envio.activo ? envio.escribir : null, leerRepositorio: envio.activo ? envio.leerDelRepositorio : null });
   const verAdmin = envio.activo || licencia.esAdministrador;
 
   const elegirEnSelector = (h) => {

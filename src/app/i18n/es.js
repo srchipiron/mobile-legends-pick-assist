@@ -653,4 +653,8 @@ export default {
   'puerta.motivo.firma': 'Esa clave no es de esta app.',
   'puerta.motivo.caducada': 'Tu clave ha caducado. Pide una nueva.',
   'puerta.motivo.revocada': 'Tu clave ya no vale. Pide una nueva.',
+  'admin.error.yaHay': 'Ya hay una clave de administrador publicada. Si es tuya, pega abajo tu copia de seguridad.',
+  'admin.pisar': 'Ya hay una clave de administrador publicada. Si creas otra, todas las claves que diste dejarán de valer. ¿Crear otra igualmente?',
+  'admin.sinPublica': 'Tu clave pública no está publicada: las claves que des no se podrán comprobar.',
+  'admin.republicar': 'Volver a publicar mi clave',
 };

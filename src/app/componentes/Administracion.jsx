@@ -16,9 +16,14 @@ export function Administracion({ licencia, onCerrar, t = tPorDefecto }) {
   const [copia, setCopia] = useState('');
   const { licencias, esAdministrador, emitidas } = licencia;
   const revocadas = new Set(licencias?.revocadas ?? []);
-  const resultado = (r, bien) => setAviso(r?.error ? { mal: true, texto: t(`admin.error.${['permiso', 'token', 'sinToken', 'red'].includes(r.error) ? r.error : 'otro'}`) } : { mal: false, texto: bien });
+  const resultado = (r, bien) => setAviso(r?.error ? { mal: true, texto: t(`admin.error.${['permiso', 'token', 'sinToken', 'red', 'yaHay'].includes(r.error) ? r.error : 'otro'}`) } : { mal: false, texto: bien });
 
-  const crear = async () => resultado(await licencia.crearAdministrador(), t('admin.creada'));
+  const crear = async () => {
+    let r = await licencia.crearAdministrador();
+    // Ya hay una publicada: lo normal es restaurar la copia; pisarla deja sin valor las claves dadas.
+    if (r.error === 'yaHay' && window.confirm(t('admin.pisar'))) r = await licencia.crearAdministrador({ forzar: true });
+    resultado(r, t('admin.creada'));
+  };
   const emitir = async () => {
     const r = await licencia.emitir({ nombre, dias: Number(dias) > 0 ? Number(dias) : null });
     if (r.error) { resultado(r); return; }
@@ -47,6 +52,12 @@ export function Administracion({ licencia, onCerrar, t = tPorDefecto }) {
         )}
         {esAdministrador && (
           <>
+            {licencias && !licencias.publica && (
+              <>
+                <p className="nota mal">{t('admin.sinPublica')}</p>
+                <button className="ancho" onClick={async () => resultado(await licencia.republicar(), t('admin.publicado'))}>{t('admin.republicar')}</button>
+              </>
+            )}
             <strong>{t('admin.darClave')}</strong>
             <input className="admin-campo" type="text" value={nombre} maxLength={40} placeholder={t('admin.nombre')} aria-label={t('admin.nombre')} onChange={(e) => setNombre(e.target.value)} />
             <input className="admin-campo" type="text" inputMode="numeric" value={dias} placeholder={t('admin.dias')} aria-label={t('admin.dias')} onChange={(e) => setDias(e.target.value)} />

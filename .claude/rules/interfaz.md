@@ -380,3 +380,19 @@ eligió «controlar quién la usa», sin servidor y licencia no comercial
   privada desde `useLicencia`, la para `sanearLicencias`). En el e2e, la ruta
   de `licencias.json` va con el origen de la app: `**/licencias.json*`
   también atrapaba el PUT a la API de GitHub.
+
+**El administrador lee del repositorio (3.65.1)**. Javi: «lo de
+administración no funciona». Lo publicado llegaba bien al repositorio, pero
+Pages tarda minutos en rehacerse. La Administración leía `licencias.json` de
+Pages, así que al reabrirla enseñaba lo de antes, y el cambio siguiente
+partía de esa copia vieja: revocar después de exigir deshacía el exigir.
+- Con el token, `useLicencia` lee el fichero de la API (`leerFichero`) y eso
+  manda sobre Pages (`delRepositorio`).
+- `escribirFichero` acepta `contenido` como función del contenido ACTUAL:
+  cada cambio es una función sobre lo último guardado, no sobre el estado
+  local.
+- «Crear» con otra pública ya publicada lanza `yaHay` y pide confirmación.
+- `licencias.e2e` simula el repositorio (GET da lo de ahora y PUT lo
+  cambia). Cuatro mutaciones. La de «Pages pisa lo del repositorio»
+  sobrevivía hasta retrasar Pages 1,5 s en la prueba: sin retraso contestaba
+  antes que la API.
