@@ -791,6 +791,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .lector-tablet .empty-state { padding: 0; margin: 0; }
 .lector-tablet input { width: 100%; box-sizing: border-box; min-height: 40px; padding: 8px 12px; border-radius: var(--r-sm); border: 1px solid transparent; background: var(--field); color: var(--text); font-size: 16px; }
 .lector-tablet input:focus { outline: none; border-color: var(--gold); }
+.lector-traer { border-color: rgba(255, 214, 10, 0.55); }
 /* La voz de los consejos en directo no suena (3.44.0): en naranja, que hay que hacer algo. */
 .lector-voz { color: var(--c-balance); }
 

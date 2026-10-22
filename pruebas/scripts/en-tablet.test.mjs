@@ -11,7 +11,10 @@ import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { principal, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk } from '../../scripts/lector/en-tablet.mjs';
 import { writeFileSync } from 'node:fs';
-import { crearPortero, hostPermitido, FALLOS_CODIGO, VENTANA_CODIGO_MS } from '../../scripts/lector/servir.mjs';
+import { crearPortero, hostPermitido, crearServidor, fundirAprendido, FALLOS_CODIGO, VENTANA_CODIGO_MS } from '../../scripts/lector/servir.mjs';
+import { aprenderResultado, reconocerResultado, plantillasIniciales, ZONA_PALABRA } from '../../scripts/lector/resultado.mjs';
+import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
+import { readFileSync as leerFichero } from 'node:fs';
 import { capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
 import { leerPng } from '../../scripts/lector/png.mjs';
 
@@ -160,6 +163,39 @@ test('la salud de la tablet (3.63.0): /estado cuenta lecturas y fallos, y lo que
     ok(Number.isFinite(e.lector?.memoriaMB) && e.lector.memoriaMB > 0, 'no dice la memoria del lector');
     eq(e.tablet?.apk, '3.63.0', 'no lleva lo que escribió la APK');
   } finally { servidor.close(); apk.cerrar(); }
+});
+
+test('lo aprendido en Termux pasa a la tablet (3.64.1): con sus plantillas, la tablet reconoce el final que antes no', async () => {
+  // La tabla de serie es una derrota; una «victoria» de pega: la misma tabla con la palabra cambiada.
+  const derrota = leerPng(leerFichero(new URL('../../scripts/lector/tabla-derrota.png', import.meta.url)));
+  const victoria = { ...derrota, rgba: Uint8Array.from(derrota.rgba) };
+  // ZONA_PALABRA es [x0, x1, y0, y1] en fracciones de la franja.
+  const [x0, x1] = ZONA_PALABRA.slice(0, 2).map((f) => Math.round(f * victoria.ancho));
+  const [y0, y1] = ZONA_PALABRA.slice(2).map((f) => Math.round(f * victoria.alto));
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) { const k = (y * victoria.ancho + x) * 4; const v = ((x >> 2) + (y >> 1)) % 2 ? 230 : 20; victoria.rgba[k] = v; victoria.rgba[k + 1] = 255 - v; victoria.rgba[k + 2] = v; }
+  const deSerie = plantillasIniciales(derrota);
+  eq(reconocerResultado(victoria, deSerie).resultado, null, `la prueba no prueba nada: la tablet de serie ya reconoce la victoria (${JSON.stringify(reconocerResultado(victoria, deSerie))})`);
+  const enTermux = aprenderResultado(victoria, true, deSerie, { id: 'v1' }).resultados;
+  eq(reconocerResultado(victoria, enTermux).resultado, 'gane', 'Termux no aprendió la victoria (la prueba no prueba nada)');
+  const termux = crearServidor({ capturar: () => { throw new Error('no'); }, enHilos: false, aprendido: { version: VERSION_APRENDIDO, capturas: 648, caras: {}, picks: null }, resultados: enTermux, guardar: () => {}, guardarResultadosDe: () => {} });
+  let guardados = null;
+  const tablet = crearServidor({ capturar: () => { throw new Error('no'); }, enHilos: false, codigo: CODIGO, guardar: () => {}, guardarResultadosDe: (r) => { guardados = r; } });
+  await Promise.all([termux, tablet].map((s) => new Promise((r) => s.listen(0, '127.0.0.1', r))));
+  try {
+    const app = { Origin: 'https://srchipiron.github.io' };
+    const datos = await (await fetch(`http://127.0.0.1:${termux.address().port}/aprendido`, { headers: app })).json();
+    eq(datos.aprendido?.capturas, 648, 'Termux no da lo aprendido');
+    eq((await fetch(`http://127.0.0.1:${termux.address().port}/aprendido`)).status, 403, 'lo aprendido sale sin la app');
+    const r = await fetch(`http://127.0.0.1:${tablet.address().port}/aprendido`, { method: 'POST', headers: { ...app, 'X-Lector-Codigo': CODIGO, 'Content-Type': 'application/json' }, body: JSON.stringify(datos) });
+    const dicho = await r.json();
+    eq(`${r.status} ${dicho.capturas} ${dicho.gane}`, '200 648 1', `la tablet no recibe lo aprendido: ${JSON.stringify(dicho)}`);
+    eq(reconocerResultado(victoria, guardados).resultado, 'gane', 'con lo de Termux la tablet sigue sin reconocer la victoria');
+    eq(reconocerResultado(derrota, guardados).resultado, 'perdi', 'al fundir se pierde la derrota');
+  } finally { termux.close(); tablet.close(); }
+  // Y quien haya visto más capturas manda en las caras: la tablet no pierde lo suyo por uno con menos.
+  const conMas = fundirAprendido({ aprendido: { version: VERSION_APRENDIDO, capturas: 900 }, resultados: deSerie }, { aprendido: { version: VERSION_APRENDIDO, capturas: 10 } });
+  eq(conMas.aprendido.capturas, 900, 'lo aprendido con menos capturas pisa a lo de la tablet');
+  eq(fundirAprendido({ aprendido: null, resultados: deSerie }, { aprendido: { version: 1, capturas: 5 } }), null, 'acepta lo aprendido de otra versión');
 });
 
 await terminar('scripts/en-tablet');

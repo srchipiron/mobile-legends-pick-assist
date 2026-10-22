@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { sanearLectorTablet } from '../lector.js';
+import { sanearLectorTablet, traerDeTermux } from '../lector.js';
 import { tPorDefecto } from './tPorDefecto.js';
 
 /**
@@ -10,10 +10,16 @@ import { tPorDefecto } from './tPorDefecto.js';
 export function LectorTablet({ vinculo = null, onVinculo, t = tPorDefecto }) {
   const [direccion, setDireccion] = useState('');
   const [codigo, setCodigo] = useState('');
+  const [traido, setTraido] = useState(null);
   if (vinculo) {
+    const traer = async () => { setTraido({ cargando: true }); setTraido(await traerDeTermux()); };
     return (
       <div className="lector-tablet">
         <p className="empty-state">{t('lectorTablet.vinculado', { direccion: vinculo.direccion })}</p>
+        {/* Lo aprendido en Termux, a la tablet (3.64.1): sin las plantillas del final no reconoce si ganaste. */}
+        <p className="empty-state">{t('lectorTablet.traerExplicacion')}</p>
+        <button className="reset lector-traer" disabled={traido?.cargando} onClick={traer}>{t('lectorTablet.traer')}</button>
+        {traido && !traido.cargando && <p className="empty-state" role="status">{traido.error ? t(`lectorTablet.traer.${traido.error}`) : t('lectorTablet.traido', { capturas: traido.capturas, gane: traido.gane, perdi: traido.perdi })}</p>}
         <button className="reset" onClick={() => onVinculo(null)}>{t('lectorTablet.desvincular')}</button>
       </div>
     );

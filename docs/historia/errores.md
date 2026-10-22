@@ -1060,3 +1060,13 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   cruces y builds nuevos, aunque los winrates salieran conservados con su
   fecha. Lección: si una regla del comparador se relaja para una mitad de
   los datos, hay que mirar también la otra mitad.
+
+- **Lector MLBB empezó sin lo aprendido (3.61.0 → 3.64.1)**: la APK arranca
+  con su propia carpeta y no se llevó las 8+8 plantillas del final ni las
+  648 capturas de caras del lector de Termux. Veía la tabla (duración bien
+  medida) pero la palabra «DERROTA» le daba 0,75 contra la de serie, por
+  debajo de 0,85, y no apuntaba sola (22 de octubre de 2026, #147).
+  Arreglo: `GET/POST /aprendido` y el botón de traerlo desde Termux.
+  Lección: al cambiar dónde corre algo que aprende, lo aprendido es parte
+  de la migración, no un detalle.
+

@@ -399,6 +399,27 @@ export async function mandarALaTablet(cuerpo, { base = baseLector(), plazoMs = P
 }
 
 /**
+ * Pasa a la tablet lo que aprendió el lector de Termux (3.64.1): caras,
+ * huecos y plantillas de VICTORIA/DERROTA. Lector MLBB empieza de cero y,
+ * sin las plantillas, no reconoce el final. El de Termux tiene que estar
+ * abierto (127.0.0.1, sin código); la tablet, vinculada. Nunca lanza.
+ */
+export async function traerDeTermux({ pedirTermux = (...a) => fetch(...a), pedir = pedirAlLector, plazoMs = PLAZO_CORREGIR_MS } = {}) {
+  if (!enTablet) return { error: 'sinTablet' };
+  let datos;
+  try {
+    const r = await pedirTermux(`${URL_LECTOR}/aprendido`, { cache: 'no-store', signal: AbortSignal.timeout(PLAZO_LECTOR_MS) });
+    if (!r.ok) return { error: 'sinTermux' };
+    datos = await r.json();
+  } catch { return { error: 'sinTermux' }; }
+  try {
+    const r = await pedir(`${baseLector()}/aprendido`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos), cache: 'no-store', signal: AbortSignal.timeout(plazoMs) });
+    if (!r.ok) return { error: r.status === 401 ? 'codigo' : 'sinTablet' };
+    return await r.json();
+  } catch { return { error: 'sinTablet' }; }
+}
+
+/**
  * El consejo de la burbuja: tu pick (el fijado o el nº1) con su
  * probabilidad, y debajo los dos siguientes. Sin ranking, nada.
  */

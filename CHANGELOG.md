@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.64.1
+
+- La tablet ya puede reconocer si ganaste o perdiste. Lector MLBB empezó
+  de cero y no tenía nada de lo que el lector de Termux había aprendido
+  (cómo se ven la VICTORIA y la DERROTA en tu tablet y las caras de tus
+  compañeros). Por eso veía la tabla del final y no se atrevía a decir el
+  resultado. Nuevo botón en Pick Assist → Ajustes → Lector en la tablet:
+  «Pasar a la tablet lo aprendido en Termux». Abre antes Termux y escribe
+  `lector`. Sin Termux también aprende sola: cada partida que apuntes a
+  mano le enseña cómo es ese final.
+
 ## 3.64.0
 
 - «Lector MLBB» se actualiza sola, sin preguntar: al abrirla o al dejar de

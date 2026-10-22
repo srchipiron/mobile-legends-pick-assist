@@ -44,7 +44,7 @@ import { fotogramaDe } from './miniatura.mjs';
 import { enPartida, recorteMarcador } from './partida.mjs';
 import { hablarConTermux, limpiarTexto, IDIOMAS_VOZ } from './voz.mjs';
 import { tramoDeMinutos } from '../../src/motor/directo.js';
-import { tiraDe, reconocerResultado, aprenderResultado, plantillasIniciales, cargarResultados, guardarResultados, VERSION_RESULTADOS } from './resultado.mjs';
+import { tiraDe, reconocerResultado, aprenderResultado, plantillasIniciales, cargarResultados, guardarResultados, VERSION_RESULTADOS, PLANTILLAS_POR_RESULTADO } from './resultado.mjs';
 
 /**
  * La captura de las LECTURAS del draft, comprimida o no (3.45.0, pedido por
@@ -368,6 +368,24 @@ export function sanearResumen(r) {
   return titulo && texto && typeof r?.id === 'string' && /^[\w-]{1,60}$/.test(r.id) ? { id: r.id, titulo, texto } : null;
 }
 
+/**
+ * Funde lo aprendido que llega de otro lector (3.64.1) con lo de aquí: las
+ * caras y huecos, los de quien haya visto más capturas (es un todo: mezclar
+ * dos geometrías no tiene sentido); las plantillas del resultado, juntas sin
+ * repetir y con el mismo tope que al aprender. null si no tiene forma.
+ */
+export function fundirAprendido({ aprendido, resultados }, llegado) {
+  if (!llegado || typeof llegado !== 'object') return null;
+  const otro = llegado.aprendido && typeof llegado.aprendido === 'object' && llegado.aprendido.version === VERSION_APRENDIDO ? sinHuecosVacios(llegado.aprendido) : null;
+  const suyos = llegado.resultados ? cargarResultados(llegado.resultados) : null;
+  if (!otro && !suyos) return null;
+  const nuevo = otro && (otro.capturas ?? 0) > (aprendido?.capturas ?? 0) ? otro : aprendido;
+  const clave = (p) => Buffer.from(p.v.buffer, p.v.byteOffset, p.v.byteLength).toString('base64');
+  const juntar = (a = [], b = []) => { const vistas = new Set(a.map(clave)); return [...a, ...b.filter((p) => !vistas.has(clave(p)))].slice(-PLANTILLAS_POR_RESULTADO); };
+  const fundidos = suyos ? { ...resultados, gane: juntar(suyos.gane, resultados.gane), perdi: juntar(suyos.perdi, resultados.perdi), tablas: juntar(suyos.tablas, resultados.tablas) } : resultados;
+  return { aprendido: nuevo, resultados: fundidos };
+}
+
 export const origenPermitido = (o) => !!o && (ORIGENES.includes(o) || /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(o));
 
 export { leerCaptura };
@@ -688,11 +706,11 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     }
     return final;
   };
-  const leerCuerpo = (req) => new Promise((resolver) => {
+  const leerCuerpo = (req, maximo = 65536) => new Promise((resolver) => {
     const trozos = [];
     // Demasiado grande: se corta y se contesta como cuerpo malo (sin el
     // `resolver`, la promesa quedaba colgada para siempre por petición).
-    req.on('data', (t) => { trozos.push(t); if (trozos.reduce((s, x) => s + x.length, 0) > 65536) { resolver(null); req.destroy(); } });
+    req.on('data', (t) => { trozos.push(t); if (trozos.reduce((s, x) => s + x.length, 0) > maximo) { resolver(null); req.destroy(); } });
     req.on('end', () => { try { resolver(JSON.parse(Buffer.concat(trozos).toString('utf8'))); } catch { resolver(null); } });
     req.on('error', () => resolver(null));
   });
@@ -769,6 +787,26 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       if (callada !== cuerpo.callar) registrar(cuerpo.callar ? 'Voz callada desde la app: no digo nada más hasta que la vuelvas a activar.' : 'Voz activada desde la app.');
       callada = cuerpo.callar;
       res.writeHead(200, cabeceras).end(JSON.stringify({ callada }));
+      return;
+    }
+    // Lo aprendido, para pasarlo de un lector a otro (3.64.1): Lector MLBB
+    // empezaba de cero y no reconocía la palabra del final (0,75 con la
+    // derrota de serie; con las de Termux, de sobra). Solo la app.
+    if (req.method === 'GET' && ruta === '/aprendido') {
+      if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
+      res.writeHead(200, cabeceras).end(JSON.stringify({ aprendido, resultados: guardarResultados(resultados) }));
+      return;
+    }
+    if (req.method === 'POST' && ruta === '/aprendido') {
+      if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
+      const cuerpo = await leerCuerpo(req, 4 * 1024 * 1024);
+      const r = fundirAprendido({ aprendido, resultados }, cuerpo);
+      if (!r) { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'aprendido' })); return; }
+      while (aprendiendo) await aprendiendo.catch(() => {});
+      if (r.aprendido !== aprendido) { aprendido = r.aprendido; guardar(aprendido); }
+      resultados = r.resultados; guardarResultadosDe(resultados);
+      registrar(`Recibido lo aprendido en otro lector: ${aprendido?.capturas ?? 0} capturas, ${resultados.gane.length} victorias y ${resultados.perdi.length} derrotas de plantilla.`);
+      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, capturas: aprendido?.capturas ?? 0, gane: resultados.gane.length, perdi: resultados.perdi.length }));
       return;
     }
     if (req.method === 'POST' && ruta === '/consejo') {
