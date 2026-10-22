@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- El dibujo del icono: un escudo hexagonal dorado con un ojo que lee. Al 80%, dentro de la zona segura. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <group android:pivotX="54" android:pivotY="54" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:pathData="M54,22 L81.7,38 L81.7,70 L54,86 L26.3,70 L26.3,38 Z"
+            android:fillColor="#FF0D1426" android:strokeWidth="3.2" android:strokeLineJoin="round">
+            <aapt:attr name="android:strokeColor">
+                <gradient android:type="linear" android:startX="54" android:startY="22" android:endX="54" android:endY="86"
+                    android:startColor="#FFFFE56B" android:endColor="#FFE3A500" />
+            </aapt:attr>
+        </path>
+        <path android:pathData="M54,28.5 L76.1,41.25 L76.1,66.75 L54,79.5 L31.9,66.75 L31.9,41.25 Z"
+            android:strokeColor="#40FFD60A" android:strokeWidth="1" />
+        <path android:pathData="M33,54 Q54,35 75,54 Q54,73 33,54 Z"
+            android:fillColor="#FF0A0F1C" android:strokeWidth="2.6" android:strokeLineJoin="round">
+            <aapt:attr name="android:strokeColor">
+                <gradient android:type="linear" android:startX="54" android:startY="40" android:endX="54" android:endY="68"
+                    android:startColor="#FFFFE56B" android:endColor="#FFE3A500" />
+            </aapt:attr>
+        </path>
+        <path android:pathData="M38,54 L45,54 M63,54 L70,54"
+            android:strokeColor="#8CFFD60A" android:strokeWidth="1.2" android:strokeLineCap="round" />
+        <path android:pathData="M54,45a9,9 0 1,0 0.01,0z">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="radial" android:centerX="52" android:centerY="51" android:gradientRadius="9">
+                    <item android:offset="0" android:color="#FFFFF2A8" />
+                    <item android:offset="0.6" android:color="#FFFFC800" />
+                    <item android:offset="1" android:color="#FFC98A00" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <path android:pathData="M54,50.4a3.6,3.6 0 1,0 0.01,0z" android:fillColor="#FF0A0F1C" />
+        <path android:pathData="M51,49.4a1.6,1.6 0 1,0 0.01,0z" android:fillColor="#E6FFFFFF" />
+    </group>
+</vector>

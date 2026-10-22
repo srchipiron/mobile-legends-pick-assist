@@ -190,7 +190,7 @@ class Lector : Service() {
         return Notification.Builder(this, CANAL)
             .setContentTitle("Lector MLBB")
             .setContentText("Leyendo el draft para la app del móvil")
-            .setSmallIcon(R.drawable.icono)
+            .setSmallIcon(R.drawable.icono_mono)
             .setContentIntent(abrir)
             .addAction(Notification.Action.Builder(null, "Parar", parar).build())
             .setOngoing(true)

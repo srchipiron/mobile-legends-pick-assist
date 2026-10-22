@@ -18,7 +18,7 @@
 
     <application
         android:label="Lector MLBB"
-        android:icon="@drawable/icono"
+        android:icon="@mipmap/icono"
         android:allowBackup="false"
         android:theme="@android:style/Theme.DeviceDefault">
         <activity android:name=".Principal" android:exported="true" android:launchMode="singleTask">

@@ -8,6 +8,12 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.61.2
+
+- «Lector MLBB» estrena icono: un escudo hexagonal dorado con un ojo que
+  lee, sobre azul noche. Se adapta a la forma de icono de tu Android, y la
+  notificación usa su silueta.
+
 ## 3.61.1
 
 - «Lector MLBB» ya abre en la tablet. Se cerraba nada más abrirla porque le
