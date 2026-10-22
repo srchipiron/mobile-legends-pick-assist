@@ -1,6 +1,143 @@
 {
- "actualizado": "2026-10-21T21:30:10.728Z",
+ "actualizado": "2026-10-22T18:01:57.008Z",
  "partidas": [
+  {
+   "t": 1792692086623,
+   "pick": "Estes",
+   "recomendados": [
+    "Marcel",
+    "Saber",
+    "Kalea"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.583,
+   "modelo": 3,
+   "origen": "lector",
+   "bans": [
+    "Lukas",
+    "Minotaur",
+    "Masha",
+    "Aulus",
+    "Kadita",
+    "Eudora",
+    "Paquito",
+    "Hirara"
+   ],
+   "draft": {
+    "enemigos": [
+     "Cyclops",
+     "Sun",
+     "Hilda",
+     "Helcurt",
+     "Clint"
+    ],
+    "aliados": [
+     "Odette",
+     "Hanabi",
+     "Esmeralda",
+     "Belerick"
+    ],
+    "linea": "roam"
+   },
+   "lector": {
+    "baneos": [
+     "Lukas",
+     "Minotaur",
+     "Masha",
+     "Aulus",
+     "Kadita",
+     "Eudora",
+     "Paquito",
+     "Hirara"
+    ],
+    "enemigos": [
+     "Cyclops",
+     "Sun",
+     "Hilda",
+     "Helcurt",
+     "Clint"
+    ],
+    "aliados": [
+     "Wanwan",
+     "Odette",
+     "Esmeralda"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "s5",
+      "candidato": "Bane",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "a3",
+      "candidato": "Belerick",
+      "parecido": 0.79
+     }
+    ],
+    "ms": [
+     4522,
+     4963,
+     3280,
+     4216,
+     2980,
+     4547,
+     3306,
+     3164,
+     3287,
+     4351,
+     3121,
+     3440,
+     2885
+    ],
+    "msCaptura": [
+     3074,
+     3499,
+     2178,
+     2935,
+     2044,
+     3204,
+     2366,
+     2266,
+     2307,
+     3293,
+     2080,
+     2536,
+     2044
+    ],
+    "formatos": [
+     "crudo",
+     "png",
+     "crudo",
+     "png",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Clint"
+     ]
+    }
+   },
+   "duracion": 14.5,
+   "fases": [
+    0.754,
+    0.634,
+    0.573,
+    0.447,
+    0.41,
+    0.397
+   ]
+  },
   {
    "t": 1792618159205,
    "pick": "Angela",
@@ -22430,6 +22567,12 @@
   },
   {
    "cuando": "2026-10-21T21:30:10.728Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-22T18:01:57.008Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
