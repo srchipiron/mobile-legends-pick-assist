@@ -28,6 +28,12 @@ reiniciaba la del anterior: cinco commits seguidos dejaron lo publicado 25
 minutos por detrás. Si ves que un despliegue tarda doce minutos, es que el bot
 lleva medio día sin traer datos, y eso es lo que hay que mirar.
 
+**La concurrencia de `deploy.yml` va en los JOBS (3.65.4).** A nivel de
+workflow, la corrida que lanzaba un bot fallido (`workflow_run`) cancelaba
+el despliegue en marcha aunque su job se saltara después por el `if`: la
+3.65.3 se quedó sin publicar el 23 de octubre de 2026. Un job saltado no
+entra en el grupo. Prueba en `workflows.test`, dos mutaciones.
+
 Con datos de más de 72 horas el despliegue publica IGUAL y deja un
 `::warning::` (3.57.4, decidido por Javi el 14 de octubre de 2026): hasta
 entonces se paraba, y con la API caída desde el 13 eso solo impedía publicar

@@ -1099,3 +1099,10 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   de octubre). Lección: al fundir por filas una matriz con estructura
   (antisimétrica, simétrica), la estructura se repone tras fundir; fundir
   fila a fila no la conserva sola.
+- **Un bot fallido cancelaba la publicación (deploy.yml, hasta 3.65.4)**:
+  la concurrencia estaba a nivel de workflow, y la corrida de `workflow_run`
+  de un bot que había fallado cancelaba el despliegue de código en marcha,
+  aunque luego se saltaba. Así la 3.65.3 no se publicó hasta relanzarla a
+  mano. Lección: un grupo de concurrencia con `cancel-in-progress` va en el
+  job que hace el trabajo, no en el workflow, si el workflow puede acabar
+  sin hacer nada.

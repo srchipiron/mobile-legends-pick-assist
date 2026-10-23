@@ -13,10 +13,6 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 jobs:
   build:
     # Tope del JOB entero: los pasos con red ya lo tenían, pero las pruebas,
@@ -26,6 +22,14 @@ jobs:
     # "completa": sin esto se desplegaba igual, y si los datos del repo ya
     # pasaban de 24 h, con veinte minutos de ingesta para nada.
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    # La concurrencia va en los JOBS, no en el workflow (3.65.4): a nivel de
+    # workflow, la corrida de un bot que falló cancelaba un despliegue en
+    # marcha aunque la suya se saltara después por el `if` (el 23 de octubre
+    # de 2026 la 3.65.3 se quedó sin publicar así). Un job saltado no entra
+    # en el grupo.
+    concurrency:
+      group: pages
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -183,6 +187,9 @@ jobs:
 
   deploy:
     needs: build
+    concurrency:
+      group: pages
+      cancel-in-progress: true
     timeout-minutes: 15
     runs-on: ubuntu-latest
     environment:

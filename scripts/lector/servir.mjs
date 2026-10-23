@@ -341,6 +341,9 @@ export function crearPortero(codigo, { ahora = () => Date.now() } = {}) {
     const t = ahora();
     const suyos = (fallos.get(aparato) ?? []).filter((f) => t - f < VENTANA_CODIGO_MS);
     if (suyos.length >= FALLOS_CODIGO) return 'bloqueado';
+    // Sin código no se está adivinando nada (3.65.4): es la app del móvil
+    // buscando la tablet en la wifi tras un cambio de IP. No cuenta como fallo.
+    if (dado == null || String(dado) === '') return 'no';
     const recibido = Buffer.from(String(dado ?? ''));
     const bueno = esperado.length > 0 && recibido.length === esperado.length && timingSafeEqual(recibido, esperado);
     if (!bueno) {

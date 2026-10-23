@@ -666,4 +666,5 @@ export default {
   'lectorTablet.apk.otraVez': 'Volver a mirar',
   'lectorTablet.apk.solo': 'Lector MLBB {tuya}.',
   'lectorTablet.apk.nose': 'La tablet contesta, pero no dice su versión.',
+  'lectorTablet.apk.buscando': 'La tablet no contesta en su dirección de siempre: buscándola en la wifi…',
 };

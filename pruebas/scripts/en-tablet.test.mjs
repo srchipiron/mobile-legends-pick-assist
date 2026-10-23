@@ -72,6 +72,10 @@ test('el portero: el bueno entra, uno malo no, y tras demasiados fallos nadie ha
   t += VENTANA_CODIGO_MS + 1;
   eq(portero(CODIGO, '192.168.1.66'), 'si', 'pasada la ventana el bueno sigue sin entrar');
   eq(crearPortero('')(''), 'no', 'sin código entra cualquiera');
+  // Preguntar SIN código no es adivinar (3.65.4): la app busca la tablet en la wifi tras un cambio de IP.
+  const sinCodigo = crearPortero(CODIGO, { ahora: () => t });
+  for (let i = 0; i < FALLOS_CODIGO * 3; i++) { eq(sinCodigo(undefined, '192.168.1.20'), 'no'); eq(sinCodigo('', '192.168.1.20'), 'no'); }
+  eq(sinCodigo(CODIGO, '192.168.1.20'), 'si', 'buscar la tablet sin código deja fuera al móvil');
 });
 
 test('el Host en la tablet: IP privada tal cual, nunca un nombre', () => {

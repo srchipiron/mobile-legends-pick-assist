@@ -493,6 +493,40 @@ await prueba('si la tablet no contesta, Ajustes lo dice con lo que hay que hacer
   await contexto.close();
 });
 
+// 3.65.4: la tablet cambia de IP (la .116 pasó a la .112 el 23 de octubre).
+// La app la busca en la wifi sola y se vincula a la nueva sin tocar nada; el
+// código solo va a quien contesta como Lector MLBB.
+await prueba('si la tablet cambia de IP, la app la encuentra sola en la wifi y se vincula a la nueva', async () => {
+  const conCodigo = [];
+  // En BANEOS: ahí Ajustes no está montado, así que la busca la app sola, de fondo.
+  const enBaneos = { ...almacen, 'roam-picker:lector-tablet': { direccion: '192.168.68.116:47323', codigo: 'ABCDEFGH23' } };
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, {
+    almacen: enBaneos,
+    antes: async (p) => {
+      await p.context().route(/^http:\/\/192\.168\.68\.\d+:47323\//, (ruta) => {
+        const q = ruta.request();
+        const ip = new URL(q.url()).hostname;
+        const cab = { 'Access-Control-Allow-Origin': q.headers().origin ?? '*', 'Access-Control-Allow-Headers': 'Content-Type, X-Lector-Codigo', 'Access-Control-Allow-Methods': 'GET, POST' };
+        // El código se apunta ANTES de cortar: la que no es la tablet tampoco tiene que verlo.
+        const codigo = q.headers()['x-lector-codigo'];
+        if (codigo && ip !== '192.168.68.116') conCodigo.push(ip);
+        if (ip !== '192.168.68.112') return ruta.abort('connectionrefused');
+        if (q.method() === 'OPTIONS') return ruta.fulfill({ status: 204, headers: cab });
+        if (codigo !== 'ABCDEFGH23') return ruta.fulfill({ status: 401, headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'codigo' }) });
+        return ruta.fulfill({ status: 200, headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true, aprendido: {}, lector: { minutos: 1 }, tablet: { apk: '3.64.1' } }) });
+      });
+      await p.context().route('https://api.github.com/repos/*/*/releases/latest', (ruta) => ruta.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ tag_name: 'lector-v3.64.1' }) }));
+    },
+  });
+  let guardada = null;
+  for (let i = 0; i < 120 && guardada?.direccion !== '192.168.68.112:47323'; i++) { guardada = await leer(pagina, 'roam-picker:lector-tablet'); await pagina.waitForTimeout(250); }
+  eq(guardada?.direccion, '192.168.68.112:47323', `no se vincula sola a la IP nueva: ${JSON.stringify(guardada)}`);
+  eq(guardada?.codigo, 'ABCDEFGH23', 'la vinculación nueva pierde el código');
+  ok(conCodigo.length > 0 && conCodigo.every((ip) => ip === '192.168.68.112'), `el código viaja a otra IP: ${[...new Set(conCodigo)]}`);
+  ok(!errores.length, `errores de página: ${errores}`);
+  await contexto.close();
+});
+
 await prueba('si el lector no llega a la tablet, o no está abierto, lo dice con lo que hay que hacer', async () => {
   capturar = () => { throw new Error('device offline'); };
   let { contexto, pagina } = await paginaCon(navegador, url, { almacen });

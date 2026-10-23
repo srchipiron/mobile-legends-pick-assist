@@ -23,7 +23,7 @@ import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
 import { ConfirmarVinculo } from './componentes/LectorTablet.jsx';
-import { pedirLectura, pedirEstadoLector, pedirUltimaApk, parteDeLaTablet, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
+import { pedirLectura, pedirEstadoLector, pedirUltimaApk, buscarTabletUnaVez, sinLlegarALaTablet, parteDeLaTablet, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
 import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
@@ -473,6 +473,21 @@ export default function App() {
     mandarALaTablet({ consejo: consejoTablet });
     // consejoTablet cambia de objeto en cada render: lo que decide es su huella.
   }, [huellaConsejo, lectorTablet]);
+
+  // La tablet cambió de IP (3.65.4): si no contesta, se busca en la wifi y la
+  // app se vincula sola a la dirección nueva. Al abrir y cada 5 minutos.
+  useEffect(() => {
+    if (!lectorTablet) return undefined;
+    const tic = async () => {
+      const estado = await pedirEstadoLector();
+      if (estado.ok || !sinLlegarALaTablet(estado.tipo)) return;
+      const nueva = await buscarTabletUnaVez(lectorTablet);
+      if (nueva && nueva.direccion !== lectorTablet.direccion) setLectorTablet(nueva);
+    };
+    tic();
+    const reloj = setInterval(tic, 5 * 60 * 1000);
+    return () => clearInterval(reloj);
+  }, [lectorTablet, setLectorTablet]);
 
   // El parte de salud de la tablet (3.63.0): cada 10 min, con el lector en la
   // tablet y la subida activada, se le pregunta cómo está y, si toca

@@ -525,4 +525,18 @@ test('sin datos nuevos, el despliegue publica los que ya sirve la app si son má
   eq(publicar(real, peores), real.generatedAt, 'se publican datos publicados que el comparador rechaza');
 });
 
+test('el despliegue: la concurrencia va en los jobs, no en el workflow (3.65.4)', () => {
+  // A nivel de workflow, la corrida de un bot fallido cancelaba un despliegue
+  // en marcha aunque luego la suya se saltara por el `if` del job.
+  const texto = leerTexto('.github/workflows/deploy.yml');
+  ok(!/^concurrency:/m.test(texto), 'deploy.yml: la concurrencia a nivel de workflow cancela un despliegue por una corrida que se va a saltar');
+  const jobs = texto.split(/^jobs:\s*$/m)[1] ?? '';
+  const build = jobs.split(/^ {2}deploy:/m)[0];
+  const deploy = jobs.split(/^ {2}deploy:/m)[1] ?? '';
+  ok(/^ {4}if: .*workflow_run\.conclusion == 'success'/m.test(build), 'deploy.yml: el build ya no se salta con un bot fallido');
+  for (const [nombre, trozo] of [['build', build], ['deploy', deploy]]) {
+    ok(/^ {4}concurrency:\n {6}group: pages\n {6}cancel-in-progress: true$/m.test(trozo), `deploy.yml: el job ${nombre} sin su grupo de concurrencia (dos despliegues a la vez)`);
+  }
+});
+
 await terminar('scripts/workflows');

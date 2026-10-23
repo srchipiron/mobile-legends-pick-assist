@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { sanearLectorTablet, traerDeTermux, pedirEstadoLector, pedirUltimaApk, queApk, claveDeFallo, DESCARGA_APK } from '../lector.js';
+import { sanearLectorTablet, traerDeTermux, pedirEstadoLector, pedirUltimaApk, queApk, claveDeFallo, buscarTabletUnaVez, sinLlegarALaTablet, DESCARGA_APK } from '../lector.js';
 import { tPorDefecto } from './tPorDefecto.js';
 
 /**
@@ -18,9 +18,19 @@ export function LectorTablet({ vinculo = null, onVinculo, t = tPorDefecto }) {
     if (!vinculo) return undefined;
     let vivo = true;
     setApk({ estado: 'mirando' });
-    Promise.all([pedirEstadoLector(), pedirUltimaApk()]).then(([estado, ultima]) => { if (vivo) setApk(queApk(estado, ultima)); });
+    Promise.all([pedirEstadoLector(), pedirUltimaApk()]).then(async ([estado, ultima]) => {
+      if (!vivo) return;
+      const q = queApk(estado, ultima);
+      // Sin llegar a la tablet, se la busca en la wifi (3.65.4): cambia de IP.
+      if (q.estado !== 'sinRespuesta' || !sinLlegarALaTablet(q.tipo)) { setApk(q); return; }
+      setApk({ estado: 'buscando' });
+      const nueva = await buscarTabletUnaVez(vinculo);
+      if (!vivo) return;
+      if (nueva && nueva.direccion !== vinculo.direccion) onVinculo(nueva);
+      else setApk(q);
+    });
     return () => { vivo = false; };
-  }, [vinculo, mirar]);
+  }, [vinculo, mirar, onVinculo]);
   if (vinculo) {
     const traer = async () => { setTraido({ cargando: true }); setTraido(await traerDeTermux()); };
     return (
@@ -51,7 +61,7 @@ export function LectorTablet({ vinculo = null, onVinculo, t = tPorDefecto }) {
 
 /** Al día o mirando, en gris como lo demás; lo demás, en rojo: hay que hacer algo. */
 function claseDeApk(estado) {
-  return ['alDia', 'nose', 'mirando'].includes(estado) ? 'empty-state' : 'nota mal';
+  return ['alDia', 'nose', 'mirando', 'buscando'].includes(estado) ? 'empty-state' : 'nota mal';
 }
 
 /**

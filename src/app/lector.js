@@ -30,6 +30,59 @@ export function sanearLectorTablet(x) {
   if (!IP_PRIVADA.test(ip) || !(Number.isInteger(p) && p > 0 && p < 65536) || !/^[A-Z0-9]{8,64}$/.test(codigo)) return null;
   return { direccion: `${ip}:${p}`, codigo };
 }
+/**
+ * Buscar la tablet en la wifi cuando cambia de IP (3.65.4): el router le da
+ * otra dirección de vez en cuando (la .116 pasó a ser la .112 el 23 de
+ * octubre de 2026) y había que volver a escanear su QR. Se pregunta a las
+ * otras IP de la misma red /24, en el mismo puerto, SIN el código: solo la
+ * que contesta como Lector MLBB (401 con `error: 'codigo'`) recibe el código,
+ * y vale si con él contesta `ok`. Así el código no se manda a cualquier
+ * aparato de la casa. null si no aparece.
+ */
+export async function buscarTabletEnLaRed(vinculo, { pedir = (...a) => fetch(...a), plazoMs = 1500, aLaVez = 32 } = {}) {
+  const v = sanearLectorTablet(vinculo);
+  if (!v) return null;
+  const [ip, puerto] = v.direccion.split(':');
+  const base = ip.split('.').slice(0, 3).join('.');
+  const candidatas = Array.from({ length: 254 }, (_, i) => `${base}.${i + 1}:${puerto}`).filter((d) => d !== v.direccion);
+  const contesta = async (d, codigo = null) => {
+    try {
+      const r = await pedir(`http://${d}/estado`, { cache: 'no-store', signal: AbortSignal.timeout(plazoMs), targetAddressSpace: 'local', ...(codigo ? { headers: { 'X-Lector-Codigo': codigo } } : {}) });
+      const j = await r.json().catch(() => null);
+      return codigo ? r.ok && j?.ok === true : r.status === 401 && j?.error === 'codigo';
+    } catch { return false; }
+  };
+  for (let i = 0; i < candidatas.length; i += aLaVez) {
+    const tanda = candidatas.slice(i, i + aLaVez);
+    const vistas = await Promise.all(tanda.map((d) => contesta(d)));
+    for (const [k, d] of tanda.entries()) {
+      if (vistas[k] && await contesta(d, v.codigo)) return { direccion: d, codigo: v.codigo };
+    }
+  }
+  return null;
+}
+
+/**
+ * La búsqueda, una a la vez y como mucho cada `ENTRE_BUSQUEDAS_MS` (la piden
+ * Ajustes y el aviso de fondo a la vez; 254 preguntas por la wifi no se
+ * repiten cada pocos segundos). Decisión de producto: 2 minutos. null si no
+ * toca o no aparece.
+ */
+export const ENTRE_BUSQUEDAS_MS = 2 * 60 * 1000;
+let busquedaEnCurso = null;
+let ultimaBusqueda = 0;
+export function buscarTabletUnaVez(vinculo, { ahora = Date.now(), ...opciones } = {}) {
+  if (busquedaEnCurso) return busquedaEnCurso;
+  if (ahora - ultimaBusqueda < ENTRE_BUSQUEDAS_MS) return Promise.resolve(null);
+  ultimaBusqueda = ahora;
+  busquedaEnCurso = buscarTabletEnLaRed(vinculo, opciones).finally(() => { busquedaEnCurso = null; });
+  return busquedaEnCurso;
+}
+/** Solo para las pruebas: olvidar la última búsqueda. */
+export const olvidarBusqueda = () => { ultimaBusqueda = 0; busquedaEnCurso = null; };
+/** Los fallos que dicen «no llego a la tablet» (no un código malo ni una captura que falla). */
+export const sinLlegarALaTablet = (tipo) => tipo === 'sinPuente' || tipo === 'plazo';
+
 /** Lo que trae el enlace del QR de la tablet (`#lector=IP:PUERTO&codigo=…`), o null. */
 export function lectorTabletDeEnlace(hash) {
   const q = new URLSearchParams(String(hash ?? '').replace(/^#/, ''));

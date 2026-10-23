@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.65.4
+
+- Si la tablet cambia de dirección en la wifi, Pick Assist la encuentra sola.
+  El router le da otra IP de vez en cuando (de la .116 pasó a la .112), y
+  había que volver a escanear su QR. Ahora, si no contesta, la app la busca
+  por la wifi al abrirse y cada 5 minutos, y se vincula a la nueva. El código
+  de vinculación solo se manda al aparato que contesta como Lector MLBB.
+- Lector MLBB se actualiza con esta versión: una pregunta sin código (la
+  búsqueda) ya no cuenta como intento fallido.
+- Las publicaciones ya no se cancelan cuando el bot de datos falla.
+
 ## 3.65.3
 
 - Ajustes → Lector en la tablet siempre te dice algo de la tablet. Si no

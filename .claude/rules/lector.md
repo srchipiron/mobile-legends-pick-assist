@@ -1060,3 +1060,26 @@ que contestó una APK anterior a 3.63.0: sin bloque `lector` ni `tablet` en
   - `subirAparte` con `id` (`picks:<completoDesde>`) sube una vez: lo
     recuerda en `roam-picker:envio` (`subidas`, hasta `MAX_SUBIDAS`) y lo
     consulta también en lo guardado por otra pestaña.
+
+## La tablet cambia de IP (3.65.4)
+
+El router le dio a la tablet otra dirección (de .116 a .112, 23 de octubre
+de 2026) y la app se quedó vinculada a la vieja.
+- `buscarTabletEnLaRed` (lector.js) pregunta `/estado` SIN código a las otras
+  253 IP de la misma /24, en el mismo puerto, de 32 en 32 (1,5 s de plazo).
+  Solo a la que contesta 401 con `error: 'codigo'` le manda el código; vale
+  si contesta `ok`. Así el código no se manda a cualquier aparato de la casa.
+- `buscarTabletUnaVez` deja una búsqueda a la vez y como mucho cada
+  `ENTRE_BUSQUEDAS_MS` (2 min).
+- La lanzan App.jsx, al abrir y cada 5 min si `/estado` no llega
+  (`sinLlegarALaTablet`), y Ajustes («Buscando la tablet…»). Con lo que
+  encuentran, `setLectorTablet`. Ese setter es estable desde ahora
+  (`useCallback`): está en las dependencias de los dos efectos.
+- En el lector, el `crearPortero` sin código devuelve 'no' SIN contarlo
+  como fallo: no se adivina nada. Una APK anterior cuenta cada búsqueda
+  como un fallo, de 10 en 10 minutos.
+- Pruebas en `app/lector`, `en-tablet` y `lector.e2e`. La prueba de
+  navegador empieza en BANEOS, porque en picks el panel de Ajustes está
+  montado aunque plegado y la búsqueda de fondo sobrevivía a su mutación.
+  Apunta el código de cada IP ANTES de cortar la petición: si no, mandarlo a
+  todas sobrevivía. Cuatro mutaciones.

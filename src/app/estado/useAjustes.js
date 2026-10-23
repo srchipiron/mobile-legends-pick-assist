@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CLAVES, leer, guardar } from './almacen.js';
 import { crearT, idiomaPorDefecto } from '../i18n/index.js';
 import { activarTacto } from '../tacto.js';
@@ -38,7 +38,8 @@ export function useAjustes() {
   const [lectorAuto, setLectorAuto] = useState(() => leer(CLAVES.lectorAuto, false) === true);
   // El lector en la tablet (3.61.0): null es el de Termux, en este móvil.
   const [lectorTablet, setLectorTabletCrudo] = useState(() => sanearLectorTablet(leer(CLAVES.lectorTablet, null)));
-  const setLectorTablet = (x) => setLectorTabletCrudo(sanearLectorTablet(x));
+  // Estable (3.65.4): la búsqueda de la tablet la tiene en sus dependencias.
+  const setLectorTablet = useCallback((x) => setLectorTabletCrudo(sanearLectorTablet(x)), []);
   const [vinculoPendiente, setVinculoPendiente] = useState(vinculoDelEnlace);
   const confirmarVinculo = (si) => {
     if (si && vinculoPendiente) { setLectorTablet(vinculoPendiente); setLectorAuto(true); }
