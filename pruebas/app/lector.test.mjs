@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { parteDeLaTablet, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, URL_LECTOR } from '../../src/app/lector.js';
+import { parteDeLaTablet, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, URL_LECTOR } from '../../src/app/lector.js';
 import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
@@ -394,6 +394,42 @@ test('el parte de la tablet (3.63.0): dice lo que va mal, todo bien si nada, y n
   eq(parteDeLaTablet({ ok: false, tipo: 'sinPuente' }), null);
   ok(!/192\.168/.test(parteDeLaTablet({ ...sano, lector: { ...sano.lector, ultimoFallo: { que: 'no contesta 192.168.68.116:47323' } } }).texto), 'una IP dentro de un error llega al parte');
   ok(!/192\.168|ABCDEFGH/.test(JSON.stringify(mal)), 'el parte lleva la IP o el código');
+});
+
+test('el parte no dice «Todo bien» sin datos de la tablet (3.65.2): una Lector MLBB vieja o atrasada se dice', () => {
+  // Lo que contestó el 22 de octubre: una APK anterior a 3.63.0, sin bloques `lector` ni `tablet`.
+  const vieja = { ok: true, aprendido: { capturas: 9, caras: 0, aliados: 0 }, salida: 'Último cierre (hace 0 min): se actualizó · stop es.srchipiron.lector due to installPackageLI', lector: null, tablet: null };
+  const p = parteDeLaTablet(vieja, { version: '3.65.2' });
+  ok(!/Todo bien/.test(p.texto), `con una APK vieja dice «Todo bien»: ${p.texto}`);
+  ok(p.avisos.some((a) => /anterior a 3\.63\.0/.test(a)), `no dice que la APK es vieja: ${p.avisos}`);
+  ok(!/Último cierre: Último cierre/.test(p.texto), `«Último cierre» sale dos veces: ${p.texto}`);
+  const sana = { ok: true, aprendido: {}, lector: { minutos: 5, lecturas: 1, fallosCaptura: 0 }, tablet: { apk: '3.62.0', grabando: true, bateriaLibre: true, cuando: 1000 } };
+  ok(parteDeLaTablet(sana, { version: '3.65.2', ahora: 2000, ultimaApk: '3.64.1' }).avisos.some((a) => /3\.62\.0.*3\.64\.1/.test(a)), 'no dice que la APK está atrasada');
+  eq(parteDeLaTablet({ ...sana, tablet: { ...sana.tablet, apk: '3.64.1' } }, { version: '3.65.2', ahora: 2000, ultimaApk: '3.64.1' }).avisos.length, 0, 'una APK al día da aviso');
+  eq(parteDeLaTablet(sana, { version: '3.65.2', ahora: 2000 }).avisos.length, 0, 'sin saber la última, avisa de atrasada');
+});
+
+test('queApk y versionAnterior: qué Lector MLBB contesta', () => {
+  eq(queApk({ ok: true, lector: null }).estado, 'antigua');
+  eq(queApk({ ok: false }).estado, 'nose');
+  eq(queApk({ ok: true, lector: {}, tablet: { apk: '3.63.0' } }, '3.64.1').estado, 'atrasada');
+  eq(queApk({ ok: true, lector: {}, tablet: { apk: '3.64.1' } }, '3.64.1').estado, 'alDia');
+  eq(queApk({ ok: true, lector: {}, tablet: { apk: '3.64.2' } }, '3.64.1').estado, 'alDia', 'una más nueva que la publicada no está atrasada');
+  eq(queApk({ ok: true, lector: {}, tablet: null }, '3.64.1').estado, 'nose');
+  ok(versionAnterior('3.9.9', '3.10.0') && versionAnterior('3.64.0', '3.64.1') && !versionAnterior('3.64.1', '3.64.1') && !versionAnterior('4.0.0', '3.99.99'), 'compara como texto, no como número');
+  ok(!versionAnterior('?', '3.64.1') && !versionAnterior('3.64.1', null), 'una versión rara cuenta como anterior');
+  ok(DESCARGA_APK.startsWith('https://github.com/srchipiron/mobile-legends-pick-assist/releases/'), DESCARGA_APK);
+});
+
+test('pedirUltimaApk: la etiqueta lector-vX.Y.Z de la última publicada, sin token, y null ante cualquier cosa rara', async () => {
+  const pedidas = [];
+  const con = (respuesta) => async (url, op) => { pedidas.push({ url, op }); if (respuesta instanceof Error) throw respuesta; return { ok: respuesta.status === 200, json: async () => respuesta.datos }; };
+  eq(await pedirUltimaApk({ pedir: con({ status: 200, datos: { tag_name: 'lector-v3.64.1' } }) }), '3.64.1');
+  ok(pedidas[0].url === 'https://api.github.com/repos/srchipiron/mobile-legends-pick-assist/releases/latest', pedidas[0].url);
+  ok(!JSON.stringify(pedidas[0].op.headers).includes('Authorization'), 'pregunta con token');
+  eq(await pedirUltimaApk({ pedir: con({ status: 200, datos: { tag_name: 'v9.9.9<script>' } }) }), null);
+  eq(await pedirUltimaApk({ pedir: con({ status: 403, datos: {} }) }), null);
+  eq(await pedirUltimaApk({ pedir: con(new Error('sin red')) }), null);
 });
 
 await terminar('app/lector');

@@ -23,7 +23,7 @@ import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
 import { ConfirmarVinculo } from './componentes/LectorTablet.jsx';
-import { pedirLectura, pedirEstadoLector, parteDeLaTablet, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
+import { pedirLectura, pedirEstadoLector, pedirUltimaApk, parteDeLaTablet, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
 import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
@@ -481,7 +481,7 @@ export default function App() {
     if (!lectorTablet || !envio.activo) return undefined;
     const tic = async () => {
       const estado = await pedirEstadoLector();
-      const parte = parteDeLaTablet(estado, { version: __APP_VERSION__ });
+      const parte = parteDeLaTablet(estado, { version: __APP_VERSION__, ultimaApk: estado.ok ? await pedirUltimaApk() : null });
       if (parte) subirParte(parte);
     };
     tic();

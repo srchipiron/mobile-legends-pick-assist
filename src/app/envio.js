@@ -62,6 +62,19 @@ export const PARTE_CADA_MS = 24 * 60 * 60 * 1000;
 /** Ni con avisos más de uno cada tanto: un aviso que va y viene no puede llenar la incidencia. Decisión de producto. */
 export const PARTE_MINIMO_MS = 30 * 60 * 1000;
 /** ¿Toca subir el parte? Con token; si cambian los avisos (y hace más de PARTE_MINIMO_MS), o si hace un día del último. */
+/**
+ * Lo del parte que ya hizo OTRA pestaña (3.65.2): con la app abierta dos
+ * veces, cada una tenía su copia del estado y las dos subían el mismo parte
+ * (dos comentarios en un segundo, el 22 de octubre). Lo guardado manda si es
+ * más reciente.
+ */
+export function conLoDeOtraPestana(estado, guardado) {
+  const g = guardado ?? {};
+  const cuando = Math.max(estado?.tabletCuando ?? 0, g.tabletCuando ?? 0) || null;
+  const deOtra = cuando && cuando === g.tabletCuando && cuando !== estado?.tabletCuando;
+  return { ...estado, tabletCuando: cuando, tabletHuella: deOtra ? g.tabletHuella ?? null : estado?.tabletHuella ?? null, tablet: estado?.tablet ?? g.tablet ?? null };
+}
+
 export function tocaParte(estado, parte, { ahora }) {
   if (!estado?.token || !parte) return false;
   const desde = estado.tabletCuando ? ahora - estado.tabletCuando : Infinity;

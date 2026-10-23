@@ -1021,3 +1021,22 @@ VOZ en el móvil (Termux:API) y que el lector mire la tablet desde el minuto
   estado de un proceso que vive aparte (el lector) se identifica por algo que
   la persona puede tocar sin querer (`completoDesde`); toda corrección a mano
   tiene que conservar esa identidad.
+
+## Qué Lector MLBB contesta (3.65.2)
+
+El parte del 22 de octubre (#148) dijo «Todo bien» con versión, lecturas y
+memoria en «?». La APK publicada (3.64.1, mirada por dentro: `servir.mjs`
+con `memoriaMB`, `en-tablet.mjs` con `leerSaludDeLaApk`) estaba bien, así
+que contestó una APK anterior a 3.63.0: sin bloque `lector` ni `tablet` en
+`/estado`, y sin actualizarse sola (eso llegó en 3.64.0).
+- `queApk` (lector.js) lo deduce: sin `lector`, 'antigua'; con `tablet.apk`
+  anterior a la última publicada, 'atrasada'.
+- La última sale de `pedirUltimaApk`: releases/latest, SIN token, solo una
+  etiqueta `lector-vX.Y.Z`.
+- El parte lo dice como aviso, y Ajustes → Lector en la tablet enseña la
+  versión con el enlace fijo `DESCARGA_APK`.
+- Con la app abierta dos veces, cada pestaña subía su parte: dos comentarios
+  en un segundo. `conLoDeOtraPestana` (envio.js) mira lo guardado antes de
+  subir y toma la incidencia de la otra pestaña.
+- Pruebas en `app/lector`, `app/envio` y `lector.e2e`, siete mutaciones. Lo
+  que no está probado es el cableado de `useEnvio`: es de una línea.

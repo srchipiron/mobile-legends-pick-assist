@@ -427,6 +427,40 @@ await prueba('«Voz»: con el draft completo, un toque calla al lector, se recue
   } finally { await contexto.close(); }
 });
 
+// 3.65.2: una Lector MLBB anterior a 3.63.0 no dice su salud ni se actualiza
+// sola, y el parte decía «Todo bien». En Ajustes se dice qué versión tienes.
+await prueba('Ajustes dice si Lector MLBB está vieja o atrasada, con el enlace para bajarla; al día, sin enlace', async () => {
+  const conTablet = (estado) => async (p) => {
+    await p.context().route('http://192.168.68.116:47323/**', (ruta) => {
+      const q = ruta.request();
+      const cab = { 'Access-Control-Allow-Origin': q.headers().origin ?? '*', 'Access-Control-Allow-Headers': 'Content-Type, X-Lector-Codigo', 'Access-Control-Allow-Methods': 'GET, POST' };
+      if (q.method() === 'OPTIONS') return ruta.fulfill({ status: 204, headers: cab });
+      const camino = new URL(q.url()).pathname;
+      return ruta.fulfill({ status: 200, headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify(camino === '/estado' ? estado : { ok: true }) });
+    });
+    await p.context().route('https://api.github.com/repos/*/*/releases/latest', (ruta) => ruta.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ tag_name: 'lector-v3.64.1' }) }));
+  };
+  const enPicks = { ...almacen, 'roam-picker:draft': { enemies: ['Layla'], allies: [], bans: [], enemyRoam: null, fase: 'picks' }, 'roam-picker:lector-tablet': { direccion: '192.168.68.116:47323', codigo: 'ABCDEFGH23' } };
+  const casos = [
+    { estado: { ok: true, aprendido: { capturas: 9 }, salida: 'Último cierre (hace 0 min): se actualizó' }, texto: /anterior a la 3\.63\.0/, enlace: true },
+    { estado: { ok: true, aprendido: {}, lector: { minutos: 1 }, tablet: { apk: '3.63.0' } }, texto: /es la 3\.63\.0 y hay la 3\.64\.1/, enlace: true },
+    { estado: { ok: true, aprendido: {}, lector: { minutos: 1 }, tablet: { apk: '3.64.1' } }, texto: /3\.64\.1: al día/, enlace: false },
+  ];
+  for (const c of casos) {
+    const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: enPicks, antes: conTablet(c.estado) });
+    await abrirAjustes(pagina);
+    const panel = pagina.locator('.lector-tablet');
+    let texto = '';
+    for (let i = 0; i < 40 && !c.texto.test(texto); i++) { texto = await panel.innerText(); await pagina.waitForTimeout(150); }
+    ok(c.texto.test(texto), `no dice ${c.texto}: ${texto}`);
+    const enlace = panel.getByRole('link', { name: 'Descargar Lector MLBB' });
+    eq(await enlace.count(), c.enlace ? 1 : 0, `el enlace de descarga ${c.enlace ? 'no sale' : 'sale estando al día'}`);
+    if (c.enlace) ok((await enlace.getAttribute('href')).startsWith('https://github.com/srchipiron/mobile-legends-pick-assist/releases/'), 'el enlace lleva a otro sitio');
+    ok(!errores.length, `errores de página: ${errores}`);
+    await contexto.close();
+  }
+});
+
 await prueba('si el lector no llega a la tablet, o no está abierto, lo dice con lo que hay que hacer', async () => {
   capturar = () => { throw new Error('device offline'); };
   let { contexto, pagina } = await paginaCon(navegador, url, { almacen });

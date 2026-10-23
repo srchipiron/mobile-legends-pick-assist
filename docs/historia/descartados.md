@@ -542,3 +542,11 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   no entra a ciegas: con la pantalla quieta (el draft) puede no llegar
   ningún fotograma nuevo tras reenganchar, y la lectura fallaría. Primero
   se mide en su tablet: FPS del juego con el lector grabando y sin él.
+- **Que la propia tablet compruebe su versión contra GitHub en el parte**
+  (3.65.2): ya lo hace `Actualizar.sola` desde 3.64.0. Lo que fallaba eran
+  las APK de antes, que no tienen ese código, y eso solo se puede ver desde
+  el móvil. Por eso va en la app y no en la APK.
+- **Un candado entre pestañas para el parte** (Web Locks o BroadcastChannel):
+  leer lo guardado antes de subir quita el caso visto (dos comentarios en un
+  segundo). Dos pestañas en el MISMO milisegundo siguen pudiendo duplicarlo,
+  y un comentario de más no hace daño.

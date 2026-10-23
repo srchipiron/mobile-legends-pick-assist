@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.65.2
+
+- Pick Assist te dice si tu Lector MLBB está vieja. En Ajustes → Lector en
+  la tablet sale qué versión tienes y, si hay una más nueva, un botón para
+  descargarla. Las anteriores a la 3.64.0 no se actualizan solas, y las
+  anteriores a la 3.63.0 tampoco dicen cómo están: el parte de anoche
+  decía «Todo bien» con todo en «?». Ahora lo dice como aviso.
+- El parte de salud de la tablet ya no se sube dos veces si tienes la app
+  abierta en dos sitios a la vez.
+
 ## 3.65.1
 
 - La Administración enseña al momento lo que acabas de cambiar. Antes leía

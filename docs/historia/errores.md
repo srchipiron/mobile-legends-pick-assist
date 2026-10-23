@@ -1080,3 +1080,9 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   función), y el administrador lee de la API. Lección: un cambio que se
   publica parte de la fuente de verdad, nunca de una copia que se refresca
   sola.
+- **El parte de la tablet decía «Todo bien» sin saber nada (3.63.0)**: con
+  una Lector MLBB anterior a 3.63.0, `/estado` no traía ni `lector` ni
+  `tablet`, y el parte pintaba «?» en todo y no daba ningún aviso. Así, una
+  APK que no se actualiza sola pasaba por sana (#148, 22 de octubre). Hoy
+  falta de datos = aviso (`queApk`). Lección: un informe que dice «bien»
+  tiene que haber visto con qué decirlo; si falta el dato, eso es el aviso.

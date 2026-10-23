@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { sanearLectorTablet, traerDeTermux } from '../lector.js';
+import { useEffect, useState } from 'react';
+import { sanearLectorTablet, traerDeTermux, pedirEstadoLector, pedirUltimaApk, queApk, DESCARGA_APK } from '../lector.js';
 import { tPorDefecto } from './tPorDefecto.js';
 
 /**
@@ -11,11 +11,23 @@ export function LectorTablet({ vinculo = null, onVinculo, t = tPorDefecto }) {
   const [direccion, setDireccion] = useState('');
   const [codigo, setCodigo] = useState('');
   const [traido, setTraido] = useState(null);
+  // Qué Lector MLBB tienes (3.65.2): las anteriores a 3.64.0 no se actualizan solas y nadie lo decía.
+  const [apk, setApk] = useState(null);
+  useEffect(() => {
+    if (!vinculo) return undefined;
+    let vivo = true;
+    Promise.all([pedirEstadoLector(), pedirUltimaApk()]).then(([estado, ultima]) => { if (vivo) setApk(queApk(estado, ultima)); });
+    return () => { vivo = false; };
+  }, [vinculo]);
   if (vinculo) {
     const traer = async () => { setTraido({ cargando: true }); setTraido(await traerDeTermux()); };
     return (
       <div className="lector-tablet">
         <p className="empty-state">{t('lectorTablet.vinculado', { direccion: vinculo.direccion })}</p>
+        {apk && apk.estado !== 'nose' && (
+          <p className={claseDeApk(apk.estado)} role="status">{t(`lectorTablet.apk.${apk.estado}`, { tuya: apk.tuya, ultima: apk.ultima })}</p>
+        )}
+        {(apk?.estado === 'antigua' || apk?.estado === 'atrasada') && <a className="reset lector-traer" href={DESCARGA_APK} target="_blank" rel="noopener noreferrer">{t('lectorTablet.apk.descargar')}</a>}
         {/* Lo aprendido en Termux, a la tablet (3.64.1): sin las plantillas del final no reconoce si ganaste. */}
         <p className="empty-state">{t('lectorTablet.traerExplicacion')}</p>
         <button className="reset lector-traer" disabled={traido?.cargando} onClick={traer}>{t('lectorTablet.traer')}</button>
@@ -34,6 +46,11 @@ export function LectorTablet({ vinculo = null, onVinculo, t = tPorDefecto }) {
       <button className="reset" disabled={!valido} onClick={() => onVinculo(valido)}>{t('lectorTablet.vincular')}</button>
     </div>
   );
+}
+
+/** Al día, en gris como lo demás; antigua o atrasada, en rojo: hay que hacer algo. */
+function claseDeApk(estado) {
+  return estado === 'alDia' ? 'empty-state' : 'nota mal';
 }
 
 /** «¿Vincular con la tablet en …?» al abrir el enlace de su QR: sin el toque no se guarda nada. */

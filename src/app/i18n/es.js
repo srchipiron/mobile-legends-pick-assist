@@ -657,4 +657,8 @@ export default {
   'admin.pisar': 'Ya hay una clave de administrador publicada. Si creas otra, todas las claves que diste dejarán de valer. ¿Crear otra igualmente?',
   'admin.sinPublica': 'Tu clave pública no está publicada: las claves que des no se podrán comprobar.',
   'admin.republicar': 'Volver a publicar mi clave',
+  'lectorTablet.apk.antigua': 'Tu Lector MLBB es anterior a la 3.63.0: no se actualiza sola ni dice cómo está. Descarga la última en la tablet e instálala encima (no pierdes lo aprendido).',
+  'lectorTablet.apk.atrasada': 'Tu Lector MLBB es la {tuya} y hay la {ultima}. Se pone sola al dejar de leer; si no, descárgala.',
+  'lectorTablet.apk.alDia': 'Lector MLBB {tuya}: al día.',
+  'lectorTablet.apk.descargar': 'Descargar Lector MLBB',
 };

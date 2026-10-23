@@ -3,7 +3,7 @@
  * cuándo toca y que lo guardado no pueda reventar la app.
  */
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { tocaParte, PARTE_CADA_MS, PARTE_MINIMO_MS, huellaDe, sanearEnvio, tocaSubir, encolarAparte, vaciarCola, paraSubir, PARTIDAS_POR_ENVIO, MAX_APARTE, ESPERA_MS, REINTENTO_MS } from '../../src/app/envio.js';
+import { tocaParte, conLoDeOtraPestana, PARTE_CADA_MS, PARTE_MINIMO_MS, huellaDe, sanearEnvio, tocaSubir, encolarAparte, vaciarCola, paraSubir, PARTIDAS_POR_ENVIO, MAX_APARTE, ESPERA_MS, REINTENTO_MS } from '../../src/app/envio.js';
 import { recogerPerfil, exportarPerfil, leerPerfil, fundirPerfil } from '../../src/motor/perfil.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -108,6 +108,22 @@ test('el parte de la tablet (3.63.0): uno al día si todo sigue igual, en el act
   ok(tocaParte(base, parte('v|a|memoria baja'), { ahora: base.tabletCuando + PARTE_MINIMO_MS }), 'con un aviso nuevo no sube en el acto');
   ok(!tocaParte(base, parte('v|a|memoria baja'), { ahora: base.tabletCuando + PARTE_MINIMO_MS - 1 }), 'un aviso que va y viene sube sin pausa');
   eq(sanearEnvio({ tablet: 7, tabletHuella: 'h', tabletCuando: 3 }).tablet, 7, 'la incidencia del parte no se guarda');
+});
+
+test('el parte que ya subió otra pestaña no se vuelve a subir (3.65.2: dos comentarios en un segundo)', () => {
+  const parte = { huella: 'h1' };
+  const aqui = sanearEnvio({ token: 'github_pat_PRUEBA_0123456789abcdefghij' });
+  const otra = sanearEnvio({ ...aqui, tablet: 148, tabletCuando: 1_000_000, tabletHuella: 'h1' });
+  const ahora = 1_000_000 + 1000;
+  ok(tocaParte(aqui, parte, { ahora }), 'la prueba no prueba nada: sin lo de la otra pestaña ya no tocaba');
+  const junto = conLoDeOtraPestana(aqui, otra);
+  ok(!tocaParte(junto, parte, { ahora }), 'sube otra vez lo que acaba de subir la otra pestaña');
+  eq(junto.tablet, 148, 'abriría otra incidencia en vez de comentar en la de la otra pestaña');
+  // Lo de aquí, más reciente, manda.
+  const mio = sanearEnvio({ ...aqui, tablet: 150, tabletCuando: 2_000_000, tabletHuella: 'h2' });
+  const j2 = conLoDeOtraPestana(mio, otra);
+  eq(j2.tabletCuando, 2_000_000); eq(j2.tabletHuella, 'h2'); eq(j2.tablet, 150);
+  eq(conLoDeOtraPestana(aqui, null).tabletCuando, null);
 });
 
 terminar('app/envio');

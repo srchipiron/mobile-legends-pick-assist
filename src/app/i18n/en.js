@@ -640,4 +640,8 @@ export default {
   'admin.pisar': 'An admin key is already published. If you create another, every key you gave will stop working. Create another anyway?',
   'admin.sinPublica': 'Your public key is not published: the keys you give cannot be checked.',
   'admin.republicar': 'Publish my key again',
+  'lectorTablet.apk.antigua': 'Your Lector MLBB is older than 3.63.0: it does not update itself or report its health. Download the latest on the tablet and install it over (you keep what it learned).',
+  'lectorTablet.apk.atrasada': 'Your Lector MLBB is {tuya} and {ultima} is out. It updates itself when it stops reading; if not, download it.',
+  'lectorTablet.apk.alDia': 'Lector MLBB {tuya}: up to date.',
+  'lectorTablet.apk.descargar': 'Download Lector MLBB',
 };

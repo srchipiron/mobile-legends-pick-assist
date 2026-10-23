@@ -355,10 +355,16 @@ export async function callarVoz({ callar, base = baseLector(), plazoMs = PLAZO_L
  * capturas. Solo texto de estado: ni el código de vinculación ni la IP.
  * `avisos` dice lo que no va bien; con alguno, el parte sube en el acto.
  */
-export function parteDeLaTablet(estado, { version = '', ahora = Date.now() } = {}) {
+export function parteDeLaTablet(estado, { version = '', ahora = Date.now(), ultimaApk = null } = {}) {
   if (!estado?.ok) return null;
   const l = estado.lector ?? {}, tb = estado.tablet ?? {};
   const avisos = [];
+  // Sin estos bloques, quien contesta es una Lector MLBB anterior a 3.63.0,
+  // que ni da su salud ni se actualiza sola (3.65.2): el 22 de octubre el parte
+  // decía «Todo bien» con todo en «?».
+  const vieja = queApk(estado, ultimaApk);
+  if (vieja.estado === 'antigua') avisos.push('Lector MLBB es anterior a 3.63.0: no dice cómo está ni se actualiza sola, hay que instalarla de nuevo');
+  else if (vieja.estado === 'atrasada') avisos.push(`Lector MLBB ${vieja.tuya}, y hay ${vieja.ultima}`);
   if (estado.salida && !/se actualizó|la cerraste tú|forzaste/.test(estado.salida)) avisos.push(estado.salida.split('\n')[0]);
   if (tb.grabando === false) avisos.push('la tablet no está grabando la pantalla');
   if (tb.bateriaLibre === false) avisos.push('el ahorro de batería puede cerrarla');
@@ -370,13 +376,53 @@ export function parteDeLaTablet(estado, { version = '', ahora = Date.now() } = {
     `Lector: encendido hace ${l.minutos ?? '?'} min · ${l.lecturas ?? '?'} lecturas · ${l.fallosCaptura ?? '?'} capturas fallidas${l.ultimoFallo ? ` (la última: «${l.ultimoFallo.que}»)` : ''} · Node ${l.memoriaMB ?? '?'} MB`,
     `Tablet: grabando ${tb.grabando ? 'sí' : 'no'} · burbuja ${tb.burbuja ? `sí (${tb.esquina})` : 'sin permiso'} · ahorro de batería ${tb.bateriaLibre ? 'quitado' : 'puesto'} · memoria libre ${tb.memoriaLibreMB ?? '?'} MB${tb.memoriaBaja ? ' (BAJA)' : ''} · la app usa ${tb.memoriaAppMB ?? '?'} MB`,
     `Aprendido: ${estado.aprendido?.capturas ?? 0} capturas, ${estado.aprendido?.caras ?? 0} caras de rivales, ${estado.aprendido?.aliados ?? 0} de tu equipo`,
-    ...(estado.salida ? [`Último cierre: ${estado.salida.replace(/\n/g, ' · ')}`] : []),
+    ...(estado.salida ? [`Último cierre: ${estado.salida.replace(/^Último cierre /, '').replace(/\n/g, ' · ')}`] : []),
   ];
   // Va a una incidencia pública: ninguna dirección de la casa, aunque venga dentro de un mensaje de error.
   const sinIp = (x) => x.replace(/\b\d{1,3}(\.\d{1,3}){3}(:\d+)?\b/g, '(IP)');
   const texto = sinIp(`${avisos.length ? `**Avisos:** ${avisos.join('; ')}` : '**Todo bien.**'}\n\n${filas.map((f) => `- ${f}`).join('\n')}`);
   // La huella no cuenta lo que cambia solo (minutos, lecturas, memoria): solo si cambian los avisos o la versión, sube antes de tiempo.
   return { texto, avisos, huella: `${version}|${tb.apk}|${avisos.join('|')}` };
+}
+
+/** ¿Es `a` una versión anterior a `b`? (X.Y.Z; lo que no tenga esa forma, no). */
+export function versionAnterior(a, b) {
+  const p = (v) => (/^\d+\.\d+\.\d+$/.test(String(v ?? '')) ? String(v).split('.').map(Number) : null);
+  const x = p(a), y = p(b);
+  if (!x || !y) return false;
+  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i];
+  return false;
+}
+
+/**
+ * Qué Lector MLBB contesta (3.65.2), con lo que da `/estado` y la última
+ * publicada: 'antigua' (anterior a 3.63.0: sin bloque `lector`, no se
+ * actualiza sola), 'atrasada' (hay una más nueva), 'alDia' o 'nose'.
+ */
+export function queApk(estado, ultima = null) {
+  if (!estado?.ok) return { estado: 'nose' };
+  if (!estado.lector) return { estado: 'antigua', ultima };
+  const tuya = estado.tablet?.apk ?? null;
+  if (!tuya) return { estado: 'nose', ultima };
+  if (ultima && versionAnterior(tuya, ultima)) return { estado: 'atrasada', tuya, ultima };
+  return { estado: ultima ? 'alDia' : 'nose', tuya, ultima };
+}
+
+/** La APK más reciente, siempre en la misma dirección de GitHub. */
+export const DESCARGA_APK = 'https://github.com/srchipiron/mobile-legends-pick-assist/releases/latest/download/lector-mlbb.apk';
+
+/**
+ * La versión de la última Lector MLBB publicada (3.65.2): las anteriores a
+ * 3.64.0 no se actualizan solas y nadie lo decía. Sin token (es pública).
+ * null si no se sabe. Nunca lanza.
+ */
+export async function pedirUltimaApk({ pedir = (...a) => fetch(...a), plazoMs = 4000 } = {}) {
+  try {
+    const r = await pedir('https://api.github.com/repos/srchipiron/mobile-legends-pick-assist/releases/latest', { cache: 'no-store', headers: { Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(plazoMs) });
+    if (!r.ok) return null;
+    const m = /^lector-v(\d+\.\d+\.\d+)$/.exec(String((await r.json())?.tag_name ?? ''));
+    return m ? m[1] : null;
+  } catch { return null; }
 }
 
 /**

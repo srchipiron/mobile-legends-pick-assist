@@ -3,7 +3,7 @@ import { CLAVES, leer, guardar } from './almacen.js';
 import { useAhora } from './useAhora.js';
 import { recogerPerfil, exportarPerfil } from '../../motor/perfil.js';
 import { subirIncidencia, comentarIncidencia, escribirFichero, leerFichero } from '../github.js';
-import { huellaDe, sanearEnvio, tocaSubir, tocaParte, encolarAparte, vaciarCola, paraSubir, ESPERA_MS } from '../envio.js';
+import { huellaDe, sanearEnvio, tocaSubir, tocaParte, conLoDeOtraPestana, encolarAparte, vaciarCola, paraSubir, ESPERA_MS } from '../envio.js';
 
 /**
  * La subida automática de tus partidas (3.10.0). Con un token de GitHub
@@ -84,7 +84,8 @@ export function useEnvio({ perfil, t }) {
    * (`tocaParte`). El token no sale de aquí.
    */
   const subirParte = useCallback(async (parte) => {
-    const { estado: e } = ultimo.current;
+    // Otra pestaña con la app abierta pudo subirlo ya: se mira lo guardado.
+    const e = conLoDeOtraPestana(ultimo.current.estado, sanearEnvio(leer(CLAVES.envio, {})));
     if (!tocaParte(e, parte, { ahora: Date.now() })) return null;
     cambiar({ tabletCuando: Date.now(), tabletHuella: parte.huella });
     let numero = e.tablet;
