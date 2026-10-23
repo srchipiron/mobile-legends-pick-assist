@@ -1,6 +1,169 @@
 {
- "actualizado": "2026-10-22T21:56:40.156Z",
+ "actualizado": "2026-10-23T20:50:50.963Z",
  "partidas": [
+  {
+   "t": 1792788632929,
+   "pick": "Estes",
+   "recomendados": [
+    "Minotaur",
+    "Kalea",
+    "Saber"
+   ],
+   "gane": false,
+   "rango": "glory",
+   "estimacion": 0.477,
+   "modelo": 3,
+   "bans": [
+    "Marcel",
+    "Hirara",
+    "Eudora",
+    "Aulus",
+    "Belerick",
+    "Angela",
+    "Barats",
+    "Lukas"
+   ],
+   "draft": {
+    "enemigos": [
+     "Obsidia",
+     "Badang",
+     "Rafaela",
+     "Selena",
+     "Nolan"
+    ],
+    "aliados": [
+     "Carmilla",
+     "Lesley",
+     "Bane",
+     "Silvanna"
+    ],
+    "linea": "roam",
+    "rival": "Rafaela"
+   },
+   "lector": {
+    "baneos": [
+     "Marcel",
+     "Hirara",
+     "Eudora",
+     "Aulus",
+     "Belerick",
+     "Angela",
+     "Barats",
+     "Lukas"
+    ],
+    "enemigos": [
+     "Obsidia",
+     "Badang",
+     "Rafaela",
+     "Nolan"
+    ],
+    "aliados": [
+     "Carmilla",
+     "Lesley",
+     "Bane",
+     "Silvanna"
+    ],
+    "tuyo": "Estes",
+    "dudas": [
+     {
+      "hueco": "t1",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "e3",
+      "candidato": "Selena",
+      "parecido": 0.8
+     }
+    ],
+    "ms": [
+     663,
+     1137,
+     1210,
+     1179,
+     1099,
+     1078,
+     1070,
+     1142,
+     864,
+     1802,
+     1051,
+     1257,
+     1246,
+     1024,
+     616,
+     1025,
+     862,
+     972,
+     865,
+     1088
+    ],
+    "msCaptura": [
+     61,
+     78,
+     90,
+     87,
+     94,
+     81,
+     70,
+     66,
+     70,
+     787,
+     83,
+     65,
+     81,
+     102,
+     41,
+     81,
+     95,
+     90,
+     92,
+     579
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Selena",
+      "Selena",
+      "Selena"
+     ],
+     "sinEncontrar": [
+      "Nolan",
+      "Nolan"
+     ]
+    }
+   },
+   "duracion": 13.8,
+   "fases": [
+    0.501,
+    0.45,
+    0.453,
+    0.441,
+    0.49,
+    0.482
+   ]
+  },
   {
    "t": 1792706184311,
    "pick": "Gloo",
@@ -22918,6 +23081,12 @@
   },
   {
    "cuando": "2026-10-22T21:56:40.156Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-23T20:50:50.963Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
