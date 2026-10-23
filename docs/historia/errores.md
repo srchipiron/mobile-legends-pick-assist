@@ -1092,3 +1092,10 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   subir los recortes (#142, #143, #145), y si el catálogo no había cargado,
   con todos los nombres en «?». Lección: lo que se hace «una vez por draft»
   se marca en lo que sobrevive a una recarga, no en memoria.
+- **Cruces mezclados de dos días (fundir filas, 3.14 → 3.65.3)**: con unos
+  pocos héroes caídos, su fila de cruces se conservaba de la corrida
+  anterior y la de los demás era nueva. Así c[X][Y] + c[Y][X] dejaba de
+  sumar 1, y nadie lo veía hasta que `modelo.test` paró un despliegue (23
+  de octubre). Lección: al fundir por filas una matriz con estructura
+  (antisimétrica, simétrica), la estructura se repone tras fundir; fundir
+  fila a fila no la conserva sola.

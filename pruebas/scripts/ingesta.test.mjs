@@ -501,4 +501,26 @@ test('las imágenes servidas por un proxy guardan la dirección de Moonton y no 
   ok(huellaTexto(ficha(moonton)) !== huellaTexto({ data: { records: [{ data: { hero: { data: { heroid: 1, head: moonton, skill: [{ skilldesc: texto.replace('slow', 'stun') }] } } } }] } }), 'cambiar el texto ya no mueve la huella');
 });
 
+test('una fila conservada se cose a las nuevas: los cruces siguen sumando 1 y las parejas siguen iguales (3.65.3)', () => {
+  // Ayer: tres héroes, cruces antisimétricos y parejas simétricas.
+  const previo = {
+    rank: 'glory',
+    counters: { A: { B: 0.6, C: 0.45 }, B: { A: 0.4, C: 0.52 }, C: { A: 0.55, B: 0.48 } },
+    synergies: { A: { B: 0.51, C: 0.49 }, B: { A: 0.51, C: 0.5 }, C: { A: 0.49, B: 0.5 } },
+  };
+  const copia = JSON.stringify(previo);
+  // Hoy A no llega (500); B y C sí, con otros números.
+  const hoy = { counters: { B: { A: 0.3, C: 0.5 }, C: { A: 0.7, B: 0.5 } }, synergies: { B: { A: 0.53, C: 0.47 }, C: { A: 0.46, B: 0.47 } } };
+  const r = relacionesDeLaCorrida(previo, hoy, 'glory');
+  const c = r.relations.counters, s = r.relations.synergies;
+  for (const [x, fila] of Object.entries(c)) for (const [y, v] of Object.entries(fila)) ok(Math.abs(v + c[y][x] - 1) < 1e-9, `c[${x}][${y}] + c[${y}][${x}] = ${v + c[y][x]}: una fila de ayer contra una de hoy`);
+  for (const [x, fila] of Object.entries(s)) for (const [y, v] of Object.entries(fila)) eq(v, s[y][x], `s[${x}][${y}] ≠ s[${y}][${x}]`);
+  eq(c.A.B, 0.7); eq(c.A.C, 0.3); eq(s.A.B, 0.53);
+  eq(r.recosidas, 4, 'no cuenta lo cosido');
+  eq(JSON.stringify(previo), copia, 'coser toca el fichero de antes');
+  // Una celda que la fila de ayer no tenía no se inventa.
+  const sinC = relacionesDeLaCorrida({ ...previo, counters: { ...previo.counters, A: { B: 0.6 } } }, hoy, 'glory');
+  eq(Object.keys(sinC.relations.counters.A).join(), 'B', 'inventa una celda que no había');
+});
+
 await terminar('scripts/ingesta');

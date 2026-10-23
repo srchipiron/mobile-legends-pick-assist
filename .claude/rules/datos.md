@@ -211,6 +211,18 @@ ninguna constante.
   simulada lo prueba: academy da 500 al medir, la corrida tiene que acabar
   por academy y decirlo.
 
+  Desde 3.65.3 las filas conservadas se COSEN a las frescas (`recoser`,
+  fusion.mjs). El 23 de octubre de 2026 la API dio 500 en Akai, Atlas,
+  Barats y Baxia; sus filas eran de ayer y las demás de hoy, así que
+  c[X][Y] + c[Y][X] ya no sumaba 1. La estimación de un draft más la del
+  draft visto desde el otro lado dio 0,9989 y `modelo.test` paró el
+  despliegue. Los cruces son antisimétricos y las parejas simétricas (los
+  17.556 pares de la guardada), así que la celda de la fila de ayer contra
+  un héroe de hoy sale de la fila de hoy. No se inventan celdas que no
+  había. `recosidas` dice cuántas. Con los datos del repositorio la ida y la
+  vuelta se separan como mucho 1,3·10⁻⁴ (redondeo a 4 decimales), con la
+  mezcla 1,1·10⁻³. Prueba en `ingesta.test`, tres mutaciones.
+
 **La tier list de mlbb.gg y el 403 (3.59.4)**: desde el 4 de octubre de
 2026 `back.mlbb.gg` contesta 403 a los runners de GitHub (desde la sesión y
 desde un móvil contesta 200), y `fetchTiers` conservaba la anterior con su

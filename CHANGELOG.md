@@ -15,6 +15,11 @@ correcciones.
   trae un botón «Volver a mirar». Antes solo salía «Vinculado…», sin más.
   Si contesta pero no se sabe cuál es la última publicada, te dice al menos
   tu versión.
+- Con la API fallando a ratos, los cruces ya no salen mezclados. Si un
+  héroe no llegaba, su fila se quedaba la de ayer y la de los demás era la
+  de hoy, y el «A contra B» dejaba de cuadrar con el «B contra A». Ahora la
+  fila de ayer se completa con lo de hoy. Esto también paraba la
+  publicación de esta versión.
 - Las caras de un draft que el lector no leyó se suben al proyecto una sola
   vez. Al reabrir la app con el draft completo se volvían a subir, a veces
   con todos los nombres en «?» porque el catálogo aún no había cargado.

@@ -101,7 +101,7 @@ export function relacionesDeLaCorrida(previous, elegidas, rango) {
   // Lo corto se mide contra lo guardado AUNQUE sea de otro rango (3.60.2):
   // empezando de cero, una fila de 10 no tenía con qué compararse y entraba.
   const frescas = fundirRelaciones(relations, elegidas, cuenta, relacionesPrevias(previous));
-  return { relations, frescas, frescasParejas: cuenta.parejas, cortas: cuenta.cortas, cortasParejas: cuenta.cortasParejas, conservado: frescas === 0 && cuenta.parejas === 0 };
+  return { relations, frescas, frescasParejas: cuenta.parejas, cortas: cuenta.cortas, cortasParejas: cuenta.cortasParejas, recosidas: cuenta.recosidas, conservado: frescas === 0 && cuenta.parejas === 0 };
 }
 
 /**
@@ -126,10 +126,45 @@ export function fundirRelaciones(relations, fresh, cuenta = {}, referencia = rel
     relations.counters[nombre] = fila;
     relacionesFrescas += 1;
   }
+  cuenta.recosidas = recoser(relations, fresh);
   cuenta.parejas = parejas;
   cuenta.cortas = cortas;
   cuenta.cortasParejas = cortasParejas;
   return relacionesFrescas;
+}
+
+/**
+ * Las filas que se quedan de la corrida anterior, cosidas a las nuevas
+ * (3.65.3). Con unos pocos héroes caídos (500 de la API para Akai, Atlas,
+ * Barats y Baxia el 23 de octubre de 2026), su fila era de ayer y la de los
+ * demás de hoy: c[X][Y] de ayer y c[Y][X] de hoy ya no sumaban 1, la
+ * estimación de un draft y la del draft visto desde el otro lado dejaban de
+ * sumar 1 (0,9989) y la prueba del modelo paró el despliegue. Los cruces son
+ * antisimétricos y las parejas simétricas (medido: los 17.556 pares de la
+ * guardada), así que la celda de una fila conservada contra un héroe fresco
+ * sale de la fila fresca, que es de hoy. Devuelve cuántas celdas se cosieron.
+ */
+export function recoser(relations, fresh) {
+  const frescos = new Set(Object.keys(fresh?.counters ?? {}).filter((n) => relations.counters[n] === fresh.counters[n]));
+  const parejasFrescas = new Set(Object.keys(fresh?.synergies ?? {}).filter((n) => relations.synergies[n] === fresh.synergies[n]));
+  const a4 = (v) => Math.round(v * 10000) / 10000;
+  let celdas = 0;
+  // La fila conservada es la del fichero anterior: se copia antes de tocarla.
+  const coser = (matriz, frescas, valor) => {
+    for (const [x, fila] of Object.entries(matriz)) {
+      if (frescas.has(x) || !fila) continue;
+      const nueva = { ...fila };
+      let cambio = false;
+      for (const y of frescas) {
+        const suya = matriz[y]?.[x];
+        if (x !== y && y in nueva && Number.isFinite(suya) && nueva[y] !== valor(suya)) { nueva[y] = valor(suya); celdas += 1; cambio = true; }
+      }
+      if (cambio) matriz[x] = nueva;
+    }
+  };
+  coser(relations.counters, frescos, (v) => a4(1 - v));
+  coser(relations.synergies, parejasFrescas, (v) => v);
+  return celdas;
 }
 
 /**
