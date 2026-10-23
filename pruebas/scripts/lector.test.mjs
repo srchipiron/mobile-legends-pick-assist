@@ -387,10 +387,16 @@ test('la tablet se encuentra sola: la pregunta mDNS pide respuesta unicast y la 
   eq(tabletsDeRespuesta(Buffer.from([1, 2, 3])).length, 0, 'una respuesta rota da tablets');
   eq(tabletsDeRespuesta(respuestaMdns(), null, '_otro._tcp.local').length, 0, 'un servicio que no es adb cuenta como tablet');
   // Sin nadie que conteste, vuelve vacío pasado el plazo, sin lanzar.
-  const t0 = Date.now();
-  eq((await buscarPorMdns({ ms: 150 })).length, 0, 'sin tablet en la red encuentra algo');
-  // Las pruebas corren a la vez y las de lector.sh bloquean el bucle con spawnSync: el margen es ancho a propósito.
-  ok(Date.now() - t0 < 10000, 'la búsqueda sin respuesta no acaba al plazo');
+  // Las pruebas corren a la vez y las de lector.sh bloquean el bucle con
+  // spawnSync (11,6 s en un contenedor lento, 3.65.2): el reloj de pared no
+  // vale. Se compara con un temporizador del MISMO plazo, que sufre el mismo
+  // bloqueo: la búsqueda tiene que acabar poco después que él.
+  let alPlazo = 0;
+  const referencia = new Promise((r) => setTimeout(() => { alPlazo = Date.now(); r(); }, 150));
+  const [encontradas] = await Promise.all([buscarPorMdns({ ms: 150 }), referencia]);
+  const alAcabar = Date.now();
+  eq(encontradas.length, 0, 'sin tablet en la red encuentra algo');
+  ok(alAcabar - alPlazo < 2000, `la búsqueda sin respuesta no acaba al plazo: ${alAcabar - alPlazo} ms después de él`);
   // El escaneo de puertos encuentra uno abierto en el rango.
   const servidor = createServer();
   await new Promise((r) => servidor.listen(0, '127.0.0.1', r));

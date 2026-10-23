@@ -1040,3 +1040,8 @@ que contestó una APK anterior a 3.63.0: sin bloque `lector` ni `tablet` en
   subir y toma la incidencia de la otra pestaña.
 - Pruebas en `app/lector`, `app/envio` y `lector.e2e`, siete mutaciones. Lo
   que no está probado es el cableado de `useEnvio`: es de una línea.
+- La prueba de que mDNS acaba al plazo medía el reloj de pared, y las
+  pruebas con `spawnSync` del mismo fichero bloquean el bucle: en un
+  contenedor nuevo fueron 11,6 s contra un tope de 10 (23 de octubre). Hoy
+  se compara con un temporizador del mismo plazo, que sufre el mismo
+  bloqueo. Caza un cuelgue (+30 s); +4 s quedan tapados por el bloqueo.
