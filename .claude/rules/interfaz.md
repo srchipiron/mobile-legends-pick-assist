@@ -396,3 +396,9 @@ partía de esa copia vieja: revocar después de exigir deshacía el exigir.
   cambia). Cuatro mutaciones. La de «Pages pisa lo del repositorio»
   sobrevivía hasta retrasar Pages 1,5 s en la prueba: sin retraso contestaba
   antes que la API.
+
+**No se commitea con las pruebas de navegador en marcha.** `actualizacion.e2e`
+compila con `package.json` en 9.9.9 un momento, para simular una versión
+nueva, y luego lo restaura. El 23 de octubre de 2026 un commit hecho mientras
+corría se llevó el 9.9.9; se vio antes de llegar a `main`. Primero acaban las
+pruebas, después `git add`.
