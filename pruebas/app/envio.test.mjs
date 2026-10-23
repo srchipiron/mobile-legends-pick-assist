@@ -3,7 +3,7 @@
  * cuándo toca y que lo guardado no pueda reventar la app.
  */
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { tocaParte, conLoDeOtraPestana, PARTE_CADA_MS, PARTE_MINIMO_MS, huellaDe, sanearEnvio, tocaSubir, encolarAparte, vaciarCola, paraSubir, PARTIDAS_POR_ENVIO, MAX_APARTE, ESPERA_MS, REINTENTO_MS } from '../../src/app/envio.js';
+import { tocaParte, conLoDeOtraPestana, yaSubido, MAX_SUBIDAS, PARTE_CADA_MS, PARTE_MINIMO_MS, huellaDe, sanearEnvio, tocaSubir, encolarAparte, vaciarCola, paraSubir, PARTIDAS_POR_ENVIO, MAX_APARTE, ESPERA_MS, REINTENTO_MS } from '../../src/app/envio.js';
 import { recogerPerfil, exportarPerfil, leerPerfil, fundirPerfil } from '../../src/motor/perfil.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -124,6 +124,19 @@ test('el parte que ya subió otra pestaña no se vuelve a subir (3.65.2: dos com
   const j2 = conLoDeOtraPestana(mio, otra);
   eq(j2.tabletCuando, 2_000_000); eq(j2.tabletHuella, 'h2'); eq(j2.tablet, 150);
   eq(conLoDeOtraPestana(aqui, null).tabletCuando, null);
+});
+
+test('una lectura se sube aparte UNA vez (3.65.3: #142, #143 y #145 eran la misma)', () => {
+  const id = 'picks:1700000000000';
+  const vacio = sanearEnvio({});
+  eq(JSON.stringify(vacio.subidas), '[]');
+  ok(!yaSubido(vacio, null, id), 'sin subir nada, cuenta como subida');
+  ok(yaSubido(sanearEnvio({ subidas: [id] }), null, id), 'lo subido aquí se vuelve a subir');
+  ok(yaSubido(vacio, sanearEnvio({ subidas: [id] }), id), 'lo subido por otra pestaña se vuelve a subir');
+  ok(!yaSubido(vacio, sanearEnvio({ subidas: [id] }), null), 'sin id no se puede saber: no se descarta');
+  const muchas = sanearEnvio({ subidas: [...Array.from({ length: MAX_SUBIDAS + 10 }, (_, i) => `picks:${i}`), 3, 'x'.repeat(200)] });
+  eq(muchas.subidas.length, MAX_SUBIDAS, 'las subidas recordadas no tienen tope');
+  ok(muchas.subidas.every((v) => typeof v === 'string' && v.length <= 80), 'guarda basura');
 });
 
 terminar('app/envio');

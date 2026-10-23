@@ -3,7 +3,7 @@ import { CLAVES, leer, guardar } from './almacen.js';
 import { useAhora } from './useAhora.js';
 import { recogerPerfil, exportarPerfil } from '../../motor/perfil.js';
 import { subirIncidencia, comentarIncidencia, escribirFichero, leerFichero } from '../github.js';
-import { huellaDe, sanearEnvio, tocaSubir, tocaParte, conLoDeOtraPestana, encolarAparte, vaciarCola, paraSubir, ESPERA_MS } from '../envio.js';
+import { huellaDe, sanearEnvio, tocaSubir, tocaParte, conLoDeOtraPestana, yaSubido, MAX_SUBIDAS, encolarAparte, vaciarCola, paraSubir, ESPERA_MS } from '../envio.js';
 
 /**
  * La subida automática de tus partidas (3.10.0). Con un token de GitHub
@@ -114,9 +114,14 @@ export function useEnvio({ perfil, t }) {
   }, []);
 
   const subirAparte = useCallback((envio) => {
+    // Con `id`, una sola vez aunque se reabra la app o esté abierta dos veces (3.65.3).
+    if (envio?.id) {
+      if (yaSubido(ultimo.current.estado, sanearEnvio(leer(CLAVES.envio, {})), envio.id)) return Promise.resolve(null);
+      cambiar({ subidas: [...ultimo.current.estado.subidas, envio.id].slice(-MAX_SUBIDAS) });
+    }
     cola.current = encolarAparte(cola.current, envio);
     return vaciar();
-  }, [vaciar]);
+  }, [vaciar, cambiar]);
   // Reintento: cada minuto y al volver a la app (`ahora`), y al volver la red.
   useEffect(() => { vaciar(); }, [ahora, estado.token, vaciar]);
   useEffect(() => {

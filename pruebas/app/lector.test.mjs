@@ -411,7 +411,8 @@ test('el parte no dice «Todo bien» sin datos de la tablet (3.65.2): una Lector
 
 test('queApk y versionAnterior: qué Lector MLBB contesta', () => {
   eq(queApk({ ok: true, lector: null }).estado, 'antigua');
-  eq(queApk({ ok: false }).estado, 'nose');
+  eq(queApk({ ok: false, tipo: 'plazo' }).estado, 'sinRespuesta', 'sin respuesta de la tablet no se dice');
+  eq(queApk({ ok: false, tipo: 'plazo' }).tipo, 'plazo');
   eq(queApk({ ok: true, lector: {}, tablet: { apk: '3.63.0' } }, '3.64.1').estado, 'atrasada');
   eq(queApk({ ok: true, lector: {}, tablet: { apk: '3.64.1' } }, '3.64.1').estado, 'alDia');
   eq(queApk({ ok: true, lector: {}, tablet: { apk: '3.64.2' } }, '3.64.1').estado, 'alDia', 'una más nueva que la publicada no está atrasada');

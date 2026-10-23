@@ -364,7 +364,8 @@ export default function App() {
   // por si se corrigió algo después.
   const corregido = useRef(null);
   useEffect(() => {
-    if (!draft.completoDesde || corregido.current === draft.completoDesde || !draft.lectura?.ids?.length) return;
+    // Sin catálogo los nombres salen en «?» (#145): se espera a tenerlo.
+    if (!draft.completoDesde || corregido.current === draft.completoDesde || !draft.lectura?.ids?.length || !datos.heroes.length) return;
     corregido.current = draft.completoDesde;
     const desde = draft.completoDesde;
     // Lo de ESTE draft, ahora: la respuesta tarda (el lector aprende) y el draft puede haber cambiado.
@@ -377,10 +378,10 @@ export default function App() {
         // proyecto para medir por qué (3.52.0). Sin token no sube nada.
         const recortes = (r?.recortes ?? []).filter(recorteValido);
         if (recortes.length && faltoAlguien(leidos, verdad) && envioActual.current.activo) {
-          envioActual.current.subirAparte({ ...cuerpoDePicks({ recortes, verdad, leidos, heroes: datos.heroes, version: __APP_VERSION__ }), etiquetas: ['pantalla'] });
+          envioActual.current.subirAparte({ ...cuerpoDePicks({ recortes, verdad, leidos, heroes: datos.heroes, version: __APP_VERSION__ }), etiquetas: ['pantalla'], id: `picks:${desde}` });
         }
       });
-  }, [draft.completoDesde, draft.lectura, draft.enemigos, draft.baneos]);
+  }, [draft.completoDesde, draft.lectura, draft.enemigos, draft.baneos, datos.heroes]);
 
   /** Trae los datos de otro dispositivo: vienen fundidos, así que solo guarda. */
   const traerPerfil = (fundido) => {

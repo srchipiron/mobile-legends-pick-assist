@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.65.3
+
+- Ajustes → Lector en la tablet siempre te dice algo de la tablet. Si no
+  contesta, lo dice («La tablet no contesta en …»), te explica qué hacer y
+  trae un botón «Volver a mirar». Antes solo salía «Vinculado…», sin más.
+  Si contesta pero no se sabe cuál es la última publicada, te dice al menos
+  tu versión.
+- Las caras de un draft que el lector no leyó se suben al proyecto una sola
+  vez. Al reabrir la app con el draft completo se volvían a subir, a veces
+  con todos los nombres en «?» porque el catálogo aún no había cargado.
+
 ## 3.65.2
 
 - Pick Assist te dice si tu Lector MLBB está vieja. En Ajustes → Lector en

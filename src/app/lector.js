@@ -397,10 +397,12 @@ export function versionAnterior(a, b) {
 /**
  * Qué Lector MLBB contesta (3.65.2), con lo que da `/estado` y la última
  * publicada: 'antigua' (anterior a 3.63.0: sin bloque `lector`, no se
- * actualiza sola), 'atrasada' (hay una más nueva), 'alDia' o 'nose'.
+ * actualiza sola), 'atrasada' (hay una más nueva), 'alDia', 'nose' o
+ * 'sinRespuesta' (con el `tipo` del fallo).
  */
 export function queApk(estado, ultima = null) {
-  if (!estado?.ok) return { estado: 'nose' };
+  // Sin respuesta (3.65.3): antes no se decía nada y Ajustes se quedaba mudo.
+  if (!estado?.ok) return { estado: 'sinRespuesta', tipo: estado?.tipo ?? 'sinPuente' };
   if (!estado.lector) return { estado: 'antigua', ultima };
   const tuya = estado.tablet?.apk ?? null;
   if (!tuya) return { estado: 'nose', ultima };

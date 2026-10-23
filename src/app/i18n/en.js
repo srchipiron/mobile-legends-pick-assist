@@ -644,4 +644,9 @@ export default {
   'lectorTablet.apk.atrasada': 'Your Lector MLBB is {tuya} and {ultima} is out. It updates itself when it stops reading; if not, download it.',
   'lectorTablet.apk.alDia': 'Lector MLBB {tuya}: up to date.',
   'lectorTablet.apk.descargar': 'Download Lector MLBB',
+  'lectorTablet.apk.mirando': 'Checking the tablet…',
+  'lectorTablet.apk.sinRespuesta': 'The tablet does not answer at {direccion}.',
+  'lectorTablet.apk.otraVez': 'Check again',
+  'lectorTablet.apk.solo': 'Lector MLBB {tuya}.',
+  'lectorTablet.apk.nose': 'The tablet answers but does not say its version.',
 };

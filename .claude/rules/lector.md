@@ -1045,3 +1045,18 @@ que contestó una APK anterior a 3.63.0: sin bloque `lector` ni `tablet` en
   contenedor nuevo fueron 11,6 s contra un tope de 10 (23 de octubre). Hoy
   se compara con un temporizador del mismo plazo, que sufre el mismo
   bloqueo. Caza un cuelgue (+30 s); +4 s quedan tapados por el bloqueo.
+- Desde 3.65.3 Ajustes nunca se calla. Javi vio solo «Vinculado con la
+  tablet en …», sin línea de versión: o no contestaba la tablet o no se sabía
+  la última, y `queApk` daba 'nose' en los dos casos. Hoy hay 'sinRespuesta'
+  (con el `tipo`, y el aviso de `claveDeFallo`) y «Volver a mirar». Con
+  'nose' se dice al menos tu versión. Prueba en `lector.e2e`, dos mutaciones.
+- Las incidencias #142, #143 y #145 eran la MISMA lectura subida tres
+  veces, y la tercera con todo en «?». El efecto de `/corregir` (App.jsx) se
+  rearma al recargar: `corregido` es un ref, así que con el draft ya
+  completo vuelve a corregir y a subir. Además corría antes de cargar el
+  catálogo, y `cuerpoDePicks` saca los nombres de él.
+  Desde 3.65.3:
+  - espera a `datos.heroes`;
+  - `subirAparte` con `id` (`picks:<completoDesde>`) sube una vez: lo
+    recuerda en `roam-picker:envio` (`subidas`, hasta `MAX_SUBIDAS`) y lo
+    consulta también en lo guardado por otra pestaña.

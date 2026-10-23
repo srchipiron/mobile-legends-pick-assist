@@ -461,6 +461,38 @@ await prueba('Ajustes dice si Lector MLBB está vieja o atrasada, con el enlace 
   }
 });
 
+await prueba('si la tablet no contesta, Ajustes lo dice con lo que hay que hacer, y «Volver a mirar» lo vuelve a intentar (3.65.3)', async () => {
+  let contesta = false;
+  const enPicks = { ...almacen, 'roam-picker:draft': { enemies: ['Layla'], allies: [], bans: [], enemyRoam: null, fase: 'picks' }, 'roam-picker:lector-tablet': { direccion: '192.168.68.116:47323', codigo: 'ABCDEFGH23' } };
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, {
+    almacen: enPicks,
+    antes: async (p) => {
+      await p.context().route('http://192.168.68.116:47323/**', (ruta) => {
+        const q = ruta.request();
+        const cab = { 'Access-Control-Allow-Origin': q.headers().origin ?? '*', 'Access-Control-Allow-Headers': 'Content-Type, X-Lector-Codigo', 'Access-Control-Allow-Methods': 'GET, POST' };
+        if (!contesta) return ruta.abort('connectionrefused');
+        if (q.method() === 'OPTIONS') return ruta.fulfill({ status: 204, headers: cab });
+        return ruta.fulfill({ status: 200, headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true, aprendido: {}, lector: { minutos: 1 }, tablet: { apk: '3.64.1' } }) });
+      });
+      // Sin saber la última publicada: dice al menos la tuya.
+      await p.context().route('https://api.github.com/repos/*/*/releases/latest', (ruta) => ruta.fulfill({ status: 403, contentType: 'application/json', body: '{}' }));
+    },
+  });
+  await abrirAjustes(pagina);
+  const panel = pagina.locator('.lector-tablet');
+  let texto = '';
+  for (let i = 0; i < 60 && !/no contesta/.test(texto); i++) { texto = await panel.innerText(); await pagina.waitForTimeout(150); }
+  ok(/no contesta en 192\.168\.68\.116:47323/.test(texto), `sin respuesta no dice nada: ${texto}`);
+  ok(/Empezar a leer/.test(texto), `no dice qué hacer: ${texto}`);
+  contesta = true;
+  await panel.getByRole('button', { name: 'Volver a mirar' }).click();
+  for (let i = 0; i < 60 && !/Lector MLBB 3\.64\.1\./.test(texto); i++) { texto = await panel.innerText(); await pagina.waitForTimeout(150); }
+  ok(/Lector MLBB 3\.64\.1\./.test(texto), `al contestar, sin saber la última, no dice tu versión: ${texto}`);
+  eq(await panel.getByRole('button', { name: 'Volver a mirar' }).count(), 0, 'contestando sigue el botón de volver a mirar');
+  ok(!errores.length, `errores de página: ${errores}`);
+  await contexto.close();
+});
+
 await prueba('si el lector no llega a la tablet, o no está abierto, lo dice con lo que hay que hacer', async () => {
   capturar = () => { throw new Error('device offline'); };
   let { contexto, pagina } = await paginaCon(navegador, url, { almacen });

@@ -41,8 +41,17 @@ export function sanearEnvio(x) {
     tablet: num(o.tablet),
     tabletHuella: texto(o.tabletHuella),
     tabletCuando: num(o.tabletCuando),
+    // Lo ya subido aparte (3.65.3): al reabrir la app con el draft completo, la
+    // misma lectura se subía otra vez (#142, #143 y #145 eran una).
+    subidas: Array.isArray(o.subidas) ? o.subidas.filter((v) => typeof v === 'string' && v.length <= 80).slice(-MAX_SUBIDAS) : [],
   };
 }
+
+/** Las últimas subidas aparte que se recuerdan. Decisión de producto: unas semanas de partidas. */
+export const MAX_SUBIDAS = 60;
+
+/** ¿Ya se subió esto (aquí o en otra pestaña)? Sin `id`, nunca. */
+export const yaSubido = (estado, guardado, id) => !!id && [...(estado?.subidas ?? []), ...(guardado?.subidas ?? [])].includes(id);
 
 /**
  * ¿Toca subir ahora? Con token, con algo que subir, con red, con datos

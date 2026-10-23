@@ -1086,3 +1086,9 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   APK que no se actualiza sola pasaba por sana (#148, 22 de octubre). Hoy
   falta de datos = aviso (`queApk`). Lección: un informe que dice «bien»
   tiene que haber visto con qué decirlo; si falta el dato, eso es el aviso.
+- **La misma lectura del draft subida tres veces, una sin nombres (3.52.0 →
+  3.65.3)**: el efecto que corrige la lectura al completar el draft se
+  rearmaba al recargar la app, porque su marca era un ref. Así volvía a
+  subir los recortes (#142, #143, #145), y si el catálogo no había cargado,
+  con todos los nombres en «?». Lección: lo que se hace «una vez por draft»
+  se marca en lo que sobrevive a una recarga, no en memoria.

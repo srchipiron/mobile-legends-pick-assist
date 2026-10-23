@@ -661,4 +661,9 @@ export default {
   'lectorTablet.apk.atrasada': 'Tu Lector MLBB es la {tuya} y hay la {ultima}. Se pone sola al dejar de leer; si no, descárgala.',
   'lectorTablet.apk.alDia': 'Lector MLBB {tuya}: al día.',
   'lectorTablet.apk.descargar': 'Descargar Lector MLBB',
+  'lectorTablet.apk.mirando': 'Mirando la tablet…',
+  'lectorTablet.apk.sinRespuesta': 'La tablet no contesta en {direccion}.',
+  'lectorTablet.apk.otraVez': 'Volver a mirar',
+  'lectorTablet.apk.solo': 'Lector MLBB {tuya}.',
+  'lectorTablet.apk.nose': 'La tablet contesta, pero no dice su versión.',
 };
