@@ -1,6 +1,166 @@
 {
- "actualizado": "2026-10-23T20:50:50.963Z",
+ "actualizado": "2026-10-23T21:51:25.716Z",
  "partidas": [
+  {
+   "t": 1792792271074,
+   "pick": "Estes",
+   "recomendados": [
+    "Rafaela",
+    "Floryn",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.531,
+   "modelo": 3,
+   "bans": [
+    "Belerick",
+    "Lukas",
+    "Hirara",
+    "Aulus",
+    "Minotaur",
+    "Marcel",
+    "Obsidia",
+    "Clint",
+    "Fredrinn",
+    "Kaja"
+   ],
+   "draft": {
+    "enemigos": [
+     "Masha",
+     "Esmeralda",
+     "Angela",
+     "Lesley",
+     "Luo Yi"
+    ],
+    "aliados": [
+     "Thamuz",
+     "Zetian",
+     "Badang",
+     "Wanwan"
+    ],
+    "linea": "roam",
+    "rival": "Angela"
+   },
+   "lector": {
+    "baneos": [
+     "Belerick",
+     "Lukas",
+     "Hirara",
+     "Aulus",
+     "Minotaur",
+     "Marcel",
+     "Obsidia",
+     "Clint",
+     "Fredrinn",
+     "Kaja"
+    ],
+    "enemigos": [
+     "Esmeralda",
+     "Angela",
+     "Lesley",
+     "Masha",
+     "Luo Yi"
+    ],
+    "aliados": [
+     "Thamuz",
+     "Zetian",
+     "Badang",
+     "Wanwan"
+    ],
+    "tuyo": "Estes",
+    "ms": [
+     743,
+     941,
+     1109,
+     1105,
+     1565,
+     916,
+     955,
+     1052,
+     1007,
+     982,
+     1047,
+     582,
+     1114,
+     564,
+     1165,
+     565,
+     630,
+     1045,
+     1089,
+     1037
+    ],
+    "msCaptura": [
+     42,
+     50,
+     52,
+     84,
+     515,
+     71,
+     58,
+     67,
+     68,
+     62,
+     68,
+     73,
+     65,
+     78,
+     280,
+     35,
+     34,
+     73,
+     82,
+     51
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Masha",
+      "Masha",
+      "Masha"
+     ],
+     "sinEncontrar": [
+      "Luo Yi",
+      "Lesley",
+      "Luo Yi",
+      "Lesley",
+      "Luo Yi",
+      "Lesley"
+     ]
+    }
+   },
+   "duracion": 22,
+   "fases": [
+    0.599,
+    0.525,
+    0.501,
+    0.506,
+    0.494,
+    0.506
+   ]
+  },
   {
    "t": 1792788632929,
    "pick": "Estes",
@@ -23087,6 +23247,12 @@
   },
   {
    "cuando": "2026-10-23T20:50:50.963Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-23T21:51:25.716Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
