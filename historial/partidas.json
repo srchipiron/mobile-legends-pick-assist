@@ -1,6 +1,164 @@
 {
- "actualizado": "2026-10-23T21:51:25.716Z",
+ "actualizado": "2026-10-23T22:27:18.341Z",
  "partidas": [
+  {
+   "t": 1792794422235,
+   "pick": "Angela",
+   "recomendados": [
+    "Rafaela",
+    "Floryn",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.509,
+   "modelo": 3,
+   "bans": [
+    "Obsidia",
+    "Hirara",
+    "Marcel",
+    "Lukas",
+    "Minotaur"
+   ],
+   "draft": {
+    "enemigos": [
+     "Masha",
+     "Selena",
+     "Granger"
+    ],
+    "aliados": [
+     "Aulus",
+     "Thamuz",
+     "Wanwan",
+     "Gord"
+    ],
+    "linea": "roam"
+   },
+   "lector": {
+    "baneos": [
+     "Obsidia",
+     "Hirara",
+     "Marcel",
+     "Lukas",
+     "Minotaur"
+    ],
+    "enemigos": [
+     "Masha",
+     "Khufra",
+     "Selena"
+    ],
+    "aliados": [
+     "Aulus",
+     "Thamuz",
+     "Wanwan",
+     "Gord"
+    ],
+    "tuyo": "Angela",
+    "dudas": [
+     {
+      "hueco": "t4",
+      "candidato": "Gord",
+      "parecido": 0.76
+     },
+     {
+      "hueco": "t5",
+      "candidato": "Gord",
+      "parecido": 0.74
+     },
+     {
+      "hueco": "s1",
+      "candidato": "Beatrix",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "s2",
+      "candidato": "Beatrix",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "s5",
+      "candidato": "Bane",
+      "parecido": 0.71
+     },
+     {
+      "hueco": "e2",
+      "candidato": "Bruno",
+      "parecido": 0.75
+     },
+     {
+      "hueco": "e4",
+      "candidato": "Beatrix",
+      "parecido": 0.73
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Gord",
+      "parecido": 0.67
+     },
+     {
+      "hueco": "a5",
+      "candidato": "Moskov",
+      "parecido": 0.77
+     }
+    ],
+    "ms": [
+     1504,
+     652,
+     1416,
+     832,
+     1420,
+     1217,
+     1136,
+     598,
+     1205,
+     1557,
+     1390,
+     1592,
+     1149,
+     1582
+    ],
+    "msCaptura": [
+     46,
+     52,
+     62,
+     56,
+     489,
+     69,
+     57,
+     48,
+     60,
+     67,
+     91,
+     49,
+     92,
+     74
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ]
+   },
+   "fases": [
+    0.434,
+    0.514,
+    0.559,
+    0.555,
+    0.524,
+    0.493
+   ]
+  },
   {
    "t": 1792792271074,
    "pick": "Estes",
@@ -23253,6 +23411,12 @@
   },
   {
    "cuando": "2026-10-23T21:51:25.716Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-23T22:27:18.341Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
