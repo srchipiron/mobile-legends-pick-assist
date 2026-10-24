@@ -403,6 +403,14 @@ test('el parte de la tablet (3.63.0): dice lo que va mal, todo bien si nada, y n
   for (const e of ['no llega al lector: IOException', 'Android no deja pintarla: BadToken', 'el lector no contesta']) ok(conBurbuja(e).avisos.some((a) => a.includes(e)), `la burbuja que no sale (${e}) no avisa (3.68.1)`);
   for (const e of ['enseñando', 'esperando consejo', 'parada']) eq(conBurbuja(e).avisos.length, 0, `la burbuja sana (${e}) avisa`);
   ok(conBurbuja('enseñando').texto.includes('abajo, enseñando'), 'el parte no dice cómo va la burbuja');
+  // Lo que hace la tablet sola (3.69.3).
+  const conSolo = (solo) => parteDeLaTablet({ ...sano, solo }, { version: '3.63.0', ahora: 3 * 60000 });
+  const leyendo = conSolo({ activo: true, linea: 'roam', origen: 'movil', apartado: false, lecturas: 12, ultima: { cuando: 60000, enPartida: false, baneos: 10, enemigos: 4, aliados: 3 } });
+  ok(/Sin móvil: lee con roam \(la que mandó la app\) · 12 lecturas · la última hace 2 min: 10 baneos, 4 enemigos, 3 de tu equipo/.test(leyendo.texto), `el parte no dice qué lee la tablet sola: ${leyendo.texto}`);
+  eq(leyendo.avisos.length, 0);
+  ok(conSolo({ activo: false, origen: 'sinLinea' }).avisos.some((a) => /no lee sola/.test(a)), 'sin línea no avisa');
+  eq(conSolo({ activo: false, origen: 'apagado' }).avisos.length, 0, '«Apagado» a propósito avisa');
+  ok(/Sin móvil: no lee \(apagado en la APK\)/.test(conSolo({ activo: false, origen: 'apagado' }).texto), 'no dice que está apagado');
   eq(parteDeLaTablet({ ...sano, salida: 'Último cierre (hace 1 min): se actualizó' }, { version: '3.63.0', ahora: 2000 }).avisos.length, 0, 'actualizarse cuenta como un fallo');
   ok(parteDeLaTablet({ ...sano, tablet: { ...sano.tablet, cuando: 0 } }, { ahora: 10 * 60000 }).avisos.some((a) => /señales/.test(a)), 'no avisa de una app que dejó de escribir su salud');
   eq(parteDeLaTablet({ ok: false, tipo: 'sinPuente' }), null);

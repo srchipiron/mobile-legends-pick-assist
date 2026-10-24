@@ -1178,3 +1178,31 @@ APK de antes la quita igual (sin consejo, se quita); la nueva dice
 «escondida mientras juegas». Prueba en `puente-lector` con una pantalla de
 juego real; cinco mutaciones.
 
+## La tablet sin el móvil delante (3.69.3)
+
+Javi, tras la 3.69.2: «sigue apareciendo la burbuja en mitad de partida, y
+no llega a detectar bien los picks y bans. Tengo que abrir la app web». Las
+partidas de ese día (de la app) leían bien; lo de la tablet sola no dejaba
+rastro. Dos causas:
+- La burbuja solo se quitaba si alguien capturaba. Con la app del móvil
+  cerrada o con la pantalla apagada y sin línea en «Sin móvil», nadie lo
+  hacía y el último consejo se quedaba toda la partida. Hoy
+  `interno.mirarPartida` (servir.mjs) hace un VISTAZO (captura y
+  `enPartida`, sin reconocer caras) si hay consejo y nadie capturó en
+  `VISTAZO_MS` (10 s); en-tablet.mjs lo llama cada 10 s. Los vistazos
+  cuentan aparte (`salud.vistazos`): como lecturas, la guía de la APK diría
+  que el móvil lee.
+- El modo solo solo leía con la línea elegida en la APK. Hoy la app manda
+  `ajustes` (línea, rango, idioma) con cada consejo, `sanearAjustes` los
+  valida, `ajustesDeLaTablet` (en-tablet.mjs) los guarda en
+  `solo-movil.json` para después de un reinicio y `ajustesEfectivos`
+  (solo.mjs) decide: la de la APK si hay; si no, y sin «Apagado»
+  (`apagado`, `activo: false` en solo.json), la del móvil.
+- `/estado` lleva `solo` (`resumen` de crearSolo: activo, línea y de dónde,
+  si se aparta por el móvil, lecturas y lo último leído) y el parte lo dice
+  en una fila «Sin móvil»; sin línea, aviso.
+- Pruebas en `puente-lector` (vistazo con una pantalla de juego y otra del
+  draft), `solo`, `en-tablet`, `app/lector` y `lector.e2e` (el consejo lleva
+  la línea). Quince mutaciones; sobrevive una inofensiva: sanear la línea
+  guardada repite lo que `ajustesEfectivos` ya hace.
+

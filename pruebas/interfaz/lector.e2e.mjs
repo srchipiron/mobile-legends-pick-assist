@@ -73,7 +73,7 @@ await prueba('el enlace del QR de la tablet vincula la app: lee de la tablet con
       const cab = { 'Access-Control-Allow-Origin': q.headers().origin ?? '*', 'Access-Control-Allow-Headers': 'Content-Type, X-Lector-Codigo', 'Access-Control-Allow-Methods': 'GET, POST' };
       if (q.method() === 'OPTIONS') return ruta.fulfill({ status: 204, headers: cab });
       const camino = new URL(q.url()).pathname;
-      vistas.push({ camino, codigo: q.headers()['x-lector-codigo'] });
+      vistas.push({ camino, codigo: q.headers()['x-lector-codigo'], cuerpo: q.postData() ?? '' });
       const r = await fetch(`http://127.0.0.1:${PUERTO}${camino}`, { method: q.method(), headers: { Origin: q.headers().origin ?? 'http://127.0.0.1', 'Content-Type': 'application/json' }, body: q.postData() ?? undefined });
       return ruta.fulfill({ status: r.status, headers: { ...cab, 'Content-Type': 'application/json' }, body: await r.text() });
     }),
@@ -90,6 +90,9 @@ await prueba('el enlace del QR de la tablet vincula la app: lee de la tablet con
   // Y la burbuja de la tablet recibe tu nº1 (3.62.0).
   for (let i = 0; i < 40 && !vistas.some((v) => v.camino === '/consejo'); i++) await pagina.waitForTimeout(250);
   ok(vistas.some((v) => v.camino === '/consejo'), 'la app no manda el consejo a la tablet');
+  // Con tu línea (3.69.3): con ella la tablet sigue leyendo sola cuando el móvil se calla.
+  const conAjustes = vistas.find((v) => v.camino === '/consejo' && v.cuerpo.includes('"ajustes"'));
+  ok(conAjustes && /^[a-z]+$/.test(JSON.parse(conAjustes.cuerpo).ajustes?.linea ?? ''), `el consejo no lleva tu línea: ${conAjustes?.cuerpo ?? 'sin ajustes'}`);
   eq(await pagina.evaluate(() => window.location.hash), '', 'el enlace con el código se queda en la barra de direcciones');
   eq(JSON.stringify(await leer(pagina, 'roam-picker:lector-tablet')), JSON.stringify({ direccion: '192.168.68.116:47323', codigo: 'ABCDEFGH23' }), 'la vinculación no se guarda');
   eq(await leer(pagina, 'roam-picker:lector-auto'), true, 'vincular no enciende «Leer solo»');

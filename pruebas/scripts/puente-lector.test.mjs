@@ -7,7 +7,7 @@ import { mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync, exist
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { crearServidor, lectorEnHilos, leerCaptura, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS, EN_PARTIDA_PARA_ESCONDER } from '../../scripts/lector/servir.mjs';
+import { crearServidor, lectorEnHilos, leerCaptura, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS, EN_PARTIDA_PARA_ESCONDER, VISTAZO_MS, sanearAjustes } from '../../scripts/lector/servir.mjs';
 import { guardarResultados } from '../../scripts/lector/resultado.mjs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { carasGuardadas, vaciosAliadoGuardados } from '../../scripts/lector/leer.mjs';
@@ -548,6 +548,42 @@ test('en partida la burbuja se quita: sin consejo tras dos capturas con el minim
     eq(despues.consejo?.titulo, 'Rafaela 55%', 'acabada la partida no vuelve el consejo guardado');
     eq(despues.enPartida, false);
   });
+});
+
+test('el vistazo al minimapa (3.69.3): sin nadie leyendo, la burbuja se quita igual en partida; sin burbuja ni con capturas recientes, no captura', async () => {
+  const peq = leerPng(readFileSync(new URL('../fixtures/juego/pantallas/juego-27.png', import.meta.url)));
+  const k = 5, ancho = peq.ancho * k, alto = peq.alto * k, rgba = new Uint8Array(ancho * alto * 4);
+  for (let y = 0; y < alto; y++) for (let x = 0; x < ancho; x++) { const o = (Math.floor(y / k) * peq.ancho + Math.floor(x / k)) * 4; rgba.set(peq.rgba.subarray(o, o + 4), (y * ancho + x) * 4); }
+  const juego = escribirPng({ ancho, alto, rgba });
+  let reloj = 1_000_000, capturas = 0, pantalla = juego;
+  const servidor = crearServidor({ caras, enHilos: false, ahora: () => reloj, capturar: async () => { capturas += 1; return pantalla; } });
+  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${servidor.address().port}`;
+  try {
+    eq(await servidor.interno.mirarPartida(), null, 'sin burbuja que quitar, captura igual');
+    eq(capturas, 0);
+    await fetch(`${base}/consejo`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ consejo: { titulo: 'Rafaela 55%' }, ajustes: { linea: 'roam', rango: 'mythic', idioma: 'en' } }) });
+    eq(JSON.stringify(servidor.interno.ajustesDelMovil()), JSON.stringify({ linea: 'roam', rango: 'mythic', idioma: 'en' }), 'no se queda con los ajustes que manda la app');
+    for (let i = 0; i < EN_PARTIDA_PARA_ESCONDER; i += 1) {
+      ok((await servidor.interno.mirarPartida())?.lectura?.partida === true, 'el vistazo no ve la partida');
+      eq(await servidor.interno.mirarPartida(), null, 'dos vistazos seguidos: captura sin esperar');
+      reloj += VISTAZO_MS;
+    }
+    eq(capturas, EN_PARTIDA_PARA_ESCONDER);
+    eq((await (await fetch(`${base}/consejo`)).json()).consejo, null, 'con los vistazos en partida, la burbuja sigue');
+    const estado = await (await fetch(`${base}/estado`, { headers: cab })).json();
+    ok(estado.lector.vistazos === EN_PARTIDA_PARA_ESCONDER && estado.lector.lecturas === 0, `un vistazo cuenta como lectura (la guía diría que el móvil lee): ${JSON.stringify(estado.lector)}`);
+    // Acabada la partida (otra pantalla): el vistazo la devuelve, y sin reconocer caras (es solo el minimapa).
+    pantalla = png;
+    const fuera = await servidor.interno.mirarPartida();
+    ok(fuera?.lectura?.partida === false && !('enemigos' in fuera.lectura), `el vistazo reconoce caras (gasta lo de una lectura entera): ${JSON.stringify(Object.keys(fuera?.lectura ?? {}))}`);
+    eq((await (await fetch(`${base}/consejo`)).json()).consejo?.titulo, 'Rafaela 55%', 'fuera de partida el vistazo no devuelve la burbuja');
+    // Unos ajustes raros no pisan los buenos.
+    await fetch(`${base}/consejo`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ ajustes: { linea: '../x' } }) });
+    eq(servidor.interno.ajustesDelMovil()?.linea, 'roam', 'unos ajustes sin forma pisan los buenos');
+  } finally { servidor.close(); }
+  eq(sanearAjustes({ linea: 'roam', rango: '<b>' })?.rango, 'glory');
+  eq(sanearAjustes({ linea: 'Roam!' }), null);
 });
 
 await terminar('scripts/puente-lector');

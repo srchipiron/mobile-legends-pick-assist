@@ -121,13 +121,32 @@ export function consejoSolo({ datos, draft, linea, idioma = 'es' }) {
   } catch { return null; }
 }
 
-/** Lo que la APK escribe en `solo.json`: la línea (sin ella, apagado), el rango y el idioma. */
+/**
+ * Lo que la APK escribe en `solo.json`: la línea (sin ella, apagado), el rango
+ * y el idioma. `apagado` es que Javi tocó «Apagado» (`activo: false`): eso
+ * manda sobre la línea que diga la app (3.69.3).
+ */
 export function leerAjustesSolo(fichero) {
   try {
     const j = JSON.parse(readFileSync(fichero, 'utf8'));
     const linea = LINEAS_SOLO.includes(j?.linea) ? j.linea : null;
-    return { activo: !!linea && j.activo !== false, linea, rango: typeof j.rango === 'string' && /^[a-z]{2,12}$/.test(j.rango) ? j.rango : 'glory', idioma: j.idioma === 'en' ? 'en' : 'es' };
-  } catch { return { activo: false, linea: null, rango: 'glory', idioma: 'es' }; }
+    return { activo: !!linea && j.activo !== false, apagado: j?.activo === false, linea, rango: typeof j.rango === 'string' && /^[a-z]{2,12}$/.test(j.rango) ? j.rango : 'glory', idioma: j.idioma === 'en' ? 'en' : 'es' };
+  } catch { return { activo: false, apagado: false, linea: null, rango: 'glory', idioma: 'es' }; }
+}
+
+/**
+ * Con qué ajustes lee la tablet sola (3.69.3). Hasta ahora solo con la línea
+ * elegida en la APK, y sin ella, en cuanto se callaba el móvil nadie leía: la
+ * burbuja se quedaba con el consejo viejo. Hoy: la de la APK si hay; si no, y
+ * sin «Apagado», la última que mandó la app del móvil.
+ */
+export function ajustesEfectivos(apk, movil) {
+  if (apk?.activo) return { ...apk, origen: 'apk' };
+  if (apk?.apagado) return { ...apk, activo: false, origen: 'apagado' };
+  if (movil && LINEAS_SOLO.includes(movil.linea)) {
+    return { activo: true, apagado: false, linea: movil.linea, rango: typeof movil.rango === 'string' && /^[a-z]{2,12}$/.test(movil.rango) ? movil.rango : 'glory', idioma: movil.idioma === 'en' ? 'en' : 'es', origen: 'movil' };
+  }
+  return { ...(apk ?? { linea: null, rango: 'glory', idioma: 'es' }), activo: false, origen: 'sinLinea' };
 }
 
 /**
@@ -140,15 +159,24 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
   let draft = draftVacio();
   let ultimoConsejo = null;
   let reloj = null, parado = false;
+  // Lo que se cuenta en /estado (3.69.3): sin esto no se sabía si la tablet leía sola.
+  const resumen = { activo: false, linea: null, origen: null, apartado: false, lecturas: 0, ultima: null };
   async function tic() {
     const a = ajustes();
+    Object.assign(resumen, { activo: !!a.activo, linea: a.linea ?? null, origen: a.origen ?? null, apartado: false });
     if (!a.activo) return intervalos.vacio;
     const movil = interno.delMovil();
     const t = ahora();
-    if ((movil.leyo && t - movil.leyo < MOVIL_ACTIVO_MS) || (movil.consejo && t - movil.consejo < MOVIL_ACTIVO_MS)) return intervalos.vacio;
+    if ((movil.leyo && t - movil.leyo < MOVIL_ACTIVO_MS) || (movil.consejo && t - movil.consejo < MOVIL_ACTIVO_MS)) { resumen.apartado = true; return intervalos.vacio; }
     const r = await interno.leer({ rapida: true });
     if (!r?.ok) return intervalos.error;
     draft = acumularDraft(draft, r.lectura, ahora());
+    resumen.lecturas += 1;
+    resumen.ultima = {
+      cuando: ahora(),
+      enPartida: !!r.lectura?.partida,
+      baneos: draft.baneos.length, enemigos: draft.enemigos.filter(Boolean).length, aliados: draft.aliados.filter(Boolean).length,
+    };
     if (draft.cerrado) return intervalos.partida;
     const datos = datosPara(a.rango);
     const consejo = consejoSolo({ datos, draft, linea: a.linea, idioma: a.idioma });
@@ -175,6 +203,7 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     arrancar: () => { parado = false; reloj = programar(vuelta, intervalos.vacio); },
     parar: () => { parado = true; if (reloj) cancelar(reloj); },
     estado: () => draft,
+    resumen: () => ({ ...resumen, ultima: resumen.ultima ? { ...resumen.ultima } : null }),
   };
 }
 

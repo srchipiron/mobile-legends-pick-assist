@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.69.3
+
+- La burbuja ya se quita en la partida aunque la app del móvil esté
+  cerrada: la tablet echa un vistazo al minimapa cada 10 segundos mientras
+  enseña algo. Antes solo se quitaba si alguien estaba leyendo, y con el
+  móvil apagado nadie leía, así que se quedaba toda la partida.
+- La tablet sigue leyendo el draft sola cuando cierras la app del móvil,
+  sin tener que elegir la línea en «Sin móvil»: usa la línea que tienes en
+  la app. Si en Lector MLBB tocas «Apagado», no lee sola.
+- El parte de salud de la tablet dice qué hace la tablet por su cuenta (si
+  lee, con qué línea y qué leyó la última vez), y avisa si no lee.
+
 ## 3.69.2
 
 - La burbuja de la tablet dice en qué fase del draft cree que estás:

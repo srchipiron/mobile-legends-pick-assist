@@ -9,7 +9,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { principal, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk } from '../../scripts/lector/en-tablet.mjs';
+import { principal, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet } from '../../scripts/lector/en-tablet.mjs';
 import { writeFileSync } from 'node:fs';
 import { crearPortero, hostPermitido, crearServidor, fundirAprendido, FALLOS_CODIGO, VENTANA_CODIGO_MS } from '../../scripts/lector/servir.mjs';
 import { aprenderResultado, reconocerResultado, plantillasIniciales, ZONA_PALABRA } from '../../scripts/lector/resultado.mjs';
@@ -150,6 +150,27 @@ test('el consejo y el resumen que manda la app (3.62.0): solo la app los escribe
     eq((await leerApk()).consejo, null, 'el consejo no se borra');
     eq((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: null, codigo: null })).estado, 401, 'el consejo se lee sin el código');
   } finally { servidor.close(); apk.cerrar(); }
+});
+
+test('la línea que manda la app vale para leer sola, también tras reiniciar sin el móvil; «Apagado» en la APK manda (3.69.3)', () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-ajustes-'));
+  let delMovil = null;
+  const interno = { ajustesDelMovil: () => delMovil };
+  eq(ajustesDeLaTablet(casa, interno)().origen, 'sinLinea');
+  delMovil = { linea: 'jungle', rango: 'glory', idioma: 'es' };
+  const a = ajustesDeLaTablet(casa, interno)();
+  ok(a.activo && a.linea === 'jungle' && a.origen === 'movil', `no lee con la línea del móvil: ${JSON.stringify(a)}`);
+  // Reiniciada, sin el móvil: la línea guardada.
+  delMovil = null;
+  const tras = ajustesDeLaTablet(casa, interno)();
+  ok(tras.activo && tras.linea === 'jungle', `tras reiniciar se olvida de la línea: ${JSON.stringify(tras)}`);
+  writeFileSync(join(casa, 'solo.json'), JSON.stringify({ activo: false }));
+  eq(ajustesDeLaTablet(casa, interno)().activo, false, '«Apagado» en la APK no manda');
+  writeFileSync(join(casa, 'solo.json'), JSON.stringify({ linea: 'mid' }));
+  eq(ajustesDeLaTablet(casa, interno)().linea, 'mid', 'la línea del móvil pisa la de la APK');
+  writeFileSync(join(casa, 'solo-movil.json'), '{"linea":"../x"}');
+  writeFileSync(join(casa, 'solo.json'), '{}');
+  eq(ajustesDeLaTablet(casa, interno)().activo, false, 'una línea guardada sin forma vale');
 });
 
 test('la salud de la tablet (3.63.0): /estado cuenta lecturas y fallos, y lo que la APK escribe, solo con campos conocidos', async () => {

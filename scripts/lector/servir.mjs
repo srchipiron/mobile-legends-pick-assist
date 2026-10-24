@@ -366,6 +366,12 @@ export function sanearConsejo(c) {
   const titulo = textoPlano(c?.titulo, 80);
   return titulo ? { titulo, detalle: textoPlano(c?.detalle, 160) } : null;
 }
+/** Lo que la app dice de tus ajustes (3.69.3): solo palabras cortas en minúscula; lo valida el modo solo. */
+export function sanearAjustes(a) {
+  const palabra = (v) => (typeof v === 'string' && /^[a-z]{2,12}$/.test(v) ? v : null);
+  const linea = palabra(a?.linea);
+  return linea ? { linea, rango: palabra(a?.rango) ?? 'glory', idioma: a?.idioma === 'en' ? 'en' : 'es' } : null;
+}
 export function sanearResumen(r) {
   const titulo = textoPlano(r?.titulo, 80), texto = textoPlano(r?.texto, 300);
   return titulo && texto && typeof r?.id === 'string' && /^[\w-]{1,60}$/.test(r.id) ? { id: r.id, titulo, texto } : null;
@@ -453,6 +459,13 @@ export function lectorEnHilos({ caras, registrar = () => {}, tarea = new URL('le
 
 /** Capturas seguidas con el minimapa para quitar la burbuja: las mismas que cierran el draft (LECTURAS_EN_PARTIDA). */
 export const EN_PARTIDA_PARA_ESCONDER = 2;
+/**
+ * Cada cuánto, como mucho, se echa un vistazo al minimapa con la burbuja
+ * puesta y nadie capturando (3.69.3): sin la app leyendo ni el modo solo, la
+ * burbuja se quedaba en mitad de la partida. Decisión de producto: dos
+ * vistazos son 20 s de burbuja al empezar.
+ */
+export const VISTAZO_MS = 10000;
 
 /**
  * El servidor, con la captura inyectada: en Termux es `capturarTablet`, en
@@ -467,8 +480,12 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   // que decir hasta el draft siguiente. Cuenta las capturas SEGUIDAS con el
   // minimapa (de /leer, del modo solo y de la vigilancia); una que no lo
   // tenga (la tabla del final, el draft siguiente) la devuelve.
-  let seguidasEnPartida = 0;
-  const anotarPartida = (si) => { seguidasEnPartida = si ? seguidasEnPartida + 1 : 0; };
+  let seguidasEnPartida = 0, ultimaMirada = null;
+  const anotarPartida = (si) => { seguidasEnPartida = si ? seguidasEnPartida + 1 : 0; ultimaMirada = ahora(); };
+  // Lo último que dijo la app de tu línea, rango e idioma (3.69.3): el modo
+  // solo los usa si en la APK no se eligió línea, para que la tablet siga
+  // leyendo cuando el móvil se calla. En memoria; en-tablet.mjs lo guarda.
+  let ajustesDelMovil = null;
   // El modo solo de la tablet (3.66.0) se aparta cuando el móvil lee o
   // manda su consejo: estos instantes dicen cuándo fue la última vez.
   let ultimaDelMovil = null, consejoDelMovil = null;
@@ -479,7 +496,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   let n = 0, aprendiendo = null;
   // La salud del lector (3.63.0): cuántas lecturas, cuántas capturas fallaron y la última, desde que arrancó.
   const arranque = ahora();
-  const salud = { lecturas: 0, fallosCaptura: 0, ultimoFallo: null };
+  const salud = { lecturas: 0, vistazos: 0, fallosCaptura: 0, ultimoFallo: null };
   resultados = resultados ?? plantillasDeSerie();
   /** Guarda una captura y borra las que ya no hacen falta (3.34.0). */
   const podar = () => { if (carpeta) podarCapturas(carpeta, { ahora: ahora(), maximos, proteger: new Set((final?.fotogramas ?? []).map((f) => f.id)) }); };
@@ -761,11 +778,12 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
    * app del móvil por `/leer` y el modo solo de la tablet. Con `rapida`, en
    * partida no reconoce caras. Devuelve `{ ok, lectura }` o `{ ok: false, estado, error }`.
    */
-  async function hacerLectura({ rapida = false } = {}) {
+  async function hacerLectura({ rapida = false, soloPartida = false } = {}) {
     const t0 = Date.now();
     // El instante de la lectura en el reloj de la vigilancia (inyectable en las pruebas).
     const tLeida = ahora();
-    salud.lecturas += 1;
+    // Un vistazo al minimapa (3.69.3) no es una lectura: no cuenta como que alguien lee.
+    if (soloPartida) salud.vistazos += 1; else salud.lecturas += 1;
     // Comprimida o no (3.45.0, `crearElectorDeCaptura`); sin elector, comprimida como siempre.
     let formato = elector?.siguiente() ?? 'png', png = null, crudo = null, tFormato = t0, t1;
     try {
@@ -805,7 +823,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       if (partida) { leidas.seguidas += 1; if (leidas.seguidas === 1) leidas.dentro = tLeida; } else { leidas.fuera = tLeida; leidas.dentro = null; leidas.seguidas = 0; }
       // Rápida (3.66.0): en partida el modo solo solo pregunta si sigue en
       // partida (el minimapa, 13 ms); reconocer caras entonces podría meter lag.
-      if (rapida && partida) return { ok: true, lectura: { version: VERSION_PUENTE, partida, rapida: true } };
+      if (soloPartida || (rapida && partida)) return { ok: true, lectura: { version: VERSION_PUENTE, partida, rapida: true } };
       const leido = lector ? await lector.leer(img, aprendido) : leerCaptura(img, caras, aprendido);
       // `ms` es lo que espera la app; `msCaptura`, lo que tardó la tablet en dar la imagen (3.39.0), y con qué formato (3.45.0).
       const lectura = { version: VERSION_PUENTE, id, ...leido, partida, ms: Date.now() - t0, msCaptura: t1 - tFormato, formato };
@@ -902,6 +920,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       const cuerpo = await leerCuerpo(req);
       if (!cuerpo || typeof cuerpo !== 'object') { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'cuerpo' })); return; }
       if ('consejo' in cuerpo) { consejoActual = sanearConsejo(cuerpo.consejo); consejoDelMovil = ahora(); }
+      if ('ajustes' in cuerpo) ajustesDelMovil = sanearAjustes(cuerpo.ajustes) ?? ajustesDelMovil;
       if ('resumen' in cuerpo) resumenActual = sanearResumen(cuerpo.resumen) ?? resumenActual;
       res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true }));
       return;
@@ -985,6 +1004,15 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     leer: (opciones) => hacerLectura(opciones),
     delMovil: () => ({ leyo: ultimaDelMovil, consejo: consejoDelMovil }),
     ponerConsejo: (c) => { consejoActual = sanearConsejo(c); },
+    ajustesDelMovil: () => ajustesDelMovil,
+    /**
+     * Un vistazo al minimapa si la burbuja tiene algo que enseñar y nadie ha
+     * capturado en VISTAZO_MS (3.69.3). null si no tocaba.
+     */
+    mirarPartida: async () => {
+      if (!consejoActual || (ultimaMirada != null && ahora() - ultimaMirada < VISTAZO_MS)) return null;
+      return hacerLectura({ soloPartida: true });
+    },
   };
   servidor.on('close', () => { pararVigilancia(); lector?.cerrar(); });
   return servidor;

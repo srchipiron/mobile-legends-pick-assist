@@ -489,9 +489,11 @@ export default function App() {
   const huellaConsejo = consejoTablet ? `${consejoTablet.titulo}|${consejoTablet.detalle}` : '';
   useEffect(() => {
     if (!lectorTablet) return;
-    mandarALaTablet({ consejo: consejoTablet });
+    // Con tu línea, rango e idioma (3.69.3): la tablet sigue leyendo sola con
+    // ellos cuando el móvil se calla, aunque en la APK no se haya elegido línea.
+    mandarALaTablet({ consejo: consejoTablet, ajustes: { linea, rango: datos.rango, idioma } });
     // consejoTablet cambia de objeto en cada render: lo que decide es su huella.
-  }, [huellaConsejo, lectorTablet]);
+  }, [huellaConsejo, lectorTablet, linea, datos.rango, idioma]);
 
   // La tablet cambió de IP (3.65.4): si no contesta, se busca en la wifi y la
   // app se vincula sola a la dirección nueva. Al abrir y cada 5 minutos.

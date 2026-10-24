@@ -127,7 +127,7 @@ class Principal : Activity() {
                 startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
             },
             Paso("Empieza a leer. Android pregunta qué grabar: elige «Pantalla completa».", "Empezar a leer") { alternar() },
-            Paso("Elige tu línea en «Sin móvil»: la tablet lee el draft y decide ella sola, y tu nº1 sale en la burbuja."),
+            Paso("«Sin móvil»: la tablet lee el draft y decide ella sola con tu línea (la de la app del móvil, o la que elijas aquí), y tu nº1 sale en la burbuja."),
             Paso("(Opcional) Con Pick Assist en el MÓVIL: abre la cámara, escanea el QR y toca «Vincular» (misma wifi). Con el móvil, además se apuntan tus partidas y suena la voz."),
             Paso("Juega. En baneos la burbuja dice a quién banear; en picks, tu nº1 y los dos siguientes."),
         )

@@ -8,7 +8,7 @@ import { test, ok, eq, terminar, leerJson } from '../arnes.mjs';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { acumularDraft, draftVacio, consejoSolo, crearSolo, leerAjustesSolo, datosDelSolo, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO } from '../../scripts/lector/solo.mjs';
+import { acumularDraft, draftVacio, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO } from '../../scripts/lector/solo.mjs';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
 import { crearServidor } from '../../scripts/lector/servir.mjs';
 import { RAIZ } from '../arnes.mjs';
@@ -85,6 +85,23 @@ test('los ajustes de la APK: sin línea, apagado; nada raro entra', () => {
   eq(leerAjustesSolo(f).activo, false);
 });
 
+test('sin línea en la APK, la tablet lee con la que mandó la app; «Apagado» manda sobre ella (3.69.3)', () => {
+  const sinNada = { activo: false, apagado: false, linea: null, rango: 'glory', idioma: 'es' };
+  const movil = { linea: 'jungle', rango: 'mythic', idioma: 'en' };
+  const a = ajustesEfectivos(sinNada, movil);
+  ok(a.activo && a.linea === 'jungle' && a.rango === 'mythic' && a.idioma === 'en' && a.origen === 'movil', `sin línea en la APK no usa la del móvil: ${JSON.stringify(a)}`);
+  eq(ajustesEfectivos({ ...sinNada, apagado: true }, movil).activo, false, '«Apagado» en la APK no manda');
+  eq(ajustesEfectivos({ ...sinNada, apagado: true }, movil).origen, 'apagado');
+  const apk = ajustesEfectivos({ activo: true, linea: 'mid', rango: 'glory', idioma: 'es' }, movil);
+  ok(apk.linea === 'mid' && apk.origen === 'apk', 'la línea del móvil pisa la de la APK');
+  eq(ajustesEfectivos(sinNada, { linea: '../x' }).activo, false, 'entra una línea rara del móvil');
+  eq(ajustesEfectivos(sinNada, null).origen, 'sinLinea');
+  const casa = mkdtempSync(join(tmpdir(), 'solo-apagado-'));
+  writeFileSync(join(casa, 'solo.json'), JSON.stringify({ activo: false }));
+  eq(leerAjustesSolo(join(casa, 'solo.json')).apagado, true, '«Apagado» no se distingue de no haber elegido nada');
+  eq(leerAjustesSolo(join(casa, 'no-existe.json')).apagado, false, 'sin fichero cuenta como apagado');
+});
+
 test('el bucle: decide y pone el consejo; se aparta si el móvil lee o manda el suyo; en partida solo el minimapa', async () => {
   let t = 1_000_000;
   const puestos = [], pedidas = [];
@@ -101,6 +118,7 @@ test('el bucle: decide y pone el consejo; se aparta si el móvil lee o manda el 
   movil = { leyo: t - 1000, consejo: null };
   const antes = pedidas.length;
   eq(await solo.tic(), INTERVALOS_SOLO.vacio);
+  eq(solo.resumen().apartado, true, 'el resumen no dice que se aparta por el móvil');
   eq(pedidas.length, antes, 'lee con el móvil leyendo (dos lecturas a la vez)');
   movil = { leyo: null, consejo: t - 1000 };
   respuesta = lectura({ tuyos: [N('Hirara')], enemigos: [N('Clint'), N('Khufra'), V, V, V] });
@@ -115,6 +133,9 @@ test('el bucle: decide y pone el consejo; se aparta si el móvil lee o manda el 
   await solo.tic();
   eq(await solo.tic(), INTERVALOS_SOLO.partida, 'en partida no espera más');
   ok(solo.estado().cerrado, 'la partida no cierra el draft');
+  // Lo que cuenta en /estado (3.69.3).
+  const r = solo.resumen();
+  ok(r.activo && r.linea === 'roam' && r.lecturas >= 4 && r.ultima?.enPartida === true && r.apartado === false, `el resumen no cuenta lo que hace: ${JSON.stringify(r)}`);
   // Apagado, no lee.
   const apagado = crearSolo({ interno, ajustes: () => ({ activo: false }), datosPara: () => datos });
   const n = pedidas.length;

@@ -426,9 +426,13 @@ export function parteDeLaTablet(estado, { version = '', ahora = Date.now(), ulti
   if (tb.memoriaBaja) avisos.push(`memoria baja en la tablet (${tb.memoriaLibreMB} MB libres)`);
   if (l.lecturas >= 10 && l.fallosCaptura / l.lecturas > 0.2) avisos.push(`fallan ${l.fallosCaptura} de ${l.lecturas} capturas`);
   if (Number.isFinite(tb.cuando) && ahora - tb.cuando > 5 * 60000) avisos.push('la app de la tablet no da señales desde hace más de 5 min');
+  // Lo que hace la tablet sola (3.69.3): sin línea, en cuanto el móvil se calla no lee nadie.
+  const so = estado.solo && typeof estado.solo === 'object' ? estado.solo : null;
+  if (so?.origen === 'sinLinea') avisos.push('la tablet no lee sola: sin línea (ni elegida en «Sin móvil» ni mandada por la app)');
   const filas = [
     `Versión de la app: ${version} · de Lector MLBB: ${tb.apk ?? '?'} · ${tb.modelo ?? '?'} (Android API ${tb.android ?? '?'})`,
-    `Lector: encendido hace ${l.minutos ?? '?'} min · ${l.lecturas ?? '?'} lecturas · ${l.fallosCaptura ?? '?'} capturas fallidas${l.ultimoFallo ? ` (la última: «${l.ultimoFallo.que}»)` : ''} · Node ${l.memoriaMB ?? '?'} MB`,
+    `Lector: encendido hace ${l.minutos ?? '?'} min · ${l.lecturas ?? '?'} lecturas${Number.isFinite(l.vistazos) ? ` y ${l.vistazos} vistazos al minimapa` : ''} · ${l.fallosCaptura ?? '?'} capturas fallidas${l.ultimoFallo ? ` (la última: «${l.ultimoFallo.que}»)` : ''} · Node ${l.memoriaMB ?? '?'} MB`,
+    ...(so ? [filaDelSolo(so, ahora)] : []),
     `Tablet: grabando ${tb.grabando ? 'sí' : 'no'} · burbuja ${tb.burbuja ? `sí (${tb.esquina}${tb.burbujaEstado ? `, ${tb.burbujaEstado}` : ''})` : 'sin permiso'} · ahorro de batería ${tb.bateriaLibre ? 'quitado' : 'puesto'} · memoria libre ${tb.memoriaLibreMB ?? '?'} MB${tb.memoriaBaja ? ' (BAJA)' : ''} · la app usa ${tb.memoriaAppMB ?? '?'} MB`,
     `Aprendido: ${estado.aprendido?.capturas ?? 0} capturas, ${estado.aprendido?.caras ?? 0} caras de rivales, ${estado.aprendido?.aliados ?? 0} de tu equipo`,
     ...(estado.salida ? [`Último cierre: ${estado.salida.replace(/^Último cierre /, '').replace(/\n/g, ' · ')}`] : []),
@@ -438,6 +442,18 @@ export function parteDeLaTablet(estado, { version = '', ahora = Date.now(), ulti
   const texto = sinIp(`${avisos.length ? `**Avisos:** ${avisos.join('; ')}` : '**Todo bien.**'}\n\n${filas.map((f) => `- ${f}`).join('\n')}`);
   // La huella no cuenta lo que cambia solo (minutos, lecturas, memoria): solo si cambian los avisos o la versión, sube antes de tiempo.
   return { texto, avisos, huella: `${version}|${tb.apk}|${avisos.join('|')}` };
+}
+
+/** La fila del parte con lo que hace la tablet sola (3.69.3). */
+const ORIGEN_SOLO = { apk: 'la elegida en la APK', movil: 'la que mandó la app', apagado: 'apagado en la APK', sinLinea: 'sin línea' };
+function filaDelSolo(so, ahora) {
+  const n = (v) => (Number.isFinite(v) ? v : '?');
+  if (!so.activo) return `Sin móvil: no lee (${ORIGEN_SOLO[so.origen] ?? '?'})`;
+  const u = so.ultima;
+  const ultima = u && Number.isFinite(u.cuando)
+    ? ` · la última hace ${Math.max(0, Math.round((ahora - u.cuando) / 60000))} min: ${u.enPartida ? 'en partida' : `${n(u.baneos)} baneos, ${n(u.enemigos)} enemigos, ${n(u.aliados)} de tu equipo`}`
+    : '';
+  return `Sin móvil: lee con ${String(so.linea ?? '?').slice(0, 12)} (${ORIGEN_SOLO[so.origen] ?? '?'})${so.apartado ? ' · ahora se aparta: lee el móvil' : ''} · ${n(so.lecturas)} lecturas${ultima}`;
 }
 
 /** ¿Es `a` una versión anterior a `b`? (X.Y.Z; lo que no tenga esa forma, no). */

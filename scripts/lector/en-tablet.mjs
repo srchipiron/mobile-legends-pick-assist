@@ -20,10 +20,10 @@
 import { mkdirSync, readFileSync, writeFileSync, renameSync, statSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas, PUERTO } from './servir.mjs';
+import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas, sanearAjustes, PUERTO, VISTAZO_MS } from './servir.mjs';
 import { limpiarTexto } from './voz.mjs';
 import { leerCrudo, escribirPngRapido } from './png.mjs';
-import { crearSolo, leerAjustesSolo, datosDelSolo } from './solo.mjs';
+import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo } from './solo.mjs';
 
 /** Solo 127.0.0.1: la APK es la única que da la captura. */
 export const esInterno = (u) => typeof u === 'string' && /^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(u);
@@ -114,6 +114,26 @@ export function lectorDeDatos(carpetas) {
   return () => ({ catalogo: uno('catalogo'), meta: uno('meta') });
 }
 
+/**
+ * Los ajustes del modo solo (3.69.3): los de la APK (`solo.json`) y, si no
+ * eligió línea, la última que mandó la app del móvil. Esa se guarda en
+ * `solo-movil.json` para que valga también tras reiniciar la tablet sin el
+ * móvil delante. Lo de disco se lee con forma o no se usa.
+ */
+export function ajustesDeLaTablet(casa, interno) {
+  const fichero = join(casa, 'solo-movil.json');
+  let guardado;
+  try { guardado = sanearAjustes(JSON.parse(readFileSync(fichero, 'utf8'))); } catch { guardado = null; }
+  return () => {
+    const delMovil = interno.ajustesDelMovil();
+    if (delMovil && JSON.stringify(delMovil) !== JSON.stringify(guardado)) {
+      guardado = delMovil;
+      try { writeFileSync(fichero, JSON.stringify(guardado)); } catch { /* sin disco, vale lo de memoria */ }
+    }
+    return ajustesEfectivos(leerAjustesSolo(join(casa, 'solo.json')), delMovil ?? guardado);
+  };
+}
+
 /** Baja los datos de la web a `carpeta` (a un temporal y luego encima). Nunca lanza; dice cuántos ficheros guardó. */
 export async function bajarDatos(carpeta, { pedir = (...a) => fetch(...a), plazoMs = 60000 } = {}) {
   mkdirSync(carpeta, { recursive: true });
@@ -140,11 +160,13 @@ export async function principal(env = process.env) {
   const carpeta = join(env.LECTOR_CASA || '.', 'capturas');
   mkdirSync(carpeta, { recursive: true });
   podarCapturas(carpeta);
+  // El modo solo, para /estado (3.69.3): se crea después del servidor.
+  let soloRef = null;
   const servidor = crearServidor({
     capturar: capturaDeLaApk(base, secreto), hablar: vozDeLaApk(base, secreto), codigo,
     // Por qué se cerró la app la última vez (3.61.5, lo dice Android): el Diagnóstico del móvil lo enseña.
     // Y lo que la APK sabe de la tablet (3.63.0: versión, si graba, permisos, memoria), que escribe cada pocos segundos.
-    estadoExtra: () => ({ salida: String(env.LECTOR_ULTIMA_SALIDA ?? '').slice(0, 500) || null, tablet: leerSaludDeLaApk(join(env.LECTOR_CASA || '.', 'salud.json')) }),
+    estadoExtra: () => ({ salida: String(env.LECTOR_ULTIMA_SALIDA ?? '').slice(0, 500) || null, tablet: leerSaludDeLaApk(join(env.LECTOR_CASA || '.', 'salud.json')), ...(soloRef ? { solo: soloRef.resumen() } : {}) }),
     elector: crearElectorDeCaptura(), carpeta, registrar, ...cargarLoAprendido(registrar),
   });
   const puerto = Number(env.LECTOR_PUERTO ?? PUERTO);
@@ -156,7 +178,12 @@ export async function principal(env = process.env) {
   const bajados = join(casa, 'datos');
   const aqui = dirname(fileURLToPath(import.meta.url));
   const leerDatos = lectorDeDatos([bajados, join(aqui, '..', '..', 'datos'), join(aqui, '..', '..', 'public', 'data')]);
-  const solo = crearSolo({ interno: servidor.interno, ajustes: () => leerAjustesSolo(join(casa, 'solo.json')), datosPara: datosDelSolo(leerDatos), registrar });
+  const solo = crearSolo({ interno: servidor.interno, ajustes: ajustesDeLaTablet(casa, servidor.interno), datosPara: datosDelSolo(leerDatos), registrar });
+  soloRef = solo;
+  // El vistazo al minimapa (3.69.3): con la burbuja puesta y nadie capturando,
+  // mira si estás en partida para quitarla. `mirarPartida` decide si toca.
+  const vistazo = setInterval(() => { servidor.interno.mirarPartida().catch(() => {}); }, VISTAZO_MS);
+  servidor.on('close', () => clearInterval(vistazo));
   if (env.LECTOR_SIN_SOLO !== '1') {
     solo.arrancar();
     const refrescar = async () => { const n = await bajarDatos(bajados); if (n) registrar(`Sin móvil: datos de Pick Assist al día (${n} ficheros).`); };
