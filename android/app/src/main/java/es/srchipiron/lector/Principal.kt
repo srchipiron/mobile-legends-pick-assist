@@ -44,7 +44,12 @@ class Principal : Activity() {
         const val PUERTO = 47323
         const val APP = "https://srchipiron.github.io/mobile-legends-pick-assist/"
         private const val PEDIR_GRABAR = 7
+        /** Mobile Legends (3.70.0): se abre solo al empezar a leer. Solo se abre: nada lo toca. */
+        const val JUEGO = "com.mobile.legends"
     }
+
+    /** Ya se pidió grabar al abrir esta pantalla (3.70.0): si dices que no, no se vuelve a pedir en bucle. */
+    private var pedidoAlAbrir = false
 
     /** Un paso de la guía: su marca, su texto y, si hace falta, su botón. */
     private inner class Paso(val texto: String, boton: String? = null, accion: (() -> Unit)? = null) {
@@ -106,7 +111,7 @@ class Principal : Activity() {
         val instalada = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { null }
         izquierda.addView(texto(13f, Color.GRAY).apply { text = instalada?.let { "Versión $it" } ?: ""; setPadding(0, 0, 0, pad / 2) })
         izquierda.addView(texto(14f, Color.LTGRAY).apply {
-            text = "Lee el draft de Mobile Legends de la pantalla de esta tablet y se lo pasa a la app Pick Assist del móvil, que te dice qué héroe coger. " +
+            text = "Lee el draft de Mobile Legends de la pantalla de esta tablet, te dice qué héroe coger en la burbuja y apunta tus partidas. Ábrela, acepta grabar y juega: no hace falta el móvil. " +
                 "Solo MIRA la pantalla: no toca el juego ni tu cuenta. Aun así, es una herramienta de terceros: úsala bajo tu responsabilidad."
             setPadding(0, 0, 0, pad)
         })
@@ -168,6 +173,13 @@ class Principal : Activity() {
         ajustes.addView(boton)
         esquinaBurbuja = Button(this).apply { setOnClickListener { Burbuja.siguienteEsquina(this@Principal); refrescar() } }
         ajustes.addView(esquinaBurbuja)
+        // Abrir el juego al empezar a leer (3.70.0), sí por defecto.
+        val prefs = getSharedPreferences("lector", MODE_PRIVATE)
+        fun textoJuego() = "Abrir Mobile Legends al empezar: ${if (prefs.getBoolean("abrirJuego", true)) "sí" else "no"} (toca para cambiar)"
+        ajustes.addView(Button(this).apply {
+            text = textoJuego()
+            setOnClickListener { prefs.edit().putBoolean("abrirJuego", !prefs.getBoolean("abrirJuego", true)).apply(); text = textoJuego() }
+        })
         estado = texto(14f).also { ajustes.addView(it) }
         ajustes.addView(texto(13f, Color.LTGRAY).apply { text = "Mientras lee, la tablet graba su pantalla: si abres otra app, el lector también la ve. La grabación no sale de la tablet; al móvil solo van nombres de héroes." })
         ajustes.addView(texto(14f, Color.LTGRAY).apply { text = "Últimas líneas del lector:" })
@@ -207,7 +219,12 @@ class Principal : Activity() {
         thread(isDaemon = true) {
             val n = try { Actualizar.sola(this) } catch (e: Throwable) { null }
             nueva = n
-            runOnUiThread { refrescar() }
+            runOnUiThread {
+                refrescar()
+                // Abrir y jugar (3.70.0): sin versión nueva que instalar, pide grabar
+                // nada más abrir (Android exige ese toque cada vez) y luego abre el juego.
+                if (n == null && !Lector.grabando && !pedidoAlAbrir && !isFinishing) { pedidoAlAbrir = true; alternar() }
+            }
         }
     }
 
@@ -238,6 +255,10 @@ class Principal : Activity() {
         if (peticion != PEDIR_GRABAR || resultado != RESULT_OK || datos == null) return
         startForegroundService(Intent(this, Lector::class.java).setAction(Lector.EMPEZAR)
             .putExtra(Lector.CODIGO_RESULTADO, resultado).putExtra(Lector.DATOS, datos))
+        // Y al juego (3.70.0), si está instalado y no lo has quitado abajo.
+        if (getSharedPreferences("lector", MODE_PRIVATE).getBoolean("abrirJuego", true)) {
+            packageManager.getLaunchIntentForPackage(JUEGO)?.let { reloj.postDelayed({ startActivity(it) }, 800) }
+        }
     }
 
     private fun codigoNuevo() {

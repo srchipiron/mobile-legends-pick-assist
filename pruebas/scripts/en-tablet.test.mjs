@@ -9,7 +9,8 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { principal, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet } from '../../scripts/lector/en-tablet.mjs';
+import { principal, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET } from '../../scripts/lector/en-tablet.mjs';
+import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { writeFileSync } from 'node:fs';
 import { crearPortero, hostPermitido, crearServidor, fundirAprendido, FALLOS_CODIGO, VENTANA_CODIGO_MS } from '../../scripts/lector/servir.mjs';
 import { aprenderResultado, reconocerResultado, plantillasIniciales, ZONA_PALABRA } from '../../scripts/lector/resultado.mjs';
@@ -171,6 +172,38 @@ test('la línea que manda la app vale para leer sola, también tras reiniciar si
   writeFileSync(join(casa, 'solo-movil.json'), '{"linea":"../x"}');
   writeFileSync(join(casa, 'solo.json'), '{}');
   eq(ajustesDeLaTablet(casa, interno)().activo, false, 'una línea guardada sin forma vale');
+});
+
+test('las partidas de la tablet (3.70.0): se guardan sin repetir y con tope, y se suben una vez con tu clave', async () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-partidas-'));
+  const partidas = partidasDeLaTablet(casa);
+  const p = (t, extra = {}) => ({ t, pick: 'Rafaela', gane: true, recomendados: ['Rafaela'], origen: 'lector', fuente: 'tablet', ...extra });
+  ok(partidas.apuntar(p(1788000000000)) && !partidas.apuntar(p(1788000000000)), 'apunta dos veces la misma partida');
+  partidas.apuntar(p(1788000060000, { gane: false }));
+  eq(partidasDeLaTablet(casa).todas().length, 2, 'las partidas no sobreviven a un reinicio');
+  const s = supabaseFalso();
+  const config = { url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica };
+  const clave = 'J'.repeat(43);
+  eq((await subirLoDeLaTablet({ partidas, clave: null, config, fetch: s.fetch })).subidas, 0, 'sube sin tu clave');
+  eq((await subirLoDeLaTablet({ partidas, clave, config: { url: 'https://otra.com', clave: s.clavePublica }, fetch: s.fetch })).subidas, 0, 'sube a una dirección que no es la base de datos');
+  eq(s.llamadas.length, 0);
+  const r = await subirLoDeLaTablet({ partidas, clave, config, fetch: s.fetch });
+  eq(r.subidas, 2, JSON.stringify(r));
+  eq(s.jugadores.get(clave).partidas.size, 2);
+  eq((await subirLoDeLaTablet({ partidas, clave, config, fetch: s.fetch })).subidas, 0, 'sube otra vez lo ya subido');
+  partidas.apuntar(p(1788000120000));
+  eq((await subirLoDeLaTablet({ partidas, clave, config, fetch: s.fetch })).subidas, 1, 'no sube la nueva');
+  eq(partidasDeLaTablet(casa).pendientes().length, 0, 'lo subido no se recuerda tras un reinicio');
+  // Sin red, nada se marca: se reintenta.
+  partidas.apuntar(p(1788000180000));
+  const sinRed = await subirLoDeLaTablet({ partidas, clave, config, fetch: async () => { throw new TypeError('sin red'); } });
+  eq(sinRed.error, 'red'); eq(partidas.pendientes().length, 1, 'un fallo marca la partida como subida');
+  // El tope.
+  for (let i = 0; i < TOPE_PARTIDAS_TABLET + 5; i += 1) partidas.apuntar(p(1789000000000 + i));
+  eq(partidas.todas().length, TOPE_PARTIDAS_TABLET, 'sin tope');
+  // La configuración que bajó la tablet, con forma o nada.
+  writeFileSync(join(casa, 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: 'sb_secret_aaaaaaaaaaaaaa' }));
+  eq(leerComunidad([casa]), null, 'acepta una configuración con la clave secreta');
 });
 
 test('la salud de la tablet (3.63.0): /estado cuenta lecturas y fallos, y lo que la APK escribe, solo con campos conocidos', async () => {

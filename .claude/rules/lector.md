@@ -1136,8 +1136,8 @@ juega en el móvil, sin tablet aparte. `scripts/lector/solo.mjs`:
   127.0.0.1 y GitHub: dos URL fijas de github.io, solo GET.
 - `apk.yml` NO escucha `public/data/**`: los datos de dentro solo sirven para
   el primer arranque, y con ellos la APK se recompilaría dos veces al día.
-- Lo que NO hace sin el móvil: apuntar la partida, la voz del guion y
-  aprender de las correcciones (todo eso lo pide la app).
+- Lo que NO hace sin el móvil: la voz del guion y aprender de las
+  correcciones (las pide la app). Apuntar la partida, desde 3.70.0 sí (abajo).
 - Pruebas en `scripts/solo` y `en-tablet`. Esta última es de punta a punta:
   la captura real, la línea en `solo.json` y el consejo en `GET /consejo`.
   Siete mutaciones. Sobrevive una inofensiva: el filtro de «ya baneados»
@@ -1205,4 +1205,53 @@ rastro. Dos causas:
   draft), `solo`, `en-tablet`, `app/lector` y `lector.e2e` (el consejo lleva
   la línea). Quince mutaciones; sobrevive una inofensiva: sanear la línea
   guardada repite lo que `ajustesEfectivos` ya hace.
+
+## Todo desde la tablet (3.70.0)
+
+Pedido por Javi: «que ya no haga falta el móvil para nada… solo abrir el apk
+y jugar». Lo único que no se quita es el toque de Android para grabar la
+pantalla (lo exige el sistema cada vez, y pulsarlo solo sería tocar la
+pantalla por programa).
+- **Arrancar**: `Principal.onResume` pide grabar al abrir (una vez por
+  pantalla, `pedidoAlAbrir`), pero solo si `Actualizar.sola` no tiene versión
+  que instalar: se actualiza solo sin leer, y grabando nada más abrir no se
+  actualizaría nunca. Al empezar abre Mobile Legends (`JUEGO`,
+  `com.mobile.legends`, `<queries>` en el manifiesto; botón para quitarlo,
+  `abrirJuego`). Solo se ABRE: nada lo toca.
+- **Apuntar sola**: `crearSolo` (solo.mjs), al cerrarse el draft por la
+  partida y sin el móvil activo, llama a `interno.vigilar` (la misma
+  vigilancia del final que pide la app) con el instante del cierre y guarda la
+  decisión (`decidirSolo`, la misma que da el consejo). Con `final.resultado`
+  apunta UNA vez `partidaSolo` (forma de `apuntar` de registro.js: pick de tu
+  fila o el nº1 `supuesto`, tres recomendados, estimación y `VERSION_MODELO`,
+  baneos, draft, duración solo con el inicio visto; `origen: 'lector'`,
+  `fuente: 'tablet'`) y pone el resumen (`resumenSolo`, la notificación).
+- **Tu maestría**: la app la manda en `ajustes.maestria` (`maestriaUsada`, 200
+  como mucho; `sanearAjustes` exige nombre, partidas y winrate con forma) con
+  la hora (`cuando`); la tablet decide con `maestriaEfectiva(esa, lo que
+  apuntó DESPUÉS)`: lo de antes ya va dentro y contaría dos veces.
+- **Guardar y subir**: `partidasDeLaTablet` (`partidas.json` en la casa, tope
+  `TOPE_PARTIDAS_TABLET` 500, `subidas` aparte) y `subirLoDeLaTablet` con TU
+  clave (`ajustes.clave`, solo con «Guardar mis partidas» puesto en la app) y
+  `comunidad.json` (bajado de la web con los datos o el que trae la APK),
+  saneados con `sanearConfig` de src/app/basedatos.js. Sin clave no sube
+  nada; un fallo no marca nada y se reintenta cada 10 min.
+- **De vuelta al móvil**: `useComunidad` trae al abrir (y cada
+  `TRAER_CADA_MS`, 5 min) `mis_partidas`, se queda con lo que no está aquí ni
+  se quitó, y App lo funde con `fundirPerfil`. La primera versión cancelaba
+  la respuesta al rearmarse el efecto (al llegar `comunidad.json` la
+  configuración es otro objeto) y el tope impedía pedirla otra vez: no llegaba
+  nunca. Lo cazó la prueba de navegador con la base de datos contestando
+  después de `comunidad.json`, el orden de un móvil de verdad.
+- **La APK lleva lo que importa el lector**: `copiarLector` copia también
+  `src/app/basedatos.js` y `public/comunidad.json`. `android.test` recorre
+  los imports de en-tablet.mjs y exige que cada fichero vaya en la copia: uno
+  sin copiar tira la APK al arrancar y desde aquí no se ve.
+- Pruebas en `solo` (el recorrido entero con un final de pega, una vez, con
+  el móvil leyendo no), `en-tablet` (guardar, subir con el Supabase de
+  pega, sin clave, sin red, tope), `puente-lector` (maestría y clave con
+  forma), `android` y `comunidad.e2e`. Diecisiete mutaciones; sobrevive una
+  inofensiva: filtrar las quitadas al traer repite lo que `fundirPerfil` hace.
+- Sin hacer todavía: la voz del guion sin el móvil (sus textos están en la
+  app) y aprender de las correcciones (sin el móvil nadie corrige).
 

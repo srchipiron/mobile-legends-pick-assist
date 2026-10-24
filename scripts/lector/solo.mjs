@@ -19,6 +19,7 @@
 import { readFileSync } from 'node:fs';
 import { nombreClave } from '../../src/motor/nombres.js';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
+import { VERSION_MODELO } from '../../src/motor/modelo.js';
 
 /** Las líneas que se pueden elegir en la APK (las de `LINEAS` del motor). */
 export const LINEAS_SOLO = ['roam', 'jungle', 'mid', 'gold', 'exp'];
@@ -93,19 +94,32 @@ const TEXTOS = {
  * Del draft al consejo de la burbuja, con el motor de la app. null si no hay
  * nada que decir (sin datos o sin draft a la vista). Nunca lanza.
  */
-export function consejoSolo({ datos, draft, linea, idioma = 'es' }) {
+/**
+ * El draft leído, pasado al catálogo y al motor (`recomendar`, con tu
+ * maestría si la hay). null sin datos o sin nada leído. Lo usan el consejo y
+ * la partida que se apunta (3.70.0): la misma decisión en los dos.
+ */
+export function decidirSolo({ datos, draft, linea, maestria = null }) {
+  if (!datos?.heroes?.length || !draft || !LINEAS_SOLO.includes(linea)) return null;
+  const porClave = new Map(datos.heroes.map((h) => [nombreClave(h.name), h]));
+  const heroe = (n) => (n ? porClave.get(nombreClave(n)) ?? null : null);
+  const unicos = (lista) => [...new Map(lista.filter(Boolean).map((h) => [h.name, h])).values()];
+  const baneos = unicos(draft.baneos.map(heroe));
+  const enemigos = unicos(draft.enemigos.map(heroe));
+  const tuyo = draft.tuyoFila >= 0 ? heroe(draft.aliados[draft.tuyoFila]) : null;
+  const nombresEnemigos = new Set(enemigos.map((h) => h.name));
+  const aliados = unicos(draft.aliados.filter((_, i) => i !== draft.tuyoFila).map(heroe)).filter((h) => !nombresEnemigos.has(h.name) && h.name !== tuyo?.name);
+  if (!baneos.length && !enemigos.length && !aliados.length && !tuyo) return null;
+  const rec = recomendar(datos, { linea, enemigos, aliados, baneos, maestria, miPick: tuyo, conSimulacion: false });
+  return { rec, tuyo, baneos, enemigos, aliados };
+}
+
+export function consejoSolo({ datos, draft, linea, idioma = 'es', maestria = null }) {
   try {
-    if (!datos?.heroes?.length || !draft || draft.cerrado || !LINEAS_SOLO.includes(linea)) return null;
-    const porClave = new Map(datos.heroes.map((h) => [nombreClave(h.name), h]));
-    const heroe = (n) => (n ? porClave.get(nombreClave(n)) ?? null : null);
-    const unicos = (lista) => [...new Map(lista.filter(Boolean).map((h) => [h.name, h])).values()];
-    const baneos = unicos(draft.baneos.map(heroe));
-    const enemigos = unicos(draft.enemigos.map(heroe));
-    const tuyo = draft.tuyoFila >= 0 ? heroe(draft.aliados[draft.tuyoFila]) : null;
-    const nombresEnemigos = new Set(enemigos.map((h) => h.name));
-    const aliados = unicos(draft.aliados.filter((_, i) => i !== draft.tuyoFila).map(heroe)).filter((h) => !nombresEnemigos.has(h.name) && h.name !== tuyo?.name);
-    if (!baneos.length && !enemigos.length && !aliados.length && !tuyo) return null;
-    const rec = recomendar(datos, { linea, enemigos, aliados, baneos, miPick: tuyo, conSimulacion: false });
+    if (!draft || draft.cerrado) return null;
+    const d = decidirSolo({ datos, draft, linea, maestria });
+    if (!d) return null;
+    const { rec, baneos, enemigos, aliados } = d;
     const t = TEXTOS[idioma] ?? TEXTOS.es;
     const pct = (p) => `${Math.round(p * 100)}%`;
     if (!enemigos.length && !aliados.length) {
@@ -119,6 +133,45 @@ export function consejoSolo({ datos, draft, linea, idioma = 'es' }) {
     const otros = rec.ranking.filter((r) => r.heroe.name !== e.heroe.name).slice(0, 2).map((r) => `${r.heroe.name} ${pct(r.p)}`);
     return { titulo: `${e.heroe.name} ${pct(e.p)}`, detalle: [t.picks, otros.length ? t.luego(otros.join(' · ')) : null].filter(Boolean).join(' · ') };
   } catch { return null; }
+}
+
+/**
+ * La partida que apunta la tablet sola (3.70.0), con la MISMA forma que las
+ * de la app (registro.js `apuntar`): el draft de cuando se cerró, tu pick
+ * (tu fila leída o, si no se leyó, el nº1, marcado `supuesto`), los tres
+ * recomendados, la estimación del pick jugado, el resultado de la tabla y la
+ * duración si el inicio se vio. `origen: 'lector'` y `fuente: 'tablet'`.
+ * null si no hay pick.
+ */
+export function partidaSolo({ decision, linea, rango = 'glory', gane, t, duracion = null, versionModelo = null }) {
+  const rec = decision?.rec;
+  const pick = decision?.tuyo?.name ?? rec?.eleccion?.heroe?.name ?? null;
+  if (!pick || typeof gane !== 'boolean' || !Number.isFinite(t)) return null;
+  const est = rec.ranking.find((r) => r.heroe.name === pick)?.p;
+  return {
+    t, pick, gane, rango, origen: 'lector', fuente: 'tablet',
+    ...(decision.tuyo ? {} : { supuesto: true }),
+    recomendados: rec.ranking.slice(0, 3).map((r) => r.heroe.name),
+    ...(typeof est === 'number' && est > 0 && est < 1 ? { estimacion: Math.round(est * 1000) / 1000, ...(versionModelo ? { modelo: versionModelo } : {}) } : {}),
+    ...(decision.baneos.length ? { bans: decision.baneos.map((h) => h.name).slice(0, 10) } : {}),
+    draft: { linea, enemigos: decision.enemigos.map((h) => h.name).slice(0, 5), aliados: decision.aliados.map((h) => h.name).slice(0, 4) },
+    ...(Number.isFinite(duracion) && duracion >= 3 && duracion <= 90 ? { duracion } : {}),
+  };
+}
+
+/** El resumen de la notificación al apuntar sola, en tu idioma. */
+export function resumenSolo(partida, idioma = 'es') {
+  const en = idioma === 'en';
+  const primero = partida.recomendados?.[0];
+  return {
+    id: `partida-${partida.t}`,
+    titulo: en ? `${partida.gane ? 'Won' : 'Lost'} with ${partida.pick}` : `${partida.gane ? 'Ganada' : 'Perdida'} con ${partida.pick}`,
+    texto: [
+      primero === partida.pick ? (en ? 'It was the app\'s no. 1.' : 'Era el nº1 de la app.') : primero ? (en ? `The app's no. 1 was ${primero}.` : `El nº1 de la app era ${primero}.`) : null,
+      partida.estimacion != null ? (en ? `The app gave ${Math.round(partida.estimacion * 100)}%.` : `La app daba un ${Math.round(partida.estimacion * 100)}%.`) : null,
+      en ? 'Logged by the tablet.' : 'Apuntada por la tablet.',
+    ].filter(Boolean).join(' '),
+  };
 }
 
 /**
@@ -155,12 +208,15 @@ export function ajustesEfectivos(apk, movil) {
  * null). Devuelve `{ tic, parar, estado }`: `tic` hace una vuelta y dice
  * cuánto esperar a la siguiente (las pruebas lo llaman a mano).
  */
-export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout }) {
+export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout, apuntar = null, maestriaDe = () => null }) {
+  // La partida que se vigila para apuntarla sola (3.70.0): el draft de cuando
+  // se cerró y su decisión, hasta que la tabla del final dé el resultado.
+  let vigilada = null;
   let draft = draftVacio();
   let ultimoConsejo = null;
   let reloj = null, parado = false;
   // Lo que se cuenta en /estado (3.69.3): sin esto no se sabía si la tablet leía sola.
-  const resumen = { activo: false, linea: null, origen: null, apartado: false, lecturas: 0, ultima: null };
+  const resumen = { activo: false, linea: null, origen: null, apartado: false, lecturas: 0, apuntadas: 0, ultima: null };
   async function tic() {
     const a = ajustes();
     Object.assign(resumen, { activo: !!a.activo, linea: a.linea ?? null, origen: a.origen ?? null, apartado: false });
@@ -170,8 +226,33 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     if ((movil.leyo && t - movil.leyo < MOVIL_ACTIVO_MS) || (movil.consejo && t - movil.consejo < MOVIL_ACTIVO_MS)) { resumen.apartado = true; return intervalos.vacio; }
     const r = await interno.leer({ rapida: true });
     if (!r?.ok) return intervalos.error;
+    const antes = draft;
     draft = acumularDraft(draft, r.lectura, ahora());
     resumen.lecturas += 1;
+    if (!draft.cerrado) vigilada = null;
+    // Se acaba de cerrar (empezó la partida): a vigilar el final, como si la app lo pidiera.
+    if (draft.cerrado && !antes.cerrado && apuntar) {
+      const decision = decidirSolo({ datos: datosPara(a.rango), draft, linea: a.linea, maestria: maestriaDe() });
+      if (decision) {
+        vigilada = { desde: draft.cerradoEn, decision, linea: a.linea, rango: a.rango, idioma: a.idioma, apuntada: false };
+        interno.vigilar?.(vigilada.desde, { guion: [] });
+        registrar(`Sin móvil: empieza la partida; vigilo el final para apuntarla (${decision.tuyo?.name ?? `nº1 ${decision.rec.eleccion?.heroe?.name ?? '?'}`}).`);
+      }
+    }
+    // Con el resultado de la tabla, la partida se apunta sola (una vez).
+    if (vigilada && !vigilada.apuntada) {
+      const f = interno.final?.();
+      if (f?.desde === vigilada.desde && (f.resultado === 'gane' || f.resultado === 'perdi')) {
+        const partida = partidaSolo({ decision: vigilada.decision, linea: vigilada.linea, rango: vigilada.rango, gane: f.resultado === 'gane', t: Number.isFinite(f.resultadoEn) ? f.resultadoEn : ahora(), duracion: f.inicioEstimado ? null : f.duracion, versionModelo: VERSION_MODELO });
+        vigilada.apuntada = true;
+        if (partida) {
+          apuntar(partida);
+          interno.ponerResumen?.(resumenSolo(partida, vigilada.idioma));
+          resumen.apuntadas = (resumen.apuntadas ?? 0) + 1;
+          registrar(`Sin móvil: partida apuntada, ${partida.gane ? 'ganada' : 'perdida'} con ${partida.pick}.`);
+        }
+      }
+    }
     resumen.ultima = {
       cuando: ahora(),
       enPartida: !!r.lectura?.partida,
@@ -179,7 +260,7 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     };
     if (draft.cerrado) return intervalos.partida;
     const datos = datosPara(a.rango);
-    const consejo = consejoSolo({ datos, draft, linea: a.linea, idioma: a.idioma });
+    const consejo = consejoSolo({ datos, draft, linea: a.linea, idioma: a.idioma, maestria: maestriaDe() });
     const huella = consejo ? `${consejo.titulo}|${consejo.detalle}` : null;
     if (consejo && huella !== ultimoConsejo) {
       // Si el móvil mandó algo entretanto, manda el móvil.

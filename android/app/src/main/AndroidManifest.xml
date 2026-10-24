@@ -14,6 +14,8 @@
   - REQUEST_INSTALL_PACKAGES: actualizarse sola desde GitHub (3.62.0). Android
     pide confirmar cada vez y solo acepta una versión con la misma firma.
   Nada de accesibilidad, ni de tocar la pantalla, ni de otras apps.
+  `queries` (3.70.0): ver si Mobile Legends está instalado para ABRIRLO al
+  empezar a leer. Solo se abre como lo abrirías tú: no se toca nada de él.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
@@ -25,6 +27,9 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
+    <queries>
+        <package android:name="com.mobile.legends" />
+    </queries>
 
     <application
         android:label="Lector MLBB"

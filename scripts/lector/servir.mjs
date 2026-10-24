@@ -370,8 +370,23 @@ export function sanearConsejo(c) {
 export function sanearAjustes(a) {
   const palabra = (v) => (typeof v === 'string' && /^[a-z]{2,12}$/.test(v) ? v : null);
   const linea = palabra(a?.linea);
-  return linea ? { linea, rango: palabra(a?.rango) ?? 'glory', idioma: a?.idioma === 'en' ? 'en' : 'es' } : null;
+  if (!linea) return null;
+  // Tu maestría (3.70.0): la tablet decide con ella como la app. Nombres
+  // cortos, partidas y winrate con sentido, como mucho MAESTRIA_MAX héroes.
+  const maestria = {};
+  if (a?.maestria && typeof a.maestria === 'object' && !Array.isArray(a.maestria)) {
+    for (const [nombre, m] of Object.entries(a.maestria).slice(0, MAESTRIA_MAX)) {
+      if (typeof nombre === 'string' && nombre.length <= 30 && /^[\p{L}\p{N} .'&-]+$/u.test(nombre) && Number.isInteger(m?.games) && m.games > 0 && m.games < 1e6 && typeof m.winRate === 'number' && m.winRate >= 0 && m.winRate <= 1) {
+        maestria[nombre] = { games: m.games, winRate: m.winRate };
+      }
+    }
+  }
+  // Tu clave de la base de datos de partidas (3.70.0), si la tienes puesta: la tablet sube con ella lo que apunta.
+  const clave = typeof a?.clave === 'string' && /^[A-Za-z0-9_-]{32,64}$/.test(a.clave) ? a.clave : null;
+  return { linea, rango: palabra(a?.rango) ?? 'glory', idioma: a?.idioma === 'en' ? 'en' : 'es', ...(Object.keys(maestria).length ? { maestria } : {}), ...(clave ? { clave } : {}) };
 }
+/** Héroes de la maestría que se aceptan del móvil: los de todas las líneas. */
+export const MAESTRIA_MAX = 200;
 export function sanearResumen(r) {
   const titulo = textoPlano(r?.titulo, 80), texto = textoPlano(r?.texto, 300);
   return titulo && texto && typeof r?.id === 'string' && /^[\w-]{1,60}$/.test(r.id) ? { id: r.id, titulo, texto } : null;
@@ -920,7 +935,11 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       const cuerpo = await leerCuerpo(req);
       if (!cuerpo || typeof cuerpo !== 'object') { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'cuerpo' })); return; }
       if ('consejo' in cuerpo) { consejoActual = sanearConsejo(cuerpo.consejo); consejoDelMovil = ahora(); }
-      if ('ajustes' in cuerpo) ajustesDelMovil = sanearAjustes(cuerpo.ajustes) ?? ajustesDelMovil;
+      if ('ajustes' in cuerpo) {
+        const a = sanearAjustes(cuerpo.ajustes);
+        // `cuando`: lo que la tablet apunte DESPUÉS no está en esa maestría y se le suma.
+        if (a) ajustesDelMovil = { ...a, cuando: ahora() };
+      }
       if ('resumen' in cuerpo) resumenActual = sanearResumen(cuerpo.resumen) ?? resumenActual;
       res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true }));
       return;
@@ -1005,6 +1024,10 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     delMovil: () => ({ leyo: ultimaDelMovil, consejo: consejoDelMovil }),
     ponerConsejo: (c) => { consejoActual = sanearConsejo(c); },
     ajustesDelMovil: () => ajustesDelMovil,
+    // Lo que usa el modo solo para apuntar la partida él (3.70.0).
+    vigilar: (desde, cuerpo) => vigilar(desde, cuerpo),
+    final: () => estadoFinal(),
+    ponerResumen: (r) => { resumenActual = sanearResumen(r) ?? resumenActual; },
     /**
      * Un vistazo al minimapa si la burbuja tiene algo que enseñar y nadie ha
      * capturado en VISTAZO_MS (3.69.3). null si no tocaba.

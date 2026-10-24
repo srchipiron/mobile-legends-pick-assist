@@ -7,7 +7,7 @@
  */
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname, relative } from 'node:path';
 
 const KOTLIN = join(RAIZ, 'android/app/src/main/java/es/srchipiron/lector');
 const manifiesto = readFileSync(join(RAIZ, 'android/app/src/main/AndroidManifest.xml'), 'utf8');
@@ -22,6 +22,28 @@ test('si el Kotlin habla con http://127.0.0.1, el manifiesto lo permite SOLO par
   const dominios = [...red.matchAll(/<domain[^>]*>([^<]+)<\/domain>/g)].map((x) => x[1].trim());
   eq(dominios.join(), '127.0.0.1', `HTTP sin cifrar permitido a más sitios que la propia tablet: ${dominios}`);
   ok(!/usesCleartextTraffic="true"/.test(manifiesto), 'usesCleartextTraffic abre HTTP a todo');
+});
+
+test('todo lo que importa el lector de la tablet va dentro de la APK (3.70.0): un fichero de fuera sin copiar la tira al arrancar', () => {
+  // Lo que copia `copiarLector` (build.gradle.kts): carpetas enteras o, con include, ficheros sueltos.
+  const gradle = readFileSync(join(RAIZ, 'android/app/build.gradle.kts'), 'utf8');
+  const bloque = gradle.slice(gradle.indexOf('copiarLector'), gradle.indexOf('tasks.named("preBuild")'));
+  const copias = [...bloque.matchAll(/from\(rootProject\.file\("\.\.\/([^"]+)"\)\)\s*\{([^}]*)\}/g)].map((m) => ({
+    carpeta: m[1].replace(/\/$/, ''),
+    solo: [...m[2].matchAll(/include\(([^)]*)\)/g)].flatMap((x) => [...x[1].matchAll(/"([^"]+)"/g)].map((y) => y[1])),
+  }));
+  ok(copias.some((c) => c.carpeta === 'scripts/lector'), 'no se encuentra la copia del lector en build.gradle.kts');
+  const copiado = (f) => copias.some((c) => (f === c.carpeta || f.startsWith(`${c.carpeta}/`)) && (!c.solo.length || c.solo.includes(relative(c.carpeta, f))));
+  const cola = ['scripts/lector/en-tablet.mjs']; const vistos = new Set();
+  while (cola.length) {
+    const f = cola.pop();
+    if (vistos.has(f)) continue;
+    vistos.add(f);
+    ok(copiado(f), `${f} lo importa el lector de la tablet y la APK no lo lleva dentro (build.gradle.kts, copiarLector)`);
+    const texto = readFileSync(join(RAIZ, f), 'utf8');
+    for (const m of texto.matchAll(/(?:import|export)\b[^'"`;]*?\bfrom\s*['"](\.[^'"]+)['"]/g)) cola.push(relative(RAIZ, join(RAIZ, dirname(f), m[1])));
+  }
+  ok([...vistos].some((f) => f.startsWith('src/app/')), 'el recorrido no llega a lo que el lector importa de la app');
 });
 
 await terminar('scripts/android');

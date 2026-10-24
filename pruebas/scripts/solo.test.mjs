@@ -8,7 +8,7 @@ import { test, ok, eq, terminar, leerJson } from '../arnes.mjs';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { acumularDraft, draftVacio, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO } from '../../scripts/lector/solo.mjs';
+import { acumularDraft, draftVacio, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO } from '../../scripts/lector/solo.mjs';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
 import { crearServidor } from '../../scripts/lector/servir.mjs';
 import { RAIZ } from '../arnes.mjs';
@@ -144,6 +144,56 @@ test('el bucle: decide y pone el consejo; se aparta si el móvil lee o manda el 
   // Un fallo de captura (no graba) espera y no rompe.
   const roto = crearSolo({ interno: { ...interno, leer: async () => ({ ok: false, estado: 502, error: 'captura' }) }, ajustes: () => ({ activo: true, linea: 'roam' }), datosPara: () => datos });
   eq(await roto.tic(), INTERVALOS_SOLO.error);
+});
+
+test('todo desde la tablet (3.70.0): al empezar la partida vigila el final y, con el resultado, apunta la partida una vez y pone el resumen', async () => {
+  let t = 5_000_000;
+  let respuesta = lectura({ tuyos: [N('Hirara'), N('Belerick')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 });
+  let final = null;
+  const vigiladas = [], apuntadas = [], resumenes = [], maestrias = [];
+  const interno = {
+    leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({ leyo: null, consejo: null }), ponerConsejo: () => {},
+    vigilar: (desde, cuerpo) => { vigiladas.push({ desde, cuerpo }); final = { desde, resultado: null }; },
+    final: () => final, ponerResumen: (r) => resumenes.push(r),
+  };
+  const maestria = { Rafaela: { games: 400, winRate: 0.62 } };
+  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: (p) => apuntadas.push(p), maestriaDe: () => { maestrias.push(1); return maestria; } });
+  await solo.tic();
+  ok(maestrias.length > 0, 'el consejo no usa tu maestría');
+  eq(vigiladas.length, 0, 'vigila el final en pleno draft');
+  respuesta = { partida: true, rapida: true };
+  t += 5000; await solo.tic();
+  t += 5000; await solo.tic();
+  eq(vigiladas.length, 1, 'al empezar la partida no vigila el final');
+  eq(vigiladas[0].desde, solo.estado().cerradoEn, 'vigila otro instante que el del cierre');
+  t += 20000; await solo.tic();
+  eq(apuntadas.length, 0, 'apunta sin resultado');
+  final = { ...final, resultado: 'gane', resultadoEn: t, duracion: 14.2, inicioEstimado: false };
+  t += 20000; await solo.tic();
+  t += 20000; await solo.tic();
+  eq(apuntadas.length, 1, 'no apunta, o apunta dos veces');
+  const p = apuntadas[0];
+  ok(p.pick === 'Rafaela' && p.gane === true && p.origen === 'lector' && p.fuente === 'tablet' && p.duracion === 14.2 && !p.supuesto, `la partida apuntada no cuadra: ${JSON.stringify(p)}`);
+  ok(p.draft.enemigos.includes('Clint') && p.draft.aliados.includes('Gord') && !p.draft.aliados.includes('Rafaela') && p.bans.includes('Eudora'), `el draft de la partida no es el leído: ${JSON.stringify(p.draft)}`);
+  ok(p.recomendados.length === 3 && typeof p.estimacion === 'number' && Number.isInteger(p.modelo), 'sin recomendados, estimación o modelo');
+  eq(resumenes.length, 1, 'no pone el resumen en la notificación');
+  ok(/^Ganada con Rafaela/.test(resumenes[0].titulo) && /tablet/.test(resumenes[0].texto), JSON.stringify(resumenes[0]));
+  eq(solo.resumen().apuntadas, 1);
+  // Con el móvil leyendo, la tablet no vigila ni apunta (lo hace la app).
+  const otraVigilancia = [];
+  const conMovil = crearSolo({ interno: { ...interno, delMovil: () => ({ leyo: t, consejo: null }), vigilar: (d) => otraVigilancia.push(d) }, ajustes: () => ({ activo: true, linea: 'roam' }), datosPara: () => datos, ahora: () => t, apuntar: () => {} });
+  respuesta = { partida: true, rapida: true };
+  await conMovil.tic(); await conMovil.tic();
+  eq(otraVigilancia.length, 0, 'con el móvil leyendo, la tablet también vigila');
+});
+
+test('la partida de la tablet: sin tu fila leída, el nº1 marcado como supuesto; sin resultado, nada', () => {
+  const draft = acumularDraft(null, lectura({ tuyos: [N('Hirara')], enemigos: [N('Clint'), N('Khufra'), V, V, V] }), 1);
+  const decision = decidirSolo({ datos, draft, linea: 'roam' });
+  const p = partidaSolo({ decision, linea: 'roam', gane: false, t: 123, duracion: 200 });
+  ok(p.supuesto && p.pick === decision.rec.eleccion.heroe.name && p.duracion === undefined, `sin tu fila no se marca supuesto, o entra una duración imposible: ${JSON.stringify(p)}`);
+  eq(partidaSolo({ decision, linea: 'roam', gane: null, t: 1 }), null);
+  ok(/^Lost with /.test(resumenSolo(p, 'en').titulo));
 });
 
 test('los datos se preparan una vez por fichero y rango', () => {

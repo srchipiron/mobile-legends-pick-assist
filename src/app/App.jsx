@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { resolverNombres, probablesDelBando, planear, poolDe } from '../motor/draft.js';
 import { buscar } from '../motor/nombres.js';
+import { fundirPerfil, sanear } from '../motor/perfil.js';
 import { diagnosticar } from '../motor/diagnostico/index.js';
 import { IDIOMAS } from './i18n/index.js';
 import { useAjustes } from './estado/useAjustes.js';
@@ -485,15 +486,27 @@ export default function App() {
   // La burbuja de la tablet (3.62.0): tu pick y los dos siguientes, cada vez
   // que cambian. Solo con el lector en la tablet; si no llega, el siguiente
   // cambio lo vuelve a mandar.
+  const maestriaParaLaTablet = useMemo(() => Object.fromEntries(Object.entries(personal.maestriaUsada ?? {})
+    .filter(([, m]) => Number.isInteger(m?.games) && m.games > 0 && typeof m.winRate === 'number')
+    .sort((a, b) => b[1].games - a[1].games).slice(0, 200)
+    .map(([n, m]) => [n, { games: m.games, winRate: Math.round(m.winRate * 1000) / 1000 }])), [personal.maestriaUsada]);
   const consejoTablet = lectorTablet ? consejoParaLaTablet({ eleccion: rec.eleccion, ranking: rec.ranking, fase: draft.fase, baneos: rec.baneosSugeridos }, t) : null;
   const huellaConsejo = consejoTablet ? `${consejoTablet.titulo}|${consejoTablet.detalle}` : '';
   useEffect(() => {
     if (!lectorTablet) return;
     // Con tu línea, rango e idioma (3.69.3): la tablet sigue leyendo sola con
     // ellos cuando el móvil se calla, aunque en la APK no se haya elegido línea.
-    mandarALaTablet({ consejo: consejoTablet, ajustes: { linea, rango: datos.rango, idioma } });
+    // Y tu maestría y tu clave de la base de datos (3.70.0): la tablet decide
+    // con ellas y sube lo que apunte sola, sin el móvil delante.
+    mandarALaTablet({ consejo: consejoTablet, ajustes: { linea, rango: datos.rango, idioma, maestria: maestriaParaLaTablet, ...(comunidad.activo && comunidad.clave ? { clave: comunidad.clave } : {}) } });
     // consejoTablet cambia de objeto en cada render: lo que decide es su huella.
-  }, [huellaConsejo, lectorTablet, linea, datos.rango, idioma]);
+  }, [huellaConsejo, lectorTablet, linea, datos.rango, idioma, maestriaParaLaTablet, comunidad.activo, comunidad.clave]);
+  // Las partidas que apuntó la tablet sola (3.70.0) se funden aquí como las de otro móvil.
+  useEffect(() => {
+    if (!comunidad.nuevas.length) return;
+    traerPerfil(fundirPerfil(datosPerfil, sanear({ partidas: comunidad.nuevas, mastery: {}, olvidadas: [] })));
+    comunidad.nuevasFundidas();
+  }, [comunidad.nuevas]);
 
   // La tablet cambió de IP (3.65.4): si no contesta, se busca en la wifi y la
   // app se vincula sola a la dirección nueva. Al abrir y cada 5 minutos.

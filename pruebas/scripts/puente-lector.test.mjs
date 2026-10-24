@@ -563,7 +563,8 @@ test('el vistazo al minimapa (3.69.3): sin nadie leyendo, la burbuja se quita ig
     eq(await servidor.interno.mirarPartida(), null, 'sin burbuja que quitar, captura igual');
     eq(capturas, 0);
     await fetch(`${base}/consejo`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ consejo: { titulo: 'Rafaela 55%' }, ajustes: { linea: 'roam', rango: 'mythic', idioma: 'en' } }) });
-    eq(JSON.stringify(servidor.interno.ajustesDelMovil()), JSON.stringify({ linea: 'roam', rango: 'mythic', idioma: 'en' }), 'no se queda con los ajustes que manda la app');
+    const aj = servidor.interno.ajustesDelMovil();
+    ok(aj?.linea === 'roam' && aj.rango === 'mythic' && aj.idioma === 'en' && aj.cuando === reloj, `no se queda con los ajustes que manda la app: ${JSON.stringify(aj)}`);
     for (let i = 0; i < EN_PARTIDA_PARA_ESCONDER; i += 1) {
       ok((await servidor.interno.mirarPartida())?.lectura?.partida === true, 'el vistazo no ve la partida');
       eq(await servidor.interno.mirarPartida(), null, 'dos vistazos seguidos: captura sin esperar');
@@ -583,6 +584,11 @@ test('el vistazo al minimapa (3.69.3): sin nadie leyendo, la burbuja se quita ig
     eq(servidor.interno.ajustesDelMovil()?.linea, 'roam', 'unos ajustes sin forma pisan los buenos');
   } finally { servidor.close(); }
   eq(sanearAjustes({ linea: 'roam', rango: '<b>' })?.rango, 'glory');
+  // La maestría y la clave (3.70.0): con forma, o fuera.
+  const m = sanearAjustes({ linea: 'roam', clave: 'k'.repeat(43), maestria: { Rafaela: { games: 300, winRate: 0.6 }, 'Yi Sun-shin': { games: 5, winRate: 0.4 }, '<b>': { games: 3, winRate: 0.5 }, Atlas: { games: -1, winRate: 0.5 }, Chou: { games: 2, winRate: 7 } } });
+  eq(JSON.stringify(Object.keys(m.maestria)), JSON.stringify(['Rafaela', 'Yi Sun-shin']), `entra una maestría sin forma: ${JSON.stringify(m.maestria)}`);
+  eq(m.clave, 'k'.repeat(43));
+  eq(sanearAjustes({ linea: 'roam', clave: 'corta' }).clave, undefined, 'entra una clave sin forma');
   eq(sanearAjustes({ linea: 'Roam!' }), null);
 });
 

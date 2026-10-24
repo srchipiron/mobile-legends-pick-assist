@@ -13,6 +13,8 @@ import { esPrevia } from '../../motor/registro.js';
 /** Lo que se espera a comunidad.json antes de quedarse con la copia guardada. Decisión de producto, como licencias.json. */
 const PLAZO_CONFIG_MS = 4000;
 const RUTA = 'public/comunidad.json';
+/** Cada cuánto se miran las partidas que subió la tablet. Decisión de producto. */
+export const TRAER_CADA_MS = 5 * 60 * 1000;
 
 /**
  * La base de datos de partidas de todos (3.69.0). Con la casilla puesta y
@@ -133,9 +135,35 @@ export function useComunidad({ perfil, escribir = null }) {
     return r;
   }, [escribir, cambiar]);
 
+  /**
+   * Lo que apuntó la tablet sola (3.70.0) llega a la base de datos con tu
+   * clave: al abrir la app (y cada `ahora`, como mucho cada TRAER_CADA_MS)
+   * se trae lo que aquí no está ni se quitó, para que App lo funda.
+   */
+  const [nuevas, setNuevas] = useState([]);
+  const ultimaTraida = useRef(0);
+  const montado = useRef(true);
+  useEffect(() => () => { montado.current = false; }, []);
+  useEffect(() => {
+    const { estado: e } = ultimo.current;
+    if (!e.activo || !e.config || !e.clave || Date.now() - ultimaTraida.current < TRAER_CADA_MS) return;
+    ultimaTraida.current = Date.now();
+    // Sin cancelar al rearmarse: al llegar comunidad.json la configuración es
+    // otro objeto, el efecto vuelve a correr y la respuesta se tiraba (y el
+    // tope de arriba no dejaba pedirla otra vez). Lo de aquí se mira AL LLEGAR.
+    traerMisPartidas({ config: e.config, clave: e.clave }).then((r) => {
+      if (!montado.current || r.error) { if (r.error) ultimaTraida.current = 0; return; }
+      const p = ultimo.current.perfil;
+      const aqui = new Set([...(p.partidas ?? []).map((x) => x.t), ...(p.olvidadas ?? [])]);
+      const faltan = r.partidas.filter((x) => Number.isFinite(x?.t) && !aqui.has(x.t));
+      if (faltan.length) setNuevas(faltan);
+    }).catch(() => { ultimaTraida.current = 0; });
+  }, [ahora, estado.activo, estado.config, estado.clave]);
+  const nuevasFundidas = useCallback(() => setNuevas([]), []);
+
   const pendiente = estado.activo && !!estado.config && (perfil.partidas?.length ?? 0) > 0 && huella !== estado.huella;
   return {
     config: estado.config, activo: estado.activo, clave: estado.clave, cuando: estado.cuando, total: estado.total, error: estado.error,
-    enCurso, pendiente, estadisticas, activar, desactivar, usarClave, borrar, subir, cargarEstadisticas, publicarConfig,
+    enCurso, pendiente, estadisticas, nuevas, nuevasFundidas, activar, desactivar, usarClave, borrar, subir, cargarEstadisticas, publicarConfig,
   };
 }

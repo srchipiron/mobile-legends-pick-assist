@@ -24,6 +24,8 @@ import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas,
 import { limpiarTexto } from './voz.mjs';
 import { leerCrudo, escribirPngRapido } from './png.mjs';
 import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo } from './solo.mjs';
+import { sanearConfig, claveDeJugadorValida, subirPartidas } from '../../src/app/basedatos.js';
+import { maestriaEfectiva } from '../../src/motor/maestria.js';
 
 /** Solo 127.0.0.1: la APK es la única que da la captura. */
 export const esInterno = (u) => typeof u === 'string' && /^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(u);
@@ -77,18 +79,23 @@ export function leerSaludDeLaApk(fichero) {
 
 /**
  * Los datos del modo solo (3.66.0): los mismos ficheros que sirve Pick Assist,
- * de su web pública, cada `REFRESCAR_DATOS_MS`. Solo GET a estas dos
- * direcciones fijas: nada de la cuenta ni del juego.
+ * de su web pública, cada `REFRESCAR_DATOS_MS`. Solo GET a estas
+ * direcciones fijas: nada de la cuenta ni del juego. `comunidad` (3.70.0)
+ * es la dirección y la clave PÚBLICA de la base de datos de partidas.
  */
 export const DATOS_DE_LA_WEB = {
   catalogo: 'https://srchipiron.github.io/mobile-legends-pick-assist/data/heroes.json',
   meta: 'https://srchipiron.github.io/mobile-legends-pick-assist/data/roam-meta.json',
+  comunidad: 'https://srchipiron.github.io/mobile-legends-pick-assist/comunidad.json',
 };
 /** Decisión de producto: el bot trae datos dos veces al día. */
 export const REFRESCAR_DATOS_MS = 6 * 60 * 60 * 1000;
-const FICHEROS = { catalogo: 'heroes.json', meta: 'roam-meta.json' };
+const FICHEROS = { catalogo: 'heroes.json', meta: 'roam-meta.json', comunidad: 'comunidad.json' };
 /** ¿Tiene forma de lo que sirve la app? (unos ficheros a medias o una página de error no se guardan) */
-export const datosValidos = (que, j) => (que === 'catalogo' ? Array.isArray(j?.heroes) && j.heroes.length >= 50 : Array.isArray(j?.heroes) && j.heroes.length >= 50 && !!j.stats);
+export const datosValidos = (que, j) => {
+  if (que === 'comunidad') return !!j && typeof j === 'object' && !Array.isArray(j);
+  return que === 'catalogo' ? Array.isArray(j?.heroes) && j.heroes.length >= 50 : Array.isArray(j?.heroes) && j.heroes.length >= 50 && !!j.stats;
+};
 
 /**
  * Lee los datos de la casa (los bajados) o, si no hay, los que trae la APK
@@ -122,16 +129,83 @@ export function lectorDeDatos(carpetas) {
  */
 export function ajustesDeLaTablet(casa, interno) {
   const fichero = join(casa, 'solo-movil.json');
+  const conCuando = (j) => { const a = sanearAjustes(j); return a ? { ...a, cuando: Number.isFinite(j?.cuando) ? j.cuando : 0 } : null; };
   let guardado;
-  try { guardado = sanearAjustes(JSON.parse(readFileSync(fichero, 'utf8'))); } catch { guardado = null; }
-  return () => {
-    const delMovil = interno.ajustesDelMovil();
-    if (delMovil && JSON.stringify(delMovil) !== JSON.stringify(guardado)) {
-      guardado = delMovil;
+  try { guardado = conCuando(JSON.parse(readFileSync(fichero, 'utf8'))); } catch { guardado = null; }
+  const delMovil = () => {
+    const m = interno.ajustesDelMovil();
+    if (m && JSON.stringify(m) !== JSON.stringify(guardado)) {
+      guardado = m;
       try { writeFileSync(fichero, JSON.stringify(guardado)); } catch { /* sin disco, vale lo de memoria */ }
     }
-    return ajustesEfectivos(leerAjustesSolo(join(casa, 'solo.json')), delMovil ?? guardado);
+    return m ?? guardado;
   };
+  const ajustes = () => ajustesEfectivos(leerAjustesSolo(join(casa, 'solo.json')), delMovil());
+  // Lo último del móvil (3.70.0): tu maestría, tu clave de la base de datos y cuándo llegaron.
+  ajustes.delMovil = delMovil;
+  return ajustes;
+}
+
+/** Partidas que guarda la tablet (3.70.0): las más nuevas. Decisión de producto, el tope de la app. */
+export const TOPE_PARTIDAS_TABLET = 500;
+
+/**
+ * Las partidas que apunta la tablet sola (3.70.0), en `partidas.json` de la
+ * casa: `{ partidas, subidas }` (los instantes ya subidos a la base de
+ * datos). Se escribe a un temporal y luego encima.
+ */
+export function partidasDeLaTablet(casa) {
+  const fichero = join(casa, 'partidas.json');
+  let datos;
+  try {
+    const j = JSON.parse(readFileSync(fichero, 'utf8'));
+    datos = {
+      partidas: Array.isArray(j?.partidas) ? j.partidas.filter((p) => p && Number.isFinite(p.t) && typeof p.pick === 'string' && typeof p.gane === 'boolean') : [],
+      subidas: Array.isArray(j?.subidas) ? j.subidas.filter(Number.isFinite) : [],
+    };
+  } catch { datos = { partidas: [], subidas: [] }; }
+  const escribir = () => {
+    try { writeFileSync(`${fichero}.tmp`, JSON.stringify(datos)); renameSync(`${fichero}.tmp`, fichero); } catch { /* sin disco: quedan en memoria */ }
+  };
+  return {
+    apuntar(p) {
+      if (!p || !Number.isFinite(p.t) || datos.partidas.some((x) => x.t === p.t)) return false;
+      datos.partidas = [p, ...datos.partidas].sort((a, b) => b.t - a.t).slice(0, TOPE_PARTIDAS_TABLET);
+      escribir();
+      return true;
+    },
+    todas: () => datos.partidas,
+    pendientes: () => { const s = new Set(datos.subidas); return datos.partidas.filter((p) => !s.has(p.t)); },
+    marcarSubidas(ts) {
+      const vivas = new Set(datos.partidas.map((p) => p.t));
+      datos.subidas = [...new Set([...datos.subidas, ...ts])].filter((t) => vivas.has(t));
+      escribir();
+    },
+  };
+}
+
+/**
+ * Sube a la base de datos de partidas lo que la tablet apuntó y no subió
+ * (3.70.0), con TU clave (la que manda la app si tienes «Guardar mis
+ * partidas» puesto) y la dirección y la clave pública de `comunidad.json`.
+ * Sin clave o sin configuración, no sube nada. Nunca lanza.
+ */
+export async function subirLoDeLaTablet({ partidas, clave, config, fetch = globalThis.fetch }) {
+  const conf = sanearConfig(config);
+  const pendientes = partidas.pendientes();
+  if (!conf || !claveDeJugadorValida(clave) || !pendientes.length) return { subidas: 0 };
+  const r = await subirPartidas({ config: conf, clave, partidas: pendientes, completo: false }, { fetch });
+  if (r.error) return r;
+  partidas.marcarSubidas(pendientes.map((p) => p.t));
+  return { subidas: pendientes.length, total: r.total };
+}
+
+/** La configuración de la base de datos que bajó la tablet (o la que trae la APK). */
+export function leerComunidad(carpetas) {
+  for (const c of carpetas) {
+    try { const j = sanearConfig(JSON.parse(readFileSync(join(c, FICHEROS.comunidad), 'utf8'))); if (j) return j; } catch { /* la siguiente */ }
+  }
+  return null;
 }
 
 /** Baja los datos de la web a `carpeta` (a un temporal y luego encima). Nunca lanza; dice cuántos ficheros guardó. */
@@ -178,7 +252,22 @@ export async function principal(env = process.env) {
   const bajados = join(casa, 'datos');
   const aqui = dirname(fileURLToPath(import.meta.url));
   const leerDatos = lectorDeDatos([bajados, join(aqui, '..', '..', 'datos'), join(aqui, '..', '..', 'public', 'data')]);
-  const solo = crearSolo({ interno: servidor.interno, ajustes: ajustesDeLaTablet(casa, servidor.interno), datosPara: datosDelSolo(leerDatos), registrar });
+  const ajustes = ajustesDeLaTablet(casa, servidor.interno);
+  // Todo desde la tablet (3.70.0): apunta la partida sola, decide con tu
+  // maestría (la del móvil más lo que la tablet apuntó después) y sube lo
+  // apuntado a la base de datos con tu clave.
+  const partidas = partidasDeLaTablet(casa);
+  const subir = () => subirLoDeLaTablet({ partidas, clave: ajustes.delMovil()?.clave, config: leerComunidad([bajados, join(aqui, '..', '..', 'datos')]) })
+    .then((r) => { if (r.subidas) registrar(`Sin móvil: ${r.subidas} partidas subidas a la base de datos.`); else if (r.error) registrar(`Sin móvil: no se pudieron subir las partidas (${r.error}).`); })
+    .catch(() => {});
+  const solo = crearSolo({
+    interno: servidor.interno, ajustes, datosPara: datosDelSolo(leerDatos), registrar,
+    apuntar: (p) => { if (partidas.apuntar(p)) subir(); },
+    maestriaDe: () => { const m = ajustes.delMovil(); return maestriaEfectiva(m?.maestria ?? {}, partidas.todas().filter((p) => p.t > (m?.cuando ?? 0))); },
+  });
+  const cadaSubida = setInterval(subir, 10 * 60 * 1000);
+  servidor.on('close', () => clearInterval(cadaSubida));
+  servidor.partidas = partidas;
   soloRef = solo;
   // El vistazo al minimapa (3.69.3): con la burbuja puesta y nadie capturando,
   // mira si estás en partida para quitarla. `mirarPartida` decide si toca.

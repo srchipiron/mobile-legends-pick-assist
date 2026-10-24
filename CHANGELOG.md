@@ -8,6 +8,20 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.70.0
+
+- Lector MLBB hace ya casi todo sola: abres la app en la tablet, aceptas
+  grabar la pantalla (Android pide ese toque cada vez) y se abre Mobile
+  Legends. Lee el draft, te da tu pick en la burbuja y, al acabar, apunta la
+  partida con su resultado y te avisa con el resumen.
+- La tablet decide con tu maestría, como la app del móvil: la toma la
+  última vez que abres la app y le suma lo que la tablet apunta después.
+- Lo que apunta la tablet se sube solo a la base de datos de partidas con
+  tu clave, y la próxima vez que abras la app del móvil aparece en tus
+  partidas, así que no se pierde nada.
+- Si no quieres que se abra el juego al empezar, en Lector MLBB → Ajustes
+  hay un botón para quitarlo.
+
 ## 3.69.3
 
 - La burbuja ya se quita en la partida aunque la app del móvil esté

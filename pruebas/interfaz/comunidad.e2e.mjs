@@ -26,12 +26,14 @@ const leer = (pagina, clave) => pagina.evaluate((k) => JSON.parse(localStorage.g
 const esperar = async (cond, ms = 9000) => { const fin = Date.now() + ms; while (Date.now() < fin) { if (await cond()) return true; await new Promise((r) => setTimeout(r, 200)); } return cond(); };
 
 /** comunidad.json (del origen de la app) y Supabase de pega, antes de cargar. */
-const conBaseDeDatos = (s, config = { url: SUPA, clave: PUBLICA }) => async (p) => {
+const conBaseDeDatos = (s, config = { url: SUPA, clave: PUBLICA }, { retrasoMis = 0 } = {}) => async (p) => {
   await p.route(`${url}comunidad.json*`, (ruta) => (config ? ruta.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(config) }) : ruta.fulfill({ status: 404, body: '' })));
   await p.route(`${SUPA}/**`, async (ruta) => {
     const r = ruta.request();
     const m = r.url().match(/\/rest\/v1\/rpc\/(\w+)$/);
     if (r.method() === 'OPTIONS') { await ruta.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST' } }); return; }
+    // `retrasoMis`: la base de datos contesta DESPUÉS de llegar comunidad.json (en el móvil pasa).
+    if (retrasoMis && m?.[1] === 'mis_partidas') await new Promise((res) => setTimeout(res, retrasoMis));
     const res = m ? s.atender(m[1], JSON.parse(r.postData() ?? '{}'), r.headers()) : { status: 404, cuerpo: {} };
     await ruta.fulfill({ status: res.status, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(res.cuerpo) });
   });
@@ -76,16 +78,17 @@ await prueba('con la casilla, tus partidas suben solas con tu clave, sin el lect
   const ultima = s.llamadas.at(-1);
   ok(ultima.args.quitar.includes(PARTIDAS[0].t), `no manda borrar la quitada: ${JSON.stringify(ultima.args.quitar)}`);
   eq(s.jugadores.get(guardado.clave).partidas.size, 1, 'la quitada sigue en la base de datos');
-  // Recargar no vuelve a subir lo mismo.
-  const n = s.llamadas.length;
+  // Recargar no vuelve a subir lo mismo (al abrir sí LEE, para traer lo de la tablet: 3.70.0).
+  const subidas = () => s.llamadas.filter((l) => l.funcion === 'subir_partidas').length;
+  const n = subidas();
   await pagina.reload({ waitUntil: 'networkidle' }); await pagina.waitForTimeout(4500);
-  eq(s.llamadas.length, n, 'al recargar sube lo mismo otra vez');
+  eq(subidas(), n, 'al recargar sube lo mismo otra vez');
   // «Dejar de guardar»: corregir una partida ya no sube nada (la clave se queda para volver).
   await abrirPartidas(pagina);
   await pagina.getByRole('button', { name: 'Dejar de guardar' }).click();
   await pagina.getByRole('button', { name: /· Atlas$/ }).filter({ hasText: '⇄' }).click();
   await pagina.waitForTimeout(5000);
-  eq(s.llamadas.length, n, 'sube con la casilla quitada');
+  eq(subidas(), n, 'sube con la casilla quitada');
   eq((await leer(pagina, 'roam-picker:comunidad')).clave, guardado.clave, 'dejar de guardar pierde la clave');
   eq(errores.length, 0, errores.join(' | '));
   await contexto.close();
@@ -111,6 +114,24 @@ await prueba('con tu clave en otro móvil te traes tus partidas, «Ver» mide la
   ok(await esperar(async () => (await leer(pagina, 'roam-picker:comunidad'))?.activo === false), 'tras borrar sigue activo');
   eq((await leer(pagina, 'roam-picker:partidas')).length, 2, 'borrar allí se lleva las de este móvil');
   eq(s.jugadores.size, 1, 'borra las de otro');
+  eq(errores.length, 0, errores.join(' | '));
+  await contexto.close();
+});
+
+await prueba('lo que apuntó la tablet sola llega a la app al abrirla, sin repetir lo que ya hay ni resucitar lo quitado (3.70.0)', async () => {
+  const s = supabaseFalso();
+  const clave = 'T'.repeat(43);
+  const deLaTablet = { t: 1788009000000, pick: 'Rafaela', gane: true, recomendados: ['Rafaela', 'Estes', 'Angela'], origen: 'lector', draft: { linea: 'roam', enemigos: ['Clint'], aliados: [] } };
+  const quitada = { t: 1788009900000, pick: 'Diggie', gane: false, recomendados: ['Diggie'] };
+  s.atender('subir_partidas', { clave, lote: [...PARTIDAS.map(({ lector, ...p }) => p), deLaTablet, quitada], quitar: [] }, { apikey: PUBLICA });
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, {
+    almacen: { ...LINEA, 'roam-picker:partidas': PARTIDAS, 'roam-picker:olvidadas': [quitada.t], 'roam-picker:comunidad': { activo: true, clave, completo: true, config: { url: SUPA, clave: PUBLICA } } },
+    sinServiceWorker: true, antes: conBaseDeDatos(s, undefined, { retrasoMis: 1500 }),
+  });
+  ok(await esperar(async () => (await leer(pagina, 'roam-picker:partidas'))?.length === 3), `la partida de la tablet no llega: ${JSON.stringify((await leer(pagina, 'roam-picker:partidas'))?.map((p) => p.t))}`);
+  const ts = (await leer(pagina, 'roam-picker:partidas')).map((p) => p.t);
+  ok(ts.includes(deLaTablet.t) && !ts.includes(quitada.t), 'resucita una partida quitada');
+  eq(new Set(ts).size, ts.length, 'repite partidas');
   eq(errores.length, 0, errores.join(' | '));
   await contexto.close();
 });
