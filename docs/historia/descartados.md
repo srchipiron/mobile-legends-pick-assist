@@ -559,3 +559,14 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
 - **Bajar las partidas de la comunidad al repositorio**: son de otras
   personas, aunque vayan sin nombre. `medir-comunidad.mjs --guardar` las deja
   en un fichero fuera del repositorio para medir el modelo con ellas.
+- **Fijar en el código el proyecto de Supabase de Javi** (revisión de 3.70.0):
+  la tablet sube a cualquier `https://<20>.supabase.co` que diga
+  `comunidad.json`. Quien puede cambiar ese fichero (escribir en el
+  repositorio) puede cambiar también el código que lo comprueba, así que no
+  protege de nada, y rompería «Administración → publicar la base de datos».
+- **`supuesto` y `fuente` en la base de datos común**: la partida que apunta la
+  tablet sin tu fila leída lleva el nº1 como pick (`supuesto`), y ni ese campo
+  ni `fuente` están en el esquema, así que suben como un pick normal. Es lo
+  mismo que hace la app al apuntar sola sin pick fijado; meterlos pediría
+  volver a pegar el esquema en Supabase. Se reabre si las estadísticas lo piden.
+

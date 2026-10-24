@@ -21,6 +21,10 @@ correcciones.
   partidas, así que no se pierde nada.
 - Si no quieres que se abra el juego al empezar, en Lector MLBB → Ajustes
   hay un botón para quitarlo.
+- Más seguro: cuando la tablet cambia de IP y la app la busca en la wifi,
+  ya no le da el código de vinculación a cualquier aparato que conteste;
+  primero la tablet demuestra que lo conoce sin que el código viaje. Hasta
+  ahora, un aparato de tu wifi hecho a propósito podía quedárselo.
 
 ## 3.69.3
 

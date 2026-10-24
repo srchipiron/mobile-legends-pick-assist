@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { buscarTabletEnLaRed, parteDeLaTablet, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, URL_LECTOR } from '../../src/app/lector.js';
+import { buscarTabletEnLaRed, pruebaDelReto, parteDeLaTablet, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, URL_LECTOR } from '../../src/app/lector.js';
 import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
@@ -458,12 +458,23 @@ test('pedirUltimaApk: la etiqueta lector-vX.Y.Z de la última publicada, sin tok
 test('buscarTabletEnLaRed: encuentra la tablet en otra IP de la wifi y solo le manda el código a quien contesta como Lector MLBB (3.65.4)', async () => {
   const conCodigo = [];
   const pedir = async (url, op) => {
-    const ip = new URL(url).hostname;
+    const u = new URL(url);
+    const ip = u.hostname;
     const codigo = op?.headers?.['X-Lector-Codigo'];
     if (codigo) conCodigo.push(ip);
     const resp = (status, cuerpo) => ({ status, ok: status === 200, json: async () => cuerpo });
+    // El reto (3.70.0): la tablet de verdad demuestra que conoce el código; las demás, no.
+    if (u.pathname === '/reto') {
+      const n = u.searchParams.get('n');
+      if (ip === '192.168.68.112') return resp(200, { prueba: await pruebaDelReto('ABCDEFGH23', n) });
+      if (ip === '192.168.68.50') return resp(200, { prueba: await pruebaDelReto('OTROCODIGO9', n) });
+      if (ip === '192.168.68.66') return resp(200, { prueba: 'a'.repeat(64) });
+      return resp(404, { error: 'no' });
+    }
     if (ip === '192.168.68.112') return codigo === 'ABCDEFGH23' ? resp(200, { ok: true }) : resp(401, { error: 'codigo' });
     if (ip === '192.168.68.50') return resp(401, { error: 'codigo' }); // otro lector, con otro código
+    // Un impostor (3.70.0): contesta como Lector MLBB y dice «ok» a cualquier código para quedárselo.
+    if (ip === '192.168.68.66') return codigo ? resp(200, { ok: true }) : resp(401, { error: 'codigo' });
     if (ip === '192.168.68.1') return resp(200, { ok: true }); // el router contesta 200 a cualquier cosa
     if (ip === '192.168.68.7') return resp(404, { error: 'no' });
     throw new Error('nadie');
@@ -471,7 +482,7 @@ test('buscarTabletEnLaRed: encuentra la tablet en otra IP de la wifi y solo le m
   const r = await buscarTabletEnLaRed({ direccion: '192.168.68.116:47323', codigo: 'ABCDEFGH23' }, { pedir, plazoMs: 50 });
   eq(r?.direccion, '192.168.68.112:47323', `no la encuentra: ${JSON.stringify(r)}`);
   eq(r.codigo, 'ABCDEFGH23');
-  eq(conCodigo.sort().join(), '192.168.68.112,192.168.68.50', `el código va a quien no contestó como Lector MLBB: ${conCodigo}`);
+  eq(conCodigo.sort().join(), '192.168.68.112', `el código va a quien no demostró conocerlo (otro lector o un impostor): ${conCodigo}`);
   eq(await buscarTabletEnLaRed({ direccion: '192.168.68.116:47323', codigo: 'ABCDEFGH23' }, { pedir: async () => { throw new Error('nadie'); }, plazoMs: 50 }), null);
   eq(await buscarTabletEnLaRed({ direccion: '8.8.8.8:47323', codigo: 'ABCDEFGH23' }, { pedir }), null, 'busca fuera de la red de casa');
 });

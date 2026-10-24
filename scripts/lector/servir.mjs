@@ -30,7 +30,7 @@
 import { createServer } from 'node:http';
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, statSync, unlinkSync, existsSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual, pbkdf2 } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Worker } from 'node:worker_threads';
@@ -475,6 +475,17 @@ export function lectorEnHilos({ caras, registrar = () => {}, tarea = new URL('le
 /** Capturas seguidas con el minimapa para quitar la burbuja: las mismas que cierran el draft (LECTURAS_EN_PARTIDA). */
 export const EN_PARTIDA_PARA_ESCONDER = 2;
 /**
+ * El reto de la búsqueda en la wifi (3.70.0): la app pregunta `/reto?n=…`
+ * SIN el código y solo se lo da a la tablet que demuestra conocerlo con
+ * PBKDF2(código, «lector-reto:» + n). Hasta aquí se lo daba a cualquiera que
+ * contestara 401 «codigo»: un aparato de la wifi se quedaba con el código (y
+ * con 3.70.0, con tu clave de jugador). Las vueltas hacen que adivinar el
+ * código a partir de una prueba cueste años: decisión de seguridad, ~50 ms
+ * por prueba en la tablet. Y como mucho RETOS_POR_MINUTO por aparato.
+ */
+export const RETO_VUELTAS = 100000;
+export const RETOS_POR_MINUTO = 6;
+/**
  * Cada cuánto, como mucho, se echa un vistazo al minimapa con la burbuja
  * puesta y nadie capturando (3.69.3): sin la app leyendo ni el modo solo, la
  * burbuja se quedaba en mitad de la partida. Decisión de producto: dos
@@ -489,6 +500,8 @@ export const VISTAZO_MS = 10000;
 export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux, codigo = null, estadoExtra = null }) {
   // En la tablet (3.61.0) escucha en la wifi: con código, y aceptando su IP como `Host`.
   const portero = codigo ? crearPortero(codigo, { ahora }) : null;
+  // Los retos de cada aparato en el último minuto (3.70.0).
+  const retos = new Map();
   // Lo último que mandó la app para la tablet (3.62.0): en memoria, se pierde al reiniciar (la app lo vuelve a mandar).
   let consejoActual = null, resumenActual = null;
   // En partida (3.69.3), la burbuja se quita: tapaba el juego y no tiene nada
@@ -877,6 +890,20 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     if (req.method === 'OPTIONS') {
       // Comprobación previa (CORS y red privada): sí, pero solo para GET.
       res.writeHead(204, { ...cabeceras, 'Access-Control-Allow-Methods': 'GET, POST', 'Access-Control-Allow-Headers': 'Content-Type, X-Lector-Codigo', 'Access-Control-Allow-Private-Network': 'true', 'Access-Control-Max-Age': '600' }).end();
+      return;
+    }
+    if (portero && req.method === 'GET' && new URL(req.url, 'http://127.0.0.1').pathname === '/reto') {
+      const n = new URL(req.url, 'http://127.0.0.1').searchParams.get('n') ?? '';
+      if (!/^[0-9a-f]{32}$/.test(n)) { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'reto' })); return; }
+      const quien = req.socket.remoteAddress ?? '';
+      const t = ahora();
+      const suyos = (retos.get(quien) ?? []).filter((x) => t - x < 60000);
+      if (suyos.length >= RETOS_POR_MINUTO) { res.writeHead(429, cabeceras).end(JSON.stringify({ error: 'bloqueado' })); return; }
+      retos.set(quien, [...suyos, t]);
+      pbkdf2(codigo, `lector-reto:${n}`, RETO_VUELTAS, 32, 'sha256', (e, clave) => {
+        if (e) { res.writeHead(500, cabeceras).end(JSON.stringify({ error: 'reto' })); return; }
+        res.writeHead(200, cabeceras).end(JSON.stringify({ prueba: clave.toString('hex') }));
+      });
       return;
     }
     if (portero) {

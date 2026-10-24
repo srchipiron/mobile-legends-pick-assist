@@ -1115,3 +1115,12 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   escribe su estado en `salud.json` y el parte avisa. Lección: un `catch`
   que se lo calla en un aparato sin logcat es un fallo invisible; cada
   bucle de fondo deja dicho en la salud por qué no hace lo suyo.
+- **El código de vinculación, a cualquiera de la wifi (3.65.4 → 3.70.0)**: al
+  buscar la tablet tras un cambio de IP, la app le mandaba el código a todo
+  aparato que contestara como Lector MLBB, y uno hecho a propósito lo
+  contestaba. Nadie lo aprovechó que se sepa (solo daba leer nombres de
+  héroes), pero con 3.70.0 iba a llevar también la clave de jugador. Lo
+  encontró la revisión de seguridad antes de publicar. Lección: «contesta como
+  el mío» no es «es el mío»; antes de dar un secreto a quien se descubre en la
+  red, que demuestre que ya lo tiene, sin que viaje.
+

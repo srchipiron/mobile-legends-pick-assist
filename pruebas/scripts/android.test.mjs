@@ -46,4 +46,30 @@ test('todo lo que importa el lector de la tablet va dentro de la APK (3.70.0): u
   ok([...vistos].some((f) => f.startsWith('src/app/')), 'el recorrido no llega a lo que el lector importa de la app');
 });
 
+test('el lector de la tablet solo llama a donde debe (3.70.0): su puerto interno, la web de Pick Assist y la base de datos', async () => {
+  // fetch es global: la lista de imports permitidos no limita los destinos. Se mira cada llamada.
+  const PERMITIDAS = {
+    'scripts/lector/en-tablet.mjs': { fetch: ['...a'], pedir: ['`${base}/captura`', '`${base}/voz`', 'url'] },
+    'src/app/basedatos.js': { fetch: ['`${config.url}/rest/v1/rpc/${funcion}`'] },
+  };
+  const cola = ['scripts/lector/en-tablet.mjs']; const vistos = new Set(); const vistas = [];
+  while (cola.length) {
+    const f = cola.pop();
+    if (vistos.has(f)) continue;
+    vistos.add(f);
+    const texto = readFileSync(join(RAIZ, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    for (const m of texto.matchAll(/(?:import|export)\b[^'"`;]*?\bfrom\s*['"](\.[^'"]+)['"]/g)) cola.push(relative(RAIZ, join(RAIZ, dirname(f), m[1])));
+    for (const m of texto.matchAll(/\b(fetch|pedir)\s*\(\s*([^,)]*)/g)) {
+      if (f === 'scripts/lector/servir.mjs' && m[1] === 'pedir') continue; // los hilos de lectura, no la red
+      vistas.push(`${f} ${m[1]}(${m[2].trim()})`);
+      ok((PERMITIDAS[f]?.[m[1]] ?? []).includes(m[2].trim()), `${f} llama a ${m[1]}(${m[2].trim()}): una salida a la red que no está en la lista (revisa a dónde va y añádela aquí)`);
+    }
+  }
+  ok(vistas.length >= 4, `la prueba no ve las llamadas de siempre: ${vistas}`);
+  // Y a dónde van: la web fija y una base de datos que pasa sanearConfig.
+  const { DATOS_DE_LA_WEB, esInterno } = await import('../../scripts/lector/en-tablet.mjs');
+  ok(Object.values(DATOS_DE_LA_WEB).every((u) => u.startsWith('https://srchipiron.github.io/mobile-legends-pick-assist/')), 'la tablet baja datos de otro sitio');
+  ok(esInterno('http://127.0.0.1:1234') && !esInterno('http://192.168.1.5:1234'), 'la captura podría pedirse fuera de 127.0.0.1');
+});
+
 await terminar('scripts/android');

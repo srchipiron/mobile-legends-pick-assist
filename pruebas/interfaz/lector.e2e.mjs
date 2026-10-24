@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes } from './navegador.mjs';
 import { crearServidor, PUERTO, VIGILANCIA } from '../../scripts/lector/servir.mjs';
 import { capturaCompletaPng, pantallaDeFinal, VERDAD } from '../fixtures/juego/captura.mjs';
+import { pruebaDelReto } from '../../src/app/lector.js';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
@@ -498,7 +499,7 @@ await prueba('si la tablet no contesta, Ajustes lo dice con lo que hay que hacer
 
 // 3.65.4: la tablet cambia de IP (la .116 pasó a la .112 el 23 de octubre).
 // La app la busca en la wifi sola y se vincula a la nueva sin tocar nada; el
-// código solo va a quien contesta como Lector MLBB.
+// código solo va a quien demuestra conocerlo (3.70.0), no a un impostor.
 await prueba('si la tablet cambia de IP, la app la encuentra sola en la wifi y se vincula a la nueva', async () => {
   const conCodigo = [];
   // En BANEOS: ahí Ajustes no está montado, así que la busca la app sola, de fondo.
@@ -513,8 +514,13 @@ await prueba('si la tablet cambia de IP, la app la encuentra sola en la wifi y s
         // El código se apunta ANTES de cortar: la que no es la tablet tampoco tiene que verlo.
         const codigo = q.headers()['x-lector-codigo'];
         if (codigo && ip !== '192.168.68.116') conCodigo.push(ip);
+        if (q.method() === 'OPTIONS' && (ip === '192.168.68.112' || ip === '192.168.68.66')) return ruta.fulfill({ status: 204, headers: cab });
+        const json = (status, cuerpo) => ruta.fulfill({ status, headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) });
+        // Un impostor de la wifi (3.70.0): contesta como Lector MLBB y dice «ok» a cualquier código; no sabe el reto.
+        if (ip === '192.168.68.66') return new URL(q.url()).pathname === '/reto' ? json(200, { prueba: 'b'.repeat(64) }) : (codigo ? json(200, { ok: true, aprendido: {}, lector: { minutos: 1 } }) : json(401, { error: 'codigo' }));
         if (ip !== '192.168.68.112') return ruta.abort('connectionrefused');
-        if (q.method() === 'OPTIONS') return ruta.fulfill({ status: 204, headers: cab });
+        // La tablet de verdad demuestra que conoce el código (3.70.0).
+        if (new URL(q.url()).pathname === '/reto') return pruebaDelReto('ABCDEFGH23', new URL(q.url()).searchParams.get('n')).then((prueba) => json(200, { prueba }));
         if (codigo !== 'ABCDEFGH23') return ruta.fulfill({ status: 401, headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'codigo' }) });
         return ruta.fulfill({ status: 200, headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true, aprendido: {}, lector: { minutos: 1 }, tablet: { apk: '3.64.1' } }) });
       });

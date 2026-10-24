@@ -257,9 +257,16 @@ export async function principal(env = process.env) {
   // maestría (la del móvil más lo que la tablet apuntó después) y sube lo
   // apuntado a la base de datos con tu clave.
   const partidas = partidasDeLaTablet(casa);
-  const subir = () => subirLoDeLaTablet({ partidas, clave: ajustes.delMovil()?.clave, config: leerComunidad([bajados, join(aqui, '..', '..', 'datos')]) })
-    .then((r) => { if (r.subidas) registrar(`Sin móvil: ${r.subidas} partidas subidas a la base de datos.`); else if (r.error) registrar(`Sin móvil: no se pudieron subir las partidas (${r.error}).`); })
-    .catch(() => {});
+  // Una subida a la vez: apuntar y el reloj de 10 minutos pueden coincidir.
+  let subiendo = null;
+  const subir = () => {
+    if (subiendo) return subiendo;
+    subiendo = subirLoDeLaTablet({ partidas, clave: ajustes.delMovil()?.clave, config: leerComunidad([bajados, join(aqui, '..', '..', 'datos')]) })
+      .then((r) => { if (r.subidas) registrar(`Sin móvil: ${r.subidas} partidas subidas a la base de datos.`); else if (r.error) registrar(`Sin móvil: no se pudieron subir las partidas (${r.error}).`); })
+      .catch(() => {})
+      .finally(() => { subiendo = null; });
+    return subiendo;
+  };
   const solo = crearSolo({
     interno: servidor.interno, ajustes, datosPara: datosDelSolo(leerDatos), registrar,
     apuntar: (p) => { if (partidas.apuntar(p)) subir(); },

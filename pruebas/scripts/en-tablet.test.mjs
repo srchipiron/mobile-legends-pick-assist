@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { principal, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
+import { pruebaDelReto } from '../../src/app/lector.js';
 import { writeFileSync } from 'node:fs';
 import { crearPortero, hostPermitido, crearServidor, fundirAprendido, FALLOS_CODIGO, VENTANA_CODIGO_MS } from '../../scripts/lector/servir.mjs';
 import { aprenderResultado, reconocerResultado, plantillasIniciales, ZONA_PALABRA } from '../../scripts/lector/resultado.mjs';
@@ -204,6 +205,25 @@ test('las partidas de la tablet (3.70.0): se guardan sin repetir y con tope, y s
   // La configuración que bajó la tablet, con forma o nada.
   writeFileSync(join(casa, 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: 'sb_secret_aaaaaaaaaaaaaa' }));
   eq(leerComunidad([casa]), null, 'acepta una configuración con la clave secreta');
+});
+
+test('el reto de la búsqueda (3.70.0): la tablet demuestra que conoce el código sin que viaje, con la misma cuenta que la app, y con tope', async () => {
+  const servidor = crearServidor({ capturar: async () => { throw new Error('no'); }, codigo: CODIGO, enHilos: false });
+  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  const puerto = servidor.address().port;
+  try {
+    const n = '0123456789abcdef0123456789abcdef';
+    const r = await pedir(puerto, `/reto?n=${n}`, { codigo: null, origen: null });
+    eq(r.estado, 200, r.cuerpo);
+    const { prueba } = JSON.parse(r.cuerpo);
+    eq(prueba, await pruebaDelReto(CODIGO, n), 'la prueba del lector no es la que calcula la app');
+    ok(prueba !== await pruebaDelReto('OTROCODIGO9', n) && !r.cuerpo.includes(CODIGO), 'la prueba no depende del código, o lo lleva dentro');
+    eq((await pedir(puerto, '/reto?n=xyz', { codigo: null, origen: null })).estado, 400, 'acepta un reto sin forma');
+    let ultimo;
+    for (let i = 0; i < 6; i += 1) ultimo = await pedir(puerto, `/reto?n=${n}`, { codigo: null, origen: null });
+    eq(ultimo.estado, 429, 'sin tope de retos por aparato (se podría ahogar a la tablet)');
+    eq((await pedir(puerto, '/estado', { codigo: null, origen: null })).estado, 401, 'el reto abre la puerta sin código');
+  } finally { servidor.close(); }
 });
 
 test('la salud de la tablet (3.63.0): /estado cuenta lecturas y fallos, y lo que la APK escribe, solo con campos conocidos', async () => {

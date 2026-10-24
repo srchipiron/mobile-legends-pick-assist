@@ -39,7 +39,20 @@ export function sanearLectorTablet(x) {
  * y vale si con él contesta `ok`. Así el código no se manda a cualquier
  * aparato de la casa. null si no aparece.
  */
-export async function buscarTabletEnLaRed(vinculo, { pedir = (...a) => fetch(...a), plazoMs = 1500, aLaVez = 32 } = {}) {
+/**
+ * La prueba de que una tablet conoce el código sin que el código viaje
+ * (3.70.0): PBKDF2-SHA256(código, «lector-reto:» + n, RETO_VUELTAS), en hex.
+ * La misma cuenta que hace el lector con node:crypto (servir.mjs, hay prueba).
+ */
+export const RETO_VUELTAS = 100000;
+export async function pruebaDelReto(codigo, n, sutil = globalThis.crypto.subtle) {
+  const utf8 = (s) => new TextEncoder().encode(s);
+  const llave = await sutil.importKey('raw', utf8(codigo), 'PBKDF2', false, ['deriveBits']);
+  const bits = await sutil.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: utf8(`lector-reto:${n}`), iterations: RETO_VUELTAS }, llave, 256);
+  return [...new Uint8Array(bits)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+export async function buscarTabletEnLaRed(vinculo, { pedir = (...a) => fetch(...a), plazoMs = 1500, aLaVez = 32, azar = () => globalThis.crypto.getRandomValues(new Uint8Array(16)), probar = pruebaDelReto } = {}) {
   const v = sanearLectorTablet(vinculo);
   if (!v) return null;
   const [ip, puerto] = v.direccion.split(':');
@@ -52,11 +65,21 @@ export async function buscarTabletEnLaRed(vinculo, { pedir = (...a) => fetch(...
       return codigo ? r.ok && j?.ok === true : r.status === 401 && j?.error === 'codigo';
     } catch { return false; }
   };
+  // ¿Conoce el código? Sin mandarlo (3.70.0): un aparato que contesta 401
+  // «codigo» y luego ok a cualquier código se quedaba con él.
+  const conoce = async (d) => {
+    try {
+      const n = [...azar()].map((b) => b.toString(16).padStart(2, '0')).join('');
+      const r = await pedir(`http://${d}/reto?n=${n}`, { cache: 'no-store', signal: AbortSignal.timeout(plazoMs * 4), targetAddressSpace: 'local' });
+      const j = await r.json().catch(() => null);
+      return r.ok && typeof j?.prueba === 'string' && j.prueba === await probar(v.codigo, n);
+    } catch { return false; }
+  };
   for (let i = 0; i < candidatas.length; i += aLaVez) {
     const tanda = candidatas.slice(i, i + aLaVez);
     const vistas = await Promise.all(tanda.map((d) => contesta(d)));
     for (const [k, d] of tanda.entries()) {
-      if (vistas[k] && await contesta(d, v.codigo)) return { direccion: d, codigo: v.codigo };
+      if (vistas[k] && await conoce(d) && await contesta(d, v.codigo)) return { direccion: d, codigo: v.codigo };
     }
   }
   return null;

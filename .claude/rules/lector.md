@@ -1254,4 +1254,21 @@ pantalla por programa).
   inofensiva: filtrar las quitadas al traer repite lo que `fundirPerfil` hace.
 - Sin hacer todavía: la voz del guion sin el móvil (sus textos están en la
   app) y aprender de las correcciones (sin el móvil nadie corrige).
+- **La revisión de seguridad de 3.70.0** encontró que `buscarTabletEnLaRed`
+  (3.65.4) daba el código de vinculación a CUALQUIER aparato que contestara
+  401 «codigo» y luego ok: un impostor de la wifi se lo quedaba, y con 3.70.0
+  también la clave de jugador (que viaja con el consejo). Hoy la app manda un
+  reto (`/reto?n=`, 16 bytes al azar, SIN código) y solo da el código a quien
+  devuelve `pruebaDelReto` (PBKDF2-SHA256 del código con «lector-reto:» + n,
+  `RETO_VUELTAS` 100.000: con una prueba no se adivina el código en años).
+  El lector la calcula con node:crypto y la app con WebCrypto: `en-tablet`
+  exige que den lo mismo. Tope `RETOS_POR_MINUTO` (6) por aparato. Una APK
+  anterior no tiene `/reto`: si cambia de IP antes de actualizarse, no se
+  encuentra sola (fallo seguro). Pruebas en `app/lector` y `lector.e2e` (un
+  impostor que dice ok a todo no recibe nada) y `en-tablet`; cinco mutaciones.
+- **A dónde llama el lector de la tablet**: `android.test` recorre lo que
+  importa en-tablet.mjs y exige que cada `fetch(`/`pedir(` esté en su lista
+  (el puerto interno, `DATOS_DE_LA_WEB` en github.io, `config.url` de la base
+  de datos, que pasa `sanearConfig`). fetch es global: la lista de imports
+  permitidos no lo limitaba.
 
