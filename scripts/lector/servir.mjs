@@ -43,6 +43,7 @@ export { CAPTURAS_POR_CORRECCION };
 import { fotogramaDe } from './miniatura.mjs';
 import { enPartida, recorteMarcador } from './partida.mjs';
 import { hablarConTermux, limpiarTexto, IDIOMAS_VOZ } from './voz.mjs';
+import { nombreClave } from '../../src/motor/nombres.js';
 import { tramoDeMinutos } from '../../src/motor/directo.js';
 import { tiraDe, reconocerResultado, aprenderResultado, plantillasIniciales, cargarResultados, guardarResultados, VERSION_RESULTADOS, PLANTILLAS_POR_RESULTADO } from './resultado.mjs';
 
@@ -383,10 +384,34 @@ export function sanearAjustes(a) {
   }
   // Tu clave de la base de datos de partidas (3.70.0), si la tienes puesta: la tablet sube con ella lo que apunta.
   const clave = typeof a?.clave === 'string' && /^[A-Za-z0-9_-]{32,64}$/.test(a.clave) ? a.clave : null;
-  return { linea, rango: palabra(a?.rango) ?? 'glory', idioma: a?.idioma === 'en' ? 'en' : 'es', ...(Object.keys(maestria).length ? { maestria } : {}), ...(clave ? { clave } : {}) };
+  // La voz callada en la app (3.71.0): la tablet sola tampoco habla.
+  return { linea, rango: palabra(a?.rango) ?? 'glory', idioma: a?.idioma === 'en' ? 'en' : 'es', ...(Object.keys(maestria).length ? { maestria } : {}), ...(clave ? { clave } : {}), ...(a?.vozCallada === true ? { vozCallada: true } : {}) };
 }
 /** Héroes de la maestría que se aceptan del móvil: los de todas las líneas. */
 export const MAESTRIA_MAX = 200;
+
+/**
+ * Lo que la tablet sola no reconoció en un draft (3.71.0, `correccionDelDraft`
+ * de solo.mjs), para que la APK te lo pregunte. Solo nombres del catálogo,
+ * ids de captura con su forma y como mucho `CAPTURAS_A_MIRAR` (las que mira
+ * el aprendizaje). null si no tiene forma.
+ */
+export function sanearCorreccion(c) {
+  const nombre = (n) => (typeof n === 'string' && n.length <= 30 && /^[\p{L}\p{N} .'&-]+$/u.test(n) ? n : null);
+  if (!c || typeof c.id !== 'string' || !/^correccion-\d{1,15}$/.test(c.id) || !Number.isFinite(c.cuando)) return null;
+  const ids = (Array.isArray(c.ids) ? c.ids : []).filter((id) => typeof id === 'string' && /^lectura-[\w-]+$/.test(id)).slice(-CAPTURAS_A_MIRAR);
+  const heroes = (Array.isArray(c.heroes) ? c.heroes : []).map(nombre).filter(Boolean).slice(0, 400);
+  const huecos = (l) => [0, 1, 2, 3, 4].map((i) => (Array.isArray(l) ? nombre(l[i]) : null));
+  if (!ids.length || !heroes.length) return null;
+  const l = c.leidos ?? {};
+  return {
+    id: c.id, cuando: c.cuando, ids, heroes,
+    leidos: { enemigos: huecos(l.enemigos), aliados: huecos(l.aliados), tuyoFila: Number.isInteger(l.tuyoFila) && l.tuyoFila >= 0 && l.tuyoFila < 5 ? l.tuyoFila : -1, baneos: (Array.isArray(l.baneos) ? l.baneos : []).map(nombre).filter(Boolean).slice(0, 10) },
+    ...(Number.isFinite(c.partida) ? { partida: c.partida } : {}),
+  };
+}
+/** Una petición de la propia tablet (la APK): por 127.0.0.1 y sin `Origin`, que un navegador siempre pone. */
+export const deLaApk = (req) => !req.headers.origin && ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress ?? '');
 export function sanearResumen(r) {
   const titulo = textoPlano(r?.titulo, 80), texto = textoPlano(r?.texto, 300);
   return titulo && texto && typeof r?.id === 'string' && /^[\w-]{1,60}$/.test(r.id) ? { id: r.id, titulo, texto } : null;
@@ -497,13 +522,16 @@ export const VISTAZO_MS = 10000;
  * El servidor, con la captura inyectada: en Termux es `capturarTablet`, en
  * las pruebas una captura de fichero.
  */
-export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux, codigo = null, estadoExtra = null }) {
+export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux, codigo = null, estadoExtra = null, alCorregir = null }) {
   // En la tablet (3.61.0) escucha en la wifi: con código, y aceptando su IP como `Host`.
   const portero = codigo ? crearPortero(codigo, { ahora }) : null;
   // Los retos de cada aparato en el último minuto (3.70.0).
   const retos = new Map();
   // Lo último que mandó la app para la tablet (3.62.0): en memoria, se pierde al reiniciar (la app lo vuelve a mandar).
   let consejoActual = null, resumenActual = null;
+  // Lo que no reconoció la tablet sola (3.71.0): la APK lo pregunta tras la partida.
+  let correccion = null;
+  const correccionVigente = () => (correccion && ahora() - correccion.cuando <= RETENCION_CAPTURAS_MS ? correccion : null);
   // En partida (3.69.3), la burbuja se quita: tapaba el juego y no tiene nada
   // que decir hasta el draft siguiente. Cuenta las capturas SEGUIDAS con el
   // minimapa (de /leer, del modo solo y de la vigilancia); una que no lo
@@ -527,7 +555,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   const salud = { lecturas: 0, vistazos: 0, fallosCaptura: 0, ultimoFallo: null };
   resultados = resultados ?? plantillasDeSerie();
   /** Guarda una captura y borra las que ya no hacen falta (3.34.0). */
-  const podar = () => { if (carpeta) podarCapturas(carpeta, { ahora: ahora(), maximos, proteger: new Set((final?.fotogramas ?? []).map((f) => f.id)) }); };
+  const podar = () => { if (carpeta) podarCapturas(carpeta, { ahora: ahora(), maximos, proteger: new Set([...(final?.fotogramas ?? []).map((f) => f.id), ...(correccionVigente()?.ids ?? [])]) }); };
   const guardarCaptura = (nombre, contenido, { conPoda = true } = {}) => {
     if (!carpeta) return;
     writeFileSync(join(carpeta, nombre), contenido);
@@ -1030,6 +1058,41 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       }
       return;
     }
+    // Enseñar al lector desde la tablet (3.71.0): la APK pregunta quién era el
+    // «?» y manda tu respuesta. Solo la APK (127.0.0.1, sin Origin, con el código).
+    if (ruta === '/correccion' && (req.method === 'GET' || req.method === 'POST')) {
+      if (!deLaApk(req)) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'solo la tablet' })); return; }
+      const c = correccionVigente();
+      if (req.method === 'GET') {
+        res.writeHead(200, cabeceras).end(JSON.stringify({ correccion: c ? { id: c.id, cuando: c.cuando, leidos: c.leidos, heroes: c.heroes } : null }));
+        return;
+      }
+      const cuerpo = await leerCuerpo(req);
+      // Otra vez tras leer el cuerpo: entretanto pudo contestarla otra petición o llegar otra corrección.
+      if (!c || correccionVigente() !== c || cuerpo?.id !== c.id) { res.writeHead(409, cabeceras).end(JSON.stringify({ error: 'ya no hay esa corrección' })); return; }
+      if (cuerpo.descartar === true) { correccion = null; registrar('Corrección descartada en la tablet.'); res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true })); return; }
+      // Solo héroes del catálogo, sin repetir, como mucho cinco enemigos y cuatro compañeros.
+      const porClave = new Map(c.heroes.map((h) => [nombreClave(h), h]));
+      const lista = (l) => (Array.isArray(l) ? l : []).filter((x) => typeof x === 'string' && x.trim()).map((x) => porClave.get(nombreClave(x)));
+      const enemigos = lista(cuerpo.enemigos), aliados = lista(cuerpo.aliados);
+      const tuyo = typeof cuerpo.tuyo === 'string' && cuerpo.tuyo.trim() ? porClave.get(nombreClave(cuerpo.tuyo)) : null;
+      const todos = [...enemigos, ...aliados, ...(tuyo !== null ? [tuyo] : [])];
+      if (todos.some((x) => !x) || enemigos.length > 5 || aliados.length > 4 || new Set(todos).size !== todos.length || !enemigos.length) {
+        res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'héroes' }));
+        return;
+      }
+      correccion = null;
+      // La partida apuntada se arregla aunque aprender falle: lo que dices es la verdad igual.
+      try { alCorregir?.({ partida: c.partida ?? null, enemigos, aliados, tuyo }); } catch (e) { registrar(`No se pudo arreglar la partida apuntada: ${e.message}`); }
+      try {
+        const r = await corregir({ ids: c.ids, enemigos, baneos: c.leidos.baneos, aliados, tuyo });
+        res.writeHead(200, cabeceras).end(JSON.stringify(r));
+      } catch (e) {
+        registrar(`No se pudo aprender: ${e.message}`);
+        res.writeHead(500, cabeceras).end(JSON.stringify({ error: 'aprender' }));
+      }
+      return;
+    }
     if (req.method === 'GET' && ruta === '/leer') {
       // La app del móvil está leyendo (3.66.0): el modo solo de la tablet se aparta.
       ultimaDelMovil = ahora();
@@ -1055,6 +1118,9 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     vigilar: (desde, cuerpo) => vigilar(desde, cuerpo),
     final: () => estadoFinal(),
     ponerResumen: (r) => { resumenActual = sanearResumen(r) ?? resumenActual; },
+    // Lo que no reconoció (3.71.0), para preguntarlo en la APK.
+    ponerCorreccion: (c) => { correccion = sanearCorreccion(c); },
+    correccion: () => correccionVigente(),
     /**
      * Un vistazo al minimapa si la burbuja tiene algo que enseñar y nadie ha
      * capturado en VISTAZO_MS (3.69.3). null si no tocaba.

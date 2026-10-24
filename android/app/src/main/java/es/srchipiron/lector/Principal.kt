@@ -19,6 +19,8 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -26,6 +28,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.Inet4Address
@@ -76,6 +79,9 @@ class Principal : Activity() {
     private lateinit var pasos: List<Paso>
     private lateinit var botonesLinea: List<Button>
     private lateinit var apagarSolo: Button
+    /** «Enseña al lector» (3.71.0): lo que no reconoció en tu última partida. */
+    private lateinit var corregir: LinearLayout
+    private var correccionId: String? = null
     @Volatile private var nueva: Actualizar.Nueva? = null
     @Volatile private var movilLee = false
     private val reloj = Handler(Looper.getMainLooper())
@@ -117,6 +123,9 @@ class Principal : Activity() {
         })
         actualizar = texto(14f, Color.rgb(100, 210, 255)).apply { visibility = View.GONE }
         izquierda.addView(actualizar)
+        // Arriba del todo, donde se ve al abrir desde la notificación de la partida (3.71.0).
+        corregir = tarjeta().apply { visibility = View.GONE }
+        izquierda.addView(corregir, separada())
 
         val guia = tarjeta()
         guia.addView(titulo("Paso a paso"))
@@ -133,8 +142,8 @@ class Principal : Activity() {
             },
             Paso("Empieza a leer. Android pregunta qué grabar: elige «Pantalla completa».", "Empezar a leer") { alternar() },
             Paso("«Sin móvil»: la tablet lee el draft y decide ella sola con tu línea (la de la app del móvil, o la que elijas aquí), y tu nº1 sale en la burbuja."),
-            Paso("(Opcional) Con Pick Assist en el MÓVIL: abre la cámara, escanea el QR y toca «Vincular» (misma wifi). Con el móvil, además se apuntan tus partidas y suena la voz."),
-            Paso("Juega. En baneos la burbuja dice a quién banear; en picks, tu nº1 y los dos siguientes."),
+            Paso("(Opcional) Con Pick Assist en el MÓVIL: abre la cámara, escanea el QR y toca «Vincular» (misma wifi). Una vez basta: la tablet se queda con tu maestría y tu clave para subir las partidas."),
+            Paso("Juega. En baneos la burbuja dice a quién banear; en picks, tu nº1 y los dos siguientes. En partida, la voz te da los consejos de tu pick, y al acabar la tablet apunta la partida."),
         )
         for (p in pasos) guia.addView(p.fila)
         izquierda.addView(guia, separada())
@@ -179,6 +188,12 @@ class Principal : Activity() {
         ajustes.addView(Button(this).apply {
             text = textoJuego()
             setOnClickListener { prefs.edit().putBoolean("abrirJuego", !prefs.getBoolean("abrirJuego", true)).apply(); text = textoJuego() }
+        })
+        // La voz en partida (3.71.0), sí por defecto: también se calla desde la app del móvil.
+        fun textoVoz() = "Voz en partida: ${if (Solo.voz(this)) "sí" else "callada"} (toca para cambiar)"
+        ajustes.addView(Button(this).apply {
+            text = textoVoz()
+            setOnClickListener { Solo.ponerVoz(this@Principal, !Solo.voz(this@Principal)); text = textoVoz() }
         })
         estado = texto(14f).also { ajustes.addView(it) }
         ajustes.addView(texto(13f, Color.LTGRAY).apply { text = "Mientras lee, la tablet graba su pantalla: si abres otra app, el lector también la ve. La grabación no sale de la tablet; al móvil solo van nombres de héroes." })
@@ -233,7 +248,11 @@ class Principal : Activity() {
     private fun tic() {
         refrescar()
         // ¿El móvil ya lee? Lo dice el propio lector (sus lecturas), cada 3 s.
-        if (Nodo.arrancado && System.currentTimeMillis() / 1000 % 3 == 0L) thread(isDaemon = true) { movilLee = lecturasDelLector() > 0 }
+        if (Nodo.arrancado && System.currentTimeMillis() / 1000 % 3 == 0L) thread(isDaemon = true) {
+            movilLee = lecturasDelLector() > 0
+            val c = pedirCorreccion()
+            runOnUiThread { if (!isFinishing) pintarCorreccion(c) }
+        }
         reloj.postDelayed({ tic() }, 1000)
     }
 
@@ -243,6 +262,107 @@ class Principal : Activity() {
         c.setRequestProperty("X-Lector-Codigo", Vinculo.codigo(this))
         try { if (c.responseCode == 200) JSONObject(c.inputStream.bufferedReader().readText()).optJSONObject("lector")?.optInt("lecturas") ?: 0 else 0 } finally { c.disconnect() }
     } catch (e: Throwable) { 0 }
+
+    /** Lo que no reconoció (3.71.0), o null. Solo lo da a la propia tablet: por 127.0.0.1 y con el código. */
+    private fun pedirCorreccion(): JSONObject? = try {
+        val c = URL("http://127.0.0.1:$PUERTO/correccion").openConnection() as HttpURLConnection
+        c.connectTimeout = 1000; c.readTimeout = 2000
+        c.setRequestProperty("X-Lector-Codigo", Vinculo.codigo(this))
+        try { if (c.responseCode == 200) JSONObject(c.inputStream.bufferedReader().readText()).optJSONObject("correccion") else null } finally { c.disconnect() }
+    } catch (e: Throwable) { null }
+
+    private fun mandarCorreccion(cuerpo: JSONObject): JSONObject? = try {
+        val c = URL("http://127.0.0.1:$PUERTO/correccion").openConnection() as HttpURLConnection
+        // Aprender lleva unas decenas de segundos por captura.
+        c.connectTimeout = 2000; c.readTimeout = 180000
+        c.requestMethod = "POST"; c.doOutput = true
+        c.setRequestProperty("Content-Type", "application/json")
+        c.setRequestProperty("X-Lector-Codigo", Vinculo.codigo(this))
+        c.outputStream.use { it.write(cuerpo.toString().toByteArray()) }
+        try { JSONObject().put("estado", c.responseCode).put("r", if (c.responseCode == 200) JSONObject(c.inputStream.bufferedReader().readText()) else JSONObject()) } finally { c.disconnect() }
+    } catch (e: Throwable) { null }
+
+    /**
+     * La tarjeta «Enseña al lector» (3.71.0): los huecos de tu última partida,
+     * con lo que sí leyó ya puesto. Escribes quién era el que falta, tocas
+     * «Enseñar» y el lector aprende de las capturas del draft como de una
+     * corrección del móvil. Solo se rehace si llega otra corrección (lo que
+     * estás escribiendo no se borra).
+     */
+    private fun pintarCorreccion(c: JSONObject?) {
+        if (c == null) { if (correccionId != null) { correccionId = null; corregir.visibility = View.GONE }; return }
+        val id = c.optString("id")
+        if (id == correccionId) return
+        correccionId = id
+        corregir.removeAllViews()
+        val heroes = c.optJSONArray("heroes")?.let { a -> List(a.length()) { a.optString(it) } } ?: emptyList()
+        val leidos = c.optJSONObject("leidos") ?: JSONObject()
+        val tuyoFila = leidos.optInt("tuyoFila", -1)
+        fun nombre(a: JSONArray?, i: Int) = a?.optString(i, "")?.takeIf { it.isNotEmpty() && it != "null" } ?: ""
+        fun campo(valor: String, pista: String) = AutoCompleteTextView(this).apply {
+            setText(valor); hint = pista; threshold = 1; textSize = 16f; setSingleLine()
+            setAdapter(ArrayAdapter(this@Principal, android.R.layout.simple_dropdown_item_1line, heroes))
+        }
+        corregir.addView(TextView(this).apply { text = "Enseña al lector"; textSize = 18f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.rgb(255, 214, 10)) })
+        corregir.addView(TextView(this).apply {
+            text = "En tu última partida no reconoció a todos. Escribe quién era el que falta (lo que sí leyó ya está puesto) y toca «Enseñar»: aprende de las capturas de ese draft y la próxima vez lo reconoce."
+            textSize = 14f; setTextColor(Color.LTGRAY); setPadding(0, dp(4), 0, dp(8))
+        })
+        corregir.addView(TextView(this).apply { text = "Enemigos"; textSize = 15f; setTextColor(Color.rgb(255, 69, 58)) })
+        val enemigos = List(5) { i -> campo(nombre(leidos.optJSONArray("enemigos"), i), "Enemigo ${i + 1}").also { corregir.addView(it) } }
+        corregir.addView(TextView(this).apply { text = "Tu equipo"; textSize = 15f; setTextColor(Color.rgb(10, 132, 255)); setPadding(0, dp(8), 0, 0) })
+        // Sin tu fila leída no se sabe cuál de los cinco eras tú: cuatro compañeros con lo leído y «Tú» aparte, vacío.
+        val sinFila = tuyoFila !in 0..4
+        val leidosAliados = leidos.optJSONArray("aliados")
+        val iniciales = if (sinFila) List(5) { nombre(leidosAliados, it) }.filter { it.isNotEmpty() }.take(4).let { it + List(5 - it.size) { "" } }.take(4) + "" else List(5) { nombre(leidosAliados, it) }
+        val filaTuya = if (sinFila) 4 else tuyoFila
+        val aliados = List(5) { i -> campo(iniciales[i], if (i == filaTuya) "Tú" else "Compañero ${i + 1}").also { corregir.addView(it) } }
+        val aviso = TextView(this).apply { textSize = 14f; setTextColor(Color.WHITE); setPadding(0, dp(6), 0, 0) }
+        val ensenar = Button(this).apply { text = "Enseñar" }
+        val ahoraNo = Button(this).apply { text = "Ahora no" }
+        val porNombre = heroes.associateBy { it.lowercase() }
+        ensenar.setOnClickListener {
+            val raros = (enemigos + aliados).map { it.text.toString().trim() }.filter { it.isNotEmpty() && porNombre[it.lowercase()] == null }
+            if (raros.isNotEmpty()) { aviso.text = "No conozco a: ${raros.joinToString(", ")}. Elige el nombre de la lista."; return@setOnClickListener }
+            val de = { v: AutoCompleteTextView -> porNombre[v.text.toString().trim().lowercase()] }
+            val cuerpo = JSONObject().put("id", id)
+                .put("enemigos", JSONArray(enemigos.mapNotNull(de)))
+                .put("aliados", JSONArray(aliados.filterIndexed { i, _ -> i != filaTuya }.mapNotNull(de)))
+            de(aliados[filaTuya])?.let { cuerpo.put("tuyo", it) }
+            ensenar.isEnabled = false; ahoraNo.isEnabled = false
+            aviso.text = "Aprendiendo de las capturas… (puede tardar un minuto)"
+            thread(isDaemon = true) {
+                val r = mandarCorreccion(cuerpo)
+                runOnUiThread {
+                    val estado = r?.optInt("estado") ?: 0
+                    val res = r?.optJSONObject("r")
+                    aviso.text = when (estado) {
+                        200 -> {
+                            val ap = res?.optJSONArray("aprendidos")?.let { a -> List(a.length()) { a.optString(it) } }.orEmpty()
+                            val no = res?.optJSONArray("sinEncontrar")?.let { a -> List(a.length()) { a.optString(it) } }.orEmpty()
+                            listOfNotNull(
+                                if (ap.isNotEmpty()) "Aprendido: ${ap.joinToString(", ")}." else "Gracias: la partida queda corregida.",
+                                if (no.isNotEmpty()) "No los encontré en las capturas: ${no.joinToString(", ")} (se intenta otra vez cuando vuelvan a salir)." else null,
+                            ).joinToString(" ")
+                        }
+                        400 -> { ensenar.isEnabled = true; ahoraNo.isEnabled = true; "Revisa los nombres: hay uno repetido o falta algún enemigo." }
+                        409 -> "Esa partida ya no se puede corregir (pasó mucho tiempo)."
+                        else -> { ensenar.isEnabled = true; ahoraNo.isEnabled = true; "El lector no contestó: ¿está leyendo? Prueba otra vez." }
+                    }
+                }
+            }
+        }
+        ahoraNo.setOnClickListener {
+            corregir.visibility = View.GONE
+            thread(isDaemon = true) { mandarCorreccion(JSONObject().put("id", id).put("descartar", true)) }
+        }
+        val botones = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        botones.addView(ensenar, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        botones.addView(ahoraNo, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        corregir.addView(botones)
+        corregir.addView(aviso)
+        corregir.visibility = View.VISIBLE
+    }
 
     private fun alternar() {
         if (Lector.grabando) startService(Intent(this, Lector::class.java).setAction(Lector.PARAR))
@@ -333,10 +453,19 @@ object Solo {
         val l = j.optString("linea", "")
         if (j.optBoolean("activo", true) && LINEAS.any { it.first == l }) l else null
     } catch (e: Exception) { null }
-    fun guardar(c: android.content.Context, linea: String?) {
-        val j = if (linea == null) JSONObject().put("activo", false) else JSONObject().put("linea", linea).put("idioma", "es")
+    private fun leer(c: android.content.Context) = try { JSONObject(fichero(c).readText()) } catch (e: Exception) { JSONObject() }
+    private fun escribir(c: android.content.Context, j: JSONObject) {
         val tmp = java.io.File(c.filesDir, "solo.json.tmp")
         tmp.writeText(j.toString())
         tmp.renameTo(fichero(c))
     }
+    fun guardar(c: android.content.Context, linea: String?) {
+        val j = if (linea == null) JSONObject().put("activo", false) else JSONObject().put("linea", linea).put("idioma", "es")
+        // La voz (3.71.0) se conserva al cambiar de línea.
+        if (!voz(c)) j.put("voz", false)
+        escribir(c, j)
+    }
+    /** «Voz en partida» (3.71.0): sin el campo, habla. */
+    fun voz(c: android.content.Context) = leer(c).optBoolean("voz", true)
+    fun ponerVoz(c: android.content.Context, si: Boolean) = escribir(c, leer(c).apply { if (si) remove("voz") else put("voz", false) })
 }

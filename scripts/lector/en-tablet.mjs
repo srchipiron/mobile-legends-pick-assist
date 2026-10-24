@@ -181,6 +181,26 @@ export function partidasDeLaTablet(casa) {
       datos.subidas = [...new Set([...datos.subidas, ...ts])].filter((t) => vivas.has(t));
       escribir();
     },
+    /**
+     * Lo que dijiste en la APK de quién era quién (3.71.0): arregla el draft de
+     * esa partida y la vuelve a subir. Si tu pick era otro, la estimación (que
+     * era la de otro héroe) se quita, como al cambiar de héroe en la app.
+     */
+    corregir(t, { enemigos = [], aliados = [], tuyo = null } = {}) {
+      const i = datos.partidas.findIndex((p) => p.t === t);
+      if (i < 0) return false;
+      const { supuesto, estimacion, modelo, ...resto } = datos.partidas[i];
+      const otro = !!tuyo && tuyo !== resto.pick;
+      datos.partidas[i] = {
+        ...resto,
+        ...(tuyo ? { pick: tuyo } : supuesto ? { supuesto } : {}),
+        ...(otro ? {} : { ...(estimacion != null ? { estimacion } : {}), ...(modelo != null ? { modelo } : {}) }),
+        draft: { ...resto.draft, enemigos: enemigos.slice(0, 5), aliados: aliados.slice(0, 4) },
+      };
+      datos.subidas = datos.subidas.filter((x) => x !== t);
+      escribir();
+      return true;
+    },
   };
 }
 
@@ -236,7 +256,10 @@ export async function principal(env = process.env) {
   podarCapturas(carpeta);
   // El modo solo, para /estado (3.69.3): se crea después del servidor.
   let soloRef = null;
+  // Arreglar la partida apuntada con tu corrección (3.71.0): las partidas se crean después.
+  let alCorregirRef = null;
   const servidor = crearServidor({
+    alCorregir: (c) => alCorregirRef?.(c),
     capturar: capturaDeLaApk(base, secreto), hablar: vozDeLaApk(base, secreto), codigo,
     // Por qué se cerró la app la última vez (3.61.5, lo dice Android): el Diagnóstico del móvil lo enseña.
     // Y lo que la APK sabe de la tablet (3.63.0: versión, si graba, permisos, memoria), que escribe cada pocos segundos.
@@ -272,6 +295,9 @@ export async function principal(env = process.env) {
     apuntar: (p) => { if (partidas.apuntar(p)) subir(); },
     maestriaDe: () => { const m = ajustes.delMovil(); return maestriaEfectiva(m?.maestria ?? {}, partidas.todas().filter((p) => p.t > (m?.cuando ?? 0))); },
   });
+  alCorregirRef = ({ partida, enemigos, aliados, tuyo }) => {
+    if (Number.isFinite(partida) && partidas.corregir(partida, { enemigos, aliados, tuyo })) { registrar('Sin móvil: la partida apuntada lleva ya los héroes que dijiste.'); subir(); }
+  };
   const cadaSubida = setInterval(subir, 10 * 60 * 1000);
   servidor.on('close', () => clearInterval(cadaSubida));
   servidor.partidas = partidas;

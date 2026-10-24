@@ -569,4 +569,11 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   ni `fuente` están en el esquema, así que suben como un pick normal. Es lo
   mismo que hace la app al apuntar sola sin pick fijado; meterlos pediría
   volver a pegar el esquema en Supabase. Se reabre si las estadísticas lo piden.
+- **Que el lector aprenda solo de lo que él mismo leyó** (3.71.0, al pedir
+  Javi «que vaya mejorando la app sola»): dar por verdad el draft leído y
+  aprender de él. Lo que nunca se leyó (el «?») no entra, que es justo lo
+  que hay que aprender; y una lectura equivocada se aprendería como buena y
+  se reforzaría sola (la lección de 3.30.1: lo que se aprende solo no puede
+  mandar sobre lo medido). Por eso la tablet PREGUNTA tras la partida, en
+  un toque, y aprende de tu respuesta.
 

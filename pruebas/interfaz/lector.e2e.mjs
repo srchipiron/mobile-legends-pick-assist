@@ -94,6 +94,14 @@ await prueba('el enlace del QR de la tablet vincula la app: lee de la tablet con
   // Con tu línea (3.69.3): con ella la tablet sigue leyendo sola cuando el móvil se calla.
   const conAjustes = vistas.find((v) => v.camino === '/consejo' && v.cuerpo.includes('"ajustes"'));
   ok(conAjustes && /^[a-z]+$/.test(JSON.parse(conAjustes.cuerpo).ajustes?.linea ?? ''), `el consejo no lleva tu línea: ${conAjustes?.cuerpo ?? 'sin ajustes'}`);
+  // Y si la voz va callada (3.71.0): la tablet habla sola en partida y lo tiene que saber.
+  eq(JSON.parse(conAjustes.cuerpo).ajustes?.vozCallada, false, 'el consejo no dice si la voz va callada');
+  if (await pagina.locator('.lector-callar').count()) {
+    await pagina.locator('.lector-callar').first().click();
+    for (let i = 0; i < 40 && !vistas.some((v) => v.camino === '/consejo' && v.cuerpo.includes('"vozCallada":true')); i++) await pagina.waitForTimeout(250);
+    ok(vistas.some((v) => v.camino === '/consejo' && v.cuerpo.includes('"vozCallada":true')), 'callar la voz en la app no se le dice a la tablet');
+    await pagina.locator('.lector-callar').first().click();
+  }
   eq(await pagina.evaluate(() => window.location.hash), '', 'el enlace con el código se queda en la barra de direcciones');
   eq(JSON.stringify(await leer(pagina, 'roam-picker:lector-tablet')), JSON.stringify({ direccion: '192.168.68.116:47323', codigo: 'ABCDEFGH23' }), 'la vinculación no se guarda');
   eq(await leer(pagina, 'roam-picker:lector-auto'), true, 'vincular no enciende «Leer solo»');

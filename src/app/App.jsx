@@ -498,9 +498,10 @@ export default function App() {
     // ellos cuando el móvil se calla, aunque en la APK no se haya elegido línea.
     // Y tu maestría y tu clave de la base de datos (3.70.0): la tablet decide
     // con ellas y sube lo que apunte sola, sin el móvil delante.
-    mandarALaTablet({ consejo: consejoTablet, ajustes: { linea, rango: datos.rango, idioma, maestria: maestriaParaLaTablet, ...(comunidad.activo && comunidad.clave ? { clave: comunidad.clave } : {}) } });
+    // Y si callaste la voz (3.71.0): la tablet habla sola en partida y lo respeta.
+    mandarALaTablet({ consejo: consejoTablet, ajustes: { linea, rango: datos.rango, idioma, maestria: maestriaParaLaTablet, vozCallada, ...(comunidad.activo && comunidad.clave ? { clave: comunidad.clave } : {}) } });
     // consejoTablet cambia de objeto en cada render: lo que decide es su huella.
-  }, [huellaConsejo, lectorTablet, linea, datos.rango, idioma, maestriaParaLaTablet, comunidad.activo, comunidad.clave]);
+  }, [huellaConsejo, lectorTablet, linea, datos.rango, idioma, maestriaParaLaTablet, vozCallada, comunidad.activo, comunidad.clave]);
   // Las partidas que apuntó la tablet sola (3.70.0) se funden aquí como las de otro móvil.
   useEffect(() => {
     if (!comunidad.nuevas.length) return;

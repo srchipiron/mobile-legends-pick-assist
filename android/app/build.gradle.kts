@@ -66,6 +66,8 @@ val copiarLector by tasks.registering(Sync::class) {
     from(rootProject.file("../src/motor")) { into("src/motor") }
     // El cliente de la base de datos de partidas (3.70.0): la tablet sube lo que apunta sola. Solo ese fichero de la app.
     from(rootProject.file("../src/app")) { include("basedatos.js"); into("src/app") }
+    // Los textos de la app y el guion de la voz (3.71.0): la tablet habla sola en partida. Sin React ni navegador.
+    from(rootProject.file("../src/app/i18n")) { include("index.js", "es.js", "en.js", "guion.js"); into("src/app/i18n") }
     // Los datos de Pick Assist dentro de la APK (3.66.0): «Sin móvil» decide desde el primer arranque, sin red.
     from(rootProject.file("../public/data")) { include("heroes.json", "roam-meta.json"); into("datos") }
     // La dirección y la clave pública de la base de datos de partidas (3.70.0), para subir desde el primer arranque.

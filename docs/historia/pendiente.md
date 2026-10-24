@@ -241,6 +241,17 @@
   tu habilidad con cada uno. Lo que falta para decidir: partidas con héroes
   NO jugados (¿rindes peor con uno nuevo, y cuánto?). Medida y opciones en
   `descartados.md` («Bajar el peso de la maestría»).
+- **Que el modelo se recalibre solo con las partidas que se juntan**
+  (propuesto en 3.71.0, al pedir Javi «que poco a poco vaya mejorando la app
+  sola»). Hoy aprenden solas la maestría, «Para ti» y las caras del lector;
+  la ESCALA del modelo (0,44) se midió con 902 partidas pro y no cambia
+  sola. La idea: un bot semanal que baje las partidas de la base de datos
+  (ya llegan solas desde la tablet, con draft y resultado), vuelva a medir
+  la escala con validación cruzada y, solo si mejora la verosimilitud fuera
+  de muestra en más de ~2 por 1.000 partidas y con un mínimo de partidas,
+  abra una incidencia con el cambio propuesto (o lo aplique, si Javi
+  quiere). Toca el motor y sería un bot que commitea: el semáforo pide
+  su OK antes.
 - **El lector en la tablet, sin probar en un Android de verdad**
   (3.61.0–3.61.4). Lo primero que diga Javi al usarlo: si la captura sale
   (o negra: FLAG_SECURE), si el juego pierde fotogramas con la grabación

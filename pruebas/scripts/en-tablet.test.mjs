@@ -13,7 +13,8 @@ import { principal, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSal
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { pruebaDelReto } from '../../src/app/lector.js';
 import { writeFileSync } from 'node:fs';
-import { crearPortero, hostPermitido, crearServidor, fundirAprendido, FALLOS_CODIGO, VENTANA_CODIGO_MS } from '../../scripts/lector/servir.mjs';
+import { crearPortero, hostPermitido, crearServidor, fundirAprendido, sanearCorreccion, deLaApk, FALLOS_CODIGO, VENTANA_CODIGO_MS, RETENCION_CAPTURAS_MS, CAPTURAS_A_MIRAR } from '../../scripts/lector/servir.mjs';
+import { existsSync } from 'node:fs';
 import { aprenderResultado, reconocerResultado, plantillasIniciales, ZONA_PALABRA } from '../../scripts/lector/resultado.mjs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { readFileSync as leerFichero } from 'node:fs';
@@ -298,6 +299,117 @@ test('un solo aparato (3.66.0): con la línea elegida en la APK, la tablet lee, 
     await servidor.solo.tic();
     eq(JSON.parse((await pedir(puerto, '/estado')).cuerpo).lector.lecturas, lecturasAntes, 'con el móvil leyendo, la tablet lee también');
   } finally { servidor.close(); apk.cerrar(); }
+});
+
+/** Un POST como lo hace la APK (o, con `origen`, un navegador). */
+const mandarA = (puerto, camino, cuerpo, { origen = null, codigo = CODIGO } = {}) => new Promise((r, x) => {
+  const q = request({ host: '127.0.0.1', port: puerto, path: camino, method: 'POST', headers: { Host: `127.0.0.1:${puerto}`, 'Content-Type': 'application/json', ...(codigo ? { 'X-Lector-Codigo': codigo } : {}), ...(origen ? { Origin: origen } : {}) } }, (res) => {
+    let b = ''; res.on('data', (t) => { b += t; }); res.on('end', () => r({ estado: res.statusCode, cuerpo: b }));
+  });
+  q.on('error', x); q.end(JSON.stringify(cuerpo));
+});
+
+test('enseñar al lector desde la tablet (3.71.0): solo la APK lo lee y lo contesta, con héroes del catálogo, y el lector aprende de las capturas de ese draft', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'en-tablet-correccion-'));
+  for (const id of ['lectura-a', 'lectura-b']) writeFileSync(join(carpeta, `${id}.png`), 'x');
+  let t = 1_790_000_000_000;
+  const aprendidas = [], corregidas = [];
+  const servidor = crearServidor({
+    capturar: async () => { throw new Error('no'); }, codigo: CODIGO, enHilos: false, carpeta, ahora: () => t, guardar: () => {},
+    aprender: async ({ pares }) => { aprendidas.push(pares); return { aprendido: { version: VERSION_APRENDIDO, picks: null, caras: {}, capturas: pares.length }, informe: [] }; },
+    alCorregir: (c) => corregidas.push(c),
+  });
+  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  const puerto = servidor.address().port;
+  const leerApk = async (op = {}) => pedir(puerto, '/correccion', { host: `127.0.0.1:${puerto}`, origen: null, ...op });
+  const heroes = ['Atlas', 'Clint', 'Franco', 'Gord', 'Khufra', 'Rafaela', 'Selena', 'Tigreal'];
+  const pendiente = { id: `correccion-${t}`, cuando: t, ids: ['lectura-a', 'lectura-b', '../../etc'], heroes, partida: t + 60000, leidos: { enemigos: ['Clint', 'Khufra', null, null, null], aliados: ['Gord', null, null, null, 'Rafaela'], tuyoFila: 4, baneos: ['Hirara', 'Eudora'] } };
+  try {
+    eq(JSON.parse((await leerApk()).cuerpo).correccion, null);
+    servidor.interno.ponerCorreccion(pendiente);
+    const c = JSON.parse((await leerApk()).cuerpo).correccion;
+    ok(c?.id === pendiente.id && c.heroes.length === heroes.length && c.leidos.enemigos[1] === 'Khufra' && !('ids' in c), `la APK no la ve, o ve las rutas de las capturas: ${JSON.stringify(c)}`);
+    eq((await leerApk({ origen: 'https://srchipiron.github.io' })).estado, 403, 'un navegador (con Origin) lee la corrección');
+    eq((await leerApk({ codigo: null })).estado, 401, 'se lee sin el código');
+    const bueno = { id: pendiente.id, enemigos: ['Clint', 'Khufra', 'atlas', 'Franco', 'Tigreal'], aliados: ['Gord', 'Selena'], tuyo: 'Rafaela' };
+    eq((await mandarA(puerto, '/correccion', bueno, { origen: 'https://srchipiron.github.io' })).estado, 403, 'un navegador contesta la corrección');
+    eq((await mandarA(puerto, '/correccion', { ...bueno, enemigos: ['Clint', 'Nadie'] })).estado, 400, 'acepta un héroe que no existe');
+    eq((await mandarA(puerto, '/correccion', { ...bueno, aliados: ['Clint'] })).estado, 400, 'acepta el mismo héroe en los dos equipos');
+    eq((await mandarA(puerto, '/correccion', { ...bueno, enemigos: [] })).estado, 400, 'acepta una corrección sin enemigos');
+    eq((await mandarA(puerto, '/correccion', { ...bueno, id: 'correccion-1' })).estado, 409, 'contesta otra corrección');
+    eq(aprendidas.length, 0, 'aprende de una respuesta rechazada');
+    const r = await mandarA(puerto, '/correccion', bueno);
+    eq(r.estado, 200, r.cuerpo);
+    ok(JSON.parse(r.cuerpo).aprendido === true, 'no dice qué aprendió');
+    eq(aprendidas.length, 1);
+    const pares = aprendidas[0];
+    eq(JSON.stringify(pares.map((p) => p.id)), JSON.stringify(['lectura-a', 'lectura-b']), 'no aprende de las capturas del draft, o de una ruta fuera');
+    const v = pares[0].verdad;
+    ok(v.enemigos.includes('Atlas') && v.enemigos.length === 5 && v.tuyo === 'Rafaela' && v.aliados.length === 2 && v.baneos.includes('Eudora'), `la verdad no es la respuesta: ${JSON.stringify(v)}`);
+    ok(existsSync(join(carpeta, 'lectura-a.verdad.json')), 'la verdad no se guarda junto a la captura');
+    eq(JSON.stringify(corregidas), JSON.stringify([{ partida: t + 60000, enemigos: ['Clint', 'Khufra', 'Atlas', 'Franco', 'Tigreal'], aliados: ['Gord', 'Selena'], tuyo: 'Rafaela' }]), 'la partida apuntada no se arregla');
+    eq(JSON.parse((await leerApk()).cuerpo).correccion, null, 'la corrección contestada se pregunta otra vez');
+    // «Ahora no» la quita; y pasadas las horas de las capturas, ya no se pregunta.
+    servidor.interno.ponerCorreccion(pendiente);
+    eq((await mandarA(puerto, '/correccion', { id: pendiente.id, descartar: true })).estado, 200);
+    eq(JSON.parse((await leerApk()).cuerpo).correccion, null, '«Ahora no» no la quita');
+    eq(aprendidas.length, 1, '«Ahora no» aprende');
+    // Llega otra corrección mientras se lee la respuesta a la vieja: la nueva no se pierde.
+    servidor.interno.ponerCorreccion(pendiente);
+    const lenta = new Promise((r, x) => {
+      const q = request({ host: '127.0.0.1', port: puerto, path: '/correccion', method: 'POST', headers: { Host: `127.0.0.1:${puerto}`, 'Content-Type': 'application/json', 'X-Lector-Codigo': CODIGO } }, (res) => { res.resume(); res.on('end', () => r(res.statusCode)); });
+      q.on('error', x);
+      q.write(JSON.stringify(bueno).slice(0, 10));
+      setTimeout(() => { servidor.interno.ponerCorreccion({ ...pendiente, id: `correccion-${t + 1}`, cuando: t + 1 }); q.end(JSON.stringify(bueno).slice(10)); }, 200);
+    });
+    eq(await lenta, 409, 'contesta la vieja aunque ya hay otra');
+    eq(JSON.parse((await leerApk()).cuerpo).correccion?.id, `correccion-${t + 1}`, 'la corrección nueva se pierde');
+    eq(aprendidas.length, 1, 'aprende con la respuesta a la vieja');
+    servidor.interno.ponerCorreccion(pendiente);
+    t += RETENCION_CAPTURAS_MS + 1;
+    eq(JSON.parse((await leerApk()).cuerpo).correccion, null, 'pregunta por capturas que ya se borraron');
+  } finally { servidor.close(); }
+  // Solo la tablet: 127.0.0.1 y sin Origin.
+  const req = (dir, origin) => ({ headers: origin ? { origin } : {}, socket: { remoteAddress: dir } });
+  ok(deLaApk(req('127.0.0.1')) && deLaApk(req('::ffff:127.0.0.1')), 'la APK no entra');
+  ok(!deLaApk(req('192.168.68.110')), 'entra un aparato de la wifi');
+  ok(!deLaApk(req('127.0.0.1', 'http://127.0.0.1:8080')), 'entra una página del navegador de la tablet');
+  // Con forma o nada.
+  eq(sanearCorreccion({ ...pendiente, id: '../x' }), null);
+  eq(sanearCorreccion({ ...pendiente, ids: ['../../etc'] }), null, 'sin capturas válidas, se pregunta igual');
+  ok(sanearCorreccion({ ...pendiente, ids: Array.from({ length: 30 }, (_, i) => `lectura-${i}`) }).ids.length === CAPTURAS_A_MIRAR, 'sin tope de capturas');
+  eq(sanearCorreccion({ ...pendiente, heroes: ['<script>'] }), null, 'entra un nombre de héroe con cualquier cosa');
+});
+
+test('la corrección protege sus capturas de la limpieza mientras se puede contestar (3.71.0)', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'en-tablet-poda-'));
+  for (const id of ['lectura-2026-10-24T20-00-00-000Z-1', 'lectura-2026-10-24T20-00-05-000Z-2', 'lectura-2026-10-24T20-00-10-000Z-3']) writeFileSync(join(carpeta, `${id}.png`), 'x');
+  const servidor = crearServidor({ capturar: async () => png, enHilos: false, carpeta, maximos: { lectura: 1, fotograma: 1, resultado: 1 }, guardar: () => {}, guardarResultadosDe: () => {} });
+  try {
+    servidor.interno.ponerCorreccion({ id: `correccion-${Date.now()}`, cuando: Date.now(), ids: ['lectura-2026-10-24T20-00-00-000Z-1', 'lectura-2026-10-24T20-00-05-000Z-2'], heroes: ['Atlas'], leidos: {} });
+    const r = await servidor.interno.leer({});
+    ok(r.ok, JSON.stringify(r).slice(0, 200));
+    // La captura nueva se escribe aparte (y entonces se limpia): se espera a que esté.
+    for (let i = 0; i < 100 && !existsSync(join(carpeta, `${r.lectura.id}.png`)); i += 1) await new Promise((x) => setTimeout(x, 50));
+    ok(existsSync(join(carpeta, 'lectura-2026-10-24T20-00-00-000Z-1.png')) && existsSync(join(carpeta, 'lectura-2026-10-24T20-00-05-000Z-2.png')), 'se borran las capturas de las que iba a aprender');
+    ok(!existsSync(join(carpeta, 'lectura-2026-10-24T20-00-10-000Z-3.png')), 'la limpieza no borra lo que sobra');
+  } finally { servidor.close(); }
+});
+
+test('las partidas de la tablet se arreglan con tu corrección y se vuelven a subir (3.71.0)', () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-arreglar-'));
+  const partidas = partidasDeLaTablet(casa);
+  partidas.apuntar({ t: 1, pick: 'Rafaela', gane: true, supuesto: true, estimacion: 0.55, modelo: 3, draft: { linea: 'roam', enemigos: ['Clint'], aliados: [] } });
+  partidas.apuntar({ t: 2, pick: 'Atlas', gane: false, estimacion: 0.5, modelo: 3, draft: { linea: 'roam', enemigos: [], aliados: [] } });
+  partidas.marcarSubidas([1, 2]);
+  ok(partidas.corregir(1, { enemigos: ['Clint', 'Khufra'], aliados: ['Gord'], tuyo: 'Rafaela' }), 'no arregla');
+  const p1 = partidasDeLaTablet(casa).todas().find((p) => p.t === 1);
+  ok(!p1.supuesto && p1.estimacion === 0.55 && p1.draft.enemigos.length === 2 && p1.draft.aliados[0] === 'Gord' && p1.draft.linea === 'roam', `con tu pick confirmado: ${JSON.stringify(p1)}`);
+  partidas.corregir(2, { enemigos: ['Clint'], aliados: [], tuyo: 'Franco' });
+  const p2 = partidas.todas().find((p) => p.t === 2);
+  ok(p2.pick === 'Franco' && p2.estimacion === undefined && p2.modelo === undefined, `con otro pick se queda la estimación de otro héroe: ${JSON.stringify(p2)}`);
+  eq(JSON.stringify(partidas.pendientes().map((p) => p.t).sort()), '[1,2]', 'lo arreglado no se vuelve a subir');
+  eq(partidas.corregir(99, { enemigos: ['Clint'] }), false);
 });
 
 await terminar('scripts/en-tablet');

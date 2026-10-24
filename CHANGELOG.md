@@ -8,6 +8,21 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.71.0
+
+- La voz de los consejos en partida ya sale de la tablet sola, sin el móvil:
+  cuando empieza la partida, Lector MLBB te va diciendo los consejos de tu
+  pick (los mismos que daba la app del móvil) y en tu idioma.
+- Para callarla: en Lector MLBB → Ajustes, «Voz en partida»; o con el botón
+  «Voz» de la app del móvil, que la tablet también respeta.
+- La tablet aprende de ti poco a poco. Si en un draft no reconoció a algún
+  héroe, al acabar la notificación te lo dice; tócala y escribe quién era
+  (lo que sí leyó ya está puesto). El lector aprende de las capturas de
+  ese draft, como cuando corregías en el móvil, y la próxima vez lo
+  reconoce.
+- Lo que corriges también arregla esa partida en tus partidas guardadas, y
+  se vuelve a subir bien a la base de datos.
+
 ## 3.70.0
 
 - Lector MLBB hace ya casi todo sola: abres la app en la tablet, aceptas

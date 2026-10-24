@@ -394,17 +394,8 @@ export function fundirFinal(actuales, final, { completoDesde, maximo = MAX_FOTOG
   return { suyo: true, fotogramas, resultado, resultadoEn: resultado && Number.isFinite(final.resultadoEn) ? final.resultadoEn : null, duracion, voz };
 }
 
-/**
- * El guion de los consejos en directo (3.44.0), traducido para el lector:
- * cada aviso del motor (`plan.directo`: minuto y frases con clave) a texto, y
- * una frase de cierre por tramo de duración. Con su huella, para volver a
- * mandarlo solo si cambia (fijaste otro pick).
- */
-export function guionTraducido(plan, t, idioma = 'es') {
-  const guion = (plan?.directo ?? []).map((a) => ({ min: a.min, texto: a.partes.map((p) => t(p.clave, p.params)).join(' ') }));
-  const cierres = (plan?.cierres ?? []).map((c) => t(c.clave, c.params));
-  return { guion, cierres, idioma, huella: JSON.stringify([guion, cierres, idioma]) };
-}
+// El guion traducido vive en i18n/guion.js desde 3.71.0 (lo usa también la tablet sin móvil).
+export { guionTraducido } from './i18n/guion.js';
 
 /**
  * Callar (o volver a oír) los consejos en directo (3.53.0, botón «Voz»).

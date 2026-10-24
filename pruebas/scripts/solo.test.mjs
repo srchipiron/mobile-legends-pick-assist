@@ -8,10 +8,12 @@ import { test, ok, eq, terminar, leerJson } from '../arnes.mjs';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { acumularDraft, draftVacio, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO } from '../../scripts/lector/solo.mjs';
+import { acumularDraft, draftVacio, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, IDS_POR_DRAFT, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO } from '../../scripts/lector/solo.mjs';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
 import { crearServidor } from '../../scripts/lector/servir.mjs';
 import { RAIZ } from '../arnes.mjs';
+import { crearT } from '../../src/app/i18n/index.js';
+import { guionTraducido } from '../../src/app/lector.js';
 
 const catalogo = leerJson('public/data/heroes.json');
 const meta = leerJson('public/data/roam-meta.json');
@@ -215,6 +217,93 @@ test('la lectura rápida: en partida solo el minimapa, sin reconocer caras; fuer
     const entera = await servidor.interno.leer({});
     ok(entera.ok && Array.isArray(entera.lectura.tuyos), 'sin «rápida» no hace la lectura entera');
   } finally { servidor.close(); }
+});
+
+test('la voz sin el móvil (3.71.0): al empezar la partida, la tablet manda los MISMOS consejos en directo que mandaría la app, en tu idioma y callada si lo pediste', async () => {
+  const pasos = async (ajustes) => {
+    let t = 7_000_000;
+    let respuesta = lectura({ tuyos: [N('Hirara')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 });
+    const vigiladas = [];
+    const interno = { leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: () => {}, vigilar: (desde, cuerpo) => vigiladas.push(cuerpo), final: () => null, ponerResumen: () => {} };
+    const solo = crearSolo({ interno, ajustes: () => ajustes, datosPara: () => datos, ahora: () => t, apuntar: () => {} });
+    await solo.tic();
+    respuesta = { partida: true, rapida: true };
+    t += 5000; await solo.tic(); t += 5000; await solo.tic();
+    return { cuerpo: vigiladas[0], draft: solo.estado() };
+  };
+  const es = await pasos({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' });
+  ok(es.cuerpo?.guion?.length > 0 && es.cuerpo.cierres?.length > 0, `sin consejos en directo: ${JSON.stringify(es.cuerpo).slice(0, 200)}`);
+  eq(es.cuerpo.callar, false, 'la voz va callada sin pedirlo');
+  // Lo mismo que calcula la app con ese draft: el plan de tu pick, traducido con sus textos.
+  const decision = decidirSolo({ datos, draft: es.draft, linea: 'roam' });
+  const app = guionTraducido(decision.rec.partida, crearT('es'), 'es');
+  eq(JSON.stringify(es.cuerpo.guion), JSON.stringify(app.guion), 'el guion de la tablet no es el de la app');
+  eq(JSON.stringify(es.cuerpo.cierres), JSON.stringify(app.cierres));
+  ok(es.cuerpo.guion.every((a) => !/^[a-z]+\.[a-zA-Z.]+$/.test(a.texto)), 'sale una clave sin traducir');
+  const en = await pasos({ activo: true, linea: 'roam', rango: 'glory', idioma: 'en', callar: true });
+  ok(en.cuerpo.idioma === 'en' && en.cuerpo.guion[0].texto !== es.cuerpo.guion[0].texto, 'en inglés dice lo mismo que en español');
+  eq(en.cuerpo.callar, true, 'con la voz callada, la tablet habla');
+  // Tu pick leído que el motor no tiene como «yo»: sin guion, como la app.
+  eq(guionSolo({ rec: { eleccion: { heroe: { name: 'Otro' } }, partida: decision.rec.partida }, tuyo: { name: 'Rafaela' } }).guion.length, 0, 'habla con el plan de otro héroe');
+  ok(guionSolo({ rec: { eleccion: { heroe: { name: 'Rafaela' } }, partida: decision.rec.partida }, tuyo: { name: 'Rafaela' } }).guion.length > 0, 'con tu pick, sin guion');
+  eq(guionSolo(null).guion.length, 0);
+});
+
+test('callar la voz: en la APK o en la app del móvil (3.71.0)', () => {
+  const casa = mkdtempSync(join(tmpdir(), 'solo-voz-'));
+  const f = join(casa, 'solo.json');
+  writeFileSync(f, JSON.stringify({ linea: 'roam' }));
+  eq(leerAjustesSolo(f).voz, true, 'sin el campo, callada');
+  writeFileSync(f, JSON.stringify({ linea: 'roam', voz: false }));
+  eq(leerAjustesSolo(f).voz, false);
+  eq(ajustesEfectivos(leerAjustesSolo(f), null).callar, true, 'callada en la APK, habla');
+  writeFileSync(f, JSON.stringify({ linea: 'roam' }));
+  eq(ajustesEfectivos(leerAjustesSolo(f), { linea: 'mid', vozCallada: true }).callar, true, 'callada en el móvil, habla');
+  eq(ajustesEfectivos(leerAjustesSolo(f), { linea: 'mid' }).callar, false);
+  eq(ajustesEfectivos(null, { linea: 'mid', vozCallada: true }).callar, true, 'con la línea del móvil, no respeta su voz callada');
+});
+
+test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se pregunta con las capturas del draft, sabe de qué partida es y la notificación lo dice', async () => {
+  let t = 9_000_000;
+  let n = 0;
+  const conId = (l) => ({ ...l, id: `lectura-20261024-${String(n += 1).padStart(3, '0')}` });
+  let respuesta = conId(lectura({ tuyos: [N('Hirara'), N('Belerick')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 }));
+  let final = null;
+  const correcciones = [], resumenes = [];
+  const interno = {
+    leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: () => {},
+    vigilar: (desde) => { final = { desde, resultado: null }; }, final: () => final, ponerResumen: (r) => resumenes.push(r),
+    ponerCorreccion: (c) => correcciones.push(c),
+  };
+  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: () => {} });
+  await solo.tic();
+  t += 5000; respuesta = conId(respuesta); await solo.tic();
+  eq(correcciones.length, 0, 'pregunta en pleno draft');
+  // Las lecturas en partida no traen captura del draft: no cuentan.
+  respuesta = { partida: true, rapida: true, id: 'lectura-de-la-partida' };
+  t += 5000; await solo.tic(); t += 5000; await solo.tic();
+  eq(correcciones.length, 1, 'al cerrarse el draft con «?» no lo pregunta');
+  const c = correcciones[0];
+  eq(JSON.stringify(c.ids), JSON.stringify(['lectura-20261024-001', 'lectura-20261024-002']), 'no son las capturas del draft');
+  eq(c.faltan, 5, 'no cuenta los que faltan (tres enemigos y dos compañeros)');
+  ok(c.leidos.enemigos[0] === 'Clint' && c.leidos.enemigos[2] === null && c.leidos.tuyoFila === 4 && c.leidos.baneos.includes('Eudora'), JSON.stringify(c.leidos));
+  ok(c.heroes.length === datos.heroes.length && c.heroes.includes('Khufra'), 'sin la lista de héroes para elegir');
+  ok(c.cuando === solo.estado().cerradoEn && !('partida' in c), 'la corrección sabe de una partida que aún no se apuntó');
+  final = { ...final, resultado: 'perdi', resultadoEn: t + 1000, duracion: 12, inicioEstimado: false };
+  t += 20000; await solo.tic();
+  eq(correcciones.length, 2, 'al apuntar no le dice de qué partida es');
+  eq(correcciones[1].partida, t - 19000);
+  ok(/Toca para decirle al lector quién eran los 5/.test(resumenes[0]?.texto ?? ''), `la notificación no lo dice: ${resumenes[0]?.texto}`);
+  // Un draft leído entero no pregunta nada; y sin capturas, tampoco.
+  const entero = { ...draftVacio(), baneos: ['Hirara'], enemigos: ['Clint', 'Khufra', 'Atlas', 'Franco', 'Tigreal'], aliados: ['Gord', 'Selena', 'Layla', 'Zilong', 'Rafaela'], cerrado: true, cerradoEn: 1, ids: ['lectura-1'] };
+  eq(correccionDelDraft(entero, datos), null, 'pregunta sin faltar nadie');
+  eq(correccionDelDraft({ ...entero, enemigos: [null, 'Khufra', 'Atlas', 'Franco', 'Tigreal'], ids: [] }, datos), null, 'pregunta sin capturas de las que aprender');
+  eq(correccionDelDraft({ ...entero, enemigos: [null, 'Khufra', 'Atlas', 'Franco', 'Tigreal'] }, datos)?.faltan, 1);
+  // El draft recuerda como mucho IDS_POR_DRAFT capturas.
+  let d = null;
+  for (let i = 0; i < IDS_POR_DRAFT + 5; i += 1) d = acumularDraft(d, { ...lectura({ tuyos: [N('Hirara')] }), id: `lectura-${i}` }, i);
+  ok(d.ids.length === IDS_POR_DRAFT && d.ids.at(-1) === `lectura-${IDS_POR_DRAFT + 4}`, 'sin tope o sin las últimas');
+  ok(!acumularDraft(d, { ...lectura({ tuyos: [N('Hirara')] }), id: '../fuera' }, 99).ids.includes('../fuera'), 'entra un id sin forma');
 });
 
 await terminar('scripts/solo');

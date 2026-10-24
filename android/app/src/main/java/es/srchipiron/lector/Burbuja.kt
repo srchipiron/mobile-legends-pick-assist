@@ -3,7 +3,9 @@ package es.srchipiron.lector
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Typeface
@@ -137,6 +139,8 @@ class Burbuja(private val contexto: Context) {
             .setContentText(r.optString("texto"))
             .setStyle(Notification.BigTextStyle().bigText(r.optString("texto")))
             .setAutoCancel(true)
+            // Tocarla abre la app (3.71.0): ahí está «Enseña al lector» si no reconoció a alguien.
+            .setContentIntent(PendingIntent.getActivity(contexto, 0, Intent(contexto, Principal::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
             .build())
     }
 }

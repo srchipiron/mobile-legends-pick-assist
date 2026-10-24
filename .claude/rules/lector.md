@@ -1272,3 +1272,55 @@ pantalla por programa).
   de datos, que pasa `sanearConfig`). fetch es global: la lista de imports
   permitidos no lo limitaba.
 
+## La voz y el aprendizaje sin el móvil (3.71.0)
+
+Pedido por Javi: «haz también la voz sin el móvil y que poco a poco vaya
+mejorando la app sola». Lo que faltaba de 3.70.0: la voz y aprender de las
+correcciones, que pasaban los dos por la app del móvil.
+- **La voz**: al cerrarse el draft, `crearSolo` manda a `interno.vigilar` el
+  guion de `guionSolo` en vez de `{ guion: [] }`. Es el MISMO plan
+  (`rec.partida` de `recomendar`) traducido con los MISMOS textos:
+  `crearT` y `guionTraducido`, que se mudó de lector.js a
+  `src/app/i18n/guion.js` (lector.js lo reexporta) para que la APK lo
+  lleve sin React. `copiarLector` copia `src/app/i18n/{index,es,en,guion}.js`.
+  El plan es el de `eleccion` (tu pick si es de tu línea; si no, no hay
+  guion, como en la app). OJO: `recomendar` no devuelve `yo` (eso es de
+  `useRecomendacion`); con `rec.yo` el guion salía siempre vacío, y lo cazó
+  la prueba que compara con el de la app.
+- **Callar**: `callar` de `ajustesEfectivos` = «Voz en partida» de la APK
+  (`voz: false` en solo.json, que `Solo.guardar` conserva al cambiar de
+  línea) O `vozCallada` del móvil (va en los ajustes de `/consejo`;
+  `sanearAjustes` solo acepta `true`).
+- **Enseñar al lector**: el draft guarda los `ids` de sus lecturas (hasta
+  `IDS_POR_DRAFT` 20, con forma `lectura-…`; las de partida no traen captura).
+  Al cerrarse, `correccionDelDraft` dice cuántos faltan (enemigos y tu
+  equipo sin leer, con tu fila) y, si falta alguno, `interno.ponerCorreccion`
+  lo guarda (saneado, `sanearCorreccion`: como mucho `CAPTURAS_A_MIRAR` ids
+  y la lista de héroes del catálogo). Al apuntar, sabe de qué partida es y la
+  notificación del resumen lo dice; tocarla abre la APK, donde la tarjeta
+  «Enseña al lector» (Principal.kt, `AutoCompleteTextView` con los héroes)
+  pide quién era. `GET`/`POST /correccion` solo para la APK (`deLaApk`:
+  127.0.0.1 y SIN `Origin`, que un navegador siempre pone; y el código del
+  portero): héroes del catálogo, sin repetir, con enemigos, del mismo `id`.
+  Contestar llama a `corregir` (el MISMO aprendizaje que `/corregir` del
+  móvil, con sus guardas) y a `alCorregir`, que arregla el draft de la
+  partida en partidas.json y la vuelve a subir (si tu pick era otro, sin la
+  estimación de otro héroe). La partida se arregla ANTES de aprender: si
+  aprender falla, lo que dijiste sigue siendo la verdad. Las capturas de la
+  corrección no se podan mientras valga (`RETENCION_CAPTURAS_MS`, 3 h);
+  pasado eso no se pregunta: sin capturas no hay de qué aprender. «Ahora no»
+  la descarta.
+- Pruebas: `solo.test` (el guion es el de la app, en los dos idiomas y
+  callado; la corrección con sus ids, cuántos faltan y su partida),
+  `en-tablet.test` (quién puede leer y contestar, qué aprende, la poda, la
+  partida arreglada) y `lector.e2e` (la app manda `vozCallada`). 37
+  mutaciones, todas cazadas; una sobrevivía al principio porque la prueba
+  del id sin forma se hacía con el tope ya lleno.
+- La revisión de seguridad no encontró nada serio; sí dos cosas, arregladas:
+  el POST vuelve a mirar la corrección DESPUÉS de leer el cuerpo (una nueva
+  llegada entretanto se perdía; prueba con el cuerpo a medias, mutación
+  cazada) y, sin tu fila leída, la tarjeta mandaba cinco compañeros y el
+  servidor la rechazaba: hoy enseña cuatro y «Tú» aparte.
+- NO hace, a propósito: aprender de sus PROPIAS lecturas sin que nadie diga
+  la verdad (ver `descartados.md`). Lo que se aprende lo dice una persona.
+
