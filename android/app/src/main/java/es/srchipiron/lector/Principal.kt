@@ -69,6 +69,8 @@ class Principal : Activity() {
     private lateinit var actualizar: TextView
     private lateinit var registro: TextView
     private lateinit var pasos: List<Paso>
+    private lateinit var botonesLinea: List<Button>
+    private lateinit var apagarSolo: Button
     @Volatile private var nueva: Actualizar.Nueva? = null
     @Volatile private var movilLee = false
     private val reloj = Handler(Looper.getMainLooper())
@@ -125,11 +127,30 @@ class Principal : Activity() {
                 startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
             },
             Paso("Empieza a leer. Android pregunta qué grabar: elige «Pantalla completa».", "Empezar a leer") { alternar() },
-            Paso("En el MÓVIL, abre la cámara y escanea el QR. Se abre Pick Assist: toca «Vincular». Tablet y móvil, en la misma wifi."),
-            Paso("Juega. En Pick Assist, «Leer solo» lee el draft cada pocos segundos y tu nº1 sale en la burbuja. Al acabar, la partida se apunta sola."),
+            Paso("Elige tu línea en «Sin móvil»: la tablet lee el draft y decide ella sola, y tu nº1 sale en la burbuja."),
+            Paso("(Opcional) Con Pick Assist en el MÓVIL: abre la cámara, escanea el QR y toca «Vincular» (misma wifi). Con el móvil, además se apuntan tus partidas y suena la voz."),
+            Paso("Juega. En baneos la burbuja dice a quién banear; en picks, tu nº1 y los dos siguientes."),
         )
         for (p in pasos) guia.addView(p.fila)
         izquierda.addView(guia, separada())
+
+        // Un solo aparato (3.66.0): con la línea elegida, la tablet decide sola.
+        val sinMovil = tarjeta()
+        sinMovil.addView(titulo("Sin móvil"))
+        sinMovil.addView(texto(14f, Color.LTGRAY).apply { text = "Elige tu línea y la tablet decide sola, con los mismos datos que Pick Assist: en baneos, a quién banear; en picks, tu nº1. Si Pick Assist del móvil está leyendo, manda el móvil." })
+        val filaLineas = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val filaLineas2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        botonesLinea = Solo.LINEAS.mapIndexed { i, (clave, nombre) ->
+            Button(this).apply {
+                tag = clave; text = nombre
+                setOnClickListener { Solo.guardar(this@Principal, clave); refrescar() }
+            }.also { (if (i < 3) filaLineas else filaLineas2).addView(it, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)) }
+        }
+        apagarSolo = Button(this).apply { text = "Apagado"; setOnClickListener { Solo.guardar(this@Principal, null); refrescar() } }
+        filaLineas2.addView(apagarSolo, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        sinMovil.addView(filaLineas)
+        sinMovil.addView(filaLineas2)
+        derecha.addView(sinMovil, separada())
 
         val enlazar = tarjeta()
         enlazar.addView(titulo("Vincular el móvil"))
@@ -239,8 +260,13 @@ class Principal : Activity() {
         val avisos = Build.VERSION.SDK_INT < 33 || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         val bateria = getSystemService(android.os.PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
         val burbuja = Settings.canDrawOverlays(this)
-        val hechos = listOf(avisos, bateria, burbuja, Lector.grabando, movilLee, false)
+        val linea = Solo.linea(this)
+        val hechos = listOf(avisos, bateria, burbuja, Lector.grabando, linea != null, movilLee, false)
         pasos.forEachIndexed { i, p -> p.marcar(hechos[i], i + 1) }
+        // La línea elegida, marcada; sin ninguna, «Apagado».
+        for (b in botonesLinea) { val es = b.tag == linea; b.text = (if (es) "✓ " else "") + Solo.nombre(b.tag as String); b.alpha = if (es) 1f else 0.7f }
+        apagarSolo.text = if (linea == null) "✓ Apagado" else "Apagado"
+        apagarSolo.alpha = if (linea == null) 1f else 0.7f
 
         nueva?.let { actualizar.text = if (Lector.grabando) "Hay una versión nueva (${it.version}): se instala sola cuando dejes de leer." else "Actualizando a la ${it.version}…"; actualizar.visibility = View.VISIBLE }
             ?: run { actualizar.visibility = View.GONE }
@@ -269,5 +295,27 @@ class Principal : Activity() {
         val bmp = Bitmap.createBitmap(m.width, m.height, Bitmap.Config.RGB_565)
         for (x in 0 until m.width) for (y in 0 until m.height) bmp.setPixel(x, y, if (m[x, y]) Color.BLACK else Color.WHITE)
         return bmp
+    }
+}
+
+/**
+ * El modo «Sin móvil» (3.66.0): la línea elegida se guarda en `solo.json`, en
+ * la casa de la app, y el lector (scripts/lector/solo.mjs) la lee en cada
+ * vuelta: sin reiniciar nada. Sin línea, el modo está apagado.
+ */
+object Solo {
+    val LINEAS = listOf("roam" to "Roam", "jungle" to "Jungla", "mid" to "Mid", "gold" to "Oro", "exp" to "Exp")
+    fun nombre(clave: String) = LINEAS.firstOrNull { it.first == clave }?.second ?: clave
+    private fun fichero(c: android.content.Context) = java.io.File(c.filesDir, "solo.json")
+    fun linea(c: android.content.Context): String? = try {
+        val j = JSONObject(fichero(c).readText())
+        val l = j.optString("linea", "")
+        if (j.optBoolean("activo", true) && LINEAS.any { it.first == l }) l else null
+    } catch (e: Exception) { null }
+    fun guardar(c: android.content.Context, linea: String?) {
+        val j = if (linea == null) JSONObject().put("activo", false) else JSONObject().put("linea", linea).put("idioma", "es")
+        val tmp = java.io.File(c.filesDir, "solo.json.tmp")
+        tmp.writeText(j.toString())
+        tmp.renameTo(fichero(c))
     }
 }

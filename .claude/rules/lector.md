@@ -1101,3 +1101,44 @@ de 2026) y la app se quedó vinculada a la vieja.
   tres primeros de `rec.baneosSugeridos`) y tu nº1 de ahora en el detalle.
   Sin sugeridos (los diez ya puestos) o en picks, lo de siempre. Prueba en
   `app/lector`, una mutación.
+
+## Un solo aparato (3.66.0)
+
+Elegido por Javi para «la app definitiva para todo aficionado»: la mayoría
+juega en el móvil, sin tablet aparte. `scripts/lector/solo.mjs`:
+- `acumularDraft` (puro) junta las lecturas:
+  - baneos de los dos lados, sin repetir;
+  - huecos por jugador: lo leído pisa al de antes, un «?» no borra, y si
+    cambian más de `CAMBIOS_A_LA_VEZ` huecos ya leídos es la fase de skins y
+    no se toca ese equipo;
+  - tu fila;
+  - el cierre con `EN_PARTIDA_PARA_CERRAR` (2) lecturas en partida;
+  - otro draft pasados `MINUTOS_PARA_OTRO_DRAFT` (3) con algo leído (las
+    pantallas del final no leen nadie), o si el draft lleva
+    `MINUTOS_DRAFT_ABANDONADO` (15) sin moverse.
+- `consejoSolo` pasa el draft a `recomendar` (draft.js, el único cerebro) y
+  saca el mismo texto que `consejoParaLaTablet` de la app: en baneos los tres
+  de `baneosSugeridos`, en picks tu nº1 con los dos siguientes.
+- `crearSolo` es el bucle (`INTERVALOS_SOLO`: 5 s en draft, 12 s sin draft,
+  20 s en partida, 30 s tras un fallo). Se aparta si el móvil hizo `/leer` o
+  `POST /consejo` hace menos de `MOVIL_ACTIVO_MS` (60 s), y no pisa el
+  consejo del móvil.
+- Pide la lectura con `rapida`: `hacerLectura` (servir.mjs, la de `/leer`
+  sacada a función y en `servidor.interno`) devuelve solo `partida` sin
+  reconocer caras cuando ve el minimapa.
+- La línea la elige la APK (`Solo` en Principal.kt, «Sin móvil»). Se guarda
+  en `solo.json` en la casa, y `leerAjustesSolo` lo valida en cada vuelta.
+  Sin línea, apagado.
+- Los datos: dentro de la APK (`copiarLector` copia `public/data/heroes.json`
+  y `roam-meta.json` a `datos/`), y `bajarDatos` (en-tablet.mjs) los trae de
+  la web pública cada `REFRESCAR_DATOS_MS` (6 h) a la casa, solo si tienen
+  forma (`datosValidos`). Es el único sitio al que la APK pide algo fuera de
+  127.0.0.1 y GitHub: dos URL fijas de github.io, solo GET.
+- `apk.yml` NO escucha `public/data/**`: los datos de dentro solo sirven para
+  el primer arranque, y con ellos la APK se recompilaría dos veces al día.
+- Lo que NO hace sin el móvil: apuntar la partida, la voz del guion y
+  aprender de las correcciones (todo eso lo pide la app).
+- Pruebas en `scripts/solo` y `en-tablet`. Esta última es de punta a punta:
+  la captura real, la línea en `solo.json` y el consejo en `GET /consejo`.
+  Siete mutaciones. Sobrevive una inofensiva: el filtro de «ya baneados»
+  repite lo que `baneosSugeridos` ya hace.

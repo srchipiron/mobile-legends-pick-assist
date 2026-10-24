@@ -25,6 +25,11 @@ actualiza sola al volver a abrirla. La versión sale en el pie.
 
 ## Que lea el draft solo: Lector MLBB (opcional)
 
+**Sin móvil (desde 3.66.0):** si juegas en el mismo aparato donde está
+Lector MLBB, elige tu línea en «Sin móvil» y la app decide sola: a quién
+banear y tu pick salen en la burbuja, encima del juego. No hace falta tener
+Pick Assist abierta al lado.
+
 Si juegas en una **tablet o un móvil Android** y miras Pick Assist en **otro**
 móvil, la app **Lector MLBB** lee el draft de la pantalla del juego y lo mete
 en Pick Assist sin que toques nada. Tu nº1 sale además en una burbuja encima

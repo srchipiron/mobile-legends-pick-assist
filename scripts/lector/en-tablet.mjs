@@ -10,17 +10,20 @@
  *   código de vinculación (`X-Lector-Codigo`, `crearPortero`), a la app
  *   publicada (`origenPermitido`) y con una IP privada como `Host`.
  * - La captura y la voz las da la APK en 127.0.0.1 (`LECTOR_INTERNO`); este
- *   fichero no habla con nada más ni lanza programas.
+ *   fichero no lanza programas. Fuera de la casa solo pide los datos de
+ *   Pick Assist a su web pública (3.66.0, modo solo: `DATOS_DE_LA_WEB`).
  * - Nada toca la pantalla ni el juego: solo se LEE lo que se ve.
  *
  * Variables (las pone la APK): LECTOR_INTERNO (http://127.0.0.1:PUERTO),
  * LECTOR_SECRETO, LECTOR_CODIGO, LECTOR_CASA (carpeta de la app).
  */
-import { mkdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, readFileSync, writeFileSync, renameSync, statSync, existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas, PUERTO } from './servir.mjs';
 import { limpiarTexto } from './voz.mjs';
 import { leerCrudo, escribirPngRapido } from './png.mjs';
+import { crearSolo, leerAjustesSolo, datosDelSolo } from './solo.mjs';
 
 /** Solo 127.0.0.1: la APK es la única que da la captura. */
 export const esInterno = (u) => typeof u === 'string' && /^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(u);
@@ -72,6 +75,64 @@ export function leerSaludDeLaApk(fichero) {
   } catch { return null; }
 }
 
+/**
+ * Los datos del modo solo (3.66.0): los mismos ficheros que sirve Pick Assist,
+ * de su web pública, cada `REFRESCAR_DATOS_MS`. Solo GET a estas dos
+ * direcciones fijas: nada de la cuenta ni del juego.
+ */
+export const DATOS_DE_LA_WEB = {
+  catalogo: 'https://srchipiron.github.io/mobile-legends-pick-assist/data/heroes.json',
+  meta: 'https://srchipiron.github.io/mobile-legends-pick-assist/data/roam-meta.json',
+};
+/** Decisión de producto: el bot trae datos dos veces al día. */
+export const REFRESCAR_DATOS_MS = 6 * 60 * 60 * 1000;
+const FICHEROS = { catalogo: 'heroes.json', meta: 'roam-meta.json' };
+/** ¿Tiene forma de lo que sirve la app? (unos ficheros a medias o una página de error no se guardan) */
+export const datosValidos = (que, j) => (que === 'catalogo' ? Array.isArray(j?.heroes) && j.heroes.length >= 50 : Array.isArray(j?.heroes) && j.heroes.length >= 50 && !!j.stats);
+
+/**
+ * Lee los datos de la casa (los bajados) o, si no hay, los que trae la APK
+ * dentro (copiados al compilar): así decide desde el primer arranque, sin
+ * red. Con caché por fecha de modificación.
+ */
+export function lectorDeDatos(carpetas) {
+  const cache = {};
+  const uno = (que) => {
+    for (const c of carpetas) {
+      const f = join(c, FICHEROS[que]);
+      try {
+        const m = statSync(f).mtimeMs;
+        if (cache[que]?.f === f && cache[que].m === m) return cache[que].j;
+        const j = JSON.parse(readFileSync(f, 'utf8'));
+        if (!datosValidos(que, j)) continue;
+        cache[que] = { f, m, j };
+        return j;
+      } catch { /* el siguiente */ }
+    }
+    return null;
+  };
+  return () => ({ catalogo: uno('catalogo'), meta: uno('meta') });
+}
+
+/** Baja los datos de la web a `carpeta` (a un temporal y luego encima). Nunca lanza; dice cuántos ficheros guardó. */
+export async function bajarDatos(carpeta, { pedir = (...a) => fetch(...a), plazoMs = 60000 } = {}) {
+  mkdirSync(carpeta, { recursive: true });
+  let guardados = 0;
+  for (const [que, url] of Object.entries(DATOS_DE_LA_WEB)) {
+    try {
+      const r = await pedir(url, { signal: AbortSignal.timeout(plazoMs) });
+      if (!r.ok) continue;
+      const texto = await r.text();
+      if (!datosValidos(que, JSON.parse(texto))) continue;
+      const f = join(carpeta, FICHEROS[que]);
+      writeFileSync(`${f}.tmp`, texto);
+      renameSync(`${f}.tmp`, f);
+      guardados += 1;
+    } catch { /* sin red: se queda lo que había */ }
+  }
+  return guardados;
+}
+
 export async function principal(env = process.env) {
   const registrar = (m) => console.log(m);
   const base = env.LECTOR_INTERNO, secreto = env.LECTOR_SECRETO, codigo = env.LECTOR_CODIGO;
@@ -89,6 +150,21 @@ export async function principal(env = process.env) {
   const puerto = Number(env.LECTOR_PUERTO ?? PUERTO);
   await new Promise((r) => servidor.listen(puerto, env.LECTOR_ESCUCHA ?? '0.0.0.0', r));
   registrar(`Lector en la tablet esperando en el puerto ${servidor.address().port}.`);
+  // Un solo aparato (3.66.0): con la línea elegida en la APK, el lector
+  // decide y pinta el consejo él solo cuando el móvil no está leyendo.
+  const casa = env.LECTOR_CASA || '.';
+  const bajados = join(casa, 'datos');
+  const aqui = dirname(fileURLToPath(import.meta.url));
+  const leerDatos = lectorDeDatos([bajados, join(aqui, '..', '..', 'datos'), join(aqui, '..', '..', 'public', 'data')]);
+  const solo = crearSolo({ interno: servidor.interno, ajustes: () => leerAjustesSolo(join(casa, 'solo.json')), datosPara: datosDelSolo(leerDatos), registrar });
+  if (env.LECTOR_SIN_SOLO !== '1') {
+    solo.arrancar();
+    const refrescar = async () => { const n = await bajarDatos(bajados); if (n) registrar(`Sin móvil: datos de Pick Assist al día (${n} ficheros).`); };
+    const primero = setTimeout(refrescar, existsSync(join(bajados, FICHEROS.meta)) ? REFRESCAR_DATOS_MS : 30000);
+    const cada = setInterval(refrescar, REFRESCAR_DATOS_MS);
+    servidor.on('close', () => { solo.parar(); clearTimeout(primero); clearInterval(cada); });
+  }
+  servidor.solo = solo;
   return servidor;
 }
 

@@ -280,7 +280,10 @@ test('SEGURIDAD: todo lo que el lector ejecuta (su carpeta y lo que importa de f
     // node:crypto: comparar el código de vinculación en tiempo constante (3.61.0).
     'scripts/lector/servir.mjs': ['node:http', 'node:fs', 'node:os', 'node:path', 'node:url', 'node:worker_threads', 'node:crypto'],
     // El lector dentro de la tablet (3.61.0): ni lanza programas ni abre conexiones propias (la captura, por fetch a 127.0.0.1).
-    'scripts/lector/en-tablet.mjs': ['node:fs', 'node:path'],
+    // node:url (3.66.0): encontrar los datos que trae la APK junto a sus scripts.
+    'scripts/lector/en-tablet.mjs': ['node:fs', 'node:path', 'node:url'],
+    // node:fs (3.66.0): leer solo.json, la línea que eligió la APK para el modo «Sin móvil».
+    'scripts/lector/solo.mjs': ['node:fs'],
     'scripts/lector/tablet.mjs': ['node:dgram', 'node:net'],
     'scripts/lector/png.mjs': ['node:zlib'],
     'scripts/lector/sacar-caras.mjs': ['node:fs', 'node:path'],

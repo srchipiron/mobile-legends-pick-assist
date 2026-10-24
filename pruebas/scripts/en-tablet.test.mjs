@@ -202,4 +202,26 @@ test('lo aprendido en Termux pasa a la tablet (3.64.1): con sus plantillas, la t
   eq(fundirAprendido({ aprendido: null, resultados: deSerie }, { aprendido: { version: 1, capturas: 5 } }), null, 'acepta lo aprendido de otra versión');
 });
 
+test('un solo aparato (3.66.0): con la línea elegida en la APK, la tablet lee, decide y pone ella sola el consejo de la burbuja', async () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-solo-'));
+  writeFileSync(join(casa, 'solo.json'), JSON.stringify({ linea: 'roam' }));
+  const apk = await apkDePega();
+  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1' });
+  const puerto = servidor.address().port;
+  try {
+    await servidor.solo.tic();
+    const { consejo } = JSON.parse((await pedir(puerto, '/consejo', { origen: null })).cuerpo);
+    // La captura de la prueba es la fase de picks con Clint y Khufra de enemigos: el consejo es un pick de roam con porcentaje.
+    ok(/^[A-Z][\w .'-]+ \d+%$/.test(consejo?.titulo ?? ''), `la tablet no pone su consejo: ${JSON.stringify(consejo)}`);
+    ok(/^Luego: /.test(consejo?.detalle ?? ''), `sin los dos siguientes: ${JSON.stringify(consejo)}`);
+    const d = servidor.solo.estado();
+    ok(d.enemigos.includes('Clint') && d.enemigos.includes('Khufra') && d.baneos.length >= 8, `el draft acumulado no es el de la captura: ${JSON.stringify(d)}`);
+    // El móvil lee: la tablet se aparta.
+    await pedir(puerto, '/leer');
+    const lecturasAntes = JSON.parse((await pedir(puerto, '/estado')).cuerpo).lector.lecturas;
+    await servidor.solo.tic();
+    eq(JSON.parse((await pedir(puerto, '/estado')).cuerpo).lector.lecturas, lecturasAntes, 'con el móvil leyendo, la tablet lee también');
+  } finally { servidor.close(); apk.cerrar(); }
+});
+
 await terminar('scripts/en-tablet');

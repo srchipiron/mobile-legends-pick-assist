@@ -460,6 +460,9 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   const portero = codigo ? crearPortero(codigo, { ahora }) : null;
   // Lo último que mandó la app para la tablet (3.62.0): en memoria, se pierde al reiniciar (la app lo vuelve a mandar).
   let consejoActual = null, resumenActual = null;
+  // El modo solo de la tablet (3.66.0) se aparta cuando el móvil lee o
+  // manda su consejo: estos instantes dicen cuándo fue la última vez.
+  let ultimaDelMovil = null, consejoDelMovil = null;
   // Lo que no se pida, como siempre (las pruebas encogen solo algunos plazos).
   const vigilancia = { ...VIGILANCIA, ...vigilanciaPedida };
   // Las lecturas, en tres hilos a la vez (3.39.0); `enHilos: false` las hace aquí.
@@ -741,6 +744,74 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     // Con los recortes de los picks (3.52.0): la app los sube a la incidencia de pantallas para medir.
     return { aprendido: true, aprendidos: r.informe.flatMap((l) => [...l.aprendidos.map((a) => a.nombre), ...(l.aliados?.aprendidos ?? [])]), sinEncontrar: r.informe.flatMap((l) => l.sinEncontrar.map((x) => x.nombre)), recortes: Array.isArray(r.recortes) ? r.recortes : [] };
   };
+  /**
+   * Una lectura de la pantalla (3.66.0, antes dentro de `/leer`): la piden la
+   * app del móvil por `/leer` y el modo solo de la tablet. Con `rapida`, en
+   * partida no reconoce caras. Devuelve `{ ok, lectura }` o `{ ok: false, estado, error }`.
+   */
+  async function hacerLectura({ rapida = false } = {}) {
+    const t0 = Date.now();
+    // El instante de la lectura en el reloj de la vigilancia (inyectable en las pruebas).
+    const tLeida = ahora();
+    salud.lecturas += 1;
+    // Comprimida o no (3.45.0, `crearElectorDeCaptura`); sin elector, comprimida como siempre.
+    let formato = elector?.siguiente() ?? 'png', png = null, crudo = null, tFormato = t0, t1;
+    try {
+      try {
+        if (formato === 'crudo') crudo = leerCrudo(await capturar({ crudo: true }));
+      } catch (e) {
+        // ¿La crudo o la tablet? Se prueba la comprimida: si sale, es la
+        // crudo la que no vale aquí; si tampoco, es la tablet (y la crudo
+        // no se descarta por eso).
+        registrar(`La captura sin comprimir falló (${String(e.message).split('\n')[0]}): pruebo la comprimida.`);
+        formato = 'png'; tFormato = Date.now();
+        png = await capturar();
+        elector?.descartar(e.message);
+        registrar('La captura sin comprimir no vale con esta tablet: sigo con la comprimida hasta que reinicies el lector.');
+      }
+      if (formato === 'png' && !png) png = await capturar();
+    } catch (e) {
+      registrar(`No se pudo hacer la captura: ${String(e.message).split('\n')[0]}`);
+      salud.fallosCaptura += 1;
+      salud.ultimoFallo = { cuando: ahora(), que: String(e.message).split('\n')[0].slice(0, 160) };
+      return { ok: false, estado: 502, error: FALLOS_DE_CAPTURA.includes(e?.tipo) ? e.tipo : 'captura' };
+    }
+    try {
+      n += 1;
+      const id = `lectura-${new Date().toISOString().replace(/[:.]/g, '-')}-${n}`;
+      t1 = Date.now();
+      const img = crudo ?? leerPng(png);
+      // Lo que costó tener la imagen con este formato (captura + descomprimir): eso decide cuál va antes.
+      const elegido = elector?.anotar(formato, Date.now() - tFormato);
+      if (elegido) {
+        const { crudo: mc, png: mp } = elector.estado();
+        registrar(`Captura ${elegido === 'crudo' ? 'SIN comprimir' : 'comprimida'}: es la más rápida en tu tablet (mediana sin comprimir ${(mc / 1000).toFixed(1)} s, comprimida ${(mp / 1000).toFixed(1)} s).`);
+      }
+      // ¿Ya en partida? (3.46.0): con esto la app cierra un draft a medias y el inicio se mide.
+      const partida = enPartida(img);
+      if (partida) { leidas.seguidas += 1; if (leidas.seguidas === 1) leidas.dentro = tLeida; } else { leidas.fuera = tLeida; leidas.dentro = null; leidas.seguidas = 0; }
+      // Rápida (3.66.0): en partida el modo solo solo pregunta si sigue en
+      // partida (el minimapa, 13 ms); reconocer caras entonces podría meter lag.
+      if (rapida && partida) return { ok: true, lectura: { version: VERSION_PUENTE, partida, rapida: true } };
+      const leido = lector ? await lector.leer(img, aprendido) : leerCaptura(img, caras, aprendido);
+      // `ms` es lo que espera la app; `msCaptura`, lo que tardó la tablet en dar la imagen (3.39.0), y con qué formato (3.45.0).
+      const lectura = { version: VERSION_PUENTE, id, ...leido, partida, ms: Date.now() - t0, msCaptura: t1 - tFormato, formato };
+      if (carpeta) {
+        writeFileSync(join(carpeta, `${id}.json`), JSON.stringify(lectura, null, 1));
+        // El aprendizaje lee PNG: la crudo se comprime aparte, sin parar al lector.
+        if (png) guardarCaptura(`${id}.png`, png);
+        else escribirPngRapido(img).then((b) => guardarCaptura(`${id}.png`, b)).catch((e) => registrar(`No se pudo guardar la captura ${id}: ${e.message}`));
+      }
+      // Un «?» dice a qué se quedó más cerca: con eso se afina sin pedir la captura.
+      const nombres = (l) => l.map((x) => x.nombre ?? (x.candidato ? `?(${x.candidato} ${x.parecido.toFixed(2)})` : '?')).join(', ');
+      registrar(`Lectura ${n} (${lectura.ms} ms, captura ${formato === 'crudo' ? 'sin comprimir' : 'comprimida'} ${lectura.msCaptura}): baneos ${nombres([...lectura.tuyos, ...lectura.suyos])} · enemigos ${nombres(lectura.enemigos)} · tu equipo ${nombres(lectura.aliados)} · tú ${lectura.tuyo ?? (lectura.tuyoFila >= 0 ? '?' : 'sin fila amarilla')}`);
+      return { ok: true, lectura };
+    } catch (e) {
+      registrar(`La captura no se pudo leer: ${e.message}`);
+      return { ok: false, estado: 500, error: 'formato' };
+    }
+  }
+
   const servidor = createServer(async (req, res) => {
     const origen = req.headers.origin;
     const cabeceras = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', Vary: 'Origin' };
@@ -817,7 +888,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
       const cuerpo = await leerCuerpo(req);
       if (!cuerpo || typeof cuerpo !== 'object') { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'cuerpo' })); return; }
-      if ('consejo' in cuerpo) consejoActual = sanearConsejo(cuerpo.consejo);
+      if ('consejo' in cuerpo) { consejoActual = sanearConsejo(cuerpo.consejo); consejoDelMovil = ahora(); }
       if ('resumen' in cuerpo) resumenActual = sanearResumen(cuerpo.resumen) ?? resumenActual;
       res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true }));
       return;
@@ -880,64 +951,10 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       return;
     }
     if (req.method === 'GET' && ruta === '/leer') {
-      const t0 = Date.now();
-      // El instante de la lectura en el reloj de la vigilancia (inyectable en las pruebas).
-      const tLeida = ahora();
-      salud.lecturas += 1;
-      // Comprimida o no (3.45.0, `crearElectorDeCaptura`); sin elector, comprimida como siempre.
-      let formato = elector?.siguiente() ?? 'png', png = null, crudo = null, tFormato = t0, t1;
-      try {
-        try {
-          if (formato === 'crudo') crudo = leerCrudo(await capturar({ crudo: true }));
-        } catch (e) {
-          // ¿La crudo o la tablet? Se prueba la comprimida: si sale, es la
-          // crudo la que no vale aquí; si tampoco, es la tablet (y la crudo
-          // no se descarta por eso).
-          registrar(`La captura sin comprimir falló (${String(e.message).split('\n')[0]}): pruebo la comprimida.`);
-          formato = 'png'; tFormato = Date.now();
-          png = await capturar();
-          elector?.descartar(e.message);
-          registrar('La captura sin comprimir no vale con esta tablet: sigo con la comprimida hasta que reinicies el lector.');
-        }
-        if (formato === 'png' && !png) png = await capturar();
-      } catch (e) {
-        registrar(`No se pudo hacer la captura: ${String(e.message).split('\n')[0]}`);
-        salud.fallosCaptura += 1;
-        salud.ultimoFallo = { cuando: ahora(), que: String(e.message).split('\n')[0].slice(0, 160) };
-        res.writeHead(502, cabeceras).end(JSON.stringify({ error: FALLOS_DE_CAPTURA.includes(e?.tipo) ? e.tipo : 'captura' }));
-        return;
-      }
-      try {
-        n += 1;
-        const id = `lectura-${new Date().toISOString().replace(/[:.]/g, '-')}-${n}`;
-        t1 = Date.now();
-        const img = crudo ?? leerPng(png);
-        // Lo que costó tener la imagen con este formato (captura + descomprimir): eso decide cuál va antes.
-        const elegido = elector?.anotar(formato, Date.now() - tFormato);
-        if (elegido) {
-          const { crudo: mc, png: mp } = elector.estado();
-          registrar(`Captura ${elegido === 'crudo' ? 'SIN comprimir' : 'comprimida'}: es la más rápida en tu tablet (mediana sin comprimir ${(mc / 1000).toFixed(1)} s, comprimida ${(mp / 1000).toFixed(1)} s).`);
-        }
-        // ¿Ya en partida? (3.46.0): con esto la app cierra un draft a medias y el inicio se mide.
-        const partida = enPartida(img);
-        if (partida) { leidas.seguidas += 1; if (leidas.seguidas === 1) leidas.dentro = tLeida; } else { leidas.fuera = tLeida; leidas.dentro = null; leidas.seguidas = 0; }
-        const leido = lector ? await lector.leer(img, aprendido) : leerCaptura(img, caras, aprendido);
-        // `ms` es lo que espera la app; `msCaptura`, lo que tardó la tablet en dar la imagen (3.39.0), y con qué formato (3.45.0).
-        const lectura = { version: VERSION_PUENTE, id, ...leido, partida, ms: Date.now() - t0, msCaptura: t1 - tFormato, formato };
-        if (carpeta) {
-          writeFileSync(join(carpeta, `${id}.json`), JSON.stringify(lectura, null, 1));
-          // El aprendizaje lee PNG: la crudo se comprime aparte, sin parar al lector.
-          if (png) guardarCaptura(`${id}.png`, png);
-          else escribirPngRapido(img).then((b) => guardarCaptura(`${id}.png`, b)).catch((e) => registrar(`No se pudo guardar la captura ${id}: ${e.message}`));
-        }
-        // Un «?» dice a qué se quedó más cerca: con eso se afina sin pedir la captura.
-        const nombres = (l) => l.map((x) => x.nombre ?? (x.candidato ? `?(${x.candidato} ${x.parecido.toFixed(2)})` : '?')).join(', ');
-        registrar(`Lectura ${n} (${lectura.ms} ms, captura ${formato === 'crudo' ? 'sin comprimir' : 'comprimida'} ${lectura.msCaptura}): baneos ${nombres([...lectura.tuyos, ...lectura.suyos])} · enemigos ${nombres(lectura.enemigos)} · tu equipo ${nombres(lectura.aliados)} · tú ${lectura.tuyo ?? (lectura.tuyoFila >= 0 ? '?' : 'sin fila amarilla')}`);
-        res.writeHead(200, cabeceras).end(JSON.stringify(lectura));
-      } catch (e) {
-        registrar(`La captura no se pudo leer: ${e.message}`);
-        res.writeHead(500, cabeceras).end(JSON.stringify({ error: 'formato' }));
-      }
+      // La app del móvil está leyendo (3.66.0): el modo solo de la tablet se aparta.
+      ultimaDelMovil = ahora();
+      const r = await hacerLectura();
+      res.writeHead(r.ok ? 200 : r.estado, cabeceras).end(JSON.stringify(r.ok ? r.lectura : { error: r.error }));
       return;
     }
     res.writeHead(404, cabeceras).end(JSON.stringify({ error: 'no existe' }));
@@ -946,6 +963,14 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   // de Node a los 5 s de inactividad, cada toque caía justo cuando el lector
   // cerraba el socket (ECONNRESET, visto en las pruebas con el bucle ocupado).
   servidor.keepAliveTimeout = 65000;
+  // Para el modo solo de la tablet (3.66.0), en el mismo proceso: leer como
+  // `/leer`, saber si el móvil anda leyendo y poner el consejo de la burbuja
+  // (que no pisa al del móvil: lo que manda la app manda).
+  servidor.interno = {
+    leer: (opciones) => hacerLectura(opciones),
+    delMovil: () => ({ leyo: ultimaDelMovil, consejo: consejoDelMovil }),
+    ponerConsejo: (c) => { consejoActual = sanearConsejo(c); },
+  };
   servidor.on('close', () => { pararVigilancia(); lector?.cerrar(); });
   return servidor;
 }

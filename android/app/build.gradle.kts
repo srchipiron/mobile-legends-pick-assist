@@ -64,6 +64,8 @@ val copiarLector by tasks.registering(Sync::class) {
     into("src/main/assets/nodejs-project")
     from(rootProject.file("../scripts/lector")) { into("scripts/lector"); exclude("**/*.sh") }
     from(rootProject.file("../src/motor")) { into("src/motor") }
+    // Los datos de Pick Assist dentro de la APK (3.66.0): «Sin móvil» decide desde el primer arranque, sin red.
+    from(rootProject.file("../public/data")) { include("heroes.json", "roam-meta.json"); into("datos") }
     from(rootProject.file("nodejs-project"))
 }
 tasks.named("preBuild") { dependsOn(copiarLector) }

@@ -8,6 +8,21 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.66.0
+
+- Lector MLBB ya funciona sin el móvil: decide ella sola y te dice el pick
+  en la burbuja, en el mismo aparato donde juegas. En la pantalla de Lector
+  MLBB, en «Sin móvil», elige tu línea. Desde ahí, mientras graba, la tablet
+  lee el draft, lo pasa al mismo motor que Pick Assist y pinta en la
+  burbuja a quién banear en los baneos y tu nº1 con los dos siguientes en
+  los picks.
+- Si Pick Assist del móvil está leyendo, manda el móvil, como hasta ahora.
+  Con el móvil, además, se apuntan las partidas y suena la voz.
+- En partida solo mira si sigue la partida (el minimapa, un instante): no
+  reconoce caras mientras juegas, para no meter lag.
+- Los datos (winrates, cruces) vienen dentro de Lector MLBB y se ponen al
+  día solos cada 6 horas desde la web de Pick Assist.
+
 ## 3.65.5
 
 - La pantalla de Lector MLBB ya no queda tapada por la barra de arriba.
