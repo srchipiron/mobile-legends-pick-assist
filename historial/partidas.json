@@ -1,6 +1,124 @@
 {
- "actualizado": "2026-10-24T16:25:47.324Z",
+ "actualizado": "2026-10-24T16:40:42.897Z",
  "partidas": [
+  {
+   "t": 1792860027040,
+   "pick": "Floryn",
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.557,
+   "modelo": 3,
+   "bans": [
+    "Obsidia",
+    "Hirara",
+    "Paquito",
+    "Marcel",
+    "Masha",
+    "Angela",
+    "Eudora",
+    "Kalea"
+   ],
+   "draft": {
+    "enemigos": [
+     "Khufra",
+     "Novaria",
+     "Beatrix"
+    ],
+    "aliados": [
+     "Selena",
+     "Lesley",
+     "Yi Sun-shin"
+    ],
+    "linea": "roam",
+    "rival": "Khufra"
+   },
+   "lector": {
+    "baneos": [
+     "Obsidia",
+     "Hirara",
+     "Paquito",
+     "Marcel",
+     "Masha",
+     "Angela",
+     "Eudora",
+     "Kalea"
+    ],
+    "enemigos": [
+     "Khufra",
+     "Novaria",
+     "Beatrix"
+    ],
+    "aliados": [
+     "Selena",
+     "Lesley",
+     "Yi Sun-shin"
+    ],
+    "tuyo": "Floryn",
+    "dudas": [
+     {
+      "hueco": "e4",
+      "candidato": "Carmilla",
+      "parecido": 0.65
+     },
+     {
+      "hueco": "e5",
+      "candidato": "Beatrix",
+      "parecido": 0.72
+     },
+     {
+      "hueco": "a2",
+      "candidato": "Yu Zhong",
+      "parecido": 0.78
+     }
+    ],
+    "ms": [
+     658,
+     1523,
+     852,
+     555,
+     1224,
+     1204,
+     2888,
+     1529,
+     1557
+    ],
+    "msCaptura": [
+     49,
+     80,
+     39,
+     55,
+     69,
+     86,
+     49,
+     69,
+     88
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo"
+    ]
+   },
+   "fases": [
+    0.533,
+    0.566,
+    0.568,
+    0.552,
+    0.542,
+    0.542
+   ]
+  },
   {
    "t": 1792859132202,
    "pick": "Estes",
@@ -23531,6 +23649,12 @@
   },
   {
    "cuando": "2026-10-24T16:25:47.324Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-24T16:40:42.897Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
