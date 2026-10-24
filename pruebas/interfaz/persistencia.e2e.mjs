@@ -8,6 +8,7 @@
  * que el perfil viaje de un dispositivo a otro fundiéndose, y que el rango y
  * el idioma sobrevivan a una recarga.
  */
+import { VERSION_MODELO } from '../../src/motor/modelo.js';
 import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes, anchoDePagina } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
@@ -135,7 +136,7 @@ await prueba('el héroe de una partida apuntada se cambia tocándolo, se guarda 
 await prueba('la calibración dice aparte la del modelo de hoy, y el Diagnóstico también (3.60.3)', async () => {
   // 20 del modelo de antes (sin `modelo`, de septiembre) y 6 del de hoy.
   const vieja = (i) => ({ t: Date.parse('2026-09-01T12:00:00Z') + i * 6e5, pick: 'Atlas', gane: i % 2 === 0, recomendados: ['Atlas'], rango: 'glory', estimacion: 0.6 });
-  const nueva = (i) => ({ t: Date.now() - (i + 1) * 6e5, pick: 'Atlas', gane: i % 2 === 0, recomendados: ['Atlas'], rango: 'glory', estimacion: 0.55, modelo: 3 });
+  const nueva = (i) => ({ t: Date.now() - (i + 1) * 6e5, pick: 'Atlas', gane: i % 2 === 0, recomendados: ['Atlas'], rango: 'glory', estimacion: 0.55, modelo: VERSION_MODELO });
   const partidas = [...Array.from({ length: 6 }, (_, i) => nueva(i)), ...Array.from({ length: 20 }, (_, i) => vieja(i))];
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:partidas': partidas } });
   try {

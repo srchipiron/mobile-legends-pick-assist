@@ -369,6 +369,10 @@ test('lo que se manda a la tablet (3.62.0): tu pick con los dos siguientes, el r
   ok(/Atlas 55%.*Franco 52%/.test(c.detalle), `los siguientes no salen por orden: ${c.detalle}`);
   ok(c.detalle.startsWith('tablet.fase.picks · '), `la burbuja no dice que es la fase de picks: ${c.detalle}`);
   eq(consejoParaLaTablet({ eleccion: null, ranking }, t), null);
+  // El mejor de los tuyos (3.72.0): se añade si no es ya uno de los nombrados.
+  const largo = [...ranking, H('Rafaela', 0.51)];
+  ok(/tablet\.deLosTuyos\{"heroe":"Rafaela 51%"\}/.test(consejoParaLaTablet({ eleccion: largo[0], ranking: largo, deLosTuyos: largo[3] }, t).detalle), 'la burbuja no dice el mejor de los tuyos');
+  ok(!/deLosTuyos/.test(consejoParaLaTablet({ eleccion: largo[0], ranking: largo, deLosTuyos: largo[2] }, t).detalle), 'repite al de los tuyos que ya sale en «Luego»');
   // En baneos (3.65.5): a quién banear, y tu nº1 de recordatorio.
   const enBaneos = consejoParaLaTablet({ eleccion: ranking[0], ranking, fase: 'baneos', baneos: [{ heroe: { name: 'Hirara' } }, { heroe: { name: 'Belerick' } }, { heroe: { name: 'Eudora' } }, { heroe: { name: 'Saber' } }] }, t);
   ok(/banea/.test(enBaneos.titulo) && /Hirara · Belerick · Eudora/.test(enBaneos.titulo) && !/Saber/.test(enBaneos.titulo), `en baneos la burbuja no dice a quién banear: ${JSON.stringify(enBaneos)}`);

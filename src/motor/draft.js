@@ -265,6 +265,19 @@ export function siguientesBaneos(datos, { baneos = [], enemigos = [], aliados = 
  * si no el nº1. Antes todo lo posterior al pick hablaba del nº1 aunque
  * cogieras el nº2 (nº1 y nº2 empatan en uno de cada cuatro drafts).
  */
+/**
+ * El mejor de TUS héroes (3.72.0, «De los tuyos»): desde que tu nivel vale
+ * para cualquier héroe, el nº1 ya no tiene por qué ser uno que juegas; esto
+ * dice cuál de los que juegas va primero, para elegir con eso delante. «Tuyo»
+ * es lo mismo que en el filtro «Mis héroes»: con alguna partida en tu
+ * maestría. null si el nº1 ya es tuyo o si no juegas ninguno de la línea.
+ */
+export function deLosTuyos(ranking, maestria) {
+  const tuyo = (c) => (buscar(maestria, c.heroe.name)?.games ?? 0) > 0;
+  if (!ranking?.length || !maestria || tuyo(ranking[0])) return null;
+  return ranking.find(tuyo) ?? null;
+}
+
 export function eleccionDe(ranking, miPick = null) {
   if (miPick) {
     const c = ranking.find((r) => r.heroe === miPick || r.heroe.name === miPick.name);
@@ -339,6 +352,7 @@ export function recomendar(datos, { linea, enemigos = [], aliados = [], baneos =
   return {
     pool, lineasAbiertas, ranking, empate, rival, eleccion, robustez, composicion, consejos, analisis,
     partida: planear(datos, { yo, aliados, enemigos, linea, baneos, maestria, rivalMarcado }),
+    deLosTuyos: deLosTuyos(ranking, maestria),
     baneosSugeridos: baneosSugeridos(datos, { aliados, enemigos, baneos, miPick }),
     cobertura: cobertura(pool, datos.meta.stats, datos.meta.counters),
   };

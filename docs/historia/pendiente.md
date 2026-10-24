@@ -235,23 +235,14 @@
 - La cobertura de la matriz de counters es del 100% desde 1.5.0: 132 rivales
   por héroe. `matchup()` y `sinergia()` siguen mirando los dos sentidos, que
   ahora solo hace falta para héroes recién salidos.
-- **El bonus de nivel de la maestría** (Javi, 20 de octubre de 2026: «más
-  adelante vamos a seguir mejorando esto»). Hoy tu winrate global entra
-  solo en los héroes jugados (+1,7 pp, `terminoTu`) y decide el nº1 más que
-  tu habilidad con cada uno. Lo que falta para decidir: partidas con héroes
-  NO jugados (¿rindes peor con uno nuevo, y cuánto?). Medida y opciones en
-  `descartados.md` («Bajar el peso de la maestría»).
-- **Que el modelo se recalibre solo con las partidas que se juntan**
-  (propuesto en 3.71.0, al pedir Javi «que poco a poco vaya mejorando la app
-  sola»). Hoy aprenden solas la maestría, «Para ti» y las caras del lector;
-  la ESCALA del modelo (0,44) se midió con 902 partidas pro y no cambia
-  sola. La idea: un bot semanal que baje las partidas de la base de datos
-  (ya llegan solas desde la tablet, con draft y resultado), vuelva a medir
-  la escala con validación cruzada y, solo si mejora la verosimilitud fuera
-  de muestra en más de ~2 por 1.000 partidas y con un mínimo de partidas,
-  abra una incidencia con el cambio propuesto (o lo aplique, si Javi
-  quiere). Toca el motor y sería un bot que commitea: el semáforo pide
-  su OK antes.
+- **El bonus de nivel de la maestría**: decidido por Javi el 24 de octubre
+  de 2026 («que a mí se me dé bien un personaje no quiere decir que sea el
+  mejor pick»): desde 3.72.0 tu nivel vale para todos (ver motor.md). Queda
+  saber si rinde peor con héroes que no ha jugado.
+- **El modelo recalibrado con las partidas que se juntan**: hecho en 3.72.0
+  como PROPUESTA (decisión de Javi: «que me lo proponga primero»). Cuando
+  `modelo.yml` abra la incidencia, se mide con el agente medidor-motor y se
+  decide; si un día quiere que se aplique solo, es cambiar ese workflow.
 - **El lector en la tablet, sin probar en un Android de verdad**
   (3.61.0–3.61.4). Lo primero que diga Javi al usarlo: si la captura sale
   (o negra: FLAG_SECURE), si el juego pierde fotogramas con la grabación

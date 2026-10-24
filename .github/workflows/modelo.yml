@@ -1,0 +1,65 @@
+name: Propuesta del modelo
+
+# ¿Hay que recalibrar el modelo? (3.72.0, pedido por Javi: «que se siga
+# actualizando… que me lo proponga primero»). Cada semana, cuando acaban las
+# partidas pro, se vuelve a medir la escala del modelo con TODAS las partidas
+# con resultado (pro de 120 días, las tuyas y las de la comunidad) y, SOLO si
+# la medida nueva predice mejor fuera de muestra y sale del error, se abre una
+# incidencia con la propuesta (o se comenta en la que haya). No commitea ni
+# cambia nada: el cambio lo aplica una persona, midiendo antes como siempre.
+on:
+  workflow_run:
+    workflows: ["Partidas profesionales"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: modelo
+  cancel-in-progress: false
+
+jobs:
+  proponer:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+
+      - name: Bajar las partidas de la comunidad
+        # Sin base de datos configurada o sin red, se mide con las pro y las tuyas.
+        timeout-minutes: 5
+        run: node scripts/medir-comunidad.mjs --guardar /tmp/comunidad.json || echo "::warning::sin las partidas de la comunidad"
+
+      - name: Medir y decidir
+        shell: bash
+        run: |
+          node scripts/proponer-modelo.mjs --comunidad /tmp/comunidad.json --json /tmp/propuesta.json | tee /tmp/propuesta.md
+          cat /tmp/propuesta.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Abrir la propuesta
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = await import('node:fs');
+            const r = JSON.parse(fs.readFileSync('/tmp/propuesta.json', 'utf8'));
+            if (!r.decision?.proponer) { core.info(`Sin propuesta: ${r.decision?.motivo}`); return; }
+            const cuerpo = [
+              fs.readFileSync('/tmp/propuesta.md', 'utf8'),
+              '',
+              `[Ver la ejecución](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+            ].join('\n');
+            // Una sola incidencia abierta: cada semana con la misma propuesta se comenta en ella.
+            const abiertas = await github.rest.issues.listForRepo({ ...context.repo, state: 'open', labels: 'modelo' });
+            if (abiertas.data.length) {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: abiertas.data[0].number, body: cuerpo });
+            } else {
+              await github.rest.issues.create({ ...context.repo, title: 'Propuesta: recalibrar el modelo', body: cuerpo, labels: ['modelo'] });
+            }

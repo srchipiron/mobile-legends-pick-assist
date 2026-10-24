@@ -556,7 +556,7 @@ export async function traerDeTermux({ pedirTermux = (...a) => fetch(...a), pedir
  * El consejo de la burbuja: tu pick (el fijado o el nº1) con su
  * probabilidad, y debajo los dos siguientes. Sin ranking, nada.
  */
-export function consejoParaLaTablet({ eleccion, ranking = [], fase = 'picks', baneos = [] }, t) {
+export function consejoParaLaTablet({ eleccion, ranking = [], fase = 'picks', baneos = [], deLosTuyos = null }, t) {
   // En la fase de baneos (3.65.5) lo que sirve es a quién banear, con tu
   // nº1 de ahora como recordatorio: el pick no se decide hasta después.
   // La fase va delante en la segunda línea (3.69.2): así se ve en la burbuja
@@ -568,8 +568,12 @@ export function consejoParaLaTablet({ eleccion, ranking = [], fase = 'picks', ba
   }
   if (!eleccion?.heroe || !ranking.length) return null;
   const pct = (p) => `${Math.round(p * 100)}%`;
-  const otros = ranking.filter((r) => r.heroe.name !== eleccion.heroe.name).slice(0, 2).map((r) => `${r.heroe.name} ${pct(r.p)}`);
-  return { titulo: `${eleccion.heroe.name} ${pct(eleccion.p)}`, detalle: conFase(otros.length ? t('tablet.siguientes', { lista: otros.join(' · ') }) : null) };
+  const siguientes = ranking.filter((r) => r.heroe.name !== eleccion.heroe.name).slice(0, 2);
+  const otros = siguientes.map((r) => `${r.heroe.name} ${pct(r.p)}`);
+  // El mejor de los tuyos (3.72.0), si no es ya uno de los que se nombran.
+  const tuyo = deLosTuyos?.heroe && deLosTuyos.heroe.name !== eleccion.heroe.name && !siguientes.some((r) => r.heroe.name === deLosTuyos.heroe.name)
+    ? t('tablet.deLosTuyos', { heroe: `${deLosTuyos.heroe.name} ${pct(deLosTuyos.p)}` }) : null;
+  return { titulo: `${eleccion.heroe.name} ${pct(eleccion.p)}`, detalle: conFase([otros.length ? t('tablet.siguientes', { lista: otros.join(' · ') }) : null, tuyo].filter(Boolean).join(' · ') || null) };
 }
 
 /** El resumen de la partida recién apuntada: con quién, si era el consejo y cómo vas en las últimas. */

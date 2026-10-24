@@ -133,6 +133,19 @@ se repite en cada corrida de `pro.yml` al log. NO vuelvas a suponer:
   1.28): tu winrate encogido hacia lo que cabe esperar de ti con ese héroe,
   también sin winrate público (referencia 50%). Escalada por la misma
   ESCALA que todo. Sus motivos se miden contra lo esperado ± σ.
+- **Tu nivel vale para TODOS los héroes (3.72.0, `VERSION_MODELO` 4)**,
+  decidido por Javi: «que a mí se me dé bien un personaje no quiere decir
+  que sea el mejor pick». Un héroe sin maestría recibe
+  logit(w + nivel − 0,5) − logit(w); antes, cero, y los jugados tu nivel: un
+  +1,7 puntos fijo a lo jugado. Medido (medidor-motor, 203 partidas con
+  draft, leave-one-out): logL −0,6834 → −0,6835 ± 0,0121, igual; el nº1
+  cambia en el 16% de sus drafts (30–33% en roam sintético; mid 42–51%,
+  exp 16–21%, jungla y oro ~0) y es un héroe jugado en el 74% (antes 90%;
+  sintético 75% → 45%). Lo que no se sabe todavía: si rinde peor con un
+  héroe que no ha jugado (202 de 203 partidas eran con jugados); el bot
+  del modelo lo irá viendo. `deLosTuyos` (draft.js) da el mejor de los que
+  juega («tuyo» = con partidas, lo mismo que «Mis héroes») para la línea
+  tras la nº1 (`.de-los-tuyos`) y la burbuja (app y tablet sola).
 - **Las reglas por etiqueta** solo entran sin dato (cruce o pareja nula) y a
   la equivalencia de 1.x: la regla más fuerte vale un cruce del 56%
   (`CRUCE_POR_REGLA_MAXIMA`); las de peligro en los baneos, igual.
@@ -159,7 +172,20 @@ centra, cómo entra la maestría), súbela. La prueba «la huella del modelo»
 de `modelo.test` falla hasta que se sube: corre un draft fijo sobre héroes y
 datos INVENTADOS, sin `heroes.json` ni el meta del día, para que un cambio
 de catálogo no la dispare. Se sube la versión y se apunta la huella nueva
-en `HUELLAS`.
+en `HUELLAS`. Las pruebas que hablan del «modelo de hoy» usan `VERSION_MODELO`, no un
+número (en 3.72.0 dos lo tenían fijado en 3 y fallaron al subirla).
+
+**El bot del modelo (3.72.0, `modelo.yml`, tras las partidas pro)**:
+`scripts/proponer-modelo.mjs` mide la escala de hoy contra la vuelta a medir
+(una pendiente sobre H+C+S+0,5·D, sin intercepto, la misma validación
+cruzada) con las pro de 120 días y las de Gloria con draft completo (tu
+historial y la comunidad, sin repetir). PROPONE (incidencia `modelo`) solo
+con ≥ `MINIMO_PROPUESTA` (300) partidas, ganancia fuera de muestra ≥
+`MEJORA_MINIMA` (2 por 1.000) y la escala nueva a más de 2 SE de la de hoy.
+Nunca commitea: Javi pidió que se lo proponga primero. El 24 de octubre de
+2026: pro 1.457 (0,50 ± 0,09, −0,7 por 1.000), Gloria 167 (0,33 ± 0,22,
+AUC 0,515), juntas 1.624 (0,48 ± 0,08, −1,5): nada que proponer. OJO: los
+términos salen de las matrices de HOY, no de las del día de cada partida.
 
 Para volver a ajustar: `node scripts/ajustar-modelo.mjs` (y `--dias 400`),
 mirar `logL/n` fuera de muestra, y cambiar `ESCALA`/`AJUSTE` en modelo.js

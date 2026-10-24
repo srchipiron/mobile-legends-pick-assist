@@ -8,6 +8,21 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.72.0
+
+- El nº1 ya no es tu héroe solo porque lo juegas. Antes, cualquier héroe
+  que hubieras jugado recibía un plus fijo por tu nivel, y por eso el nº1
+  era uno tuyo en 9 de cada 10 drafts. Ahora tu nivel cuenta igual para
+  todos, y lo único que sube a un héroe tuyo es que de verdad te va mejor
+  con él. Medido en tus partidas: la app acierta igual que antes, y el nº1
+  cambia en 1 de cada 6 drafts.
+- Debajo de la tarjeta nº1, «De los tuyos, el mejor es…» te dice cuál de
+  tus héroes va primero, por si prefieres ir con lo que dominas. La
+  burbuja de la tablet también lo dice.
+- Cada semana se vuelve a medir el modelo con todas las partidas que se
+  van juntando (las pro, las tuyas y las de la comunidad). Si con ellas
+  acertaría mejor, se abre una propuesta para revisarla; nada cambia solo.
+
 ## 3.71.0
 
 - La voz de los consejos en partida ya sale de la tablet sola, sin el móvil:

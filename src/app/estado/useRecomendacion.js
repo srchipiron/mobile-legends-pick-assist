@@ -1,7 +1,7 @@
 import { useDeferredValue, useMemo } from 'react';
 import {
   poolDe, lineasEnemigasAbiertas, rivalDeLinea, contextoDe, simular, composicionDe, aconsejar,
-  baneosSugeridos, siguientesBaneos, estimarCon, eleccionDe, planDePicks, planear,
+  baneosSugeridos, siguientesBaneos, estimarCon, eleccionDe, deLosTuyos, planDePicks, planear,
 } from '../../motor/draft.js';
 import { ordenarPicks, empatados } from '../../motor/ranking.js';
 import { analizarDraft } from '../../motor/analisis.js';
@@ -40,6 +40,8 @@ export function useRecomendacion({ datos, linea, enemigos, aliados, baneos, riva
   // Tu pick: el fijado si está en el ranking, si no el nº1.
   const eleccion = useMemo(() => eleccionDe(ranking, miPick), [ranking, miPick]);
   const yo = eleccion?.heroe ?? null;
+  // El mejor de los que juegas, si el nº1 no es uno de ellos (3.72.0).
+  const tuyos = useMemo(() => deLosTuyos(ranking, maestria), [ranking, maestria]);
 
   const enemigosDiferidos = useDeferredValue(enemigos);
   const aliadosDiferidos = useDeferredValue(aliados);
@@ -81,5 +83,5 @@ export function useRecomendacion({ datos, linea, enemigos, aliados, baneos, riva
   /** La probabilidad con UN héroe concreto (el que apuntas, aunque no sea el nº1). */
   const estimacionCon = (heroe) => ranking.find((r) => r.heroe === heroe) ?? estimarCon(datos, { yo: heroe, enemigos, aliados, baneos, maestria });
 
-  return { pool, cov, lineasAbiertas, rival, ranking, empate, eleccion, yo, robustez, composicion, consejos, analisis, plan, partida, baneosSugeridos: sugeridos, proximos, estimacionCon };
+  return { pool, cov, lineasAbiertas, rival, ranking, empate, eleccion, deLosTuyos: tuyos, yo, robustez, composicion, consejos, analisis, plan, partida, baneosSugeridos: sugeridos, proximos, estimacionCon };
 }

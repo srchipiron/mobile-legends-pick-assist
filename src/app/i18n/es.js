@@ -104,6 +104,8 @@ export default {
   'pick.soltar': 'Soltar a {nombre}',
   'pick.tuyo': 'tu pick',
   'filtro.mios': 'Mis héroes ({n})',
+  'tuyos.mejor': 'De los tuyos, el mejor es {nombre} ({pct}%, nº{puesto}).',
+  'tablet.deLosTuyos': 'De los tuyos: {heroe}',
   'filtro.fueraDeMios': 'Fuera de tus héroes, el nº1 sería {nombre} ({pct}%).',
   'recordatorio.pregunta': '¿Cómo fue con {yo}?',
   'recordatorio.preguntaSinFijar': '¿Jugaste con {yo}? Si fue con otro, toca «Otro héroe».',

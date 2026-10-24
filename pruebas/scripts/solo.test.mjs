@@ -306,4 +306,13 @@ test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se pregunt
   ok(!acumularDraft(d, { ...lectura({ tuyos: [N('Hirara')] }), id: '../fuera' }, 99).ids.includes('../fuera'), 'entra un id sin forma');
 });
 
+test('la burbuja de la tablet sola dice el mejor de los tuyos si el nº1 no lo es (3.72.0)', () => {
+  const draft = acumularDraft(null, lectura({ tuyos: [N('Hirara')], enemigos: [N('Clint'), N('Khufra'), V, V, V] }), 1);
+  const sin = decidirSolo({ datos, draft, linea: 'roam' });
+  const ultimo = sin.rec.ranking.at(-1).heroe.name;
+  const c = consejoSolo({ datos, draft, linea: 'roam', maestria: { [ultimo]: { games: 3, winRate: 0.5 } } });
+  ok(c?.detalle?.includes(`De los tuyos: ${ultimo}`), `no lo dice: ${c?.detalle}`);
+  ok(!consejoSolo({ datos, draft, linea: 'roam' })?.detalle?.includes('De los tuyos'), 'lo dice sin maestría');
+});
+
 await terminar('scripts/solo');

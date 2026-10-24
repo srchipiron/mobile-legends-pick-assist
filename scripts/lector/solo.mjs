@@ -92,8 +92,8 @@ export function acumularDraft(estado, lectura, ahora) {
 }
 
 const TEXTOS = {
-  es: { banea: (l) => `Banea: ${l}`, tuNumeroUno: (h) => `Tu nº1 ahora: ${h}`, luego: (l) => `Luego: ${l}`, baneos: 'Fase de baneos', picks: 'Fase de picks' },
-  en: { banea: (l) => `Ban: ${l}`, tuNumeroUno: (h) => `Your no. 1 now: ${h}`, luego: (l) => `Then: ${l}`, baneos: 'Ban phase', picks: 'Pick phase' },
+  es: { banea: (l) => `Banea: ${l}`, tuNumeroUno: (h) => `Tu nº1 ahora: ${h}`, luego: (l) => `Luego: ${l}`, tuyos: (h) => `De los tuyos: ${h}`, baneos: 'Fase de baneos', picks: 'Fase de picks' },
+  en: { banea: (l) => `Ban: ${l}`, tuNumeroUno: (h) => `Your no. 1 now: ${h}`, luego: (l) => `Then: ${l}`, tuyos: (h) => `Yours: ${h}`, baneos: 'Ban phase', picks: 'Pick phase' },
 };
 
 /**
@@ -136,8 +136,12 @@ export function consejoSolo({ datos, draft, linea, idioma = 'es', maestria = nul
     }
     const e = rec.eleccion;
     if (!e?.heroe) return null;
-    const otros = rec.ranking.filter((r) => r.heroe.name !== e.heroe.name).slice(0, 2).map((r) => `${r.heroe.name} ${pct(r.p)}`);
-    return { titulo: `${e.heroe.name} ${pct(e.p)}`, detalle: [t.picks, otros.length ? t.luego(otros.join(' · ')) : null].filter(Boolean).join(' · ') };
+    const siguientes = rec.ranking.filter((r) => r.heroe.name !== e.heroe.name).slice(0, 2);
+    const otros = siguientes.map((r) => `${r.heroe.name} ${pct(r.p)}`);
+    // El mejor de los tuyos (3.72.0), como en la app: si no es ya uno de los nombrados.
+    const mio = rec.deLosTuyos;
+    const tuyo = mio?.heroe && mio.heroe.name !== e.heroe.name && !siguientes.some((r) => r.heroe.name === mio.heroe.name) ? t.tuyos(`${mio.heroe.name} ${pct(mio.p)}`) : null;
+    return { titulo: `${e.heroe.name} ${pct(e.p)}`, detalle: [t.picks, otros.length ? t.luego(otros.join(' · ')) : null, tuyo].filter(Boolean).join(' · ') };
   } catch { return null; }
 }
 

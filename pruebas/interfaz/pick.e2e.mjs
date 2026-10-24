@@ -89,10 +89,18 @@ await prueba('«Mis héroes» filtra el ranking a los que llevas y dice quién s
   ok(todos.length >= 5, `el ranking sin filtro trae ${todos.length} tarjetas`);
   const filtro = pagina.locator('.filtro-mios');
   eq(await filtro.count(), 1, 'no hay filtro «mis héroes» con maestría guardada');
+  // «De los tuyos» (3.72.0): tras la nº1, el primero de tus héroes en el ranking (sin el filtro puesto).
+  const lineaTuyos = ['Franco', 'Minotaur'].includes(todos[0]) ? null : await pagina.locator('.de-los-tuyos').innerText();
+  if (lineaTuyos !== null) {
+    ok(await pagina.locator('.pick').first().evaluate((el, linea) => !!(el.compareDocumentPosition(linea) & 4 /* DOCUMENT_POSITION_FOLLOWING */), await pagina.locator('.de-los-tuyos').elementHandle()), '«De los tuyos» no va tras la nº1');
+  } else eq(await pagina.locator('.de-los-tuyos').count(), 0, 'lo dice con la nº1 ya tuya');
   ok(/2/.test(await filtro.innerText()), 'el filtro no cuenta los dos héroes');
   await filtro.click(); await pagina.waitForTimeout(300);
   const mios = await nombres();
   eq(JSON.stringify([...mios].sort()), JSON.stringify(['Franco', 'Minotaur']), `con el filtro no salen solo los tuyos: ${mios}`);
+  eq(await pagina.locator('.de-los-tuyos').count(), 0, 'con «Mis héroes» puesto repite el mejor de los tuyos');
+  // Con el filtro, el primero es el mejor de los tuyos: el que decía la línea.
+  if (lineaTuyos !== null) ok(lineaTuyos.includes(mios[0]), `«De los tuyos» dice otro que el primero de tus héroes (${mios[0]}): ${lineaTuyos}`);
   if (!['Franco', 'Minotaur'].includes(todos[0])) ok((await pagina.locator('.fuera-de-mios').innerText()).includes(todos[0]), 'no dice quién sería el nº1 fuera de tus héroes');
   await filtro.click(); await pagina.waitForTimeout(300);
   eq((await nombres()).length, todos.length, 'quitar el filtro no devuelve el ranking entero');

@@ -109,6 +109,8 @@ export default {
   'pick.soltar': 'Release {nombre}',
   'pick.tuyo': 'your pick',
   'filtro.mios': 'My heroes ({n})',
+  'tuyos.mejor': 'Best of your heroes: {nombre} ({pct}%, #{puesto}).',
+  'tablet.deLosTuyos': 'Yours: {heroe}',
   'filtro.fueraDeMios': 'Outside your heroes, #1 would be {nombre} ({pct}%).',
   'recordatorio.pregunta': 'How did it go with {yo}?',
   'recordatorio.preguntaSinFijar': 'Did you play {yo}? If it was someone else, tap “Other hero”.',

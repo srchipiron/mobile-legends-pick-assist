@@ -490,7 +490,7 @@ export default function App() {
     .filter(([, m]) => Number.isInteger(m?.games) && m.games > 0 && typeof m.winRate === 'number')
     .sort((a, b) => b[1].games - a[1].games).slice(0, 200)
     .map(([n, m]) => [n, { games: m.games, winRate: Math.round(m.winRate * 1000) / 1000 }])), [personal.maestriaUsada]);
-  const consejoTablet = lectorTablet ? consejoParaLaTablet({ eleccion: rec.eleccion, ranking: rec.ranking, fase: draft.fase, baneos: rec.baneosSugeridos }, t) : null;
+  const consejoTablet = lectorTablet ? consejoParaLaTablet({ eleccion: rec.eleccion, ranking: rec.ranking, fase: draft.fase, baneos: rec.baneosSugeridos, deLosTuyos: rec.deLosTuyos }, t) : null;
   const huellaConsejo = consejoTablet ? `${consejoTablet.titulo}|${consejoTablet.detalle}` : '';
   useEffect(() => {
     if (!lectorTablet) return;

@@ -12,7 +12,7 @@ import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
 import { catalogo, heroes, poolRoam, crearRnd, h } from '../fixtures/catalogo.mjs';
 import { prepararDatos } from '../../src/motor/draft.js';
 import { diagnosticar, titular } from '../../src/motor/diagnostico/index.js';
-import { ESCALA } from '../../src/motor/modelo.js';
+import { ESCALA, VERSION_MODELO } from '../../src/motor/modelo.js';
 import { seccionEntorno } from '../../src/motor/diagnostico/seccion-entorno.js';
 import { crearInforme } from '../../src/motor/diagnostico/informe.js';
 import { metaSintetica } from '../fixtures/meta-sintetico.mjs';
@@ -246,10 +246,10 @@ test('el diagnóstico dice aparte la calibración del modelo de hoy (3.60.3)', (
   const entorno = { version: 'test', rango: 'glory', width: 412, height: 915, storage: true };
   const stats = Object.fromEntries(heroes.map((x) => [x.name, { winRate: 0.5, pickRate: 0.02 }]));
   const vieja = (i) => ({ t: Date.parse('2026-09-01T12:00:00Z') + i * 6e5, pick: 'Atlas', gane: i % 2 === 0, recomendados: [], estimacion: 0.6 });
-  const nueva = (i) => ({ t: Date.parse('2026-10-20T12:00:00Z') + i * 6e5, pick: 'Atlas', gane: true, recomendados: [], estimacion: 0.55, modelo: 3 });
+  const nueva = (i) => ({ t: Date.parse('2026-10-20T12:00:00Z') + i * 6e5, pick: 'Atlas', gane: true, recomendados: [], estimacion: 0.55, modelo: VERSION_MODELO });
   const partidas = [...Array.from({ length: 4 }, (_, i) => nueva(i)), ...Array.from({ length: 10 }, (_, i) => vieja(i))];
   const texto = diagnosticar({ linea: 'roam', maestria: {}, partidas, entorno, datos: prepararDatos({ catalogo: { heroes: catalogo.heroes }, rango: 'glory', meta: { generatedAt: new Date().toISOString(), ranks: ['glory'], rank: 'glory', days: 7, heroCount: 133, stats, statsByRank: { glory: stats }, diagnostics: {} } }) }).texto;
-  ok(/con el modelo de hoy \(3\): 4 partidas · previsto 55% · ganadas 100%/.test(texto), `no dice la calibración del modelo de hoy: ${texto.split('\n').filter((l) => /Estimación|modelo de hoy/.test(l)).join(' | ')}`);
+  ok(new RegExp(`con el modelo de hoy \\(${VERSION_MODELO}\\): 4 partidas`).test(texto) && /4 partidas · previsto 55% · ganadas 100%/.test(texto), `no dice la calibración del modelo de hoy: ${texto.split('\n').filter((l) => /Estimación|modelo de hoy/.test(l)).join(' | ')}`);
 });
 
 test('un héroe recién salido sin winrate es un aviso, uno conocido sin winrate es un fallo', () => {

@@ -251,6 +251,8 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
               detras={ranking.indexOf(c) > 0 ? porQueDetras(c, ranking[0]) : null}
               primero={ranking[0]?.heroe.name}
             />
+            {/* El mejor de los tuyos (3.72.0): el nº1 ya no lleva el plus de «ya lo juegas», así que se dice aparte cuál de tus héroes va primero. */}
+            {i === 0 && !soloMios && rec.deLosTuyos && <p className="de-los-tuyos">{t('tuyos.mejor', { nombre: rec.deLosTuyos.heroe.name, pct: Math.round(rec.deLosTuyos.p * 100), puesto: ranking.indexOf(rec.deLosTuyos) + 1 })}</p>}
             {i === trasDe && <ConsejoEquipo consejos={consejos.lista} yo={consejos.yo} onElegir={anadirAliado} t={t} />}
           </Fragment>
         ))}

@@ -539,4 +539,13 @@ test('el despliegue: la concurrencia va en los jobs, no en el workflow (3.65.4)'
   }
 });
 
+test('el bot del modelo (3.72.0) solo PROPONE: no puede escribir en el repositorio y abre la incidencia solo si la medida lo dice', () => {
+  const w = leerWorkflow('modelo.yml');
+  ok(/^permissions:\s*\n\s+contents: read\s*\n\s+issues: write\s*$/m.test(w.texto), 'el bot del modelo puede escribir en el repositorio');
+  ok(!w.pasos.some((p) => mandatos(p.run).some((c) => /^git (commit|push)\b/.test(c))), 'el bot del modelo commitea');
+  ok(/workflows: \["Partidas profesionales"\]/.test(w.texto) && /^name: Partidas profesionales$/m.test(leerWorkflow('pro.yml').texto), 'no corre tras las partidas pro (o pro.yml cambió de nombre)');
+  ok(/if \(!r\.decision\?\.proponer\)[^\n]*return;/.test(w.texto), 'abre la incidencia aunque no haya propuesta');
+  ok(/node scripts\/proponer-modelo\.mjs/.test(w.texto) && /persist-credentials: false/.test(w.texto), 'no mide con el script, o deja el token en el checkout');
+});
+
 await terminar('scripts/workflows');

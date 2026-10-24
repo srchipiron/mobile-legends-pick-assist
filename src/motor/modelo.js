@@ -45,9 +45,10 @@ import { COUNTER_RULES } from './reglas.js';
  * escala, cómo se centra, cómo entra tu maestría): la huella de
  * `modelo.test` falla hasta que se sube. 1: hasta 3.3; 2: desde 3.4.0
  * (equilibrio de daño, disponibilidad); 3: desde 3.56.0 (tu maestría con
- * tus partidas con la app).
+ * tus partidas con la app); 4: desde 3.72.0 (tu nivel a todos los héroes,
+ * no solo a los jugados).
  */
-export const VERSION_MODELO = 3;
+export const VERSION_MODELO = 4;
 /**
  * Cuándo se PUBLICÓ cada cambio (el commit de su versión): las partidas de
  * antes de 3.60.3 no llevan `modelo` y se reparten por su instante. Es
@@ -57,6 +58,8 @@ export const VERSION_MODELO = 3;
 export const CAMBIOS_DE_MODELO = [
   { version: 2, desde: Date.parse('2026-09-19T21:19:15Z') },
   { version: 3, desde: Date.parse('2026-10-13T15:23:05Z') },
+  // Aproximado: desde 3.60.3 cada partida lleva su `modelo`, así que esta fecha no reparte ninguna.
+  { version: 4, desde: Date.parse('2026-10-24T23:00:00Z') },
 ];
 
 /** Pendiente medida (regresión logística de «ganó» sobre H+C+S, 10 pliegues). */
@@ -210,6 +213,17 @@ export function terminoPareja(heroe, aliado, synergies, centro) {
  * ti: su winrate público más tu ventaja sobre el 50%) SUSTITUYA al público.
  * Sin winrate público (API caída, héroe nuevo) la referencia es el 50%. Sin
  * maestría, cero. Los motivos van contra lo esperado ± σ.
+ *
+ * Un héroe que NO has jugado recibe tu nivel (3.72.0, decidido por Javi:
+ * «que a mí se me dé bien un personaje no quiere decir que sea el mejor
+ * pick»). Hasta entonces recibía cero y los jugados, tu nivel: un +1,7
+ * puntos fijo a lo jugado, el doble de lo que separa al nº1 del nº2, que
+ * hacía nº1 a un héroe tuyo en el 90% de tus drafts. Ahora el orden solo lo
+ * mueve lo PROPIO de cada héroe (tu winrate con él frente a tu nivel) y la
+ * probabilidad sigue llevando tu nivel. Medido con el agente medidor-motor
+ * en sus 203 partidas con draft: verosimilitud fuera de muestra igual
+ * (−0,6834 → −0,6835 ± 0,0121); el nº1 cambia en el 16% de sus drafts y es
+ * un héroe jugado en el 74% (antes, 90%).
  */
 export function terminoTu(heroe, maestria, stats, nivel, prior) {
   const vacio = { valor: 0, dato: false, motivos: [] };
@@ -217,8 +231,11 @@ export function terminoTu(heroe, maestria, stats, nivel, prior) {
   const publico = buscar(stats, heroe.name)?.winRate;
   const w = valido(publico) ? publico : 0.5;
   const m = buscar(maestria, heroe.name);
-  if (!m || !(m.games > 0) || m.winRate == null) return vacio;
   const base = nivel ?? tuNivel(maestria);
+  if (!m || !(m.games > 0) || m.winRate == null) {
+    const esperadoSin = Math.min(0.95, Math.max(0.05, w + (base - 0.5)));
+    return { valor: logit(esperadoSin) - logit(w), dato: false, motivos: [] };
+  }
   const k = prior ?? priorDeMaestria(maestria, base);
   const esperado = Math.min(0.95, Math.max(0.05, w + (base - 0.5)));
   const propio = (m.winRate * m.games + esperado * k) / (m.games + k);
