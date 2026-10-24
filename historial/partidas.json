@@ -1,6 +1,114 @@
 {
- "actualizado": "2026-10-23T22:27:18.341Z",
+ "actualizado": "2026-10-24T16:25:47.324Z",
  "partidas": [
+  {
+   "t": 1792859132202,
+   "pick": "Estes",
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Estes"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.495,
+   "modelo": 3,
+   "bans": [
+    "Sun",
+    "Marcel",
+    "Hirara",
+    "Eudora",
+    "Lukas",
+    "Atlas",
+    "Kalea",
+    "Aulus"
+   ],
+   "draft": {
+    "enemigos": [
+     "Belerick",
+     "Obsidia",
+     "Popol and Kupa",
+     "Zetian",
+     "Alice"
+    ],
+    "aliados": [
+     "Vexana",
+     "Gloo",
+     "Yi Sun-shin",
+     "Claude"
+    ],
+    "linea": "roam",
+    "rival": "Belerick"
+   },
+   "lector": {
+    "baneos": [
+     "Sun",
+     "Marcel",
+     "Hirara",
+     "Eudora",
+     "Lukas",
+     "Atlas",
+     "Kalea",
+     "Aulus"
+    ],
+    "enemigos": [
+     "Belerick",
+     "Obsidia",
+     "Popol and Kupa",
+     "Zetian",
+     "Alice"
+    ],
+    "aliados": [
+     "Vexana",
+     "Gloo",
+     "Yi Sun-shin",
+     "Claude"
+    ],
+    "tuyo": "Estes",
+    "ms": [
+     1112,
+     988,
+     1169,
+     1909,
+     1100,
+     1114,
+     957
+    ],
+    "msCaptura": [
+     83,
+     44,
+     73,
+     829,
+     78,
+     77,
+     73
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo"
+    ],
+    "aprendizaje": {
+     "aprendidos": [],
+     "sinEncontrar": [
+      "Alice"
+     ]
+    }
+   },
+   "duracion": 14.8,
+   "fases": [
+    0.527,
+    0.5,
+    0.502,
+    0.471,
+    0.471,
+    0.457
+   ]
+  },
   {
    "t": 1792794422235,
    "pick": "Angela",
@@ -23417,6 +23525,12 @@
   },
   {
    "cuando": "2026-10-23T22:27:18.341Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-24T16:25:47.324Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
