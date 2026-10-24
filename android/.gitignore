@@ -9,3 +9,5 @@ app/libnode/
 app/src/main/assets/
 *.keystore
 *.jks
+# Los registros del compilador de Kotlin (3.69.3: uno se coló en un commit).
+.kotlin/
