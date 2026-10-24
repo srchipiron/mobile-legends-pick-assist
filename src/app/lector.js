@@ -529,14 +529,17 @@ export async function traerDeTermux({ pedirTermux = (...a) => fetch(...a), pedir
 export function consejoParaLaTablet({ eleccion, ranking = [], fase = 'picks', baneos = [] }, t) {
   // En la fase de baneos (3.65.5) lo que sirve es a quién banear, con tu
   // nº1 de ahora como recordatorio: el pick no se decide hasta después.
+  // La fase va delante en la segunda línea (3.69.2): así se ve en la burbuja
+  // que la app sabe en qué punto del draft estás.
+  const conFase = (resto) => [t(fase === 'baneos' ? 'tablet.fase.baneos' : 'tablet.fase.picks'), resto].filter(Boolean).join(' · ');
   if (fase === 'baneos' && baneos.length) {
     const lista = baneos.slice(0, 3).map((b) => b.heroe?.name).filter(Boolean).join(' · ');
-    if (lista) return { titulo: t('tablet.banea', { lista }), detalle: eleccion?.heroe ? t('tablet.tuNumeroUno', { heroe: eleccion.heroe.name }) : null };
+    if (lista) return { titulo: t('tablet.banea', { lista }), detalle: conFase(eleccion?.heroe ? t('tablet.tuNumeroUno', { heroe: eleccion.heroe.name }) : null) };
   }
   if (!eleccion?.heroe || !ranking.length) return null;
   const pct = (p) => `${Math.round(p * 100)}%`;
   const otros = ranking.filter((r) => r.heroe.name !== eleccion.heroe.name).slice(0, 2).map((r) => `${r.heroe.name} ${pct(r.p)}`);
-  return { titulo: `${eleccion.heroe.name} ${pct(eleccion.p)}`, detalle: otros.length ? t('tablet.siguientes', { lista: otros.join(' · ') }) : null };
+  return { titulo: `${eleccion.heroe.name} ${pct(eleccion.p)}`, detalle: conFase(otros.length ? t('tablet.siguientes', { lista: otros.join(' · ') }) : null) };
 }
 
 /** El resumen de la partida recién apuntada: con quién, si era el consejo y cómo vas en las últimas. */

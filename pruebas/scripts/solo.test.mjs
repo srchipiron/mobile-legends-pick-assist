@@ -55,15 +55,15 @@ test('el consejo sale del motor de la app: en baneos a quién banear, en picks t
   const enBaneos = consejoSolo({ datos, draft: acumularDraft(null, lectura({ tuyos: [N('Hirara')] }), 1), linea: 'roam' });
   ok(/^Banea: .+ · .+ · .+$/.test(enBaneos?.titulo ?? ''), `en baneos no dice tres a banear: ${JSON.stringify(enBaneos)}`);
   ok(!/Hirara/.test(enBaneos.titulo), 'propone banear a uno ya baneado');
-  ok(/^Tu nº1 ahora: /.test(enBaneos.detalle ?? ''), 'en baneos no recuerda tu nº1');
+  ok(/^Fase de baneos · Tu nº1 ahora: /.test(enBaneos.detalle ?? ''), `en baneos no dice la fase o no recuerda tu nº1: ${enBaneos.detalle}`);
   const draft = acumularDraft(null, lectura({ tuyos: [N('Hirara')], enemigos: [N('Clint'), N('Khufra'), V, V, V] }), 1);
   const c = consejoSolo({ datos, draft, linea: 'roam' });
   // La MISMA decisión que la app con ese draft.
   const H = (n) => datos.heroes.find((h) => h.name === n);
   const rec = recomendar(datos, { linea: 'roam', enemigos: [H('Clint'), H('Khufra')], aliados: [], baneos: [H('Hirara')], conSimulacion: false });
   eq(c.titulo, `${rec.eleccion.heroe.name} ${Math.round(rec.eleccion.p * 100)}%`, 'el consejo de la tablet no es el de la app');
-  ok(/^Luego: .+ \d+% · .+ \d+%$/.test(c.detalle ?? ''), `no dice los dos siguientes: ${c.detalle}`);
-  ok(/^Then: /.test(consejoSolo({ datos, draft, linea: 'roam', idioma: 'en' }).detalle), 'en inglés sale en español');
+  ok(/^Fase de picks · Luego: .+ \d+% · .+ \d+%$/.test(c.detalle ?? ''), `no dice la fase o los dos siguientes: ${c.detalle}`);
+  ok(/^Pick phase · Then: /.test(consejoSolo({ datos, draft, linea: 'roam', idioma: 'en' }).detalle), 'en inglés sale en español');
   eq(consejoSolo({ datos, draft, linea: 'pato' }), null, 'una línea que no existe da consejo');
   eq(consejoSolo({ datos: null, draft, linea: 'roam' }), null);
   eq(consejoSolo({ datos, draft: draftVacio(), linea: 'roam' }), null, 'sin nada leído da consejo');

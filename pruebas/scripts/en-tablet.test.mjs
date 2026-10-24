@@ -137,7 +137,7 @@ test('el consejo y el resumen que manda la app (3.62.0): solo la app los escribe
   // Lo que lee la APK: desde 127.0.0.1, sin Origin y con el código.
   const leerApk = async () => JSON.parse((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
   try {
-    eq(JSON.stringify(await leerApk()), JSON.stringify({ consejo: null, resumen: null }));
+    eq(JSON.stringify(await leerApk()), JSON.stringify({ consejo: null, resumen: null, enPartida: false }));
     eq(await mandar({ consejo: { titulo: 'Khufra 54%\u0007', detalle: 'nº2 Atlas · nº3 Franco' } }), 200);
     eq(JSON.stringify((await leerApk()).consejo), JSON.stringify({ titulo: 'Khufra 54%', detalle: 'nº2 Atlas · nº3 Franco' }), 'el consejo no llega limpio');
     eq(await mandar({ consejo: { titulo: 'x' } }, { origen: null }), 403, 'sin la app se escribe el consejo');
@@ -215,7 +215,7 @@ test('un solo aparato (3.66.0): con la línea elegida en la APK, la tablet lee, 
     const { consejo } = JSON.parse((await pedir(puerto, '/consejo', { origen: null })).cuerpo);
     // La captura de la prueba es la fase de picks con Clint y Khufra de enemigos: el consejo es un pick de roam con porcentaje.
     ok(/^[A-Z][\w .'-]+ \d+%$/.test(consejo?.titulo ?? ''), `la tablet no pone su consejo: ${JSON.stringify(consejo)}`);
-    ok(/^Luego: /.test(consejo?.detalle ?? ''), `sin los dos siguientes: ${JSON.stringify(consejo)}`);
+    ok(/^Fase de picks · Luego: /.test(consejo?.detalle ?? ''), `sin la fase o sin los dos siguientes: ${JSON.stringify(consejo)}`);
     const d = servidor.solo.estado();
     ok(d.enemigos.includes('Clint') && d.enemigos.includes('Khufra') && d.baneos.length >= 8, `el draft acumulado no es el de la captura: ${JSON.stringify(d)}`);
     // El móvil lee: la tablet se aparta.

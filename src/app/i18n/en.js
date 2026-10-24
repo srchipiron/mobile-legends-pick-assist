@@ -652,6 +652,8 @@ export default {
   'lectorTablet.apk.buscando': 'The tablet does not answer at its usual address: looking for it on the wifi…',
   'tablet.banea': 'Ban: {lista}',
   'tablet.tuNumeroUno': 'Your no. 1 now: {heroe}',
+  'tablet.fase.baneos': 'Ban phase',
+  'tablet.fase.picks': 'Pick phase',
   'pie.nuevo': 'new',
   'ficha.titulo': '{heroe} profile',
   'ficha.noExiste': 'That hero is not in the data.',

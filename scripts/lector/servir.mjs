@@ -451,6 +451,9 @@ export function lectorEnHilos({ caras, registrar = () => {}, tarea = new URL('le
   };
 }
 
+/** Capturas seguidas con el minimapa para quitar la burbuja: las mismas que cierran el draft (LECTURAS_EN_PARTIDA). */
+export const EN_PARTIDA_PARA_ESCONDER = 2;
+
 /**
  * El servidor, con la captura inyectada: en Termux es `capturarTablet`, en
  * las pruebas una captura de fichero.
@@ -460,6 +463,12 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   const portero = codigo ? crearPortero(codigo, { ahora }) : null;
   // Lo último que mandó la app para la tablet (3.62.0): en memoria, se pierde al reiniciar (la app lo vuelve a mandar).
   let consejoActual = null, resumenActual = null;
+  // En partida (3.69.3), la burbuja se quita: tapaba el juego y no tiene nada
+  // que decir hasta el draft siguiente. Cuenta las capturas SEGUIDAS con el
+  // minimapa (de /leer, del modo solo y de la vigilancia); una que no lo
+  // tenga (la tabla del final, el draft siguiente) la devuelve.
+  let seguidasEnPartida = 0;
+  const anotarPartida = (si) => { seguidasEnPartida = si ? seguidasEnPartida + 1 : 0; };
   // El modo solo de la tablet (3.66.0) se aparta cuando el móvil lee o
   // manda su consejo: estos instantes dicen cuándo fue la última vez.
   let ultimaDelMovil = null, consejoDelMovil = null;
@@ -597,7 +606,9 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       try {
         const png = await capturar();
         if (final !== yo) return;
-        detectarInicio(final, leerPng(png), t, vigilancia.intervaloInicioMs);
+        const imgInicio = leerPng(png);
+        anotarPartida(enPartida(imgInicio));
+        detectarInicio(final, imgInicio, t, vigilancia.intervaloInicioMs);
         hablarPendientes(final, ahora());
       } catch (e) {
         if (final === yo && !final.fallosInicio++) registrar(`Buscando el inicio de la partida no consigo la captura (${String(e.message).split('\n')[0]}): sigo intentándolo.`);
@@ -615,6 +626,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       }
       if (final !== yo) return;
       const img = leerPng(png);
+      anotarPartida(enPartida(img));
       detectarInicio(final, img, t, vigilancia.intervaloMs);
       const f = fotogramaDe(img, final.anterior);
       final.anterior = f.pequena;
@@ -789,6 +801,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       }
       // ¿Ya en partida? (3.46.0): con esto la app cierra un draft a medias y el inicio se mide.
       const partida = enPartida(img);
+      anotarPartida(partida);
       if (partida) { leidas.seguidas += 1; if (leidas.seguidas === 1) leidas.dentro = tLeida; } else { leidas.fuera = tLeida; leidas.dentro = null; leidas.seguidas = 0; }
       // Rápida (3.66.0): en partida el modo solo solo pregunta si sigue en
       // partida (el minimapa, 13 ms); reconocer caras entonces podría meter lag.
@@ -895,7 +908,9 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     }
     if (req.method === 'GET' && ruta === '/consejo') {
       // Lo lee la APK de la tablet (3.62.0) para la burbuja y la notificación: sin `Origin`, desde 127.0.0.1 y con el código.
-      res.writeHead(200, cabeceras).end(JSON.stringify({ consejo: consejoActual, resumen: resumenActual }));
+      // En partida, sin consejo: la APK quita la burbuja (también una de antes de 3.69.3).
+      const escondida = seguidasEnPartida >= EN_PARTIDA_PARA_ESCONDER;
+      res.writeHead(200, cabeceras).end(JSON.stringify({ consejo: escondida ? null : consejoActual, resumen: resumenActual, enPartida: escondida }));
       return;
     }
     if (req.method === 'GET' && ruta === '/final') {

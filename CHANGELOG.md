@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.69.2
+
+- La burbuja de la tablet dice en qué fase del draft cree que estás:
+  «Fase de baneos» o «Fase de picks», delante de la segunda línea. Si no
+  coincide con lo que ves en el juego, algo no se está leyendo bien.
+- La burbuja ya no te tapa el juego: en cuanto la tablet ve que ha empezado
+  la partida (el minimapa, dos veces seguidas), se quita sola, y vuelve en
+  el draft siguiente. En Lector MLBB el botón de la burbuja lo dice
+  («ahora: escondida mientras juegas»).
+- Las dos cosas llegan cuando Lector MLBB se actualice (lo hace sola cuando
+  no está leyendo).
+
 ## 3.69.1
 
 - La base de datos de partidas ya está en marcha: en Ajustes → Partidas →

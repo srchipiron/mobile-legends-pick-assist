@@ -1156,3 +1156,25 @@ juega en el móvil, sin tablet aparte. `scripts/lector/solo.mjs`:
   `leerSaludDeLaApk`), en el parte (aviso con los de fallo) y en el botón de
   la APK. Pruebas en `en-tablet` y `app/lector`, tres mutaciones.
 
+## La fase en la burbuja (3.69.2)
+
+Pedido por Javi «para saber que está funcionando bien». La segunda línea del
+consejo empieza por «Fase de baneos» o «Fase de picks»: en la app
+(`consejoParaLaTablet`, por la `fase` del draft, también con los diez
+baneos puestos) y en la tablet sola (`consejoSolo`, por lo leído). Va en el
+texto y no en un campo nuevo para que la APK ya instalada lo pinte sin
+actualizarse. Pruebas en `app/lector`, `scripts/solo` y `en-tablet`, cuatro
+mutaciones.
+
+**Fuera mientras se juega (3.69.2)**, pedido por Javi («que no moleste
+mientras juegue»): en partida no hay sitio libre (minimapa, marcador,
+joystick, habilidades, y abajo en el centro va tu héroe) y la burbuja no
+tiene nada que decir hasta el draft siguiente. `servir.mjs` cuenta las
+capturas SEGUIDAS con el minimapa (`anotarPartida`: de `/leer`, del modo
+solo y de la vigilancia) y con `EN_PARTIDA_PARA_ESCONDER` (2, las mismas que
+cierran el draft) `GET /consejo` da `consejo: null` y `enPartida: true`; la
+primera captura sin minimapa (la tabla, el draft siguiente) lo devuelve. Una
+APK de antes la quita igual (sin consejo, se quita); la nueva dice
+«escondida mientras juegas». Prueba en `puente-lector` con una pantalla de
+juego real; cinco mutaciones.
+

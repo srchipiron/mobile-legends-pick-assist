@@ -7,13 +7,13 @@ import { mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync, exist
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { crearServidor, lectorEnHilos, leerCaptura, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS } from '../../scripts/lector/servir.mjs';
+import { crearServidor, lectorEnHilos, leerCaptura, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS, EN_PARTIDA_PARA_ESCONDER } from '../../scripts/lector/servir.mjs';
 import { guardarResultados } from '../../scripts/lector/resultado.mjs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { carasGuardadas, vaciosAliadoGuardados } from '../../scripts/lector/leer.mjs';
 import { PUERTO_LECTOR, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS } from '../../src/app/lector.js';
 import { capturaCompletaPng, pantallaDeFinal, VERDAD } from '../fixtures/juego/captura.mjs';
-import { leerPng } from '../../scripts/lector/png.mjs';
+import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
 import { miniaturasDe, pngQueQuepa, reducir, cuantizar, fotogramaDe, diferencia, TOPE_BASE64, CAMBIO_MINIMO } from '../../scripts/lector/miniatura.mjs';
 
 const caras = carasGuardadas();
@@ -520,6 +520,34 @@ test('el final de partida: la tabla con «DEFEAT» viene con el resultado, lo co
   eq(leerResultados(fichero), null, 'unos resultados de otra versión se usan');
   writeFileSync(fichero, JSON.stringify(guardarResultados(plantillasDeSerie())));
   eq(leerResultados(fichero)?.perdi.length, 1, 'los resultados guardados no se leen');
+});
+
+test('en partida la burbuja se quita: sin consejo tras dos capturas con el minimapa, y vuelve con la primera que no lo tiene (3.69.3)', async () => {
+  // Una pantalla de juego de verdad (160 px), ampliada como una captura de la tablet.
+  const peq = leerPng(readFileSync(new URL('../fixtures/juego/pantallas/juego-17.png', import.meta.url)));
+  const k = 5, ancho = peq.ancho * k, alto = peq.alto * k, rgba = new Uint8Array(ancho * alto * 4);
+  for (let y = 0; y < alto; y++) for (let x = 0; x < ancho; x++) { const o = (Math.floor(y / k) * peq.ancho + Math.floor(x / k)) * 4; rgba.set(peq.rgba.subarray(o, o + 4), (y * ancho + x) * 4); }
+  const juego = escribirPng({ ancho, alto, rgba });
+  let pantalla = png;
+  await conServidor({ capturar: async () => pantalla, enHilos: false }, async (base) => {
+    const consejo = async () => (await fetch(`${base}/consejo`)).json();
+    const leer = () => fetch(`${base}/leer`, { headers: cab }).then((r) => r.json());
+    await fetch(`${base}/consejo`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ consejo: { titulo: 'Rafaela 55%', detalle: 'Fase de picks' } }) });
+    await leer();
+    eq((await consejo()).consejo?.titulo, 'Rafaela 55%', 'en el draft no da el consejo');
+    pantalla = juego;
+    for (let i = 1; i < EN_PARTIDA_PARA_ESCONDER; i += 1) await leer();
+    eq((await consejo()).consejo?.titulo, 'Rafaela 55%', 'con una sola captura de partida ya la quita (un falso minimapa la haría parpadear)');
+    await leer();
+    const enJuego = await consejo();
+    eq(enJuego.consejo, null, 'en partida sigue dando el consejo: la burbuja tapa el juego');
+    eq(enJuego.enPartida, true, 'no dice por qué no hay consejo');
+    pantalla = pngTabla;
+    await leer();
+    const despues = await consejo();
+    eq(despues.consejo?.titulo, 'Rafaela 55%', 'acabada la partida no vuelve el consejo guardado');
+    eq(despues.enPartida, false);
+  });
 });
 
 await terminar('scripts/puente-lector');

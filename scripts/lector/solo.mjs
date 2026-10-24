@@ -85,8 +85,8 @@ export function acumularDraft(estado, lectura, ahora) {
 }
 
 const TEXTOS = {
-  es: { banea: (l) => `Banea: ${l}`, tuNumeroUno: (h) => `Tu nº1 ahora: ${h}`, luego: (l) => `Luego: ${l}` },
-  en: { banea: (l) => `Ban: ${l}`, tuNumeroUno: (h) => `Your no. 1 now: ${h}`, luego: (l) => `Then: ${l}` },
+  es: { banea: (l) => `Banea: ${l}`, tuNumeroUno: (h) => `Tu nº1 ahora: ${h}`, luego: (l) => `Luego: ${l}`, baneos: 'Fase de baneos', picks: 'Fase de picks' },
+  en: { banea: (l) => `Ban: ${l}`, tuNumeroUno: (h) => `Your no. 1 now: ${h}`, luego: (l) => `Then: ${l}`, baneos: 'Ban phase', picks: 'Pick phase' },
 };
 
 /**
@@ -111,12 +111,13 @@ export function consejoSolo({ datos, draft, linea, idioma = 'es' }) {
     if (!enemigos.length && !aliados.length) {
       const yaBaneados = new Set(baneos.map((h) => h.name));
       const lista = (rec.baneosSugeridos ?? []).map((b) => b.heroe?.name).filter((n) => n && !yaBaneados.has(n)).slice(0, 3);
-      if (lista.length && baneos.length < 10) return { titulo: t.banea(lista.join(' · ')), detalle: rec.eleccion?.heroe ? t.tuNumeroUno(rec.eleccion.heroe.name) : null };
+      // La fase delante en la segunda línea (3.69.2), igual que lo que manda el móvil.
+      if (lista.length && baneos.length < 10) return { titulo: t.banea(lista.join(' · ')), detalle: [t.baneos, rec.eleccion?.heroe ? t.tuNumeroUno(rec.eleccion.heroe.name) : null].filter(Boolean).join(' · ') };
     }
     const e = rec.eleccion;
     if (!e?.heroe) return null;
     const otros = rec.ranking.filter((r) => r.heroe.name !== e.heroe.name).slice(0, 2).map((r) => `${r.heroe.name} ${pct(r.p)}`);
-    return { titulo: `${e.heroe.name} ${pct(e.p)}`, detalle: otros.length ? t.luego(otros.join(' · ')) : null };
+    return { titulo: `${e.heroe.name} ${pct(e.p)}`, detalle: [t.picks, otros.length ? t.luego(otros.join(' · ')) : null].filter(Boolean).join(' · ') };
   } catch { return null; }
 }
 

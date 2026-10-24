@@ -25,6 +25,9 @@ import kotlin.concurrent.thread
  * siguientes, lo que la app del móvil manda al lector (`/consejo`). Y el
  * resumen de cada partida apuntada, como notificación.
  *
+ * Mientras juegas no sale (3.69.3): el lector deja de dar el consejo en
+ * cuanto ve el minimapa dos veces seguidas, y vuelve con el draft siguiente.
+ *
  * SEGURIDAD: la burbuja NO se puede tocar (FLAG_NOT_TOUCHABLE) y va con
  * opacidad 0,8, el máximo con el que Android deja pasar los toques al juego
  * de debajo (Android 12+). Solo enseña texto: no toca nada del juego.
@@ -81,7 +84,8 @@ class Burbuja(private val contexto: Context) {
         val esq = esquina(contexto)
         if (consejo == null || esq == "no" || !Settings.canDrawOverlays(contexto)) {
             quitar()
-            estado = when { !Settings.canDrawOverlays(contexto) -> "sin permiso"; esq == "no" -> "quitada"; else -> "esperando consejo" }
+            // En partida (3.69.3) el lector no da consejo a propósito: se quita para no tapar el juego.
+            estado = when { !Settings.canDrawOverlays(contexto) -> "sin permiso"; esq == "no" -> "quitada"; r.optBoolean("enPartida") -> "escondida mientras juegas"; else -> "esperando consejo" }
         } else {
             if (vista == null) poner(esq)
             if (vista != null) estado = "enseñando"

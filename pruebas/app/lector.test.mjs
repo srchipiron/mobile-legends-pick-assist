@@ -367,11 +367,15 @@ test('lo que se manda a la tablet (3.62.0): tu pick con los dos siguientes, el r
   const c = consejoParaLaTablet({ eleccion: ranking[1], ranking }, t);
   eq(c.titulo, 'Khufra 54%', 'la burbuja no dice tu pick fijado');
   ok(/Atlas 55%.*Franco 52%/.test(c.detalle), `los siguientes no salen por orden: ${c.detalle}`);
+  ok(c.detalle.startsWith('tablet.fase.picks · '), `la burbuja no dice que es la fase de picks: ${c.detalle}`);
   eq(consejoParaLaTablet({ eleccion: null, ranking }, t), null);
   // En baneos (3.65.5): a quién banear, y tu nº1 de recordatorio.
   const enBaneos = consejoParaLaTablet({ eleccion: ranking[0], ranking, fase: 'baneos', baneos: [{ heroe: { name: 'Hirara' } }, { heroe: { name: 'Belerick' } }, { heroe: { name: 'Eudora' } }, { heroe: { name: 'Saber' } }] }, t);
   ok(/banea/.test(enBaneos.titulo) && /Hirara · Belerick · Eudora/.test(enBaneos.titulo) && !/Saber/.test(enBaneos.titulo), `en baneos la burbuja no dice a quién banear: ${JSON.stringify(enBaneos)}`);
   ok(/tuNumeroUno/.test(enBaneos.detalle) && /Atlas/.test(enBaneos.detalle), 'en baneos no recuerda tu nº1');
+  ok(enBaneos.detalle.startsWith('tablet.fase.baneos · '), `la burbuja no dice que es la fase de baneos: ${enBaneos.detalle}`);
+  // Con los diez baneos puestos sigue siendo la fase de baneos aunque ya enseñe tu nº1.
+  eq(consejoParaLaTablet({ eleccion: ranking[1], ranking: [ranking[1]], fase: 'baneos', baneos: [] }, t).detalle, 'tablet.fase.baneos', 'con los diez baneos dice otra fase');
   eq(consejoParaLaTablet({ eleccion: ranking[1], ranking, fase: 'baneos', baneos: [] }, t).titulo, 'Khufra 54%', 'sin baneos sugeridos (ya están los diez), se calla');
   eq(consejoParaLaTablet({ eleccion: ranking[1], ranking, fase: 'picks', baneos: [{ heroe: { name: 'Hirara' } }] }, t).titulo, 'Khufra 54%', 'en picks dice a quién banear');
   const r = resumenParaLaTablet({ t: 7, pick: 'Khufra', gane: true, recomendados: ['Khufra'], estimacion: 0.54, ultimas: [{ gane: true }, { gane: false }] }, t);
