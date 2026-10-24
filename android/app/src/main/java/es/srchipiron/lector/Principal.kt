@@ -2,6 +2,8 @@ package es.srchipiron.lector
 
 import android.Manifest
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -54,6 +56,15 @@ class Principal : Activity() {
     /** Ya se pidió grabar al abrir esta pantalla (3.70.0): si dices que no, no se vuelve a pedir en bucle. */
     private var pedidoAlAbrir = false
 
+    /**
+     * Hay una petición de grabar abierta (3.72.1). Sin esto, la petición sola
+     * al abrir (que espera a mirar si hay versión nueva) y tu toque en
+     * «Empezar a leer» sacaban DOS diálogos de Android, uno encima del otro;
+     * pedir el segundo anula el permiso del primero y, al aceptar ese, Android
+     * daba un error de seguridad que cerraba la app.
+     */
+    private var pidiendo = false
+
     /** Un paso de la guía: su marca, su texto y, si hace falta, su botón. */
     private inner class Paso(val texto: String, boton: String? = null, accion: (() -> Unit)? = null) {
         val fila = LinearLayout(this@Principal).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(6), 0, dp(6)) }
@@ -81,6 +92,10 @@ class Principal : Activity() {
     private lateinit var apagarSolo: Button
     /** «Enseña al lector» (3.71.0): lo que no reconoció en tu última partida. */
     private lateinit var corregir: LinearLayout
+    /** El aviso de un cierre (3.72.1), arriba del todo y con «Copiar». */
+    private lateinit var aviso: LinearLayout
+    private lateinit var avisoTexto: TextView
+    private var avisoCompleto = ""
     private var correccionId: String? = null
     @Volatile private var nueva: Actualizar.Nueva? = null
     @Volatile private var movilLee = false
@@ -123,6 +138,29 @@ class Principal : Activity() {
         })
         actualizar = texto(14f, Color.rgb(100, 210, 255)).apply { visibility = View.GONE }
         izquierda.addView(actualizar)
+        // Si la app se cerró por un fallo (3.72.1): lo primero que se ve, con el
+        // detalle para copiarlo y pegarlo en el chat (sin ordenador no hay logcat).
+        aviso = tarjeta().apply {
+            visibility = View.GONE
+            background = GradientDrawable().apply { setColor(Color.rgb(58, 18, 18)); cornerRadius = dp(14).toFloat(); setStroke(dp(2), Color.rgb(255, 69, 58)) }
+        }
+        aviso.addView(titulo("La app se cerró por un fallo").apply { setTextColor(Color.rgb(255, 105, 97)) })
+        avisoTexto = texto(13f, Color.WHITE).apply { typeface = Typeface.MONOSPACE }.also { aviso.addView(it) }
+        aviso.addView(texto(13f, Color.LTGRAY).apply { text = "No vuelvo a pedir grabar sola hasta que toques «Empezar a leer». Toca «Copiar» y pégalo en el chat para arreglarlo." })
+        val filaAviso = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        filaAviso.addView(Button(this).apply {
+            text = "Copiar"
+            setOnClickListener {
+                getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Fallo de Lector MLBB", avisoCompleto))
+                text = "Copiado"
+            }
+        }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        filaAviso.addView(Button(this).apply {
+            text = "Ya está"
+            setOnClickListener { getSharedPreferences("lector", MODE_PRIVATE).edit().putLong("fallosVistos", System.currentTimeMillis()).apply(); aviso.visibility = View.GONE }
+        }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        aviso.addView(filaAviso)
+        izquierda.addView(aviso, separada())
         // Arriba del todo, donde se ve al abrir desde la notificación de la partida (3.71.0).
         corregir = tarjeta().apply { visibility = View.GONE }
         izquierda.addView(corregir, separada())
@@ -234,11 +272,15 @@ class Principal : Activity() {
         thread(isDaemon = true) {
             val n = try { Actualizar.sola(this) } catch (e: Throwable) { null }
             nueva = n
+            val fallo = falloSinVer()
             runOnUiThread {
                 refrescar()
+                pintarAviso(fallo)
                 // Abrir y jugar (3.70.0): sin versión nueva que instalar, pide grabar
                 // nada más abrir (Android exige ese toque cada vez) y luego abre el juego.
-                if (n == null && !Lector.grabando && !pedidoAlAbrir && !isFinishing) { pedidoAlAbrir = true; alternar() }
+                // Con un fallo sin ver, NO (3.72.1): si el fallo es al empezar a grabar,
+                // pedirlo solo era un bucle de abrir y cerrarse.
+                if (n == null && fallo == null && !Lector.grabando && !pedidoAlAbrir && !isFinishing) { pedidoAlAbrir = true; alternar() }
             }
         }
     }
@@ -251,7 +293,9 @@ class Principal : Activity() {
         if (Nodo.arrancado && System.currentTimeMillis() / 1000 % 3 == 0L) thread(isDaemon = true) {
             movilLee = lecturasDelLector() > 0
             val c = pedirCorreccion()
-            runOnUiThread { if (!isFinishing) pintarCorreccion(c) }
+            // Un fallo al empezar a grabar no cierra la app (3.72.1): el aviso sale sin tener que volver a abrirla.
+            val f = falloSinVer()
+            runOnUiThread { if (!isFinishing) { pintarCorreccion(c); pintarAviso(f) } }
         }
         reloj.postDelayed({ tic() }, 1000)
     }
@@ -364,14 +408,44 @@ class Principal : Activity() {
         corregir.visibility = View.VISIBLE
     }
 
+    /**
+     * Lo que falló desde la última vez que tocaste «Ya está» (3.72.1): el
+     * cierre que apunta Android, la excepción de la app (fallo.txt), la de
+     * empezar a grabar (fallo-grabar.txt) y si Node se paró. null si nada.
+     */
+    private fun falloSinVer(): String? {
+        val visto = getSharedPreferences("lector", MODE_PRIVATE).getLong("fallosVistos", 0)
+        fun fichero(n: String) = java.io.File(filesDir, n).takeIf { it.exists() && it.lastModified() > visto }?.readText()?.trim()
+        val partes = listOfNotNull(
+            Salidas.falloDesde(this, visto)?.let { "Android: $it" },
+            fichero("salida-nodo.txt"),
+            fichero("fallo-grabar.txt")?.let { "Al empezar a grabar:\n$it" },
+            fichero("fallo.txt")?.let { "En la app:\n$it" },
+        )
+        if (partes.isEmpty()) return null
+        val version = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "?" }
+        return (listOf("Lector MLBB $version · Android ${Build.VERSION.SDK_INT} · ${Build.MANUFACTURER} ${Build.MODEL}") + partes).joinToString("\n\n")
+    }
+
+    private fun pintarAviso(fallo: String?) {
+        if (fallo == null) { aviso.visibility = View.GONE; return }
+        avisoCompleto = fallo
+        // En pantalla, lo justo; «Copiar» lleva el detalle entero.
+        avisoTexto.text = fallo.lines().take(12).joinToString("\n")
+        aviso.visibility = View.VISIBLE
+    }
+
     private fun alternar() {
-        if (Lector.grabando) startService(Intent(this, Lector::class.java).setAction(Lector.PARAR))
-        else @Suppress("DEPRECATION") startActivityForResult(getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent(), PEDIR_GRABAR)
+        if (Lector.grabando) { startService(Intent(this, Lector::class.java).setAction(Lector.PARAR)); return }
+        if (pidiendo) return
+        pidiendo = true
+        @Suppress("DEPRECATION") startActivityForResult(getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent(), PEDIR_GRABAR)
     }
 
     @Deprecated("Activity sin AndroidX")
     override fun onActivityResult(peticion: Int, resultado: Int, datos: Intent?) {
         super.onActivityResult(peticion, resultado, datos)
+        if (peticion == PEDIR_GRABAR) pidiendo = false
         if (peticion != PEDIR_GRABAR || resultado != RESULT_OK || datos == null) return
         startForegroundService(Intent(this, Lector::class.java).setAction(Lector.EMPEZAR)
             .putExtra(Lector.CODIGO_RESULTADO, resultado).putExtra(Lector.DATOS, datos))

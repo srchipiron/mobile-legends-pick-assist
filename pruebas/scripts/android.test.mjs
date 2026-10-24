@@ -72,4 +72,22 @@ test('el lector de la tablet solo llama a donde debe (3.70.0): su puerto interno
   ok(esInterno('http://127.0.0.1:1234') && !esInterno('http://192.168.1.5:1234'), 'la captura podría pedirse fuera de 127.0.0.1');
 });
 
+test('un fallo al empezar a grabar no cierra la app ni entra en bucle (3.72.1): se recoge, se enseña arriba con «Copiar» y no se pide grabar sola', () => {
+  const lector = readFileSync(join(KOTLIN, 'Lector.kt'), 'utf8');
+  const principal = readFileSync(join(KOTLIN, 'Principal.kt'), 'utf8');
+  // Todo lo de empezar (primer plano, la proyección, la pantalla virtual, la burbuja) dentro del try.
+  const empezar = lector.slice(lector.indexOf('EMPEZAR -> try {'), lector.indexOf('PARAR ->'));
+  ok(empezar.includes('startForeground(') && empezar.includes('empezar(codigo, datos)'), 'empezar a grabar va fuera del try: un fallo cierra la app');
+  ok(/catch \(e: Throwable\)[\s\S]*fallo-grabar\.txt[\s\S]*stopSelf\(\)/.test(empezar), 'el fallo al empezar a grabar no se guarda o el servicio sigue');
+  // La petición sola al abrir, solo sin fallo sin ver.
+  ok(/if \(n == null && fallo == null && !Lector\.grabando && !pedidoAlAbrir/.test(principal), 'con un fallo sin ver, la app vuelve a pedir grabar sola al abrirse (bucle)');
+  // Una sola petición de grabar a la vez: dos diálogos anulaban el permiso del primero y la app se cerraba.
+  const alternar = principal.slice(principal.indexOf('private fun alternar()'), principal.indexOf('override fun onActivityResult'));
+  ok(/if \(pidiendo\) return\s+pidiendo = true/.test(alternar), 'se puede pedir grabar dos veces a la vez');
+  ok(/if \(peticion == PEDIR_GRABAR\) pidiendo = false/.test(principal), 'tras contestar, no se puede volver a pedir');
+  ok(/if \(grabando\) Unit/.test(empezar), 'un segundo permiso para la grabación que ya va');
+  for (const f of ['fallo-grabar.txt', 'fallo.txt', 'salida-nodo.txt']) ok(principal.includes(`fichero("${f}")`), `el aviso no enseña ${f}`);
+  ok(/Salidas\.falloDesde\(this, visto\)/.test(principal) && /setPrimaryClip/.test(principal) && /fallosVistos/.test(principal), 'el aviso no lee el cierre de Android, no se puede copiar o no se puede quitar');
+});
+
 await terminar('scripts/android');

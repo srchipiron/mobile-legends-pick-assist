@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.72.1
+
+- Lector MLBB ya no se cierra al aceptar «Pantalla completa». Al abrir la
+  app pedía grabar sola y, si a la vez tocabas «Empezar a leer», salían dos
+  peticiones de Android una encima de otra; al aceptar, Android daba un error
+  y cerraba la app. Ahora solo sale una.
+- Si algo falla al empezar a grabar, la app ya no se cierra: lo dice arriba,
+  en rojo, con un botón «Copiar» para pegármelo en el chat.
+- Después de un fallo, la app no vuelve a pedir grabar sola al abrirla. Así
+  ya no entra en el bucle de abrirse y cerrarse.
+
 ## 3.72.0
 
 - El nº1 ya no es tu héroe solo porque lo juegas. Antes, cualquier héroe

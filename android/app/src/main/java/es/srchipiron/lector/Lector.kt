@@ -95,14 +95,25 @@ class Lector : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            EMPEZAR -> {
+            EMPEZAR -> try {
                 // Android 14: primero en primer plano con el tipo de grabar pantalla, luego la grabación.
                 val notificacion = notificacion()
                 if (Build.VERSION.SDK_INT >= 29) startForeground(1, notificacion, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
                 else startForeground(1, notificacion)
                 val datos: Intent? = if (Build.VERSION.SDK_INT >= 33) intent.getParcelableExtra(DATOS, Intent::class.java) else @Suppress("DEPRECATION") intent.getParcelableExtra(DATOS)
                 val codigo = intent.getIntExtra(CODIGO_RESULTADO, Activity.RESULT_CANCELED)
-                if (datos != null && codigo == Activity.RESULT_OK) empezar(codigo, datos) else { estado = "Sin permiso para grabar la pantalla"; stopSelf() }
+                // Ya grabando (3.72.1): un segundo permiso no se usa. Empezar otra vez
+                // paraba la grabación buena para probar uno que Android ya pudo anular.
+                if (grabando) Unit
+                else if (datos != null && codigo == Activity.RESULT_OK) empezar(codigo, datos) else { estado = "Sin permiso para grabar la pantalla"; stopSelf() }
+            } catch (e: Throwable) {
+                // Un fallo al empezar a grabar (3.72.1) ya no cierra la app: se dice
+                // en la pantalla, con el detalle para copiarlo, y se deja de intentar.
+                estado = "No se pudo empezar a grabar: ${e.javaClass.simpleName}: ${e.message ?: ""}".take(300)
+                try { java.io.File(filesDir, "fallo-grabar.txt").writeText(android.util.Log.getStackTraceString(e).take(4000)) } catch (x: Throwable) {}
+                try { parar() } catch (x: Throwable) {}
+                try { stopForeground(STOP_FOREGROUND_REMOVE) } catch (x: Throwable) {}
+                stopSelf()
             }
             PARAR -> {
                 parar(); stopForeground(STOP_FOREGROUND_REMOVE); stopSelf()

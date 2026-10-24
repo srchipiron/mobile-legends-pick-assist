@@ -1324,3 +1324,17 @@ correcciones, que pasaban los dos por la app del móvil.
 - NO hace, a propósito: aprender de sus PROPIAS lecturas sin que nadie diga
   la verdad (ver `descartados.md`). Lo que se aprende lo dice una persona.
 
+## Una sola petición de grabar y el fallo arriba (3.72.1)
+
+«Al darle a pantalla completa la app se cierra», y al abrirla otra vez, igual.
+Causa más probable (ver errores.md): dos peticiones de grabar a la vez, la sola
+de 3.70.0 y el toque. `Principal.pidiendo` deja una sola, `Lector` no usa un
+segundo permiso si ya graba, y el arranque de la grabación va en `try`
+(`fallo-grabar.txt`, el servicio se para en vez de tirar la app). El aviso
+rojo de arriba (`falloSinVer`: `Salidas.falloDesde`, `salida-nodo.txt`,
+`fallo-grabar.txt`, `fallo.txt`, posteriores a «Ya está», `fallosVistos`)
+lleva «Copiar» con versión, Android y modelo, y mientras se vea no se pide
+grabar sola. Pruebas de forma en `android.test` (cinco mutaciones). Antes de
+tocar la grabación se probó el lector entero con Node 18 (el del APK) y una
+APK de pega con capturas reales: draft, partida, voz y corrección van bien.
+

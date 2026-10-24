@@ -1123,4 +1123,18 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   encontró la revisión de seguridad antes de publicar. Lección: «contesta como
   el mío» no es «es el mío»; antes de dar un secreto a quien se descubre en la
   red, que demuestre que ya lo tiene, sin que viaje.
+- **Lector MLBB se cerraba al aceptar grabar (3.70.0 → 3.72.1)**: 3.70.0 pidió
+  grabar sola al abrir, pero DESPUÉS de mirar si había versión nueva (un par
+  de segundos de red). Si entretanto tocabas «Empezar a leer», salían dos
+  diálogos de Android uno encima de otro. Pedir el segundo anula el permiso
+  del primero, y `getMediaProjection` con un permiso anulado lanza
+  `SecurityException` en `onStartCommand`, sin `catch`: la app se cerraba, y
+  al abrirla volvía a pedirlo sola, en bucle. Javi: «al darle la app se
+  cierra». No se reprodujo aquí (no hay Android); el lector con Node 18 y
+  capturas reales sí se probó entero y no falla. Hoy hay una sola petición a
+  la vez (`pidiendo`), un segundo permiso no se usa si ya graba, el arranque
+  va en `try` (`fallo-grabar.txt`) y la app enseña ARRIBA el último fallo con
+  «Copiar» y no pide sola tras uno. Lección: lo automático que compite con un
+  toque necesita su cerrojo, y en un aparato sin logcat el motivo de un
+  cierre tiene que salir arriba y copiable, no en la letra pequeña.
 
