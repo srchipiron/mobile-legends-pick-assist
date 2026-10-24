@@ -17,6 +17,7 @@ paths:
   - "src/app/componentes/Comunidad.jsx"
   - "src/motor/comunidad.js"
   - "scripts/medir-comunidad.mjs"
+  - "scripts/montar-supabase.mjs"
   - ".github/workflows/partidas.yml"
 ---
 
@@ -202,6 +203,15 @@ que se guarda: `docs/comunidad.md`.
   `t` con «.0» daba un error genérico. Aceptado y dicho en la guía: sin
   cuentas, cualquiera puede subir partidas falsas, y bajar la comunidad
   entera muchas veces gasta la transferencia del plan gratuito.
+- **Montarla sin el panel** (`scripts/montar-supabase.mjs`): con
+  `SUPABASE_ACCESS_TOKEN` (un secreto del entorno, nunca en el chat), crea o
+  reutiliza el proyecto, espera a `ACTIVE_HEALTHY`, pega el esquema por
+  `/database/query`, elige SOLO una clave que pase `clavePublicable`
+  (`api-keys?reveal=false`), comprueba `partidas_comunidad` con ella y
+  escribe `public/comunidad.json`. El token solo va a api.supabase.com en
+  la cabecera y no sale en ningún error. Prueba con una API de gestión de
+  pega, siete mutaciones. Publicar comunidad.json cambia lo que hace la app:
+  sube la versión.
 - **No medible desde aquí**: el Supabase de verdad (la prueba es un Postgres
   con sus roles). Si el primer «Guardar mis partidas» dice «no acepta la
   clave pública», es la clave o el esquema sin pegar.

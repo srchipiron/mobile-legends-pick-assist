@@ -23,7 +23,25 @@ móvil, en unos diez minutos.
   botón; mientras tanto la app sigue funcionando y las partidas esperan en
   el móvil.
 
-## Paso a paso
+## La forma corta: que lo monte Claude
+
+1. Crea la cuenta en <https://supabase.com> (entra con GitHub). Es lo único
+   que exige iniciar sesión.
+2. *Account* (tu foto, arriba a la derecha) → *Access Tokens* → *Generate
+   new token*. Ponle de nombre `pick-assist` y, si deja elegir, que caduque
+   en un día.
+3. En la app de Claude, en el menú del entorno de la nube (la barra del
+   título de la sesión) → *Edit*: añádelo como secreto o variable de
+   entorno con el nombre `SUPABASE_ACCESS_TOKEN`. **No lo pegues en el
+   chat.**
+4. Abre una sesión nueva (el secreto se carga al empezar) y pide «monta la
+   base de datos de Supabase». Claude corre `node scripts/montar-supabase.mjs`:
+   crea el proyecto `pick-assist` en Frankfurt, pega el esquema, saca la
+   clave publicable, comprueba que contesta y publica `public/comunidad.json`.
+5. Cuando acabe, **borra el token** en *Access Tokens* y quítalo del
+   entorno: da acceso a toda tu cuenta de Supabase y ya no hace falta.
+
+## Paso a paso, a mano
 
 1. **Crea la cuenta.** Abre <https://supabase.com> → *Start your project* →
    entra con tu cuenta de GitHub.
