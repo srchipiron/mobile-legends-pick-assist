@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.69.1
+
+- La base de datos de partidas ya está en marcha: en Ajustes → Partidas →
+  «Base de datos de partidas», toca «Guardar mis partidas» y se suben
+  todas; desde entonces, cada partida nueva se sube sola.
+- Copia tu clave de jugador a tus notas: con ella recuperas tus partidas en
+  otro móvil.
+
 ## 3.69.0
 
 - Base de datos de partidas: tus partidas se pueden guardar junto a las de

@@ -899,7 +899,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .envio-auto { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--glass); box-shadow: var(--brillo); }
 .envio-auto a { color: var(--gold); }
 /* La base de datos de partidas (3.69.0): tu clave en letra fija, que se pueda leer y copiar a mano. */
-.comunidad { margin-top: 0; }
+.comunidad { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--glass); box-shadow: var(--brillo); }
 .comunidad-clave { font-size: 12px; word-break: break-all; }
 .comunidad-informe { display: flex; flex-direction: column; gap: 6px; }
 .admin-basedatos { margin-top: 4px; }

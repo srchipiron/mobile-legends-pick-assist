@@ -46,7 +46,7 @@ export function Comunidad({ comunidad, perfil, onImportar, t = tPorDefecto }) {
   };
 
   return (
-    <section className="envio-auto comunidad">
+    <section className="comunidad">
       <strong>{t('comunidad.titulo')}</strong>
       {comunidad.activo ? (
         <>
