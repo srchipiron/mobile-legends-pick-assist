@@ -270,6 +270,29 @@ await prueba('un nombre guardado que ya no existe se limpia, y el rival fantasma
   await contexto.close();
 });
 
+await prueba('tocar un héroe en Meta abre su ficha, y tocar otro de sus listas abre la del otro (3.67.0)', async () => {
+  const { contexto, pagina, errores } = await con(PICKS);
+  await abrirAjustes(pagina);
+  await pagina.locator('.more .tools .reset').last().click(); await pagina.waitForTimeout(300);
+  const primero = pagina.locator('.meta-ficha').first();
+  const nombre = (await primero.textContent()).trim();
+  await primero.click(); await pagina.waitForTimeout(300);
+  const ficha = pagina.locator('[role=dialog]');
+  ok((await ficha.innerText()).includes(nombre), `no se abre la ficha de ${nombre}`);
+  // Los títulos van en mayúsculas por CSS: innerText da lo que se ve.
+  for (const titulo of ['Le gana a', 'Le ganan', 'Combina mejor con', 'Combina peor con']) ok((await ficha.innerText()).toLowerCase().includes(titulo.toLowerCase()), `la ficha no tiene «${titulo}»`);
+  eq(await ficha.locator('.ficha-otro').count(), 20, 'la ficha no lleva cinco en cada lista');
+  ok(/Winrate \d+,\d% · pick/.test(await ficha.innerText()), 'la ficha no dice el winrate (con coma decimal)');
+  const otro = ficha.locator('.ficha-otro .meta-nombre').first();
+  const nombreOtro = (await otro.textContent()).trim();
+  await ficha.locator('.ficha-otro').first().click(); await pagina.waitForTimeout(300);
+  eq((await pagina.locator('[role=dialog] .sheet-head strong').first().textContent())?.trim(), nombreOtro, `tocar ${nombreOtro} no abre su ficha`);
+  await pagina.keyboard.press('Escape'); await pagina.waitForTimeout(300);
+  eq(await pagina.locator('[role=dialog]').count(), 0, 'Escape no cierra la ficha');
+  ok(!errores.length, `errores: ${errores}`);
+  await contexto.close();
+});
+
 await prueba('la hoja Meta enseña la tier list por línea, con la tuya primero, y se cierra con Escape', async () => {
   const { contexto, pagina, errores } = await con(PICKS);
   await pagina.locator('.more summary').click(); await pagina.waitForTimeout(200);

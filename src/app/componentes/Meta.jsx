@@ -22,7 +22,7 @@ const POR_LINEA = 12;
  * trae las dos y la corta es coherente (src/motor/ventana.js): un héroe que
  * sube tras un parche se ve aquí antes de que la media de 7 días lo recoja.
  */
-export function Meta({ datos, linea, onCerrar, t = tPorDefecto }) {
+export function Meta({ datos, linea, onFicha = null, onCerrar, t = tPorDefecto }) {
   const { stats, ventana, mediaDelRango, fuerza, relaciones } = datos.meta;
   // De qué rango sale la fuerza: el tuyo, salvo Gloria recién vaciada por un
   // reinicio de temporada (motor/ventana.js, elegirRango).
@@ -54,6 +54,7 @@ export function Meta({ datos, linea, onCerrar, t = tPorDefecto }) {
         {conDeriva && <p className="nota">{t('meta.deriva', { dias: ventana.dias })}</p>}
         {tiers && <p className="nota">{t('meta.tierPista')}</p>}
         {datos.meta.winrateLinea && Object.keys(datos.meta.winrateLinea).length > 0 && <p className="nota">{t('meta.wrLineaPista')}</p>}
+        {onFicha && <p className="nota">{t('meta.fichaPista')}</p>}
         <EstaSemana datos={datos} linea={linea} t={t} />
         {lineas.map(({ linea: l, filas }) => (
           <section key={l} className="meta-linea">
@@ -65,7 +66,8 @@ export function Meta({ datos, linea, onCerrar, t = tPorDefecto }) {
                 <div key={f.heroe.name} className={`meta-fila${i === 0 ? ' top' : ''}`}>
                   <span className="meta-pos">{i + 1}</span>
                   <Cara heroe={f.heroe} className="grid-cara" tam={30} alt="" />
-                  <span className="meta-nombre">{f.heroe.name}</span>
+                  {/* Tocar el nombre abre su ficha (3.67.0). */}
+                  {onFicha ? <button className="meta-nombre meta-ficha" onClick={() => onFicha(f.heroe.name)}>{f.heroe.name}</button> : <span className="meta-nombre">{f.heroe.name}</span>}
                   <span className={`meta-tier${tiers?.[f.heroe.name] ? ` tier-${tiers[f.heroe.name]}` : ''}`}>{tiers?.[f.heroe.name] ?? ''}</span>
                   <span className="meta-wr">{pct(f.stat.winRate)}%</span>
                   <span className={`meta-delta${delta == null ? '' : delta > 0.001 ? ' sube' : delta < -0.001 ? ' baja' : ''}`}>

@@ -8,6 +8,28 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.68.0
+
+- La app aprende de cada partida que apuntas: junto a la estimación del
+  draft sale «Para ti: 63%», lo que de verdad te espera a ti con ese pick.
+  Con tus partidas se ve que ganas más de lo que da el modelo (62% de
+  media, el modelo decía 54%), y el número se ajusta a eso. Se activa a
+  partir de 30 partidas con estimación y se recalcula solo con cada una.
+- El orden de las recomendaciones no cambia por esto: lo que adapta tus
+  picks a tu juego sigue siendo tu maestría, que también aprende de cada
+  partida apuntada.
+
+## 3.67.0
+
+- Cada héroe tiene su ficha. En Ajustes → Meta, toca un nombre y verás:
+  - su winrate, pick y ban en tu rango, y su winrate en cada línea que
+    juega;
+  - a quién gana y quién le gana;
+  - con quién combina mejor y peor;
+  - su tier y cómo se ha movido esta semana.
+  Toca cualquier héroe de sus listas para ir a su ficha. Son los mismos
+  datos con los que la app decide.
+
 ## 3.66.0
 
 - Lector MLBB ya funciona sin el móvil: decide ella sola y te dice el pick

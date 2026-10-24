@@ -409,3 +409,23 @@ NUEVA; sin ella, «nuevo» sale una vez) la versión cuyas novedades se
 abrieron, y el botón de la versión lleva `.pie-nuevo` hasta abrirlas. No hay
 ventana: con un draft delante no tapa nada. Prueba en `novedades.e2e`, dos
 mutaciones.
+
+**La ficha de un héroe (3.67.0)**, de la lista para «la app definitiva para
+todo aficionado».
+- `fichaDeHeroe` (draft.js) no mide nada nuevo. Son las matrices de cruces
+  y parejas, las estadísticas del rango de la fuerza, `winrateEnLinea`,
+  `tiersVigentes` y `movimientosDelMeta`, `POR_FICHA` (5) por lista.
+- Las parejas, solo con quien juega alguna línea distinta: dos que solo
+  juegan la misma no coinciden en un draft.
+- Se abre tocando el nombre en Meta (`.meta-ficha`). Tocar otro de sus
+  listas cambia la ficha sin cerrar la hoja.
+- **De hoja a hoja** (`deHojaAHoja` en App.jsx): la hoja que se cierra
+  retira su entrada del historial con un `history.back()` que llega DESPUÉS
+  de abrir la nueva, y la cerraba al instante. Ahora se cierra, se espera
+  al `popstate` (o 400 ms sin historial) y se abre. Cualquier botón que pase
+  de una hoja a otra va por ahí.
+- Los porcentajes van como NÚMERO en los parámetros de `t()` y el «%» en la
+  frase (`ficha.pct`). Con «43.3%» de parámetro, el traductor no pone la
+  coma decimal.
+- Pruebas en `motor/ficha` (propiedades sobre los datos reales) y
+  `hojas.e2e`. Cuatro mutaciones.

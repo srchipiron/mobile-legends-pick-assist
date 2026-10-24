@@ -428,4 +428,33 @@ test('el tope de partidas no se lleva las de tu historial del juego (3.60.8)', (
   eq(ps.length, 10, 'el tope deja de contar');
 });
 
+test('tu ajuste (3.68.0): con pocas partidas no se activa; aprende tu ventaja; prudente; nunca da la vuelta al orden', async () => {
+  const { ajustePersonal, conTuHistorial, MINIMO_AJUSTE } = await import('../../src/motor/registro.js');
+  // Un generador fijo: partidas con estimación y resultado.
+  let s = 7; const rnd = () => { s = (s * 1103515245 + 12345) % 2147483648; return s / 2147483648; };
+  const lg = (q) => Math.log(q / (1 - q)), sig = (x) => 1 / (1 + Math.exp(-x));
+  const partidas = (n, real) => Array.from({ length: n }, (_, i) => { const e = 0.4 + rnd() * 0.2; return { t: 1000 + i, pick: 'Atlas', estimacion: e, gane: rnd() < real(e) }; });
+  const pocas = ajustePersonal(partidas(MINIMO_AJUSTE - 1, (e) => e));
+  ok(!pocas.activo && pocas.faltan === 1, `con ${MINIMO_AJUSTE - 1} partidas se activa: ${JSON.stringify(pocas)}`);
+  eq(conTuHistorial(0.55, pocas), 0.55, 'sin ajuste cambia el número');
+  // Gana mucho más de lo que dice el modelo (+1 en log-odds): el ajuste lo aprende.
+  const mejor = ajustePersonal(partidas(400, (e) => sig(lg(e) + 1)));
+  ok(mejor.activo && mejor.a > 0.5, `no aprende que ganas más: ${JSON.stringify(mejor)}`);
+  ok(conTuHistorial(0.5, mejor) > 0.6, 'tu número no sube');
+  // Bien calibrado: se queda cerca de «tal cual».
+  const igual = ajustePersonal(partidas(400, (e) => e));
+  ok(Math.abs(igual.a) < 0.4 && Math.abs(igual.b - 1) < 0.5, `con el modelo bien calibrado se mueve: ${JSON.stringify(igual)}`);
+  // Prudente: con 30 partidas todas ganadas no se va al 100%.
+  const racha = ajustePersonal(Array.from({ length: 30 }, (_, i) => ({ t: i, pick: 'A', estimacion: 0.5, gane: true })));
+  ok(conTuHistorial(0.5, racha) < 0.85, `30 victorias seguidas lo llevan a ${conTuHistorial(0.5, racha)}`);
+  // Nunca da la vuelta: más estimación, más para ti.
+  for (const a of [mejor, igual, racha, { activo: true, a: 0, b: -3 }]) {
+    const b = { ...a, b: Math.max(0.05, a.b ?? 1) };
+    ok(conTuHistorial(0.6, b) > conTuHistorial(0.4, b), 'el ajuste da la vuelta al orden');
+  }
+  ok(ajustePersonal(Array.from({ length: 40 }, (_, i) => ({ t: i, pick: 'A', estimacion: 0.5 + (i % 2 ? 0.1 : -0.1), gane: i % 2 === 0 }))).b >= 0.05, 'un b negativo pasa');
+  // Las previas (tu historial del juego, sin estimación) no cuentan.
+  eq(ajustePersonal([...partidas(20, (e) => e), ...Array.from({ length: 40 }, (_, i) => ({ t: 5000 + i, pick: 'A', gane: true, previa: true }))]).activo, false, 'cuentan las previas');
+});
+
 await terminar('motor/registro');

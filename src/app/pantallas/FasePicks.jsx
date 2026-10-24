@@ -15,6 +15,7 @@ import { Tarjeta } from '../componentes/Tarjeta.jsx';
 import { useDeslizar } from '../componentes/useDeslizar.js';
 import { BotonLector, BotonVoz } from '../componentes/BotonLector.jsx';
 import { LectorTablet } from '../componentes/LectorTablet.jsx';
+import { conTuHistorial } from '../../motor/registro.js';
 import { ConsejoEquipo } from '../componentes/ConsejoEquipo.jsx';
 import { Leyenda } from '../componentes/Desglose.jsx';
 import { AvisoLegal } from '../componentes/AvisoLegal.jsx';
@@ -35,7 +36,7 @@ import { HORAS_DATOS_VIEJOS } from '../componentes/Pie.jsx';
  * @param d.abrir       abre una hoja: 'enemigos' | 'aliados' | 'yo' | 'maestria' | 'historial' | 'perfil' | 'meta' | 'linea' | 'apuntar' | { build }
  * @param d.onResultado (gane) apunta la partida con tu pick fijado, desde el recordatorio
  */
-export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, vozCallada = false, onVoz = null, lectorTablet = null, onLectorTablet = null, onAdministracion = null, pie }) {
+export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, vozCallada = false, onVoz = null, lectorTablet = null, onLectorTablet = null, onAdministracion = null, ajuste = null, pie }) {
   const { enemigos, aliados, baneos } = equipo;
   const { ranking, rival, cov, pool, analisis, composicion, consejos, yo } = rec;
   const rivalAuto = rival.marcado ? null : rival.nombre;
@@ -225,7 +226,11 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
             y que es un modelo. */}
         <Analisis frases={analisis} t={t} />
         {yo && (aliados.length || enemigos.length) ? (
-          <p className="estimacion-nota">{t('estimacion.resumen', { yo: yo.name, n: aliados.length + enemigos.length + 1 })}</p>
+          <p className="estimacion-nota">
+            {t('estimacion.resumen', { yo: yo.name, n: aliados.length + enemigos.length + 1 })}
+            {/* Con tu historial (3.68.0): el número del modelo, ajustado a lo que de verdad te pasa. */}
+            {ajuste?.activo && rec.eleccion?.p != null && <span className="estimacion-tuya" title={t('estimacion.tuyaPorque', { n: ajuste.n })}>{t('estimacion.tuya', { pct: Math.round(conTuHistorial(rec.eleccion.p, ajuste) * 100) })}</span>}
+          </p>
         ) : null}
         {fueraDeMios && <p className="fuera-de-mios">{t('filtro.fueraDeMios', { nombre: fueraDeMios.heroe.name, pct: Math.round(fueraDeMios.p * 100) })}</p>}
 

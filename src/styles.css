@@ -957,6 +957,9 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .changelog ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.4; }
 
 .estimacion-nota { margin: 0 0 8px; font-size: 11px; color: var(--muted); line-height: 1.3; }
+/* Con tu historial (3.68.0): lo que te espera a ti, al lado del número del modelo. */
+.estimacion-tuya { color: var(--gold); font-weight: 600; }
+.estimacion-tuya::before { content: ' · '; color: var(--muted); font-weight: 400; }
 .equipo-vistos { font-size: 11px; color: var(--muted); font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .legend-nota { color: var(--muted); }
 /* El foco va a la hoja al abrirse (teclado y lector): sin anillo visible. */
@@ -1017,6 +1020,18 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px;
 }
 .meta-fila.top .meta-nombre { color: var(--gold); font-weight: 600; }
+/* El nombre en Meta abre la ficha (3.67.0): un botón que no parece botón. */
+.meta-ficha { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; min-height: 32px; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+/* La ficha de un héroe (3.67.0). */
+.ficha-cab { display: flex; gap: 14px; align-items: center; }
+.ficha-cara { width: 64px; height: 64px; border-radius: var(--r); flex: none; }
+.ficha-linea-dato { margin: 0 0 4px; font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 600; }
+.ficha-seccion { margin-top: 8px; }
+.ficha-lista { list-style: none; margin: 0; padding: 0; }
+.ficha-otro { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%; min-height: 40px; background: none; border: 0; border-bottom: 1px solid var(--line); color: var(--text); font: inherit; font-size: 14px; text-align: left; padding: 4px 0; cursor: pointer; }
+.ficha-valor { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 600; }
+.ficha-valor.bien { color: var(--c-comp); }
+.ficha-valor.mal { color: var(--enemy); }
 .meta-pos { font-family: var(--font-num); font-size: 11px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
 .meta-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .meta-wr { font-family: var(--font-num); text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }

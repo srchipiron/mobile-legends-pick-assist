@@ -39,6 +39,24 @@ for (const [ancho, alto] of [[360, 640], [390, 844], [430, 932]]) {
   });
 }
 
+// «Para ti» (3.68.0): con 30 partidas o más con estimación sale tu número al
+// lado del del modelo, en la MISMA línea: la nº1 tiene que seguir asomando.
+await prueba('con tu historial sale «Para ti» y la nº1 sigue asomando en 360×640', async () => {
+  const partidas = Array.from({ length: 40 }, (_, i) => ({ t: 1_700_000_000_000 + i * 3_600_000, pick: 'Tigreal', gane: i % 3 !== 0, estimacion: 0.5 + (i % 5) * 0.02, rango: 'glory' }));
+  for (const f of FASES) {
+    const { contexto, pagina } = await paginaCon(navegador, url, {
+      viewport: { width: 360, height: 640 },
+      almacen: { 'roam-picker:linea': 'roam', 'roam-picker:partidas': partidas, 'roam-picker:draft': { enemies: f.e, allies: f.a, bans: ['Hirara'], enemyRoam: null, fase: 'picks' } },
+    });
+    await pagina.waitForTimeout(300);
+    const tuya = await pagina.locator('.estimacion-tuya').innerText().catch(() => '');
+    ok(/Para ti: \d+%/.test(tuya), `con ${partidas.length} partidas no sale «Para ti»: «${tuya}»`);
+    const r = await pagina.locator('.pick').first().evaluate((e) => Math.round(e.getBoundingClientRect().top));
+    ok(r < 640, `con «Para ti» la nº1 ya no asoma en 360×640 (${f.e.length}v${f.a.length}, top ${r})`);
+    await contexto.close();
+  }
+});
+
 await terminar('interfaz/primera-pantalla');
 await navegador.close();
 await cerrar();

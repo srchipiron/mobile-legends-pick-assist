@@ -105,3 +105,30 @@ llevaba primero las `previa` (tu historial del juego, las más viejas). Desde
 3.60.8, decisión de Javi, las previas no se recortan nunca: el tope cuenta
 con ellas y solo quita apuntadas con la app. Prueba en `registro.test`, dos
 mutaciones.
+
+**«Para ti»: el número ajustado a tus partidas (3.68.0)**, pedido: «haz que
+el programa pueda ir mejorando conforme juegue».
+- Ya aprendían de cada partida la maestría (`maestriaEfectiva`, la que pesa
+  en el ranking), la co-ocurrencia de baneos y las caras del lector. Lo que
+  no aprendía era el número.
+- `ajustePersonal` (registro.js) es una logística prudente
+  ganar ~ a + b·logit(estimación), con a priori a ~ N(0, 0,5²) y
+  b ~ N(1, 0,5²), sobre las partidas con estimación que no son previas.
+- Medido el 24 de octubre de 2026 en 229 partidas, cada una predicha con
+  las de antes (verosimilitud por partida):
+  - tal cual, −0,6875;
+  - σ 0,5, −0,6771 (+1,04 por 100 partidas);
+  - sin prior, −0,6773;
+  - σ 0,3, −0,6778;
+  - solo el intercepto, −0,6799.
+- Con todas: a 0,39, b 0,57. Javi gana el 62% y la media estimada era 54%;
+  el número del modelo separa poco en su cola (b libre 0,18).
+- `MINIMO_AJUSTE` 30 (desde donde se midió). `b ≥ 0,05`, para que nunca dé
+  la vuelta al orden.
+- Se enseña («Para ti», `.estimacion-tuya`, en la misma línea que
+  «Con X · n de 10») y NO puntúa: el orden lo deciden el modelo y la
+  maestría. La estimación que se guarda en cada partida sigue siendo la del
+  modelo, sin ajustar: si se guardara la ajustada, el ajuste se ajustaría
+  sobre sí mismo.
+- Pruebas en `registro.test` y `primera-pantalla.e2e` (40 partidas: sale y la
+  nº1 sigue asomando a 360×640).

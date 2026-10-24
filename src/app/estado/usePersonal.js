@@ -3,6 +3,7 @@ import { CLAVES, leer, guardar } from './almacen.js';
 import { sanear, sanearOlvidadas } from '../../motor/perfil.js';
 import { apuntar, olvidar, corregir, cambiarHeroe } from '../../motor/registro.js';
 import { maestriaEfectiva, fecharMaestria } from '../../motor/maestria.js';
+import { ajustePersonal } from '../../motor/registro.js';
 
 /**
  * Lo tuyo: la maestría escrita a mano y las partidas apuntadas. Lo guardado
@@ -20,6 +21,8 @@ export function usePersonal() {
   const [olvidadas, setOlvidadas] = useState(() => sanearOlvidadas(leer(CLAVES.olvidadas, [])));
   const ultimasOlvidadas = useRef(olvidadas);
   const maestriaUsada = useMemo(() => maestriaEfectiva(maestria, partidas), [maestria, partidas]);
+  // Lo que la app aprende de tus partidas sobre su número (3.68.0).
+  const ajuste = useMemo(() => ajustePersonal(partidas), [partidas]);
 
   // La lista de partidas en una referencia, para poder apuntar sobre la última
   // sin leer un cierre viejo Y sin guardar dentro de un updater de estado:
@@ -67,5 +70,5 @@ export function usePersonal() {
     guardarOlvidadas(sanearOlvidadas(fundido.olvidadas));
   }, [guardarMaestria, guardarPartidas, guardarOlvidadas]);
 
-  return { maestria, maestriaUsada, partidas, olvidadas, guardarMaestria, guardarPartidas, apuntarPartida, olvidarPartida, corregirPartida, cambiarHeroePartida, importarPerfil };
+  return { maestria, maestriaUsada, ajuste, partidas, olvidadas, guardarMaestria, guardarPartidas, apuntarPartida, olvidarPartida, corregirPartida, cambiarHeroePartida, importarPerfil };
 }

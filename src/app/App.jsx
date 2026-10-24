@@ -33,6 +33,7 @@ import { HistorialPartidas } from './componentes/HistorialPartidas.jsx';
 import { Perfil } from './componentes/Perfil.jsx';
 import { EditorDeMaestria } from './componentes/EditorDeMaestria.jsx';
 import { Meta } from './componentes/Meta.jsx';
+import { FichaDeHeroe } from './componentes/FichaDeHeroe.jsx';
 import { Administracion, PuertaDeLicencia } from './componentes/Administracion.jsx';
 
 /**
@@ -71,6 +72,19 @@ export default function App() {
 
   const enemigos = useMemo(() => resolverNombres(datos, draft.enemigos), [datos, draft.enemigos]);
   const aliados = useMemo(() => resolverNombres(datos, draft.aliados), [datos, draft.aliados]);
+  /**
+   * De una hoja a otra (3.67.0, Meta → ficha): la que se cierra retira su
+   * entrada del historial con un «atrás» que llega DESPUÉS, y cerraba la
+   * nueva nada más abrirse. Se cierra, se espera a ese «atrás» y se abre.
+   */
+  const deHojaAHoja = (nueva) => {
+    setHoja(null);
+    let hecho = false;
+    const abrirYa = () => { if (hecho) return; hecho = true; window.removeEventListener('popstate', abrirYa); clearTimeout(reloj); setHoja(nueva); };
+    window.addEventListener('popstate', abrirYa);
+    // Sin historial (o sin «atrás» que esperar), se abre igual.
+    const reloj = setTimeout(abrirYa, 400);
+  };
   const abrir = (h) => {
     if (h === 'enemigos' || h === 'aliados') {
       setOrdenPick(probablesDelBando(datos, { equipo: h === 'aliados' ? aliados : enemigos, linea, bando: h }));
@@ -609,7 +623,8 @@ export default function App() {
         />
       )}
       {hoja === 'perfil' && <Perfil datos={datosPerfil} onImportar={traerPerfil} onCerrar={cerrar} t={t} />}
-      {hoja === 'meta' && <Meta datos={datos} linea={linea} onCerrar={cerrar} t={t} />}
+      {hoja === 'meta' && <Meta datos={datos} linea={linea} onFicha={(nombre) => deHojaAHoja({ ficha: nombre })} onCerrar={cerrar} t={t} />}
+      {hoja?.ficha && <FichaDeHeroe datos={datos} nombre={hoja.ficha} onOtro={(nombre) => setHoja({ ficha: nombre })} onCerrar={cerrar} t={t} />}
       {hoja === 'admin' && verAdmin && <Administracion licencia={licencia} onCerrar={cerrar} t={t} />}
       {hoja === 'maestria' && (
         <EditorDeMaestria pool={rec.pool} maestria={personal.maestria} onGuardar={personal.guardarMaestria} onCerrar={cerrar} t={t} />
@@ -655,7 +670,7 @@ export default function App() {
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
         onResultado={apuntarAMano}
         lector={lectorConVoz} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} vozCallada={vozCallada} onVoz={cambiarVoz}
-        lectorTablet={lectorTablet} onLectorTablet={setLectorTablet} onAdministracion={verAdmin ? () => abrir('admin') : null}
+        lectorTablet={lectorTablet} onLectorTablet={setLectorTablet} onAdministracion={verAdmin ? () => abrir('admin') : null} ajuste={personal.ajuste}
         pie={pie}
       />
       {deshacer}

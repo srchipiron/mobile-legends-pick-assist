@@ -1,7 +1,7 @@
 import { indexarPorNombre, nombreClave, buscar } from './nombres.js';
 import { fundirCatalogo, LINEAS, poolDeLinea, equilibrioEsperado } from './catalogo.js';
 import { indiceDeLineas, frecuenciaDeRoles, lineasOcupadas, detectarRivalDeLinea } from './lineas.js';
-import { cobertura } from './matrices.js';
+import { cobertura, cruce, sinergia } from './matrices.js';
 import { ordenarPicks, empatados, MARGEN_EMPATE } from './ranking.js';
 import { evaluarDraft } from './modelo.js';
 import { sugerirBaneos, proximosBaneos, coocurrenciaDeBaneos } from './baneos.js';
@@ -11,7 +11,7 @@ import { analizarComposicion } from './composicion.js';
 import { analizarDraft, BRECHA_CLARA } from './analisis.js';
 import { esPrevia, compararProporciones } from './registro.js';
 import { planDePartida } from './plan.js';
-import { elegirVentana, elegirRango, mediaDeWinrate, RANGO_DE_RESPALDO } from './ventana.js';
+import { elegirVentana, elegirRango, mediaDeWinrate, RANGO_DE_RESPALDO, tiersVigentes } from './ventana.js';
 import { movimientos } from './tendencia.js';
 import { centroDeFases, fasesDePartida } from './fases.js';
 import { guionEnDirecto, cierresPorTramo } from './directo.js';
@@ -414,4 +414,44 @@ export function movimientosDelMeta(datos, { linea = null } = {}) {
   const enLinea = new Set(poolDe(datos, linea).map((h) => nombreClave(h.name)));
   const filtrar = (l) => l.filter((f) => enLinea.has(nombreClave(f.heroe)));
   return { ...salida, suben: filtrar(r.suben), bajan: filtrar(r.bajan) };
+}
+
+/** Cuántos héroes en cada lista de la ficha: los que caben de un vistazo en el móvil. Decisión de producto. */
+export const POR_FICHA = 5;
+
+/**
+ * La ficha de un héroe (3.67.0), para cualquier aficionado: lo que el motor
+ * YA sabe de él, sin nada nuevo medido. Su winrate, pick y ban en el rango
+ * del que sale la fuerza; las líneas que juega con su winrate en cada una;
+ * a quién gana y quién le gana (la matriz de cruces, la misma que puntúa);
+ * con quién combina mejor y peor (parejas, solo con quien puede ir en otra
+ * línea: dos de la misma línea no se juntan en un draft); su tier de
+ * mlbb.gg si está vigente y cómo se ha movido esta semana. null si no existe.
+ */
+export function fichaDeHeroe(datos, nombre, { n = POR_FICHA } = {}) {
+  const clave = nombreClave(nombre ?? '');
+  const heroe = (datos?.heroes ?? []).find((h) => nombreClave(h.name) === clave);
+  if (!heroe) return null;
+  const stats = datos.meta?.stats ?? {};
+  const lineasDe = (h) => LINEAS.filter((l) => poolDe(datos, l).some((x) => x.name === h.name));
+  const suyas = lineasDe(heroe);
+  const otros = datos.heroes.filter((h) => h.name !== heroe.name && buscar(stats, h.name));
+  const cruces = otros.map((e) => ({ heroe: e, valor: cruce(datos.meta?.counters, heroe.name, e.name) })).filter((x) => Number.isFinite(x.valor)).sort((a, b) => b.valor - a.valor);
+  const juntos = otros.filter((a) => lineasDe(a).some((l) => !suyas.includes(l)));
+  const parejas = juntos.map((a) => ({ heroe: a, valor: sinergia(datos.meta?.synergies, heroe.name, a.name) })).filter((x) => Number.isFinite(x.valor)).sort((a, b) => b.valor - a.valor);
+  const mov = movimientosDelMeta(datos);
+  const tendencia = [...(mov.suben ?? []), ...(mov.bajan ?? [])].find((f) => nombreClave(f.heroe) === clave)?.dif ?? null;
+  const stat = buscar(stats, heroe.name) ?? null;
+  return {
+    heroe,
+    stat: stat ? { winRate: stat.winRate ?? null, pickRate: stat.pickRate ?? null, banRate: stat.banRate ?? null } : null,
+    rango: datos.meta?.fuerza?.rango ?? datos.rango,
+    lineas: suyas.map((l) => ({ linea: l, winRate: winrateEnLinea(datos, heroe, l) })),
+    leGanaA: cruces.slice(0, n),
+    leGanan: cruces.slice(-n).reverse(),
+    combinaCon: parejas.slice(0, n),
+    peorCon: parejas.slice(-n).reverse(),
+    tier: tiersVigentes(datos.crudo)?.[heroe.name] ?? null,
+    tendencia,
+  };
 }
