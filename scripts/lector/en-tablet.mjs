@@ -68,7 +68,7 @@ export function leerSaludDeLaApk(fichero) {
   try {
     const j = JSON.parse(readFileSync(fichero, 'utf8'));
     const salida = {};
-    for (const k of ['apk', 'modelo', 'esquina']) if (typeof j[k] === 'string') salida[k] = j[k].slice(0, 60);
+    for (const k of ['apk', 'modelo', 'esquina', 'burbujaEstado']) if (typeof j[k] === 'string') salida[k] = j[k].slice(0, 60);
     for (const k of ['android', 'memoriaLibreMB', 'memoriaAppMB', 'cuando']) if (Number.isFinite(j[k])) salida[k] = Math.round(j[k]);
     for (const k of ['grabando', 'burbuja', 'bateriaLibre', 'memoriaBaja']) if (typeof j[k] === 'boolean') salida[k] = j[k];
     return Object.keys(salida).length ? salida : null;

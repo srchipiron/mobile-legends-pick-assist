@@ -275,7 +275,7 @@ class Principal : Activity() {
         val salida = ultimaSalida ?: Salidas.ultima(this).also { ultimaSalida = it }
         estado.text = listOfNotNull(Nodo.fallo, Lector.estado, salida, caida?.let { "La última vez se cerró por:\n$it" }).joinToString("\n\n")
         boton.text = if (Lector.grabando) "Parar de leer" else "Empezar a leer"
-        esquinaBurbuja.text = "Burbuja con tu nº1: ${Burbuja.esquina(this)} (toca para cambiar)"
+        esquinaBurbuja.text = "Burbuja con tu nº1: ${Burbuja.esquina(this)} (toca para cambiar) · ahora: ${Burbuja.estado}"
 
         val codigo = Vinculo.codigo(this)
         val dir = ip()

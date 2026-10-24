@@ -157,6 +157,8 @@ test('la salud de la tablet (3.63.0): /estado cuenta lecturas y fallos, y lo que
   writeFileSync(join(casa, 'salud.json'), JSON.stringify({ apk: '3.63.0', grabando: true, memoriaLibreMB: 1500.7, memoriaBaja: false, raro: '<script>', burbuja: 'sí' }));
   eq(JSON.stringify(leerSaludDeLaApk(join(casa, 'salud.json'))), JSON.stringify({ apk: '3.63.0', memoriaLibreMB: 1501, grabando: true, memoriaBaja: false }), 'la salud de la APK pasa campos que no conoce o con otro tipo');
   eq(leerSaludDeLaApk(join(casa, 'no-existe.json')), null);
+  writeFileSync(join(casa, 'burbuja.json'), JSON.stringify({ burbujaEstado: 'no llega al lector: IOException' }));
+  eq(leerSaludDeLaApk(join(casa, 'burbuja.json'))?.burbujaEstado, 'no llega al lector: IOException', 'el estado de la burbuja (3.68.1) no llega al parte');
   const apk = await apkDePega();
   const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1' });
   const puerto = servidor.address().port;

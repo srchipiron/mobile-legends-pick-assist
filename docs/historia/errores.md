@@ -1106,3 +1106,12 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   mano. Lección: un grupo de concurrencia con `cancel-in-progress` va en el
   job que hace el trabajo, no en el workflow, si el workflow puede acabar
   sin hacer nada.
+- **La burbuja que nunca salió (APK, 3.62.0 → 3.68.1)**: con `targetSdk`
+  28 o más, Android prohíbe el HTTP en claro también a `127.0.0.1`, y la
+  burbuja (`Burbuja.leer`) y la guía (`lecturasDelLector`) pedían al lector
+  de la propia APK por `http://127.0.0.1:47323`. La excepción se tragaba en
+  un `catch` sin rastro: permiso dado, grabando, y ninguna burbuja (24 de
+  octubre). Hoy `res/xml/red.xml` deja en claro SOLO 127.0.0.1, la burbuja
+  escribe su estado en `salud.json` y el parte avisa. Lección: un `catch`
+  que se lo calla en un aparato sin logcat es un fallo invisible; cada
+  bucle de fondo deja dicho en la salud por qué no hace lo suyo.

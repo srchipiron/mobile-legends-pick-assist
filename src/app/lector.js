@@ -420,6 +420,8 @@ export function parteDeLaTablet(estado, { version = '', ahora = Date.now(), ulti
   else if (vieja.estado === 'atrasada') avisos.push(`Lector MLBB ${vieja.tuya}, y hay ${vieja.ultima}`);
   if (estado.salida && !/se actualizó|la cerraste tú|forzaste/.test(estado.salida)) avisos.push(estado.salida.split('\n')[0]);
   if (tb.grabando === false) avisos.push('la tablet no está grabando la pantalla');
+  // La burbuja que no llega al lector o que Android no deja pintar (3.68.1): antes no se veía nada.
+  if (typeof tb.burbujaEstado === 'string' && /^(no llega|Android no deja|el lector no contesta)/.test(tb.burbujaEstado)) avisos.push(`la burbuja no sale: ${tb.burbujaEstado}`);
   if (tb.bateriaLibre === false) avisos.push('el ahorro de batería puede cerrarla');
   if (tb.memoriaBaja) avisos.push(`memoria baja en la tablet (${tb.memoriaLibreMB} MB libres)`);
   if (l.lecturas >= 10 && l.fallosCaptura / l.lecturas > 0.2) avisos.push(`fallan ${l.fallosCaptura} de ${l.lecturas} capturas`);
@@ -427,7 +429,7 @@ export function parteDeLaTablet(estado, { version = '', ahora = Date.now(), ulti
   const filas = [
     `Versión de la app: ${version} · de Lector MLBB: ${tb.apk ?? '?'} · ${tb.modelo ?? '?'} (Android API ${tb.android ?? '?'})`,
     `Lector: encendido hace ${l.minutos ?? '?'} min · ${l.lecturas ?? '?'} lecturas · ${l.fallosCaptura ?? '?'} capturas fallidas${l.ultimoFallo ? ` (la última: «${l.ultimoFallo.que}»)` : ''} · Node ${l.memoriaMB ?? '?'} MB`,
-    `Tablet: grabando ${tb.grabando ? 'sí' : 'no'} · burbuja ${tb.burbuja ? `sí (${tb.esquina})` : 'sin permiso'} · ahorro de batería ${tb.bateriaLibre ? 'quitado' : 'puesto'} · memoria libre ${tb.memoriaLibreMB ?? '?'} MB${tb.memoriaBaja ? ' (BAJA)' : ''} · la app usa ${tb.memoriaAppMB ?? '?'} MB`,
+    `Tablet: grabando ${tb.grabando ? 'sí' : 'no'} · burbuja ${tb.burbuja ? `sí (${tb.esquina}${tb.burbujaEstado ? `, ${tb.burbujaEstado}` : ''})` : 'sin permiso'} · ahorro de batería ${tb.bateriaLibre ? 'quitado' : 'puesto'} · memoria libre ${tb.memoriaLibreMB ?? '?'} MB${tb.memoriaBaja ? ' (BAJA)' : ''} · la app usa ${tb.memoriaAppMB ?? '?'} MB`,
     `Aprendido: ${estado.aprendido?.capturas ?? 0} capturas, ${estado.aprendido?.caras ?? 0} caras de rivales, ${estado.aprendido?.aliados ?? 0} de tu equipo`,
     ...(estado.salida ? [`Último cierre: ${estado.salida.replace(/^Último cierre /, '').replace(/\n/g, ' · ')}`] : []),
   ];

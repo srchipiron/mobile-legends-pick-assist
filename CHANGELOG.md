@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.68.1
+
+- La burbuja de Lector MLBB en la tablet ya sale. No salía nunca: Android
+  no dejaba a la APK hablar con su propio lector (el que corre dentro de
+  ella), así que la burbuja nunca recibía tu nº1. Por lo mismo el paso
+  «el móvil ya lee» de la guía no se marcaba.
+- En la APK, el botón de la burbuja dice cómo va («ahora: enseñando»,
+  «esperando consejo»…), y si algo la vuelve a impedir, el parte de salud
+  de la tablet lo avisa.
+
 ## 3.68.0
 
 - La app aprende de cada partida que apuntas: junto a la estimación del

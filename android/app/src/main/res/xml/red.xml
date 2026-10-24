@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  La red de la app (3.68.1). Todo cifrado, salvo hablar con el propio lector
+  en 127.0.0.1: la burbuja pide ahí el consejo y la guía mira si el móvil ya
+  lee. Sin esta excepción Android bloquea ese HTTP sin decir nada y la
+  burbuja no salía nunca. 127.0.0.1 no sale de la tablet.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

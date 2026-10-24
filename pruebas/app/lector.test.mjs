@@ -395,6 +395,10 @@ test('el parte de la tablet (3.63.0): dice lo que va mal, todo bien si nada, y n
   const mal = parteDeLaTablet({ ...sano, salida: 'Último cierre (hace 3 min): Android la cerró por falta de memoria · usaba 900 MB', lector: { ...sano.lector, fallosCaptura: 20 }, tablet: { ...sano.tablet, grabando: false, bateriaLibre: false, memoriaBaja: true } }, { version: '3.63.0', ahora: 2000 });
   eq(mal.avisos.length, 5, `no avisa de todo lo que va mal: ${mal.avisos}`);
   ok(mal.huella !== bien.huella, 'con avisos la huella no cambia (no subiría en el acto)');
+  const conBurbuja = (burbujaEstado) => parteDeLaTablet({ ...sano, tablet: { ...sano.tablet, burbujaEstado } }, { version: '3.63.0', ahora: 2000 });
+  for (const e of ['no llega al lector: IOException', 'Android no deja pintarla: BadToken', 'el lector no contesta']) ok(conBurbuja(e).avisos.some((a) => a.includes(e)), `la burbuja que no sale (${e}) no avisa (3.68.1)`);
+  for (const e of ['enseñando', 'esperando consejo', 'parada']) eq(conBurbuja(e).avisos.length, 0, `la burbuja sana (${e}) avisa`);
+  ok(conBurbuja('enseñando').texto.includes('abajo, enseñando'), 'el parte no dice cómo va la burbuja');
   eq(parteDeLaTablet({ ...sano, salida: 'Último cierre (hace 1 min): se actualizó' }, { version: '3.63.0', ahora: 2000 }).avisos.length, 0, 'actualizarse cuenta como un fallo');
   ok(parteDeLaTablet({ ...sano, tablet: { ...sano.tablet, cuando: 0 } }, { ahora: 10 * 60000 }).avisos.some((a) => /señales/.test(a)), 'no avisa de una app que dejó de escribir su salud');
   eq(parteDeLaTablet({ ok: false, tipo: 'sinPuente' }), null);

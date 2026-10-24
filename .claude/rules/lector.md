@@ -1142,3 +1142,17 @@ juega en el móvil, sin tablet aparte. `scripts/lector/solo.mjs`:
   la captura real, la línea en `solo.json` y el consejo en `GET /consejo`.
   Siete mutaciones. Sobrevive una inofensiva: el filtro de «ya baneados»
   repite lo que `baneosSugeridos` ya hace.
+
+## La burbuja y el HTTP en claro (3.68.1)
+
+- Android (targetSdk ≥ 28) bloquea el HTTP en claro, también a 127.0.0.1.
+  La APK habla con su propio Node por `http://127.0.0.1:47323` (burbuja y
+  guía), así que `res/xml/red.xml` (`networkSecurityConfig`) lo permite SOLO
+  a 127.0.0.1; el resto sigue prohibido. Nunca `usesCleartextTraffic`.
+- `pruebas/scripts/android.test.mjs` lo exige por forma si algún `.kt` usa
+  `http://127.0.0.1`; dos mutaciones (sin config, un dominio de más).
+- `Burbuja.estado` («enseñando», «esperando consejo», «no llega al lector:
+  …», «Android no deja pintarla: …») va en `salud.json` (`burbujaEstado`,
+  `leerSaludDeLaApk`), en el parte (aviso con los de fallo) y en el botón de
+  la APK. Pruebas en `en-tablet` y `app/lector`, tres mutaciones.
+

@@ -172,6 +172,7 @@ class Lector : Service() {
             .put("grabando", grabando)
             .put("burbuja", android.provider.Settings.canDrawOverlays(this))
             .put("esquina", Burbuja.esquina(this))
+            .put("burbujaEstado", Burbuja.estado)
             .put("bateriaLibre", getSystemService(android.os.PowerManager::class.java).isIgnoringBatteryOptimizations(packageName))
             .put("memoriaLibreMB", mem.availMem / 1_000_000)
             .put("memoriaBaja", mem.lowMemory)

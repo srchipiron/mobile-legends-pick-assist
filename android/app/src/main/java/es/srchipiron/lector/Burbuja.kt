@@ -38,6 +38,8 @@ class Burbuja(private val contexto: Context) {
             c.getSharedPreferences("lector", Context.MODE_PRIVATE).edit().putString("burbuja", ESQUINAS[i]).apply()
         }
         private const val CANAL = "partidas"
+        /** Qué está haciendo la burbuja (3.68.1): va en salud.json y en la pantalla, para que un fallo no sea invisible. */
+        @Volatile var estado: String = "parada"
     }
 
     private val ventana = contexto.getSystemService(WindowManager::class.java)
@@ -52,7 +54,10 @@ class Burbuja(private val contexto: Context) {
         activa = true
         thread(isDaemon = true, name = "burbuja") {
             while (activa) {
-                try { leer()?.let { r -> principal.post { pintar(r) } } } catch (e: Throwable) { /* el lector aún no contesta */ }
+                try {
+                    val r = leer()
+                    if (r == null) estado = "el lector no contesta" else principal.post { pintar(r) }
+                } catch (e: Throwable) { estado = "no llega al lector: ${e.javaClass.simpleName}" }
                 Thread.sleep(2000)
             }
         }
@@ -60,6 +65,7 @@ class Burbuja(private val contexto: Context) {
 
     fun parar() {
         activa = false
+        estado = "parada"
         principal.post { quitar() }
     }
 
@@ -73,8 +79,12 @@ class Burbuja(private val contexto: Context) {
     private fun pintar(r: JSONObject) {
         val consejo = r.optJSONObject("consejo")
         val esq = esquina(contexto)
-        if (consejo == null || esq == "no" || !Settings.canDrawOverlays(contexto)) quitar() else {
+        if (consejo == null || esq == "no" || !Settings.canDrawOverlays(contexto)) {
+            quitar()
+            estado = when { !Settings.canDrawOverlays(contexto) -> "sin permiso"; esq == "no" -> "quitada"; else -> "esperando consejo" }
+        } else {
             if (vista == null) poner(esq)
+            if (vista != null) estado = "enseñando"
             titulo?.text = consejo.optString("titulo")
             detalle?.text = consejo.optString("detalle", "").takeIf { it.isNotEmpty() && it != "null" } ?: ""
         }
@@ -101,7 +111,7 @@ class Burbuja(private val contexto: Context) {
             gravity = when (esq) { "arriba-izquierda" -> Gravity.TOP or Gravity.START; "arriba-derecha" -> Gravity.TOP or Gravity.END; else -> Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL }
             x = (8 * d).toInt(); y = (8 * d).toInt()
         }
-        try { ventana.addView(caja, p); vista = caja } catch (e: Throwable) { vista = null }
+        try { ventana.addView(caja, p); vista = caja } catch (e: Throwable) { vista = null; estado = "Android no deja pintarla: ${e.javaClass.simpleName}" }
     }
 
     private fun quitar() {
