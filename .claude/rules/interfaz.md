@@ -328,12 +328,14 @@ esto hay que revisarlo antes.
 ## Llevarse los datos a otro dispositivo
 
 `src/motor/perfil.js`. El almacenamiento del navegador va por dispositivo, así
-que la maestría no viaja sola. NO se ha montado una base de datos con códigos
-por persona: haría falta un servidor -la app es estática en GitHub Pages-,
-alguien pagándolo, y convertiría a Javi en responsable de datos de otras
-personas. Todo eso para mover kilobyte y medio.
+que la maestría no viaja sola. Hasta 3.69.0 NO había base de datos con códigos
+por persona (servidor, alguien pagándolo, datos de otras personas). Desde
+3.69.0 la hay, porque Javi la pidió para MEDIR si la app ayuda con muchos
+jugadores («La base de datos de la comunidad» en `.claude/rules/partidas.md`).
+Trae las partidas a otro móvil, pero no la maestría: para eso sigue el
+código de perfil.
 
-En su lugar, los datos van DENTRO del código: JSON, gzip si el navegador sabe, y
+El código de perfil lleva los datos DENTRO: JSON, gzip si el navegador sabe, y
 base64url, con marca de versión delante y suma de control detrás. Unos 500
 caracteres. La promesa de "tus datos no salen de tu móvil" sigue siendo cierta:
 salen porque los saca él.

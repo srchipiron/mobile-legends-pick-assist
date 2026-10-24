@@ -45,3 +45,7 @@ jobs:
       # `channel: 'chrome'` sin descargar nada.
       - name: Pruebas de interfaz
         run: node pruebas/correr.mjs --e2e
+      # La base de datos de partidas (3.69.0): supabase/esquema.sql contra un
+      # Postgres de verdad (el runner trae uno, parado; la prueba arranca el suyo).
+      - name: Base de datos (Postgres)
+        run: npm run test:sql

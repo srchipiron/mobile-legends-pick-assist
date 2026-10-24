@@ -60,8 +60,11 @@ const srv = createServer(async (req, res) => {
   if (p === '/') p = '/index.html';
   try {
     const f = join(raiz, normalize(p).replace(/^(\.\.[/\\])+/, ''));
+    // Leer ANTES de la cabecera: con un fichero que no existe (comunidad.json
+    // sin configurar, 3.69.0) el 404 iba después del 200 y tiraba el servidor.
+    const cuerpo = await readFile(f);
     res.writeHead(200, { 'Content-Type': TIPOS[extname(f)] ?? 'application/octet-stream', 'Cache-Control': 'no-store' });
-    res.end(await readFile(f));
+    res.end(cuerpo);
   } catch {
     res.writeHead(404); res.end();
   }

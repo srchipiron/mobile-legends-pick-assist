@@ -1,6 +1,6 @@
 {
   "name": "mobile-legends-pick-assist",
-  "version": "3.68.1",
+  "version": "3.69.0",
   "license": "PolyForm-Noncommercial-1.0.0",
   "private": true,
   "type": "module",
@@ -13,6 +13,7 @@
     "check": "node scripts/comprobar/orden.mjs src && node scripts/comprobar/css.mjs && node scripts/comprobar/version.mjs",
     "test": "npm run check && npm run lint && node pruebas/correr.mjs",
     "test:ui": "node pruebas/correr.mjs --e2e",
+    "test:sql": "node pruebas/sql/esquema.sql.mjs",
     "diagnostico": "node scripts/diagnostico.mjs"
   },
   "dependencies": {

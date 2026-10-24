@@ -33,6 +33,8 @@ export const CLAVES = {
   emitidas: 'roam-picker:emitidas',      // las claves que ha dado Javi: nombre, id, fechas
   // La última versión cuyas novedades se abrieron (3.65.5). Clave NUEVA: sin ella, «nuevo» sale una vez.
   versionVista: 'roam-picker:version-vista',
+  // La base de datos de partidas de todos (3.69.0): si guardas las tuyas, tu clave de jugador y la última subida. Clave NUEVA: sin ella, no se sube nada.
+  comunidad: 'roam-picker:comunidad',
 };
 
 /** Lee un valor guardado; con cualquier fallo (JSON roto, sin almacén) devuelve `porDefecto`. */

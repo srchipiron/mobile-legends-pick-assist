@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
+import { sanearConfig } from '../basedatos.js';
 
 /**
  * Administración (3.65.0): solo en el móvil de Javi (con el token de la
@@ -8,7 +9,9 @@ import { tPorDefecto } from './tPorDefecto.js';
  * administrador, dar una clave a cada invitado (sale un enlace para
  * mandárselo), revocarla, y decidir si la app pide clave para entrar.
  */
-export function Administracion({ licencia, onCerrar, t = tPorDefecto }) {
+export function Administracion({ licencia, comunidad = null, onCerrar, t = tPorDefecto }) {
+  const [url, setUrl] = useState('');
+  const [publica, setPublica] = useState('');
   const [nombre, setNombre] = useState('');
   const [dias, setDias] = useState('');
   const [hecha, setHecha] = useState(null);
@@ -84,6 +87,22 @@ export function Administracion({ licencia, onCerrar, t = tPorDefecto }) {
               ))}
             </ul>
             <hr />
+            {/* La base de datos de partidas (3.69.0): la dirección y la clave PÚBLICA de Supabase. La secreta no se acepta. */}
+            {comunidad && (
+              <>
+                <strong>{t('admin.basedatos')}</strong>
+                <p className="nota">{t(comunidad.config ? 'admin.basedatosPuesta' : 'admin.basedatosQueEs', { url: comunidad.config?.url ?? '' })}</p>
+                <input className="admin-campo" type="url" autoComplete="off" spellCheck={false} value={url} placeholder="https://xxxxxxxxxxxxxxxxxxxx.supabase.co" aria-label={t('admin.basedatosUrl')} onChange={(e) => setUrl(e.target.value)} />
+                <input className="admin-campo" type="text" autoComplete="off" spellCheck={false} value={publica} placeholder="sb_publishable_…" aria-label={t('admin.basedatosClave')} onChange={(e) => setPublica(e.target.value)} />
+                {publica.trim().startsWith('sb_secret_') && <p className="nota mal">{t('admin.basedatosSecreta')}</p>}
+                <button className="ancho admin-basedatos" disabled={!sanearConfig({ url, clave: publica })} onClick={async () => {
+                  const r = await comunidad.publicarConfig({ url, clave: publica });
+                  resultado(r, t('admin.publicado'));
+                  if (!r.error) { setUrl(''); setPublica(''); }
+                }}>{t('admin.basedatosPublicar')}</button>
+                <hr />
+              </>
+            )}
             <strong>{t('admin.copiaTitulo')}</strong>
             <p className="nota">{t('admin.copiaExplica')}</p>
             <textarea className="codigo" readOnly rows={3} value={licencia.copiaDeAdministrador ?? ''} onFocus={(e) => e.target.select()} />

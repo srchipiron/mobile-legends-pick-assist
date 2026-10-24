@@ -8,6 +8,23 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.69.0
+
+- Base de datos de partidas: tus partidas se pueden guardar junto a las de
+  los demás jugadores, con una clave de jugador al azar (sin correo ni
+  contraseña, y nada que ver con tu cuenta del juego). Está en Ajustes →
+  Partidas → «Base de datos de partidas», y desde que la activas cada
+  partida se sube sola.
+- Con tu clave te traes tus partidas a otro móvil, y puedes borrarlas de la
+  base de datos cuando quieras.
+- «Ver con las partidas de todos» dice si la app ayuda, sin mezclar
+  jugadores: siguiéndola frente a ir por libre dentro de cada uno, contra el
+  winrate de siempre de cada uno, solo con las que apuntó el lector, y si la
+  probabilidad que enseña acierta.
+- Para ponerla en marcha hace falta un proyecto gratuito de Supabase: la
+  guía paso a paso está en docs/comunidad.md, y la dirección y la clave
+  pública se publican desde Administración.
+
 ## 3.68.1
 
 - La burbuja de Lector MLBB en la tablet ya sale. No salía nunca: Android

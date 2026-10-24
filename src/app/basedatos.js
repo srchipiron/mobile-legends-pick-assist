@@ -1,0 +1,175 @@
+/**
+ * La base de datos de partidas de todos los jugadores (3.69.0, elegido por
+ * Javi: «una clave por jugador», sin correo ni contraseña). Puro salvo la
+ * red, que se inyecta: QUÉ se sube, con qué forma, y las cuatro llamadas a
+ * las funciones de `supabase/esquema.sql`. El estado está en
+ * estado/useComunidad.js.
+ *
+ * - La CLAVE la genera la app (32 bytes al azar). Es lo único que identifica
+ *   al jugador: con ella se recuperan las partidas en otro móvil. El servidor
+ *   guarda su huella, nunca la clave.
+ * - Lo que viaja de cada partida es `paraLaComunidad`: el draft, el pick, lo
+ *   recomendado, el resultado, la estimación. Nada del lector (ids de
+ *   capturas, dudas) ni del perfil. El token de GitHub no pasa por aquí.
+ * - La dirección y la clave PÚBLICA del proyecto de Supabase van en
+ *   `public/comunidad.json`, que publica Javi desde Administración. Sin ese
+ *   fichero, nada de esto se ve.
+ */
+
+/** Un proyecto de Supabase: `https://<20 letras>.supabase.co`, nada más (ni rutas ni otros dominios). */
+const URL_SUPABASE = /^https:\/\/[a-z0-9]{20}\.supabase\.co$/;
+
+/** ¿Es una clave que se puede publicar? La «publishable» nueva, o la anon de siempre (un JWT con `role: anon`). Nunca la secreta. */
+export function clavePublicable(clave) {
+  if (typeof clave !== 'string') return false;
+  const c = clave.trim();
+  if (/^sb_publishable_[A-Za-z0-9_-]{10,200}$/.test(c)) return true;
+  const partes = c.split('.');
+  if (partes.length !== 3 || !partes.every((p) => /^[A-Za-z0-9_-]+$/.test(p))) return false;
+  try {
+    const carga = JSON.parse(atob(partes[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return carga?.role === 'anon';
+  } catch { return false; }
+}
+
+/** `comunidad.json` con la forma garantizada, o null si no vale (y entonces no se usa). */
+export function sanearConfig(x) {
+  if (!x || typeof x !== 'object') return null;
+  const url = typeof x.url === 'string' ? x.url.trim().replace(/\/+$/, '') : '';
+  const clave = typeof x.clave === 'string' ? x.clave.trim() : '';
+  return URL_SUPABASE.test(url) && clavePublicable(clave) ? { url, clave } : null;
+}
+
+/** Una clave de jugador nueva: 32 bytes al azar en base64url (43 letras). */
+export function crearClaveDeJugador(azar = (n) => globalThis.crypto.getRandomValues(new Uint8Array(n))) {
+  return btoa(String.fromCharCode(...azar(32))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+/** La misma forma que exige el servidor (`huella_de`). */
+export const claveDeJugadorValida = (c) => typeof c === 'string' && /^[A-Za-z0-9_-]{32,64}$/.test(c);
+
+/** Los campos de una partida que van a la base de datos. Ni lector ni nada que no sirva para medir. */
+const CAMPOS = ['t', 'pick', 'gane', 'recomendados', 'rango', 'estimacion', 'modelo', 'previa', 'origen', 'bans', 'draft', 'duracion', 'fases'];
+export function paraLaComunidad(p) {
+  const salida = {};
+  for (const k of CAMPOS) if (p?.[k] !== undefined && p[k] !== null) salida[k] = p[k];
+  return salida;
+}
+
+/** Partidas por envío: el tope del servidor. */
+export const POR_LOTE = 200;
+/** Partidas quitadas que se mandan para borrar allí: el tope del servidor. */
+export const QUITAR_MAX = 1000;
+
+/** Lo guardado en `roam-picker:comunidad`, con la forma garantizada. */
+export function sanearEstadoComunidad(x) {
+  const o = x && typeof x === 'object' && !Array.isArray(x) ? x : {};
+  const num = (v) => (Number.isFinite(v) && v > 0 ? v : null);
+  const texto = (v) => (typeof v === 'string' && v.trim() ? v.trim() : null);
+  return {
+    activo: o.activo === true && claveDeJugadorValida(o.clave),
+    clave: claveDeJugadorValida(o.clave) ? o.clave : null,
+    huella: texto(o.huella),
+    cuando: num(o.cuando),
+    total: Number.isInteger(o.total) && o.total >= 0 ? o.total : null,
+    error: texto(o.error),
+    intento: num(o.intento),
+    huellaIntentada: texto(o.huellaIntentada),
+    // La primera subida va entera; después, las POR_LOTE más recientes.
+    completo: o.completo === true,
+    config: sanearConfig(o.config),
+  };
+}
+
+/** Lo mismo que `tocaSubir` (envio.js), con la clave en lugar del token. */
+export function tocaSubirComunidad(estado, huella, { ahora, enLinea = true, partidas = 0, config = null, reintento = 10 * 60 * 1000 } = {}) {
+  if (!estado?.activo || !estado.clave || !config || !partidas || !enLinea) return false;
+  if (huella === estado.huella) return false;
+  if (estado.error && estado.huellaIntentada === huella && estado.intento && ahora - estado.intento < reintento) return false;
+  return true;
+}
+
+/** Los errores que lanza el esquema, por su texto; lo demás es 'otro'. */
+const ERRORES = ['clave', 'lote', 'quitar', 'partida', 'tope', 'lleno'];
+const PLAZO_MS = 15000;
+
+/**
+ * Una función del esquema por la API de Supabase (`/rest/v1/rpc/<funcion>`).
+ * `{ datos }` o `{ error: 'red'|'clave'|'tope'|'lleno'|'partida'|…|'otro' }`.
+ * Nunca lanza.
+ */
+export async function llamar(config, funcion, cuerpo, { fetch = globalThis.fetch, plazo = PLAZO_MS } = {}) {
+  if (!sanearConfig(config)) return { error: 'config' };
+  const cabeceras = { apikey: config.clave, 'Content-Type': 'application/json' };
+  // La anon de siempre es un JWT y va también como Authorization; la publishable nueva, no.
+  if (!config.clave.startsWith('sb_')) cabeceras.Authorization = `Bearer ${config.clave}`;
+  let r;
+  try {
+    r = await fetch(`${config.url}/rest/v1/rpc/${funcion}`, { method: 'POST', headers: cabeceras, body: JSON.stringify(cuerpo), signal: AbortSignal.timeout(plazo) });
+  } catch { return { error: 'red' }; }
+  let j;
+  try { j = await r.json(); } catch { j = null; }
+  if (r.ok) return { datos: j };
+  const m = String(j?.message ?? '');
+  return { error: ERRORES.includes(m) ? m : (r.status === 401 || r.status === 403 ? 'permiso' : 'otro'), estado: r.status };
+}
+
+/**
+ * Sube las partidas: todas la primera vez (`completo` falso), en lotes de
+ * POR_LOTE de la más nueva a la más vieja; después, solo las POR_LOTE más
+ * recientes (las viejas no cambian casi nunca, y si cambian, «Subir todas»).
+ * Las quitadas van en el primer lote para que se borren allí también.
+ */
+export async function subirPartidas({ config, clave, partidas = [], olvidadas = [], referencia = null, completo = false }, opciones = {}) {
+  const orden = [...partidas].filter((p) => Number.isFinite(p?.t)).sort((a, b) => b.t - a.t).map(paraLaComunidad);
+  const lotes = [];
+  for (let i = 0; i < (completo ? Math.min(orden.length, POR_LOTE) : orden.length); i += POR_LOTE) lotes.push(orden.slice(i, i + POR_LOTE));
+  if (!lotes.length) lotes.push([]);
+  let total = null;
+  for (let i = 0; i < lotes.length; i += 1) {
+    const r = await llamar(config, 'subir_partidas', {
+      clave,
+      lote: lotes[i],
+      quitar: i === 0 ? [...olvidadas].filter(Number.isFinite).slice(-QUITAR_MAX) : [],
+      referencia: referencia && typeof referencia.winRate === 'number' ? { winRate: referencia.winRate, partidas: referencia.partidas } : null,
+    }, opciones);
+    if (r.error) return r;
+    total = r.datos?.total ?? total;
+  }
+  return { total };
+}
+
+/** Las partidas de esta clave (para traerlas a otro móvil). `{ partidas }` o `{ error }`. */
+export async function traerMisPartidas({ config, clave }, opciones = {}) {
+  const r = await llamar(config, 'mis_partidas', { clave }, opciones);
+  if (r.error) return r;
+  return { partidas: Array.isArray(r.datos?.partidas) ? r.datos.partidas : [] };
+}
+
+/** Borra todo lo de esta clave en el servidor. */
+export async function borrarMisPartidas({ config, clave }, opciones = {}) {
+  const r = await llamar(config, 'borrar_mis_partidas', { clave }, opciones);
+  return r.error ? r : { borradas: r.datos === true };
+}
+
+/** Las páginas de la comunidad que se bajan como mucho: 50.000 partidas. Decisión de producto. */
+export const MAX_PAGINAS = 50;
+
+/** Las partidas de todos (`{ filas, referencias, incompleto }`), página a página. */
+export async function bajarComunidad(config, { maxPaginas = MAX_PAGINAS, ...opciones } = {}) {
+  // Sin prototipo: las claves vienen del servidor, y una «__proto__» no puede tocar nada.
+  const filas = []; const referencias = Object.create(null);
+  let tras = { j: 0, t: 0 };
+  for (let i = 0; i < maxPaginas; i += 1) {
+    const r = await llamar(config, 'partidas_comunidad', { tras_jugador: tras.j, tras_t: tras.t, cuantas: 1000 }, opciones);
+    if (r.error) return r;
+    const pagina = Array.isArray(r.datos?.filas) ? r.datos.filas.filter((f) => Number.isFinite(f?.j) && Number.isFinite(f?.t)) : [];
+    filas.push(...pagina);
+    const refs = r.datos?.referencias && typeof r.datos.referencias === 'object' ? r.datos.referencias : {};
+    for (const [j, v] of Object.entries(refs)) if (/^\d+$/.test(j)) referencias[j] = v;
+    if (!r.datos?.mas || !pagina.length) return { filas, referencias, incompleto: false };
+    const ultima = pagina[pagina.length - 1];
+    tras = { j: ultima.j, t: ultima.t };
+  }
+  // No se calla: con más de lo que se baja, el informe lo dice.
+  return { filas, referencias, incompleto: true };
+}

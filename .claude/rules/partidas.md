@@ -11,6 +11,12 @@ paths:
   - "scripts/importar-partidas.mjs"
   - "scripts/medir-mias.mjs"
   - "historial/**"
+  - "supabase/**"
+  - "src/app/basedatos.js"
+  - "src/app/estado/useComunidad.js"
+  - "src/app/componentes/Comunidad.jsx"
+  - "src/motor/comunidad.js"
+  - "scripts/medir-comunidad.mjs"
   - ".github/workflows/partidas.yml"
 ---
 
@@ -132,3 +138,71 @@ el programa pueda ir mejorando conforme juegue».
   sobre sí mismo.
 - Pruebas en `registro.test` y `primera-pantalla.e2e` (40 partidas: sale y la
   nº1 sigue asomando a 360×640).
+
+## La base de datos de la comunidad (3.69.0)
+
+Pedido por Javi: «una base de datos de todas las partidas por clave… para
+saber si el programa ayuda». Eligió (preguntado) **clave por jugador** frente
+a usuario y contraseña o seguir solo con la suya. La guía para montarla y lo
+que se guarda: `docs/comunidad.md`.
+- **El servidor** es un proyecto gratuito de Supabase de Javi, con
+  `supabase/esquema.sql`. Tablas con RLS sin políticas Y sin permisos para
+  `anon`/`authenticated` (dos capas: cada una sola aguanta, la prueba exige
+  las dos). Solo se entra por cuatro funciones `security definer` con
+  `search_path` fijo: `subir_partidas` (lote ≤ 200, partida ≤ 2 KB con `t`,
+  `pick` y `gane`, y se guardan SOLO los campos conocidos; ≤ 5.000 por
+  jugador, 200.000 y 20.000 jugadores en total; un winrate de siempre fuera
+  de 30–70% no se guarda), `mis_partidas`, `borrar_mis_partidas` y `partidas_comunidad`
+  (páginas de ≤ 1.000 por `(jugador, t)`, con un número de jugador y nunca
+  la huella). La clave se guarda como SHA-256. En SQL, `<>` con un campo que
+  falta da NULL y NO rechaza: se valida con `is distinct from` (la prueba lo
+  cazó con una partida sin `gane`).
+- **La prueba del SQL** (`pruebas/sql/esquema.sql.mjs`, `npm run test:sql`,
+  también en `pruebas-ui.yml`) monta un Postgres temporal con los roles y los
+  permisos POR DEFECTO de Supabase (todo lo nuevo de `public` se da a anon),
+  pega el esquema dos veces y prueba como `anon`. Diecinueve mutaciones,
+  todas cazadas; tres sobrevivían al principio y eran la prueba: quitar el
+  RLS lo tapaba el `revoke` (hoy se mira cada capa), el tope de 1.000 filas
+  se probaba con 2, y `huella_de` se llamaba con una clave inválida (fallaba
+  por la clave, no por el permiso). No va en `npm test`: publicar no depende
+  de tener Postgres.
+- **La app**: `src/app/basedatos.js` (puro salvo la red inyectada).
+  `sanearConfig` solo acepta `https://<20>.supabase.co` y una clave
+  publicable (`sb_publishable_` o un JWT con `role: anon`), nunca
+  `sb_secret_` ni `service_role`. `paraLaComunidad` saca de cada partida lo
+  que sirve para medir: nada de `lector`. La primera subida va entera en lotes
+  de 200; después, las 200 más recientes y las quitadas
+  (`olvidadas`). `useComunidad` (`roam-picker:comunidad`, clave NUEVA:
+  casilla, clave de jugador, huella subida) sube a los `ESPERA_MS` como
+  useEnvio, con la huella de partidas, quitadas y referencia. El token de
+  GitHub no pasa por aquí; la Administración publica `public/comunidad.json`
+  con `escribir` de useEnvio. Sin ese fichero no se ve nada.
+- **La medida** (`src/motor/comunidad.js`): siguiendo frente a por libre
+  DENTRO de cada jugador (≥ `MINIMO_POR_RAMA` 5 en cada rama, pesado por
+  1/(1/n₁+1/n₂)), contra el winrate de siempre de CADA uno (su
+  `referencia`), lo mismo solo con `origen: 'lector'`, y la calibración de
+  siempre. Conclusión solo con `MINIMO_JUGADORES` 3. La prueba tiene el caso
+  de Simpson: dos jugadores que ganan igual sigan o no, uno sigue mucho y
+  gana mucho; mezclados salen +27 puntos, dentro de cada uno 0.
+- Pruebas: `app/basedatos` (Supabase de pega en `pruebas/fixtures/
+  supabase-falso.mjs`, las mismas respuestas que el esquema: si cambias una,
+  cambia la otra), `motor/comunidad` y `comunidad.e2e` (sin
+  configuración no sale; la casilla sube sin lector ni token; quitar borra
+  allí; «Dejar de guardar» no sube; tu clave en otro móvil trae y funde; Ver;
+  borrar; la Administración no deja publicar la secreta). Mutaciones: 19 en
+  el cliente y la medida, 9 en el navegador.
+- **La revisión de seguridad (antes de publicar)** no encontró nada crítico
+  (token, clave secreta y cuenta del juego, a salvo) y sí cuatro cosas,
+  reproducidas y arregladas con su prueba y su mutación: los topes globales
+  bloqueaban también a quien ya estaba (hoy solo frenan jugadores y
+  partidas NUEVOS: quien está puede corregir y borrar aunque alguien llene
+  el resto); se guardaba cualquier campo (4 KB × 300.000 pasaba de los 500
+  MB gratuitos); un winrate de siempre inventado movía la medida de todos
+  (`REFERENCIA_POSIBLE` en la medida, el mismo filtro en el servidor); y un
+  `t` con «.0» daba un error genérico. Aceptado y dicho en la guía: sin
+  cuentas, cualquiera puede subir partidas falsas, y bajar la comunidad
+  entera muchas veces gasta la transferencia del plan gratuito.
+- **No medible desde aquí**: el Supabase de verdad (la prueba es un Postgres
+  con sus roles). Si el primer «Guardar mis partidas» dice «no acepta la
+  clave pública», es la clave o el esquema sin pegar.
+

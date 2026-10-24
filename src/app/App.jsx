@@ -9,6 +9,7 @@ import { useDraft, TOPES } from './estado/useDraft.js';
 import { usePersonal } from './estado/usePersonal.js';
 import { useEnvio } from './estado/useEnvio.js';
 import { useLicencia } from './estado/useLicencia.js';
+import { useComunidad } from './estado/useComunidad.js';
 import { useNovedades } from './estado/useNovedades.js';
 import { useRecomendacion } from './estado/useRecomendacion.js';
 import { useActualizacion } from './estado/useActualizacion.js';
@@ -141,6 +142,8 @@ export default function App() {
   // token de la subida (el móvil de Javi) o ya con la clave de administrador.
   const licencia = useLicencia({ escribir: envio.activo ? envio.escribir : null, leerRepositorio: envio.activo ? envio.leerDelRepositorio : null });
   const verAdmin = envio.activo || licencia.esAdministrador;
+  // La base de datos de partidas de todos (3.69.0): con la casilla puesta, las tuyas se suben solas con tu clave.
+  const comunidad = useComunidad({ perfil: datosPerfil, escribir: envio.activo ? envio.escribir : null });
   const novedades = useNovedades();
 
   const elegirEnSelector = (h) => {
@@ -616,7 +619,7 @@ export default function App() {
       )}
       {hoja === 'historial' && (
         <HistorialPartidas
-          partidas={personal.partidas} maestria={personal.maestria} maestriaUsada={personal.maestriaUsada} datos={datos} pool={rec.pool} perfil={datosPerfil} envio={envio}
+          partidas={personal.partidas} maestria={personal.maestria} maestriaUsada={personal.maestriaUsada} datos={datos} pool={rec.pool} perfil={datosPerfil} envio={envio} comunidad={comunidad} onImportar={traerPerfil}
           onOlvidar={personal.olvidarPartida} onCorregir={personal.corregirPartida} onCambiarHeroe={personal.cambiarHeroePartida}
           onAnadir={(heroe, gane) => personal.apuntarPartida({ pick: heroe, gane, previa: true, rango: datos.rango })}
           onCerrar={cerrar} t={t}
@@ -625,7 +628,7 @@ export default function App() {
       {hoja === 'perfil' && <Perfil datos={datosPerfil} onImportar={traerPerfil} onCerrar={cerrar} t={t} />}
       {hoja === 'meta' && <Meta datos={datos} linea={linea} onFicha={(nombre) => deHojaAHoja({ ficha: nombre })} onCerrar={cerrar} t={t} />}
       {hoja?.ficha && <FichaDeHeroe datos={datos} nombre={hoja.ficha} onOtro={(nombre) => setHoja({ ficha: nombre })} onCerrar={cerrar} t={t} />}
-      {hoja === 'admin' && verAdmin && <Administracion licencia={licencia} onCerrar={cerrar} t={t} />}
+      {hoja === 'admin' && verAdmin && <Administracion licencia={licencia} comunidad={comunidad} onCerrar={cerrar} t={t} />}
       {hoja === 'maestria' && (
         <EditorDeMaestria pool={rec.pool} maestria={personal.maestria} onGuardar={personal.guardarMaestria} onCerrar={cerrar} t={t} />
       )}

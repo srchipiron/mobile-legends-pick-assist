@@ -5,6 +5,7 @@ import { urlDeIncidencia, TOPE_URL, tokenPlausible } from '../github.js';
 import { paraSubir } from '../envio.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Veredicto } from './Veredicto.jsx';
+import { Comunidad } from './Comunidad.jsx';
 import { TusNumeros } from './TusNumeros.jsx';
 import { RevisionDraft } from './RevisionDraft.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
@@ -28,7 +29,7 @@ function estadoDeEnvio(envio, t) {
   return t('hist.autoNada');
 }
 
-export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null, maestriaUsada = null, perfil = null, envio = null, onOlvidar, onCorregir, onCambiarHeroe, onAnadir, onCerrar, t = tPorDefecto }) {
+export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null, maestriaUsada = null, perfil = null, envio = null, comunidad = null, onImportar = null, onOlvidar, onCorregir, onCambiarHeroe, onAnadir, onCerrar, t = tPorDefecto }) {
   const [anadiendo, setAnadiendo] = useState(false);
   const [heroe, setHeroe] = useState(null);
   const [aviso, setAviso] = useState(null);
@@ -139,6 +140,8 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null,
             </>
           )}
         </section>
+        {/* La base de datos de todos (3.69.0): solo con comunidad.json publicado. */}
+        <Comunidad comunidad={comunidad} perfil={perfil ?? { partidas, mastery: maestria }} onImportar={onImportar ?? (() => {})} t={t} />
         <button className="ancho" onClick={() => setAnadiendo((v) => !v)}>{t('hist.anadir')}</button>
         {anadiendo && (
           <>

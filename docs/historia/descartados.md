@@ -550,3 +550,12 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   leer lo guardado antes de subir quita el caso visto (dos comentarios en un
   segundo). Dos pestañas en el MISMO milisegundo siguen pudiendo duplicarlo,
   y un comentario de más no hace daño.
+- **Usuario y contraseña para la base de datos de partidas** (3.69.0,
+  decidido por Javi: «clave por jugador»): pedía guardar correos de otras
+  personas (protección de datos) y un paso más para cada jugador, para lo
+  mismo que da una clave al azar. Tampoco se exige la clave de invitación
+  para subir: el servidor no puede comprobar una firma ECDSA sin
+  extensiones, y la puerta de la app ya es «una puerta, no una caja fuerte».
+- **Bajar las partidas de la comunidad al repositorio**: son de otras
+  personas, aunque vayan sin nombre. `medir-comunidad.mjs --guardar` las deja
+  en un fichero fuera del repositorio para medir el modelo con ellas.
