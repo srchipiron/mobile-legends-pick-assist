@@ -1083,3 +1083,21 @@ de 2026) y la app se quedó vinculada a la vieja.
   montado aunque plegado y la búsqueda de fondo sobrevivía a su mutación.
   Apunta el código de cada IP ANTES de cortar la petición: si no, mandarlo a
   todas sobrevivía. Cuatro mutaciones.
+
+## La pantalla de la APK y la burbuja en baneos (3.65.5)
+
+- Con `targetSdk 35` Android 15 obliga a dibujar de borde a borde: el
+  contenido va por debajo de la barra de estado y de la de navegación. Javi:
+  «en tablet se me tapan las primeras frases de arriba». `Principal.kt` pone
+  de margen los `systemBars | displayCutout` en el `ScrollView`
+  (`setOnApplyWindowInsetsListener`) y `clipToPadding = false`.
+- Con `screenWidthDp >= 720`, dos columnas: la guía, y vincular más los
+  ajustes. Cada bloque en una tarjeta (#1C1C1E, 14 dp). Arriba, la versión
+  instalada.
+- El Kotlin se compila aquí (`./gradlew --offline :app:compileReleaseKotlin`,
+  hay un SDK en /opt/android). Si se mira en un Android de verdad, solo en
+  la tablet.
+- En la fase de baneos `consejoParaLaTablet` manda «Banea: A · B · C» (los
+  tres primeros de `rec.baneosSugeridos`) y tu nº1 de ahora en el detalle.
+  Sin sugeridos (los diez ya puestos) o en picks, lo de siempre. Prueba en
+  `app/lector`, una mutación.

@@ -27,6 +27,21 @@ await prueba('la versión del pie abre las novedades y la primera es la que se p
   await contexto.close();
 });
 
+await prueba('tras actualizarse, la versión del pie lleva «nuevo» hasta abrir las novedades; abiertas, no vuelve (3.65.5)', async () => {
+  const { version } = leerJson('package.json');
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { 'roam-picker:linea': 'roam', 'roam-picker:version-vista': '3.0.0' } });
+  eq(await pagina.locator('.pie-nuevo').count(), 1, 'con una versión vista anterior no sale «nuevo»');
+  eq((await pagina.locator('.pie-version').textContent()).trim(), `v${version}`, '«nuevo» se mete en el texto de la versión');
+  await pagina.locator('.pie-version').click(); await pagina.waitForTimeout(300);
+  await pagina.locator('.sheet .close').click(); await pagina.waitForTimeout(200);
+  eq(await pagina.locator('.pie-nuevo').count(), 0, 'abiertas las novedades, «nuevo» sigue');
+  eq(await pagina.evaluate(() => JSON.parse(localStorage.getItem('roam-picker:version-vista'))), version, 'no se guarda la versión vista');
+  await pagina.reload({ waitUntil: 'networkidle' }); await pagina.waitForTimeout(400);
+  eq(await pagina.locator('.pie-nuevo').count(), 0, 'tras recargar vuelve «nuevo» con las novedades ya vistas');
+  ok(!errores.length, `errores: ${errores}`);
+  await contexto.close();
+});
+
 await terminar('interfaz/novedades');
 await navegador.close();
 await cerrar();

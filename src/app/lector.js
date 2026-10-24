@@ -524,7 +524,13 @@ export async function traerDeTermux({ pedirTermux = (...a) => fetch(...a), pedir
  * El consejo de la burbuja: tu pick (el fijado o el nº1) con su
  * probabilidad, y debajo los dos siguientes. Sin ranking, nada.
  */
-export function consejoParaLaTablet({ eleccion, ranking = [] }, t) {
+export function consejoParaLaTablet({ eleccion, ranking = [], fase = 'picks', baneos = [] }, t) {
+  // En la fase de baneos (3.65.5) lo que sirve es a quién banear, con tu
+  // nº1 de ahora como recordatorio: el pick no se decide hasta después.
+  if (fase === 'baneos' && baneos.length) {
+    const lista = baneos.slice(0, 3).map((b) => b.heroe?.name).filter(Boolean).join(' · ');
+    if (lista) return { titulo: t('tablet.banea', { lista }), detalle: eleccion?.heroe ? t('tablet.tuNumeroUno', { heroe: eleccion.heroe.name }) : null };
+  }
   if (!eleccion?.heroe || !ranking.length) return null;
   const pct = (p) => `${Math.round(p * 100)}%`;
   const otros = ranking.filter((r) => r.heroe.name !== eleccion.heroe.name).slice(0, 2).map((r) => `${r.heroe.name} ${pct(r.p)}`);

@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.65.5
+
+- La pantalla de Lector MLBB ya no queda tapada por la barra de arriba.
+  Android 15 dibuja las apps por debajo de la barra de estado y de la de
+  abajo, y las primeras frases se quedaban escondidas. Además, en la tablet
+  la pantalla va en dos columnas (la guía a un lado; el QR y los ajustes al
+  otro), cada bloque en su tarjeta, y arriba dice la versión instalada.
+- En la fase de baneos, la burbuja de la tablet dice a quién banear (los
+  tres primeros que sugiere la app) y te recuerda tu nº1 de ese momento.
+- Cuando la app se actualiza sola, la versión del pie lleva «nuevo» hasta
+  que abres las novedades.
+
 ## 3.65.4
 
 - Si la tablet cambia de dirección en la wifi, Pick Assist la encuentra sola.

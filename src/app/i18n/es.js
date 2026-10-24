@@ -667,4 +667,7 @@ export default {
   'lectorTablet.apk.solo': 'Lector MLBB {tuya}.',
   'lectorTablet.apk.nose': 'La tablet contesta, pero no dice su versión.',
   'lectorTablet.apk.buscando': 'La tablet no contesta en su dirección de siempre: buscándola en la wifi…',
+  'tablet.banea': 'Banea: {lista}',
+  'tablet.tuNumeroUno': 'Tu nº1 ahora: {heroe}',
+  'pie.nuevo': 'nuevo',
 };

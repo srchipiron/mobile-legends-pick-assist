@@ -945,6 +945,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* Área de toque de 40 px aunque el texto mida 11: fallar abría el detalle del pie. */
 .pie-version { color: inherit; font: inherit; padding: 12px 6px; margin: -12px -6px; text-decoration: underline dotted; text-underline-offset: 3px; }
 .pie-version:hover { color: var(--gold); }
+/* «nuevo» tras actualizarse sola (3.65.5), hasta abrir las novedades. */
+.pie-nuevo { margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: var(--gold); color: #000; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-block; }
 /* El pie va alineado a la derecha y la hoja lo hereda: se deshace aquí. */
 .pie .sheet { text-align: left; font-size: 14px; color: var(--text); cursor: auto; font-family: var(--font-body); }
 .changelog { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }

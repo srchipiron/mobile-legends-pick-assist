@@ -31,6 +31,8 @@ export const CLAVES = {
   licencias: 'roam-picker:licencias',    // la última licencias.json vista (sin red se usa esta)
   admin: 'roam-picker:admin',            // la clave de administrador de Javi (privada: SOLO en su móvil)
   emitidas: 'roam-picker:emitidas',      // las claves que ha dado Javi: nombre, id, fechas
+  // La última versión cuyas novedades se abrieron (3.65.5). Clave NUEVA: sin ella, «nuevo» sale una vez.
+  versionVista: 'roam-picker:version-vista',
 };
 
 /** Lee un valor guardado; con cualquier fallo (JSON roto, sin almacén) devuelve `porDefecto`. */

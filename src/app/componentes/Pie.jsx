@@ -12,7 +12,7 @@ export const HORAS_DATOS_VIEJOS = 36;
  * Si faltan los counters, el motivo se enseña aquí: leer el JSON en un móvil
  * no es una opción razonable.
  */
-export function Pie({ meta, generado, edadHoras, edadMatrizHoras = null, rango, rangoDatos = null, diasDatos = null, cov, t = tPorDefecto }) {
+export function Pie({ meta, generado, edadHoras, edadMatrizHoras = null, rango, rangoDatos = null, diasDatos = null, cov, novedadesNuevas = false, onVerNovedades = null, t = tPorDefecto }) {
   const [abierto, setAbierto] = useState(false);
   const [novedades, setNovedades] = useState(false);
   const fecha = generado ? generado.toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : null;
@@ -68,7 +68,9 @@ export function Pie({ meta, generado, edadHoras, edadMatrizHoras = null, rango, 
       )}
       <span className="pie-linea">
         {/* La versión abre las novedades; el resto del pie, el detalle. stopPropagation para que no hagan las dos. */}
-        <button className="pie-version" onClick={(e) => { e.stopPropagation(); setNovedades(true); }} title={t('changelog.titulo')}>v{__APP_VERSION__}</button>
+        <button className="pie-version" onClick={(e) => { e.stopPropagation(); setNovedades(true); onVerNovedades?.(); }} title={t('changelog.titulo')}>v{__APP_VERSION__}</button>
+        {/* Al lado y no dentro: el texto del botón es la versión, y lo leen las pruebas y el diagnóstico. */}
+        {novedadesNuevas && <span className="pie-nuevo">{t('pie.nuevo')}</span>}
         {' · '}{fecha ? t('pie.datos', { fecha }) : t('pie.sinDatos')}
       </span>
       {novedades && <Novedades entradas={__CHANGELOG__} actual={__APP_VERSION__} onCerrar={() => setNovedades(false)} t={t} />}

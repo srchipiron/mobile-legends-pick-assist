@@ -650,4 +650,7 @@ export default {
   'lectorTablet.apk.solo': 'Lector MLBB {tuya}.',
   'lectorTablet.apk.nose': 'The tablet answers but does not say its version.',
   'lectorTablet.apk.buscando': 'The tablet does not answer at its usual address: looking for it on the wifi…',
+  'tablet.banea': 'Ban: {lista}',
+  'tablet.tuNumeroUno': 'Your no. 1 now: {heroe}',
+  'pie.nuevo': 'new',
 };

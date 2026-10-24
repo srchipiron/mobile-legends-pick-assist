@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.media.projection.MediaProjectionManager
 import android.net.ConnectivityManager
 import android.net.Uri
@@ -17,6 +18,7 @@ import android.os.Looper
 import android.provider.Settings
 import android.view.Gravity
 import android.view.View
+import android.view.WindowInsets
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -82,19 +84,35 @@ class Principal : Activity() {
             previo?.uncaughtException(hilo, e)
         }
         val pad = dp(16)
-        val columna = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(pad, pad, pad, pad); setBackgroundColor(Color.BLACK) }
-        fun texto(tam: Float, color: Int = Color.WHITE) = TextView(this).apply { textSize = tam; setTextColor(color); setPadding(0, pad / 3, 0, pad / 3) }
-        fun titulo(t: String) = texto(18f, Color.rgb(255, 214, 10)).apply { text = t; typeface = Typeface.DEFAULT_BOLD; setPadding(0, pad, 0, pad / 3) }
+        // En una tablet (o un móvil tumbado) hay sitio para dos columnas: la
+        // guía a un lado y el QR y los ajustes al otro (3.65.5). En vertical, una.
+        val dosColumnas = resources.configuration.screenWidthDp >= 720
+        fun texto(tam: Float, color: Int = Color.WHITE) = TextView(this).apply { textSize = tam; setTextColor(color); setPadding(0, pad / 3, 0, pad / 3); setLineSpacing(0f, 1.15f) }
+        fun titulo(t: String) = texto(18f, Color.rgb(255, 214, 10)).apply { text = t; typeface = Typeface.DEFAULT_BOLD; setPadding(0, 0, 0, pad / 3) }
+        /** Una tarjeta como las de Pick Assist: gris sobre negro, esquinas redondas. */
+        fun tarjeta() = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(pad, pad, pad, pad)
+            background = GradientDrawable().apply { setColor(Color.rgb(28, 28, 30)); cornerRadius = dp(14).toFloat() }
+        }
+        fun separada() = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(12) }
+        val izquierda = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val derecha = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
 
-        columna.addView(texto(24f, Color.rgb(255, 214, 10)).apply { text = "Lector MLBB"; typeface = Typeface.DEFAULT_BOLD })
-        columna.addView(texto(14f, Color.LTGRAY).apply {
+        izquierda.addView(texto(26f, Color.rgb(255, 214, 10)).apply { text = "Lector MLBB"; typeface = Typeface.DEFAULT_BOLD; setPadding(0, 0, 0, 0) })
+        // La versión instalada, a la vista (3.65.5): para saber si está al día sin buscarla en Ajustes de Android.
+        val instalada = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { null }
+        izquierda.addView(texto(13f, Color.GRAY).apply { text = instalada?.let { "Versión $it" } ?: ""; setPadding(0, 0, 0, pad / 2) })
+        izquierda.addView(texto(14f, Color.LTGRAY).apply {
             text = "Lee el draft de Mobile Legends de la pantalla de esta tablet y se lo pasa a la app Pick Assist del móvil, que te dice qué héroe coger. " +
                 "Solo MIRA la pantalla: no toca el juego ni tu cuenta. Aun así, es una herramienta de terceros: úsala bajo tu responsabilidad."
+            setPadding(0, 0, 0, pad)
         })
         actualizar = texto(14f, Color.rgb(100, 210, 255)).apply { visibility = View.GONE }
-        columna.addView(actualizar)
+        izquierda.addView(actualizar)
 
-        columna.addView(titulo("Paso a paso"))
+        val guia = tarjeta()
+        guia.addView(titulo("Paso a paso"))
         pasos = listOf(
             Paso("Deja que la app te avise (resumen de cada partida).", "Permitir avisos") {
                 if (Build.VERSION.SDK_INT >= 33) requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
@@ -107,29 +125,58 @@ class Principal : Activity() {
                 startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
             },
             Paso("Empieza a leer. Android pregunta qué grabar: elige «Pantalla completa».", "Empezar a leer") { alternar() },
-            Paso("En el MÓVIL, abre la cámara y escanea el QR de abajo. Se abre Pick Assist: toca «Vincular». Tablet y móvil, en la misma wifi."),
+            Paso("En el MÓVIL, abre la cámara y escanea el QR. Se abre Pick Assist: toca «Vincular». Tablet y móvil, en la misma wifi."),
             Paso("Juega. En Pick Assist, «Leer solo» lee el draft cada pocos segundos y tu nº1 sale en la burbuja. Al acabar, la partida se apunta sola."),
         )
-        for (p in pasos) columna.addView(p.fila)
+        for (p in pasos) guia.addView(p.fila)
+        izquierda.addView(guia, separada())
 
-        columna.addView(titulo("Vincular el móvil"))
-        vinculo = texto(16f).apply { typeface = Typeface.MONOSPACE }.also { columna.addView(it) }
+        val enlazar = tarjeta()
+        enlazar.addView(titulo("Vincular el móvil"))
+        vinculo = texto(16f).apply { typeface = Typeface.MONOSPACE }.also { enlazar.addView(it) }
         qr = ImageView(this).apply { adjustViewBounds = true }
-        columna.addView(qr, LinearLayout.LayoutParams(dp(240), dp(240)).apply { gravity = Gravity.START })
+        enlazar.addView(qr, LinearLayout.LayoutParams(dp(240), dp(240)).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = dp(8); bottomMargin = dp(8) })
         // Un código nuevo invalida el viejo: Node lo leyó al arrancar, así que
         // la app se cierra y se vuelve a abrir con el nuevo (Node no se reinicia en el mismo proceso).
-        columna.addView(Button(this).apply { text = "Código nuevo (desvincula el móvil)"; setOnClickListener { codigoNuevo() } })
+        enlazar.addView(Button(this).apply { text = "Código nuevo (desvincula el móvil)"; setOnClickListener { codigoNuevo() } })
+        derecha.addView(enlazar, separada())
 
-        columna.addView(titulo("Ajustes y detalles"))
+        val ajustes = tarjeta()
+        ajustes.addView(titulo("Ajustes y detalles"))
         boton = Button(this).apply { textSize = 18f; setOnClickListener { alternar() } }
-        columna.addView(boton)
+        ajustes.addView(boton)
         esquinaBurbuja = Button(this).apply { setOnClickListener { Burbuja.siguienteEsquina(this@Principal); refrescar() } }
-        columna.addView(esquinaBurbuja)
-        estado = texto(14f).also { columna.addView(it) }
-        columna.addView(texto(13f, Color.LTGRAY).apply { text = "Mientras lee, la tablet graba su pantalla: si abres otra app, el lector también la ve. La grabación no sale de la tablet; al móvil solo van nombres de héroes." })
-        columna.addView(texto(14f, Color.LTGRAY).apply { text = "Últimas líneas del lector:" })
-        registro = texto(12f, Color.LTGRAY).apply { typeface = Typeface.MONOSPACE }.also { columna.addView(it) }
-        setContentView(ScrollView(this).apply { addView(columna); setBackgroundColor(Color.BLACK) })
+        ajustes.addView(esquinaBurbuja)
+        estado = texto(14f).also { ajustes.addView(it) }
+        ajustes.addView(texto(13f, Color.LTGRAY).apply { text = "Mientras lee, la tablet graba su pantalla: si abres otra app, el lector también la ve. La grabación no sale de la tablet; al móvil solo van nombres de héroes." })
+        ajustes.addView(texto(14f, Color.LTGRAY).apply { text = "Últimas líneas del lector:" })
+        registro = texto(12f, Color.LTGRAY).apply { typeface = Typeface.MONOSPACE }.also { ajustes.addView(it) }
+        derecha.addView(ajustes, separada())
+
+        val cuerpo = LinearLayout(this).apply { orientation = if (dosColumnas) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL; setBackgroundColor(Color.BLACK) }
+        if (dosColumnas) {
+            cuerpo.addView(izquierda, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dp(12) })
+            cuerpo.addView(derecha, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        } else {
+            cuerpo.addView(izquierda)
+            cuerpo.addView(derecha)
+        }
+        val desplazar = ScrollView(this).apply { addView(cuerpo); setBackgroundColor(Color.BLACK); clipToPadding = false }
+        // Desde Android 15 la app se dibuja DEBAJO de la barra de estado y de la
+        // de navegación (edge-to-edge obligatorio con targetSdk 35): sin este
+        // margen, las primeras frases quedaban tapadas en la tablet (3.65.5).
+        desplazar.setOnApplyWindowInsetsListener { v, insets ->
+            val (izq, arriba, der, abajo) = if (Build.VERSION.SDK_INT >= 30) {
+                val i = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+                listOf(i.left, i.top, i.right, i.bottom)
+            } else {
+                @Suppress("DEPRECATION")
+                listOf(insets.systemWindowInsetLeft, insets.systemWindowInsetTop, insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
+            }
+            v.setPadding(pad + izq, pad + arriba, pad + der, pad + abajo)
+            insets
+        }
+        setContentView(desplazar)
     }
 
     override fun onResume() {

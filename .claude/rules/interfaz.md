@@ -402,3 +402,10 @@ compila con `package.json` en 9.9.9 un momento, para simular una versión
 nueva, y luego lo restaura. El 23 de octubre de 2026 un commit hecho mientras
 corría se llevó el 9.9.9; se vio antes de llegar a `main`. Primero acaban las
 pruebas, después `git add`.
+
+**«nuevo» en el pie (3.65.5)**: la app se actualiza sola y nadie se enteraba
+de qué cambiaba. `useNovedades` guarda en `roam-picker:version-vista` (clave
+NUEVA; sin ella, «nuevo» sale una vez) la versión cuyas novedades se
+abrieron, y el botón de la versión lleva `.pie-nuevo` hasta abrirlas. No hay
+ventana: con un draft delante no tapa nada. Prueba en `novedades.e2e`, dos
+mutaciones.

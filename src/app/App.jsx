@@ -9,6 +9,7 @@ import { useDraft, TOPES } from './estado/useDraft.js';
 import { usePersonal } from './estado/usePersonal.js';
 import { useEnvio } from './estado/useEnvio.js';
 import { useLicencia } from './estado/useLicencia.js';
+import { useNovedades } from './estado/useNovedades.js';
 import { useRecomendacion } from './estado/useRecomendacion.js';
 import { useActualizacion } from './estado/useActualizacion.js';
 import { leerEntorno, pedirPublicada } from './entorno.js';
@@ -126,6 +127,7 @@ export default function App() {
   // token de la subida (el móvil de Javi) o ya con la clave de administrador.
   const licencia = useLicencia({ escribir: envio.activo ? envio.escribir : null, leerRepositorio: envio.activo ? envio.leerDelRepositorio : null });
   const verAdmin = envio.activo || licencia.esAdministrador;
+  const novedades = useNovedades();
 
   const elegirEnSelector = (h) => {
     if (hoja === 'baneos') { draft.alternarBaneo(h); return; }
@@ -466,7 +468,7 @@ export default function App() {
   // La burbuja de la tablet (3.62.0): tu pick y los dos siguientes, cada vez
   // que cambian. Solo con el lector en la tablet; si no llega, el siguiente
   // cambio lo vuelve a mandar.
-  const consejoTablet = lectorTablet ? consejoParaLaTablet({ eleccion: rec.eleccion, ranking: rec.ranking }, t) : null;
+  const consejoTablet = lectorTablet ? consejoParaLaTablet({ eleccion: rec.eleccion, ranking: rec.ranking, fase: draft.fase, baneos: rec.baneosSugeridos }, t) : null;
   const huellaConsejo = consejoTablet ? `${consejoTablet.titulo}|${consejoTablet.detalle}` : '';
   useEffect(() => {
     if (!lectorTablet) return;
@@ -546,6 +548,7 @@ export default function App() {
     <Pie
       t={t} meta={meta} generado={generado} edadHoras={edadHoras} edadMatrizHoras={edadMatrizHoras} rango={datos.rango} cov={rec.cov}
       rangoDatos={rangoDatos} diasDatos={datos.meta?.ventana?.dias}
+      novedadesNuevas={novedades.nueva} onVerNovedades={novedades.marcarVista}
     />
   );
   // «Deshacer» tras vaciar el draft o quitar con la × (3.23.0). Con una hoja
