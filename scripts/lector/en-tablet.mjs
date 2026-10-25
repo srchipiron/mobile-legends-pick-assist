@@ -317,4 +317,30 @@ export async function principal(env = process.env) {
   return servidor;
 }
 
-if (process.env.LECTOR_INTERNO && process.argv[1]?.endsWith('en-tablet.mjs')) await principal();
+/**
+ * Un error que nadie recoge NO cierra la app (3.72.2). En la APK, cuando
+ * Node sale, sale el proceso entero: la app se cerraba sola (Android:
+ * «se cerró ella misma», código 1) y lo único que quedaba era ese número.
+ * Hoy se apunta con su detalle en `fallo-nodo.txt` (la app lo enseña arriba,
+ * con «Copiar») y en el registro, y el lector sigue. Si ni siquiera arranca,
+ * Node se queda vivo sin hacer nada para que la app no se cierre y lo diga.
+ */
+export function vigilarErrores({ casa = '.', registrar = (m) => console.log(m), proceso = process } = {}) {
+  const apuntar = (tipo, e) => {
+    const texto = `${tipo}: ${e?.stack ?? e}`.slice(0, 4000);
+    registrar(`ERROR sin recoger (${tipo}); el lector sigue. ${texto}`);
+    try { writeFileSync(join(casa, 'fallo-nodo.txt'), `${new Date().toISOString()} ${texto}`); } catch { /* sin disco: queda en el registro */ }
+  };
+  proceso.on('uncaughtException', (e) => apuntar('excepción', e));
+  proceso.on('unhandledRejection', (e) => apuntar('promesa', e));
+  return apuntar;
+}
+
+if (process.env.LECTOR_INTERNO && process.argv[1]?.endsWith('en-tablet.mjs')) {
+  const apuntar = vigilarErrores({ casa: process.env.LECTOR_CASA || '.' });
+  try { await principal(); } catch (e) {
+    apuntar('al arrancar', e);
+    // Sin nada pendiente, Node acabaría y con él la app: se queda esperando.
+    setInterval(() => {}, 1 << 30);
+  }
+}

@@ -1137,4 +1137,11 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   «Copiar» y no pide sola tras uno. Lección: lo automático que compite con un
   toque necesita su cerrojo, y en un aparato sin logcat el motivo de un
   cierre tiene que salir arriba y copiable, no en la letra pequeña.
+  Tras 3.72.1 Javi copió «código 1, estado 1»: `REASON_EXIT_SELF` con salida
+  1, o sea Node saliendo por un error sin recoger, que en la APK cierra el
+  proceso entero (antes de que `alSalir` apunte nada). Desde 3.72.2
+  `vigilarErrores` (en-tablet.mjs) recoge excepciones y promesas sueltas en
+  `fallo-nodo.txt` y el lector sigue, y un fallo al arrancar deja a Node vivo
+  para que la app lo diga. Lección: en un proceso que comparte vida con la
+  app, un error sin recoger no puede ser la forma de morir.
 

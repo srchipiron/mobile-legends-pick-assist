@@ -86,7 +86,7 @@ test('un fallo al empezar a grabar no cierra la app ni entra en bucle (3.72.1): 
   ok(/if \(pidiendo\) return\s+pidiendo = true/.test(alternar), 'se puede pedir grabar dos veces a la vez');
   ok(/if \(peticion == PEDIR_GRABAR\) pidiendo = false/.test(principal), 'tras contestar, no se puede volver a pedir');
   ok(/if \(grabando\) Unit/.test(empezar), 'un segundo permiso para la grabación que ya va');
-  for (const f of ['fallo-grabar.txt', 'fallo.txt', 'salida-nodo.txt']) ok(principal.includes(`fichero("${f}")`), `el aviso no enseña ${f}`);
+  for (const f of ['fallo-grabar.txt', 'fallo.txt', 'salida-nodo.txt', 'fallo-nodo.txt']) ok(principal.includes(`fichero("${f}")`), `el aviso no enseña ${f}`);
   ok(/Salidas\.falloDesde\(this, visto\)/.test(principal) && /setPrimaryClip/.test(principal) && /fallosVistos/.test(principal), 'el aviso no lee el cierre de Android, no se puede copiar o no se puede quitar');
 });
 

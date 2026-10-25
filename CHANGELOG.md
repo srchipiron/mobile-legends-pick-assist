@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.72.2
+
+- Un error del lector ya no cierra Lector MLBB. Hasta ahora, cualquier error
+  del lector por dentro cerraba la app entera; Android solo decía «se cerró
+  ella misma, código 1». Ahora el error se apunta con su detalle y la app
+  sigue abierta.
+- El aviso rojo de arriba dice qué falló dentro del lector, y «Copiar»
+  lleva también las últimas líneas del registro, que es donde se ve el
+  porqué exacto.
+
 ## 3.72.1
 
 - Lector MLBB ya no se cierra al aceptar «Pantalla completa». Al abrir la

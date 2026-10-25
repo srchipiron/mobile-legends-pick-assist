@@ -1337,4 +1337,11 @@ lleva «Copiar» con versión, Android y modelo, y mientras se vea no se pide
 grabar sola. Pruebas de forma en `android.test` (cinco mutaciones). Antes de
 tocar la grabación se probó el lector entero con Node 18 (el del APK) y una
 APK de pega con capturas reales: draft, partida, voz y corrección van bien.
+- **Los errores de Node no cierran la app (3.72.2)**: «código 1, estado 1»
+  (`REASON_EXIT_SELF`, salida 1) era Node saliendo por un error sin recoger,
+  que en nodejs-mobile se lleva el proceso. `vigilarErrores` escucha
+  `uncaughtException` y `unhandledRejection`, apunta `fallo-nodo.txt` (el
+  aviso rojo lo enseña) y sigue; si `principal()` falla, Node se queda vivo.
+  «Copiar» añade las últimas 40 líneas de `lector.log`. Comprobado con Node
+  18: arranque fallido, promesa y excepción sueltas, y el proceso sigue.
 

@@ -419,19 +419,22 @@ class Principal : Activity() {
         val partes = listOfNotNull(
             Salidas.falloDesde(this, visto)?.let { "Android: $it" },
             fichero("salida-nodo.txt"),
+            fichero("fallo-nodo.txt")?.let { "En el lector:\n$it" },
             fichero("fallo-grabar.txt")?.let { "Al empezar a grabar:\n$it" },
             fichero("fallo.txt")?.let { "En la app:\n$it" },
         )
         if (partes.isEmpty()) return null
         val version = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "?" }
-        return (listOf("Lector MLBB $version · Android ${Build.VERSION.SDK_INT} · ${Build.MANUFACTURER} ${Build.MODEL}") + partes).joinToString("\n\n")
+        // Y lo último del registro del lector (3.72.2): ahí está lo que pasó justo antes.
+        val log = Nodo.registro(this).takeIf { it.exists() }?.readLines()?.takeLast(40)?.joinToString("\n")
+        return (listOf("Lector MLBB $version · Android ${Build.VERSION.SDK_INT} · ${Build.MANUFACTURER} ${Build.MODEL}") + partes + listOfNotNull(log?.let { "Últimas líneas del lector:\n$it" })).joinToString("\n\n")
     }
 
     private fun pintarAviso(fallo: String?) {
         if (fallo == null) { aviso.visibility = View.GONE; return }
         avisoCompleto = fallo
         // En pantalla, lo justo; «Copiar» lleva el detalle entero.
-        avisoTexto.text = fallo.lines().take(12).joinToString("\n")
+        avisoTexto.text = fallo.substringBefore("Últimas líneas del lector:").lines().take(12).joinToString("\n").trim()
         aviso.visibility = View.VISIBLE
     }
 

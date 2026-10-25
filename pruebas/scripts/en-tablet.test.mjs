@@ -7,9 +7,10 @@
 import { createServer, request } from 'node:http';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { principal, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET } from '../../scripts/lector/en-tablet.mjs';
+import { principal, vigilarErrores, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { pruebaDelReto } from '../../src/app/lector.js';
 import { writeFileSync } from 'node:fs';
@@ -410,6 +411,26 @@ test('las partidas de la tablet se arreglan con tu corrección y se vuelven a su
   ok(p2.pick === 'Franco' && p2.estimacion === undefined && p2.modelo === undefined, `con otro pick se queda la estimación de otro héroe: ${JSON.stringify(p2)}`);
   eq(JSON.stringify(partidas.pendientes().map((p) => p.t).sort()), '[1,2]', 'lo arreglado no se vuelve a subir');
   eq(partidas.corregir(99, { enemigos: ['Clint'] }), false);
+});
+
+test('un error que nadie recoge no tira el lector (3.72.2): se apunta en fallo-nodo.txt con su detalle y el proceso sigue', () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-errores-'));
+  const oyentes = {}; const dichas = [];
+  const proceso = { on: (ev, f) => { oyentes[ev] = f; } };
+  vigilarErrores({ casa, registrar: (m) => dichas.push(m), proceso });
+  ok(oyentes.uncaughtException && oyentes.unhandledRejection, 'no escucha las excepciones o las promesas sin recoger');
+  oyentes.unhandledRejection(new TypeError('Cannot read properties of null (reading \'picks\')'));
+  const f = leerFichero(join(casa, 'fallo-nodo.txt'), 'utf8');
+  ok(/promesa: TypeError: Cannot read properties of null/.test(f) && /at /.test(f), `no apunta el error con su pila: ${f.slice(0, 200)}`);
+  ok(dichas.some((m) => /ERROR sin recoger/.test(m)), 'no lo dice en el registro');
+  oyentes.uncaughtException(new Error('otra'));
+  ok(/excepción: Error: otra/.test(leerFichero(join(casa, 'fallo-nodo.txt'), 'utf8')), 'no apunta la excepción');
+});
+
+test('el lector de la APK arranca con Node 18 vigilando sus errores, y un fallo al arrancar no lo cierra (3.72.2)', () => {
+  const fuente = leerFichero(join(dirname(fileURLToPath(import.meta.url)), '../../scripts/lector/en-tablet.mjs'), 'utf8');
+  const arranque = fuente.slice(fuente.lastIndexOf("if (process.env.LECTOR_INTERNO"));
+  ok(/vigilarErrores\(/.test(arranque) && /try \{ await principal\(\); \} catch/.test(arranque) && /setInterval\(/.test(arranque), 'el arranque de la APK no vigila sus errores, o un fallo al arrancar deja salir a Node (y cierra la app)');
 });
 
 await terminar('scripts/en-tablet');
