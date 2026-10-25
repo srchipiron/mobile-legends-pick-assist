@@ -8,6 +8,21 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.73.1
+
+- Lector MLBB usa siempre los datos del juego más nuevos que tenga.
+  Antes, si dejaba de poder descargarlos, seguía con los viejos aunque la
+  propia app trajera unos más recientes.
+- La pantalla de la tablet, en «Sin móvil», ahora dice:
+  - de hace cuánto son los datos con los que decide, y si son viejos;
+  - cuántas partidas lleva apuntadas y si están guardadas en tu base de
+    datos.
+- Sin tu clave, tus partidas se quedaban solo en la tablet sin avisar.
+  Ahora lo dice y explica cómo arreglarlo: abrir Pick Assist en el móvil una
+  vez con «Guardar mis partidas» puesto y la tablet vinculada.
+- Lo que quedó sin subir de otras veces se intenta subir al poco de
+  arrancar, sin esperar 10 minutos.
+
 ## 3.73.0
 
 - Lector MLBB ya no se queda atascado cuando no ve el final de la partida.

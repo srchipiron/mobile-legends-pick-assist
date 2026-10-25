@@ -243,6 +243,11 @@
   como PROPUESTA (decisión de Javi: «que me lo proponga primero»). Cuando
   `modelo.yml` abra la incidencia, se mide con el agente medidor-motor y se
   decide; si un día quiere que se aplique solo, es cambiar ese workflow.
+- **Que `apk.yml` pase las pruebas antes de publicar la APK** (propuesto el
+  25 de octubre de 2026): con 3.72.3 un push con `npm test` en rojo llegó a
+  publicar la APK (el despliegue de la web sí se paró). Bastaría un paso
+  `npm ci && npm test` antes de compilar (unos 2 minutos más por APK). Es un
+  workflow que publica: necesita el OK de Javi.
 - **El lector en la tablet, sin probar en un Android de verdad**
   (3.61.0–3.61.4). Lo primero que diga Javi al usarlo: si la captura sale
   (o negra: FLAG_SECURE), si el juego pierde fotogramas con la grabación

@@ -9,8 +9,8 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { test, ok, eq, terminar } from '../arnes.mjs';
-import { principal, vigilarErrores, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET } from '../../scripts/lector/en-tablet.mjs';
+import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { pruebaDelReto } from '../../src/app/lector.js';
 import { writeFileSync } from 'node:fs';
@@ -431,6 +431,41 @@ test('el lector de la APK arranca con Node 18 vigilando sus errores, y un fallo 
   const fuente = leerFichero(join(dirname(fileURLToPath(import.meta.url)), '../../scripts/lector/en-tablet.mjs'), 'utf8');
   const arranque = fuente.slice(fuente.lastIndexOf("if (process.env.LECTOR_INTERNO"));
   ok(/vigilarErrores\(/.test(arranque) && /try \{ await principal\(\); \} catch/.test(arranque) && /setInterval\(/.test(arranque), 'el arranque de la APK no vigila sus errores, o un fallo al arrancar deja salir a Node (y cierra la app)');
+});
+
+test('los datos con los que decide la tablet: los MÁS NUEVOS que tenga, no los primeros que encuentre (3.73.1)', () => {
+  const real = JSON.parse(leerFichero(join(RAIZ, 'public/data/roam-meta.json'), 'utf8'));
+  const cat = leerFichero(join(RAIZ, 'public/data/heroes.json'), 'utf8');
+  const carpeta = (fecha) => {
+    const c = mkdtempSync(join(tmpdir(), 'en-tablet-datos-'));
+    writeFileSync(join(c, 'roam-meta.json'), JSON.stringify({ ...real, generatedAt: fecha }));
+    writeFileSync(join(c, 'heroes.json'), cat);
+    return c;
+  };
+  const bajados = carpeta('2026-10-01T00:00:00Z'), deLaApk = carpeta('2026-10-20T00:00:00Z');
+  const leer = lectorDeDatos([bajados, deLaApk]);
+  const d = leer();
+  ok(d.meta.generatedAt === '2026-10-20T00:00:00Z' && d.de === 1, `decide con los bajados aunque los de la APK sean más nuevos: ${d.meta.generatedAt}`);
+  ok(d.catalogo?.heroes?.length > 100, 'sin catálogo');
+  writeFileSync(join(bajados, 'roam-meta.json'), JSON.stringify({ ...real, generatedAt: '2026-10-25T00:00:00Z' }));
+  const e = leer();
+  ok(e.meta.generatedAt === '2026-10-25T00:00:00Z' && e.de === 0, 'con los bajados más nuevos no los usa');
+  writeFileSync(join(bajados, 'roam-meta.json'), '{"roto":');
+  eq(leer().meta.generatedAt, '2026-10-20T00:00:00Z', 'un fichero roto deja sin datos');
+});
+
+test('/estado dice de cuándo son los datos y si tus partidas suben (3.73.1): sin tu clave, cuántas se quedan en la tablet', async () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-cuenta-'));
+  const apk = await apkDePega();
+  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' });
+  const puerto = servidor.address().port;
+  try {
+    servidor.partidas.apuntar({ t: 1788000000000, pick: 'Rafaela', gane: true });
+    const e = JSON.parse((await pedir(puerto, '/estado', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
+    // Sin nada bajado (LECTOR_SIN_SOLO no baja), decide con los que trae la APK, y lo dice.
+    ok(typeof e.datos?.fecha === 'string' && e.datos.de === 'apk', `/estado no dice de cuándo son los datos ni de dónde: ${JSON.stringify(e.datos)}`);
+    eq(JSON.stringify(e.partidas), JSON.stringify({ apuntadas: 1, sinSubir: 1, clave: false, error: null }), 'no dice que la partida se queda sin subir por falta de clave');
+  } finally { servidor.close(); apk.cerrar(); }
 });
 
 await terminar('scripts/en-tablet');

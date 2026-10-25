@@ -102,6 +102,8 @@ class Principal : Activity() {
     private var correccionId: String? = null
     @Volatile private var nueva: Actualizar.Nueva? = null
     @Volatile private var movilLee = false
+    /** De cuándo son los datos y si suben las partidas (3.73.1), de /estado. */
+    private lateinit var cuentaTablet: TextView
     private val reloj = Handler(Looper.getMainLooper())
     private var qrDe: String? = null
     private var ultimaSalida: String? = null
@@ -208,6 +210,7 @@ class Principal : Activity() {
         filaLineas2.addView(apagarSolo, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         sinMovil.addView(filaLineas)
         sinMovil.addView(filaLineas2)
+        cuentaTablet = texto(14f, Color.LTGRAY).also { sinMovil.addView(it) }
         derecha.addView(sinMovil, separada())
 
         val enlazar = tarjeta()
@@ -297,7 +300,10 @@ class Principal : Activity() {
         refrescar()
         // ¿El móvil ya lee? Lo dice el propio lector (sus lecturas), cada 3 s.
         if (Nodo.arrancado && System.currentTimeMillis() / 1000 % 3 == 0L) thread(isDaemon = true) {
-            movilLee = lecturasDelLector() > 0
+            val e = pedir("/estado")
+            movilLee = (e?.optJSONObject("lector")?.optInt("lecturas") ?: 0) > 0
+            val cuenta = e?.let { textoDeCuenta(it) }
+            runOnUiThread { if (!isFinishing && cuenta != null) cuentaTablet.text = cuenta }
             val c = pedirCorreccion()
             val p = pedir("/pregunta")?.optJSONObject("pregunta")
             // Un fallo al empezar a grabar no cierra la app (3.72.1): el aviso sale sin tener que volver a abrirla.
@@ -307,13 +313,6 @@ class Principal : Activity() {
         reloj.postDelayed({ tic() }, 1000)
     }
 
-    private fun lecturasDelLector(): Int = try {
-        val c = URL("http://127.0.0.1:$PUERTO/estado").openConnection() as HttpURLConnection
-        c.connectTimeout = 1000; c.readTimeout = 2000
-        c.setRequestProperty("X-Lector-Codigo", Vinculo.codigo(this))
-        try { if (c.responseCode == 200) JSONObject(c.inputStream.bufferedReader().readText()).optJSONObject("lector")?.optInt("lecturas") ?: 0 else 0 } finally { c.disconnect() }
-    } catch (e: Throwable) { 0 }
-
     /** Lo que no reconoció (3.71.0), o null. Solo lo da a la propia tablet: por 127.0.0.1 y con el código. */
     private fun pedirCorreccion(): JSONObject? = try {
         val c = URL("http://127.0.0.1:$PUERTO/correccion").openConnection() as HttpURLConnection
@@ -321,6 +320,33 @@ class Principal : Activity() {
         c.setRequestProperty("X-Lector-Codigo", Vinculo.codigo(this))
         try { if (c.responseCode == 200) JSONObject(c.inputStream.bufferedReader().readText()).optJSONObject("correccion") else null } finally { c.disconnect() }
     } catch (e: Throwable) { null }
+
+    /**
+     * Lo que antes no se veía (3.73.1): de cuándo son los datos con los que
+     * decide y si tus partidas llegan a la base de datos (sin tu clave no
+     * suben, y ni la app del móvil ni el bot que mide el modelo las ven).
+     */
+    private fun textoDeCuenta(e: JSONObject): String {
+        val lineas = mutableListOf<String>()
+        e.optJSONObject("datos")?.let { d ->
+            val f = d.optString("fecha", "")
+            val t = try { java.time.Instant.parse(f).toEpochMilli() } catch (x: Exception) { null }
+            if (t != null) {
+                val horas = (System.currentTimeMillis() - t) / 3_600_000
+                lineas += "Datos del juego de hace ${if (horas < 48) "$horas h" else "${horas / 24} días"}${if (d.optString("de") == "apk") " (los que trae la app: no consigo bajar los nuevos)" else ""}." + if (horas >= 72) " Son viejos: conecta la tablet a internet." else ""
+            }
+        }
+        e.optJSONObject("partidas")?.let { p ->
+            val apuntadas = p.optInt("apuntadas"); val sinSubir = p.optInt("sinSubir")
+            lineas += when {
+                apuntadas == 0 -> "Aún no ha apuntado ninguna partida."
+                sinSubir == 0 -> "$apuntadas partidas apuntadas, todas guardadas en tu base de datos."
+                !p.optBoolean("clave") -> "$apuntadas partidas apuntadas; $sinSubir solo están en esta tablet: falta tu clave. Abre Pick Assist en el móvil con «Guardar mis partidas» puesto y la tablet vinculada, una vez."
+                else -> "$apuntadas partidas apuntadas; $sinSubir por subir (se reintenta sola)."
+            }
+        }
+        return lineas.joinToString("\n")
+    }
 
     /** GET al lector de la propia tablet (127.0.0.1, con el código); null si no contesta 200. */
     private fun pedir(ruta: String): JSONObject? = try {

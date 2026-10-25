@@ -1394,4 +1394,16 @@ se queda esperando al ganado o perdido». Dos causas:
   ve, 409/400, se aprende la victoria y se deja de vigilar) y `android`.
   Quince mutaciones; sobrevive una inofensiva: con «No la terminé»
   `partidaSolo` ya no apunta sin resultado.
+- **Lo que la tablet no decía (iteración del 25 de octubre de 2026, 3.73.1)**:
+  (1) `lectorDeDatos` cogía el primer meta válido (los bajados delante), así
+  que con la descarga rota decidía con datos viejos aunque la APK trajera
+  unos más nuevos: hoy el de mayor `generatedAt`, con el catálogo de su
+  carpeta, y `de` dice cuál. (2) `subirLoDeLaTablet` sin clave devolvía «0
+  subidas» sin rastro: las partidas se quedaban en la tablet, sin llegar a la
+  base de datos, al móvil ni al bot del modelo. `/estado` lleva hoy `datos`
+  (fecha y de dónde) y `partidas` (apuntadas, sin subir, si hay clave, el
+  último error) y la APK lo enseña en «Sin móvil» (`textoDeCuenta`); el
+  registro lo dice una vez, y se sube a los 30 s de arrancar. Pruebas en
+  `en-tablet` y `android`, cuatro mutaciones (una sobrevivía hasta exigir
+  el «de dónde» exacto).
 

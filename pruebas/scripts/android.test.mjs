@@ -124,4 +124,10 @@ test('«¿Cómo acabó?» en la APK (3.72.5): la pantalla pregunta al lector de 
   ok(/mandar\("\/pregunta", JSONObject\(\)\.put\("id", id\)\.put\("gane", gane \?: JSONObject\.NULL\)\)/.test(principal), 'la respuesta no va al lector con su id');
 });
 
+test('la APK dice de cuándo son los datos y si las partidas suben (3.73.1)', () => {
+  const principal = readFileSync(join(KOTLIN, 'Principal.kt'), 'utf8');
+  ok(/val e = pedir\("\/estado"\)/.test(principal) && /textoDeCuenta\(it\)/.test(principal), 'la pantalla no lee de /estado los datos y las partidas');
+  ok(/optJSONObject\("datos"\)/.test(principal) && /optJSONObject\("partidas"\)/.test(principal) && /falta tu clave/.test(principal), 'no dice la edad de los datos o que faltan partidas por subir sin clave');
+});
+
 await terminar('scripts/android');

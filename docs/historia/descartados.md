@@ -576,4 +576,11 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   se reforzaría sola (la lección de 3.30.1: lo que se aprende solo no puede
   mandar sobre lo medido). Por eso la tablet PREGUNTA tras la partida, en
   un toque, y aprende de tu respuesta.
+- **`apk.yml` sin `npm test` antes de publicar (iteración del 25 de octubre
+  de 2026)**: el push en rojo de 3.72.3 publicó la APK igual (su código era
+  el bueno). Meter las pruebas en ese workflow es tocar uno que publica: va
+  a `pendiente.md` para que Javi lo apruebe, no se hace solo.
+- **Los datos del motor en la tablet, más a menudo que cada 6 h**: la ingesta
+  corre dos veces al día; bajarlos más a menudo no trae nada nuevo. Lo que
+  faltaba era SABER su edad (hecho en 3.73.1).
 

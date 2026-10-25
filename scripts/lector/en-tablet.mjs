@@ -98,27 +98,39 @@ export const datosValidos = (que, j) => {
 };
 
 /**
- * Lee los datos de la casa (los bajados) o, si no hay, los que trae la APK
- * dentro (copiados al compilar): así decide desde el primer arranque, sin
- * red. Con caché por fecha de modificación.
+ * Lee los datos de la casa (los bajados) o los que trae la APK dentro
+ * (copiados al compilar): así decide desde el primer arranque, sin red. Con
+ * caché por fecha de modificación.
+ *
+ * El meta, el MÁS NUEVO de los que haya (por `generatedAt`), no el primero
+ * que aparezca (3.73.1): con los bajados delante siempre, si la descarga
+ * dejaba de funcionar y una APK nueva traía datos más frescos, la tablet
+ * seguía decidiendo con los viejos sin decirlo. El catálogo va con el meta
+ * elegido (de su misma carpeta si allí hay uno válido). `de` dice de dónde
+ * salieron, para /estado.
  */
 export function lectorDeDatos(carpetas) {
   const cache = {};
-  const uno = (que) => {
-    for (const c of carpetas) {
-      const f = join(c, FICHEROS[que]);
-      try {
-        const m = statSync(f).mtimeMs;
-        if (cache[que]?.f === f && cache[que].m === m) return cache[que].j;
-        const j = JSON.parse(readFileSync(f, 'utf8'));
-        if (!datosValidos(que, j)) continue;
-        cache[que] = { f, m, j };
-        return j;
-      } catch { /* el siguiente */ }
-    }
-    return null;
+  const leer = (c, que) => {
+    const f = join(c, FICHEROS[que]);
+    try {
+      const m = statSync(f).mtimeMs;
+      if (cache[f]?.m === m) return cache[f].j;
+      const j = JSON.parse(readFileSync(f, 'utf8'));
+      if (!datosValidos(que, j)) return null;
+      cache[f] = { m, j };
+      return j;
+    } catch { return null; }
   };
-  return () => ({ catalogo: uno('catalogo'), meta: uno('meta') });
+  const fecha = (j) => { const t = Date.parse(j?.generatedAt ?? ''); return Number.isFinite(t) ? t : -Infinity; };
+  return () => {
+    let meta = null, deMeta = null;
+    carpetas.forEach((c, i) => { const j = leer(c, 'meta'); if (j && (!meta || fecha(j) > fecha(meta))) { meta = j; deMeta = i; } });
+    const orden = deMeta == null ? carpetas : [carpetas[deMeta], ...carpetas.filter((_, i) => i !== deMeta)];
+    let catalogo = null;
+    for (const c of orden) { catalogo = leer(c, 'catalogo'); if (catalogo) break; }
+    return { catalogo, meta, de: deMeta };
+  };
 }
 
 /**
@@ -258,12 +270,14 @@ export async function principal(env = process.env) {
   let soloRef = null;
   // Arreglar la partida apuntada con tu corrección (3.71.0): las partidas se crean después.
   let alCorregirRef = null;
+  // Lo que la APK enseña de cómo va la tablet (3.73.1): de cuándo son sus datos y si sus partidas suben.
+  let estadoTablet = () => ({});
   const servidor = crearServidor({
     alCorregir: (c) => alCorregirRef?.(c),
     capturar: capturaDeLaApk(base, secreto), hablar: vozDeLaApk(base, secreto), codigo,
     // Por qué se cerró la app la última vez (3.61.5, lo dice Android): el Diagnóstico del móvil lo enseña.
     // Y lo que la APK sabe de la tablet (3.63.0: versión, si graba, permisos, memoria), que escribe cada pocos segundos.
-    estadoExtra: () => ({ salida: String(env.LECTOR_ULTIMA_SALIDA ?? '').slice(0, 500) || null, tablet: leerSaludDeLaApk(join(env.LECTOR_CASA || '.', 'salud.json')), ...(soloRef ? { solo: soloRef.resumen() } : {}) }),
+    estadoExtra: () => ({ salida: String(env.LECTOR_ULTIMA_SALIDA ?? '').slice(0, 500) || null, tablet: leerSaludDeLaApk(join(env.LECTOR_CASA || '.', 'salud.json')), ...(soloRef ? { solo: soloRef.resumen() } : {}), ...estadoTablet() }),
     elector: crearElectorDeCaptura(), carpeta, registrar, ...cargarLoAprendido(registrar),
   });
   const puerto = Number(env.LECTOR_PUERTO ?? PUERTO);
@@ -282,13 +296,29 @@ export async function principal(env = process.env) {
   const partidas = partidasDeLaTablet(casa);
   // Una subida a la vez: apuntar y el reloj de 10 minutos pueden coincidir.
   let subiendo = null;
+  // Cómo fue la última subida (3.73.1): sin tu clave no sube nada, y antes no se decía.
+  let ultimaSubida = { cuando: null, error: null };
   const subir = () => {
     if (subiendo) return subiendo;
-    subiendo = subirLoDeLaTablet({ partidas, clave: ajustes.delMovil()?.clave, config: leerComunidad([bajados, join(aqui, '..', '..', 'datos')]) })
-      .then((r) => { if (r.subidas) registrar(`Sin móvil: ${r.subidas} partidas subidas a la base de datos.`); else if (r.error) registrar(`Sin móvil: no se pudieron subir las partidas (${r.error}).`); })
+    const clave = ajustes.delMovil()?.clave;
+    const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
+    subiendo = subirLoDeLaTablet({ partidas, clave, config })
+      .then((r) => {
+        const error = r.error ?? (!partidas.pendientes().length ? null : !claveDeJugadorValida(clave) ? 'sinClave' : !config ? 'sinBaseDeDatos' : null);
+        if (error && error !== ultimaSubida.error) registrar(`Sin móvil: ${partidas.pendientes().length} partidas sin subir (${error === 'sinClave' ? 'falta tu clave: abre Pick Assist en el móvil con «Guardar mis partidas» y la tablet vinculada una vez' : error}).`);
+        ultimaSubida = { cuando: Date.now(), error };
+        if (r.subidas) registrar(`Sin móvil: ${r.subidas} partidas subidas a la base de datos.`);
+      })
       .catch(() => {})
       .finally(() => { subiendo = null; });
     return subiendo;
+  };
+  estadoTablet = () => {
+    const d = leerDatos();
+    return {
+      datos: { fecha: d.meta?.generatedAt ?? null, de: d.de === 0 ? 'web' : d.de == null ? null : 'apk' },
+      partidas: { apuntadas: partidas.todas().length, sinSubir: partidas.pendientes().length, clave: claveDeJugadorValida(ajustes.delMovil()?.clave), error: ultimaSubida.error },
+    };
   };
   const solo = crearSolo({
     interno: servidor.interno, ajustes, datosPara: datosDelSolo(leerDatos), registrar,
@@ -299,7 +329,9 @@ export async function principal(env = process.env) {
     if (Number.isFinite(partida) && partidas.corregir(partida, { enemigos, aliados, tuyo })) { registrar('Sin móvil: la partida apuntada lleva ya los héroes que dijiste.'); subir(); }
   };
   const cadaSubida = setInterval(subir, 10 * 60 * 1000);
-  servidor.on('close', () => clearInterval(cadaSubida));
+  // Lo que quedó sin subir de otra vez, al poco de arrancar (no a los 10 minutos).
+  const primeraSubida = setTimeout(subir, 30000);
+  servidor.on('close', () => { clearInterval(cadaSubida); clearTimeout(primeraSubida); });
   servidor.partidas = partidas;
   soloRef = solo;
   // El vistazo al minimapa (3.69.3): con la burbuja puesta y nadie capturando,
