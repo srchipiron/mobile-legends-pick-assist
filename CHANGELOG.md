@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.72.4
+
+- Arreglado por fin el cierre de Lector MLBB al empezar a leer. El lector
+  traía una comprobación de nombres de héroe que la tablet no sabía
+  entender. Desde la 3.70.0 el lector no llegaba a arrancar y se llevaba
+  la app con él. Ahora esa comprobación está escrita de una forma que
+  entiende cualquier tablet, y una prueba nueva impide que vuelva a
+  colarse.
+
 ## 3.72.3
 
 - Si el lector falla al arrancar, Lector MLBB ya no se cierra. La 3.72.2

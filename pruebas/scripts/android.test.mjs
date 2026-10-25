@@ -48,6 +48,17 @@ test('todo lo que importa el lector de la tablet va dentro de la APK (3.70.0): u
     for (const m of texto.matchAll(/\bimport\(\s*['"](\.[^'"]+)['"]\s*\)/g)) cola.push(relative(RAIZ, join(RAIZ, dirname(f), m[1])));
   }
   ok(vistos.has('scripts/lector/en-tablet.mjs'), 'lo que arranca la APK no carga el lector (en-tablet.mjs)');
+  // El Node de la APK (nodejs-mobile 18.20.4) no trae los datos Unicode de las
+  // clases de propiedad: `\p{L}` no compila, el fichero no carga y Lector MLBB
+  // se cerraba al empezar a grabar (3.70.0 → 3.72.4, «Invalid property name in
+  // character class»). Nada de lo que carga la APK puede usarlas, ni el
+  // indicador `v` de expresiones, que las da por supuestas.
+  for (const f of vistos) {
+    const texto = readFileSync(join(RAIZ, f), 'utf8');
+    const propiedad = texto.match(/\\[pP]\{[^}]*\}/);
+    ok(!propiedad, `${f} usa ${propiedad?.[0]} en una expresión regular: el Node de la APK no la entiende y el fichero no carga`);
+    ok(!/\/[a-z]*v[a-z]*\.test\(|new RegExp\([^)]*['"][a-z]*v[a-z]*['"]\)/.test(texto), `${f} usa el indicador v de expresiones regulares`);
+  }
   ok([...vistos].some((f) => f.startsWith('src/app/')), 'el recorrido no llega a lo que el lector importa de la app');
 });
 

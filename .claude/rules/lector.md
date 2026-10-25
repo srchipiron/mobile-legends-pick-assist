@@ -1354,4 +1354,12 @@ APK de pega con capturas reales: draft, partida, voz y corrección van bien.
   los `import()`) y exige el orden. Comprobado con Node 18 sobre la copia de
   la APK: arranca igual y, con un import roto a propósito, sigue vivo y
   apunta `ERR_MODULE_NOT_FOUND`.
+- **El Node de la APK no entiende las clases de propiedad Unicode (3.72.4)**:
+  la regex de nombres de `sanearAjustes` (3.70.0) no compilaba en
+  nodejs-mobile y Lector MLBB se cerraba al empezar a grabar. Hoy
+  `NOMBRE_DE_HEROE` (servir.mjs) lista los caracteres (latinas con tilde,
+  cifras, espacio, . ' & -; los 133 nombres pasan) y `android.test` prohíbe
+  barra-p/P y el indicador `v` en todo el grafo que carga la APK (falla con
+  el código de 3.72.3). El Node de escritorio sí las entiende: probar con él
+  no basta para esto.
 

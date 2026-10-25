@@ -1152,4 +1152,19 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   publicó la APK igual; su código era el bueno. Lección: antes de un push se
   mira el código de salida de `npm test`, nunca su última línea por una
   tubería.
+- **La causa de verdad del cierre (3.70.0 → 3.72.4)**: con el arranque
+  vigilado de 3.72.3, Javi copió el error: «SyntaxError: Invalid regular
+  expression: /^[\\p{L}\\p{N} .'&-]+$/: Invalid property name in character
+  class». `sanearAjustes` (3.70.0) validaba los nombres de la maestría con
+  clases de propiedad Unicode, y nodejs-mobile 18.20.4 no trae sus datos
+  (sí `Intl`, por eso un vistazo a su `config.gypi` no lo descartó):
+  servir.mjs no compilaba y Node salía. En el Node de escritorio, también
+  18.20.4, compila, así que ni las pruebas ni la simulación con la copia de
+  la APK podían verlo. Las dos hipótesis anteriores (dos peticiones de
+  grabar, un error suelto) eran reales pero no eran esto. Hoy
+  `NOMBRE_DE_HEROE` lista los caracteres, y `android.test` prohíbe las
+  clases de propiedad y el indicador `v` en todo lo que carga la APK.
+  Lección: lo que corre en un motor distinto del de las pruebas tiene que
+  dejar el error a la vista ANTES de cargar nada; con eso, un cierre se
+  arregla en una vuelta en vez de en cuatro.
 

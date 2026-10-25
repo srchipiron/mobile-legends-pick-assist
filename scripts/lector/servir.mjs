@@ -367,6 +367,14 @@ export function sanearConsejo(c) {
   const titulo = textoPlano(c?.titulo, 80);
   return titulo ? { titulo, detalle: textoPlano(c?.detalle, 160) } : null;
 }
+/**
+ * Cómo puede ser un nombre de héroe que llega de fuera (3.72.4): letras
+ * latinas, también con tilde, cifras, espacio y . ' & -. Escrito carácter a
+ * carácter y NO con las clases de propiedad Unicode (barra-p, «letra»): el Node de la APK (nodejs-mobile) no trae los
+ * datos Unicode de esas clases, la expresión no compilaba y servir.mjs no
+ * cargaba; Lector MLBB se cerraba nada más empezar a grabar desde 3.70.0.
+ */
+export const NOMBRE_DE_HEROE = /^[A-Za-z0-9\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF .'&-]+$/;
 /** Lo que la app dice de tus ajustes (3.69.3): solo palabras cortas en minúscula; lo valida el modo solo. */
 export function sanearAjustes(a) {
   const palabra = (v) => (typeof v === 'string' && /^[a-z]{2,12}$/.test(v) ? v : null);
@@ -377,7 +385,7 @@ export function sanearAjustes(a) {
   const maestria = {};
   if (a?.maestria && typeof a.maestria === 'object' && !Array.isArray(a.maestria)) {
     for (const [nombre, m] of Object.entries(a.maestria).slice(0, MAESTRIA_MAX)) {
-      if (typeof nombre === 'string' && nombre.length <= 30 && /^[\p{L}\p{N} .'&-]+$/u.test(nombre) && Number.isInteger(m?.games) && m.games > 0 && m.games < 1e6 && typeof m.winRate === 'number' && m.winRate >= 0 && m.winRate <= 1) {
+      if (typeof nombre === 'string' && nombre.length <= 30 && NOMBRE_DE_HEROE.test(nombre) && Number.isInteger(m?.games) && m.games > 0 && m.games < 1e6 && typeof m.winRate === 'number' && m.winRate >= 0 && m.winRate <= 1) {
         maestria[nombre] = { games: m.games, winRate: m.winRate };
       }
     }
@@ -397,7 +405,7 @@ export const MAESTRIA_MAX = 200;
  * el aprendizaje). null si no tiene forma.
  */
 export function sanearCorreccion(c) {
-  const nombre = (n) => (typeof n === 'string' && n.length <= 30 && /^[\p{L}\p{N} .'&-]+$/u.test(n) ? n : null);
+  const nombre = (n) => (typeof n === 'string' && n.length <= 30 && NOMBRE_DE_HEROE.test(n) ? n : null);
   if (!c || typeof c.id !== 'string' || !/^correccion-\d{1,15}$/.test(c.id) || !Number.isFinite(c.cuando)) return null;
   const ids = (Array.isArray(c.ids) ? c.ids : []).filter((id) => typeof id === 'string' && /^lectura-[\w-]+$/.test(id)).slice(-CAPTURAS_A_MIRAR);
   const heroes = (Array.isArray(c.heroes) ? c.heroes : []).map(nombre).filter(Boolean).slice(0, 400);
