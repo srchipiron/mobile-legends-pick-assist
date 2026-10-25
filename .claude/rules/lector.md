@@ -1407,3 +1407,16 @@ se queda esperando al ganado o perdido». Dos causas:
   `en-tablet` y `android`, cuatro mutaciones (una sobrevivía hasta exigir
   el «de dónde» exacto).
 
+## El parte de salud (3.74.0)
+
+`en-tablet.mjs` sube cada `PARTE_CADA_MS` (15 min; el primero a los 2) un
+`parteDeSalud`: `/estado` entero (`interno.estado()`, que ya lleva
+`pendiente`: corrección, pregunta, vigilando), `fallo-nodo.txt` y las
+últimas `LINEAS_DEL_PARTE` de `lector.log` (los dos en `filesDir`, la
+`LECTOR_CASA`). `lineasLimpias` quita caracteres de control, IPs (`[ip]`) y
+el código y la clave (`[oculto]`), y corta a 300. Sin clave de jugador
+válida o sin `comunidad.json` no sube nada. Va a `config.url` (la base de
+datos) por `llamar`, como las partidas: ningún destino nuevo. Pruebas en
+`en-tablet` (el parte limpio y la subida de punta a punta con el Supabase
+falso) y `revisar-tablet`; 20 mutaciones, sobrevive una inofensiva: quitar
+la guarda de la clave en `subirSuParte` la hace `subirParte` igual.

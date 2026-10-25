@@ -186,7 +186,63 @@ begin
   );
 end $$;
 
+-- Los PARTES de salud del lector de la tablet (3.74.0): cada 15 minutos,
+-- cómo va (versión, si graba, lecturas, fallos, edad de los datos, partidas
+-- sin subir) y las últimas líneas de su registro, sin IP ni códigos. Para
+-- que una revisión automática vea si algo falla sin que nadie copie nada.
+-- Topes: 16 KB por parte, uno cada 4 minutos por jugador, los 100 últimos
+-- de cada uno y 7 días; lo de más se borra al subir.
+create table if not exists public.partes (
+  id bigint generated always as identity primary key,
+  jugador bigint not null references public.jugadores(id) on delete cascade,
+  recibido timestamptz not null default now(),
+  datos jsonb not null
+);
+create index if not exists partes_por_jugador on public.partes (jugador, recibido desc);
+alter table public.partes enable row level security;
+revoke all on public.partes from public;
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'anon') then execute 'revoke all on public.partes from anon'; end if;
+  if exists (select 1 from pg_roles where rolname = 'authenticated') then execute 'revoke all on public.partes from authenticated'; end if;
+end $$;
+
+create or replace function public.subir_parte(clave text, parte jsonb) returns jsonb
+language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  h text := public.huella_de(clave);
+  yo bigint;
+begin
+  if jsonb_typeof(parte) is distinct from 'object' or pg_column_size(parte) > 16000 then
+    raise exception 'parte' using errcode = 'P0001';
+  end if;
+  select id into yo from public.jugadores where huella = h;
+  if yo is null then
+    if (select count(*) from public.jugadores) >= 20000 then raise exception 'lleno' using errcode = 'P0001'; end if;
+    insert into public.jugadores (huella) values (h) on conflict (huella) do update set visto = now() returning id into yo;
+  end if;
+  if exists (select 1 from public.partes where jugador = yo and recibido > now() - interval '4 minutes') then
+    raise exception 'pronto' using errcode = 'P0001';
+  end if;
+  insert into public.partes (jugador, datos) values (yo, parte);
+  delete from public.partes where jugador = yo and (recibido < now() - interval '7 days'
+    or id not in (select id from public.partes where jugador = yo order by recibido desc limit 100));
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- Los partes de los últimos días, para la revisión automática: el jugador va
+-- como un número (el de `partidas_comunidad`), nunca con la huella.
+create or replace function public.partes_recientes(horas int default 48) returns jsonb
+language plpgsql security definer stable set search_path = public, pg_temp as $$
+begin
+  return coalesce((
+    select jsonb_agg(jsonb_build_object('j', p.jugador, 'recibido', p.recibido, 'd', p.datos) order by p.recibido desc)
+    from (select * from public.partes where recibido > now() - make_interval(hours => least(greatest(coalesce(horas, 48), 1), 168)) order by recibido desc limit 2000) p
+  ), '[]'::jsonb);
+end $$;
+
 revoke all on function public.huella_de(text) from public;
+revoke all on function public.subir_parte(text, jsonb) from public;
+revoke all on function public.partes_recientes(int) from public;
 revoke all on function public.subir_partidas(text, jsonb, jsonb, jsonb) from public;
 revoke all on function public.mis_partidas(text) from public;
 revoke all on function public.borrar_mis_partidas(text) from public;
@@ -201,6 +257,8 @@ begin
       execute format('grant execute on function public.mis_partidas(text) to %I', r);
       execute format('grant execute on function public.borrar_mis_partidas(text) to %I', r);
       execute format('grant execute on function public.partidas_comunidad(bigint, bigint, int) to %I', r);
+      execute format('grant execute on function public.subir_parte(text, jsonb) to %I', r);
+      execute format('grant execute on function public.partes_recientes(int) to %I', r);
     end if;
   end loop;
 end $$;

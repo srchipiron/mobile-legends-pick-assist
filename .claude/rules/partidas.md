@@ -216,3 +216,19 @@ que se guarda: `docs/comunidad.md`.
   con sus roles). Si el primer «Guardar mis partidas» dice «no acepta la
   clave pública», es la clave o el esquema sin pegar.
 
+## Los partes de la tablet (3.74.0)
+
+Javi: «que puedas ver en tiempo real o mediante un log que todo está
+funcionando bien… para no estar todo el rato con "mejora, revisa…"».
+- Tabla `partes` (RLS sin políticas y revokes, como las otras), funciones
+  `subir_parte(clave, parte)` (objeto ≤ 16.000 bytes, `pronto` con otro de
+  hace menos de 4 min, se quedan los 100 últimos y 7 días; crea el jugador
+  si no existe) y `partes_recientes(horas ≤ 168)` (`[{j, recibido, d}]`, sin
+  huella). En el cliente, `subirParte` y `bajarPartes` (basedatos.js); en el
+  falso, las dos con `ahora` inyectable. Prueba en `pruebas/sql`.
+- Lo lee `scripts/revisar-tablet.mjs` (el más reciente de cada lector:
+  FALLO y AVISO; sale con 1 con algún FALLO y con 2 si la base de datos no
+  contesta). `CIERRE_POR_FALLO` son los textos de `FALLOS` de Salidas.kt, y
+  una prueba los compara con el fichero: con la primera expresión, «se cerró
+  ella misma» (el cierre de 3.72.x) no avisaba. Lo corre la revisión
+  programada de Claude cada día.

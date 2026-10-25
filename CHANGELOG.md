@@ -8,6 +8,20 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.74.0
+
+- Lector MLBB avisa por sí solo de cómo va en la tablet, sin que tengas que
+  copiar nada. Cada 15 minutos sube un parte a tu base de datos de partidas:
+  si graba, si la burbuja sale, cuántas capturas fallan, de cuándo son los
+  datos, el último error y las últimas líneas de su registro.
+- Una revisión automática lee esos partes cada día y, si algo falla, lo
+  arregla y publica una versión nueva (con las pruebas de siempre).
+- El parte sale limpio: sin direcciones IP, sin el código de vinculación y
+  sin tu clave. No lleva nada de tu cuenta del juego. Solo se sube con tu
+  clave de «Guardar mis partidas» puesta.
+- Para que funcione hay que pegar una vez el esquema nuevo
+  (`supabase/esquema.sql`) en Supabase; volver a pegarlo no borra nada.
+
 ## 3.73.1
 
 - Lector MLBB usa siempre los datos del juego más nuevos que tenga.

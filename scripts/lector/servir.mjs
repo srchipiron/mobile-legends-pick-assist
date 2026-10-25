@@ -835,6 +835,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     if (aprendidos) guardarResultadosDe(resultados);
     return { aprendidos, contradichas, ids };
   };
+  /** Cómo va el lector (`/estado`; desde 3.74.0 también el parte de salud que sube la tablet). */
+  const estado = () => ({ ok: true, version: VERSION_PUENTE, aprendido: { capturas: aprendido?.capturas ?? 0, caras: Object.keys(aprendido?.caras ?? {}).length, aliados: Object.keys(aprendido?.aliados ?? {}).length, picks: !!aprendido?.picks }, resultados: { gane: resultados.gane.length, perdi: resultados.perdi.length, tablas: resultados.tablas.length }, lector: { minutos: Math.round((ahora() - arranque) / 60000), ...salud, memoriaMB: Math.round(process.memoryUsage().rss / 1e6) }, pendiente: { correccion: !!correccionVigente(), pregunta: !!preguntaVigente(), vigilando: !!final?.activa }, ...(typeof estadoExtra === 'function' ? estadoExtra() : estadoExtra ?? {}) });
   const leerCuerpo = (req, maximo = 65536) => new Promise((resolver) => {
     const trozos = [];
     // Demasiado grande: se corta y se contesta como cuerpo malo (sin el
@@ -978,7 +980,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     }
     const ruta = new URL(req.url, 'http://127.0.0.1').pathname;
     if (req.method === 'GET' && ruta === '/estado') {
-      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, version: VERSION_PUENTE, aprendido: { capturas: aprendido?.capturas ?? 0, caras: Object.keys(aprendido?.caras ?? {}).length, aliados: Object.keys(aprendido?.aliados ?? {}).length, picks: !!aprendido?.picks }, resultados: { gane: resultados.gane.length, perdi: resultados.perdi.length, tablas: resultados.tablas.length }, lector: { minutos: Math.round((ahora() - arranque) / 60000), ...salud, memoriaMB: Math.round(process.memoryUsage().rss / 1e6) }, ...(typeof estadoExtra === 'function' ? estadoExtra() : estadoExtra ?? {}) }));
+      res.writeHead(200, cabeceras).end(JSON.stringify(estado()));
       return;
     }
     if (req.method === 'POST' && ruta === '/vigilar') {
@@ -1176,6 +1178,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     // Cómo acabó la partida (3.72.5): el modo solo pregunta y recoge la respuesta (una vez).
     ponerPregunta: (p) => { pregunta = sanearPregunta(p); },
     respuesta: () => { const r = respuesta; respuesta = null; return r; },
+    estado: () => estado(),
     /**
      * Un vistazo al minimapa si la burbuja tiene algo que enseñar y nadie ha
      * capturado en VISTAZO_MS (3.69.3). null si no tocaba.

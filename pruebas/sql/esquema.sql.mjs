@@ -168,6 +168,29 @@ try {
     eq(json(comoAnon(`select public.mis_partidas('${c}')`)).referencia, null, 'guarda un winrate de siempre imposible');
   });
 
+  test('los partes de la tablet (3.74.0): se suben con tu clave, uno cada pocos minutos, con tope y solo los recientes; se leen sin huella, y la tabla sigue cerrada', () => {
+    const PARTE = 'p'.repeat(40);
+    const r = comoAnon(`select public.subir_parte('${PARTE}', ${lit({ apk: '3.74.0', grabando: true, log: ['Lectura 1'] })})`);
+    ok(!r.error, r.error);
+    const pronto = comoAnon(`select public.subir_parte('${PARTE}', ${lit({ apk: '3.74.0' })})`);
+    ok(pronto.error && /pronto/.test(pronto.error), `deja subir otro parte al momento: ${pronto.error ?? pronto.salida}`);
+    for (const malo of [`'${PARTE}', '[]'::jsonb`, `'${PARTE}', ${lit({ log: 'x'.repeat(20000) })}`, `'corta', ${lit({ a: 1 })}`]) ok(comoAnon(`select public.subir_parte(${malo})`).error, `acepta ${malo.slice(0, 60)}`);
+    const leidos = json(comoAnon('select public.partes_recientes(48)'));
+    ok(leidos.length === 1 && leidos[0].d.apk === '3.74.0' && Number.isInteger(leidos[0].j) && !JSON.stringify(leidos).includes('huella'), `no se leen bien, o va la huella: ${JSON.stringify(leidos)}`);
+    // Los 100 últimos y 7 días: lo de más se borra al subir.
+    const yo = leidos[0].j;
+    ok(!sql(`insert into public.partes (jugador, recibido, datos) select ${yo}, now() - make_interval(mins => 10 + g), '{}'::jsonb from generate_series(1, 120) g`).error);
+    ok(!sql(`insert into public.partes (jugador, recibido, datos) values (${yo}, now() - interval '8 days', '{}'::jsonb)`).error);
+    sql(`update public.partes set recibido = now() - interval '5 minutes' where jugador = ${yo} and datos->>'apk' = '3.74.0'`);
+    ok(!comoAnon(`select public.subir_parte('${PARTE}', ${lit({ apk: '3.74.1' })})`).error);
+    eq(sql(`select count(*) from public.partes where jugador = ${yo}`).salida, '100', 'sin tope de partes por jugador');
+    eq(sql(`select count(*) from public.partes where recibido < now() - interval '7 days'`).salida, '0', 'se quedan partes de hace más de 7 días');
+    // La tabla, cerrada como las otras (las dos capas).
+    ok(comoAnon('select * from public.partes').error && comoAnon("insert into public.partes (jugador, datos) values (1, '{}')").error, 'anon toca la tabla de partes');
+    eq(sql("select count(*) from information_schema.role_table_grants where grantee in ('anon', 'authenticated') and table_name = 'partes'").salida, '0', 'anon tiene permisos sobre los partes');
+    eq(sql("select count(*) from pg_class where relname = 'partes' and relrowsecurity").salida, '1', 'los partes sin RLS');
+  });
+
   test('con el proyecto lleno de jugadores, uno nuevo no entra y los de antes siguen subiendo', () => {
     const r = sql("insert into public.jugadores (huella) select md5(g::text) || md5((g + 1)::text) from generate_series(1, 20000) g");
     ok(!r.error, r.error);

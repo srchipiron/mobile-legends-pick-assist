@@ -1,12 +1,13 @@
 /**
- * Un Supabase de pega, en memoria, con las cuatro funciones de
+ * Un Supabase de pega, en memoria, con las funciones de
  * `supabase/esquema.sql` y sus mismas respuestas (3.69.0). Lo usan
  * `app/basedatos.test` (como `fetch`) y `comunidad.e2e` (por `page.route`).
  * Lo que valida el esquema de verdad se prueba contra Postgres en
  * `pruebas/sql/esquema.sql.mjs`; si cambias la forma de una respuesta allí,
  * cámbiala aquí a la vez.
  */
-export function supabaseFalso({ clavePublica = 'sb_publishable_prueba1234567890' } = {}) {
+export function supabaseFalso({ clavePublica = 'sb_publishable_prueba1234567890', ahora = () => Date.now() } = {}) {
+  const partes = [];
   const jugadores = new Map(); // huella (aquí, la clave) → { id, referencia, partidas: Map(t → datos) }
   let siguiente = 1;
   const llamadas = [];
@@ -49,6 +50,19 @@ export function supabaseFalso({ clavePublica = 'sb_publishable_prueba1234567890'
       for (const j of jugadores.values()) if (j.referencia && filas.some((f) => f.j === j.id)) referencias[String(j.id)] = j.referencia;
       return { status: 200, cuerpo: { filas, referencias, mas: filas.length === lim } };
     }
+    // Los partes de la tablet (3.74.0), como `subir_parte` y `partes_recientes` del esquema.
+    if (funcion === 'subir_parte') {
+      if (!claveValida(args.clave)) return error('clave');
+      if (!args.parte || typeof args.parte !== 'object' || Array.isArray(args.parte) || JSON.stringify(args.parte).length > 16000) return error('parte');
+      const ya = partes.filter((x) => x.clave === args.clave);
+      if (ya.length && ahora() - ya[ya.length - 1].recibido < 4 * 60000) return error('pronto');
+      partes.push({ clave: args.clave, j: (jugadores.get(args.clave)?.id ?? 999), recibido: ahora(), d: args.parte });
+      return { status: 200, cuerpo: { ok: true } };
+    }
+    if (funcion === 'partes_recientes') {
+      const desde = ahora() - Math.min(Math.max(args.horas ?? 48, 1), 168) * 3600000;
+      return { status: 200, cuerpo: partes.filter((x) => x.recibido > desde).sort((a, b) => b.recibido - a.recibido).map(({ j, recibido, d }) => ({ j, recibido: new Date(recibido).toISOString(), d })) };
+    }
     return { status: 404, cuerpo: { message: 'no existe' } };
   }
 
@@ -60,5 +74,5 @@ export function supabaseFalso({ clavePublica = 'sb_publishable_prueba1234567890'
     return new Response(JSON.stringify(r.cuerpo), { status: r.status, headers: { 'Content-Type': 'application/json' } });
   }
 
-  return { atender, fetch: fetchFalso, llamadas, jugadores, clavePublica };
+  return { atender, fetch: fetchFalso, llamadas, jugadores, clavePublica, partes };
 }

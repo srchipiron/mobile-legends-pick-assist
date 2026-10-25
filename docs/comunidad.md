@@ -86,6 +86,14 @@ con un número de jugador, nunca con la clave. Nadie puede cambiar ni borrar
 las de otro. *Borrar mis partidas de la base de datos* se lleva todas las
 tuyas de allí (en el móvil se quedan).
 
+Los partes de la tablet (3.74.0): con tu clave puesta, Lector MLBB sube cada
+15 minutos cómo va (si graba, los permisos, la memoria, de cuándo son sus
+datos, el último error y las últimas 60 líneas de su registro, sin IPs, sin
+el código de vinculación y sin tu clave). Se guardan los 100 últimos y 7 días
+por jugador, y como mucho uno cada 4 minutos. Se leen con la clave pública,
+con el número de jugador y nunca la clave: llevan nombres de héroes, tiempos
+y el modelo de la tablet. Los lee `node scripts/revisar-tablet.mjs`.
+
 ## Cómo se mide si la app ayuda
 
 En Ajustes → *Partidas* → *Ver con las partidas de todos*, o por consola con

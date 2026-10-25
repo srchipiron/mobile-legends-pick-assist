@@ -258,3 +258,8 @@
   Pidió que esas ideas salgan de aquí. Cada `/iterar` cierra con una
   propuesta de fondo, y cualquier sesión que vea a Javi repetir un paso a
   mano o tropezar dos veces con lo mismo la plantea sin que la pida.
+- **Los partes de la tablet (3.74.0)**: falta que Javi pegue
+  `supabase/esquema.sql` en el SQL Editor de Supabase (o ponga
+  `SUPABASE_ACCESS_TOKEN` como secreto del entorno para `montar-supabase`).
+  Hasta entonces `revisar-tablet.mjs` sale con 2 («¿falta pegar el
+  esquema?») y la tablet apunta en su registro que el parte no se subió.

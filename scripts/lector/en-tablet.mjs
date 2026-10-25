@@ -24,7 +24,7 @@ import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas,
 import { limpiarTexto } from './voz.mjs';
 import { leerCrudo, escribirPngRapido } from './png.mjs';
 import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo } from './solo.mjs';
-import { sanearConfig, claveDeJugadorValida, subirPartidas } from '../../src/app/basedatos.js';
+import { sanearConfig, claveDeJugadorValida, subirPartidas, subirParte } from '../../src/app/basedatos.js';
 import { maestriaEfectiva } from '../../src/motor/maestria.js';
 
 /** Solo 127.0.0.1: la APK es la única que da la captura. */
@@ -232,6 +232,41 @@ export async function subirLoDeLaTablet({ partidas, clave, config, fetch = globa
   return { subidas: pendientes.length, total: r.total };
 }
 
+/** Cada cuánto sube la tablet su parte de salud (3.74.0): decisión de producto, el tope del servidor es uno cada 4 minutos. */
+export const PARTE_CADA_MS = 15 * 60 * 1000;
+/** Las líneas del registro que van en cada parte, y su largo máximo. */
+export const LINEAS_DEL_PARTE = 60;
+
+/**
+ * Las últimas líneas del registro, limpias para salir de la tablet (3.74.0):
+ * sin direcciones IP, sin el código de vinculación ni tu clave, sin
+ * caracteres de control, y cortas. Lo demás del registro son nombres de
+ * héroe, tiempos y contadores.
+ */
+export function lineasLimpias(texto, { secretos = [], max = LINEAS_DEL_PARTE } = {}) {
+  const tapar = secretos.filter((x) => typeof x === 'string' && x.length >= 8);
+  return String(texto ?? '').split('\n').filter((l) => l.trim()).slice(-max).map((l) => {
+    // Sin caracteres de control (limpiarTexto, el de la voz) y sin IP.
+    let x = limpiarTexto(l).replace(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g, '[ip]');
+    for (const sec of tapar) x = x.split(sec).join('[oculto]');
+    return x.slice(0, 300);
+  });
+}
+
+/**
+ * El parte de salud de la tablet (3.74.0): lo que dice /estado, el fallo de
+ * Node de la última vez si lo hubo y las últimas líneas del registro,
+ * limpias. Lo sube `subirParte` con tu clave; la revisión automática lo lee.
+ */
+export function parteDeSalud({ estado, log = '', falloNodo = null, secretos = [], ahora = Date.now() }) {
+  return {
+    v: 1, cuando: ahora,
+    estado,
+    ...(falloNodo ? { falloNodo: lineasLimpias(falloNodo, { secretos, max: 30 }).join('\n') } : {}),
+    log: lineasLimpias(log, { secretos }),
+  };
+}
+
 /** La configuración de la base de datos que bajó la tablet (o la que trae la APK). */
 export function leerComunidad(carpetas) {
   for (const c of carpetas) {
@@ -328,6 +363,20 @@ export async function principal(env = process.env) {
   alCorregirRef = ({ partida, enemigos, aliados, tuyo }) => {
     if (Number.isFinite(partida) && partidas.corregir(partida, { enemigos, aliados, tuyo })) { registrar('Sin móvil: la partida apuntada lleva ya los héroes que dijiste.'); subir(); }
   };
+  // El parte de salud (3.74.0): para que la revisión automática vea cómo va la tablet sin que nadie copie nada.
+  const subirSuParte = async () => {
+    const clave = ajustes.delMovil()?.clave;
+    const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
+    if (!claveDeJugadorValida(clave) || !config) return;
+    const leer = (f) => { try { return readFileSync(join(casa, f), 'utf8'); } catch { return null; } };
+    const parte = parteDeSalud({ estado: servidor.interno.estado(), log: leer('lector.log') ?? '', falloNodo: leer('fallo-nodo.txt'), secretos: [codigo, clave] });
+    const r = await subirParte({ config, clave, parte });
+    if (r.error && r.error !== 'pronto') registrar(`El parte de salud no se pudo subir (${r.error}).`);
+  };
+  const cadaParte = setInterval(() => { subirSuParte().catch(() => {}); }, PARTE_CADA_MS);
+  const primerParte = setTimeout(() => { subirSuParte().catch(() => {}); }, 2 * 60 * 1000);
+  servidor.on('close', () => { clearInterval(cadaParte); clearTimeout(primerParte); });
+  servidor.subirParte = subirSuParte;
   const cadaSubida = setInterval(subir, 10 * 60 * 1000);
   // Lo que quedó sin subir de otra vez, al poco de arrancar (no a los 10 minutos).
   const primeraSubida = setTimeout(subir, 30000);

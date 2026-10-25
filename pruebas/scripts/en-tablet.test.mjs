@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET } from '../../scripts/lector/en-tablet.mjs';
+import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { pruebaDelReto } from '../../src/app/lector.js';
 import { writeFileSync } from 'node:fs';
@@ -466,6 +466,55 @@ test('/estado dice de cuándo son los datos y si tus partidas suben (3.73.1): si
     ok(typeof e.datos?.fecha === 'string' && e.datos.de === 'apk', `/estado no dice de cuándo son los datos ni de dónde: ${JSON.stringify(e.datos)}`);
     eq(JSON.stringify(e.partidas), JSON.stringify({ apuntadas: 1, sinSubir: 1, clave: false, error: null }), 'no dice que la partida se queda sin subir por falta de clave');
   } finally { servidor.close(); apk.cerrar(); }
+});
+
+test('el parte de salud (3.74.0): sin IPs, sin el código ni tu clave, sin caracteres de control y con tope', () => {
+  const clave = 'K'.repeat(43);
+  const log = [...Array.from({ length: LINEAS_DEL_PARTE + 20 }, (_, i) => `línea ${i}`), `Móvil 192.168.1.37 con código ${CODIGO} y clave ${clave}\u0007`, 'x'.repeat(900)].join('\n');
+  const l = lineasLimpias(log, { secretos: [CODIGO, clave] });
+  eq(l.length, LINEAS_DEL_PARTE, 'no corta el registro');
+  ok(l[0] === 'línea 22', `no se queda con las ÚLTIMAS líneas: ${l[0]}`);
+  const junto = l.join('\n');
+  ok(!junto.includes('192.168') && junto.includes('[ip]'), `sale la IP: ${junto.slice(-400)}`);
+  ok(!junto.includes(CODIGO) && !junto.includes(clave) && junto.includes('[oculto]'), 'sale el código o la clave');
+  ok(![...junto.replace(/\n/g, '')].some((c) => c.charCodeAt(0) < 32), 'sale un carácter de control');
+  ok(l.every((x) => x.length <= 300), 'una línea sin cortar');
+  const p = parteDeSalud({ estado: { tablet: { apk: '3.74.0' } }, log, falloNodo: `Error en ${CODIGO}\n10.0.0.5`, secretos: [CODIGO, clave], ahora: 5 });
+  eq(p.v, 1); eq(p.cuando, 5); eq(p.estado.tablet.apk, '3.74.0');
+  ok(!p.falloNodo.includes(CODIGO) && !p.falloNodo.includes('10.0.0.5'), `el fallo de Node sale sin limpiar: ${p.falloNodo}`);
+  ok(!('falloNodo' in parteDeSalud({ estado: {}, log: '' })), 'sin fallo, falloNodo viaja igual');
+  ok(JSON.stringify(p).length < 16000, 'el parte no cabe en lo que acepta el servidor');
+});
+
+test('la tablet sube su parte con tu clave a la base de datos, y la revisión lo lee (3.74.0)', async () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-parte-'));
+  const clave = 'P'.repeat(43);
+  const s = supabaseFalso();
+  const { mkdirSync } = await import('node:fs');
+  mkdirSync(join(casa, 'datos'), { recursive: true });
+  writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
+  writeFileSync(join(casa, 'lector.log'), `Lector en 192.168.1.9 con ${CODIGO}\nTodo bien\n`);
+  const apk = await apkDePega();
+  const original = globalThis.fetch;
+  globalThis.fetch = (url, o) => (String(url).startsWith('https://abcdefghijklmnopqrst.supabase.co/') ? s.fetch(url, o) : original(url, o));
+  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' });
+  try {
+    await servidor.subirParte();
+    eq(s.partes.length, 0, 'sube el parte sin tu clave');
+    writeFileSync(join(casa, 'solo-movil.json'), JSON.stringify({ linea: 'roam', clave }));
+    const conClave = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' });
+    try {
+      await conClave.subirParte();
+      eq(s.partes.length, 1, 'no sube el parte con tu clave');
+      const parte = s.partes[0];
+      eq(parte.clave, clave);
+      const texto = JSON.stringify(parte.d);
+      ok(!texto.includes(CODIGO) && !texto.includes(SECRETO) && !texto.includes('192.168.1.9'), `el parte lleva el código, el secreto o la IP: ${texto.slice(0, 300)}`);
+      ok(parte.d.log.some((l) => l === 'Todo bien'), 'el parte no lleva el registro');
+      ok(parte.d.estado && 'pendiente' in parte.d.estado && 'partidas' in parte.d.estado, `el parte no lleva el estado: ${Object.keys(parte.d.estado ?? {})}`);
+      eq(s.llamadas.filter((c) => c.funcion === 'subir_parte').length, 1);
+    } finally { conClave.close(); }
+  } finally { globalThis.fetch = original; servidor.close(); apk.cerrar(); }
 });
 
 await terminar('scripts/en-tablet');

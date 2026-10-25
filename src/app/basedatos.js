@@ -89,7 +89,7 @@ export function tocaSubirComunidad(estado, huella, { ahora, enLinea = true, part
 }
 
 /** Los errores que lanza el esquema, por su texto; lo demás es 'otro'. */
-const ERRORES = ['clave', 'lote', 'quitar', 'partida', 'tope', 'lleno'];
+const ERRORES = ['clave', 'lote', 'quitar', 'partida', 'tope', 'lleno', 'pronto', 'parte'];
 const PLAZO_MS = 15000;
 
 /**
@@ -172,4 +172,20 @@ export async function bajarComunidad(config, { maxPaginas = MAX_PAGINAS, ...opci
   }
   // No se calla: con más de lo que se baja, el informe lo dice.
   return { filas, referencias, incompleto: true };
+}
+
+/**
+ * El parte de salud del lector de la tablet (3.74.0): cómo va y las últimas
+ * líneas de su registro, con tu clave de jugador. Lo lee la revisión
+ * automática (`partes_recientes`, sin huella). Nunca lanza.
+ */
+export async function subirParte({ config, clave, parte }, opciones = {}) {
+  if (!claveDeJugadorValida(clave) || !parte || typeof parte !== 'object') return { error: 'clave' };
+  return llamar(config, 'subir_parte', { clave, parte }, opciones);
+}
+
+/** Los partes de las últimas `horas` (como mucho 168), de todos los lectores. */
+export async function bajarPartes(config, { horas = 48, ...opciones } = {}) {
+  const r = await llamar(config, 'partes_recientes', { horas }, opciones);
+  return r.error ? r : { partes: Array.isArray(r.datos) ? r.datos : [] };
 }
