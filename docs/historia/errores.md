@@ -1144,4 +1144,12 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   `fallo-nodo.txt` y el lector sigue, y un fallo al arrancar deja a Node vivo
   para que la app lo diga. Lección: en un proceso que comparte vida con la
   app, un error sin recoger no puede ser la forma de morir.
+- **Un push a main con `npm test` en rojo (3.72.3)**: la cadena era
+  `npm test 2>&1 | tail -1 && git push`, y el `&&` miraba el código de `tail`
+  (siempre 0), no el de las pruebas. Falló la de seguridad del lector (el
+  fichero nuevo `arranque-apk.mjs` no estaba en su lista y usaba `import()`).
+  El despliegue lo paró (corre `npm test`), pero `apk.yml` no pasa pruebas y
+  publicó la APK igual; su código era el bueno. Lección: antes de un push se
+  mira el código de salida de `npm test`, nunca su última línea por una
+  tubería.
 

@@ -292,7 +292,13 @@ test('SEGURIDAD: todo lo que el lector ejecuta (su carpeta y lo que importa de f
     // La voz de los consejos en directo (3.44.0): lanza `termux-tts-speak` y nada más (prueba de abajo).
     'scripts/lector/voz.mjs': ['node:child_process'],
     'scripts/lector/partida.mjs': ['node:fs'],
+    // El arranque vigilado de la APK (3.72.3): escribir fallo-nodo.txt en la casa de la app.
+    'scripts/lector/arranque-apk.mjs': ['node:fs', 'node:path'],
   };
+  // La ÚNICA carga dinámica permitida (3.72.3): el arranque de la APK carga el
+  // lector DESPUÉS de poner los vigilantes de errores, con este literal exacto
+  // y una sola vez. Cualquier otro import() sigue prohibido.
+  const CARGA_PERMITIDA = { 'scripts/lector/arranque-apk.mjs': 'import("./en-tablet.mjs")' }; // como lo deja esbuild al quitar los comentarios
   for (const [f, texto] of vistos) {
     const r = relativo(f);
     const deps = [...texto.matchAll(/(?:^|\n)\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g)].map((m) => m[1] ?? m[2]).filter((d) => !d.startsWith('.'));
@@ -302,7 +308,9 @@ test('SEGURIDAD: todo lo que el lector ejecuta (su carpeta y lo que importa de f
     // el constructor de funciones por `.constructor(`, `Reflect` y CUALQUIER
     // llamada a un miembro calculado (`x['constr' + 'uctor'](…)`): en el
     // código del lector no hay ninguna, así que la regla puede ser estricta.
-    const otraVia = texto.match(/\bimport\s*\(|\brequire\s*\(|\bcreateRequire\b|\beval\s*\(|\bFunction\s*\(|\bprocess\s*\[|\bprocess\.(binding|dlopen|_linkedBinding)\b|\bgetBuiltinModule\b|\.constructor\b|\bconstructor\s*\(|\bReflect\b|\]\s*\(|\bglobalThis\s*\[|\beval\s*:\s*true|\bmodule\.constructor\b/);
+    const permitida = CARGA_PERMITIDA[r];
+    if (permitida) eq(texto.split(permitida).length - 1, 1, `${r} no carga el lector con su única carga permitida`);
+    const otraVia = (permitida ? texto.split(permitida).join('') : texto).match(/\bimport\s*\(|\brequire\s*\(|\bcreateRequire\b|\beval\s*\(|\bFunction\s*\(|\bprocess\s*\[|\bprocess\.(binding|dlopen|_linkedBinding)\b|\bgetBuiltinModule\b|\.constructor\b|\bconstructor\s*\(|\bReflect\b|\]\s*\(|\bglobalThis\s*\[|\beval\s*:\s*true|\bmodule\.constructor\b/);
     ok(!otraVia, `${r} puede cargar o ejecutar código por otra vía: ${otraVia?.[0]}`);
     // Un hilo solo arranca ficheros del propio lector, nunca código en texto.
     for (const m of texto.matchAll(/new\s+Worker\s*\((.{0,80})/g)) ok(/^\s*(new URL\(\s*["'][\w-]+\.mjs["'],\s*import\.meta\.url\s*\)|tarea)\s*,/.test(m[1]), `${r} arranca un hilo con ${m[1].trim()}`);

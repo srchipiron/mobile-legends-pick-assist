@@ -99,7 +99,7 @@ test('Node en la APK arranca vigilado (3.72.3): los vigilantes se ponen ANTES de
   const entrada = /File\(proyecto, "([^"]+\.mjs)"\)/.exec(readFileSync(join(KOTLIN, 'Nodo.kt'), 'utf8'))?.[1];
   eq(entrada, 'scripts/lector/arranque-apk.mjs', 'la APK arranca otra cosa que el arranque vigilado');
   const a = readFileSync(join(RAIZ, entrada), 'utf8');
-  const estaticos = [...a.matchAll(/^import\b[^;]*?from\s*['"]([^'"]+)['"]/gm)].map((m) => m[1]);
+  const estaticos = [...a.matchAll(/^import\b[^;]*?from\s*['"]([^'"]+)['"]|^import\s*['"]([^'"]+)['"]/gm)].map((m) => m[1] ?? m[2]);
   ok(estaticos.every((m) => m.startsWith('node:')), `el arranque carga algo del lector antes de vigilar: ${estaticos}`);
   const vigila = a.indexOf("process.on('uncaughtException'"), promesas = a.indexOf("process.on('unhandledRejection'"), carga = a.indexOf("await import('./en-tablet.mjs')");
   ok(vigila > 0 && promesas > 0 && carga > vigila && carga > promesas, 'el lector se carga antes de poner los vigilantes');
