@@ -4,7 +4,8 @@ import android.content.Context
 import java.io.File
 
 /**
- * Node (nodejs-mobile) con el lector de siempre (scripts/lector/en-tablet.mjs).
+ * Node (nodejs-mobile) con el lector de siempre (scripts/lector/en-tablet.mjs),
+ * arrancado por arranque-apk.mjs (3.72.3), que recoge cualquier fallo al cargarlo.
  * Se arranca UNA vez por proceso: Node no se puede volver a arrancar dentro
  * del mismo, así que si se para, la app se cierra y se abre de cero.
  */
@@ -37,7 +38,7 @@ object Nodo {
         for ((n, v) in variables) variable(n, v)
         variable("HOME", contexto.filesDir.absolutePath)
         Thread({
-            val codigo = arrancar(arrayOf("node", File(proyecto, "scripts/lector/en-tablet.mjs").absolutePath), log.absolutePath)
+            val codigo = arrancar(arrayOf("node", File(proyecto, "scripts/lector/arranque-apk.mjs").absolutePath), log.absolutePath)
             alSalir(codigo)
         }, "nodo").apply { isDaemon = true; start() }
     }

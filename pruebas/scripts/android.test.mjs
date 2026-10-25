@@ -34,7 +34,10 @@ test('todo lo que importa el lector de la tablet va dentro de la APK (3.70.0): u
   }));
   ok(copias.some((c) => c.carpeta === 'scripts/lector'), 'no se encuentra la copia del lector en build.gradle.kts');
   const copiado = (f) => copias.some((c) => (f === c.carpeta || f.startsWith(`${c.carpeta}/`)) && (!c.solo.length || c.solo.includes(relative(c.carpeta, f))));
-  const cola = ['scripts/lector/en-tablet.mjs']; const vistos = new Set();
+  // Desde lo que arranca Nodo.kt de verdad (3.72.3: arranque-apk.mjs, que carga en-tablet.mjs con import()).
+  const entrada = /File\(proyecto, "([^"]+\.mjs)"\)/.exec(readFileSync(join(KOTLIN, 'Nodo.kt'), 'utf8'))?.[1];
+  ok(entrada, 'no se encuentra qué arranca Nodo.kt');
+  const cola = [entrada]; const vistos = new Set();
   while (cola.length) {
     const f = cola.pop();
     if (vistos.has(f)) continue;
@@ -42,7 +45,9 @@ test('todo lo que importa el lector de la tablet va dentro de la APK (3.70.0): u
     ok(copiado(f), `${f} lo importa el lector de la tablet y la APK no lo lleva dentro (build.gradle.kts, copiarLector)`);
     const texto = readFileSync(join(RAIZ, f), 'utf8');
     for (const m of texto.matchAll(/(?:import|export)\b[^'"`;]*?\bfrom\s*['"](\.[^'"]+)['"]/g)) cola.push(relative(RAIZ, join(RAIZ, dirname(f), m[1])));
+    for (const m of texto.matchAll(/\bimport\(\s*['"](\.[^'"]+)['"]\s*\)/g)) cola.push(relative(RAIZ, join(RAIZ, dirname(f), m[1])));
   }
+  ok(vistos.has('scripts/lector/en-tablet.mjs'), 'lo que arranca la APK no carga el lector (en-tablet.mjs)');
   ok([...vistos].some((f) => f.startsWith('src/app/')), 'el recorrido no llega a lo que el lector importa de la app');
 });
 
@@ -88,6 +93,17 @@ test('un fallo al empezar a grabar no cierra la app ni entra en bucle (3.72.1): 
   ok(/if \(grabando\) Unit/.test(empezar), 'un segundo permiso para la grabación que ya va');
   for (const f of ['fallo-grabar.txt', 'fallo.txt', 'salida-nodo.txt', 'fallo-nodo.txt']) ok(principal.includes(`fichero("${f}")`), `el aviso no enseña ${f}`);
   ok(/Salidas\.falloDesde\(this, visto\)/.test(principal) && /setPrimaryClip/.test(principal) && /fallosVistos/.test(principal), 'el aviso no lee el cierre de Android, no se puede copiar o no se puede quitar');
+});
+
+test('Node en la APK arranca vigilado (3.72.3): los vigilantes se ponen ANTES de cargar el lector, y un fallo al cargarlo no cierra la app', () => {
+  const entrada = /File\(proyecto, "([^"]+\.mjs)"\)/.exec(readFileSync(join(KOTLIN, 'Nodo.kt'), 'utf8'))?.[1];
+  eq(entrada, 'scripts/lector/arranque-apk.mjs', 'la APK arranca otra cosa que el arranque vigilado');
+  const a = readFileSync(join(RAIZ, entrada), 'utf8');
+  const estaticos = [...a.matchAll(/^import\b[^;]*?from\s*['"]([^'"]+)['"]/gm)].map((m) => m[1]);
+  ok(estaticos.every((m) => m.startsWith('node:')), `el arranque carga algo del lector antes de vigilar: ${estaticos}`);
+  const vigila = a.indexOf("process.on('uncaughtException'"), promesas = a.indexOf("process.on('unhandledRejection'"), carga = a.indexOf("await import('./en-tablet.mjs')");
+  ok(vigila > 0 && promesas > 0 && carga > vigila && carga > promesas, 'el lector se carga antes de poner los vigilantes');
+  ok(/try \{[\s\S]*await import\('\.\/en-tablet\.mjs'\)[\s\S]*\} catch \(e\) \{[\s\S]*fallo-nodo|apuntar\('al arrancar'/.test(a) && /setInterval\(/.test(a), 'un fallo al cargar el lector deja salir a Node (y cierra la app)');
 });
 
 await terminar('scripts/android');

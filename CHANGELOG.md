@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.72.3
+
+- Si el lector falla al arrancar, Lector MLBB ya no se cierra. La 3.72.2
+  recogía los errores con el lector ya funcionando, pero no los de cuando
+  se pone en marcha, justo al aceptar «Pantalla completa». Ahora esos
+  también quedan apuntados: la app sigue abierta y el aviso rojo de arriba
+  dice qué falló, con «Copiar».
+
 ## 3.72.2
 
 - Un error del lector ya no cierra Lector MLBB. Hasta ahora, cualquier error

@@ -1344,4 +1344,14 @@ APK de pega con capturas reales: draft, partida, voz y corrección van bien.
   aviso rojo lo enseña) y sigue; si `principal()` falla, Node se queda vivo.
   «Copiar» añade las últimas 40 líneas de `lector.log`. Comprobado con Node
   18: arranque fallido, promesa y excepción sueltas, y el proceso sigue.
+- **El arranque vigilado (3.72.3)**: con 3.72.2 seguía «código 1, estado 1».
+  `vigilarErrores` se ponía DENTRO de en-tablet.mjs, así que un fallo al
+  CARGAR sus imports (o en la evaluación de alguno) salía antes de existir.
+  Nodo.kt arranca hoy `arranque-apk.mjs`: solo `node:fs` y `node:path`, pone
+  los vigilantes y luego `import('./en-tablet.mjs')` y `principal()` dentro de
+  un `try`; lo que falle va a `fallo-nodo.txt` y Node se queda vivo.
+  `android.test` recorre los imports desde lo que arranca Nodo.kt (también
+  los `import()`) y exige el orden. Comprobado con Node 18 sobre la copia de
+  la APK: arranca igual y, con un import roto a propósito, sigue vivo y
+  apunta `ERR_MODULE_NOT_FOUND`.
 
