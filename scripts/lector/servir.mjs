@@ -418,6 +418,16 @@ export function sanearCorreccion(c) {
     ...(Number.isFinite(c.partida) ? { partida: c.partida } : {}),
   };
 }
+/**
+ * La pregunta de cómo acabó la partida (3.72.5): la tablet sola no reconoció
+ * el final (la victoria no viene de serie, o no salió la tabla) y la APK te
+ * lo pregunta. Solo id con forma, el instante del draft y el pick como texto.
+ */
+export function sanearPregunta(p) {
+  if (!p || typeof p.id !== 'string' || !/^pregunta-\d{1,15}$/.test(p.id) || !Number.isFinite(p.desde) || !Number.isFinite(p.cuando)) return null;
+  const pick = typeof p.pick === 'string' && p.pick.length <= 30 && NOMBRE_DE_HEROE.test(p.pick) ? p.pick : null;
+  return { id: p.id, desde: p.desde, cuando: p.cuando, pick };
+}
 /** Una petición de la propia tablet (la APK): por 127.0.0.1 y sin `Origin`, que un navegador siempre pone. */
 export const deLaApk = (req) => !req.headers.origin && ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress ?? '');
 export function sanearResumen(r) {
@@ -539,6 +549,9 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   let consejoActual = null, resumenActual = null;
   // Lo que no reconoció la tablet sola (3.71.0): la APK lo pregunta tras la partida.
   let correccion = null;
+  // Cómo acabó la partida, si la tablet sola no lo reconoció (3.72.5), y lo que contestaste.
+  let pregunta = null, respuesta = null;
+  const preguntaVigente = () => (pregunta && ahora() - pregunta.cuando <= RETENCION_CAPTURAS_MS ? pregunta : null);
   const correccionVigente = () => (correccion && ahora() - correccion.cuando <= RETENCION_CAPTURAS_MS ? correccion : null);
   // En partida (3.69.3), la burbuja se quita: tapaba el juego y no tiene nada
   // que decir hasta el draft siguiente. Cuenta las capturas SEGUIDAS con el
@@ -576,8 +589,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   const hora = (t) => new Date(t).toISOString().slice(11, 19);
   const pararVigilancia = () => { if (relojFinal) clearInterval(relojFinal); relojFinal = null; if (final) final.activa = false; };
   const estadoFinal = () => (final
-    ? { desde: final.desde, activa: final.activa, resultado: final.resultado, resultadoId: final.resultadoId, resultadoEn: final.resultadoEn, fotogramas: final.fotogramas, inicio: final.inicio, inicioEstimado: final.inicioEstimado, duracion: final.duracion, voz: final.voz, callada, avisos: final.guion.length, dichos: final.dichosVoz, saltados: final.saltados }
-    : { desde: null, activa: false, resultado: null, resultadoId: null, resultadoEn: null, fotogramas: [], inicio: null, inicioEstimado: false, duracion: null, voz: null, callada, avisos: 0, dichos: 0, saltados: 0 });
+    ? { desde: final.desde, activa: final.activa, acabada: !!final.acabada, resultado: final.resultado, resultadoId: final.resultadoId, resultadoEn: final.resultadoEn, fotogramas: final.fotogramas, inicio: final.inicio, inicioEstimado: final.inicioEstimado, duracion: final.duracion, voz: final.voz, callada, avisos: final.guion.length, dichos: final.dichosVoz, saltados: final.saltados }
+    : { desde: null, activa: false, acabada: false, resultado: null, resultadoId: null, resultadoEn: null, fotogramas: [], inicio: null, inicioEstimado: false, duracion: null, voz: null, callada, avisos: 0, dichos: 0, saltados: 0 });
 
   // ── La voz (3.44.0): un aviso detrás de otro, nunca dos a la vez. ──────
   let colaVoz = Promise.resolve();
@@ -804,6 +817,23 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       registrar(`La partida empezó hacia las ${hora(final.inicio)} (lo vieron las lecturas del draft): ${final.guion.length} consejos en directo.`);
     }
     return final;
+  };
+  /**
+   * Aprende la palabra de la tabla de esos fotogramas con lo que se contestó
+   * (3.32.0; desde 3.72.5 también desde la pregunta de la APK). Solo ids con
+   * forma que existan en la carpeta, los ocho últimos.
+   */
+  const aprenderDelFinal = (idsPedidos, gane) => {
+    const ids = (Array.isArray(idsPedidos) ? idsPedidos : []).filter((id) => typeof id === 'string' && /^fotograma-[\w-]+$/.test(id) && carpeta && existsSync(join(carpeta, `${id}.png`))).slice(-8);
+    let aprendidos = 0, contradichas = 0;
+    for (const id of ids) {
+      try {
+        const r = aprenderResultado(tiraDe(leerPng(readFileSync(join(carpeta, `${id}.png`)))), gane, resultados, { id });
+        if (r.aprendido) { aprendidos += 1; contradichas += r.contradichas; resultados = r.resultados; }
+      } catch (e) { registrar(`No se pudo aprender el resultado de ${id}: ${e.message}`); }
+    }
+    if (aprendidos) guardarResultadosDe(resultados);
+    return { aprendidos, contradichas, ids };
   };
   const leerCuerpo = (req, maximo = 65536) => new Promise((resolver) => {
     const trozos = [];
@@ -1036,15 +1066,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
         registrar('Partida apuntada en la app: dejo de vigilarla y de dar consejos.');
       }
       if (!cuerpo || typeof cuerpo.gane !== 'boolean' || !carpeta) { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'falta gane o carpeta' })); return; }
-      const ids = (Array.isArray(cuerpo.ids) ? cuerpo.ids : []).filter((id) => /^fotograma-[\w-]+$/.test(id) && existsSync(join(carpeta, `${id}.png`))).slice(-8);
-      let aprendidos = 0, contradichas = 0;
-      for (const id of ids) {
-        try {
-          const r = aprenderResultado(tiraDe(leerPng(readFileSync(join(carpeta, `${id}.png`)))), cuerpo.gane, resultados, { id });
-          if (r.aprendido) { aprendidos += 1; contradichas += r.contradichas; resultados = r.resultados; }
-        } catch (e) { registrar(`No se pudo aprender el resultado de ${id}: ${e.message}`); }
-      }
-      if (aprendidos) guardarResultadosDe(resultados);
+      const { aprendidos, contradichas, ids } = aprenderDelFinal(cuerpo.ids, cuerpo.gane);
       registrar(`Resultado contestado (${cuerpo.gane ? 'ganada' : 'perdida'}): ${aprendidos} tabla(s) aprendida(s) de ${ids.length} fotogramas${contradichas ? `, ${contradichas} plantilla(s) contraria(s) quitada(s)` : ''}. Plantillas: ${resultados.gane.length} de victoria, ${resultados.perdi.length} de derrota.`);
       res.writeHead(200, cabeceras).end(JSON.stringify({ aprendidos, contradichas, gane: resultados.gane.length, perdi: resultados.perdi.length, tablas: resultados.tablas.length }));
       return;
@@ -1101,6 +1123,28 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       }
       return;
     }
+    // ¿Cómo acabó la partida? (3.72.5) La APK lo pregunta si la tablet sola no
+    // lo reconoció, y con la respuesta se apunta y se aprende la tabla. Solo la APK.
+    if (ruta === '/pregunta' && (req.method === 'GET' || req.method === 'POST')) {
+      if (!deLaApk(req)) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'solo la tablet' })); return; }
+      const p = preguntaVigente();
+      if (req.method === 'GET') { res.writeHead(200, cabeceras).end(JSON.stringify({ pregunta: p ? { id: p.id, pick: p.pick } : null })); return; }
+      const cuerpo = await leerCuerpo(req);
+      if (!p || preguntaVigente() !== p || cuerpo?.id !== p.id) { res.writeHead(409, cabeceras).end(JSON.stringify({ error: 'ya no hay esa pregunta' })); return; }
+      if (!(cuerpo.gane === true || cuerpo.gane === false || cuerpo.gane === null)) { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'gane' })); return; }
+      pregunta = null;
+      respuesta = { id: p.id, desde: p.desde, gane: cuerpo.gane, cuando: ahora() };
+      let aprendidos = 0;
+      if (typeof cuerpo.gane === 'boolean' && final?.desde === p.desde) {
+        // Esa partida ha acabado: se deja de vigilar y de hablar.
+        final.acabada = true;
+        pararVigilancia();
+        aprendidos = aprenderDelFinal(final.fotogramas.filter((f) => f.tabla).map((f) => f.id), cuerpo.gane).aprendidos;
+      }
+      registrar(`Contestado en la tablet: ${cuerpo.gane === null ? 'la partida no contó' : cuerpo.gane ? 'ganada' : 'perdida'}${aprendidos ? ` (aprendida la tabla de ${cuerpo.gane ? 'victoria' : 'derrota'})` : ''}.`);
+      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, aprendidos }));
+      return;
+    }
     if (req.method === 'GET' && ruta === '/leer') {
       // La app del móvil está leyendo (3.66.0): el modo solo de la tablet se aparta.
       ultimaDelMovil = ahora();
@@ -1129,6 +1173,9 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     // Lo que no reconoció (3.71.0), para preguntarlo en la APK.
     ponerCorreccion: (c) => { correccion = sanearCorreccion(c); },
     correccion: () => correccionVigente(),
+    // Cómo acabó la partida (3.72.5): el modo solo pregunta y recoge la respuesta (una vez).
+    ponerPregunta: (p) => { pregunta = sanearPregunta(p); },
+    respuesta: () => { const r = respuesta; respuesta = null; return r; },
     /**
      * Un vistazo al minimapa si la burbuja tiene algo que enseñar y nadie ha
      * capturado en VISTAZO_MS (3.69.3). null si no tocaba.

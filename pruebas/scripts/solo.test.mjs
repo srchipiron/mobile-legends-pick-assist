@@ -8,7 +8,7 @@ import { test, ok, eq, terminar, leerJson } from '../arnes.mjs';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { acumularDraft, draftVacio, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, IDS_POR_DRAFT, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO } from '../../scripts/lector/solo.mjs';
+import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, IDS_POR_DRAFT, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO } from '../../scripts/lector/solo.mjs';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
 import { crearServidor } from '../../scripts/lector/servir.mjs';
 import { RAIZ } from '../arnes.mjs';
@@ -313,6 +313,82 @@ test('la burbuja de la tablet sola dice el mejor de los tuyos si el nº1 no lo e
   const c = consejoSolo({ datos, draft, linea: 'roam', maestria: { [ultimo]: { games: 3, winRate: 0.5 } } });
   ok(c?.detalle?.includes(`De los tuyos: ${ultimo}`), `no lo dice: ${c?.detalle}`);
   ok(!consejoSolo({ datos, draft, linea: 'roam' })?.detalle?.includes('De los tuyos'), 'lo dice sin maestría');
+});
+
+test('el draft siguiente se ve por sus baneos, no solo por el reloj (3.72.5): tras la partida, en cuanto hay baneos nuevos; y si alguien abandona el draft, en cuanto cambian los huecos de baneo', () => {
+  const T = 1_000_000;
+  // Un draft entero y cerrado por la partida.
+  let d = acumularDraft(null, lectura({ tuyos: [N('Hirara'), N('Belerick'), N('Atlas'), V, V], suyos: [N('Eudora'), N('Saber'), V, V, V], enemigos: [N('Clint'), N('Khufra'), V, V, V] }), T);
+  d = acumularDraft(d, { partida: true }, T + 1000); d = acumularDraft(d, { partida: true }, T + 2000);
+  ok(d.cerrado, 'la partida no cierra el draft');
+  // La pantalla de carga (los mismos héroes, sin baneos) no es otro draft.
+  eq(acumularDraft(d, lectura({ enemigos: [N('Clint'), N('Khufra'), V, V, V] }), T + 30000).cerrado, true, 'la carga de la misma partida abre otro draft');
+  // Un baneo nuevo solo (puede ser uno mal leído) tampoco.
+  eq(acumularDraft(d, lectura({ tuyos: [N('Lolita'), V, V, V, V] }), T + 60000).cerrado, true, 'un solo baneo distinto abre otro draft');
+  // Dos baneos que el de antes no tenía, al minuto: es otro draft, sin esperar los 3 minutos.
+  const otro = acumularDraft(d, lectura({ tuyos: [N('Lolita'), N('Franco'), V, V, V] }), T + 60000);
+  ok(!otro.cerrado && otro.baneos.includes('Lolita') && !otro.baneos.includes('Hirara') && !otro.enemigos.some(Boolean), `el draft nuevo no entra o se mezcla con el de antes: ${JSON.stringify(otro)}`);
+  // Alguien abandona en pleno draft y empieza otro: dos huecos de baneo con otro héroe.
+  let a = acumularDraft(null, lectura({ tuyos: [N('Hirara'), N('Belerick'), V, V, V], enemigos: [N('Clint'), V, V, V, V] }), T);
+  eq(acumularDraft(a, lectura({ tuyos: [N('Lolita'), N('Belerick'), V, V, V] }), T + 30000).baneos.includes('Hirara'), true, 'un hueco de baneo mal leído tira el draft');
+  a = acumularDraft(a, lectura({ tuyos: [N('Lolita'), N('Franco'), V, V, V] }), T + 30000);
+  ok(!a.baneos.includes('Hirara') && !a.enemigos.some(Boolean) && a.baneos.includes('Franco'), `el draft tras un abandono se mezcla con el anterior: ${JSON.stringify(a)}`);
+  eq(BANEOS_DE_OTRO_DRAFT, 2);
+});
+
+test('¿Cómo acabó? (3.72.5): sin reconocer el final, la tablet lo pregunta UNA vez y apunta con lo que contestes; «No la terminé» no apunta; y si empieza otro draft sin saberlo, también pregunta', async () => {
+  const montar = () => {
+    let t = 20_000_000, final = null, respuesta = null;
+    let respuestaLista = lectura({ tuyos: [N('Hirara'), N('Belerick')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 });
+    const preguntas = [], apuntadas = [], resumenes = [];
+    const interno = {
+      leer: async () => ({ ok: true, lectura: respuestaLista }), delMovil: () => ({}), ponerConsejo: () => {},
+      vigilar: (desde) => { final = { desde, activa: true, acabada: false, resultado: null, inicio: desde + 1000, duracion: null }; },
+      final: () => final, ponerResumen: (r) => resumenes.push(r),
+      ponerPregunta: (p) => preguntas.push(p), respuesta: () => { const r = respuesta; respuesta = null; return r; },
+    };
+    const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: (p) => apuntadas.push(p) });
+    return {
+      solo, preguntas, apuntadas, resumenes,
+      paso: async (ms = 5000) => { t += ms; await solo.tic(); },
+      leer: (l) => { respuestaLista = l; }, fin: (f) => { final = { ...final, ...f }; }, contestar: (r) => { respuesta = { ...r, cuando: t }; }, desde: () => final?.desde,
+    };
+  };
+  // La tabla del final sin palabra conocida (la victoria se aprende).
+  const v = montar();
+  await v.paso(); v.leer({ partida: true, rapida: true }); await v.paso(); await v.paso();
+  v.fin({ acabada: true, activa: false, duracion: 13.5 });
+  await v.paso(20000); await v.paso(20000);
+  eq(v.preguntas.length, 1, 'con la tabla sin palabra no pregunta, o pregunta dos veces');
+  ok(v.preguntas[0].id === `pregunta-${v.desde()}` && v.preguntas[0].pick === 'Rafaela', JSON.stringify(v.preguntas[0]));
+  ok(v.resumenes.some((r) => r.id === `pregunta-${v.desde()}` && /Cómo acabó/.test(r.titulo)), 'la notificación no lo pregunta');
+  eq(v.apuntadas.length, 0, 'apunta sin saber el resultado');
+  v.contestar({ desde: v.desde(), gane: true });
+  await v.paso(20000); await v.paso(20000);
+  eq(v.apuntadas.length, 1, 'con tu respuesta no apunta, o apunta dos veces');
+  ok(v.apuntadas[0].gane === true && v.apuntadas[0].pick === 'Rafaela' && v.apuntadas[0].duracion === 13.5, JSON.stringify(v.apuntadas[0]));
+  // «No la terminé».
+  const n = montar();
+  await n.paso(); n.leer({ partida: true, rapida: true }); await n.paso(); await n.paso();
+  n.fin({ acabada: true, activa: false });
+  await n.paso(20000);
+  n.contestar({ desde: n.desde(), gane: null });
+  await n.paso(20000);
+  eq(n.apuntadas.length, 0, '«No la terminé» apunta la partida');
+  // Otro draft sin haber visto el final: se pregunta por la de antes.
+  const o = montar();
+  await o.paso(); o.leer({ partida: true, rapida: true }); await o.paso(); await o.paso();
+  o.leer(lectura({ tuyos: [N('Lolita'), N('Franco'), V, V, V] }));
+  await o.paso(60000);
+  eq(o.preguntas.length, 1, 'empieza otro draft y no pregunta por la partida de antes');
+  ok(!o.solo.estado().cerrado && o.solo.estado().baneos.includes('Lolita'), 'el draft siguiente no entra');
+  // Con el resultado leído, ni se pregunta.
+  const g = montar();
+  await g.paso(); g.leer({ partida: true, rapida: true }); await g.paso(); await g.paso();
+  g.fin({ acabada: true, activa: false, resultado: 'perdi', resultadoEn: 123 });
+  await g.paso(20000);
+  ok(g.preguntas.length === 0 && g.apuntadas.length === 1 && g.apuntadas[0].gane === false, 'con el resultado leído pregunta o no apunta');
+  ok(/How did the game end/.test(resumenPregunta(1, null, 'en').titulo));
 });
 
 await terminar('scripts/solo');

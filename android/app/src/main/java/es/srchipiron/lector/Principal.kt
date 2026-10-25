@@ -92,6 +92,9 @@ class Principal : Activity() {
     private lateinit var apagarSolo: Button
     /** «Enseña al lector» (3.71.0): lo que no reconoció en tu última partida. */
     private lateinit var corregir: LinearLayout
+    /** «¿Cómo acabó?» (3.72.5): la tablet no reconoció el final de tu última partida. */
+    private lateinit var preguntaCard: LinearLayout
+    private var preguntaId: String? = null
     /** El aviso de un cierre (3.72.1), arriba del todo y con «Copiar». */
     private lateinit var aviso: LinearLayout
     private lateinit var avisoTexto: TextView
@@ -161,6 +164,9 @@ class Principal : Activity() {
         }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         aviso.addView(filaAviso)
         izquierda.addView(aviso, separada())
+        // Cómo acabó la partida (3.72.5), lo primero tras un fallo: sin eso la partida no se apunta.
+        preguntaCard = tarjeta().apply { visibility = View.GONE }
+        izquierda.addView(preguntaCard, separada())
         // Arriba del todo, donde se ve al abrir desde la notificación de la partida (3.71.0).
         corregir = tarjeta().apply { visibility = View.GONE }
         izquierda.addView(corregir, separada())
@@ -293,9 +299,10 @@ class Principal : Activity() {
         if (Nodo.arrancado && System.currentTimeMillis() / 1000 % 3 == 0L) thread(isDaemon = true) {
             movilLee = lecturasDelLector() > 0
             val c = pedirCorreccion()
+            val p = pedir("/pregunta")?.optJSONObject("pregunta")
             // Un fallo al empezar a grabar no cierra la app (3.72.1): el aviso sale sin tener que volver a abrirla.
             val f = falloSinVer()
-            runOnUiThread { if (!isFinishing) { pintarCorreccion(c); pintarAviso(f) } }
+            runOnUiThread { if (!isFinishing) { pintarCorreccion(c); pintarPregunta(p); pintarAviso(f) } }
         }
         reloj.postDelayed({ tic() }, 1000)
     }
@@ -314,6 +321,65 @@ class Principal : Activity() {
         c.setRequestProperty("X-Lector-Codigo", Vinculo.codigo(this))
         try { if (c.responseCode == 200) JSONObject(c.inputStream.bufferedReader().readText()).optJSONObject("correccion") else null } finally { c.disconnect() }
     } catch (e: Throwable) { null }
+
+    /** GET al lector de la propia tablet (127.0.0.1, con el código); null si no contesta 200. */
+    private fun pedir(ruta: String): JSONObject? = try {
+        val c = URL("http://127.0.0.1:$PUERTO$ruta").openConnection() as HttpURLConnection
+        c.connectTimeout = 1000; c.readTimeout = 2000
+        c.setRequestProperty("X-Lector-Codigo", Vinculo.codigo(this))
+        try { if (c.responseCode == 200) JSONObject(c.inputStream.bufferedReader().readText()) else null } finally { c.disconnect() }
+    } catch (e: Throwable) { null }
+
+    /** POST al lector de la propia tablet; el código HTTP, o 0 si no contesta. */
+    private fun mandar(ruta: String, cuerpo: JSONObject): Int = try {
+        val c = URL("http://127.0.0.1:$PUERTO$ruta").openConnection() as HttpURLConnection
+        c.connectTimeout = 2000; c.readTimeout = 20000
+        c.requestMethod = "POST"; c.doOutput = true
+        c.setRequestProperty("Content-Type", "application/json")
+        c.setRequestProperty("X-Lector-Codigo", Vinculo.codigo(this))
+        c.outputStream.use { it.write(cuerpo.toString().toByteArray()) }
+        try { c.responseCode } finally { c.disconnect() }
+    } catch (e: Throwable) { 0 }
+
+    /**
+     * «¿Cómo acabó?» (3.72.5): la tablet no reconoció el final (la victoria se
+     * aprende, o no salió la tabla). Con tu respuesta apunta la partida y
+     * aprende la pantalla de la tabla, así la próxima la reconoce sola.
+     */
+    private fun pintarPregunta(p: JSONObject?) {
+        if (p == null) { if (preguntaId != null) { preguntaId = null; preguntaCard.visibility = View.GONE }; return }
+        val id = p.optString("id")
+        if (id == preguntaId) return
+        preguntaId = id
+        preguntaCard.removeAllViews()
+        val pick = p.optString("pick", "").takeIf { it.isNotEmpty() && it != "null" }
+        preguntaCard.addView(TextView(this).apply { text = "¿Cómo acabó tu partida${pick?.let { " con $it" } ?: ""}?"; textSize = 18f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.rgb(255, 214, 10)) })
+        preguntaCard.addView(TextView(this).apply {
+            text = "No vi el resultado. Dímelo y la apunto; si salió la tabla del final, aprendo a reconocerla para la próxima."
+            textSize = 14f; setTextColor(Color.LTGRAY); setPadding(0, dp(4), 0, dp(8))
+        })
+        val aviso = TextView(this).apply { textSize = 14f; setTextColor(Color.WHITE); setPadding(0, dp(6), 0, 0) }
+        val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val botones = listOf("Gané" to true, "Perdí" to false, "No la terminé" to null).map { (texto, gane) ->
+            Button(this).apply { text = texto }.also { fila.addView(it, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)) } to gane
+        }
+        for ((b, gane) in botones) b.setOnClickListener {
+            botones.forEach { it.first.isEnabled = false }
+            thread(isDaemon = true) {
+                val estado = mandar("/pregunta", JSONObject().put("id", id).put("gane", gane ?: JSONObject.NULL))
+                runOnUiThread {
+                    aviso.text = when (estado) {
+                        200 -> if (gane == null) "Vale: esa partida no se apunta." else "Apuntada como ${if (gane) "ganada" else "perdida"}."
+                        409 -> "Esa partida ya no se puede contestar."
+                        else -> { botones.forEach { it.first.isEnabled = true }; "El lector no contestó: ¿está leyendo? Prueba otra vez." }
+                    }
+                }
+            }
+        }
+        preguntaCard.addView(fila)
+        preguntaCard.addView(aviso)
+        preguntaCard.visibility = View.VISIBLE
+    }
 
     private fun mandarCorreccion(cuerpo: JSONObject): JSONObject? = try {
         val c = URL("http://127.0.0.1:$PUERTO/correccion").openConnection() as HttpURLConnection

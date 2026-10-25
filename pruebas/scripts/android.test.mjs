@@ -117,4 +117,11 @@ test('Node en la APK arranca vigilado (3.72.3): los vigilantes se ponen ANTES de
   ok(/try \{[\s\S]*await import\('\.\/en-tablet\.mjs'\)[\s\S]*\} catch \(e\) \{[\s\S]*fallo-nodo|apuntar\('al arrancar'/.test(a) && /setInterval\(/.test(a), 'un fallo al cargar el lector deja salir a Node (y cierra la app)');
 });
 
+test('«¿Cómo acabó?» en la APK (3.72.5): la pantalla pregunta al lector de la tablet y contesta Gané, Perdí o No la terminé', () => {
+  const principal = readFileSync(join(KOTLIN, 'Principal.kt'), 'utf8');
+  ok(/pedir\("\/pregunta"\)/.test(principal) && /pintarPregunta\(p\)/.test(principal), 'la pantalla no pregunta al lector si hay una partida sin resultado');
+  ok(/"Gané" to true, "Perdí" to false, "No la terminé" to null/.test(principal), 'faltan las tres respuestas');
+  ok(/mandar\("\/pregunta", JSONObject\(\)\.put\("id", id\)\.put\("gane", gane \?: JSONObject\.NULL\)\)/.test(principal), 'la respuesta no va al lector con su id');
+});
+
 await terminar('scripts/android');

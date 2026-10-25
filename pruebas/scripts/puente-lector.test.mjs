@@ -7,7 +7,7 @@ import { mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync, exist
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { crearServidor, lectorEnHilos, leerCaptura, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS, EN_PARTIDA_PARA_ESCONDER, VISTAZO_MS, sanearAjustes } from '../../scripts/lector/servir.mjs';
+import { crearServidor, lectorEnHilos, leerCaptura, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS, EN_PARTIDA_PARA_ESCONDER, VISTAZO_MS, sanearAjustes, sanearPregunta } from '../../scripts/lector/servir.mjs';
 import { guardarResultados } from '../../scripts/lector/resultado.mjs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { carasGuardadas, vaciosAliadoGuardados } from '../../scripts/lector/leer.mjs';
@@ -593,6 +593,47 @@ test('el vistazo al minimapa (3.69.3): sin nadie leyendo, la burbuja se quita ig
   // La voz callada en la app (3.71.0): solo un «sí» de verdad la calla en la tablet.
   eq(sanearAjustes({ linea: 'roam', vozCallada: true }).vozCallada, true, 'la voz callada del móvil no llega a la tablet');
   eq(sanearAjustes({ linea: 'roam', vozCallada: 'si' }).vozCallada, undefined, 'entra una voz callada sin forma');
+});
+
+test('¿Cómo acabó? (3.72.5): con la tabla sin palabra conocida, la APK lo pregunta; con la respuesta se deja de vigilar, se aprende la tabla y el modo solo la recoge una vez', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'lector-pregunta-'));
+  const servidor = crearServidor({ caras, capturar: () => pngTabla, carpeta, guardarResultadosDe: () => {}, resultados: { ...plantillasDeSerie(), perdi: [] }, vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 15 } });
+  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${servidor.address().port}`;
+  const apk = async (camino, cuerpo, { origen = null } = {}) => {
+    const r = await fetch(`${base}${camino}`, { method: cuerpo ? 'POST' : 'GET', headers: { ...(origen ? { Origin: origen } : {}), 'Content-Type': 'application/json' }, ...(cuerpo ? { body: JSON.stringify(cuerpo) } : {}) });
+    return { estado: r.status, cuerpo: await r.json() };
+  };
+  try {
+    const desde = Date.now();
+    servidor.interno.vigilar(desde, {});
+    ok(await hasta(async () => servidor.interno.final().acabada), 'la tabla sin palabra conocida no da la partida por acabada');
+    eq(servidor.interno.final().resultado, null, 'la prueba necesita una tabla SIN palabra conocida');
+    eq((await apk('/pregunta')).cuerpo.pregunta, null);
+    servidor.interno.ponerPregunta({ id: `pregunta-${desde}`, desde, cuando: Date.now(), pick: 'Rafaela' });
+    eq(JSON.stringify((await apk('/pregunta')).cuerpo.pregunta), JSON.stringify({ id: `pregunta-${desde}`, pick: 'Rafaela' }), 'la APK no ve la pregunta');
+    eq((await apk('/pregunta', null, { origen: 'https://srchipiron.github.io' })).estado, 403, 'un navegador lee la pregunta');
+    eq((await apk('/pregunta', { id: `pregunta-${desde}`, gane: true }, { origen: 'https://srchipiron.github.io' })).estado, 403, 'un navegador contesta la pregunta');
+    eq((await apk('/pregunta', { id: 'pregunta-1', gane: true })).estado, 409, 'contesta otra pregunta');
+    eq((await apk('/pregunta', { id: `pregunta-${desde}`, gane: 'si' })).estado, 400, 'acepta un resultado sin forma');
+    eq(servidor.interno.respuesta(), null, 'una respuesta rechazada llega al modo solo');
+    const r = await apk('/pregunta', { id: `pregunta-${desde}`, gane: true });
+    eq(r.estado, 200, JSON.stringify(r.cuerpo));
+    ok(r.cuerpo.aprendidos >= 1, `no aprende la tabla de victoria: ${JSON.stringify(r.cuerpo)}`);
+    ok(!servidor.interno.final().activa, 'contestada, sigue vigilando');
+    const respuesta = servidor.interno.respuesta();
+    ok(respuesta?.desde === desde && respuesta.gane === true, `el modo solo no recibe la respuesta: ${JSON.stringify(respuesta)}`);
+    eq(servidor.interno.respuesta(), null, 'la respuesta se recoge dos veces');
+    eq((await apk('/pregunta')).cuerpo.pregunta, null, 'contestada, se sigue preguntando');
+    ok((await (await fetch(`${base}/estado`)).json()).resultados.gane >= 1, 'la tabla de victoria no queda aprendida');
+    // «No la terminé»: no se aprende nada y el modo solo lo sabe.
+    servidor.interno.ponerPregunta({ id: `pregunta-${desde + 1}`, desde: desde + 1, cuando: Date.now(), pick: null });
+    eq((await apk('/pregunta', { id: `pregunta-${desde + 1}`, gane: null })).cuerpo.aprendidos, 0);
+    eq(servidor.interno.respuesta()?.gane, null);
+    // Con forma o nada.
+    eq(sanearPregunta({ id: '../x', desde, cuando: desde }), null);
+    eq(sanearPregunta({ id: `pregunta-${desde}`, desde, cuando: desde, pick: '<b>' }).pick, null, 'entra un pick con cualquier cosa');
+  } finally { servidor.close(); }
 });
 
 await terminar('scripts/puente-lector');

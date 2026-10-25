@@ -8,6 +8,19 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.73.0
+
+- Lector MLBB ya no se queda atascado cuando no ve el final de la partida.
+  Si no reconoce cómo acabó, o empiezas otro draft sin que haya visto la
+  pantalla del resultado, te lo pregunta: te llega un aviso y en la app
+  sale «¿Cómo acabó tu partida?» con Gané, Perdí o No la terminé.
+- Con tu respuesta apunta la partida y aprende la pantalla del final. La
+  victoria no venía aprendida de serie, así que la primera vez que ganes
+  te lo preguntará, y a partir de ahí la reconocerá sola.
+- El draft siguiente entra antes. Ya no espera 3 minutos tras la partida:
+  en cuanto ve baneos nuevos, sabe que es otro draft. Y si alguien abandona
+  en pleno draft y empezáis otro, ya no lo mezcla con el anterior.
+
 ## 3.72.4
 
 - Arreglado por fin el cierre de Lector MLBB al empezar a leer. El lector

@@ -1363,3 +1363,35 @@ APK de pega con capturas reales: draft, partida, voz y corrección van bien.
   el código de 3.72.3). El Node de escritorio sí las entiende: probar con él
   no basta para esto.
 
+## Cuando no se ve el final (3.73.0)
+
+Javi: «hay veces que no terminas la partida y ya se rompe el programa porque
+se queda esperando al ganado o perdido». Dos causas:
+- **Sin el móvil, la victoria no se reconocía nunca**: de serie solo va la
+  derrota, y la victoria se aprendía de un «Gané» de la app del móvil. Sin
+  resultado, la vigilancia esperaba hasta su límite y la partida no se
+  apuntaba. Hoy `crearSolo` PREGUNTA (`preguntar`, una vez por partida) si
+  vio la tabla sin palabra conocida (`acabada`, ahora en `/final`), si la
+  vigilancia acabó sin tabla con la partida empezada, o si empieza otro draft
+  sin resultado. `interno.ponerPregunta` (servir.mjs, `sanearPregunta`) y la
+  notificación (`resumenPregunta`); la APK enseña «¿Cómo acabó tu partida?»
+  (Gané / Perdí / No la terminé, `GET`/`POST /pregunta`, solo `deLaApk`). Con
+  la respuesta el lector deja de vigilar, aprende la tabla de esos
+  fotogramas (`aprenderDelFinal`, lo mismo que `/resultado`) y el modo solo
+  la recoge UNA vez (`interno.respuesta`) y apunta (`apuntarVigilada`).
+  Caduca con las capturas (`RETENCION_CAPTURAS_MS`).
+- **El draft siguiente esperaba al reloj**: `acumularDraft` solo abría otro
+  pasados 3 min del cierre (o 15 sin moverse), así que el siguiente no
+  entraba a tiempo y, tras un abandono en pleno draft, se mezclaba con el
+  anterior. Hoy guarda los baneos por hueco (`banHuecos`) y abre otro con
+  `BANEOS_DE_OTRO_DRAFT` (2) huecos de baneo con otro héroe o, tras la
+  partida, dos baneos que no estaban. Dos y no uno: un baneo mal leído (1 de
+  338 medidos) no tira el draft. La pantalla de carga (sin baneos) no abre
+  otro.
+- Pruebas en `solo` (los tres caminos de la pregunta, la respuesta una vez,
+  «No la terminé», el draft siguiente por baneos, el abandono, un baneo mal
+  leído), `puente-lector` (la tabla real sin palabra: la pregunta, quién la
+  ve, 409/400, se aprende la victoria y se deja de vigilar) y `android`.
+  Quince mutaciones; sobrevive una inofensiva: con «No la terminé»
+  `partidaSolo` ya no apunta sin resultado.
+
