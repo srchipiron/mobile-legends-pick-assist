@@ -1420,3 +1420,11 @@ datos) por `llamar`, como las partidas: ningún destino nuevo. Pruebas en
 `en-tablet` (el parte limpio y la subida de punta a punta con el Supabase
 falso) y `revisar-tablet`; 20 mutaciones, sobrevive una inofensiva: quitar
 la guarda de la clave en `subirSuParte` la hace `subirParte` igual.
+
+**La clave del lector (3.74.1)**: el parte va con `claveDelLector(casa)`
+(`clave-lector.txt`, al azar con `crearClaveDeJugador` y `randomBytes`), no
+con tu clave de jugador: la base de datos tenía 0 jugadores el 26 de octubre
+de 2026, así que con la tuya no habría llegado ni uno. Siempre la misma, con
+tu clave o sin ella (la revisión agrupa por lector), y tu clave también se
+tapa en el parte. Cinco mutaciones, todas cazadas.
+

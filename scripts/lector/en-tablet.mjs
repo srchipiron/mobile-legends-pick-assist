@@ -19,12 +19,13 @@
  */
 import { mkdirSync, readFileSync, writeFileSync, renameSync, statSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas, sanearAjustes, PUERTO, VISTAZO_MS } from './servir.mjs';
 import { limpiarTexto } from './voz.mjs';
 import { leerCrudo, escribirPngRapido } from './png.mjs';
 import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo } from './solo.mjs';
-import { sanearConfig, claveDeJugadorValida, subirPartidas, subirParte } from '../../src/app/basedatos.js';
+import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte } from '../../src/app/basedatos.js';
 import { maestriaEfectiva } from '../../src/motor/maestria.js';
 
 /** Solo 127.0.0.1: la APK es la única que da la captura. */
@@ -267,6 +268,21 @@ export function parteDeSalud({ estado, log = '', falloNodo = null, secretos = []
   };
 }
 
+/**
+ * La clave con la que la tablet sube sus PARTES (3.74.1): la suya, creada al
+ * azar la primera vez y guardada en `clave-lector.txt`. No es tu clave de
+ * jugador: con ella no se ven ni se tocan tus partidas, y así los partes
+ * llegan aunque el móvil no haya mandado nunca la tuya (la base de datos
+ * tenía 0 jugadores el 26 de octubre de 2026: sin esto, la revisión no veía
+ * nada). Sin disco, null: no se sube.
+ */
+export function claveDelLector(casa, { azar = (n) => new Uint8Array(randomBytes(n)) } = {}) {
+  const fichero = join(casa, 'clave-lector.txt');
+  try { const c = readFileSync(fichero, 'utf8').trim(); if (claveDeJugadorValida(c)) return c; } catch { /* la primera vez */ }
+  const c = crearClaveDeJugador(azar);
+  try { writeFileSync(fichero, c); return c; } catch { return null; }
+}
+
 /** La configuración de la base de datos que bajó la tablet (o la que trae la APK). */
 export function leerComunidad(carpetas) {
   for (const c of carpetas) {
@@ -365,11 +381,11 @@ export async function principal(env = process.env) {
   };
   // El parte de salud (3.74.0): para que la revisión automática vea cómo va la tablet sin que nadie copie nada.
   const subirSuParte = async () => {
-    const clave = ajustes.delMovil()?.clave;
+    const clave = claveDelLector(casa);
     const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
     if (!claveDeJugadorValida(clave) || !config) return;
     const leer = (f) => { try { return readFileSync(join(casa, f), 'utf8'); } catch { return null; } };
-    const parte = parteDeSalud({ estado: servidor.interno.estado(), log: leer('lector.log') ?? '', falloNodo: leer('fallo-nodo.txt'), secretos: [codigo, clave] });
+    const parte = parteDeSalud({ estado: servidor.interno.estado(), log: leer('lector.log') ?? '', falloNodo: leer('fallo-nodo.txt'), secretos: [codigo, clave, ajustes.delMovil()?.clave] });
     const r = await subirParte({ config, clave, parte });
     if (r.error && r.error !== 'pronto') registrar(`El parte de salud no se pudo subir (${r.error}).`);
   };

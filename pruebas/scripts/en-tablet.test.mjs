@@ -10,8 +10,9 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE } from '../../scripts/lector/en-tablet.mjs';
+import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
+import { claveDeJugadorValida } from '../../src/app/basedatos.js';
 import { pruebaDelReto } from '../../src/app/lector.js';
 import { writeFileSync } from 'node:fs';
 import { crearPortero, hostPermitido, crearServidor, fundirAprendido, sanearCorreccion, deLaApk, FALLOS_CODIGO, VENTANA_CODIGO_MS, RETENCION_CAPTURAS_MS, CAPTURAS_A_MIRAR } from '../../scripts/lector/servir.mjs';
@@ -486,35 +487,50 @@ test('el parte de salud (3.74.0): sin IPs, sin el código ni tu clave, sin carac
   ok(JSON.stringify(p).length < 16000, 'el parte no cabe en lo que acepta el servidor');
 });
 
-test('la tablet sube su parte con tu clave a la base de datos, y la revisión lo lee (3.74.0)', async () => {
+test('la tablet sube su parte con SU clave, aunque el móvil no haya mandado la tuya, y sin secretos (3.74.1)', async () => {
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-parte-'));
-  const clave = 'P'.repeat(43);
+  const tuya = 'P'.repeat(43);
   const s = supabaseFalso();
   const { mkdirSync } = await import('node:fs');
   mkdirSync(join(casa, 'datos'), { recursive: true });
   writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
-  writeFileSync(join(casa, 'lector.log'), `Lector en 192.168.1.9 con ${CODIGO}\nTodo bien\n`);
+  writeFileSync(join(casa, 'lector.log'), `Lector en 192.168.1.9 con ${CODIGO} y ${tuya}\nTodo bien\n`);
   const apk = await apkDePega();
   const original = globalThis.fetch;
   globalThis.fetch = (url, o) => (String(url).startsWith('https://abcdefghijklmnopqrst.supabase.co/') ? s.fetch(url, o) : original(url, o));
-  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' });
+  const arrancar = () => principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' });
+  const servidor = await arrancar();
   try {
     await servidor.subirParte();
-    eq(s.partes.length, 0, 'sube el parte sin tu clave');
-    writeFileSync(join(casa, 'solo-movil.json'), JSON.stringify({ linea: 'roam', clave }));
-    const conClave = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' });
+    eq(s.partes.length, 1, 'sin tu clave de jugador no sube el parte');
+    const delLector = s.partes[0].clave;
+    ok(claveDeJugadorValida(delLector) && delLector !== tuya, 'el parte no va con una clave propia del lector');
+    eq(claveDelLector(casa), delLector, 'la clave del lector no se guarda');
+    const parte = s.partes[0];
+    ok(parte.d.log.some((l) => l === 'Todo bien'), 'el parte no lleva el registro');
+    ok(parte.d.estado && 'pendiente' in parte.d.estado && 'partidas' in parte.d.estado, `el parte no lleva el estado: ${Object.keys(parte.d.estado ?? {})}`);
+    // Con tu clave puesta, el parte sigue con la del lector (el mismo lector en la revisión) y tu clave no sale.
+    writeFileSync(join(casa, 'solo-movil.json'), JSON.stringify({ linea: 'roam', clave: tuya }));
+    const conClave = await arrancar();
     try {
+      s.partes.length = 0;
       await conClave.subirParte();
-      eq(s.partes.length, 1, 'no sube el parte con tu clave');
-      const parte = s.partes[0];
-      eq(parte.clave, clave);
-      const texto = JSON.stringify(parte.d);
-      ok(!texto.includes(CODIGO) && !texto.includes(SECRETO) && !texto.includes('192.168.1.9'), `el parte lleva el código, el secreto o la IP: ${texto.slice(0, 300)}`);
-      ok(parte.d.log.some((l) => l === 'Todo bien'), 'el parte no lleva el registro');
-      ok(parte.d.estado && 'pendiente' in parte.d.estado && 'partidas' in parte.d.estado, `el parte no lleva el estado: ${Object.keys(parte.d.estado ?? {})}`);
-      eq(s.llamadas.filter((c) => c.funcion === 'subir_parte').length, 1);
+      eq(s.partes.length, 1); eq(s.partes[0].clave, delLector, 'cambia de clave al tener la tuya: la revisión lo vería como otro lector');
+      const texto = JSON.stringify(s.partes[0].d);
+      for (const secreto of [CODIGO, SECRETO, tuya, delLector, '192.168.1.9']) ok(!texto.includes(secreto), `el parte lleva un secreto: ${secreto.slice(0, 6)}…`);
+      eq(s.jugadores.size, 0, 'subir un parte toca tus partidas');
     } finally { conClave.close(); }
   } finally { globalThis.fetch = original; servidor.close(); apk.cerrar(); }
+});
+
+test('la clave del lector: al azar, con la forma del servidor, y la misma tras reiniciar', () => {
+  const a = mkdtempSync(join(tmpdir(), 'clave-lector-')), b = mkdtempSync(join(tmpdir(), 'clave-lector-'));
+  const ka = claveDelLector(a);
+  ok(claveDeJugadorValida(ka), ka);
+  eq(claveDelLector(a), ka, 'cambia tras reiniciar');
+  ok(claveDelLector(b) !== ka, 'dos tablets con la misma clave');
+  writeFileSync(join(a, 'clave-lector.txt'), 'rota');
+  ok(claveDeJugadorValida(claveDelLector(a)), 'una clave rota en disco se usa');
 });
 
 await terminar('scripts/en-tablet');

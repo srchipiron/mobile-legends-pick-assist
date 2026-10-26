@@ -75,7 +75,7 @@ export function revisarPartes(partes, { ahora = Date.now() } = {}) {
 
 /** El informe en Markdown. */
 export function informe(r, { horas = 48 } = {}) {
-  if (!r.lectores.length) return `## Lector MLBB: ningún parte en ${horas} h\n\nNinguna tablet ha subido su parte: o no se ha usado, o le falta la clave de jugador (sin ella no sube nada).`;
+  if (!r.lectores.length) return `## Lector MLBB: ningún parte en ${horas} h\n\nNinguna tablet ha subido su parte: o no se ha abierto Lector MLBB en estas horas, o no tiene red, o lleva una APK anterior a la 3.74.1 (hasta entonces solo subía con tu clave de jugador).`;
   const L = [`## Lector MLBB: ${r.fallos ? `${r.fallos} fallo(s)` : 'sin fallos'}${r.avisos ? ` · ${r.avisos} aviso(s)` : ''}`, ''];
   for (const l of r.lectores) {
     L.push(`### Lector ${l.j} · APK ${l.apk ?? '?'} · último parte hace ${l.minutos ?? '?'} min · ${l.grabando ? 'grabando' : 'sin grabar'} · ${l.lecturas} lecturas`);

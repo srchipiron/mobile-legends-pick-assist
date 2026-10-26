@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.74.1
+
+- Lector MLBB manda su parte de salud aunque el móvil no le haya pasado
+  nunca tu clave. Antes solo lo mandaba con ella, y como tu base de datos
+  estaba vacía, la revisión diaria no habría visto nada.
+- Para eso usa una clave suya, creada en la tablet. Solo sirve para los
+  partes: con ella no se ven ni se tocan tus partidas.
+
 ## 3.74.0
 
 - Lector MLBB avisa por sí solo de cómo va en la tablet, sin que tengas que
