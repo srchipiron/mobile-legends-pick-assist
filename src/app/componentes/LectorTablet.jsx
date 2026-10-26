@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { sanearLectorTablet, traerDeTermux, pedirEstadoLector, pedirUltimaApk, queApk, claveDeFallo, buscarTabletUnaVez, sinLlegarALaTablet, DESCARGA_APK } from '../lector.js';
+import { sanearLectorTablet, traerDeTermux, pedirEstadoLector, lineasDelSistema, pedirUltimaApk, queApk, claveDeFallo, buscarTabletUnaVez, sinLlegarALaTablet, DESCARGA_APK } from '../lector.js';
 import { tPorDefecto } from './tPorDefecto.js';
 
 /**
@@ -14,12 +14,15 @@ export function LectorTablet({ vinculo = null, onVinculo, t = tPorDefecto }) {
   // Qué Lector MLBB tienes (3.65.2): las anteriores a 3.64.0 no se actualizan solas y nadie lo decía.
   const [apk, setApk] = useState(null);
   const [mirar, setMirar] = useState(0);
+  // El sistema de un vistazo (3.77.0): lo que dice la tablet de sí misma.
+  const [sistema, setSistema] = useState([]);
   useEffect(() => {
     if (!vinculo) return undefined;
     let vivo = true;
     setApk({ estado: 'mirando' });
     Promise.all([pedirEstadoLector(), pedirUltimaApk()]).then(async ([estado, ultima]) => {
       if (!vivo) return;
+      setSistema(lineasDelSistema(estado));
       const q = queApk(estado, ultima);
       // Sin llegar a la tablet, se la busca en la wifi (3.65.4): cambia de IP.
       if (q.estado !== 'sinRespuesta' || !sinLlegarALaTablet(q.tipo)) { setApk(q); return; }
@@ -37,6 +40,12 @@ export function LectorTablet({ vinculo = null, onVinculo, t = tPorDefecto }) {
       <div className="lector-tablet">
         <p className="empty-state">{t('lectorTablet.vinculado', { direccion: vinculo.direccion })}</p>
         {apk && <p className={claseDeApk(apk.estado)} role="status">{textoDeApk(apk, vinculo, t)}</p>}
+        {sistema.length > 0 && (
+          <div className="sistema" role="status" aria-label={t('sistema.titulo')}>
+            <strong>{t('sistema.titulo')}</strong>
+            {sistema.map((l) => <p key={l.clave} className={l.mal ? 'nota mal' : 'empty-state'}>{t(l.clave, l.params)}</p>)}
+          </div>
+        )}
         {apk?.estado === 'sinRespuesta' && <button className="reset" onClick={() => setMirar((n) => n + 1)}>{t('lectorTablet.apk.otraVez')}</button>}
         {(apk?.estado === 'antigua' || apk?.estado === 'atrasada') && <a className="reset lector-traer" href={DESCARGA_APK} target="_blank" rel="noopener noreferrer">{t('lectorTablet.apk.descargar')}</a>}
         {/* Lo aprendido en Termux, a la tablet (3.64.1): sin las plantillas del final no reconoce si ganaste. */}

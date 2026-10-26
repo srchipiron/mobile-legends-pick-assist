@@ -5,6 +5,12 @@ tienes delante. Nació como app personal de Javi (GitHub: `srchipiron`) solo par
 roam, y desde 1.0.0 sirve para las cinco líneas. Javi está en **Gloria Mítica**,
 así que el rango por defecto de los datos es `glory`, no `mythic`.
 
+**El sistema** (así lo llama Javi desde el 26 de octubre de 2026) es el
+conjunto: la app web del móvil (Pick Assist) y la APK de la tablet (Lector
+MLBB), con la base de datos de partidas en medio. La tablet lee y apunta; el
+móvil es el centro de mando (estadísticas, historial, arreglos). Una mejora
+del sistema se piensa para los dos lados.
+
 El pool de cada línea NO está escrito a mano: sale de `lanes`, que la API da
 para los 133 héroes. Si añades una línea nueva, va en `LINEAS` (motor/catalogo.js) y el
 resto sale solo.

@@ -246,6 +246,31 @@ export async function pedirLectura({ base = baseLector(), plazoMs = PLAZO_LECTOR
  * móvil ve y arregla lo mismo que «Mis partidas» de la APK. Solo con el
  * lector en la tablet (con su código). La clave o null; nunca lanza.
  */
+/**
+ * El sistema de un vistazo (3.77.0): lo que el móvil sabe de la tablet por
+ * su `/estado`, en líneas para Ajustes. Cada línea es `{ clave, params,
+ * mal }`: `mal` cuando hay que hacer algo. Lo que la tablet no dice
+ * (una APK vieja) no sale.
+ */
+export function lineasDelSistema(estado, { ahora = Date.now() } = {}) {
+  if (!estado?.ok) return [];
+  const num = (x) => (Number.isFinite(x) ? x : 0);
+  const L = [];
+  const tablet = estado.tablet ?? {}, lector = estado.lector ?? {}, solo = estado.solo, partidas = estado.partidas, datos = estado.datos;
+  if (typeof tablet.grabando === 'boolean') L.push({ clave: tablet.grabando ? 'sistema.grabando' : 'sistema.sinGrabar', params: {}, mal: !tablet.grabando });
+  if (solo) L.push(solo.activo ? { clave: 'sistema.solo', params: { linea: solo.linea ?? '?' }, mal: false } : { clave: 'sistema.soloApagado', params: {}, mal: true });
+  const lecturas = num(lector.lecturas) + num(lector.lecturasSolo);
+  if (lector && Object.keys(lector).length) L.push({ clave: 'sistema.lecturas', params: { n: lecturas, fallos: num(lector.fallosCaptura), minutos: num(lector.minutos) }, mal: lecturas > 10 && num(lector.fallosCaptura) / lecturas > 0.2 });
+  if (partidas) {
+    L.push({ clave: partidas.sinSubir ? 'sistema.partidasSinSubir' : 'sistema.partidas', params: { n: num(partidas.apuntadas), sinSubir: num(partidas.sinSubir) }, mal: num(partidas.sinSubir) > 0 && !!partidas.error });
+    const total = num(partidas.porTabla) + num(partidas.porPregunta);
+    if (total) L.push({ clave: 'sistema.resultados', params: { tabla: num(partidas.porTabla), total }, mal: false });
+  }
+  const fecha = Date.parse(datos?.fecha ?? '');
+  if (Number.isFinite(fecha)) { const h = Math.max(0, Math.round((ahora - fecha) / 3600000)); L.push({ clave: 'sistema.datos', params: { h }, mal: h > 72 }); }
+  return L;
+}
+
 export async function pedirClaveDeLaTablet({ base = baseLector(), plazoMs = 4000, pedir = pedirAlLector, vinculada = !!enTablet } = {}) {
   if (!vinculada) return null;
   try {
@@ -265,7 +290,7 @@ export async function pedirEstadoLector({ base = baseLector(), plazoMs = 3000, p
     try { cuerpo = await r.json(); } catch { /* vacío */ }
     if (!r.ok) return { ok: false, tipo: falloDe(r, cuerpo) };
     const objeto = (x) => (x && typeof x === 'object' && !Array.isArray(x) ? x : null);
-    return { ok: true, aprendido: cuerpo?.aprendido ?? null, resultados: cuerpo?.resultados ?? null, salida: typeof cuerpo?.salida === 'string' ? cuerpo.salida.slice(0, 500) : null, lector: objeto(cuerpo?.lector), tablet: objeto(cuerpo?.tablet) };
+    return { ok: true, aprendido: cuerpo?.aprendido ?? null, resultados: cuerpo?.resultados ?? null, salida: typeof cuerpo?.salida === 'string' ? cuerpo.salida.slice(0, 500) : null, lector: objeto(cuerpo?.lector), tablet: objeto(cuerpo?.tablet), partidas: objeto(cuerpo?.partidas), datos: objeto(cuerpo?.datos), solo: objeto(cuerpo?.solo) };
   } catch {
     return { ok: false, tipo: corte.signal.aborted ? 'plazo' : 'sinPuente' };
   } finally { clearTimeout(reloj); }

@@ -494,4 +494,31 @@ test('el lector separa las lecturas del modo solo (3.74.3): la APK sabe que el M
   } finally { servidor.close(); }
 });
 
+test('el resumen de la partida dice cómo va la sesión y, en racha mala, cómo te va tras perder, con tus partidas (3.77.0)', async () => {
+  const partida = { t: 5, pick: 'Rafaela', gane: false, recomendados: ['Rafaela'] };
+  const sesion = { n: 4, ganadas: 1 };
+  const peor = { racha: { gane: false, n: 3 }, sesion, trasPerder: { wr: 0.38, n: 40, wrResto: 0.6, nResto: 60, seVe: true, dif: -0.22 } };
+  const r1 = resumenSolo(partida, 'es', 0, peor).texto;
+  ok(/Hoy: 1 ganadas, 3 perdidas/.test(r1) && /3 derrotas seguidas: tras perder ganas un 38% \(si no, un 60%\)\. Quizá toca un descanso/.test(r1), r1);
+  const igual = { ...peor, trasPerder: { ...peor.trasPerder, seVe: false } };
+  ok(/perder no empeora la siguiente/.test(resumenSolo(partida, 'es', 0, igual).texto) && !/descanso/.test(resumenSolo(partida, 'es', 0, igual).texto), 'afirma lo que no se distingue');
+  const unaSola = { ...peor, racha: { gane: false, n: 1 } };
+  ok(!/derrotas seguidas/.test(resumenSolo(partida, 'es', 0, unaSola).texto), 'habla de racha con una sola derrota');
+  ok(!/Hoy/.test(resumenSolo(partida, 'es', 0, { ...peor, sesion: { n: 1, ganadas: 0 } }).texto), 'dice la sesión con una partida');
+  ok(/A break might help/.test(resumenSolo(partida, 'en', 0, peor).texto));
+  eq(resumenSolo(partida, 'es').texto, resumenSolo(partida, 'es', 0, null).texto, 'sin números, cambia el resumen de siempre');
+  // El modo solo lo pide al apuntar.
+  let t = 20_000_000, final = null;
+  const resumenes = [];
+  const lista = lectura({ tuyos: [N('Hirara'), N('Belerick')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 });
+  let leida = lista;
+  const interno = { leer: async () => ({ ok: true, lectura: leida }), delMovil: () => ({}), ponerConsejo: () => {}, vigilar: (desde) => { final = { desde, activa: true }; }, final: () => final, ponerResumen: (r) => resumenes.push(r) };
+  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: () => {}, numerosDe: () => peor });
+  const paso = async () => { t += 5000; await solo.tic(); };
+  await paso(); leida = { partida: true, rapida: true }; await paso(); await paso();
+  final = { ...final, resultado: 'perdi', resultadoEn: t, activa: false };
+  await paso();
+  ok(resumenes.some((r) => /Quizá toca un descanso/.test(r.texto ?? '')), `el modo solo no pasa tus números al resumen: ${JSON.stringify(resumenes.map((r) => r.texto))}`);
+});
+
 await terminar('scripts/solo');

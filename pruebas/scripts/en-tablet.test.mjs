@@ -631,6 +631,7 @@ test('«Mis partidas» de la APK (3.75.0): lo que dice la base de datos con lo q
     eq(lista.de, 'base', JSON.stringify(lista));
     eq(JSON.stringify(lista.partidas.map((p) => [p.t, p.pick, !!p.sinSubir])), JSON.stringify([[1788000060000, 'Rafaela', true], [1788000000000, 'Estes', false]]), 'no junta la base de datos con lo que falta por subir');
     ok(lista.heroes.includes('Rafaela') && lista.heroes.length > 100, 'no manda la lista de héroes para elegir');
+    ok(lista.numeros?.n === 2 && lista.numeros.racha?.gane === false && lista.numeros.racha.n === 1, `no manda tus números (3.77.0): ${JSON.stringify(lista.numeros)}`);
     // Ya subida, arreglarla la vuelve a subir y la lista la enseña arreglada antes de subirse.
     await servidor.subirPartidas();
     eq(servidor.partidas.pendientes().length, 0);

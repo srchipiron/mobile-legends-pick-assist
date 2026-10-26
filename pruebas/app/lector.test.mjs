@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { buscarTabletEnLaRed, pruebaDelReto, parteDeLaTablet, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, URL_LECTOR, pedirClaveDeLaTablet } from '../../src/app/lector.js';
+import { buscarTabletEnLaRed, pruebaDelReto, parteDeLaTablet, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, URL_LECTOR, pedirClaveDeLaTablet, lineasDelSistema } from '../../src/app/lector.js';
 import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
@@ -354,7 +354,7 @@ test('el lector en la tablet (3.61.0): solo IP privada y código decente; el enl
 
 test('el estado del lector para el Diagnóstico: contesta, no está, o no acepta el código; nunca lanza (3.61.4)', async () => {
   const bien = await pedirEstadoLector({ pedir: async () => ({ ok: true, status: 200, json: async () => ({ ok: true, aprendido: { capturas: 3, caras: 1, aliados: 0 } }) }) });
-  eq(JSON.stringify(bien), JSON.stringify({ ok: true, aprendido: { capturas: 3, caras: 1, aliados: 0 }, resultados: null, salida: null, lector: null, tablet: null }));
+  eq(JSON.stringify(bien), JSON.stringify({ ok: true, aprendido: { capturas: 3, caras: 1, aliados: 0 }, resultados: null, salida: null, lector: null, tablet: null, partidas: null, datos: null, solo: null }));
   eq((await pedirEstadoLector({ pedir: async () => { throw new Error('red'); } })).tipo, 'sinPuente');
   eq((await pedirEstadoLector({ pedir: async () => ({ ok: false, status: 401, json: async () => ({}) }) })).tipo, 'codigo');
   eq((await pedirEstadoLector({ plazoMs: 20, pedir: (u, { signal }) => new Promise((_, x) => signal.addEventListener('abort', () => x(new Error('corte')))) })).tipo, 'plazo');
@@ -501,6 +501,20 @@ test('la clave de la tablet (3.76.0): solo con el lector en la tablet, con su c�
   eq(await pedirClaveDeLaTablet({ vinculada: true, pedir: async () => ({ ok: true, json: async () => ({ clave: 'corta' }) }) }), null, 'acepta una clave sin forma');
   eq(await pedirClaveDeLaTablet({ vinculada: true, pedir: async () => ({ ok: false, json: async () => ({}) }) }), null);
   eq(await pedirClaveDeLaTablet({ vinculada: true, pedir: async () => { throw new TypeError('red'); } }), null, 'lanza sin red');
+});
+
+test('el sistema de un vistazo (3.77.0): lo que dice la tablet, y en rojo lo que hay que arreglar', () => {
+  const ahora = Date.parse('2026-10-26T12:00:00Z');
+  const bien = lineasDelSistema({ ok: true, tablet: { grabando: true }, solo: { activo: true, linea: 'roam' }, lector: { lecturas: 0, lecturasSolo: 50, fallosCaptura: 1, minutos: 30 }, partidas: { apuntadas: 6, sinSubir: 0, porTabla: 4, porPregunta: 2 }, datos: { fecha: '2026-10-26T00:00:00Z' } }, { ahora });
+  eq(JSON.stringify(bien.map((l) => l.clave)), JSON.stringify(['sistema.grabando', 'sistema.solo', 'sistema.lecturas', 'sistema.partidas', 'sistema.resultados', 'sistema.datos']));
+  ok(bien.every((l) => !l.mal), JSON.stringify(bien));
+  eq(bien.find((l) => l.clave === 'sistema.lecturas').params.n, 50, 'no cuenta las lecturas del modo solo');
+  eq(JSON.stringify(bien.find((l) => l.clave === 'sistema.resultados').params), JSON.stringify({ tabla: 4, total: 6 }));
+  eq(bien.find((l) => l.clave === 'sistema.datos').params.h, 12);
+  const mal = lineasDelSistema({ ok: true, tablet: { grabando: false }, solo: { activo: false }, lector: { lecturas: 20, fallosCaptura: 10, minutos: 5 }, partidas: { apuntadas: 3, sinSubir: 2, error: 'red' }, datos: { fecha: '2026-10-20T00:00:00Z' } }, { ahora });
+  eq(JSON.stringify(mal.filter((l) => l.mal).map((l) => l.clave)), JSON.stringify(['sistema.sinGrabar', 'sistema.soloApagado', 'sistema.lecturas', 'sistema.partidasSinSubir', 'sistema.datos']));
+  eq(lineasDelSistema({ ok: false }).length, 0);
+  eq(lineasDelSistema({ ok: true }).length, 0, 'inventa líneas de una APK que no las dice');
 });
 
 await terminar('app/lector');

@@ -83,9 +83,45 @@ class Partidas : Activity() {
                 val ganadas = (0 until ps.length()).count { ps.getJSONObject(it).optBoolean("gane") }
                 cabecera.text = (if (r.optString("de") == "base") "Lo que hay en la base de datos" else "Sin conexión con la base de datos: lo guardado en esta tablet") +
                     " · ${ps.length()} partidas, $ganadas ganadas${if (ps.length() > 0) " (${ganadas * 100 / ps.length()}%)" else ""}.\nToca una para arreglarla si el lector se equivocó: así mejora."
+                r.optJSONObject("numeros")?.let { lista.addView(tusNumeros(it), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(12) }) }
                 for (i in 0 until ps.length()) lista.addView(tarjeta(ps.getJSONObject(i)), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(8) })
             }
         }
+    }
+
+    /**
+     * «Tus números» (3.77.0), el mismo cálculo que en Pick Assist del móvil:
+     * racha, hoy, cómo te va después de perder (solo afirmado si se
+     * distingue de lo demás) y los héroes con los que ganas o pierdes más
+     * de lo normal en ti.
+     */
+    private fun tusNumeros(n: JSONObject): LinearLayout {
+        val caja = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = GradientDrawable().apply { setColor(Color.rgb(28, 28, 30)); cornerRadius = dp(14).toFloat(); setStroke(dp(1), Color.rgb(255, 214, 10)) }
+        }
+        fun linea(t: String, color: Int = Color.WHITE, tam: Float = 15f) = TextView(this).apply { text = t; textSize = tam; setTextColor(color); setPadding(0, dp(3), 0, dp(3)) }
+        caja.addView(linea("Tus números", Color.rgb(255, 214, 10), 18f).apply { typeface = Typeface.DEFAULT_BOLD })
+        val pct = { x: Double -> Math.round(x * 100) }
+        n.optJSONObject("racha")?.let { r -> caja.addView(linea("Racha: ${r.optInt("n")} ${if (r.optBoolean("gane")) "ganadas" else "perdidas"} seguidas · en total ${pct(n.optDouble("wr"))}% de ${n.optInt("n")}")) }
+        n.optJSONObject("sesion")?.let { s -> caja.addView(linea("Hoy: ${s.optInt("ganadas")} ganadas, ${s.optInt("n") - s.optInt("ganadas")} perdidas")) }
+        val tras = n.optJSONObject("trasPerder")
+        if (tras == null) caja.addView(linea("Después de perder: aún pocas partidas seguidas para saberlo.", Color.LTGRAY, 14f))
+        else {
+            caja.addView(linea("Después de perder ganas un ${pct(tras.optDouble("wr"))}% (${tras.optInt("n")}); después de ganar, un ${pct(tras.optDouble("wrResto"))}% (${tras.optInt("nResto")})."))
+            caja.addView(linea(
+                if (!tras.optBoolean("seVe")) "Con estas partidas no se distingue: perder no cambia la siguiente." else if (tras.optDouble("dif") < 0) "Se nota: tras perder te va peor. Un descanso tras dos derrotas puede ayudar." else "Se nota: tras perder te va mejor.",
+                if (tras.optBoolean("seVe") && tras.optDouble("dif") < 0) Color.rgb(255, 159, 10) else Color.LTGRAY, 14f,
+            ))
+        }
+        val heroes = n.optJSONArray("heroes")
+        if (heroes != null && heroes.length() > 0) for (i in 0 until heroes.length()) {
+            val h = heroes.getJSONObject(i)
+            val mejor = h.optString("lado") == "mejor"
+            caja.addView(linea("${h.optString("heroe")}: ${pct(h.optDouble("wr"))}% en ${h.optInt("n")} · ${if (mejor) "mejor que tu media" else "peor que tu media"}", if (mejor) Color.rgb(48, 209, 88) else Color.rgb(255, 69, 58), 14f))
+        }
+        return caja
     }
 
     private fun tarjeta(p: JSONObject): LinearLayout {

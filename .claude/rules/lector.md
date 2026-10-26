@@ -1534,3 +1534,27 @@ paso por paso».
   sobrevivían hasta hacer fallar la subida durante la prueba y mirar
   `desde`/`resultadoDe`.
 
+## El sistema de un vistazo y tus números en la tablet (3.77.0)
+
+Javi: «investiga nuevas funcionalidades y mejora todo el sistema». Las apps
+parecidas (MLBB Support, Coach Legend, MLBBHub; en LoL, Porofessor y
+Mobalytics) tienen draft, counters y estadísticas personales, que el sistema
+ya tenía; lo que les falta a casi todas es seguir al jugador entre partidas.
+- `lineasDelSistema` (lector.js, pura): de `/estado` (que
+  `pedirEstadoLector` trae ahora también con `partidas`, `datos` y `solo`)
+  las líneas de «El sistema» en Ajustes → Lector en la tablet
+  (LectorTablet.jsx), con `mal` en rojo: sin grabar, «Sin móvil» apagado,
+  más del 20% de capturas fallidas, partidas sin subir con error, datos de
+  más de 72 h. Una APK que no lo dice no sale.
+- `/partidas` lleva `numeros` (`tusNumeros` de habitos.js con TODAS las
+  partidas, el mismo cálculo que «Tus números» del móvil) y `Partidas.kt`
+  lo pinta arriba: racha, hoy, tras perder (afirmado solo con `seVe`) y los
+  héroes con `lado`.
+- `resumenSolo(…, numeros)`: la notificación de la partida dice la sesión
+  (desde 2 partidas) y, con `RACHA_PARA_AVISAR` (2) derrotas seguidas, cómo
+  te va tras perder; «quizá toca un descanso» SOLO si `trasPerder.seVe` y
+  peor. `crearSolo` recibe `numerosDe` (en-tablet: `tusNumeros` de sus
+  partidas).
+- Pruebas en `solo`, `app/lector` y `en-tablet`; nueve mutaciones, todas
+  cazadas. Sin prueba de navegador el cableado de LectorTablet (una línea).
+

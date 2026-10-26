@@ -236,9 +236,23 @@ export function resumenPregunta(desde, pick, idioma = 'es') {
 }
 
 /** El resumen de la notificación al apuntar sola, en tu idioma. */
-export function resumenSolo(partida, idioma = 'es', faltan = 0) {
+/** Desde cuántas derrotas seguidas el resumen dice cómo te va tras perder. Decisión de producto. */
+export const RACHA_PARA_AVISAR = 2;
+
+export function resumenSolo(partida, idioma = 'es', faltan = 0, numeros = null) {
   const en = idioma === 'en';
   const primero = partida.recomendados?.[0];
+  // Cómo va la sesión y, tras perder, cómo te suele ir en la siguiente (3.77.0): con TUS partidas
+  // (`tusNumeros`, el mismo cálculo que «Tus números» del móvil), y solo afirmado si se distingue.
+  const s = numeros?.sesion;
+  const tras = numeros?.trasPerder;
+  const enRachaMala = numeros?.racha && !numeros.racha.gane && numeros.racha.n >= RACHA_PARA_AVISAR;
+  const sesion = s && s.n >= 2 ? (en ? `Today: ${s.ganadas} won, ${s.n - s.ganadas} lost.` : `Hoy: ${s.ganadas} ganadas, ${s.n - s.ganadas} perdidas.`) : null;
+  const racha = enRachaMala && tras
+    ? (tras.seVe && tras.dif < 0
+      ? (en ? `${numeros.racha.n} losses in a row: after a loss you win ${Math.round(tras.wr * 100)}% (otherwise ${Math.round(tras.wrResto * 100)}%). A break might help.` : `${numeros.racha.n} derrotas seguidas: tras perder ganas un ${Math.round(tras.wr * 100)}% (si no, un ${Math.round(tras.wrResto * 100)}%). Quizá toca un descanso.`)
+      : (en ? `${numeros.racha.n} losses in a row: in your games, losing doesn't make the next one worse.` : `${numeros.racha.n} derrotas seguidas: en tus partidas, perder no empeora la siguiente.`))
+    : null;
   return {
     id: `partida-${partida.t}`,
     titulo: en ? `${partida.gane ? 'Won' : 'Lost'} with ${partida.pick}` : `${partida.gane ? 'Ganada' : 'Perdida'} con ${partida.pick}`,
@@ -246,6 +260,8 @@ export function resumenSolo(partida, idioma = 'es', faltan = 0) {
       primero === partida.pick ? (en ? 'It was the app\'s no. 1.' : 'Era el nº1 de la app.') : primero ? (en ? `The app's no. 1 was ${primero}.` : `El nº1 de la app era ${primero}.`) : null,
       partida.estimacion != null ? (en ? `The app gave ${Math.round(partida.estimacion * 100)}%.` : `La app daba un ${Math.round(partida.estimacion * 100)}%.`) : null,
       en ? 'Logged by the tablet.' : 'Apuntada por la tablet.',
+      sesion,
+      racha,
       // Lo que no reconoció (3.71.0): tocando la notificación se lo dices y aprende.
       faltan > 0 ? (en ? `Tap to tell the reader who the ${faltan === 1 ? 'unknown hero was' : `${faltan} unknown heroes were`}: it learns from it.` : `Toca para decirle al lector quién ${faltan === 1 ? 'era el que no reconoció' : `eran los ${faltan} que no reconoció`}: aprende de ello.`) : null,
     ].filter(Boolean).join(' '),
@@ -292,7 +308,7 @@ export function ajustesEfectivos(apk, movil) {
 /** Lo que dura la pregunta de cómo acabó: lo mismo que `RETENCION_CAPTURAS_MS` de servir.mjs (una prueba lo compara). */
 export const PREGUNTA_CADUCA_MS = 3 * 3600000;
 
-export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout, apuntar = null, maestriaDe = () => null, alCorregir = null }) {
+export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout, apuntar = null, maestriaDe = () => null, alCorregir = null, numerosDe = () => null }) {
   // La partida que se vigila para apuntarla sola (3.70.0): el draft de cuando
   // se cerró y su decisión, hasta que la tabla del final dé el resultado.
   let vigilada = null;
@@ -326,7 +342,7 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     // La corrección sabe de qué partida es: al contestarla, se arregla también su draft.
     const deEsta = pendiente?.cuando === v.desde ? pendiente : null;
     if (deEsta) { pendiente = { ...deEsta, partida: partida.t }; interno.ponerCorreccion?.(pendiente); }
-    interno.ponerResumen?.(resumenSolo(partida, v.idioma, deEsta?.faltan ?? 0));
+    interno.ponerResumen?.(resumenSolo(partida, v.idioma, deEsta?.faltan ?? 0, numerosDe()));
     resumen.apuntadas = (resumen.apuntadas ?? 0) + 1;
     registrar(`Sin móvil: partida apuntada${contestada ? ' con lo que contestaste' : ''}, ${partida.gane ? 'ganada' : 'perdida'} con ${partida.pick}.`);
   };

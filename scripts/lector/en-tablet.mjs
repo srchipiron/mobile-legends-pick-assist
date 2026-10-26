@@ -27,6 +27,7 @@ import { leerCrudo, escribirPngRapido } from './png.mjs';
 import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo } from './solo.mjs';
 import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte, traerMisPartidas } from '../../src/app/basedatos.js';
 import { maestriaEfectiva } from '../../src/motor/maestria.js';
+import { tusNumeros } from '../../src/motor/habitos.js';
 
 /** Solo 127.0.0.1: la APK es la única que da la captura. */
 export const esInterno = (u) => typeof u === 'string' && /^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(u);
@@ -494,6 +495,7 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     interno: servidor.interno, ajustes, datosPara: datosDelSolo(leerDatos), registrar,
     apuntar: (p) => { if (partidas.apuntar(p)) subir(); },
     alCorregir: (c) => alCorregirRef?.(c),
+    numerosDe: () => tusNumeros(partidas.todas()),
     maestriaDe: () => { const m = ajustes.delMovil(); return maestriaEfectiva(m?.maestria ?? {}, partidas.todas().filter((p) => p.t > (m?.cuando ?? 0))); },
   });
   alCorregirRef = ({ partida, enemigos, aliados, tuyo }) => {
@@ -538,7 +540,14 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
       enemigos: p.draft?.enemigos ?? [], aliados: p.draft?.aliados ?? [], bans: p.bans ?? [], linea: p.draft?.linea ?? null,
       ...(Number.isFinite(p.duracion) ? { duracion: p.duracion } : {}), ...(p.resultadoDe ? { resultadoDe: p.resultadoDe } : {}), ...(p.editada ? { editada: true } : {}),
     }));
-    return { de: r.error ? 'tablet' : 'base', error: r.error ?? null, partidas: lista, heroes: (leerDatos().catalogo?.heroes ?? []).map((h) => h.name).filter(Boolean).sort() };
+    // «Tus números» (3.77.0), con TODAS (no solo las 200 que se enseñan): racha, hoy, tras perder y tus héroes.
+    const n = tusNumeros([...todas.values()]);
+    const numeros = n.n ? {
+      n: n.n, wr: n.wr, racha: n.racha, sesion: n.sesion,
+      trasPerder: n.trasPerder ? { wr: n.trasPerder.wr, n: n.trasPerder.n, wrResto: n.trasPerder.wrResto, nResto: n.trasPerder.nResto, seVe: !!n.trasPerder.seVe, dif: n.trasPerder.dif } : null,
+      heroes: n.heroes.filter((h) => h.lado).slice(0, 6).map((h) => ({ heroe: h.heroe, wr: h.wr, n: h.n, lado: h.lado })),
+    } : null;
+    return { de: r.error ? 'tablet' : 'base', error: r.error ?? null, numeros, partidas: lista, heroes: (leerDatos().catalogo?.heroes ?? []).map((h) => h.name).filter(Boolean).sort() };
   };
   const editarPartida = (cuerpo) => {
     const nombres = (leerDatos().catalogo?.heroes ?? []).map((h) => h.name).filter(Boolean);

@@ -789,6 +789,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* El lector en la tablet (3.61.0): vinculado, o dirección y código a mano. */
 .lector-tablet { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
 .lector-tablet .empty-state { padding: 0; margin: 0; }
+/* El sistema de un vistazo (3.77.0): las líneas de lo que dice la tablet, juntas. */
+.lector-tablet .sistema { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); }
 .lector-tablet input { width: 100%; box-sizing: border-box; min-height: 40px; padding: 8px 12px; border-radius: var(--r-sm); border: 1px solid transparent; background: var(--field); color: var(--text); font-size: 16px; }
 .lector-tablet input:focus { outline: none; border-color: var(--gold); }
 .lector-traer { border-color: rgba(255, 214, 10, 0.55); }

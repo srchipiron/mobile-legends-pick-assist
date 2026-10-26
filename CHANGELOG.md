@@ -8,6 +8,21 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.77.0
+
+- El móvil enseña el estado del sistema de un vistazo, en Ajustes → Lector
+  en la tablet: si la tablet graba, con qué línea decide, cuántas lecturas
+  lleva, cuántas partidas ha apuntado y cuántas faltan por subir, cuántos
+  resultados reconoce sola y de cuándo son sus datos. Lo que hay que
+  arreglar sale en rojo.
+- La tablet tiene «Tus números» en «Mis partidas»: tu racha, cómo vas hoy,
+  cómo te va la partida siguiente después de perder y los héroes con los
+  que ganas o pierdes más de lo normal en ti.
+- El aviso al acabar cada partida dice cómo va la sesión. Con dos o más
+  derrotas seguidas, añade cómo te va normalmente la siguiente, con tus
+  propias partidas. Solo sugiere un descanso si tus datos muestran de
+  verdad que tras perder te va peor.
+
 ## 3.76.0
 
 - El móvil es ahora tu centro de mando de la tablet. Al vincularlos, Pick
