@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.74.6
+
+- Las partidas que apunta Lector MLBB en la tablet ya se guardan en la base
+  de datos aunque el móvil no le haya pasado tu clave. Usa la clave de la
+  tablet, así que cuentan para medir y mejorar el modelo, pero no salen en
+  Pick Assist del móvil. La pantalla de la tablet lo dice.
+- Si algún día activas «Guardar mis partidas» en el móvil, las nuevas irán
+  con tu clave. Las de antes se quedan con la de la tablet.
+
 ## 3.74.5
 
 - La revisión diaria de la tablet solo da la alarma por fallos de verdad.

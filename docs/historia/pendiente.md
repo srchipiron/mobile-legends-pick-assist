@@ -260,7 +260,7 @@
   mano o tropezar dos veces con lo mismo la plantea sin que la pida.
 - **Los partes de la tablet (3.74.0)**: el esquema está aplicado en Supabase
   (26 de octubre de 2026, por el conector, solo la parte nueva) y probado
-  como `anon` dentro de una transacción deshecha. Falta que la tablet tenga
-  tu clave: la base de datos tenía 0 jugadores y 0 partidas, así que
-  «Guardar mis partidas» no está puesto en el móvil.
+  como `anon` dentro de una transacción deshecha. Desde 3.74.6 las partidas de la
+  tablet suben con la clave del lector si el móvil no mandó la tuya
+  (decidido por Javi: cuentan para el modelo, no salen en el móvil).
 - **Tres fallos silenciosos del modo «Sin móvil»** (26 de octubre de 2026): hechos en 3.74.3.

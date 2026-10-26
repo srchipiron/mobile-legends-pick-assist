@@ -340,6 +340,7 @@ class Principal : Activity() {
             val apuntadas = p.optInt("apuntadas"); val sinSubir = p.optInt("sinSubir")
             lineas += when {
                 apuntadas == 0 -> "Aún no ha apuntado ninguna partida."
+                sinSubir == 0 && p.optString("deQuien") == "lector" -> "$apuntadas partidas apuntadas, todas guardadas en la base de datos con la clave de esta tablet (cuentan para medir; no salen en Pick Assist del móvil)."
                 sinSubir == 0 -> "$apuntadas partidas apuntadas, todas guardadas en tu base de datos."
                 !p.optBoolean("clave") -> "$apuntadas partidas apuntadas; $sinSubir solo están en esta tablet: falta tu clave. Abre Pick Assist en el móvil con «Guardar mis partidas» puesto y la tablet vinculada, una vez."
                 else -> "$apuntadas partidas apuntadas; $sinSubir por subir (se reintenta sola)."

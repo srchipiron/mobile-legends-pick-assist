@@ -1480,3 +1480,13 @@ grabar) es el uso (`NO_ES_FALLO`). `recortado` solo cuando se acorta el
 fallo o los errores: quitar líneas viejas del registro es lo normal (las de
 lectura pasan de 200 caracteres). Seis mutaciones, todas cazadas.
 
+**Las partidas con la clave del lector (3.74.6, decidido por Javi: «la 2,
+hazlo tú»)**: sin tu clave del móvil, `subir` usa `claveDelLector` (la de los
+partes): las partidas llegan a la base de datos y cuentan para
+`proponer-modelo`, pero `mis_partidas` del móvil no las trae. Con tu clave,
+las nuevas van con ella; las ya subidas se quedan con la del lector.
+`/estado` dice `deQuien` ('tuya'|'lector') y la APK lo explica. `principal`
+recibe `pedirBaseDeDatos` (el fetch de la base de datos): las pruebas
+cambiaban `globalThis.fetch` y, como el arnés corre las asíncronas a la
+vez, se pisaban (la de 3.74.1 pasaba de suerte). Tres mutaciones.
+

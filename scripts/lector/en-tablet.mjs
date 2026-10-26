@@ -220,7 +220,8 @@ export function partidasDeLaTablet(casa) {
 /**
  * Sube a la base de datos de partidas lo que la tablet apuntó y no subió
  * (3.70.0), con TU clave (la que manda la app si tienes «Guardar mis
- * partidas» puesto) y la dirección y la clave pública de `comunidad.json`.
+ * partidas» puesto) o, sin ella, la del lector (3.74.6), y la dirección y la
+ * clave pública de `comunidad.json`.
  * Sin clave o sin configuración, no sube nada. Nunca lanza.
  */
 export async function subirLoDeLaTablet({ partidas, clave, config, fetch = globalThis.fetch }) {
@@ -333,7 +334,8 @@ export async function bajarDatos(carpeta, { pedir = (...a) => fetch(...a), plazo
   return guardados;
 }
 
-export async function principal(env = process.env) {
+// `pedirBaseDeDatos`: el fetch de la base de datos, inyectable (3.74.6: las pruebas a la vez no pueden cambiar el global).
+export async function principal(env = process.env, { pedirBaseDeDatos = globalThis.fetch } = {}) {
   const registrar = (m) => console.log(m);
   const base = env.LECTOR_INTERNO, secreto = env.LECTOR_SECRETO, codigo = env.LECTOR_CODIGO;
   if (!esInterno(base) || !secreto || !codigoValido(codigo)) throw new Error('faltan LECTOR_INTERNO, LECTOR_SECRETO o un LECTOR_CODIGO válido');
@@ -372,11 +374,14 @@ export async function principal(env = process.env) {
   let subiendo = null;
   // Cómo fue la última subida (3.73.1): sin tu clave no sube nada, y antes no se decía.
   let ultimaSubida = { cuando: null, error: null };
+  const claveConLaQueSube = () => { const tuya = ajustes.delMovil()?.clave; return claveDeJugadorValida(tuya) ? tuya : claveDelLector(casa); };
   const subir = () => {
     if (subiendo) return subiendo;
-    const clave = ajustes.delMovil()?.clave;
+    // Con tu clave si el móvil la mandó; si no, con la del lector (3.74.6, decidido por Javi: «la 2»):
+    // así cuentan para medir el modelo, aunque no salgan en Pick Assist del móvil.
+    const clave = claveConLaQueSube();
     const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
-    subiendo = subirLoDeLaTablet({ partidas, clave, config })
+    subiendo = subirLoDeLaTablet({ partidas, clave, config, fetch: pedirBaseDeDatos })
       .then((r) => {
         const error = r.error ?? (!partidas.pendientes().length ? null : !claveDeJugadorValida(clave) ? 'sinClave' : !config ? 'sinBaseDeDatos' : null);
         if (error && error !== ultimaSubida.error) registrar(`Sin móvil: ${partidas.pendientes().length} partidas sin subir (${error === 'sinClave' ? 'falta tu clave: abre Pick Assist en el móvil con «Guardar mis partidas» y la tablet vinculada una vez' : error}).`);
@@ -391,7 +396,7 @@ export async function principal(env = process.env) {
     const d = leerDatos();
     return {
       datos: { fecha: d.meta?.generatedAt ?? null, de: d.de === 0 ? 'web' : d.de == null ? null : 'apk' },
-      partidas: { apuntadas: partidas.todas().length, sinSubir: partidas.pendientes().length, clave: claveDeJugadorValida(ajustes.delMovil()?.clave), error: ultimaSubida.error },
+      partidas: { apuntadas: partidas.todas().length, sinSubir: partidas.pendientes().length, clave: claveDeJugadorValida(claveConLaQueSube()), deQuien: claveDeJugadorValida(ajustes.delMovil()?.clave) ? 'tuya' : 'lector', error: ultimaSubida.error },
     };
   };
   const solo = crearSolo({
@@ -410,7 +415,7 @@ export async function principal(env = process.env) {
     if (!claveDeJugadorValida(clave) || !config) return;
     const leer = (f) => { try { return readFileSync(join(casa, f), 'utf8'); } catch { return null; } };
     const parte = parteDeSalud({ estado: servidor.interno.estado(), log: (leer('lector.log') ?? '').slice(-FINAL_DEL_REGISTRO_BYTES), falloNodo: leer('fallo-nodo.txt'), secretos: [codigo, clave, ajustes.delMovil()?.clave] });
-    const r = await subirParte({ config, clave, parte });
+    const r = await subirParte({ config, clave, parte }, { fetch: pedirBaseDeDatos });
     if (r.error && r.error !== 'pronto') registrar(`El parte de salud no se pudo subir (${r.error}).`);
   };
   const cadaParte = setInterval(() => { subirSuParte().catch(() => {}); }, PARTE_CADA_MS);
@@ -422,6 +427,7 @@ export async function principal(env = process.env) {
   const primeraSubida = setTimeout(subir, 30000);
   servidor.on('close', () => { clearInterval(cadaSubida); clearTimeout(primeraSubida); });
   servidor.partidas = partidas;
+  servidor.subirPartidas = subir;
   soloRef = solo;
   // El vistazo al minimapa (3.69.3): con la burbuja puesta y nadie capturando,
   // mira si estás en partida para quitarla. `mirarPartida` decide si toca.

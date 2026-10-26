@@ -471,7 +471,8 @@ test('/estado dice de cuándo son los datos y si tus partidas suben (3.73.1): si
     const e = JSON.parse((await pedir(puerto, '/estado', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
     // Sin nada bajado (LECTOR_SIN_SOLO no baja), decide con los que trae la APK, y lo dice.
     ok(typeof e.datos?.fecha === 'string' && e.datos.de === 'apk', `/estado no dice de cuándo son los datos ni de dónde: ${JSON.stringify(e.datos)}`);
-    eq(JSON.stringify(e.partidas), JSON.stringify({ apuntadas: 1, sinSubir: 1, clave: false, error: null }), 'no dice que la partida se queda sin subir por falta de clave');
+    // Sin tu clave sube con la del lector (3.74.6) y lo dice.
+    eq(JSON.stringify(e.partidas), JSON.stringify({ apuntadas: 1, sinSubir: 1, clave: true, deQuien: 'lector', error: null }), 'no dice con qué clave sube');
   } finally { servidor.close(); apk.cerrar(); }
 });
 
@@ -523,9 +524,7 @@ test('la tablet sube su parte con SU clave, aunque el móvil no haya mandado la 
   writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
   writeFileSync(join(casa, 'lector.log'), `Lector en 192.168.1.9 con ${CODIGO} y ${tuya}\nTodo bien\n`);
   const apk = await apkDePega();
-  const original = globalThis.fetch;
-  globalThis.fetch = (url, o) => (String(url).startsWith('https://abcdefghijklmnopqrst.supabase.co/') ? s.fetch(url, o) : original(url, o));
-  const arrancar = () => principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' });
+  const arrancar = () => principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
   const servidor = await arrancar();
   try {
     await servidor.subirParte();
@@ -547,7 +546,7 @@ test('la tablet sube su parte con SU clave, aunque el móvil no haya mandado la 
       for (const secreto of [CODIGO, SECRETO, tuya, delLector, '192.168.1.9']) ok(!texto.includes(secreto), `el parte lleva un secreto: ${secreto.slice(0, 6)}…`);
       eq(s.jugadores.size, 0, 'subir un parte toca tus partidas');
     } finally { conClave.close(); }
-  } finally { globalThis.fetch = original; servidor.close(); apk.cerrar(); }
+  } finally { servidor.close(); apk.cerrar(); }
 });
 
 test('la clave del lector: al azar, con la forma del servidor, y la misma tras reiniciar', () => {
@@ -558,6 +557,33 @@ test('la clave del lector: al azar, con la forma del servidor, y la misma tras r
   ok(claveDelLector(b) !== ka, 'dos tablets con la misma clave');
   writeFileSync(join(a, 'clave-lector.txt'), 'rota');
   ok(claveDeJugadorValida(claveDelLector(a)), 'una clave rota en disco se usa');
+});
+
+test('sin tu clave, la tablet sube sus partidas con la del lector; con la tuya, con la tuya (3.74.6)', async () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-sinclave-'));
+  const s = supabaseFalso();
+  const { mkdirSync } = await import('node:fs');
+  mkdirSync(join(casa, 'datos'), { recursive: true });
+  writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
+  const apk = await apkDePega();
+  const arrancar = () => principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  const servidor = await arrancar();
+  try {
+    servidor.partidas.apuntar({ t: 1788000000000, pick: 'Rafaela', gane: true });
+    await servidor.subirPartidas();
+    const delLector = claveDelLector(casa);
+    eq(s.jugadores.get(delLector)?.partidas.size, 1, 'sin tu clave no sube con la del lector');
+    eq(servidor.partidas.pendientes().length, 0);
+    const tuya = 'T'.repeat(43);
+    writeFileSync(join(casa, 'solo-movil.json'), JSON.stringify({ linea: 'roam', clave: tuya }));
+    const conTuya = await arrancar();
+    try {
+      conTuya.partidas.apuntar({ t: 1788000060000, pick: 'Estes', gane: false });
+      await conTuya.subirPartidas();
+      eq(s.jugadores.get(tuya)?.partidas.size, 1, 'con tu clave no sube con la tuya');
+      eq(s.jugadores.get(delLector).partidas.size, 1, 'sube la nueva con la del lector teniendo la tuya');
+    } finally { conTuya.close(); }
+  } finally { servidor.close(); apk.cerrar(); }
 });
 
 await terminar('scripts/en-tablet');
