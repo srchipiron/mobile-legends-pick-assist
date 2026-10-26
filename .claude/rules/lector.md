@@ -1558,3 +1558,45 @@ ya tenía; lo que les falta a casi todas es seguir al jugador entre partidas.
 - Pruebas en `solo`, `app/lector` y `en-tablet`; nueve mutaciones, todas
   cazadas. Sin prueba de navegador el cableado de LectorTablet (una línea).
 
+## Leer mejor los picks (3.80.0)
+
+Javi: «mejora la detección de personajes. Falla muchísimo». Medido antes de
+tocar nada, con los 51 drafts de recortes (#56–#153, 106 capturas; desde
+3.70.0 la tablet no sube recortes y no hay más) y el lector de hoy: rivales
+305 de 508, tu equipo 315 de 476, falsos 19 y 34. Casi todo lo que falta NO
+es reconocimiento: de las 96 capturas con cinco rivales en la verdad, solo 17
+los leen a los cinco, porque son las DOS ÚLTIMAS del draft y ahí el hueco del
+último rival aún es rojo o ya lleva la skin (#137, #70). Lo que se cambió:
+
+- **Leer el draft cada 1,5 s en la tablet** (`INTERVALOS_SOLO.draft`, antes
+  5 s, el ritmo del móvil, donde una lectura tardaba 4–6 s; en la tablet
+  0,6–1,6 s según sus partes). El último pick y el tuyo se ven con su
+  dibujo unos segundos antes de las skins. NO medido en la tablet: lo dirán
+  sus partes (`Lectura N`) y sus partidas.
+- **`aceptarCercanos`** (leer.mjs) en los rivales: por debajo de 0,80, se lee
+  si pasa de `CERCA_ENEMIGO` (0,77) y le saca `MARGEN_CERCA_ENEMIGO` (0,08)
+  al segundo héroe, sin nombre repetido. +8 leídos (Kaja en tres drafts a
+  0,78–0,79, Martis), 0 falsos; eligiendo con los drafts viejos y midiendo en
+  los nuevos, +4/0 (corte #100) y +2/0 (#126). En tu equipo la misma idea
+  (0,79/0,05) daba +4 y no entra: otra constante por casi nada.
+- **Tus skins de serie** (`caras-panel.json`, `panel: 'aliados'`): Estes
+  (tres), Ruby (dos), Diggie y Rafaela, por ELIMINACIÓN (tu fila es tu pick;
+  si en un equipo queda un hueco sin leer y falta un héroe, es él), con las
+  guardas de 3.58.0: el mismo héroe en OTRO draft a ≥ 0,92 y nada de otro
+  héroe a ≥ 0,85; sin iconos de hueco vacío. Validación cruzada en diez
+  bloques (las caras de nueve, medido en el décimo): tu fila 40 → 52 de 68,
+  tu equipo 208 → 223 con 1 «falso» (#145, draft sin verdad, el mismo de
+  #142 donde jugaste Floryn). Los scripts (`medir-lector.mjs`, `serie.mjs`,
+  `serie-cv.mjs`, `serie-final.mjs`, `split.mjs`) están en el scratch de la
+  sesión del 26 de octubre de 2026.
+- Pruebas en `lector.test` (Kaja de #146, `picks-kaja.png`; tu Estes de #75,
+  `aliados-estes.png`, un draft del que no sale la cara; la función pura) y
+  `solo.test` (el ritmo); cinco mutaciones.
+- Lo que NO funcionó: el aprendizaje de la tablet (`aprenderDe`) repetido con
+  los 40 drafts viejos no mejora los 14 nuevos (57,5% → 57,5%); de los
+  rivales, ningún héroe tiene el mismo recorte en dos drafts (las skins de
+  la fase de skins), así que no hay caras de serie de rivales nuevas.
+- Para seguir midiendo hace falta que la tablet vuelva a mandar recortes
+  (hoy solo los mandaba el móvil, con el token de GitHub): está propuesto a
+  Javi, no hecho (una tabla nueva en la base de datos).
+

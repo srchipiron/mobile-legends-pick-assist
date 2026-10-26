@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.80.0
+
+- La tablet lee mejor los héroes del draft. Mira la pantalla cada 1,5
+  segundos en vez de cada 5: el último rival y tu héroe solo se ven con su
+  dibujo unos segundos antes de las skins, y se escapaban.
+- Reconoce tus skins de siempre en tu fila (Estes, Diggie, Rafaela) y la de
+  Ruby: en tus drafts, tu héroe se leía en 6 de cada 10 capturas y ahora en
+  más de 7 de cada 10.
+- Lee rivales que se quedaban justo por debajo, como Kaja, sin leer de más:
+  medido en tus 51 drafts corregidos, ningún héroe equivocado nuevo.
+
 ## 3.79.0
 
 - «Tu semana», en el móvil (Partidas) y en «Mis partidas» de la tablet: cómo

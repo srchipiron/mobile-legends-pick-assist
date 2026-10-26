@@ -591,4 +591,9 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
 - **Paralelizar las nueve corridas de la ingesta en `ingesta-simulada`**
   (35 s): son procesos hijos que ya corren con `--pausa 0`; meterlos a la
   vez cambiaría una prueba que compara corridas encadenadas (`--previo`).
-
+- **Repetir el aprendizaje de la tablet para leer mejor (3.80.0)**: con
+  `aprenderDe` sobre los 40 drafts de recortes hasta #125, los 14 siguientes
+  se leen igual (rivales 57,5% → 57,5%, tu equipo 66,4% → 66,4%). Las caras
+  de rivales nuevas no salen: ningún héroe repite recorte entre drafts.
+- **El margen sobre el segundo en tu equipo (3.80.0)**: 0,79 con 0,05 daba
+  +4 compañeros de 476 sin falsos; no compensa otra constante.

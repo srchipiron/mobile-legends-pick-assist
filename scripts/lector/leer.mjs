@@ -86,12 +86,32 @@ export const ambasOrientaciones = (caras) => {
  * equivocado (el 1 de octubre de 2026 una tanda movió el panel entero y
  * los picks dejaron de leerse) ya no puede tapar lo que la medida sí ve.
  */
+/**
+ * Un rival por debajo de `PARECIDO_MINIMO` se da por leído si se parece al
+ * menos `CERCA_ENEMIGO` y le saca `MARGEN_CERCA_ENEMIGO` al segundo héroe
+ * (3.80.0), y nunca con un nombre ya leído en otro hueco. Medido en los 51
+ * drafts de recortes (#56–#153, 106 capturas): Kaja sale a 0,78–0,79 en tres
+ * drafts y Martis a 0,78 en uno; +8 rivales leídos y ningún falso, también
+ * eligiendo los números con los drafts viejos y midiendo en los nuevos (corte
+ * en #100: +4 y 0; en #126: +2 y 0). Sin margen, 0,77 metía 11 falsos (los
+ * imanes y el hueco rojo de quien aún no ha elegido, «Bane 0,76»).
+ */
+export const CERCA_ENEMIGO = 0.77, MARGEN_CERCA_ENEMIGO = 0.08;
+export function aceptarCercanos(lecturas, { minimo = CERCA_ENEMIGO, margen = MARGEN_CERCA_ENEMIGO } = {}) {
+  const leidos = new Set(lecturas.filter((l) => l.nombre).map((l) => nombreClave(l.nombre)));
+  return lecturas.map((l) => {
+    if (l.nombre || !l.candidato || l.parecido < minimo || l.parecido - (l.segundo?.parecido ?? 0) < margen || leidos.has(nombreClave(l.candidato))) return l;
+    leidos.add(nombreClave(l.candidato));
+    return { ...l, nombre: l.candidato, cerca: true };
+  });
+}
+
 export function leerPicksEnemigos(img, caras, { posiciones = null, extra = [], panel = carasDelPanel('enemigos') } = {}) {
   const referencias = [...ambasOrientaciones(caras), ...panel, ...extra];
   // Búsqueda más ancha que en los baneos: cada dibujo encuadra la cara en un
   // sitio (Khufra cae a unos 20 píxeles de Clint en el mismo hueco).
   const opciones = { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12], criba: CRIBA_PICKS, saltoCriba: 2 };
-  const medidos = PICKS_ENEMIGOS.map((pos) => reconocer(img, escalar(img, pos), referencias, opciones));
+  const medidos = aceptarCercanos(PICKS_ENEMIGOS.map((pos) => reconocer(img, escalar(img, pos), referencias, opciones)));
   if (!Array.isArray(posiciones)) return medidos;
   // Un hueco aprendido que lea a alguien que la medida ya leyó está mirando al vecino.
   const yaLeidos = new Set(medidos.map((l) => l.nombre).filter(Boolean));

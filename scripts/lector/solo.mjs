@@ -25,8 +25,17 @@ import { guionTraducido } from '../../src/app/i18n/guion.js';
 
 /** Las líneas que se pueden elegir en la APK (las de `LINEAS` del motor). */
 export const LINEAS_SOLO = ['roam', 'jungle', 'mid', 'gold', 'exp'];
-/** Cada cuánto se lee: en un draft, sin draft a la vista y en partida (solo el minimapa). Decisión de producto, como «Leer solo» de la app. */
-export const INTERVALOS_SOLO = { draft: 5000, vacio: 12000, partida: 20000, error: 30000 };
+/**
+ * Cada cuánto se lee: en un draft, sin draft a la vista y en partida (solo
+ * el minimapa). Decisiones de producto. En el draft, 1,5 s desde 3.80.0
+ * (antes 5 s, el ritmo de «Leer solo» en el móvil, donde una lectura tardaba
+ * 4–6 s): en la tablet una lectura tarda 0,6–1,6 s (sus partes del 26 de
+ * octubre de 2026), y el último rival y tu pick se ven con su dibujo solo
+ * unos segundos antes de la fase de skins. En los 51 drafts de recortes,
+ * de las capturas del final del draft solo 17 de 96 leían a los cinco rivales:
+ * el hueco rojo de quien aún no ha elegido o la skin que ya lo tapa.
+ */
+export const INTERVALOS_SOLO = { draft: 1500, vacio: 12000, partida: 20000, error: 30000 };
 /** El móvil manda si leyó o mandó su consejo hace menos de esto. */
 export const MOVIL_ACTIVO_MS = 60000;
 /** Lecturas seguidas en partida para dar el draft por cerrado (las mismas que la app, `LECTURAS_EN_PARTIDA`). */

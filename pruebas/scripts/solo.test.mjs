@@ -112,6 +112,8 @@ test('el bucle: decide y pone el consejo; se aparta si el móvil lee o manda el 
   const interno = { leer: async (op) => { pedidas.push(op); return { ok: true, lectura: respuesta }; }, delMovil: () => movil, ponerConsejo: (c) => puestos.push(c) };
   const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t });
   eq(await solo.tic(), INTERVALOS_SOLO.draft);
+  // 3.80.0: el último pick se ve con su dibujo unos segundos; a 5 s entre lecturas se escapaba.
+  ok(INTERVALOS_SOLO.draft <= 2000, `en el draft se lee cada ${INTERVALOS_SOLO.draft} ms: el último pick se escapa`);
   eq(puestos.length, 1, 'no pone el consejo');
   ok(pedidas[0]?.rapida === true, 'no pide la lectura rápida (en partida reconocería caras)');
   await solo.tic();

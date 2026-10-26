@@ -13,8 +13,8 @@ import { spawnSync } from 'node:child_process';
 import { transformSync } from 'esbuild';
 import { test, ok, eq, terminar, RAIZ, leerJson, generador } from '../arnes.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
-import { LADO, muestra, normalizar, reconocer, CRIBA_PICKS } from '../../scripts/lector/caras.mjs';
-import { leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, carasGuardadas, carasDesfasadas, encontrarTablet, sinRepetidos, REFERENCIA, PICKS_ENEMIGOS, ALIADOS, BANEOS, ambasOrientaciones } from '../../scripts/lector/leer.mjs';
+import { LADO, muestra, normalizar, reconocer, CRIBA_PICKS, PARECIDO_MINIMO } from '../../scripts/lector/caras.mjs';
+import { leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, carasGuardadas, carasDesfasadas, encontrarTablet, sinRepetidos, REFERENCIA, PICKS_ENEMIGOS, ALIADOS, BANEOS, ambasOrientaciones, aceptarCercanos, CERCA_ENEMIGO, MARGEN_CERCA_ENEMIGO, carasDelPanel } from '../../scripts/lector/leer.mjs';
 import { preguntaMdns, tabletsDeRespuesta, buscarPorMdns, escanearPuertos, SERVICIO } from '../../scripts/lector/tablet.mjs';
 import { capturaCompleta, VERDAD as VERDAD_JUEGO } from '../fixtures/juego/captura.mjs';
 
@@ -578,6 +578,38 @@ test('tu equipo con las caras de serie (3.59.5): Gord y tu Diggie de #121, un dr
   const con = leerAliados(g, caras);
   eq(filas(con), 'Miya,Diggie,?,Gord,Sora', `con las caras de serie se lee ${filas(con)}`);
   ok(con[3].aprendida && con[3].parecido >= 0.92, `Gord no sale de una cara de serie a 0,92 o más (${con[3].parecido.toFixed(2)})`);
+});
+
+test('un rival un poco por debajo del umbral, con margen sobre el segundo (3.80.0): Kaja de #146 sí, el hueco rojo de quien no ha elegido no', () => {
+  // La columna de rivales de #146: Vexana, Bruno, Kaja, Saber y el hueco de Esmeralda aún sin elegir.
+  const g = capturaCompleta();
+  const col = leerPng(readFileSync(join(RAIZ, 'pruebas/fixtures/juego/picks-kaja.png')));
+  for (let y = 0; y < col.alto; y++) g.rgba.set(col.rgba.subarray(y * col.ancho * 4, (y + 1) * col.ancho * 4), ((230 + y) * g.ancho + 2120) * 4);
+  const l = leerPicksEnemigos(g, carasGuardadas());
+  ok(l[2].parecido < PARECIDO_MINIMO, `Kaja ya pasa el umbral (${l[2].parecido.toFixed(3)}): la prueba no mide nada`);
+  ok(l[2].nombre === 'Kaja' && l[2].cerca, `Kaja a ${l[2].parecido.toFixed(3)} con ${(l[2].parecido - (l[2].segundo?.parecido ?? 0)).toFixed(3)} de margen sale ${l[2].nombre ?? '?'}`);
+  eq(l.map((x) => x.nombre ?? '?').join(','), 'Vexana,Bruno,Kaja,Saber,?', 'el hueco sin elegir se lee como alguien');
+});
+
+test('aceptarCercanos (3.80.0): umbral, margen sobre el segundo y nunca un nombre ya leído', () => {
+  const h = (candidato, parecido, segundo, nombre = null) => ({ nombre, candidato, parecido, segundo: { nombre: 'Otro', parecido: segundo } });
+  const r = aceptarCercanos([h('Kaja', 0.79, 0.70), h('Gord', 0.79, 0.75), h('Atlas', 0.76, 0.6), h('Vexana', 0.9, 0.7, 'Vexana'), h('Vexana', 0.79, 0.6)]);
+  eq(r.map((x) => x.nombre ?? '?').join(','), 'Kaja,?,?,Vexana,?');
+  ok(r[0].cerca && !r[3].cerca, 'no marca cuál entró por cerca');
+  eq(CERCA_ENEMIGO < PARECIDO_MINIMO && MARGEN_CERCA_ENEMIGO > 0, true);
+});
+
+test('tu Estes de serie (3.80.0): tu fila de #75, un draft del que no sale la cara', () => {
+  const g = capturaCompleta({ conAliados: false });
+  const col = leerPng(readFileSync(join(RAIZ, 'pruebas/fixtures/juego/aliados-estes.png')));
+  for (let y = 0; y < col.alto; y++) g.rgba.set(col.rgba.subarray(y * col.ancho * 4, (y + 1) * col.ancho * 4), ((228 + y) * g.ancho + 60) * 4);
+  const caras = carasGuardadas();
+  const sin = leerAliados(g, caras, { panel: carasDelPanel('aliados').filter((c) => c.nombre !== 'Estes') });
+  ok(!sin[4].nombre, `sin las caras de Estes tu fila ya sale ${sin[4].nombre}: la prueba no mide nada`);
+  const con = leerAliados(g, caras);
+  eq(con[4].nombre, 'Estes', `con las caras de serie tu fila sale ${con[4].nombre ?? '?'} (${con[4].parecido.toFixed(2)})`);
+  eq(con.filter((x) => x.nombre === 'Estes').length, 1, 'Estes sale en más de una fila');
+  ok(!leerAliados(capturaCompleta(), caras).some((x) => x.nombre === 'Estes' && x.aprendida), 'la cara de Estes lee a Estes donde no está');
 });
 
 await terminar('scripts/lector');
