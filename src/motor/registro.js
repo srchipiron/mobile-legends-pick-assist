@@ -238,6 +238,12 @@ export const olvidar = (partidas = [], t) => partidas.filter((p) => p.t !== t);
 export const corregir = (partidas = [], t, gane) => partidas.map((p) => (p.t === t ? { ...p, gane: !!gane } : p));
 
 /**
+ * Marca cuándo arreglaste una partida (3.76.0): entre el móvil y la tablet,
+ * al juntarlas, gana la copia arreglada más tarde (`fundirPerfil`).
+ */
+export const marcarEditada = (partidas = [], t, ahora = Date.now()) => partidas.map((p) => (p.t === t ? { ...p, editada: ahora } : p));
+
+/**
  * Cambiar el héroe de una partida mal apuntada (3.47.0: el lector apuntó una
  * con «Hayabusa» que se jugó con Diggie). La estimación y las fases eran las
  * del héroe de antes: con el otro no valen y medirían el modelo con lo que no

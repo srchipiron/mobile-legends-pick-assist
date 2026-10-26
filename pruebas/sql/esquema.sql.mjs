@@ -166,6 +166,16 @@ try {
     ok(comoAnon(`select public.subir_partidas('${c}', '[]'::jsonb, '[1.5]'::jsonb)`).error, 'acepta un instante a quitar con decimales');
     json(comoAnon(`select public.subir_partidas('${c}', '[]'::jsonb, '[]'::jsonb, ${lit({ winRate: 0.0001, partidas: 1000000 })})`));
     eq(json(comoAnon(`select public.mis_partidas('${c}')`)).referencia, null, 'guarda un winrate de siempre imposible');
+    // Cuándo se arregló (3.76.0): se guarda si es un número, y si no, no.
+    json(comoAnon(`select public.subir_partidas('${c}', '[{"t": 1788000000000, "pick": "Chou", "gane": false, "editada": 1788000500000}, {"t": 1788000000002, "pick": "Chou", "gane": true, "editada": "ayer"}]'::jsonb)`));
+    const ps = json(comoAnon(`select public.mis_partidas('${c}')`)).partidas;
+    eq(ps.find((p) => p.t === 1788000000000)?.editada, 1788000500000, `no guarda cuándo se arregló: ${JSON.stringify(ps)}`);
+    ok(!('editada' in ps.find((p) => p.t === 1788000000002)), 'guarda un «editada» que no es un número');
+    // Una copia sin arreglar (la del móvil, de antes) no pisa la arreglada; otra arreglada después, sí.
+    json(comoAnon(`select public.subir_partidas('${c}', '[{"t": 1788000000000, "pick": "Chou", "gane": true}]'::jsonb)`));
+    eq(json(comoAnon(`select public.mis_partidas('${c}')`)).partidas.find((p) => p.t === 1788000000000).gane, false, 'una copia vieja pisa la arreglada');
+    json(comoAnon(`select public.subir_partidas('${c}', '[{"t": 1788000000000, "pick": "Chou", "gane": true, "editada": 1788000900000}]'::jsonb)`));
+    eq(json(comoAnon(`select public.mis_partidas('${c}')`)).partidas.find((p) => p.t === 1788000000000).gane, true, 'un arreglo más nuevo no entra');
   });
 
   test('los partes de la tablet (3.74.0): se suben con tu clave, uno cada pocos minutos, con tope y solo los recientes; se leen sin huella, y la tabla sigue cerrada', () => {

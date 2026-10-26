@@ -58,9 +58,10 @@ class Guia : Activity() {
                 "Tus partidas se guardan solas en una base de datos (Supabase), con la clave de esta tablet. Sirven para medir si el modelo acierta y mejorarlo con tus partidas reales.",
                 "No guarda tu nombre ni tu cuenta del juego: solo héroes, resultado y fecha, con un número de jugador.",
             ),
-            "Con el móvil (opcional)" to listOf(
-                "Pick Assist es la app web del móvil: el draft a mano, la ficha de cada héroe, el meta, tus estadísticas y el diagnóstico. Para unirlo a la tablet: abre Pick Assist, escanea el QR de «Vincular el móvil» con la cámara y toca «Vincular» (misma wifi).",
-                "Vinculado, el móvil manda a la tablet tu maestría (cómo te va con cada héroe) y tu línea, y puede leer el draft él. Si el móvil está leyendo, manda el móvil y la tablet se aparta.",
+            "El móvil, tu centro de mando" to listOf(
+                "Pick Assist es la app web del móvil: tus estadísticas, el historial, el meta, la ficha de cada héroe y el diagnóstico. Para unirlo a la tablet: abre Pick Assist, escanea el QR de «Vincular el móvil» con la cámara y toca «Vincular» (misma wifi). Una vez basta.",
+                "Vinculados, móvil y tablet usan la MISMA clave: en el móvil ves todas las partidas que apunta la tablet, con tus números, y lo que arregles en uno aparece en el otro (gana el arreglo más reciente). No tienes que activar nada a mano.",
+                "El móvil también manda a la tablet tu maestría (cómo te va con cada héroe) y tu línea, y puede leer el draft él. Si el móvil está leyendo, manda el móvil y la tablet se aparta.",
             ),
             "Mantenimiento solo" to listOf(
                 "Se actualiza sola al abrirla si hay versión nueva (cuando no está grabando).",

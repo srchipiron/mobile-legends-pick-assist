@@ -232,3 +232,35 @@ funcionando bien… para no estar todo el rato con "mejora, revisa…"».
   una prueba los compara con el fichero: con la primera expresión, «se cerró
   ella misma» (el cierre de 3.72.x) no avisaba. Lo corre la revisión
   programada de Claude cada día.
+
+## Móvil y tablet con una clave (3.76.0)
+
+Javi: «que el móvil sea como un centro de comandos estadísticos del apk».
+- **Una clave**: `GET /clave` (servir.mjs, solo con `Origin` de la app y el
+  código del portero; la APK y otra web, 403) da `claveConLaQueSube`. App.jsx,
+  vinculado y SIN clave propia, la pide (`pedirClaveDeLaTablet`, lector.js;
+  `vinculada` explícito en la prueba porque las asíncronas corren a la vez)
+  y `comunidad.usarClave`: trae y funde, y desde ahí sube con ella. Con una
+  clave tuya, manda la tuya (va a la tablet con el consejo, como desde
+  3.70.0); lo ya subido con la del lector se queda allí.
+- **Los arreglos en los dos sentidos**: `editada` (la hora del arreglo) en
+  la partida: `marcarEditada` (registro.js) en `corregirPartida` y
+  `cambiarHeroePartida` (usePersonal), `partidas.editar` en la tablet;
+  `CAMPOS` y el esquema la guardan (solo si es número). `fundirPerfil`: en
+  la misma partida, gana la de fuera solo si se arregló DESPUÉS (sin
+  `editada` en ninguna, la local, como siempre). `queTraer` (basedatos.js,
+  lo usa useComunidad) trae lo que falta y lo arreglado allí después. La
+  tablet, al listar, `alDiaCon`: lo arreglado en el móvil sustituye a su
+  copia ya subida (conserva `desde` y `resultadoDe`), nunca a una pendiente.
+- **El servidor no deja pisar un arreglo**: `subir_partidas` hace el
+  `on conflict` solo si la `editada` que llega es ≥ la guardada. El móvil
+  vuelve a subir sus 200 más recientes en cada cambio, y sin esto su copia
+  vieja deshacía lo arreglado en la tablet. Lo mismo en el Supabase de pega.
+  Aplicado en el Supabase de Javi el 26 de octubre de 2026 (migración
+  `partidas_editadas_3_76_0`, probada como `anon` en una transacción
+  deshecha).
+- Pruebas en `pruebas/sql` (guarda `editada` solo si es número; una copia
+  vieja no pisa, una más nueva sí), `app/basedatos` (`queTraer`, el falso),
+  `motor/perfil`, `motor/registro`, `app/lector` y `en-tablet` (`/clave`,
+  `alDiaCon`). Veinte mutaciones, todas cazadas tras apretar dos.
+

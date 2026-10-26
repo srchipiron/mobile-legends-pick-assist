@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.76.0
+
+- El móvil es ahora tu centro de mando de la tablet. Al vincularlos, Pick
+  Assist usa la misma clave que Lector MLBB, así que en el móvil ves todas
+  las partidas que apunta la tablet, con tus estadísticas, sin activar
+  nada a mano.
+- Lo que arregles en una partida, en el móvil o en la tablet, aparece en el
+  otro: gana siempre el arreglo más reciente.
+- Una copia vieja ya no puede deshacer un arreglo. Antes, el móvil volvía a
+  subir su copia y pisaba lo que habías arreglado en la tablet.
+
 ## 3.75.0
 
 - Lector MLBB tiene «Mis partidas»: el registro de todas tus partidas tal

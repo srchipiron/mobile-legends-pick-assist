@@ -152,6 +152,7 @@ export function sanear(perfil) {
       if (duracion) limpia.duracion = duracion; else delete limpia.duracion;
       const fases = sanearFases(p.fases);
       if (fases) limpia.fases = fases; else delete limpia.fases;
+      if (!(Number.isFinite(p.editada) && p.editada > 0)) delete limpia.editada;
       return limpia;
     });
   return { ...(perfil ?? {}), mastery, partidas, olvidadas: sanearOlvidadas(perfil?.olvidadas) };
@@ -192,6 +193,11 @@ export function fundirPerfil(actual, entrante) {
   }
   const olvidadas = sanearOlvidadas([...(actual.olvidadas ?? []), ...(entrante.olvidadas ?? [])]);
   const borradas = new Set(olvidadas.map(String));
+  // La misma partida en los dos lados: la local, salvo que la de fuera se
+  // arreglara DESPUÉS (`editada`, 3.76.0: lo que arreglas en la tablet llega
+  // al móvil y al revés). Sin `editada` en ninguna, la local, como siempre.
+  const editadaDe = (p) => (Number.isFinite(p?.editada) ? p.editada : 0);
+  const deFuera = new Map((entrante.partidas ?? []).map((p) => [String(p.t ?? ''), p]));
   const vistas = new Set();
   const partidas = [...(actual.partidas ?? []), ...(entrante.partidas ?? [])]
     .filter((p) => {
@@ -201,6 +207,7 @@ export function fundirPerfil(actual, entrante) {
       vistas.add(k);
       return true;
     })
+    .map((p) => { const fuera = deFuera.get(String(p.t ?? '')); return fuera && editadaDe(fuera) > editadaDe(p) ? fuera : p; })
     .sort((a, b) => (b.t ?? 0) - (a.t ?? 0));
   return {
     mastery,

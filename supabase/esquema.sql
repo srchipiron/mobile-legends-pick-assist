@@ -133,10 +133,15 @@ begin
     jsonb_strip_nulls(jsonb_build_object(
       't', (e.x->>'t')::numeric::bigint, 'pick', e.x->'pick', 'gane', e.x->'gane', 'recomendados', e.x->'recomendados',
       'rango', e.x->'rango', 'estimacion', e.x->'estimacion', 'modelo', e.x->'modelo', 'previa', e.x->'previa',
-      'origen', e.x->'origen', 'bans', e.x->'bans', 'draft', e.x->'draft', 'duracion', e.x->'duracion', 'fases', e.x->'fases'))
+      'origen', e.x->'origen', 'bans', e.x->'bans', 'draft', e.x->'draft', 'duracion', e.x->'duracion', 'fases', e.x->'fases',
+      -- Cuándo la arreglaste (3.76.0): al juntar móvil y tablet gana la copia arreglada más tarde.
+      'editada', case when jsonb_typeof(e.x->'editada') = 'number' then e.x->'editada' end))
   from jsonb_array_elements(lote) with ordinality as e(x, orden)
   order by (e.x->>'t')::numeric::bigint, e.orden desc
-  on conflict (jugador, t) do update set datos = excluded.datos, recibida = now();
+  -- Una copia arreglada más tarde no la pisa otra más vieja (3.76.0): el móvil
+  -- vuelve a subir sus partidas a menudo, y sin esto deshacía lo arreglado en la tablet.
+  on conflict (jugador, t) do update set datos = excluded.datos, recibida = now()
+    where coalesce((excluded.datos->>'editada')::numeric, 0) >= coalesce((public.partidas.datos->>'editada')::numeric, 0);
   get diagnostics n_guardadas = row_count;
 
   if (select count(*) from public.partidas where jugador = yo) > 5000 then

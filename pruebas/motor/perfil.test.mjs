@@ -206,4 +206,17 @@ test('sanear conserva el modelo de una estimación y tira el que no vale (3.60.3
   ok(!('modelo' in p({ estimacion: 0.5, modelo: 3.5 })), 'un modelo con decimales se queda');
 });
 
+test('al juntar, la copia arreglada más tarde gana, venga de donde venga (3.76.0); sin arreglos, la de aquí', () => {
+  const base = { mastery: {}, olvidadas: [] };
+  const aqui = { ...base, partidas: [{ t: 1, pick: 'Estes', gane: true, editada: 100 }, { t: 2, pick: 'Gord', gane: true }] };
+  const fuera = { ...base, partidas: [{ t: 1, pick: 'Estes', gane: false, editada: 200 }, { t: 2, pick: 'Gord', gane: false }] };
+  const f = fundirPerfil(aqui, fuera);
+  eq(f.partidas.find((p) => p.t === 1).gane, false, 'la arreglada después fuera no gana');
+  eq(f.partidas.find((p) => p.t === 2).gane, true, 'sin arreglos, gana la de fuera');
+  const g = fundirPerfil(fuera, aqui);
+  eq(g.partidas.find((p) => p.t === 1).gane, false, 'la arreglada antes fuera pisa la de aquí');
+  eq(sanear({ partidas: [{ t: 1, pick: 'A', gane: true, editada: 'ayer' }] }).partidas[0].editada, undefined, 'entra un «editada» que no es un número');
+  eq(sanear({ partidas: [{ t: 1, pick: 'A', gane: true, editada: 5 }] }).partidas[0].editada, 5);
+});
+
 await terminar('motor/perfil');

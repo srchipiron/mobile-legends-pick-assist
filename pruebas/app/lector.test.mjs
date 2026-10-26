@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { buscarTabletEnLaRed, pruebaDelReto, parteDeLaTablet, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, URL_LECTOR } from '../../src/app/lector.js';
+import { buscarTabletEnLaRed, pruebaDelReto, parteDeLaTablet, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, URL_LECTOR, pedirClaveDeLaTablet } from '../../src/app/lector.js';
 import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
@@ -489,6 +489,18 @@ test('buscarTabletEnLaRed: encuentra la tablet en otra IP de la wifi y solo le m
   eq(conCodigo.sort().join(), '192.168.68.112', `el código va a quien no demostró conocerlo (otro lector o un impostor): ${conCodigo}`);
   eq(await buscarTabletEnLaRed({ direccion: '192.168.68.116:47323', codigo: 'ABCDEFGH23' }, { pedir: async () => { throw new Error('nadie'); }, plazoMs: 50 }), null);
   eq(await buscarTabletEnLaRed({ direccion: '8.8.8.8:47323', codigo: 'ABCDEFGH23' }, { pedir }), null, 'busca fuera de la red de casa');
+});
+
+test('la clave de la tablet (3.76.0): solo con el lector en la tablet, con su código, y solo si tiene forma', async () => {
+  // `vinculada` explícito: las pruebas asíncronas corren a la vez y otra cambia la tablet vinculada.
+  let pedidas = 0;
+  const pedir = async () => { pedidas += 1; return { ok: true, json: async () => ({ clave: 'K'.repeat(43) }) }; };
+  eq(await pedirClaveDeLaTablet({ pedir, vinculada: false }), null, 'pide la clave sin tablet vinculada');
+  eq(pedidas, 0);
+  eq(await pedirClaveDeLaTablet({ pedir, vinculada: true }), 'K'.repeat(43));
+  eq(await pedirClaveDeLaTablet({ vinculada: true, pedir: async () => ({ ok: true, json: async () => ({ clave: 'corta' }) }) }), null, 'acepta una clave sin forma');
+  eq(await pedirClaveDeLaTablet({ vinculada: true, pedir: async () => ({ ok: false, json: async () => ({}) }) }), null);
+  eq(await pedirClaveDeLaTablet({ vinculada: true, pedir: async () => { throw new TypeError('red'); } }), null, 'lanza sin red');
 });
 
 await terminar('app/lector');

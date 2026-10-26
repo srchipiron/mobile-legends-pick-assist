@@ -540,7 +540,7 @@ export const VISTAZO_MS = 10000;
  * El servidor, con la captura inyectada: en Termux es `capturarTablet`, en
  * las pruebas una captura de fichero.
  */
-export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux, codigo = null, estadoExtra = null, alCorregir = null, historial = null }) {
+export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux, codigo = null, estadoExtra = null, alCorregir = null, historial = null, claveDeLaTablet = null }) {
   // En la tablet (3.61.0) escucha en la wifi: con código, y aceptando su IP como `Host`.
   const portero = codigo ? crearPortero(codigo, { ahora }) : null;
   // Los retos de cada aparato en el último minuto (3.70.0).
@@ -1040,6 +1040,14 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       }
       if ('resumen' in cuerpo) resumenActual = sanearResumen(cuerpo.resumen) ?? resumenActual;
       res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true }));
+      return;
+    }
+    // La clave con la que la tablet guarda tus partidas (3.76.0): la pide la app del móvil
+    // vinculada (con el código) para usar la MISMA y ver y arreglar lo mismo. Solo la app.
+    if (req.method === 'GET' && ruta === '/clave') {
+      if (!origen || !portero) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'solo la app vinculada' })); return; }
+      const clave = claveDeLaTablet?.() ?? null;
+      res.writeHead(clave ? 200 : 404, cabeceras).end(JSON.stringify(clave ? { clave } : { error: 'sin clave' }));
       return;
     }
     if (req.method === 'GET' && ruta === '/consejo') {

@@ -27,7 +27,9 @@ export function supabaseFalso({ clavePublica = 'sb_publishable_prueba1234567890'
       if (r && typeof r.winRate === 'number' && r.winRate >= 0 && r.winRate <= 1 && r.partidas >= 1) j.referencia = { winRate: r.winRate, partidas: Math.floor(r.partidas) };
       let quitadas = 0;
       for (const t of args.quitar ?? []) if (j.partidas.delete(t)) quitadas += 1;
-      for (const p of args.lote) j.partidas.set(p.t, p);
+      // Una copia arreglada más tarde no la pisa otra más vieja (3.76.0), como el esquema.
+      const editadaDe = (x) => (Number.isFinite(x?.editada) ? x.editada : 0);
+      for (const p of args.lote) if (!j.partidas.has(p.t) || editadaDe(p) >= editadaDe(j.partidas.get(p.t))) j.partidas.set(p.t, p);
       if (j.partidas.size > 5000) return error('tope');
       return { status: 200, cuerpo: { guardadas: args.lote.length, quitadas, total: j.partidas.size } };
     }

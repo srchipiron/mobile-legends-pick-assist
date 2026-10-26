@@ -7,7 +7,7 @@
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { sanear } from '../../src/motor/perfil.js';
-import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, medirFasesMias, aciertosDelLector, apuntar, olvidar, corregir, cambiarHeroe, calibracion, modeloDe, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
+import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, medirFasesMias, aciertosDelLector, apuntar, olvidar, corregir, cambiarHeroe, marcarEditada, calibracion, modeloDe, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
 import { maestriaDesdeRegistro, maestriaEfectiva, winrateDeReferencia, TOPE_DE_SIEMPRE } from '../../src/motor/maestria.js';
 import { nombreClave } from '../../src/motor/nombres.js';
 import { generador } from '../../src/motor/robustez.js';
@@ -455,6 +455,12 @@ test('tu ajuste (3.68.0): con pocas partidas no se activa; aprende tu ventaja; p
   ok(ajustePersonal(Array.from({ length: 40 }, (_, i) => ({ t: i, pick: 'A', estimacion: 0.5 + (i % 2 ? 0.1 : -0.1), gane: i % 2 === 0 }))).b >= 0.05, 'un b negativo pasa');
   // Las previas (tu historial del juego, sin estimación) no cuentan.
   eq(ajustePersonal([...partidas(20, (e) => e), ...Array.from({ length: 40 }, (_, i) => ({ t: 5000 + i, pick: 'A', gane: true, previa: true }))]).activo, false, 'cuentan las previas');
+});
+
+test('marcar una partida arreglada (3.76.0): solo esa, con la hora', () => {
+  const ps = [{ t: 1, pick: 'A', gane: true }, { t: 2, pick: 'B', gane: true }];
+  const m = marcarEditada(ps, 2, 777);
+  ok(m[0] === ps[0] && m[1].editada === 777 && m[1].pick === 'B', JSON.stringify(m));
 });
 
 await terminar('motor/registro');

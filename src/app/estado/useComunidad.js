@@ -4,7 +4,7 @@ import { useAhora } from './useAhora.js';
 import { huellaDe, ESPERA_MS, REINTENTO_MS } from '../envio.js';
 import {
   sanearConfig, sanearEstadoComunidad, crearClaveDeJugador, claveDeJugadorValida, tocaSubirComunidad,
-  subirPartidas, traerMisPartidas, borrarMisPartidas, bajarComunidad,
+  subirPartidas, traerMisPartidas, borrarMisPartidas, bajarComunidad, queTraer,
 } from '../basedatos.js';
 import { medirComunidad } from '../../motor/comunidad.js';
 import { maestriaDeSiempre, winrateDeReferencia } from '../../motor/maestria.js';
@@ -138,7 +138,8 @@ export function useComunidad({ perfil, escribir = null }) {
   /**
    * Lo que apuntó la tablet sola (3.70.0) llega a la base de datos con tu
    * clave: al abrir la app (y cada `ahora`, como mucho cada TRAER_CADA_MS)
-   * se trae lo que aquí no está ni se quitó, para que App lo funda.
+   * se trae lo que aquí no está ni se quitó, y lo arreglado allí después
+   * que aquí (3.76.0), para que App lo funda.
    */
   const [nuevas, setNuevas] = useState([]);
   const ultimaTraida = useRef(0);
@@ -154,8 +155,7 @@ export function useComunidad({ perfil, escribir = null }) {
     traerMisPartidas({ config: e.config, clave: e.clave }).then((r) => {
       if (!montado.current || r.error) { if (r.error) ultimaTraida.current = 0; return; }
       const p = ultimo.current.perfil;
-      const aqui = new Set([...(p.partidas ?? []).map((x) => x.t), ...(p.olvidadas ?? [])]);
-      const faltan = r.partidas.filter((x) => Number.isFinite(x?.t) && !aqui.has(x.t));
+      const faltan = queTraer(r.partidas, p);
       if (faltan.length) setNuevas(faltan);
     }).catch(() => { ultimaTraida.current = 0; });
   }, [ahora, estado.activo, estado.config, estado.clave]);

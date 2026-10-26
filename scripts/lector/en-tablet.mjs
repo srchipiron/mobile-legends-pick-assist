@@ -215,6 +215,25 @@ export function partidasDeLaTablet(casa) {
       return true;
     },
     /**
+     * Lo arreglado en el MÓVIL (3.76.0): si la copia de la base de datos se
+     * arregló después que la de aquí y la de aquí ya está subida, manda la de
+     * allí (con lo que solo sabe la tablet: de qué draft es y cómo se supo el
+     * resultado). Cuántas se cambiaron.
+     */
+    alDiaCon(deLaBase) {
+      const subidas = new Set(datos.subidas);
+      const editadaDe = (p) => (Number.isFinite(p?.editada) ? p.editada : 0);
+      let cambiadas = 0;
+      datos.partidas = datos.partidas.map((p) => {
+        const b = deLaBase.get(p.t);
+        if (!b || !subidas.has(p.t) || editadaDe(b) <= editadaDe(p) || typeof b.pick !== 'string' || typeof b.gane !== 'boolean') return p;
+        cambiadas += 1;
+        return { ...b, ...(p.desde != null ? { desde: p.desde } : {}), ...(p.resultadoDe ? { resultadoDe: p.resultadoDe } : {}) };
+      });
+      if (cambiadas) escribir();
+      return cambiadas;
+    },
+    /**
      * Lo que arreglas en «Mis partidas» de la APK (3.75.0): resultado, tu
      * pick, enemigos, compañeros y baneos, ya validados. Se vuelve a subir
      * (la base de datos la reemplaza por su instante). Si la partida solo
@@ -414,11 +433,14 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
   let alCorregirRef = null;
   // «Mis partidas» de la APK (3.75.0): las partidas se crean después.
   let historialRef = null;
+  // La clave con la que sube (3.76.0), para dársela al móvil vinculado.
+  let claveRef = null;
   // Lo que la APK enseña de cómo va la tablet (3.73.1): de cuándo son sus datos y si sus partidas suben.
   let estadoTablet = () => ({});
   const servidor = crearServidor({
     alCorregir: (c) => alCorregirRef?.(c),
     historial: { listar: () => historialRef?.listar() ?? { partidas: [] }, editar: (c) => historialRef?.editar(c) ?? { ok: false, estado: 503 } },
+    claveDeLaTablet: () => claveRef?.() ?? null,
     capturar: capturaDeLaApk(base, secreto), hablar: vozDeLaApk(base, secreto), codigo,
     // Por qué se cerró la app la última vez (3.61.5, lo dice Android): el Diagnóstico del móvil lo enseña.
     // Y lo que la APK sabe de la tablet (3.63.0: versión, si graba, permisos, memoria), que escribe cada pocos segundos.
@@ -502,7 +524,12 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
     const clave = claveConLaQueSube();
     const r = config && claveDeJugadorValida(clave) ? await traerMisPartidas({ config, clave }, { fetch: pedirBaseDeDatos }).catch(() => ({ error: 'red' })) : { error: 'sinBaseDeDatos' };
-    if (!r.error) deLaBase = new Map(r.partidas.filter((p) => Number.isFinite(p?.t)).map((p) => [p.t, p]));
+    if (!r.error) {
+      deLaBase = new Map(r.partidas.filter((p) => Number.isFinite(p?.t)).map((p) => [p.t, p]));
+      // Lo arreglado en el móvil llega también a lo que guarda la tablet (decide con ello: maestría).
+      const n = partidas.alDiaCon(deLaBase);
+      if (n) registrar(`${n} partidas arregladas en el móvil, al día en la tablet.`);
+    }
     const sinSubir = new Set(partidas.pendientes().map((p) => p.t));
     const todas = new Map(deLaBase);
     for (const p of partidas.todas()) if (sinSubir.has(p.t) || !todas.has(p.t)) todas.set(p.t, { ...p, sinSubir: sinSubir.has(p.t) });
@@ -526,6 +553,7 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     return { ok: true, aprendidos };
   };
   historialRef = { listar: listarPartidas, editar: editarPartida };
+  claveRef = () => { const c = claveConLaQueSube(); return claveDeJugadorValida(c) ? c : null; };
   servidor.partidas = partidas;
   servidor.subirPartidas = subir;
   soloRef = solo;

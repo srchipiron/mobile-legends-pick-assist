@@ -660,4 +660,45 @@ test('«Mis partidas» de la APK (3.75.0): lo que dice la base de datos con lo q
   } finally { servidor.close(); apk.cerrar(); }
 });
 
+test('móvil y tablet con UNA clave (3.76.0): la app vinculada pide la clave con su código, la APK y un navegador sin código no; lo arreglado en el móvil llega a la tablet', async () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-clave-'));
+  const s = supabaseFalso();
+  const { mkdirSync } = await import('node:fs');
+  mkdirSync(join(casa, 'datos'), { recursive: true });
+  writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
+  const apk = await apkDePega();
+  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  const puerto = servidor.address().port;
+  try {
+    const clave = claveDelLector(casa);
+    const r = await pedir(puerto, '/clave', { host: `127.0.0.1:${puerto}` });
+    eq(r.estado, 200, r.cuerpo);
+    eq(JSON.parse(r.cuerpo).clave, clave, 'no da la clave con la que sube');
+    eq((await pedir(puerto, '/clave', { host: `127.0.0.1:${puerto}`, origen: null })).estado, 403, 'la da sin ser la app');
+    ok((await pedir(puerto, '/clave', { host: `127.0.0.1:${puerto}`, codigo: 'MALO123456' })).estado >= 400, 'la da con un código malo');
+    ok((await pedir(puerto, '/clave', { host: `127.0.0.1:${puerto}`, origen: 'https://otra.example' })).estado === 403, 'la da a otra web');
+    // Lo arreglado en el móvil (en la base de datos, más tarde) llega a lo que guarda la tablet.
+    servidor.partidas.apuntar({ t: 1788000000000, pick: 'Estes', gane: true, desde: 1787999000000, resultadoDe: 'tabla', draft: { linea: 'roam', enemigos: ['Clint'], aliados: [] } });
+    servidor.partidas.apuntar({ t: 1788000060000, pick: 'Gord', gane: true, draft: { linea: 'roam', enemigos: [], aliados: [] } });
+    await servidor.subirPartidas();
+    s.atender('subir_partidas', { clave, lote: [
+      { t: 1788000000000, pick: 'Rafaela', gane: false, editada: Date.now(), draft: { linea: 'roam', enemigos: ['Clint', 'Khufra'], aliados: [] } },
+    ] }, { apikey: s.clavePublica });
+    servidor.partidas.apuntar({ t: 1788000120000, pick: 'Diggie', gane: true });
+    s.atender('subir_partidas', { clave, lote: [{ t: 1788000120000, pick: 'Diggie', gane: false, editada: Date.now() }] }, { apikey: s.clavePublica });
+    await pedir(puerto, '/partidas', { host: `127.0.0.1:${puerto}`, origen: null });
+    const local = servidor.partidas.todas().find((p) => p.t === 1788000000000);
+    ok(local.pick === 'Rafaela' && local.gane === false && local.draft.enemigos.length === 2, `lo arreglado en el móvil no llega a la tablet: ${JSON.stringify(local)}`);
+    ok(local.desde === 1787999000000 && local.resultadoDe === 'tabla', 'se pierde lo que solo sabe la tablet');
+    eq(servidor.partidas.todas().find((p) => p.t === 1788000060000).pick, 'Gord', 'cambia una que no se arregló');
+    eq(servidor.partidas.todas().find((p) => p.t === 1788000120000).gane, true, `pisa una que aún no se ha subido desde la tablet: ${JSON.stringify(servidor.partidas.todas().find((p) => p.t === 1788000120000))} pendientes ${servidor.partidas.pendientes().map((p) => p.t)}`);
+    // Si la de la tablet se arregló DESPUÉS que la de la base de datos, manda la de la tablet.
+    eq((await mandarPost(puerto, '/partida', { t: 1788000060000, gane: false })).estado, 200);
+    await servidor.subirPartidas();
+    s.jugadores.get(clave).partidas.set(1788000060000, { t: 1788000060000, pick: 'Gord', gane: true, editada: 1 });
+    await pedir(puerto, '/partidas', { host: `127.0.0.1:${puerto}`, origen: null });
+    eq(servidor.partidas.todas().find((p) => p.t === 1788000060000).gane, false, 'una copia arreglada antes en la base de datos pisa lo arreglado en la tablet');
+  } finally { servidor.close(); apk.cerrar(); }
+});
+
 await terminar('scripts/en-tablet');

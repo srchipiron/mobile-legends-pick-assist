@@ -2,7 +2,7 @@ import { test, ok, eq, terminar } from '../arnes.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import {
   sanearConfig, clavePublicable, crearClaveDeJugador, claveDeJugadorValida, paraLaComunidad, sanearEstadoComunidad,
-  tocaSubirComunidad, llamar, subirPartidas, traerMisPartidas, borrarMisPartidas, bajarComunidad, POR_LOTE,
+  tocaSubirComunidad, llamar, subirPartidas, traerMisPartidas, borrarMisPartidas, bajarComunidad, POR_LOTE, queTraer,
 } from '../../src/app/basedatos.js';
 
 const URL = 'https://abcdefghijklmnopqrst.supabase.co';
@@ -111,6 +111,26 @@ test('bajar la comunidad: todas las páginas, sin repetir, con las referencias; 
   const h = await bajarComunidad(config, { fetch: hostil });
   eq(Object.keys(h.referencias).join(), '7', 'deja pasar una referencia que no es de un jugador');
   eq(({}).x, undefined, 'una «__proto__» del servidor toca los objetos');
+});
+
+test('qué se trae de la base de datos (3.76.0): lo que falta, sin lo quitado, y lo arreglado allí después que aquí', () => {
+  const aqui = { partidas: [{ t: 1, pick: 'A', gane: true }, { t: 2, pick: 'B', gane: true, editada: 500 }, { t: 3, pick: 'C', gane: true, editada: 900 }], olvidadas: [4] };
+  const remotas = [
+    { t: 1, pick: 'A', gane: false, editada: 100 }, // arreglada allí, aquí sin arreglar: viene
+    { t: 2, pick: 'B', gane: false, editada: 400 }, // arreglada allí ANTES que aquí: no
+    { t: 3, pick: 'C', gane: true, editada: 900 }, // igual: no
+    { t: 4, pick: 'D', gane: true }, // quitada aquí: no
+    { t: 5, pick: 'E', gane: true }, // nueva: viene
+    { t: 'x', pick: 'F', gane: true },
+  ];
+  eq(JSON.stringify(queTraer(remotas, aqui).map((p) => p.t)), '[1,5]');
+  ok(paraLaComunidad({ t: 1, pick: 'A', gane: true, editada: 7 }).editada === 7, 'la hora del arreglo no sube a la base de datos');
+  // El Supabase de pega hace lo mismo que el esquema: lo arreglado no lo pisa una copia vieja.
+  const s = supabaseFalso();
+  const c = { apikey: s.clavePublica }, clave = 'Z'.repeat(40);
+  s.atender('subir_partidas', { clave, lote: [{ t: 9, pick: 'A', gane: false, editada: 50 }] }, c);
+  s.atender('subir_partidas', { clave, lote: [{ t: 9, pick: 'A', gane: true }] }, c);
+  eq(s.jugadores.get(clave).partidas.get(9).gane, false, 'el falso deja pisar lo arreglado');
 });
 
 await terminar('app/basedatos');

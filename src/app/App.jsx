@@ -26,7 +26,7 @@ import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
 import { ConfirmarVinculo } from './componentes/LectorTablet.jsx';
-import { pedirLectura, pedirEstadoLector, pedirUltimaApk, buscarTabletUnaVez, sinLlegarALaTablet, parteDeLaTablet, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
+import { pedirLectura, pedirEstadoLector, pedirClaveDeLaTablet, pedirUltimaApk, buscarTabletUnaVez, sinLlegarALaTablet, parteDeLaTablet, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
 import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
@@ -502,6 +502,16 @@ export default function App() {
     mandarALaTablet({ consejo: consejoTablet, ajustes: { linea, rango: datos.rango, idioma, maestria: maestriaParaLaTablet, vozCallada, ...(comunidad.activo && comunidad.clave ? { clave: comunidad.clave } : {}) } });
     // consejoTablet cambia de objeto en cada render: lo que decide es su huella.
   }, [huellaConsejo, lectorTablet, linea, datos.rango, idioma, maestriaParaLaTablet, vozCallada, comunidad.activo, comunidad.clave]);
+  // Móvil y tablet con UNA clave (3.76.0): vinculado y sin clave propia, el
+  // móvil usa la de la tablet y ve y arregla lo mismo que «Mis partidas» de
+  // la APK. Con una clave tuya, manda la tuya (va a la tablet con el consejo).
+  const claveTabletPedida = useRef(false);
+  useEffect(() => {
+    if (!lectorTablet || !comunidad.config || comunidad.clave || claveTabletPedida.current) return;
+    claveTabletPedida.current = true;
+    pedirClaveDeLaTablet().then((clave) => { if (clave) comunidad.usarClave(clave); else claveTabletPedida.current = false; });
+    // comunidad cambia de objeto en cada render: lo que decide es si hay clave y configuración.
+  }, [lectorTablet, comunidad.config, comunidad.clave]);
   // Las partidas que apuntó la tablet sola (3.70.0) se funden aquí como las de otro móvil.
   useEffect(() => {
     if (!comunidad.nuevas.length) return;

@@ -48,7 +48,8 @@ export function crearClaveDeJugador(azar = (n) => globalThis.crypto.getRandomVal
 export const claveDeJugadorValida = (c) => typeof c === 'string' && /^[A-Za-z0-9_-]{32,64}$/.test(c);
 
 /** Los campos de una partida que van a la base de datos. Ni lector ni nada que no sirva para medir. */
-const CAMPOS = ['t', 'pick', 'gane', 'recomendados', 'rango', 'estimacion', 'modelo', 'previa', 'origen', 'bans', 'draft', 'duracion', 'fases'];
+// `editada` (3.76.0): cuándo la arreglaste, para que entre móvil y tablet gane la copia arreglada más tarde.
+const CAMPOS = ['t', 'pick', 'gane', 'recomendados', 'rango', 'estimacion', 'modelo', 'previa', 'origen', 'bans', 'draft', 'duracion', 'fases', 'editada'];
 export function paraLaComunidad(p) {
   const salida = {};
   for (const k of CAMPOS) if (p?.[k] !== undefined && p[k] !== null) salida[k] = p[k];
@@ -143,6 +144,18 @@ export async function traerMisPartidas({ config, clave }, opciones = {}) {
   const r = await llamar(config, 'mis_partidas', { clave }, opciones);
   if (r.error) return r;
   return { partidas: Array.isArray(r.datos?.partidas) ? r.datos.partidas : [] };
+}
+
+/**
+ * De lo que hay en la base de datos, qué hay que fundir aquí: lo que aquí no
+ * está ni se quitó, y lo que se arregló allí (en la tablet o en otro móvil)
+ * DESPUÉS que aquí (`editada`, 3.76.0).
+ */
+export function queTraer(remotas = [], { partidas = [], olvidadas = [] } = {}) {
+  const quitadas = new Set(olvidadas);
+  const aqui = new Map(partidas.map((x) => [x.t, x]));
+  const editadaDe = (x) => (Number.isFinite(x?.editada) ? x.editada : 0);
+  return remotas.filter((x) => Number.isFinite(x?.t) && !quitadas.has(x.t) && (!aqui.has(x.t) || editadaDe(x) > editadaDe(aqui.get(x.t))));
 }
 
 /** Borra todo lo de esta clave en el servidor. */

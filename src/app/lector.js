@@ -241,6 +241,21 @@ export async function pedirLectura({ base = baseLector(), plazoMs = PLAZO_LECTOR
  * aprendido. Sin él, «el lector no va» solo se veía tocando el botón. Nunca
  * lanza; plazo corto, que el diagnóstico no espere.
  */
+/**
+ * La clave con la que la tablet guarda tus partidas (3.76.0): con ella el
+ * móvil ve y arregla lo mismo que «Mis partidas» de la APK. Solo con el
+ * lector en la tablet (con su código). La clave o null; nunca lanza.
+ */
+export async function pedirClaveDeLaTablet({ base = baseLector(), plazoMs = 4000, pedir = pedirAlLector, vinculada = !!enTablet } = {}) {
+  if (!vinculada) return null;
+  try {
+    const r = await pedir(`${base}/clave`, { cache: 'no-store', signal: AbortSignal.timeout(plazoMs) });
+    if (!r.ok) return null;
+    const c = (await r.json())?.clave;
+    return typeof c === 'string' && /^[A-Za-z0-9_-]{32,64}$/.test(c) ? c : null;
+  } catch { return null; }
+}
+
 export async function pedirEstadoLector({ base = baseLector(), plazoMs = 3000, pedir = pedirAlLector } = {}) {
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), plazoMs);
