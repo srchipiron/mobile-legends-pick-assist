@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.81.0
+
+- Cuando la tablet apunta sola una partida en la que no reconoció a algún
+  héroe, sube las caras de ese draft para que se pueda ver por qué falló y
+  arreglarlo. Solo las diez caras de los héroes, sin los nombres de los
+  jugadores, con la clave del lector (no la tuya). Si después dices quién
+  era en «Enseña al lector» o arreglas la partida, eso sirve de respuesta.
+
 ## 3.80.0
 
 - La tablet lee mejor los héroes del draft. Mira la pantalla cada 1,5

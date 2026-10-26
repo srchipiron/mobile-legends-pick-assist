@@ -25,7 +25,7 @@ import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas,
 import { limpiarTexto } from './voz.mjs';
 import { leerCrudo, escribirPngRapido } from './png.mjs';
 import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo } from './solo.mjs';
-import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte, traerMisPartidas } from '../../src/app/basedatos.js';
+import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte, subirRecorte, traerMisPartidas } from '../../src/app/basedatos.js';
 import { maestriaEfectiva } from '../../src/motor/maestria.js';
 import { tusNumeros, tuSemana } from '../../src/motor/habitos.js';
 
@@ -373,6 +373,35 @@ export function semanaParaLaApk(partidas, ahora = Date.now()) {
   };
 }
 
+/** Lo que admite `subir_recorte` (120 KB): cada captura recortada son unos 45 mil caracteres. */
+export const TOPE_RECORTE_BYTES = 118000;
+/**
+ * Lo que se sube de un draft con héroes sin reconocer (3.81.0): las diez
+ * caras de una o dos capturas (sin nombres de jugadores: `recortes.mjs`) y lo
+ * leído hueco a hueco, con el instante de la partida para cruzarlo con su
+ * draft bueno. Solo nombres de héroes, números e imágenes de caras: ni la
+ * clave, ni la IP, ni el código. null si no hay nada que subir.
+ */
+export function recorteParaSubir({ correccion, recortes, version = null }) {
+  const nombres = (l) => (Array.isArray(l) ? l.slice(0, 10).map((n) => (typeof n === 'string' ? n.slice(0, 40) : null)) : []);
+  const hueco = (l) => ({ nombre: typeof l?.nombre === 'string' ? l.nombre.slice(0, 40) : null, candidato: typeof l?.candidato === 'string' ? l.candidato.slice(0, 40) : null, parecido: Number.isFinite(l?.parecido) ? l.parecido : 0 });
+  const capturas = (Array.isArray(recortes) ? recortes : [])
+    .filter((r) => typeof r?.id === 'string' && /^lectura-[\w-]+$/.test(r.id) && typeof r.picks === 'string' && /^[A-Za-z0-9+/=]+$/.test(r.picks))
+    .slice(0, 2)
+    .map((r) => ({ id: r.id, picks: r.picks, enemigos: (r.enemigos ?? []).slice(0, 5).map(hueco), aliados: (r.aliados ?? []).slice(0, 5).map(hueco), tuyoFila: Number.isInteger(r.tuyoFila) ? r.tuyoFila : -1 }));
+  if (!capturas.length || !Number.isFinite(correccion?.partida)) return null;
+  const l = correccion.leidos ?? {};
+  const recorte = {
+    v: 1, version: typeof version === 'string' ? version : null, partida: correccion.partida, desde: Number.isFinite(correccion.cuando) ? correccion.cuando : null,
+    faltan: Number.isInteger(correccion.faltan) ? correccion.faltan : null,
+    leidos: { enemigos: nombres(l.enemigos), aliados: nombres(l.aliados), tuyoFila: Number.isInteger(l.tuyoFila) ? l.tuyoFila : -1, baneos: nombres(l.baneos) },
+    capturas,
+  };
+  // Si las dos no caben, va la primera (la que más leía).
+  while (Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES && recorte.capturas.length > 1) recorte.capturas.pop();
+  return Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES ? null : recorte;
+}
+
 export function parteDeSalud({ estado, log = '', falloNodo = null, secretos = [], ahora = Date.now() }) {
   const parte = {
     v: 1, cuando: ahora,
@@ -510,11 +539,23 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     apuntar: (p) => { if (partidas.apuntar(p)) subir(); },
     alCorregir: (c) => alCorregirRef?.(c),
     numerosDe: () => tusNumeros(partidas.todas()),
+    alSinLeer: (c) => { subirRecortesDe(c).catch(() => {}); },
     maestriaDe: () => { const m = ajustes.delMovil(); return maestriaEfectiva(m?.maestria ?? {}, partidas.todas().filter((p) => p.t > (m?.cuando ?? 0))); },
   });
   alCorregirRef = ({ partida, enemigos, aliados, tuyo }) => {
     if (Number.isFinite(partida) && partidas.corregir(partida, { enemigos, aliados, tuyo })) { registrar('Sin móvil: la partida apuntada lleva ya los héroes que dijiste.'); subir(); }
   };
+  // Los recortes de un draft con héroes sin reconocer (3.81.0), con la clave del lector como los partes: para medir el lector.
+  const subirRecortesDe = async (correccion) => {
+    const clave = claveDelLector(casa);
+    const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
+    if (!claveDeJugadorValida(clave) || !config) return;
+    const recorte = recorteParaSubir({ correccion, recortes: await servidor.interno.recortesDe(correccion?.ids), version: servidor.interno.estado()?.version });
+    if (!recorte) return;
+    const r = await subirRecorte({ config, clave, recorte }, { fetch: pedirBaseDeDatos });
+    registrar(r.error ? `Los recortes del draft no se pudieron subir (${r.error}).` : `Recortes del draft subidos para medir el lector (${recorte.capturas.length} capturas, ${recorte.faltan} sin reconocer).`);
+  };
+  servidor.subirRecortesDe = subirRecortesDe;
   // El parte de salud (3.74.0): para que la revisión automática vea cómo va la tablet sin que nadie copie nada.
   const subirSuParte = async () => {
     const clave = claveDelLector(casa);

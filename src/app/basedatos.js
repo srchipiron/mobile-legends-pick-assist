@@ -197,6 +197,16 @@ export async function subirParte({ config, clave, parte }, opciones = {}) {
   return llamar(config, 'subir_parte', { clave, parte }, opciones);
 }
 
+/**
+ * Los recortes de un draft con héroes sin reconocer (3.81.0): las diez caras
+ * de una o dos capturas (sin nombres de jugadores) y lo leído, con la clave
+ * del lector. Para medir el lector (`recortes_recientes`). Nunca lanza.
+ */
+export async function subirRecorte({ config, clave, recorte }, opciones = {}) {
+  if (!claveDeJugadorValida(clave) || !recorte || typeof recorte !== 'object' || !Array.isArray(recorte.capturas) || !recorte.capturas.length) return { error: 'clave' };
+  return llamar(config, 'subir_recorte', { clave, recorte }, opciones);
+}
+
 /** Los partes de las últimas `horas` (como mucho 168), de todos los lectores. */
 export async function bajarPartes(config, { horas = 48, ...opciones } = {}) {
   const r = await llamar(config, 'partes_recientes', { horas }, opciones);

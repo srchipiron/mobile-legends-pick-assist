@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk } from '../../scripts/lector/en-tablet.mjs';
+import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { claveDeJugadorValida } from '../../src/app/basedatos.js';
 import { pruebaDelReto } from '../../src/app/lector.js';
@@ -713,6 +713,59 @@ await test('tu semana para la APK (3.79.0): lo mismo que en el móvil, en el JSO
   eq(JSON.stringify(s), JSON.stringify({ n: 3, ganadas: 2, wr: 2 / 3, anterior: { n: 1, wr: 0, dif: 2 / 3, seVe: s.anterior.seVe }, funcionan: [{ heroe: 'Diggie', n: 3, ganadas: 2 }], cuestan: [], numeroUno: { n: 3, cogido: 3, wrCogido: 2 / 3, wrOtro: null } }));
   eq(typeof s.anterior.seVe, 'boolean');
   eq(semanaParaLaApk([{ t: ahora - 8 * 24 * h, pick: 'Atlas', gane: false }], ahora), null);
+});
+
+test('los recortes de un draft sin leer entero (3.81.0): la tablet los sube SOLA con la clave del lector, las dos mejores capturas y sin secretos', async () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-recortes-'));
+  const s = supabaseFalso();
+  const { mkdirSync } = await import('node:fs');
+  mkdirSync(join(casa, 'datos'), { recursive: true });
+  mkdirSync(join(casa, 'capturas'), { recursive: true });
+  writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
+  // Las del draft leen menos que la de fuera: si un id sin forma se colara, ganaría ella.
+  const peor = capturaCompletaPng({ conAliados: false });
+  for (const id of ['lectura-20261026-001', 'lectura-20261026-002', 'lectura-20261026-003']) writeFileSync(join(casa, 'capturas', `${id}.png`), peor);
+  writeFileSync(join(casa, 'fuera.png'), png);
+  // Con tu clave de jugador puesta, los recortes siguen yendo con la del lector (como los partes).
+  const tuya = 'R'.repeat(43);
+  writeFileSync(join(casa, 'solo-movil.json'), JSON.stringify({ linea: 'roam', clave: tuya }));
+  const apk = await apkDePega();
+  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  try {
+    const T = 1793000000000;
+    const correccion = { ids: ['lectura-20261026-001', 'lectura-20261026-002', 'lectura-20261026-003', '../fuera', 'lectura-no-existe'], partida: T, cuando: T - 900000, faltan: 2, leidos: { enemigos: ['Clint', null, 'Khufra', null, null], aliados: ['Gord'], tuyoFila: 4, baneos: ['Hirara'] } };
+    await servidor.subirRecortesDe(correccion);
+    eq(s.recortes.length, 1, 'no sube los recortes');
+    const r = s.recortes[0];
+    ok(r.clave === claveDelLector(casa) && r.clave !== tuya, 'no van con la clave del lector');
+    ok(r.d.partida === T && r.d.desde === T - 900000 && r.d.faltan === 2 && r.d.leidos.enemigos[0] === 'Clint', JSON.stringify({ ...r.d, capturas: undefined }));
+    eq(r.d.capturas.length, 2, 'no son dos capturas');
+    ok(r.d.capturas.every((c) => /^lectura-20261026-00[123]$/.test(c.id) && c.enemigos.length === 5 && c.aliados.length === 5), 'una captura de fuera o sin lo leído');
+    const vuelta = leerPng(Buffer.from(r.d.capturas[0].picks, 'base64'));
+    ok(vuelta.ancho > 50 && vuelta.alto > 200, 'la imagen no es el recorte de las caras');
+    eq(r.d.capturas[0].enemigos.slice(0, 2).map((l) => l.nombre).join(), VERDAD.enemigos.join(), 'lo leído no es el de la captura');
+    const texto = JSON.stringify(r.d);
+    for (const secreto of [CODIGO, SECRETO, r.clave, tuya, casa]) ok(!texto.includes(secreto), `el recorte lleva un secreto: ${secreto.slice(0, 6)}…`);
+    eq(s.jugadores.size, 0, 'subir recortes toca tus partidas');
+    // Sin capturas que existan no se sube nada; y uno al momento lo frena el servidor sin tirar nada.
+    await servidor.subirRecortesDe({ ...correccion, ids: ['lectura-no-existe'] });
+    await servidor.subirRecortesDe(correccion);
+    eq(s.recortes.length, 1, 'sube sin capturas o dos seguidos');
+  } finally { servidor.close(); apk.cerrar(); }
+});
+
+test('recorteParaSubir (3.81.0): solo ids con forma, imágenes en base64, con su partida, y si no caben las dos, la primera', () => {
+  const cap = (id, picks = 'iVBORw0KGgo=') => ({ id, picks, enemigos: [{ nombre: 'Clint', candidato: 'Clint', parecido: 0.9 }], aliados: [], tuyoFila: 2 });
+  const correccion = { partida: 5, cuando: 4, faltan: 1, leidos: { enemigos: ['Clint'], aliados: [], tuyoFila: 2, baneos: [] } };
+  const r = recorteParaSubir({ correccion, recortes: [cap('../x'), cap('lectura-1'), cap('lectura-2', 'no es <base64>'), cap('lectura-3'), cap('lectura-4')], version: '3.81.0' });
+  eq(r.capturas.map((c) => c.id).join(), 'lectura-1,lectura-3', 'pasa un id o una imagen sin forma, o más de dos');
+  eq(r.version, '3.81.0');
+  eq(recorteParaSubir({ correccion: { ...correccion, partida: null }, recortes: [cap('lectura-1')] }), null, 'sin partida no se puede cruzar con su draft');
+  eq(recorteParaSubir({ correccion, recortes: [] }), null);
+  const grande = 'A'.repeat(70000);
+  const dos = recorteParaSubir({ correccion, recortes: [cap('lectura-1', grande), cap('lectura-2', grande)] });
+  ok(dos.capturas.length === 1 && dos.capturas[0].id === 'lectura-1' && Buffer.byteLength(JSON.stringify(dos)) <= TOPE_RECORTE_BYTES, 'no deja la primera cuando no caben las dos');
+  eq(recorteParaSubir({ correccion, recortes: [cap('lectura-1', 'A'.repeat(130000))] }), null, 'sube uno que el servidor no admite');
 });
 
 terminar('scripts/en-tablet');

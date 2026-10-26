@@ -140,3 +140,24 @@ export function recortesDelDraft(informe, leer, caras, opciones = {}, maximo = R
   const ids = validas.sort((a, b) => (b.aciertos ?? 0) - (a.aciertos ?? 0) || b.i - a.i).slice(0, maximo).sort((a, b) => a.i - b.i).map((l) => l.id);
   return ids.map((id) => { const r = recorteDeDraft(leer(id), caras, opciones); return r ? { id, ...r } : null; }).filter(Boolean);
 }
+
+/**
+ * Sin la verdad (3.81.0, la tablet sola): de las capturas de un draft, las
+ * `maximo` que más héroes leían (enemigos y tu equipo; a igualdad, las más
+ * nuevas), en su orden. Las del final del draft suelen ser ya la fase de
+ * skins, y las primeras, picks a medias: las que más leen son las del draft
+ * casi entero. Cada captura se decodifica al mirarla.
+ */
+export function mejoresRecortes(ids, leer, caras, opciones = {}, maximo = RECORTES_POR_DRAFT) {
+  const { posiciones = null, extra = [], aliadas = [] } = opciones;
+  const vistos = [];
+  (ids ?? []).forEach((id, i) => {
+    try {
+      const img = leer(id);
+      const n = leerPicksEnemigos(img, caras, { posiciones, extra }).filter((l) => l.nombre).length + leerAliados(img, caras, { extra: aliadas }).filter((l) => l.nombre).length;
+      vistos.push({ id, i, n });
+    } catch { /* una captura que no se lee no cuenta */ }
+  });
+  const elegidos = vistos.sort((a, b) => b.n - a.n || b.i - a.i).slice(0, maximo).sort((a, b) => a.i - b.i);
+  return elegidos.map(({ id }) => { try { const r = recorteDeDraft(leer(id), caras, opciones); return r ? { id, ...r } : null; } catch { return null; } }).filter(Boolean);
+}

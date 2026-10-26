@@ -250,6 +250,16 @@ export function aprenderEnHilo({ pares, aprendido }) {
   });
 }
 
+/** Los recortes de un draft para medir el lector (3.81.0), en un hilo aparte (recortes-tarea.mjs). */
+export function recortarEnHilo({ capturas, aprendido }) {
+  return new Promise((resolver, rechazar) => {
+    const hilo = new Worker(new URL('recortes-tarea.mjs', import.meta.url), { workerData: { capturas, aprendido } });
+    hilo.once('message', resolver);
+    hilo.once('error', rechazar);
+    hilo.once('exit', (codigo) => { if (codigo !== 0) rechazar(new Error(`el hilo de los recortes salió con ${codigo}`)); });
+  });
+}
+
 export function leerMemoria(fichero = FICHERO_MEMORIA) {
   try { const m = JSON.parse(readFileSync(fichero, 'utf8')); return m && typeof m === 'object' ? m : {}; } catch { return {}; }
 }
@@ -540,7 +550,7 @@ export const VISTAZO_MS = 10000;
  * El servidor, con la captura inyectada: en Termux es `capturarTablet`, en
  * las pruebas una captura de fichero.
  */
-export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux, codigo = null, estadoExtra = null, alCorregir = null, historial = null, claveDeLaTablet = null }) {
+export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, recortar = recortarEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux, codigo = null, estadoExtra = null, alCorregir = null, historial = null, claveDeLaTablet = null }) {
   // En la tablet (3.61.0) escucha en la wifi: con código, y aceptando su IP como `Host`.
   const portero = codigo ? crearPortero(codigo, { ahora }) : null;
   // Los retos de cada aparato en el último minuto (3.70.0).
@@ -1198,6 +1208,19 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     // Lo que no reconoció (3.71.0), para preguntarlo en la APK.
     ponerCorreccion: (c) => { correccion = sanearCorreccion(c); },
     correccion: () => correccionVigente(),
+    /**
+     * Los recortes de las capturas de un draft (3.81.0): solo ids con forma
+     * que existan en la carpeta, las `CAPTURAS_A_MIRAR` últimas. [] si no hay
+     * o si el hilo falla: medir no puede tirar el lector.
+     */
+    recortesDe: async (ids) => {
+      const validos = (Array.isArray(ids) ? ids : []).filter((id) => typeof id === 'string' && /^lectura-[\w-]+$/.test(id) && carpeta && existsSync(join(carpeta, `${id}.png`))).sort().slice(-CAPTURAS_A_MIRAR);
+      if (!validos.length) return [];
+      try {
+        const r = await recortar({ capturas: validos.map((id) => ({ id, png: join(carpeta, `${id}.png`) })), aprendido });
+        return Array.isArray(r) ? r : [];
+      } catch (e) { registrar(`No se pudieron recortar las capturas del draft: ${e.message}`); return []; }
+    },
     correccionContestada: () => { const c = correccionContestada; correccionContestada = null; return c && ahora() - c.cuando <= RETENCION_CAPTURAS_MS ? c : null; },
     // Cómo acabó la partida (3.72.5): el modo solo pregunta y recoge la respuesta (una vez).
     ponerPregunta: (p) => { pregunta = sanearPregunta(p); },

@@ -290,6 +290,7 @@ test('SEGURIDAD: todo lo que el lector ejecuta (su carpeta y lo que importa de f
     'scripts/lector/sacar-caras.mjs': ['node:fs', 'node:path'],
     'scripts/lector/lectura-tarea.mjs': ['node:worker_threads'],
     'scripts/lector/aprender-tarea.mjs': ['node:worker_threads', 'node:fs'],
+    'scripts/lector/recortes-tarea.mjs': ['node:worker_threads', 'node:fs'],
     // La voz de los consejos en directo (3.44.0): lanza `termux-tts-speak` y nada más (prueba de abajo).
     'scripts/lector/voz.mjs': ['node:child_process'],
     'scripts/lector/partida.mjs': ['node:fs'],

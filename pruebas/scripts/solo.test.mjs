@@ -161,7 +161,8 @@ test('todo desde la tablet (3.70.0): al empezar la partida vigila el final y, co
     final: () => final, ponerResumen: (r) => resumenes.push(r),
   };
   const maestria = { Rafaela: { games: 400, winRate: 0.62 } };
-  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: (p) => apuntadas.push(p), maestriaDe: () => { maestrias.push(1); return maestria; } });
+  let recortesPedidos = 0;
+  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: (p) => apuntadas.push(p), maestriaDe: () => { maestrias.push(1); return maestria; }, alSinLeer: () => { recortesPedidos += 1; } });
   await solo.tic();
   ok(maestrias.length > 0, 'el consejo no usa tu maestría');
   eq(vigiladas.length, 0, 'vigila el final en pleno draft');
@@ -185,6 +186,7 @@ test('todo desde la tablet (3.70.0): al empezar la partida vigila el final y, co
   eq(solo.resumen().apuntadas, 1);
   // Con el móvil leyendo, la tablet no vigila ni apunta (lo hace la app).
   const otraVigilancia = [];
+  eq(recortesPedidos, 0, 'pide recortes de un draft sin capturas (3.81.0)');
   const conMovil = crearSolo({ interno: { ...interno, delMovil: () => ({ leyo: t, consejo: null }), vigilar: (d) => otraVigilancia.push(d) }, ajustes: () => ({ activo: true, linea: 'roam' }), datosPara: () => datos, ahora: () => t, apuntar: () => {} });
   respuesta = { partida: true, rapida: true };
   await conMovil.tic(); await conMovil.tic();
@@ -277,7 +279,8 @@ test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se pregunt
     vigilar: (desde) => { final = { desde, resultado: null }; }, final: () => final, ponerResumen: (r) => resumenes.push(r),
     ponerCorreccion: (c) => correcciones.push(c),
   };
-  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: () => {} });
+  const sinLeer = [];
+  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: () => {}, alSinLeer: (x) => sinLeer.push(x) });
   await solo.tic();
   t += 5000; respuesta = conId(respuesta); await solo.tic();
   eq(correcciones.length, 0, 'pregunta en pleno draft');
@@ -295,6 +298,10 @@ test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se pregunt
   t += 20000; await solo.tic();
   eq(correcciones.length, 2, 'al apuntar no le dice de qué partida es');
   eq(correcciones[1].partida, t - 19000);
+  // 3.81.0: con alguien sin leer, sus capturas van a medir el lector, con la partida para cruzarla con su draft bueno.
+  eq(sinLeer.length, 1, 'al apuntar un draft con «?» no pide sus recortes');
+  ok(sinLeer[0].partida === t - 19000 && sinLeer[0].faltan === 5 && sinLeer[0].ids.length === 2 && sinLeer[0].leidos.enemigos[0] === 'Clint', JSON.stringify(sinLeer[0]));
+  eq(sinLeer[0].cuando, solo.estado().cerradoEn ?? sinLeer[0].cuando);
   ok(/Toca para decirle al lector quién eran los 5/.test(resumenes[0]?.texto ?? ''), `la notificación no lo dice: ${resumenes[0]?.texto}`);
   // Un draft leído entero no pregunta nada; y sin capturas, tampoco.
   const entero = { ...draftVacio(), baneos: ['Hirara'], enemigos: ['Clint', 'Khufra', 'Atlas', 'Franco', 'Tigreal'], aliados: ['Gord', 'Selena', 'Layla', 'Zilong', 'Rafaela'], cerrado: true, cerradoEn: 1, ids: ['lectura-1'] };
@@ -400,7 +407,7 @@ test('lo que se perdía sin el móvil (3.74.3): la pregunta pisada o caducada se
     let t = 20_000_000, final = null, respuesta = null, contestada = contestadaAntes;
     // Con id de captura: lo que no reconoce se pregunta en la tarjeta «Enseña al lector».
     let lista = { ...lectura({ tuyos: [N('Hirara'), N('Belerick')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 }), id: 'lectura-1' };
-    const preguntas = [], apuntadas = [], registro = [], corregidas = [], correcciones = [];
+    const preguntas = [], apuntadas = [], registro = [], corregidas = [], correcciones = [], sinLeer = [];
     const interno = {
       leer: async () => ({ ok: true, lectura: lista }), delMovil: () => ({}), ponerConsejo: () => {},
       vigilar: (desde) => { final = { desde, activa: true, acabada: false, resultado: null, inicio: desde + 1000, duracion: null }; },
@@ -408,9 +415,9 @@ test('lo que se perdía sin el móvil (3.74.3): la pregunta pisada o caducada se
       ponerPregunta: (p) => preguntas.push(p), respuesta: () => { const r = respuesta; respuesta = null; return r; },
       correccionContestada: () => { const c = typeof contestada === 'function' ? contestada(final) : contestada; contestada = null; return c; },
     };
-    const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: (p) => apuntadas.push(p), registrar: (m) => registro.push(m), alCorregir: (c) => corregidas.push(c) });
+    const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: (p) => apuntadas.push(p), registrar: (m) => registro.push(m), alCorregir: (c) => corregidas.push(c), alSinLeer: (c) => sinLeer.push(c) });
     return {
-      preguntas, apuntadas, registro, corregidas, correcciones,
+      preguntas, apuntadas, registro, corregidas, correcciones, sinLeer,
       paso: async (ms = 5000) => { t += ms; await solo.tic(); }, saltar: (ms) => { t += ms; },
       leer: (l) => { lista = l; }, fin: (f) => { final = { ...final, ...f }; }, contestar: (r) => { respuesta = { ...r, cuando: t }; }, desde: () => final?.desde,
     };
@@ -471,6 +478,8 @@ test('lo que se perdía sin el móvil (3.74.3): la pregunta pisada o caducada se
   eq(antes.apuntadas.length, 1);
   eq(JSON.stringify(antes.corregidas), JSON.stringify([{ partida: 30_000_000, ...contestada }]), 'la corrección contestada antes no se aplica a la partida');
   eq(antes.correcciones.length, tarjetas, 'la tarjeta ya contestada vuelve a salir');
+  // Y sus capturas van igual a medir el lector (3.81.0): la partida ya trae el draft bueno.
+  ok(antes.sinLeer.length === 1 && antes.sinLeer[0].partida === 30_000_000, `contestada antes, no pide los recortes: ${JSON.stringify(antes.sinLeer)}`);
   // Una contestada de OTRO draft no se aplica.
   const otra = montar({ contestadaAntes: { cuando: 1, ...contestada } });
   await jugar(otra);

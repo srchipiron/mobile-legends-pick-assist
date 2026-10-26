@@ -201,6 +201,30 @@ try {
     eq(sql("select count(*) from pg_class where relname = 'partes' and relrowsecurity").salida, '1', 'los partes sin RLS');
   });
 
+  test('los recortes del draft (3.81.0): uno o dos con su forma, uno por minuto, con tope y 60 días; se leen sin huella, y la tabla sigue cerrada', () => {
+    const LECTOR = 'r'.repeat(40);
+    const recorte = (extra = {}) => lit({ v: 1, partida: T0, capturas: [{ id: 'lectura-1', picks: 'iVBOR', enemigos: [], aliados: [] }], ...extra });
+    const r = comoAnon(`select public.subir_recorte('${LECTOR}', ${recorte()})`);
+    ok(!r.error, r.error);
+    const pronto = comoAnon(`select public.subir_recorte('${LECTOR}', ${recorte()})`);
+    ok(pronto.error && /pronto/.test(pronto.error), `deja subir otro recorte al momento: ${pronto.error ?? pronto.salida}`);
+    const cap = { id: 'x', picks: 'a' };
+    for (const malo of [`'${LECTOR}', '[]'::jsonb`, `'${LECTOR}', ${lit({ v: 1 })}`, `'${LECTOR}', ${lit({ capturas: [] })}`, `'${LECTOR}', ${lit({ capturas: [cap, cap, cap] })}`, `'${LECTOR}', ${lit({ capturas: [{ picks: 'x'.repeat(121000) }] })}`, `'corta', ${recorte()}`]) { const e = comoAnon(`select public.subir_recorte(${malo})`).error; ok(e && !/pronto/.test(e), `acepta ${malo.slice(0, 70)} (o lo frena solo por pronto: ${e})`); }
+    const leidos = json(comoAnon('select public.recortes_recientes(48)'));
+    ok(leidos.length === 1 && leidos[0].d.partida === T0 && Number.isInteger(leidos[0].j) && !JSON.stringify(leidos).includes('huella'), `no se leen bien, o va la huella: ${JSON.stringify(leidos).slice(0, 200)}`);
+    const yo = leidos[0].j;
+    ok(!sql(`insert into public.recortes (jugador, recibido, datos) select ${yo}, now() - make_interval(mins => 10 + g), '{}'::jsonb from generate_series(1, 320) g`).error);
+    ok(!sql(`insert into public.recortes (jugador, recibido, datos) values (${yo}, now() - interval '61 days', '{}'::jsonb)`).error);
+    sql(`update public.recortes set recibido = now() - interval '2 minutes' where jugador = ${yo} and datos ? 'partida'`);
+    ok(!comoAnon(`select public.subir_recorte('${LECTOR}', ${recorte({ partida: T0 + 1 })})`).error);
+    eq(sql(`select count(*) from public.recortes where jugador = ${yo}`).salida, '300', 'sin tope de recortes por lector');
+    eq(sql(`select count(*) from public.recortes where recibido < now() - interval '60 days'`).salida, '0', 'se quedan recortes de hace más de 60 días');
+    ok(json(comoAnon('select public.recortes_recientes(48)')).length <= 50, 'se leen más de 50 de una vez');
+    ok(comoAnon('select * from public.recortes').error && comoAnon("insert into public.recortes (jugador, datos) values (1, '{}')").error, 'anon toca la tabla de recortes');
+    eq(sql("select count(*) from information_schema.role_table_grants where grantee in ('anon', 'authenticated') and table_name = 'recortes'").salida, '0', 'anon tiene permisos sobre los recortes');
+    eq(sql("select count(*) from pg_class where relname = 'recortes' and relrowsecurity").salida, '1', 'los recortes sin RLS');
+  });
+
   test('con el proyecto lleno de jugadores, uno nuevo no entra y los de antes siguen subiendo', () => {
     const r = sql("insert into public.jugadores (huella) select md5(g::text) || md5((g + 1)::text) from generate_series(1, 20000) g");
     ok(!r.error, r.error);

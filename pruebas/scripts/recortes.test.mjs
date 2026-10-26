@@ -8,7 +8,7 @@
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { leerPng } from '../../scripts/lector/png.mjs';
 import { carasGuardadas, leerPicksEnemigos, leerAliados } from '../../scripts/lector/leer.mjs';
-import { recorteDePicks, recorteDeDraft, recortesDelDraft, componerPicks, CAJAS_ALIADOS, CAJAS_ENEMIGOS, TOPE_RECORTE } from '../../scripts/lector/recortes.mjs';
+import { recorteDePicks, recorteDeDraft, recortesDelDraft, mejoresRecortes, componerPicks, CAJAS_ALIADOS, CAJAS_ENEMIGOS, TOPE_RECORTE } from '../../scripts/lector/recortes.mjs';
 import { capturaCompleta, VERDAD } from '../fixtures/juego/captura.mjs';
 
 const caras = carasGuardadas();
@@ -86,6 +86,18 @@ test('de las capturas del aprendizaje se recortan las DOS ÚLTIMAS que eran la p
   // Las que más enemigos leían (3.54.0): la última suele ser ya la fase de skins.
   const conAciertos = [{ id: 'lectura-1', aciertos: 5 }, { id: 'lectura-2', aciertos: 1 }, { id: 'lectura-3', aciertos: 4 }, { id: 'lectura-4', aciertos: 0 }];
   eq(recortesDelDraft(conAciertos, () => img, caras).map((x) => x.id).join(), 'lectura-1,lectura-3', 'no recorta las que más enemigos leían, en su orden');
+});
+
+test('sin la verdad (3.81.0): de las capturas de un draft se recortan las dos que más héroes leen, en su orden; una que no se lee no cuenta', () => {
+  const negra = { ancho: 2400, alto: 1504, rgba: new Uint8Array(2400 * 1504 * 4) };
+  const media = capturaCompleta({ columna: 2, conAliados: false });
+  const capturas = { 'lectura-1': img, 'lectura-2': negra, 'lectura-3': media, 'lectura-4': img, 'lectura-5': negra };
+  const leer = (id) => { if (id === 'lectura-6') throw new Error('rota'); return capturas[id]; };
+  const r = mejoresRecortes(['lectura-1', 'lectura-2', 'lectura-3', 'lectura-4', 'lectura-5', 'lectura-6'], leer, caras);
+  eq(r.map((x) => x.id).join(), 'lectura-1,lectura-4', 'no son las dos que más leen');
+  ok(r.every((x) => x.picks && x.enemigos.length === 5 && x.aliados.length === 5), 'un recorte sin imagen o sin lo leído');
+  eq(mejoresRecortes([], leer, caras).length, 0);
+  eq(mejoresRecortes(['lectura-2', 'lectura-3'], leer, caras).map((x) => x.id).join(), 'lectura-2,lectura-3', 'con dos, van las dos en su orden');
 });
 
 await terminar('scripts/recortes');

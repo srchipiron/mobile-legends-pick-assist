@@ -317,7 +317,7 @@ export function ajustesEfectivos(apk, movil) {
 /** Lo que dura la pregunta de cómo acabó: lo mismo que `RETENCION_CAPTURAS_MS` de servir.mjs (una prueba lo compara). */
 export const PREGUNTA_CADUCA_MS = 3 * 3600000;
 
-export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout, apuntar = null, maestriaDe = () => null, alCorregir = null, numerosDe = () => null }) {
+export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout, apuntar = null, maestriaDe = () => null, alCorregir = null, numerosDe = () => null, alSinLeer = null }) {
   // La partida que se vigila para apuntarla sola (3.70.0): el draft de cuando
   // se cerró y su decisión, hasta que la tabla del final dé el resultado.
   let vigilada = null;
@@ -339,6 +339,8 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     // De qué draft es y cómo se supo el resultado (3.75.0), solo en la tablet (la base de datos no los guarda):
     // para medir cuánto reconoce sola y para aprender la tabla si arreglas el resultado.
     const partida = { ...sola, desde: v.desde, resultadoDe: contestada ? 'pregunta' : 'tabla' };
+    // Si en este draft quedó alguien sin leer (3.81.0), sus recortes, para medir el lector.
+    const sinLeer = pendiente?.cuando === v.desde ? pendiente : null;
     apuntar(partida);
     // La corrección contestada ANTES de apuntar la partida (3.74.3): se aplica
     // ahora y la tarjeta no vuelve a salir. Antes se perdía y la partida subía
@@ -353,6 +355,7 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     if (deEsta) { pendiente = { ...deEsta, partida: partida.t }; interno.ponerCorreccion?.(pendiente); }
     interno.ponerResumen?.(resumenSolo(partida, v.idioma, deEsta?.faltan ?? 0, numerosDe()));
     resumen.apuntadas = (resumen.apuntadas ?? 0) + 1;
+    if (sinLeer) { try { alSinLeer?.({ ids: sinLeer.ids, leidos: sinLeer.leidos, faltan: sinLeer.faltan, cuando: sinLeer.cuando, partida: partida.t }); } catch (e) { registrar(`No se pudieron preparar los recortes del draft: ${e.message}`); } }
     registrar(`Sin móvil: partida apuntada${contestada ? ' con lo que contestaste' : ''}, ${partida.gane ? 'ganada' : 'perdida'} con ${partida.pick}.`);
   };
   /**

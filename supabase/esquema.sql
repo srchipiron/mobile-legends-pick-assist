@@ -245,9 +245,68 @@ begin
   ), '[]'::jsonb);
 end $$;
 
+-- Los recortes del draft (3.81.0): cuando la tablet sola apunta una partida
+-- con héroes sin reconocer, sube las dos capturas del draft que más leían,
+-- reducidas a las DIEZ CARAS (sin los nombres de los jugadores) y lo leído
+-- hueco a hueco, con el instante de la partida (`partida`) para cruzarlo con
+-- el draft bueno (lo que dijiste en «Enseña al lector» o arreglaste después).
+-- Es lo que mide el lector; antes llegaba como incidencias de GitHub desde el
+-- móvil. Topes: 120 KB por recorte, uno por minuto por lector, los 300
+-- últimos de cada uno y 60 días.
+create table if not exists public.recortes (
+  id bigint generated always as identity primary key,
+  jugador bigint not null references public.jugadores(id) on delete cascade,
+  recibido timestamptz not null default now(),
+  datos jsonb not null
+);
+create index if not exists recortes_por_jugador on public.recortes (jugador, recibido desc);
+alter table public.recortes enable row level security;
+revoke all on public.recortes from public;
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'anon') then execute 'revoke all on public.recortes from anon'; end if;
+  if exists (select 1 from pg_roles where rolname = 'authenticated') then execute 'revoke all on public.recortes from authenticated'; end if;
+end $$;
+
+create or replace function public.subir_recorte(clave text, recorte jsonb) returns jsonb
+language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  h text := public.huella_de(clave);
+  yo bigint;
+begin
+  if jsonb_typeof(recorte) is distinct from 'object' or jsonb_typeof(recorte->'capturas') is distinct from 'array'
+     or jsonb_array_length(recorte->'capturas') not between 1 and 2 or octet_length(recorte::text) > 120000 then
+    raise exception 'recorte' using errcode = 'P0001';
+  end if;
+  select id into yo from public.jugadores where huella = h;
+  if yo is null then
+    if (select count(*) from public.jugadores) >= 20000 then raise exception 'lleno' using errcode = 'P0001'; end if;
+    insert into public.jugadores (huella) values (h) on conflict (huella) do update set visto = now() returning id into yo;
+  end if;
+  if exists (select 1 from public.recortes where jugador = yo and recibido > now() - interval '1 minute') then
+    raise exception 'pronto' using errcode = 'P0001';
+  end if;
+  insert into public.recortes (jugador, datos) values (yo, recorte);
+  delete from public.recortes where jugador = yo and (recibido < now() - interval '60 days'
+    or id not in (select id from public.recortes where jugador = yo order by recibido desc limit 300));
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- Los recortes de los últimos días, para medir el lector: el jugador va como
+-- un número, nunca con la huella; como mucho 50 (cada uno pesa).
+create or replace function public.recortes_recientes(horas int default 168) returns jsonb
+language plpgsql security definer stable set search_path = public, pg_temp as $$
+begin
+  return coalesce((
+    select jsonb_agg(jsonb_build_object('j', r.jugador, 'recibido', r.recibido, 'd', r.datos) order by r.recibido desc)
+    from (select * from public.recortes where recibido > now() - make_interval(hours => least(greatest(coalesce(horas, 168), 1), 1440)) order by recibido desc limit 50) r
+  ), '[]'::jsonb);
+end $$;
+
 revoke all on function public.huella_de(text) from public;
 revoke all on function public.subir_parte(text, jsonb) from public;
 revoke all on function public.partes_recientes(int) from public;
+revoke all on function public.subir_recorte(text, jsonb) from public;
+revoke all on function public.recortes_recientes(int) from public;
 revoke all on function public.subir_partidas(text, jsonb, jsonb, jsonb) from public;
 revoke all on function public.mis_partidas(text) from public;
 revoke all on function public.borrar_mis_partidas(text) from public;
@@ -264,6 +323,8 @@ begin
       execute format('grant execute on function public.partidas_comunidad(bigint, bigint, int) to %I', r);
       execute format('grant execute on function public.subir_parte(text, jsonb) to %I', r);
       execute format('grant execute on function public.partes_recientes(int) to %I', r);
+      execute format('grant execute on function public.subir_recorte(text, jsonb) to %I', r);
+      execute format('grant execute on function public.recortes_recientes(int) to %I', r);
     end if;
   end loop;
 end $$;

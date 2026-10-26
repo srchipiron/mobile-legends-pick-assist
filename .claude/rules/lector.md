@@ -1596,7 +1596,35 @@ los leen a los cinco, porque son las DOS ÚLTIMAS del draft y ahí el hueco del
   los 40 drafts viejos no mejora los 14 nuevos (57,5% → 57,5%); de los
   rivales, ningún héroe tiene el mismo recorte en dos drafts (las skins de
   la fase de skins), así que no hay caras de serie de rivales nuevas.
-- Para seguir midiendo hace falta que la tablet vuelva a mandar recortes
-  (hoy solo los mandaba el móvil, con el token de GitHub): está propuesto a
-  Javi, no hecho (una tabla nueva en la base de datos).
+- Para seguir midiendo, la tablet manda sus recortes sola desde 3.81.0
+  (abajo).
+
+## Los recortes, desde la tablet (3.81.0)
+
+Desde 3.70.0 los recortes del draft solo llegaban si el MÓVIL corregía (con
+el token de GitHub, como incidencia): con la tablet sola, ninguno desde el 24
+de octubre de 2026. Javi lo aprobó («haz todo lo que has propuesto»).
+- Cuándo: al apuntar la tablet sola una partida cuyo draft dejó a alguien
+  sin leer (`alSinLeer` de `crearSolo`, con la corrección de ese draft
+  aunque ya la hayas contestado: `sinLeer` se toma ANTES de apuntar).
+- Qué: `interno.recortesDe(ids)` (servir.mjs; ids con forma que existan,
+  las `CAPTURAS_A_MIRAR` últimas) corre `recortes-tarea.mjs` en un hilo, y
+  `mejoresRecortes` (recortes.mjs) elige las DOS capturas que más héroes
+  leen (sin la verdad no se puede usar `esPantallaDeDraft`). Son las diez
+  caras sin nombres de jugadores (`recorteDeDraft`, 3.52.0) y lo leído
+  hueco a hueco. `recorteParaSubir` (en-tablet) añade la partida (`partida`,
+  su `t`: se cruza con su draft bueno en `partidas`, también con lo que
+  contestes en «Enseña al lector» o arregles después), `desde`, `faltan` y
+  lo leído del draft; si no caben las dos (`TOPE_RECORTE_BYTES`), la
+  primera.
+- Dónde: `subir_recorte` (esquema.sql, tabla `recortes` cerrada como
+  `partes`; 120 KB, uno por minuto, 300 por lector y 60 días), con la clave
+  del LECTOR como los partes, nunca la tuya. Se leen con `recortes_recientes`
+  (50 como mucho, sin huella) o desde el conector de Supabase.
+- Pruebas en `recortes.test`, `solo.test`, `en-tablet.test` (de punta a punta
+  con el hilo de verdad y el Supabase de pega: la clave, que no se cuele un
+  id de fuera, sin secretos) y `pruebas/sql`; nueve mutaciones, tres
+  sobrevivieron al principio por pruebas flojas (la clave del jugador sin
+  poner, la captura de fuera igual que las buenas, y los recortes malos
+  frenados por «pronto» antes que por su forma).
 

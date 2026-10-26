@@ -8,6 +8,7 @@
  */
 export function supabaseFalso({ clavePublica = 'sb_publishable_prueba1234567890', ahora = () => Date.now() } = {}) {
   const partes = [];
+  const recortes = [];
   const jugadores = new Map(); // huella (aquí, la clave) → { id, referencia, partidas: Map(t → datos) }
   let siguiente = 1;
   const llamadas = [];
@@ -61,6 +62,16 @@ export function supabaseFalso({ clavePublica = 'sb_publishable_prueba1234567890'
       partes.push({ clave: args.clave, j: (jugadores.get(args.clave)?.id ?? 999), recibido: ahora(), d: args.parte });
       return { status: 200, cuerpo: { ok: true } };
     }
+    // Los recortes del draft (3.81.0), como `subir_recorte` del esquema.
+    if (funcion === 'subir_recorte') {
+      if (!claveValida(args.clave)) return error('clave');
+      const c = args.recorte?.capturas;
+      if (!args.recorte || typeof args.recorte !== 'object' || !Array.isArray(c) || c.length < 1 || c.length > 2 || JSON.stringify(args.recorte).length > 120000) return error('recorte');
+      const ya = recortes.filter((x) => x.clave === args.clave);
+      if (ya.length && ahora() - ya[ya.length - 1].recibido < 60000) return error('pronto');
+      recortes.push({ clave: args.clave, recibido: ahora(), d: args.recorte });
+      return { status: 200, cuerpo: { ok: true } };
+    }
     if (funcion === 'partes_recientes') {
       const desde = ahora() - Math.min(Math.max(args.horas ?? 48, 1), 168) * 3600000;
       return { status: 200, cuerpo: partes.filter((x) => x.recibido > desde).sort((a, b) => b.recibido - a.recibido).map(({ j, recibido, d }) => ({ j, recibido: new Date(recibido).toISOString(), d })) };
@@ -76,5 +87,5 @@ export function supabaseFalso({ clavePublica = 'sb_publishable_prueba1234567890'
     return new Response(JSON.stringify(r.cuerpo), { status: r.status, headers: { 'Content-Type': 'application/json' } });
   }
 
-  return { atender, fetch: fetchFalso, llamadas, jugadores, clavePublica, partes };
+  return { atender, fetch: fetchFalso, llamadas, jugadores, clavePublica, partes, recortes };
 }
