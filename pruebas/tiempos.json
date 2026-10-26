@@ -1,0 +1,16 @@
+{
+"pruebas/scripts/aprender.test.mjs": 48,
+"pruebas/scripts/directo-lector.test.mjs": 36,
+"pruebas/scripts/ingesta-simulada.test.mjs": 35,
+"pruebas/scripts/puente-lector.test.mjs": 24,
+"pruebas/scripts/captura-cruda.test.mjs": 21,
+"pruebas/scripts/lector.test.mjs": 20,
+"pruebas/scripts/recortes.test.mjs": 10,
+"pruebas/motor/robustez.test.mjs": 8,
+"pruebas/app/compilacion.test.mjs": 6,
+"pruebas/scripts/en-tablet.test.mjs": 5,
+"pruebas/motor/maestria.test.mjs": 5,
+"pruebas/scripts/solo.test.mjs": 4,
+"pruebas/scripts/workflows.test.mjs": 3,
+"pruebas/scripts/medir-fases.test.mjs": 3
+}

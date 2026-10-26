@@ -1458,3 +1458,13 @@ Trece mutaciones; tres sobrevivían hasta poner id de captura en la
 prueba, contar `lecturasSolo` en la revisión y mirar el cableado de
 `alCorregir` en en-tablet (prueba de forma).
 
+**Escribir PNG sin ir píxel a píxel (3.74.4)**: `escribirPng` copiaba cada
+píxel con `subarray` y, con paleta, buscaba su color en un Map por
+`join()` de cadena: era lo más caro de `directo-lector` (62 s) y de los
+recortes y miniaturas de la tablet. Hoy los bytes de cada fila van tal
+cual (RGBA) o como índice (clave numérica de 32 bits), y con filtro 0 la
+fila se copia entera. Byte a byte igual que antes en 1.200 casos al azar
+(RGBA y paleta, con y sin Adam7, los cinco filtros, más de 256 colores),
+6 veces más rápido con RGBA y 4 con paleta. Cuatro mutaciones; sobrevive
+una inofensiva (con filtro 0 el bucle general da lo mismo).
+

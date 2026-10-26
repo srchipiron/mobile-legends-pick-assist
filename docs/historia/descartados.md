@@ -583,4 +583,12 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
 - **Los datos del motor en la tablet, más a menudo que cada 6 h**: la ingesta
   corre dos veces al día; bajarlos más a menudo no trae nada nuevo. Lo que
   faltaba era SABER su edad (hecho en 3.73.1).
+- **`reconocer` con tablas por número de héroe en vez de Maps por nombre
+  (26 de octubre de 2026, buscando velocidad)**: el perfil de
+  `aprender.test` ponía 13,7 s en `comparar`, pero el cambio daba lo mismo
+  en 125 casos reales y tardaba igual (3.411 frente a 3.379 ms): el tiempo
+  es el producto escalar, que ya va de cuatro en cuatro. No entra.
+- **Paralelizar las nueve corridas de la ingesta en `ingesta-simulada`**
+  (35 s): son procesos hijos que ya corren con `--pausa 0`; meterlos a la
+  vez cambiaría una prueba que compara corridas encadenadas (`--previo`).
 

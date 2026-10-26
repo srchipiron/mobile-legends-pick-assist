@@ -8,6 +8,13 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.74.4
+
+- Lector MLBB hace más rápido los recortes y miniaturas que guarda: de 4 a
+  6 veces más rápido, con el mismo resultado byte a byte.
+- Las comprobaciones antes de publicar tardan un tercio menos (de casi 2
+  minutos a 1 minuto 10), así que cada versión llega antes.
+
 ## 3.74.3
 
 - Si en la tablet contestas «Enseña al lector» con la partida aún en

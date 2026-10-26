@@ -123,34 +123,52 @@ export function leerPng(buf) {
  * de cada fila (por defecto 0).
  */
 export function escribirPng({ ancho, alto, rgba }, filtros = () => 0, { paleta = false, entrelazado = false } = {}) {
-  let bpp = 4, pixel = (x, y) => rgba.subarray((y * ancho + x) * 4, (y * ancho + x) * 4 + 4);
+  // Los píxeles, ya en los bytes de su fila: RGBA tal cual, o el índice de su
+  // color (3.74.4: antes, un `join()` y un Map de cadenas POR PÍXEL; escribir
+  // una captura era lo más lento de las pruebas, y los recortes y las
+  // miniaturas de la tablet pasan por aquí).
+  let bpp = 4, bytes = rgba;
   const trozos = [];
   if (paleta) {
     const indice = new Map(), colores = [];
-    for (let k = 0; k < rgba.length; k += 4) {
-      const clave = rgba.subarray(k, k + 4).join();
-      if (!indice.has(clave)) { indice.set(clave, colores.length); colores.push(rgba.subarray(k, k + 4)); }
+    bytes = new Uint8Array(ancho * alto);
+    for (let k = 0, n = 0; k < rgba.length; k += 4, n++) {
+      const clave = ((rgba[k] << 24) | (rgba[k + 1] << 16) | (rgba[k + 2] << 8) | rgba[k + 3]) >>> 0;
+      let i = indice.get(clave);
+      if (i === undefined) {
+        i = colores.length;
+        if (i >= 256) throw new Error('más de 256 colores para una paleta');
+        indice.set(clave, i); colores.push(rgba.subarray(k, k + 4));
+      }
+      bytes[n] = i;
     }
-    if (colores.length > 256) throw new Error('más de 256 colores para una paleta');
     trozos.push(['PLTE', Buffer.from(colores.flatMap((c) => [c[0], c[1], c[2]]))], ['tRNS', Buffer.from(colores.map((c) => c[3]))]);
-    bpp = 1; const rgbaOriginal = rgba;
-    pixel = (x, y) => [indice.get(rgbaOriginal.subarray((y * ancho + x) * 4, (y * ancho + x) * 4 + 4).join())];
+    bpp = 1;
   }
   const filasDe = (x0, y0, dx, dy) => {
     const w = Math.ceil((ancho - x0) / dx), h = Math.ceil((alto - y0) / dy);
     if (w <= 0 || h <= 0) return [];
     const fila = w * bpp, out = [];
-    const crudaDe = (y) => { const r = new Uint8Array(fila); for (let x = 0; x < w; x++) r.set(pixel(x0 + x * dx, y0 + y * dy), x * bpp); return r; };
+    const crudaDe = (y) => {
+      const yy = y0 + y * dy, desde = (yy * ancho + x0) * bpp;
+      if (dx === 1) return bytes.subarray(desde, desde + fila);
+      const r = new Uint8Array(fila);
+      for (let x = 0; x < w; x++) for (let c = 0; c < bpp; c++) r[x * bpp + c] = bytes[desde + x * dx * bpp + c];
+      return r;
+    };
     let previa = null;
     for (let y = 0; y < h; y++) {
       const actual = crudaDe(y), f = filtros(y), linea = new Uint8Array(fila + 1);
       linea[0] = f;
-      for (let i = 0; i < fila; i++) {
-        const x = actual[i], a = i >= bpp ? actual[i - bpp] : 0, b = previa ? previa[i] : 0, c = previa && i >= bpp ? previa[i - bpp] : 0;
-        let p = 0;
-        if (f === 1) p = a; else if (f === 2) p = b; else if (f === 3) p = (a + b) >> 1;
-        else if (f === 4) { const pp = a + b - c, pa = Math.abs(pp - a), pb = Math.abs(pp - b), pc = Math.abs(pp - c); p = pa <= pb && pa <= pc ? a : pb <= pc ? b : c; }
-        linea[1 + i] = (x - p) & 255;
+      if (f === 0) linea.set(actual, 1);
+      else {
+        for (let i = 0; i < fila; i++) {
+          const x = actual[i], a = i >= bpp ? actual[i - bpp] : 0, b = previa ? previa[i] : 0, c = previa && i >= bpp ? previa[i - bpp] : 0;
+          let p = 0;
+          if (f === 1) p = a; else if (f === 2) p = b; else if (f === 3) p = (a + b) >> 1;
+          else if (f === 4) { const pp = a + b - c, pa = Math.abs(pp - a), pb = Math.abs(pp - b), pc = Math.abs(pp - c); p = pa <= pb && pa <= pc ? a : pb <= pc ? b : c; }
+          linea[1 + i] = (x - p) & 255;
+        }
       }
       out.push(linea); previa = actual;
     }

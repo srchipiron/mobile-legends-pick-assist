@@ -11,7 +11,8 @@
  *   PRUEBAS_TRAZA=1 node pruebas/correr.mjs  con traza completa de cada fallo
  */
 import { spawn } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -37,7 +38,22 @@ function listar(dir) {
 const ficheros = listar(AQUI).filter((f) => !patrones.length || patrones.some((p) => relative(RAIZ, f).includes(p)));
 if (!ficheros.length) { console.error('No hay ficheros de prueba que casen'); process.exit(2); }
 
-const PARALELO = E2E ? 1 : Math.max(1, Math.min(3, Number(process.env.PRUEBAS_PARALELO) || 3));
+// Tantos a la vez como núcleos, hasta cuatro (3.74.4: eran tres fijos; el runner de GitHub y el móvil tienen cuatro).
+const PARALELO = E2E ? 1 : Math.max(1, Math.min(4, Number(process.env.PRUEBAS_PARALELO) || availableParallelism()));
+
+/**
+ * Las más lentas primero (3.74.4): en orden alfabético, la de 60 s empezaba
+ * de las últimas y todo esperaba por ella. Lo que tardó cada una la última
+ * vez se guarda fuera del repositorio (node_modules/.cache); sin eso, el
+ * orden de siempre. Solo cambia el ORDEN: cada fichero sigue en su proceso.
+ */
+const TIEMPOS = resolve(RAIZ, 'node_modules/.cache/pruebas-tiempos.json');
+// Sin lo de la última vez (en GitHub cada corrida empieza de cero), los de
+// `pruebas/tiempos.json`: una foto de las lentas, solo para el orden.
+let tiempos = {};
+try { tiempos = JSON.parse(readFileSync(resolve(AQUI, 'tiempos.json'), 'utf8')); } catch { /* sin foto, el orden de siempre */ }
+try { tiempos = { ...tiempos, ...JSON.parse(readFileSync(TIEMPOS, 'utf8')) }; } catch { /* la primera vez */ }
+if (!E2E) ficheros.sort((a, b) => (tiempos[relative(RAIZ, b)] ?? 0) - (tiempos[relative(RAIZ, a)] ?? 0));
 if (E2E) comprobarDist();
 
 /**
@@ -79,7 +95,7 @@ function correr(fichero) {
       const segundos = ((Date.now() - inicio) / 1000).toFixed(1);
       console.log(`\n=== ${nombre} (${segundos} s)${codigo ? ' · FALLA' : ''}`);
       process.stdout.write(salida.endsWith('\n') ? salida : `${salida}\n`);
-      resolver({ nombre, codigo: codigo ?? 1, salida });
+      resolver({ nombre, codigo: codigo ?? 1, salida, segundos: Number(segundos) });
     });
   });
 }
@@ -93,6 +109,12 @@ async function trabajador() {
 
 await Promise.all(Array.from({ length: PARALELO }, trabajador));
 
+if (!E2E) {
+  try {
+    mkdirSync(dirname(TIEMPOS), { recursive: true });
+    writeFileSync(TIEMPOS, JSON.stringify({ ...tiempos, ...Object.fromEntries(resultados.map((r) => [r.nombre, r.segundos])) }));
+  } catch { /* sin disco, el orden de siempre la próxima vez */ }
+}
 const rotos = resultados.filter((r) => r.codigo !== 0);
 let pasadas = 0; let fallos = 0;
 for (const r of resultados) {
