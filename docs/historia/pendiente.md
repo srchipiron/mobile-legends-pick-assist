@@ -258,8 +258,8 @@
   Pidió que esas ideas salgan de aquí. Cada `/iterar` cierra con una
   propuesta de fondo, y cualquier sesión que vea a Javi repetir un paso a
   mano o tropezar dos veces con lo mismo la plantea sin que la pida.
-- **Los partes de la tablet (3.74.0)**: falta que Javi pegue
-  `supabase/esquema.sql` en el SQL Editor de Supabase (o ponga
-  `SUPABASE_ACCESS_TOKEN` como secreto del entorno para `montar-supabase`).
-  Hasta entonces `revisar-tablet.mjs` sale con 2 («¿falta pegar el
-  esquema?») y la tablet apunta en su registro que el parte no se subió.
+- **Los partes de la tablet (3.74.0)**: el esquema está aplicado en Supabase
+  (26 de octubre de 2026, por el conector, solo la parte nueva) y probado
+  como `anon` dentro de una transacción deshecha. Falta que la tablet tenga
+  tu clave: la base de datos tenía 0 jugadores y 0 partidas, así que
+  «Guardar mis partidas» no está puesto en el móvil.
