@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.79.0
+
+- «Tu semana», en el móvil (Partidas) y en «Mis partidas» de la tablet: cómo
+  te han ido los últimos 7 días frente a los 7 de antes, los héroes que te
+  han funcionado y los que te han costado esa semana (con 3 partidas o
+  más), y en cuántas cogiste el nº1 de la app y cómo te fue con él y sin
+  él. Solo dice «vas mejor» o «vas peor» cuando la diferencia ya no cabe
+  en el azar.
+
 ## 3.78.0
 
 - En el móvil ya puedes arreglar quién iba en cada equipo de una partida

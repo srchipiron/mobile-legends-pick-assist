@@ -7,6 +7,7 @@ import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Veredicto } from './Veredicto.jsx';
 import { Comunidad } from './Comunidad.jsx';
 import { TusNumeros } from './TusNumeros.jsx';
+import { TuSemana } from './TuSemana.jsx';
 import { RevisionDraft } from './RevisionDraft.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
 
@@ -113,6 +114,7 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null,
             Dentro del cuerpo que se desplaza: fijo arriba dejaba 208 px para
             la lista en un móvil de 640 de alto. */}
         <Veredicto partidas={partidas} maestria={maestria} t={t} />
+        <TuSemana partidas={partidas} t={t} />
         <TusNumeros partidas={partidas} t={t} />
         <RevisionDraft datos={datos} partidas={partidas} maestria={maestriaUsada ?? maestria} t={t} />
         <p className="nota">{t('hist.resumenLineas', { total: partidas.length, conApp, previas: partidas.length - conApp })}</p>

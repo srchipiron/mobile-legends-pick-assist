@@ -119,3 +119,51 @@ export function tusNumeros(partidas = [], { ahora = Date.now(), hora = horaLocal
     .sort((a, b) => b.n - a.n || b.wr - a.wr);
   return salida;
 }
+
+// «Tu semana» (3.79.0): decisión de producto, los últimos 7 días contra los 7 de antes.
+export const SEMANA_MS = 7 * 24 * 60 * 60 * 1000;
+// Decisión de producto: un héroe entra en tu semana desde 3 partidas en ella.
+export const MINIMO_SEMANA_HEROE = 3;
+// Decisión de producto: dos que te funcionan y dos que te cuestan, no una lista.
+export const HEROES_DE_LA_SEMANA = 2;
+
+/**
+ * Tu semana: cuántas, cómo te fue frente a la semana anterior (con el margen
+ * al lado, «mejor» solo si se sale de él), los héroes que te funcionaron y
+ * los que te costaron, y si cogiste el nº1 de la app y cómo te fue con y sin
+ * él. Lo de los héroes es lo que PASÓ esta semana (con 3–6 partidas no dice
+ * qué héroe es mejor para ti: eso es «Tus números»). Las de «pick supuesto»
+ * (el lector no vio tu fila y puso el nº1) no cuentan para el nº1.
+ */
+export function tuSemana(partidas = [], { ahora = Date.now() } = {}) {
+  const validas = (partidas ?? []).filter((p) => p && !esPrevia(p) && Number.isFinite(p.t) && typeof p.gane === 'boolean' && p.t <= ahora);
+  const semana = validas.filter((p) => ahora - p.t < SEMANA_MS);
+  const anterior = validas.filter((p) => ahora - p.t >= SEMANA_MS && ahora - p.t < 2 * SEMANA_MS);
+  const n = semana.length;
+  const salida = { n, ganadas: ganadasDe(semana), wr: n ? ganadasDe(semana) / n : null, anterior: null, funcionan: [], cuestan: [], numeroUno: null };
+  if (!n) return salida;
+  if (anterior.length) {
+    const b = ganadasDe(anterior) / anterior.length;
+    salida.anterior = { n: anterior.length, wr: b, ...compararProporciones(salida.wr, n, b, anterior.length) };
+  }
+
+  const porHeroe = new Map();
+  for (const p of semana) {
+    const clave = nombreClave(p.pick);
+    if (!clave) continue;
+    if (!porHeroe.has(clave)) porHeroe.set(clave, { heroe: p.pick, n: 0, ganadas: 0 });
+    const h = porHeroe.get(clave); h.n++; if (p.gane) h.ganadas++;
+  }
+  const heroes = [...porHeroe.values()].filter((h) => h.n >= MINIMO_SEMANA_HEROE).map((h) => ({ ...h, saldo: 2 * h.ganadas - h.n }));
+  salida.funcionan = heroes.filter((h) => h.saldo > 0).sort((a, b) => b.saldo - a.saldo || b.n - a.n).slice(0, HEROES_DE_LA_SEMANA).map(({ saldo, ...h }) => h);
+  salida.cuestan = heroes.filter((h) => h.saldo < 0).sort((a, b) => a.saldo - b.saldo || b.n - a.n).slice(0, HEROES_DE_LA_SEMANA).map(({ saldo, ...h }) => h);
+
+  const conUno = semana.filter((p) => !p.supuesto && nombreClave(p.recomendados?.[0]) && nombreClave(p.pick));
+  if (conUno.length) {
+    const si = conUno.filter((p) => nombreClave(p.recomendados[0]) === nombreClave(p.pick));
+    const no = conUno.filter((p) => !si.includes(p));
+    const wr = (l) => (l.length ? ganadasDe(l) / l.length : null);
+    salida.numeroUno = { n: conUno.length, cogido: si.length, wrCogido: wr(si), wrOtro: wr(no) };
+  }
+  return salida;
+}

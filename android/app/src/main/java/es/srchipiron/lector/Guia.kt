@@ -52,6 +52,7 @@ class Guia : Activity() {
             "Mis partidas" to listOf(
                 "Botón «Mis partidas»: el registro de todas tus partidas tal como están en la base de datos, con fecha, pick, resultado y quién iba en cada equipo.",
                 "Toca una para arreglarla si el lector se equivocó (resultado, tu pick, un enemigo que faltaba…). Se sube corregida y las estadísticas, tu maestría y la medida del modelo usan la buena. Si cambias el resultado de una partida de hace poco, además aprende la pantalla del final.",
+                "Arriba, «Tu semana»: cómo te fueron los últimos 7 días frente a la semana anterior, los héroes que te funcionaron y los que te costaron (con 3 partidas o más), y en cuántas cogiste el nº1.",
                 "Las marcadas «pick supuesto» son partidas en las que no vio tu fila: puso el nº1. Si jugaste otro, cámbialo.",
             ),
             "La base de datos" to listOf(

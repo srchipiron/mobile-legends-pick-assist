@@ -83,10 +83,50 @@ class Partidas : Activity() {
                 val ganadas = (0 until ps.length()).count { ps.getJSONObject(it).optBoolean("gane") }
                 cabecera.text = (if (r.optString("de") == "base") "Lo que hay en la base de datos" else "Sin conexión con la base de datos: lo guardado en esta tablet") +
                     " · ${ps.length()} partidas, $ganadas ganadas${if (ps.length() > 0) " (${ganadas * 100 / ps.length()}%)" else ""}.\nToca una para arreglarla si el lector se equivocó: así mejora."
+                r.optJSONObject("semana")?.let { lista.addView(tuSemana(it), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(12) }) }
                 r.optJSONObject("numeros")?.let { lista.addView(tusNumeros(it), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(12) }) }
                 for (i in 0 until ps.length()) lista.addView(tarjeta(ps.getJSONObject(i)), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(8) })
             }
         }
+    }
+
+    /**
+     * «Tu semana» (3.79.0), el mismo cálculo que en Pick Assist del móvil:
+     * los últimos 7 días frente a los 7 de antes («mejor» o «peor» solo si
+     * no cabe en el azar), los héroes que te funcionaron y los que te
+     * costaron, y si cogiste el nº1.
+     */
+    private fun tuSemana(s: JSONObject): LinearLayout {
+        val caja = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = GradientDrawable().apply { setColor(Color.rgb(28, 28, 30)); cornerRadius = dp(14).toFloat(); setStroke(dp(1), Color.rgb(255, 214, 10)) }
+        }
+        fun linea(t: String, color: Int = Color.WHITE, tam: Float = 15f) = TextView(this).apply { text = t; textSize = tam; setTextColor(color); setPadding(0, dp(3), 0, dp(3)) }
+        val pct = { x: Double -> Math.round(x * 100) }
+        caja.addView(linea("Tu semana", Color.rgb(255, 214, 10), 18f).apply { typeface = Typeface.DEFAULT_BOLD })
+        val n = s.optInt("n"); val g = s.optInt("ganadas")
+        caja.addView(linea("Últimos 7 días: $n partidas, $g–${n - g} (${pct(s.optDouble("wr"))}%)"))
+        val a = s.optJSONObject("anterior")
+        if (a == null) caja.addView(linea("La semana anterior no hay partidas: no hay con qué comparar.", Color.LTGRAY, 14f))
+        else {
+            caja.addView(linea("La semana anterior: ${pct(a.optDouble("wr"))}% en ${a.optInt("n")}."))
+            val seVe = a.optBoolean("seVe"); val mejor = a.optDouble("dif") > 0
+            caja.addView(linea(
+                if (!seVe) "Cabe en el margen: vas parecido a la semana anterior." else if (mejor) "Ya no cabe en el azar: esta semana vas mejor." else "Ya no cabe en el azar: esta semana vas peor.",
+                if (seVe) (if (mejor) Color.rgb(48, 209, 88) else Color.rgb(255, 159, 10)) else Color.LTGRAY, 14f,
+            ))
+        }
+        fun heroes(arr: JSONArray?) = arr?.let { List(it.length()) { i -> it.getJSONObject(i) } }?.joinToString(", ") { h -> "${h.optString("heroe")} ${h.optInt("ganadas")}–${h.optInt("n") - h.optInt("ganadas")}" } ?: ""
+        val bien = heroes(s.optJSONArray("funcionan")); val mal = heroes(s.optJSONArray("cuestan"))
+        if (bien.isNotEmpty()) caja.addView(linea("Te funcionan: $bien", Color.rgb(48, 209, 88), 14f))
+        if (mal.isNotEmpty()) caja.addView(linea("Te cuestan: $mal", Color.rgb(255, 69, 58), 14f))
+        s.optJSONObject("numeroUno")?.let { u ->
+            val c = u.optInt("cogido"); val total = u.optInt("n")
+            caja.addView(linea("Cogiste el nº1 en $c de $total."))
+            if (c > 0 && c < total) caja.addView(linea("Con el nº1 ganaste el ${pct(u.optDouble("wrCogido"))}%; con otro, el ${pct(u.optDouble("wrOtro"))}%.", Color.LTGRAY, 14f))
+        }
+        return caja
     }
 
     /**

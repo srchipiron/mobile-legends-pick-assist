@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion } from '../../scripts/lector/en-tablet.mjs';
+import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { claveDeJugadorValida } from '../../src/app/basedatos.js';
 import { pruebaDelReto } from '../../src/app/lector.js';
@@ -632,6 +632,7 @@ test('«Mis partidas» de la APK (3.75.0): lo que dice la base de datos con lo q
     eq(JSON.stringify(lista.partidas.map((p) => [p.t, p.pick, !!p.sinSubir])), JSON.stringify([[1788000060000, 'Rafaela', true], [1788000000000, 'Estes', false]]), 'no junta la base de datos con lo que falta por subir');
     ok(lista.heroes.includes('Rafaela') && lista.heroes.length > 100, 'no manda la lista de héroes para elegir');
     ok(lista.numeros?.n === 2 && lista.numeros.racha?.gane === false && lista.numeros.racha.n === 1, `no manda tus números (3.77.0): ${JSON.stringify(lista.numeros)}`);
+    ok('semana' in lista, 'no manda tu semana (3.79.0)');
     // Ya subida, arreglarla la vuelve a subir y la lista la enseña arreglada antes de subirse.
     await servidor.subirPartidas();
     eq(servidor.partidas.pendientes().length, 0);
@@ -702,4 +703,16 @@ test('móvil y tablet con UNA clave (3.76.0): la app vinculada pide la clave con
   } finally { servidor.close(); apk.cerrar(); }
 });
 
-await terminar('scripts/en-tablet');
+await test('tu semana para la APK (3.79.0): lo mismo que en el móvil, en el JSON que lee Partidas.kt', () => {
+  const ahora = 1790000000000, h = 3600000;
+  const ps = [
+    ...[true, true, false].map((gane, i) => ({ t: ahora - (i + 1) * h, pick: 'Diggie', gane, recomendados: ['Diggie'] })),
+    { t: ahora - 8 * 24 * h, pick: 'Atlas', gane: false },
+  ];
+  const s = semanaParaLaApk(ps, ahora);
+  eq(JSON.stringify(s), JSON.stringify({ n: 3, ganadas: 2, wr: 2 / 3, anterior: { n: 1, wr: 0, dif: 2 / 3, seVe: s.anterior.seVe }, funcionan: [{ heroe: 'Diggie', n: 3, ganadas: 2 }], cuestan: [], numeroUno: { n: 3, cogido: 3, wrCogido: 2 / 3, wrOtro: null } }));
+  eq(typeof s.anterior.seVe, 'boolean');
+  eq(semanaParaLaApk([{ t: ahora - 8 * 24 * h, pick: 'Atlas', gane: false }], ahora), null);
+});
+
+terminar('scripts/en-tablet');

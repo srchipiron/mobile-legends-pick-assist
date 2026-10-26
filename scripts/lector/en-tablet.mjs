@@ -27,7 +27,7 @@ import { leerCrudo, escribirPngRapido } from './png.mjs';
 import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo } from './solo.mjs';
 import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte, traerMisPartidas } from '../../src/app/basedatos.js';
 import { maestriaEfectiva } from '../../src/motor/maestria.js';
-import { tusNumeros } from '../../src/motor/habitos.js';
+import { tusNumeros, tuSemana } from '../../src/motor/habitos.js';
 
 /** Solo 127.0.0.1: la APK es la única que da la captura. */
 export const esInterno = (u) => typeof u === 'string' && /^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(u);
@@ -359,6 +359,20 @@ export function lineasLimpias(texto, { secretos = [], max = LINEAS_DEL_PARTE, so
  * `TOPE_PARTE_BYTES`: si no, quita primero líneas del registro y luego
  * acorta el fallo, y lo dice en `recortado`. Lo sube `subirParte`.
  */
+/**
+ * «Tu semana» (3.79.0) para «Mis partidas», el mismo cálculo que en el móvil
+ * (`tuSemana`), ya en el JSON que lee Partidas.kt; null sin partidas esta semana.
+ */
+export function semanaParaLaApk(partidas, ahora = Date.now()) {
+  const s = tuSemana(partidas, { ahora });
+  if (!s.n) return null;
+  return {
+    n: s.n, ganadas: s.ganadas, wr: s.wr,
+    anterior: s.anterior ? { n: s.anterior.n, wr: s.anterior.wr, dif: s.anterior.dif, seVe: !!s.anterior.seVe } : null,
+    funcionan: s.funcionan, cuestan: s.cuestan, numeroUno: s.numeroUno,
+  };
+}
+
 export function parteDeSalud({ estado, log = '', falloNodo = null, secretos = [], ahora = Date.now() }) {
   const parte = {
     v: 1, cuando: ahora,
@@ -547,7 +561,7 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
       trasPerder: n.trasPerder ? { wr: n.trasPerder.wr, n: n.trasPerder.n, wrResto: n.trasPerder.wrResto, nResto: n.trasPerder.nResto, seVe: !!n.trasPerder.seVe, dif: n.trasPerder.dif } : null,
       heroes: n.heroes.filter((h) => h.lado).slice(0, 6).map((h) => ({ heroe: h.heroe, wr: h.wr, n: h.n, lado: h.lado })),
     } : null;
-    return { de: r.error ? 'tablet' : 'base', error: r.error ?? null, numeros, partidas: lista, heroes: (leerDatos().catalogo?.heroes ?? []).map((h) => h.name).filter(Boolean).sort() };
+    return { de: r.error ? 'tablet' : 'base', error: r.error ?? null, numeros, semana: semanaParaLaApk([...todas.values()]), partidas: lista, heroes: (leerDatos().catalogo?.heroes ?? []).map((h) => h.name).filter(Boolean).sort() };
   };
   const editarPartida = (cuerpo) => {
     const nombres = (leerDatos().catalogo?.heroes ?? []).map((h) => h.name).filter(Boolean);

@@ -272,4 +272,15 @@ Javi: «que el móvil sea como un centro de comandos estadísticos del apk».
   con la lista de héroes). Pruebas en `motor/registro` y
   `persistencia.e2e`; cuatro mutaciones cazadas, la del tope sobrevive
   porque `sanearDraft` también corta en cinco (inofensiva).
+- **Tu semana (3.79.0)**, pedido por Javi: `tuSemana` (habitos.js, puro,
+  `ahora` inyectado) da los últimos `SEMANA_MS` contra los anteriores con
+  `compararProporciones` (la misma regla del Veredicto: afirmar solo fuera
+  del margen), `funcionan`/`cuestan` por saldo con `MINIMO_SEMANA_HEROE` (3)
+  y por clave de nombre, y `numeroUno` (`recomendados[0]` por clave; las de
+  `supuesto`, que solo la tablet sabe, no cuentan: el pick ES el nº1). Todo
+  decisión de producto, no calibrado. Lo de los héroes es lo que PASÓ, no
+  una medida de qué héroe te va: eso es «Tus números». En el móvil,
+  `TuSemana` antes de «Tus números»; en la tablet, `semanaParaLaApk`
+  (en-tablet) en `/partidas` y `tuSemana` en Partidas.kt. Pruebas en
+  `motor/habitos`, `en-tablet` y `persistencia.e2e`; ocho mutaciones.
 

@@ -199,6 +199,32 @@ await prueba('«Tus números» enseña la racha, la sesión y cada héroe con su
   } finally { await contexto.close(); }
 });
 
+await prueba('«Tu semana» dice los 7 días contra los anteriores, los héroes que funcionan y cuestan y el nº1, sin claves crudas ni desborde a 320 px (3.79.0)', async () => {
+  const ahora = Date.now(), h = 3600000;
+  const v = (i, pick, gane, extra = {}) => ({ t: ahora - (i + 1) * h, pick, gane, recomendados: ['Rafaela', 'Diggie', 'Estes'], rango: 'glory', ...extra });
+  const partidas = [
+    v(0, 'Rafaela', true), v(1, 'Rafaela', true), v(2, 'Rafaela', false),
+    v(3, 'Diggie', false), v(4, 'Diggie', false), v(5, 'Diggie', true),
+    v(9 * 24, 'Estes', false),
+  ].sort((a, b) => a.t - b.t);
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: 320, height: 640 }, almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:partidas': partidas } });
+  try {
+    await abrirHoja(pagina, 1);
+    const caja = pagina.locator('section[aria-label="Tu semana"]');
+    eq(await caja.count(), 1, 'no sale «Tu semana»');
+    const texto = await caja.innerText();
+    ok(/Últimos 7 días: 6 partidas, 3–3 \(50%\)/.test(texto), `la semana no cuenta bien: ${texto}`);
+    ok(/La semana anterior, 0% en 1/.test(texto), `no compara con la anterior: ${texto}`);
+    ok(/Cabe en el margen/.test(texto), `con 6 y 1 partidas afirma una diferencia: ${texto}`);
+    ok(await caja.locator('.numeros-heroe.mejor', { hasText: 'Te funcionan: Rafaela 2–1' }).count() === 1, `Rafaela no le funciona: ${texto}`);
+    ok(await caja.locator('.numeros-heroe.peor', { hasText: 'Te cuestan: Diggie 1–2' }).count() === 1, `Diggie no le cuesta: ${texto}`);
+    ok(/Cogiste el nº1 de la app en 3 de 6/.test(texto) && /Con el nº1 ganaste el 67% \(3\); con otro, el 33% \(3\)/.test(texto), `el nº1 no sale: ${texto}`);
+    ok(!/semana\.\w|\{/.test(texto), `claves o llaves crudas: ${texto}`);
+    ok(await anchoDePagina(pagina) <= 320, 'la página se sale a 320 px');
+    ok(!errores.length, `errores de página: ${errores}`);
+  } finally { await contexto.close(); }
+});
+
 await prueba('la revisión del draft dice la última partida y, con el botón, todas, sin claves crudas ni desborde a 320 px (3.49.0)', async () => {
   const draft = { linea: 'roam', enemigos: ['Layla', 'Fanny', 'Chou', 'Kagura', 'Granger'], aliados: ['Lukas', 'Pharsa'] };
   const partidas = Array.from({ length: 3 }, (_, i) => ({ t: 1000 + i, pick: i === 2 ? 'Faramis' : 'Rafaela', gane: i !== 1, recomendados: [], rango: 'glory', draft }));

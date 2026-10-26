@@ -5,7 +5,7 @@
  * y los grupos pequeños no se enseñan.
  */
 import { test, ok, eq, casi, terminar } from '../arnes.mjs';
-import { tusNumeros, wilson, HUECO_DE_SESION_MS, MINIMO_POR_GRUPO } from '../../src/motor/habitos.js';
+import { tusNumeros, tuSemana, wilson, HUECO_DE_SESION_MS, MINIMO_POR_GRUPO } from '../../src/motor/habitos.js';
 import { compararProporciones, resumen } from '../../src/motor/registro.js';
 
 const igual = (a, b) => eq(JSON.stringify(a), JSON.stringify(b));
@@ -121,4 +121,54 @@ test('sin partidas no hay nada que enseñar', () => {
   eq(r.n, 0); eq(r.racha, null);
 });
 
-await terminar('motor/habitos');
+await test('tu semana (3.79.0): los 7 días de antes de ahora contra los 7 anteriores; lo de más atrás, lo futuro y las previas no cuentan', () => {
+  const ahora = BASE + 20 * 24 * HORA;
+  const dia = (d) => ahora - d * 24 * HORA;
+  const ps = [
+    ...[1, 2, 3, 4].map((d) => ({ t: dia(d), pick: 'Diggie', gane: true })),
+    { t: dia(6.9), pick: 'Diggie', gane: false },
+    { t: dia(7.1), pick: 'Diggie', gane: false }, { t: dia(13.9), pick: 'Diggie', gane: false },
+    { t: dia(14.1), pick: 'Diggie', gane: true }, { t: dia(-1), pick: 'Diggie', gane: true },
+    { t: dia(2), pick: 'Diggie', gane: true, previa: true },
+  ];
+  const s = tuSemana(ps, { ahora });
+  eq(s.n, 5); eq(s.ganadas, 4);
+  eq(s.anterior.n, 2); eq(s.anterior.wr, 0);
+  ok(typeof s.anterior.margen === 'number' && typeof s.anterior.seVe === 'boolean', 'la comparación con la semana pasada no lleva su margen');
+  eq(tuSemana([], { ahora }).n, 0);
+  eq(tuSemana([{ t: dia(1), pick: 'Diggie', gane: true }], { ahora }).anterior, null);
+});
+
+test('tu semana: te funcionan y te cuestan con 3 partidas o más, por saldo, por clave de nombre', () => {
+  const ahora = BASE + 20 * 24 * HORA;
+  const v = (pick, gane, i) => ({ t: ahora - (i + 1) * HORA, pick, gane });
+  const ps = [
+    ...[true, true, true, false].map((g, i) => v(i % 2 ? 'X.Borg' : 'X Borg', g, i)),
+    ...[true, true, false].map((g, i) => v('Diggie', g, 10 + i)),
+    ...[false, false, false].map((g, i) => v('Layla', g, 20 + i)),
+    ...[false, false, true].map((g, i) => v('Miya', g, 30 + i)),
+    ...[true, true].map((g, i) => v('Fanny', g, 40 + i)),
+    ...[true, false].map((g, i) => v('Atlas', g, 50 + i)),
+  ];
+  const s = tuSemana(ps, { ahora });
+  eq(s.funcionan.map((h) => `${h.heroe}:${h.ganadas}/${h.n}`).join(','), 'X Borg:3/4,Diggie:2/3');
+  eq(s.cuestan.map((h) => `${h.heroe}:${h.ganadas}/${h.n}`).join(','), 'Layla:0/3,Miya:1/3');
+  ok(![...s.funcionan, ...s.cuestan].some((h) => h.heroe === 'Fanny'), 'un héroe con dos partidas entra en la semana');
+});
+
+test('tu semana: el nº1 cogido por clave y su winrate frente al de las otras; sin recomendados o con pick supuesto, no cuenta', () => {
+  const ahora = BASE + 20 * 24 * HORA;
+  const v = (pick, gane, i, extra = {}) => ({ t: ahora - (i + 1) * HORA, pick, gane, recomendados: ['X.Borg', 'Diggie', 'Atlas'], ...extra });
+  const ps = [
+    v('X Borg', true, 0), v('X.Borg', true, 1), v('X.Borg', false, 2),
+    v('Diggie', false, 3), v('Atlas', true, 4),
+    v('X.Borg', true, 5, { supuesto: true }),
+    { t: ahora - 7 * HORA, pick: 'Layla', gane: false },
+  ];
+  const u = tuSemana(ps, { ahora }).numeroUno;
+  eq(`${u.cogido}/${u.n}`, '3/5');
+  casi(u.wrCogido, 2 / 3); casi(u.wrOtro, 0.5);
+  eq(tuSemana([{ t: ahora - HORA, pick: 'Layla', gane: true }], { ahora }).numeroUno, null);
+});
+
+terminar('motor/habitos');
