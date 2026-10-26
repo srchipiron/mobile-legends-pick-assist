@@ -1,6 +1,201 @@
 {
- "actualizado": "2026-10-24T16:40:42.897Z",
+ "actualizado": "2026-10-26T17:32:53.712Z",
  "partidas": [
+  {
+   "t": 1793018570100,
+   "gane": false,
+   "pick": "Diggie",
+   "draft": {
+    "enemigos": [
+     "Diggie",
+     "Selena",
+     "Layla",
+     "Nolan",
+     "Arlott"
+    ],
+    "aliados": [
+     "Kagura",
+     "Saber",
+     "X.Borg",
+     "Hanabi"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "estimacion": 0.561,
+   "recomendados": [
+    "Diggie",
+    "Rafaela",
+    "Gloo"
+   ]
+  },
+  {
+   "t": 1793008206861,
+   "bans": [
+    "Hirara",
+    "Masha",
+    "Lukas",
+    "Eudora",
+    "Wanwan",
+    "Obsidia",
+    "Aulus",
+    "Rafaela",
+    "X.Borg",
+    "Marcel"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Yu Zhong",
+     "Estes",
+     "Nana",
+     "Hanabi",
+     "Fredrinn"
+    ],
+    "aliados": [
+     "Jawhead",
+     "Luo Yi",
+     "Lesley",
+     "Alucard"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "editada": 1793016917076,
+   "duracion": 12.8,
+   "recomendados": [
+    "Floryn",
+    "Atlas",
+    "Edith"
+   ]
+  },
+  {
+   "t": 1793007175225,
+   "bans": [
+    "Lukas",
+    "Hirara",
+    "Kaja",
+    "Kadita",
+    "Wanwan",
+    "Marcel",
+    "Aulus",
+    "Belerick",
+    "Khufra",
+    "Estes"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Masha",
+     "Zetian",
+     "Angela",
+     "Hanabi",
+     "Fanny"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Jawhead",
+     "Fredrinn",
+     "Gord"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 19.7,
+   "estimacion": 0.578,
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Diggie"
+   ]
+  },
+  {
+   "t": 1793004713147,
+   "bans": [
+    "Hirara",
+    "Khufra",
+    "Masha",
+    "Aulus",
+    "Kagura",
+    "Kaja",
+    "Lukas",
+    "Belerick"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Obsidia",
+     "Selena",
+     "Freya",
+     "Marcel"
+    ],
+    "aliados": [
+     "Fredrinn",
+     "Clint",
+     "Sora",
+     "Odette"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 12.8,
+   "estimacion": 0.584,
+   "recomendados": [
+    "Rafaela",
+    "Floryn",
+    "Estes"
+   ]
+  },
+  {
+   "t": 1792948337992,
+   "bans": [
+    "Atlas",
+    "Masha",
+    "Khufra",
+    "Aulus",
+    "Hirara",
+    "Paquito",
+    "Marcel",
+    "Lukas",
+    "Eudora"
+   ],
+   "gane": false,
+   "pick": "Minotaur",
+   "draft": {
+    "enemigos": [
+     "Zetian",
+     "Hanabi",
+     "Tigreal"
+    ],
+    "aliados": [
+     "Atlas",
+     "Obsidia",
+     "Julian",
+     "Kadita"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 11.8,
+   "estimacion": 0.569,
+   "recomendados": [
+    "Minotaur",
+    "Natalia",
+    "Minsitthar"
+   ]
+  },
   {
    "t": 1792860027040,
    "pick": "Floryn",
@@ -23655,6 +23850,12 @@
   },
   {
    "cuando": "2026-10-24T16:40:42.897Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-26T17:32:53.712Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
