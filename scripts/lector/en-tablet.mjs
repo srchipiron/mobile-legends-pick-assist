@@ -281,7 +281,8 @@ export function parteDeSalud({ estado, log = '', falloNodo = null, secretos = []
     log: lineasLimpias(log, { secretos }),
   };
   const mide = () => Buffer.byteLength(JSON.stringify(parte));
-  while (mide() > TOPE_PARTE_BYTES && parte.log.length) { parte.log.shift(); parte.recortado = true; }
+  // Quitar líneas viejas del registro es lo normal (van largas); `recortado` solo si se pierde el fallo o errores (3.74.5).
+  while (mide() > TOPE_PARTE_BYTES && parte.log.length) parte.log.shift();
   if (mide() > TOPE_PARTE_BYTES && parte.falloNodo) { parte.falloNodo = parte.falloNodo.slice(0, 2000); parte.recortado = true; }
   while (mide() > TOPE_PARTE_BYTES && parte.errores.length) { parte.errores.shift(); parte.recortado = true; }
   return parte;

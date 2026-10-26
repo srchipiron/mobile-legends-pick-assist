@@ -502,14 +502,16 @@ test('el parte cabe siempre en lo que acepta el servidor, también con un fallo 
   const falloNodo = Array.from({ length: 40 }, (_, i) => `    at algo${i} (${'x'.repeat(280)})`).join('\n');
   const p = parteDeSalud({ estado: { tablet: { apk: '3.74.2' }, lector: { lecturas: 1 } }, log, falloNodo, ahora: 1 });
   ok(Buffer.byteLength(JSON.stringify(p)) <= TOPE_PARTE_BYTES, `el parte mide ${Buffer.byteLength(JSON.stringify(p))}`);
-  ok(p.recortado && p.falloNodo && p.log.length > 0, 'recorta sin decirlo, o se queda sin fallo o sin registro');
+  ok(p.falloNodo && p.log.length > 0, 'se queda sin fallo o sin registro');
+  const soloLog = parteDeSalud({ estado: {}, log, ahora: 1 });
+  ok(Buffer.byteLength(JSON.stringify(soloLog)) <= TOPE_PARTE_BYTES && !soloLog.recortado, 'dice recortado por quitar líneas viejas del registro (lo normal)');
   ok(p.errores.some((l) => /TypeError/.test(l)), 'el error de la línea 50 de 200 no va en el parte');
   eq((await subirParte({ config, clave: 'Q'.repeat(43), parte: p }, { fetch: s.fetch })).error, undefined, 'el servidor lo rechaza');
   ok(!parteDeSalud({ estado: {}, log: 'hola' }).recortado, 'dice recortado sin recortar');
   // Diez errores largos y el fallo entero no caben juntos: se acorta el fallo, no se pierden los errores.
   const errores = Array.from({ length: 12 }, (_, i) => `No se pudo leer ${i}: ${'y'.repeat(290)}`).join('\n');
   const q = parteDeSalud({ estado: { tablet: { burbujaEstado: 'z'.repeat(1500) } }, log: errores, falloNodo, ahora: 1 });
-  ok(Buffer.byteLength(JSON.stringify(q)) <= TOPE_PARTE_BYTES && q.errores.length === 10 && q.falloNodo.length <= 2000, `con errores largos: ${Buffer.byteLength(JSON.stringify(q))} bytes, ${q.errores.length} errores`);
+  ok(Buffer.byteLength(JSON.stringify(q)) <= TOPE_PARTE_BYTES && q.errores.length === 10 && q.falloNodo.length <= 2000 && q.recortado, `con errores largos: ${Buffer.byteLength(JSON.stringify(q))} bytes, ${q.errores.length} errores`);
 });
 
 test('la tablet sube su parte con SU clave, aunque el móvil no haya mandado la tuya, y sin secretos (3.74.1)', async () => {

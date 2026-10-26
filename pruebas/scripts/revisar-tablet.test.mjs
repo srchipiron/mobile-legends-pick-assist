@@ -6,7 +6,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { revisarParte, revisarPartes, informe, PARTE_CALLADO_MIN, DATOS_VIEJOS_H, CIERRE_POR_FALLO, SALUD_CALLADA_MIN } from '../../scripts/revisar-tablet.mjs';
+import { revisarParte, revisarPartes, informe, PARTE_CALLADO_MIN, DATOS_VIEJOS_H, CIERRE_POR_FALLO, SALUD_CALLADA_MIN, FALLO_ANTERIOR_H } from '../../scripts/revisar-tablet.mjs';
 import { subirParte, bajarPartes } from '../../src/app/basedatos.js';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { parteDeSalud } from '../../scripts/lector/en-tablet.mjs';
@@ -106,6 +106,24 @@ test('los puntos ciegos de la revisión (3.74.2): un error viejo del registro, l
   const captura = revisarParte({ j: 1, recibido: hace(1), d: sano({ lector: { lecturas: 50, fallosCaptura: 30, ultimoFallo: { cuando: 1, que: 'la APK no contesta' } } }) }, { ahora: AHORA });
   ok(captura.avisos.some((a) => /la APK no contesta/.test(a) && !/object/.test(a)), JSON.stringify(captura.avisos));
   ok(revisarParte({ j: 1, recibido: hace(1), d: sano({ lector: { lecturas: 0, lecturasSolo: 50, fallosCaptura: 30 } }) }, { ahora: AHORA }).avisos.some((a) => /30 de 50/.test(a)), 'no cuenta las capturas fallidas del modo solo');
+});
+
+test('lo que es ruido no es FALLO (3.74.5, con el primer parte de verdad): el fallo de Node de un arranque anterior y la tablet sin grabar', () => {
+  const conFallo = (cuandoFallo, minutos = 45) => revisarParte({ j: 1, recibido: hace(1), d: { ...sano({ lector: { lecturas: 100, fallosCaptura: 0, minutos } }), cuando: AHORA, falloNodo: `${new Date(cuandoFallo).toISOString()} al arrancar: SyntaxError: Invalid regular expression` } }, { ahora: AHORA });
+  // El de este arranque: FALLO.
+  eq(conFallo(AHORA - 10 * 60000).fallos.length, 1, 'un error de este arranque no es FALLO');
+  // Del arranque anterior, hace unas horas: aviso, no FALLO.
+  const anterior = conFallo(AHORA - 3 * 3600000);
+  ok(anterior.fallos.length === 0 && anterior.avisos.some((a) => /arranque anterior/.test(a)), JSON.stringify(anterior));
+  // De hace días: nada.
+  const viejo = conFallo(AHORA - (FALLO_ANTERIOR_H + 24) * 3600000);
+  ok(viejo.fallos.length === 0 && viejo.avisos.length === 0, JSON.stringify(viejo));
+  // Sin fecha legible, por si acaso: FALLO.
+  eq(revisarParte({ j: 1, recibido: hace(1), d: { ...sano(), cuando: AHORA, falloNodo: 'algo raro' } }, { ahora: AHORA }).fallos.length, 1);
+  // La tablet sin grabar: el modo solo lo intenta y lo registra, pero es el uso.
+  const sinGrabar = revisarParte({ j: 1, recibido: hace(1), d: { ...sano(), errores: ['No se pudo hacer la captura: La tablet no está grabando la pantalla: abre la app del lector y toca «Empezar».'] } }, { ahora: AHORA });
+  eq(sinGrabar.fallos.length, 0, 'la tablet sin grabar sale como FALLO');
+  eq(revisarParte({ j: 1, recibido: hace(1), d: { ...sano(), errores: ['No se pudo hacer la captura: timeout'] } }, { ahora: AHORA }).fallos.length, 1, 'un fallo de captura de verdad no sale');
 });
 
 await terminar('scripts/revisar-tablet');

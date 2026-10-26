@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.74.5
+
+- La revisión diaria de la tablet solo da la alarma por fallos de verdad.
+  Con los primeros partes reales salían dos falsas: un fallo del 25 de
+  octubre que ya estaba arreglado, y los avisos de «no está grabando» de
+  cuando la tablet simplemente no graba.
+- El parte ya no sale marcado como «recortado» solo porque el registro es
+  largo; solo cuando de verdad se pierde parte de un fallo.
+
 ## 3.74.4
 
 - Lector MLBB hace más rápido los recortes y miniaturas que guarda: de 4 a

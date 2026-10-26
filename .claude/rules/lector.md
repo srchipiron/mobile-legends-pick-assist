@@ -1468,3 +1468,15 @@ fila se copia entera. Byte a byte igual que antes en 1.200 casos al azar
 6 veces más rápido con RGBA y 4 con paleta. Cuatro mutaciones; sobrevive
 una inofensiva (con filtro 0 el bucle general da lo mismo).
 
+**Los primeros partes de verdad (26 de octubre de 2026, 3.74.5)**: siete
+partes de la tablet de Javi (APK 3.74.3 y 3.74.4, 176–237 lecturas del
+modo solo, Node 480–770 MB sin crecer, 6,5 GB libres). La revisión daba dos
+FALLO que eran ruido: `fallo-nodo.txt` se queda en la tablet, y el del 25
+de octubre (el de 3.72.4) salía en cada parte; hoy el fallo se fecha (su
+primera palabra) contra el arranque (`cuando` − `lector.minutos`): de este
+arranque es FALLO, del anterior AVISO durante `FALLO_ANTERIOR_H` (24 h) y
+luego nada. Y «no está grabando la pantalla» (el modo solo lo intenta sin
+grabar) es el uso (`NO_ES_FALLO`). `recortado` solo cuando se acorta el
+fallo o los errores: quitar líneas viejas del registro es lo normal (las de
+lectura pasan de 200 caracteres). Seis mutaciones, todas cazadas.
+

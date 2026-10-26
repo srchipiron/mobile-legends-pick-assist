@@ -33,6 +33,11 @@ export const DATOS_VIEJOS_H = 72;
 /** La APK escribe salud.json cada 15 s; con más de esto sin escribir y grabando, su hilo de salud murió o la app está colgada. */
 export const SALUD_CALLADA_MIN = 5;
 
+/** Lo que se registra como «No se pudo» pero es el uso, no un fallo: la tablet sin grabar (el modo solo lo intenta igual). */
+export const NO_ES_FALLO = /no está grabando la pantalla/;
+/** Un fallo de Node de un arranque anterior se avisa durante esto; después ya es historia. */
+export const FALLO_ANTERIOR_H = 24;
+
 /** Los motivos de cierre de Salidas.kt que son un fallo (su `FALLOS`): una prueba los compara con el fichero. */
 export const CIERRE_POR_FALLO = /falta de memoria|fallo de la app|fallo del lector|dejó de responder|por gastar demasiado|la cerró el sistema|se cerró ella misma/;
 
@@ -45,11 +50,19 @@ export function revisarParte(parte, { ahora = Date.now() } = {}) {
   const lector = e.lector ?? {};
   const recibido = Date.parse(parte?.recibido ?? '');
   const minutos = Number.isFinite(recibido) ? Math.round((ahora - recibido) / 60000) : null;
-  if (d.falloNodo) fallos.push(`el lector se cayó o no arrancó la última vez: ${String(d.falloNodo).split('\n')[0].slice(0, 200)}`);
+  if (d.falloNodo) {
+    // fallo-nodo.txt se queda en la tablet: uno de antes de este arranque ya se superó (3.74.5; el
+    // primer parte de verdad traía el del 25 de octubre, arreglado en 3.72.4, como FALLO).
+    const linea = String(d.falloNodo).split('\n')[0].slice(0, 200);
+    const cuandoFallo = Date.parse(linea.split(' ')[0]);
+    const arranque = Number.isFinite(d.cuando) && Number.isFinite(lector.minutos) ? d.cuando - lector.minutos * 60000 : null;
+    if (!Number.isFinite(cuandoFallo) || arranque == null || cuandoFallo >= arranque - 60000) fallos.push(`el lector tuvo un error sin recoger: ${linea}`);
+    else if (arranque - cuandoFallo < FALLO_ANTERIOR_H * 3600000) avisos.push(`el lector se cayó en el arranque anterior y desde entonces va: ${linea}`);
+  }
   // Los cierres que son un fallo: los mismos textos que `FALLOS` de Salidas.kt (no «la cerraste tú» ni «se actualizó»).
   if (e.salida && CIERRE_POR_FALLO.test(e.salida)) avisos.push(`Android la cerró: ${e.salida.slice(0, 200)}`);
   // Los errores van aparte (`errores`, de todo el registro) y en las últimas líneas: sin repetir.
-  const errores = [...new Set([...(Array.isArray(d.errores) ? d.errores : []), ...(Array.isArray(d.log) ? d.log : [])].filter((l) => typeof l === 'string' && LINEA_DE_ERROR.test(l)))];
+  const errores = [...new Set([...(Array.isArray(d.errores) ? d.errores : []), ...(Array.isArray(d.log) ? d.log : [])].filter((l) => typeof l === 'string' && LINEA_DE_ERROR.test(l) && !NO_ES_FALLO.test(l)))];
   if (errores.length) fallos.push(`errores en el registro (${errores.length}): ${errores.slice(-3).map((l) => l.slice(0, 160)).join(' | ')}`);
   // Las del móvil y las del modo solo (3.74.3: van aparte en /estado).
   const lecturas = (lector.lecturas ?? 0) + (lector.lecturasSolo ?? 0);
