@@ -434,6 +434,12 @@ test('el lector de la APK arranca con Node 18 vigilando sus errores, y un fallo 
   ok(/vigilarErrores\(/.test(arranque) && /try \{ await principal\(\); \} catch/.test(arranque) && /setInterval\(/.test(arranque), 'el arranque de la APK no vigila sus errores, o un fallo al arrancar deja salir a Node (y cierra la app)');
 });
 
+test('el modo solo de la tablet lleva cómo arreglar la partida con tu corrección (3.74.3): sin eso, la contestada antes de apuntar se perdía', () => {
+  const fuente = leerFichero(join(dirname(fileURLToPath(import.meta.url)), '../../scripts/lector/en-tablet.mjs'), 'utf8');
+  const llamada = fuente.slice(fuente.indexOf('const solo = crearSolo({'), fuente.indexOf('});', fuente.indexOf('const solo = crearSolo({')));
+  ok(/alCorregir: \(c\) => alCorregirRef\?\.\(c\)/.test(llamada), 'crearSolo no recibe alCorregir en en-tablet.mjs');
+});
+
 test('los datos con los que decide la tablet: los MÁS NUEVOS que tenga, no los primeros que encuentre (3.73.1)', () => {
   const real = JSON.parse(leerFichero(join(RAIZ, 'public/data/roam-meta.json'), 'utf8'));
   const cat = leerFichero(join(RAIZ, 'public/data/heroes.json'), 'utf8');

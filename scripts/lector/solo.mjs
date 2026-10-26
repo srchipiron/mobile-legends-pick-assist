@@ -289,7 +289,10 @@ export function ajustesEfectivos(apk, movil) {
  * null). Devuelve `{ tic, parar, estado }`: `tic` hace una vuelta y dice
  * cuánto esperar a la siguiente (las pruebas lo llaman a mano).
  */
-export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout, apuntar = null, maestriaDe = () => null }) {
+/** Lo que dura la pregunta de cómo acabó: lo mismo que `RETENCION_CAPTURAS_MS` de servir.mjs (una prueba lo compara). */
+export const PREGUNTA_CADUCA_MS = 3 * 3600000;
+
+export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout, apuntar = null, maestriaDe = () => null, alCorregir = null }) {
   // La partida que se vigila para apuntarla sola (3.70.0): el draft de cuando
   // se cerró y su decisión, hasta que la tabla del final dé el resultado.
   let vigilada = null;
@@ -309,6 +312,14 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     const partida = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane, t, duracion, versionModelo: VERSION_MODELO });
     if (!partida) return;
     apuntar(partida);
+    // La corrección contestada ANTES de apuntar la partida (3.74.3): se aplica
+    // ahora y la tarjeta no vuelve a salir. Antes se perdía y la partida subía
+    // con el draft a medias.
+    const yaContestada = interno.correccionContestada?.();
+    if (yaContestada && yaContestada.cuando === v.desde) {
+      try { alCorregir?.({ partida: partida.t, enemigos: yaContestada.enemigos, aliados: yaContestada.aliados, tuyo: yaContestada.tuyo }); } catch (e) { registrar(`No se pudo arreglar la partida apuntada: ${e.message}`); }
+      if (pendiente?.cuando === v.desde) pendiente = null;
+    }
     // La corrección sabe de qué partida es: al contestarla, se arregla también su draft.
     const deEsta = pendiente?.cuando === v.desde ? pendiente : null;
     if (deEsta) { pendiente = { ...deEsta, partida: partida.t }; interno.ponerCorreccion?.(pendiente); }
@@ -322,11 +333,15 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
    * quedaba esperando un resultado que no llegaba y la partida no se
    * apuntaba; hoy te lo pregunta la APK (y con tu respuesta aprende la tabla).
    */
+  const pickDe = (v) => v.decision.tuyo?.name ?? v.decision.rec.eleccion?.heroe?.name ?? null;
   const preguntar = (v, motivo) => {
     if (!v || v.apuntada || v.preguntada || !interno.ponerPregunta) return;
+    // La APK guarda UNA pregunta: la de antes, sin contestar, se pierde. Que se sepa (3.74.3).
+    if (preguntada && preguntada !== v && !preguntada.apuntada) registrar(`Sin móvil: la partida anterior (${pickDe(preguntada) ?? '?'}) se queda sin apuntar: no contestaste cómo acabó.`);
     v.preguntada = true;
+    v.preguntadaEn = ahora();
     preguntada = v;
-    const pick = v.decision.tuyo?.name ?? v.decision.rec.eleccion?.heroe?.name ?? null;
+    const pick = pickDe(v);
     interno.ponerPregunta({ id: `pregunta-${v.desde}`, desde: v.desde, cuando: ahora(), pick });
     interno.ponerResumen?.(resumenPregunta(v.desde, pick, v.idioma));
     registrar(`Sin móvil: no sé cómo acabó la partida (${motivo}); te lo pregunto en la app de la tablet.`);
@@ -338,11 +353,21 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
       if (typeof contestada.gane === 'boolean') {
         const f = interno.final?.();
         const duracion = f?.desde === preguntada.desde && !f.inicioEstimado ? f.duracion : null;
-        apuntarVigilada(preguntada, { gane: contestada.gane, t: Number.isFinite(f?.resultadoEn) && f.desde === preguntada.desde ? f.resultadoEn : contestada.cuando, duracion, contestada: true });
+        // El instante es el del final si se vio; si no, el del inicio más lo que duró, y si no, el del draft (3.74.3): la hora de contestar puede ser horas después, y `t` es la identidad de la partida.
+        const deEsta = f?.desde === preguntada.desde;
+        const t = deEsta && Number.isFinite(f.resultadoEn) ? f.resultadoEn
+          : deEsta && Number.isFinite(f.inicio) && duracion != null ? Math.round(f.inicio + duracion * 60000)
+            : preguntada.desde;
+        apuntarVigilada(preguntada, { gane: contestada.gane, t, duracion, contestada: true });
       } else {
         preguntada.apuntada = true;
         registrar('Sin móvil: dijiste que esa partida no contó; no se apunta.');
       }
+      preguntada = null;
+    }
+    // La pregunta caduca con sus capturas (la APK deja de enseñarla): que se sepa (3.74.3).
+    if (preguntada && !preguntada.apuntada && ahora() - preguntada.preguntadaEn > PREGUNTA_CADUCA_MS) {
+      registrar(`Sin móvil: la partida con ${pickDe(preguntada) ?? '?'} se queda sin apuntar: no contestaste cómo acabó a tiempo.`);
       preguntada = null;
     }
     const a = ajustes();

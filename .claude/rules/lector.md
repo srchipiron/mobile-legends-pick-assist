@@ -1442,3 +1442,19 @@ sin escribirse con la tablet grabando (el hilo «salud» de Lector.kt traga
 sus errores), si no hay fecha de datos, y lee `ultimoFallo.que` (salía
 «[object Object]»). Doce mutaciones, todas cazadas tras apretar dos.
 
+**Lo que se perdía sin el móvil (3.74.3, silent-failure-hunter)**: (1) la
+APK guarda UNA pregunta: la de antes sin contestar se pierde, y hoy se
+registra; la pregunta caduca a las `PREGUNTA_CADUCA_MS` (= la
+`RETENCION_CAPTURAS_MS` de servir, con prueba) y también se registra; la
+contestada tarde va con `resultadoEn`, o el inicio más la duración, o el
+cierre del draft, nunca la hora de contestar (`t` es la identidad). (2)
+La corrección contestada con la partida en marcha (`partida` null) se
+guarda en servir (`correccionContestada`, se recoge una vez) y
+`apuntarVigilada` la aplica con `alCorregir` (nuevo en `crearSolo`, que
+en-tablet pasa) y no vuelve a poner la tarjeta. (3) `interno.leer` cuenta
+en `lecturasSolo`: `lecturas` es solo del móvil (la APK lo usa para el paso
+«el móvil lee»); la revisión suma las dos para las capturas fallidas.
+Trece mutaciones; tres sobrevivían hasta poner id de captura en la
+prueba, contar `lecturasSolo` en la revisión y mirar el cableado de
+`alCorregir` en en-tablet (prueba de forma).
+

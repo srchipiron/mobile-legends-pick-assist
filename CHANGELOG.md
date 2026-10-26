@@ -8,6 +8,19 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.74.3
+
+- Si en la tablet contestas «Enseña al lector» con la partida aún en
+  marcha, ahora vale. Antes se perdía: la partida se guardaba con el draft
+  a medias y la tarjeta volvía a salir.
+- Si contestas tarde cómo acabó una partida, se guarda con la hora en que
+  terminó, no con la hora en que contestaste.
+- Si una partida se queda sin apuntar, porque llegó otra pregunta o
+  contestaste demasiado tarde, Lector MLBB lo apunta en su registro y la
+  revisión diaria lo ve.
+- La guía de la app de la tablet ya no da por hecho el paso «el móvil lee»
+  cuando quien lee es la propia tablet.
+
 ## 3.74.2
 
 - El parte de salud de la tablet llega siempre. Con un fallo largo pasaba

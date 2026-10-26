@@ -105,6 +105,7 @@ test('los puntos ciegos de la revisión (3.74.2): un error viejo del registro, l
   ok(revisarParte({ j: 1, recibido: hace(1), d: sano({ datos: { fecha: null, de: null } }) }, { ahora: AHORA }).avisos.some((a) => /sin estadísticas/.test(a)), 'no ve la tablet sin datos');
   const captura = revisarParte({ j: 1, recibido: hace(1), d: sano({ lector: { lecturas: 50, fallosCaptura: 30, ultimoFallo: { cuando: 1, que: 'la APK no contesta' } } }) }, { ahora: AHORA });
   ok(captura.avisos.some((a) => /la APK no contesta/.test(a) && !/object/.test(a)), JSON.stringify(captura.avisos));
+  ok(revisarParte({ j: 1, recibido: hace(1), d: sano({ lector: { lecturas: 0, lecturasSolo: 50, fallosCaptura: 30 } }) }, { ahora: AHORA }).avisos.some((a) => /30 de 50/.test(a)), 'no cuenta las capturas fallidas del modo solo');
 });
 
 await terminar('scripts/revisar-tablet');

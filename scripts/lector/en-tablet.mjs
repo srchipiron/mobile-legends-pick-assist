@@ -396,6 +396,7 @@ export async function principal(env = process.env) {
   const solo = crearSolo({
     interno: servidor.interno, ajustes, datosPara: datosDelSolo(leerDatos), registrar,
     apuntar: (p) => { if (partidas.apuntar(p)) subir(); },
+    alCorregir: (c) => alCorregirRef?.(c),
     maestriaDe: () => { const m = ajustes.delMovil(); return maestriaEfectiva(m?.maestria ?? {}, partidas.todas().filter((p) => p.t > (m?.cuando ?? 0))); },
   });
   alCorregirRef = ({ partida, enemigos, aliados, tuyo }) => {

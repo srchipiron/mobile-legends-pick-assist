@@ -549,6 +549,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   let consejoActual = null, resumenActual = null;
   // Lo que no reconoció la tablet sola (3.71.0): la APK lo pregunta tras la partida.
   let correccion = null;
+  // La corrección contestada antes de apuntar su partida (3.74.3), hasta que el modo solo la recoja.
+  let correccionContestada = null;
   // Cómo acabó la partida, si la tablet sola no lo reconoció (3.72.5), y lo que contestaste.
   let pregunta = null, respuesta = null;
   const preguntaVigente = () => (pregunta && ahora() - pregunta.cuando <= RETENCION_CAPTURAS_MS ? pregunta : null);
@@ -573,7 +575,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   let n = 0, aprendiendo = null;
   // La salud del lector (3.63.0): cuántas lecturas, cuántas capturas fallaron y la última, desde que arrancó.
   const arranque = ahora();
-  const salud = { lecturas: 0, vistazos: 0, fallosCaptura: 0, ultimoFallo: null };
+  const salud = { lecturas: 0, lecturasSolo: 0, vistazos: 0, fallosCaptura: 0, ultimoFallo: null };
   resultados = resultados ?? plantillasDeSerie();
   /** Guarda una captura y borra las que ya no hacen falta (3.34.0). */
   const podar = () => { if (carpeta) podarCapturas(carpeta, { ahora: ahora(), maximos, proteger: new Set([...(final?.fotogramas ?? []).map((f) => f.id), ...(correccionVigente()?.ids ?? [])]) }); };
@@ -874,12 +876,13 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
    * app del móvil por `/leer` y el modo solo de la tablet. Con `rapida`, en
    * partida no reconoce caras. Devuelve `{ ok, lectura }` o `{ ok: false, estado, error }`.
    */
-  async function hacerLectura({ rapida = false, soloPartida = false } = {}) {
+  async function hacerLectura({ rapida = false, soloPartida = false, delSolo = false } = {}) {
     const t0 = Date.now();
     // El instante de la lectura en el reloj de la vigilancia (inyectable en las pruebas).
     const tLeida = ahora();
     // Un vistazo al minimapa (3.69.3) no es una lectura: no cuenta como que alguien lee.
-    if (soloPartida) salud.vistazos += 1; else salud.lecturas += 1;
+    // Las del modo solo van aparte (3.74.3): la APK mira `lecturas` para saber si el MÓVIL lee.
+    if (soloPartida) salud.vistazos += 1; else if (delSolo) salud.lecturasSolo += 1; else salud.lecturas += 1;
     // Comprimida o no (3.45.0, `crearElectorDeCaptura`); sin elector, comprimida como siempre.
     let formato = elector?.siguiente() ?? 'png', png = null, crudo = null, tFormato = t0, t1;
     try {
@@ -1114,6 +1117,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
         return;
       }
       correccion = null;
+      // Contestada antes de que se apunte la partida (3.74.3): se guarda y el modo solo la aplica al apuntarla.
+      if (!Number.isFinite(c.partida)) correccionContestada = { cuando: c.cuando, enemigos, aliados, tuyo };
       // La partida apuntada se arregla aunque aprender falle: lo que dices es la verdad igual.
       try { alCorregir?.({ partida: c.partida ?? null, enemigos, aliados, tuyo }); } catch (e) { registrar(`No se pudo arreglar la partida apuntada: ${e.message}`); }
       try {
@@ -1164,7 +1169,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   // `/leer`, saber si el móvil anda leyendo y poner el consejo de la burbuja
   // (que no pisa al del móvil: lo que manda la app manda).
   servidor.interno = {
-    leer: (opciones) => hacerLectura(opciones),
+    leer: (opciones) => hacerLectura({ ...opciones, delSolo: true }),
     delMovil: () => ({ leyo: ultimaDelMovil, consejo: consejoDelMovil }),
     ponerConsejo: (c) => { consejoActual = sanearConsejo(c); },
     ajustesDelMovil: () => ajustesDelMovil,
@@ -1175,6 +1180,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     // Lo que no reconoció (3.71.0), para preguntarlo en la APK.
     ponerCorreccion: (c) => { correccion = sanearCorreccion(c); },
     correccion: () => correccionVigente(),
+    correccionContestada: () => { const c = correccionContestada; correccionContestada = null; return c && ahora() - c.cuando <= RETENCION_CAPTURAS_MS ? c : null; },
     // Cómo acabó la partida (3.72.5): el modo solo pregunta y recoge la respuesta (una vez).
     ponerPregunta: (p) => { pregunta = sanearPregunta(p); },
     respuesta: () => { const r = respuesta; respuesta = null; return r; },

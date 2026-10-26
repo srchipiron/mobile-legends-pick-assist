@@ -51,7 +51,9 @@ export function revisarParte(parte, { ahora = Date.now() } = {}) {
   // Los errores van aparte (`errores`, de todo el registro) y en las últimas líneas: sin repetir.
   const errores = [...new Set([...(Array.isArray(d.errores) ? d.errores : []), ...(Array.isArray(d.log) ? d.log : [])].filter((l) => typeof l === 'string' && LINEA_DE_ERROR.test(l)))];
   if (errores.length) fallos.push(`errores en el registro (${errores.length}): ${errores.slice(-3).map((l) => l.slice(0, 160)).join(' | ')}`);
-  if (lector.lecturas > 10 && lector.fallosCaptura / lector.lecturas > FALLOS_DE_CAPTURA_MAX) avisos.push(`fallan ${lector.fallosCaptura} de ${lector.lecturas} capturas${lector.ultimoFallo?.que ? ` (${String(lector.ultimoFallo.que).slice(0, 120)})` : ''}`);
+  // Las del móvil y las del modo solo (3.74.3: van aparte en /estado).
+  const lecturas = (lector.lecturas ?? 0) + (lector.lecturasSolo ?? 0);
+  if (lecturas > 10 && lector.fallosCaptura / lecturas > FALLOS_DE_CAPTURA_MAX) avisos.push(`fallan ${lector.fallosCaptura} de ${lecturas} capturas${lector.ultimoFallo?.que ? ` (${String(lector.ultimoFallo.que).slice(0, 120)})` : ''}`);
   if (t.memoriaBaja) avisos.push(`la tablet va justa de memoria (${t.memoriaLibreMB ?? '?'} MB libres; la app usa ${t.memoriaAppMB ?? '?'} MB)`);
   if (t.bateriaLibre === false) avisos.push('el ahorro de batería puede cerrar la app con el juego delante');
   if (t.burbuja === false) avisos.push('la burbuja no tiene permiso');
@@ -67,7 +69,7 @@ export function revisarParte(parte, { ahora = Date.now() } = {}) {
   if (t.grabando && salud != null && salud > SALUD_CALLADA_MIN) avisos.push(`la APK no escribe su estado desde hace ${Math.round(salud)} min con la tablet grabando: lo de la tablet puede ser viejo o estar colgada`);
   if (d.recortado) avisos.push('el parte llegó recortado: el registro o el fallo eran demasiado largos');
   if (minutos != null && minutos > PARTE_CALLADO_MIN && t.grabando) avisos.push(`el último parte es de hace ${minutos} min con la tablet grabando: ¿se cerró?`);
-  return { fallos, avisos, minutos, apk: t.apk ?? null, grabando: !!t.grabando, lecturas: lector.lecturas ?? 0 };
+  return { fallos, avisos, minutos, apk: t.apk ?? null, grabando: !!t.grabando, lecturas: lecturas };
 }
 
 /** Todos los partes: el más reciente de cada lector, revisado. */

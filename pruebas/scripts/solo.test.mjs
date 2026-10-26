@@ -8,9 +8,9 @@ import { test, ok, eq, terminar, leerJson } from '../arnes.mjs';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, IDS_POR_DRAFT, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO } from '../../scripts/lector/solo.mjs';
+import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, IDS_POR_DRAFT, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS } from '../../scripts/lector/solo.mjs';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
-import { crearServidor } from '../../scripts/lector/servir.mjs';
+import { crearServidor, RETENCION_CAPTURAS_MS } from '../../scripts/lector/servir.mjs';
 import { RAIZ } from '../arnes.mjs';
 import { crearT } from '../../src/app/i18n/index.js';
 import { guionTraducido } from '../../src/app/lector.js';
@@ -389,6 +389,107 @@ test('¿Cómo acabó? (3.72.5): sin reconocer el final, la tablet lo pregunta UN
   await g.paso(20000);
   ok(g.preguntas.length === 0 && g.apuntadas.length === 1 && g.apuntadas[0].gane === false, 'con el resultado leído pregunta o no apunta');
   ok(/How did the game end/.test(resumenPregunta(1, null, 'en').titulo));
+});
+
+test('lo que se perdía sin el móvil (3.74.3): la pregunta pisada o caducada se dice, la respuesta tardía no cambia la hora de la partida, y la corrección contestada antes de apuntar se aplica', async () => {
+  const montar = ({ contestadaAntes = null } = {}) => {
+    let t = 20_000_000, final = null, respuesta = null, contestada = contestadaAntes;
+    // Con id de captura: lo que no reconoce se pregunta en la tarjeta «Enseña al lector».
+    let lista = { ...lectura({ tuyos: [N('Hirara'), N('Belerick')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 }), id: 'lectura-1' };
+    const preguntas = [], apuntadas = [], registro = [], corregidas = [], correcciones = [];
+    const interno = {
+      leer: async () => ({ ok: true, lectura: lista }), delMovil: () => ({}), ponerConsejo: () => {},
+      vigilar: (desde) => { final = { desde, activa: true, acabada: false, resultado: null, inicio: desde + 1000, duracion: null }; },
+      final: () => final, ponerResumen: () => {}, ponerCorreccion: (c) => correcciones.push(c),
+      ponerPregunta: (p) => preguntas.push(p), respuesta: () => { const r = respuesta; respuesta = null; return r; },
+      correccionContestada: () => { const c = typeof contestada === 'function' ? contestada(final) : contestada; contestada = null; return c; },
+    };
+    const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: (p) => apuntadas.push(p), registrar: (m) => registro.push(m), alCorregir: (c) => corregidas.push(c) });
+    return {
+      preguntas, apuntadas, registro, corregidas, correcciones,
+      paso: async (ms = 5000) => { t += ms; await solo.tic(); }, saltar: (ms) => { t += ms; },
+      leer: (l) => { lista = l; }, fin: (f) => { final = { ...final, ...f }; }, contestar: (r) => { respuesta = { ...r, cuando: t }; }, desde: () => final?.desde,
+    };
+  };
+  const jugar = async (m) => { await m.paso(); m.leer({ partida: true, rapida: true }); await m.paso(); await m.paso(); };
+  eq(PREGUNTA_CADUCA_MS, RETENCION_CAPTURAS_MS, 'la pregunta caduca a otra hora que en la APK');
+  // Contestas dos horas después: la partida va con la hora en que acabó, no con la de contestar.
+  const tarde = montar();
+  await jugar(tarde);
+  tarde.fin({ acabada: true, activa: false, duracion: 13.5 });
+  await tarde.paso(20000);
+  tarde.saltar(2 * 3600000);
+  tarde.contestar({ desde: tarde.desde(), gane: true });
+  await tarde.paso(1000);
+  eq(tarde.apuntadas.length, 1);
+  eq(tarde.apuntadas[0].t, tarde.desde() + 1000 + 13.5 * 60000, 'la partida va con la hora de contestar');
+  // Sin duración ni final: la del draft.
+  const sinNada = montar();
+  await jugar(sinNada);
+  sinNada.fin({ acabada: true, activa: false });
+  await sinNada.paso(20000);
+  sinNada.saltar(3600000);
+  sinNada.contestar({ desde: sinNada.desde(), gane: false });
+  await sinNada.paso(1000);
+  eq(sinNada.apuntadas[0]?.t, sinNada.desde(), 'sin duración, la partida no va con la hora del draft');
+  // Dos partidas sin contestar: la segunda pregunta pisa a la primera, y se dice.
+  const dos = montar();
+  await jugar(dos);
+  dos.fin({ acabada: true, activa: false });
+  await dos.paso(20000);
+  dos.leer(lectura({ tuyos: [N('Lolita'), N('Franco')], suyos: [N('Valir'), V] }));
+  await dos.paso(60000);
+  dos.leer(lectura({ tuyos: [N('Lolita'), N('Franco')], suyos: [N('Valir')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 }));
+  await jugar(dos);
+  dos.fin({ acabada: true, activa: false });
+  await dos.paso(20000);
+  eq(dos.preguntas.length, 2, JSON.stringify(dos.preguntas.map((p) => p.id)));
+  ok(dos.registro.some((l) => /partida anterior .*se queda sin apuntar/.test(l)), `la partida pisada se pierde sin decirlo: ${dos.registro.slice(-3).join(' | ')}`);
+  // La pregunta caduca sin contestar: se dice.
+  const caduca = montar();
+  await jugar(caduca);
+  caduca.fin({ acabada: true, activa: false });
+  await caduca.paso(20000);
+  eq(caduca.preguntas.length, 1);
+  await caduca.paso(PREGUNTA_CADUCA_MS + 1000);
+  ok(caduca.registro.some((l) => /a tiempo/.test(l)), 'la pregunta caduca en silencio');
+  caduca.contestar({ desde: caduca.desde(), gane: true });
+  await caduca.paso(1000);
+  eq(caduca.apuntadas.length, 0, 'apunta con una respuesta a una pregunta que ya no está');
+  // La corrección contestada antes de apuntar: se aplica a la partida al apuntarla, y la tarjeta no vuelve.
+  const contestada = { enemigos: ['Clint', 'Khufra', 'Layla', 'Atlas', 'Franco'], aliados: ['Gord', 'Selena', 'Miya', 'Lancelot'], tuyo: 'Rafaela' };
+  const antes = montar({ contestadaAntes: (f) => ({ cuando: f.desde, ...contestada }) });
+  await jugar(antes);
+  const tarjetas = antes.correcciones.length;
+  eq(tarjetas, 1, 'el draft con huecos sin reconocer no pone la tarjeta');
+  antes.fin({ acabada: true, activa: false, resultado: 'perdi', resultadoEn: 30_000_000 });
+  await antes.paso(20000);
+  eq(antes.apuntadas.length, 1);
+  eq(JSON.stringify(antes.corregidas), JSON.stringify([{ partida: 30_000_000, ...contestada }]), 'la corrección contestada antes no se aplica a la partida');
+  eq(antes.correcciones.length, tarjetas, 'la tarjeta ya contestada vuelve a salir');
+  // Una contestada de OTRO draft no se aplica.
+  const otra = montar({ contestadaAntes: { cuando: 1, ...contestada } });
+  await jugar(otra);
+  otra.fin({ acabada: true, activa: false, resultado: 'gane', resultadoEn: 30_000_000 });
+  await otra.paso(20000);
+  eq(otra.corregidas.length, 0, 'aplica la corrección de otra partida');
+});
+
+test('el lector separa las lecturas del modo solo (3.74.3): la APK sabe que el MÓVIL lee solo con las suyas, y la corrección contestada antes de apuntar se guarda una vez', async () => {
+  let t = 1_000_000;
+  const servidor = crearServidor({ capturar: async () => { throw new Error('sin captura'); }, enHilos: false, ahora: () => t, registrar: () => {} });
+  await servidor.interno.leer({ rapida: true });
+  const e = servidor.interno.estado().lector;
+  ok(e.lecturas === 0 && e.lecturasSolo === 1, `las lecturas del modo solo cuentan como del móvil: ${JSON.stringify(e)}`);
+  servidor.interno.ponerCorreccion({ id: 'correccion-5', cuando: t, ids: ['lectura-1'], heroes: ['Clint', 'Khufra', 'Layla', 'Gord'], leidos: { enemigos: ['Clint'] } });
+  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  try {
+    const r = await fetch(`http://127.0.0.1:${servidor.address().port}/correccion`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: 'correccion-5', enemigos: ['Clint', 'Khufra', 'Layla'], aliados: ['Gord'] }) });
+    ok(r.status !== 409 && r.status !== 400 && r.status !== 403, `POST /correccion: ${r.status}`);
+    const c = servidor.interno.correccionContestada();
+    ok(c && c.cuando === t && c.enemigos.length === 3 && c.aliados[0] === 'Gord', `no se guarda la contestada: ${JSON.stringify(c)}`);
+    eq(servidor.interno.correccionContestada(), null, 'se recoge dos veces');
+  } finally { servidor.close(); }
 });
 
 await terminar('scripts/solo');
