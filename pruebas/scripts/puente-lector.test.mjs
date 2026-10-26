@@ -626,6 +626,9 @@ test('¿Cómo acabó? (3.72.5): con la tabla sin palabra conocida, la APK lo pre
     eq(servidor.interno.respuesta(), null, 'la respuesta se recoge dos veces');
     eq((await apk('/pregunta')).cuerpo.pregunta, null, 'contestada, se sigue preguntando');
     ok((await (await fetch(`${base}/estado`)).json()).resultados.gane >= 1, 'la tabla de victoria no queda aprendida');
+    // Arreglar el resultado desde «Mis partidas» (3.75.0): solo aprende con las pantallas de ESE draft.
+    eq(servidor.interno.aprenderResultadoDe(desde + 5, false), 0, 'aprende de las pantallas de otra partida');
+    ok(servidor.interno.aprenderResultadoDe(desde, false) >= 1, 'arreglar el resultado no aprende la tabla');
     // «No la terminé»: no se aprende nada y el modo solo lo sabe.
     servidor.interno.ponerPregunta({ id: `pregunta-${desde + 1}`, desde: desde + 1, cuando: Date.now(), pick: null });
     eq((await apk('/pregunta', { id: `pregunta-${desde + 1}`, gane: null })).cuerpo.aprendidos, 0);

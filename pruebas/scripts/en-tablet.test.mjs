@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES } from '../../scripts/lector/en-tablet.mjs';
+import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { claveDeJugadorValida } from '../../src/app/basedatos.js';
 import { pruebaDelReto } from '../../src/app/lector.js';
@@ -472,7 +472,7 @@ test('/estado dice de cuándo son los datos y si tus partidas suben (3.73.1): si
     // Sin nada bajado (LECTOR_SIN_SOLO no baja), decide con los que trae la APK, y lo dice.
     ok(typeof e.datos?.fecha === 'string' && e.datos.de === 'apk', `/estado no dice de cuándo son los datos ni de dónde: ${JSON.stringify(e.datos)}`);
     // Sin tu clave sube con la del lector (3.74.6) y lo dice.
-    eq(JSON.stringify(e.partidas), JSON.stringify({ apuntadas: 1, sinSubir: 1, clave: true, deQuien: 'lector', error: null }), 'no dice con qué clave sube');
+    eq(JSON.stringify(e.partidas), JSON.stringify({ apuntadas: 1, sinSubir: 1, porTabla: 0, porPregunta: 0, clave: true, deQuien: 'lector', error: null }), 'no dice con qué clave sube');
   } finally { servidor.close(); apk.cerrar(); }
 });
 
@@ -583,6 +583,80 @@ test('sin tu clave, la tablet sube sus partidas con la del lector; con la tuya, 
       eq(s.jugadores.get(tuya)?.partidas.size, 1, 'con tu clave no sube con la tuya');
       eq(s.jugadores.get(delLector).partidas.size, 1, 'sube la nueva con la del lector teniendo la tuya');
     } finally { conTuya.close(); }
+  } finally { servidor.close(); apk.cerrar(); }
+});
+
+const mandarPost = (puerto, camino, cuerpo, { codigo = CODIGO, origen = null } = {}) => new Promise((r, x) => {
+  const datos = JSON.stringify(cuerpo);
+  const headers = { Host: `127.0.0.1:${puerto}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(datos), ...(origen ? { Origin: origen } : {}), ...(codigo ? { 'X-Lector-Codigo': codigo } : {}) };
+  const q = request({ host: '127.0.0.1', port: puerto, path: camino, method: 'POST', headers }, (res) => {
+    let b = ''; res.on('data', (t) => { b += t; }); res.on('end', () => r({ estado: res.statusCode, cuerpo: b }));
+  });
+  q.on('error', x); q.end(datos);
+});
+
+test('lo que se puede arreglar de una partida (3.75.0): solo héroes del catálogo, sin repetir y con topes', () => {
+  const nombres = ['Rafaela', 'Clint', 'Khufra', 'Gord', 'Selena', 'Estes', "Chang'e"];
+  const e = sanearEdicion({ t: 5, gane: false, pick: 'rafaela', enemigos: ['Clint', 'khufra', ''], aliados: ["chang'e"], bans: ['Gord'] }, nombres);
+  eq(JSON.stringify(e), JSON.stringify({ t: 5, cambios: { gane: false, pick: 'Rafaela', enemigos: ['Clint', 'Khufra'], aliados: ["Chang'e"], bans: ['Gord'] } }));
+  eq(sanearEdicion({ t: 5, enemigos: ['Nadie'] }, nombres).error, 'enemigos', 'acepta un héroe que no existe');
+  eq(sanearEdicion({ t: 5, enemigos: ['Clint'], aliados: ['Clint'] }, nombres).error, 'repetidos', 'acepta el mismo héroe en los dos equipos');
+  eq(sanearEdicion({ t: 5, enemigos: Array(6).fill('Clint') }, nombres).error, 'enemigos', 'acepta seis enemigos');
+  eq(sanearEdicion({ t: 5, gane: 'sí' }, nombres).error, 'gane');
+  eq(sanearEdicion({ t: 5 }, nombres).error, 'nada');
+  eq(sanearEdicion({ t: 'x', gane: true }, nombres).error, 't');
+  eq(sanearEdicion({ t: 5, pick: '' }, nombres).error, 'pick');
+});
+
+test('«Mis partidas» de la APK (3.75.0): lo que dice la base de datos con lo que falta por subir encima, solo para la APK, y arreglar una la vuelve a subir y aprende la tabla', async () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-historial-'));
+  const s = supabaseFalso();
+  const { mkdirSync } = await import('node:fs');
+  mkdirSync(join(casa, 'datos'), { recursive: true });
+  writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
+  const apk = await apkDePega();
+  // Subir puede fallar (sin red un rato) mientras leer la base de datos va: así se ve lo arreglado por encima.
+  let sinSubir = false;
+  const pedirBaseDeDatos = (url, o) => (sinSubir && String(url).endsWith('/subir_partidas') ? Promise.reject(new TypeError('sin red')) : s.fetch(url, o));
+  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos });
+  const puerto = servidor.address().port;
+  try {
+    // Una partida ya en la base de datos (de otra vez, o de otro aparato con la misma clave) y una de la tablet.
+    const clave = claveDelLector(casa);
+    s.atender('subir_partidas', { clave, lote: [{ t: 1788000000000, pick: 'Estes', gane: true, draft: { linea: 'roam', enemigos: ['Clint'], aliados: [] } }] }, { apikey: s.clavePublica });
+    servidor.partidas.apuntar({ t: 1788000060000, pick: 'Rafaela', gane: false, desde: 1787999000000, resultadoDe: 'tabla', draft: { linea: 'roam', enemigos: ['Khufra'], aliados: ['Gord'] } });
+    // Desde la app del móvil (con Origin) no se ve.
+    eq((await pedir(puerto, '/partidas', { host: `127.0.0.1:${puerto}` })).estado, 403, 'el navegador ve tus partidas por /partidas');
+    const lista = JSON.parse((await pedir(puerto, '/partidas', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
+    eq(lista.de, 'base', JSON.stringify(lista));
+    eq(JSON.stringify(lista.partidas.map((p) => [p.t, p.pick, !!p.sinSubir])), JSON.stringify([[1788000060000, 'Rafaela', true], [1788000000000, 'Estes', false]]), 'no junta la base de datos con lo que falta por subir');
+    ok(lista.heroes.includes('Rafaela') && lista.heroes.length > 100, 'no manda la lista de héroes para elegir');
+    // Ya subida, arreglarla la vuelve a subir y la lista la enseña arreglada antes de subirse.
+    await servidor.subirPartidas();
+    eq(servidor.partidas.pendientes().length, 0);
+    sinSubir = true;
+    // Arreglar la de la tablet: el resultado y un enemigo; se sube y aprende de la tabla.
+    const aprendidas = [];
+    servidor.interno.aprenderResultadoDe = (desde, gane) => { aprendidas.push([desde, gane]); return 1; };
+    eq((await mandarPost(puerto, '/partida', { t: 1788000060000, gane: true }, { origen: 'https://srchipiron.github.io' })).estado, 403, 'el navegador arregla partidas');
+    const r = await mandarPost(puerto, '/partida', { t: 1788000060000, gane: true, enemigos: ['Khufra', 'Clint'] });
+    eq(r.estado, 200, r.cuerpo);
+    eq(JSON.stringify(aprendidas), JSON.stringify([[1787999000000, true]]), 'cambiar el resultado no enseña la tabla buena');
+    const arreglada = JSON.parse((await pedir(puerto, '/partidas', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo).partidas.find((p) => p.t === 1788000060000);
+    ok(arreglada?.gane === true && arreglada.sinSubir && arreglada.editada, `la lista enseña lo de la base de datos en vez de lo arreglado: ${JSON.stringify(arreglada)}`);
+    eq(servidor.partidas.pendientes().length, 1, 'lo arreglado no se vuelve a subir');
+    sinSubir = false;
+    await servidor.subirPartidas();
+    const enLaBase = s.jugadores.get(clave).partidas.get(1788000060000);
+    ok(enLaBase?.gane === true && enLaBase.draft.enemigos.join() === 'Khufra,Clint', `lo arreglado no llega a la base de datos: ${JSON.stringify(enLaBase)}`);
+    // Arreglar una que solo estaba en la base de datos: se trae, se cambia y se sube.
+    eq((await mandarPost(puerto, '/partida', { t: 1788000000000, pick: 'Rafaela' })).estado, 200);
+    await servidor.subirPartidas();
+    eq(s.jugadores.get(clave).partidas.get(1788000000000)?.pick, 'Rafaela', 'no arregla la que solo estaba en la base de datos');
+    eq(aprendidas.length, 1, 'aprende la tabla sin cambiar el resultado');
+    // Lo que no vale.
+    eq((await mandarPost(puerto, '/partida', { t: 1788000060000, enemigos: ['Nadie'] })).estado, 400);
+    eq((await mandarPost(puerto, '/partida', { t: 1, gane: true })).estado, 404);
   } finally { servidor.close(); apk.cerrar(); }
 });
 

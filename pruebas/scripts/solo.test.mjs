@@ -367,6 +367,7 @@ test('¿Cómo acabó? (3.72.5): sin reconocer el final, la tablet lo pregunta UN
   await v.paso(20000); await v.paso(20000);
   eq(v.apuntadas.length, 1, 'con tu respuesta no apunta, o apunta dos veces');
   ok(v.apuntadas[0].gane === true && v.apuntadas[0].pick === 'Rafaela' && v.apuntadas[0].duracion === 13.5, JSON.stringify(v.apuntadas[0]));
+  ok(v.apuntadas[0].desde === v.desde() && v.apuntadas[0].resultadoDe === 'pregunta', `la partida no dice de qué draft es ni que el resultado se preguntó (3.75.0): ${JSON.stringify(v.apuntadas[0])}`);
   // «No la terminé».
   const n = montar();
   await n.paso(); n.leer({ partida: true, rapida: true }); await n.paso(); await n.paso();
@@ -388,6 +389,7 @@ test('¿Cómo acabó? (3.72.5): sin reconocer el final, la tablet lo pregunta UN
   g.fin({ acabada: true, activa: false, resultado: 'perdi', resultadoEn: 123 });
   await g.paso(20000);
   ok(g.preguntas.length === 0 && g.apuntadas.length === 1 && g.apuntadas[0].gane === false, 'con el resultado leído pregunta o no apunta');
+  eq(g.apuntadas[0].resultadoDe, 'tabla', 'el resultado leído no se marca como leído de la tabla');
   ok(/How did the game end/.test(resumenPregunta(1, null, 'en').titulo));
 });
 

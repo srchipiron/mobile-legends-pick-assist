@@ -540,7 +540,7 @@ export const VISTAZO_MS = 10000;
  * El servidor, con la captura inyectada: en Termux es `capturarTablet`, en
  * las pruebas una captura de fichero.
  */
-export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux, codigo = null, estadoExtra = null, alCorregir = null }) {
+export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux, codigo = null, estadoExtra = null, alCorregir = null, historial = null }) {
   // En la tablet (3.61.0) escucha en la wifi: con código, y aceptando su IP como `Host`.
   const portero = codigo ? crearPortero(codigo, { ahora }) : null;
   // Los retos de cada aparato en el último minuto (3.70.0).
@@ -1132,6 +1132,16 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     }
     // ¿Cómo acabó la partida? (3.72.5) La APK lo pregunta si la tablet sola no
     // lo reconoció, y con la respuesta se apunta y se aprende la tabla. Solo la APK.
+    // Tus partidas (3.75.0): la APK las enseña como están en la base de datos y
+    // te deja arreglarlas (resultado, tu pick, quién iba en cada equipo). Solo la APK.
+    if ((ruta === '/partidas' && req.method === 'GET') || (ruta === '/partida' && req.method === 'POST')) {
+      if (!deLaApk(req)) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'solo la tablet' })); return; }
+      if (!historial) { res.writeHead(404, cabeceras).end(JSON.stringify({ error: 'no existe' })); return; }
+      if (req.method === 'GET') { res.writeHead(200, cabeceras).end(JSON.stringify(await historial.listar())); return; }
+      const r = historial.editar(await leerCuerpo(req));
+      res.writeHead(r.ok ? 200 : r.estado ?? 400, cabeceras).end(JSON.stringify(r));
+      return;
+    }
     if (ruta === '/pregunta' && (req.method === 'GET' || req.method === 'POST')) {
       if (!deLaApk(req)) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'solo la tablet' })); return; }
       const p = preguntaVigente();
@@ -1185,6 +1195,13 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     ponerPregunta: (p) => { pregunta = sanearPregunta(p); },
     respuesta: () => { const r = respuesta; respuesta = null; return r; },
     estado: () => estado(),
+    /**
+     * Arreglaste el resultado de una partida (3.75.0): si sus pantallas del
+     * final siguen aquí, se aprende la tabla con el bueno (y se olvida la que
+     * lo confundió), como con «¿Cómo acabó?». Cuántas se aprendieron.
+     */
+    aprenderResultadoDe: (desde, gane) => (Number.isFinite(desde) && typeof gane === 'boolean' && final?.desde === desde
+      ? aprenderDelFinal(final.fotogramas.filter((f) => f.tabla).map((f) => f.id), gane).aprendidos : 0),
     /**
      * Un vistazo al minimapa si la burbuja tiene algo que enseñar y nadie ha
      * capturado en VISTAZO_MS (3.69.3). null si no tocaba.

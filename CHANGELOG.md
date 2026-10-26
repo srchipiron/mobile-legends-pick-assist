@@ -8,6 +8,24 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.75.0
+
+- Lector MLBB tiene «Mis partidas»: el registro de todas tus partidas tal
+  como están en la base de datos, con fecha, tu pick, resultado, enemigos y
+  compañeros, y cuántas has ganado.
+- Puedes arreglar cualquier partida si el lector se equivocó: el
+  resultado, tu pick, un enemigo o compañero que faltaba, o los baneos. Se
+  sube corregida, y tus estadísticas, tu maestría y la medida del modelo
+  usan la buena.
+- Si arreglas el resultado de una partida reciente, el lector aprende a
+  reconocer bien esa pantalla del final, así que la próxima vez acierta
+  solo.
+- Hay una guía completa dentro de la app («Guía completa», y se abre sola
+  la primera vez). Explica paso a paso cómo dejarlo todo listo y qué hace
+  cada parte.
+- La revisión diaria mide cuántas veces reconoce sola el resultado y cuántas
+  te lo tiene que preguntar.
+
 ## 3.74.6
 
 - Las partidas que apunta Lector MLBB en la tablet ya se guardan en la base

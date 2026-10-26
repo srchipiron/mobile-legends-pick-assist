@@ -126,4 +126,11 @@ test('lo que es ruido no es FALLO (3.74.5, con el primer parte de verdad): el fa
   eq(revisarParte({ j: 1, recibido: hace(1), d: { ...sano(), errores: ['No se pudo hacer la captura: timeout'] } }, { ahora: AHORA }).fallos.length, 1, 'un fallo de captura de verdad no sale');
 });
 
+test('cuánto reconoce sola el resultado (3.75.0): aviso si pregunta más de la mitad, con partidas de sobra', () => {
+  const con = (porTabla, porPregunta) => revisarParte({ j: 1, recibido: hace(1), d: sano({ partidas: { apuntadas: porTabla + porPregunta, sinSubir: 0, clave: true, porTabla, porPregunta } }) }, { ahora: AHORA }).avisos;
+  ok(con(1, 4).some((a) => /1 de 5/.test(a)), 'no avisa con 4 de 5 preguntadas');
+  eq(con(3, 2).length, 0, 'avisa con la mayoría reconocidas');
+  eq(con(0, 4).length, 0, 'avisa con muy pocas partidas');
+});
+
 await terminar('scripts/revisar-tablet');

@@ -141,7 +141,12 @@ class Principal : Activity() {
                 "Solo MIRA la pantalla: no toca el juego ni tu cuenta. Aun así, es una herramienta de terceros: úsala bajo tu responsabilidad."
             setPadding(0, 0, 0, pad)
         })
-        actualizar = texto(14f, Color.rgb(100, 210, 255)).apply { visibility = View.GONE }
+        // La guía completa y tus partidas (3.75.0), a la vista: «me ha costado encontrar eso de apuntar mis partidas».
+        val atajos = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 0, 0, pad / 2) }
+        atajos.addView(Button(this).apply { text = "Guía completa"; setOnClickListener { startActivity(Intent(this@Principal, Guia::class.java)) } }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        atajos.addView(Button(this).apply { text = "Mis partidas"; setOnClickListener { startActivity(Intent(this@Principal, Partidas::class.java)) } }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        izquierda.addView(atajos)
+                actualizar = texto(14f, Color.rgb(100, 210, 255)).apply { visibility = View.GONE }
         izquierda.addView(actualizar)
         // Si la app se cerró por un fallo (3.72.1): lo primero que se ve, con el
         // detalle para copiarlo y pegarlo en el chat (sin ordenador no hay logcat).
@@ -188,7 +193,7 @@ class Principal : Activity() {
             },
             Paso("Empieza a leer. Android pregunta qué grabar: elige «Pantalla completa».", "Empezar a leer") { alternar() },
             Paso("«Sin móvil»: la tablet lee el draft y decide ella sola con tu línea (la de la app del móvil, o la que elijas aquí), y tu nº1 sale en la burbuja."),
-            Paso("(Opcional) Con Pick Assist en el MÓVIL: abre la cámara, escanea el QR y toca «Vincular» (misma wifi). Una vez basta: la tablet se queda con tu maestría y tu clave para subir las partidas."),
+            Paso("Tus partidas se guardan solas en la base de datos: míralas y arréglalas en «Mis partidas». (Opcional) Con Pick Assist en el MÓVIL: escanea el QR de «Vincular el móvil» y toca «Vincular» (misma wifi) para que la tablet use tu maestría."),
             Paso("Juega. En baneos la burbuja dice a quién banear; en picks, tu nº1 y los dos siguientes. En partida, la voz te da los consejos de tu pick, y al acabar la tablet apunta la partida."),
         )
         for (p in pasos) guia.addView(p.fila)
@@ -272,6 +277,8 @@ class Principal : Activity() {
             insets
         }
         setContentView(desplazar)
+        // La primera vez, la guía entera (3.75.0).
+        if (guardado == null && !getSharedPreferences("lector", MODE_PRIVATE).getBoolean("guiaVista", false)) startActivity(Intent(this, Guia::class.java))
     }
 
     override fun onResume() {

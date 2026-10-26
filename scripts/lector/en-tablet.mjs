@@ -25,7 +25,7 @@ import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas,
 import { limpiarTexto } from './voz.mjs';
 import { leerCrudo, escribirPngRapido } from './png.mjs';
 import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo } from './solo.mjs';
-import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte } from '../../src/app/basedatos.js';
+import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte, traerMisPartidas } from '../../src/app/basedatos.js';
 import { maestriaEfectiva } from '../../src/motor/maestria.js';
 
 /** Solo 127.0.0.1: la APK es la única que da la captura. */
@@ -214,7 +214,73 @@ export function partidasDeLaTablet(casa) {
       escribir();
       return true;
     },
+    /**
+     * Lo que arreglas en «Mis partidas» de la APK (3.75.0): resultado, tu
+     * pick, enemigos, compañeros y baneos, ya validados. Se vuelve a subir
+     * (la base de datos la reemplaza por su instante). Si la partida solo
+     * estaba en la base de datos, `base` es su copia y se trae. Con otro
+     * pick, la estimación (de otro héroe) se quita. null si no existe.
+     */
+    editar(t, cambios, base = null) {
+      let i = datos.partidas.findIndex((p) => p.t === t);
+      if (i < 0) {
+        if (!base || base.t !== t || typeof base.pick !== 'string' || typeof base.gane !== 'boolean') return null;
+        datos.partidas = [base, ...datos.partidas].sort((a, b) => b.t - a.t).slice(0, TOPE_PARTIDAS_TABLET);
+        i = datos.partidas.findIndex((p) => p.t === t);
+        if (i < 0) return null;
+      }
+      const antes = datos.partidas[i];
+      const { supuesto, estimacion, modelo, ...resto } = antes;
+      const otro = cambios.pick && cambios.pick !== antes.pick;
+      const nueva = {
+        ...resto,
+        ...(cambios.pick ? { pick: cambios.pick } : supuesto ? { supuesto } : {}),
+        ...(otro ? {} : { ...(estimacion != null ? { estimacion } : {}), ...(modelo != null ? { modelo } : {}) }),
+        ...(typeof cambios.gane === 'boolean' ? { gane: cambios.gane } : {}),
+        ...(cambios.bans ? { bans: cambios.bans } : {}),
+        draft: { ...(antes.draft ?? {}), ...(cambios.enemigos ? { enemigos: cambios.enemigos } : {}), ...(cambios.aliados ? { aliados: cambios.aliados } : {}) },
+        editada: Date.now(),
+      };
+      datos.partidas[i] = nueva;
+      datos.subidas = datos.subidas.filter((x) => x !== t);
+      escribir();
+      return { antes, nueva };
+    },
   };
+}
+
+/** Las partidas que enseña «Mis partidas» de la APK (3.75.0): las más nuevas. */
+export const PARTIDAS_EN_LA_APK = 200;
+
+/**
+ * Lo que se puede cambiar de una partida desde la APK, saneado (3.75.0):
+ * solo héroes del catálogo (en su grafía), sin repetir dentro del draft, y
+ * como mucho cinco enemigos, cuatro compañeros y diez baneos. `{ t, cambios }`
+ * o `{ error }`.
+ */
+export function sanearEdicion(cuerpo, nombres) {
+  if (!cuerpo || !Number.isFinite(cuerpo.t)) return { error: 't' };
+  const porClave = new Map(nombres.map((n) => [n.toLowerCase(), n]));
+  const heroe = (x) => (typeof x === 'string' && x.trim() ? porClave.get(x.trim().toLowerCase()) ?? false : null);
+  const lista = (l, max) => {
+    if (l == null) return undefined;
+    if (!Array.isArray(l) || l.length > max) return false;
+    const h = l.map(heroe).filter((x) => x !== null);
+    return h.includes(false) ? false : h;
+  };
+  const cambios = {};
+  if (cuerpo.gane === true || cuerpo.gane === false) cambios.gane = cuerpo.gane;
+  else if (cuerpo.gane !== undefined) return { error: 'gane' };
+  if (cuerpo.pick !== undefined) { const p = heroe(cuerpo.pick); if (!p) return { error: 'pick' }; cambios.pick = p; }
+  for (const [k, max] of [['enemigos', 5], ['aliados', 4], ['bans', 10]]) {
+    const l = lista(cuerpo[k], max);
+    if (l === false) return { error: k };
+    if (l) cambios[k] = l;
+  }
+  const enDraft = [...(cambios.enemigos ?? []), ...(cambios.aliados ?? []), ...(cambios.pick ? [cambios.pick] : [])];
+  if (new Set(enDraft).size !== enDraft.length) return { error: 'repetidos' };
+  if (!Object.keys(cambios).length) return { error: 'nada' };
+  return { t: cuerpo.t, cambios };
 }
 
 /**
@@ -346,10 +412,13 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
   let soloRef = null;
   // Arreglar la partida apuntada con tu corrección (3.71.0): las partidas se crean después.
   let alCorregirRef = null;
+  // «Mis partidas» de la APK (3.75.0): las partidas se crean después.
+  let historialRef = null;
   // Lo que la APK enseña de cómo va la tablet (3.73.1): de cuándo son sus datos y si sus partidas suben.
   let estadoTablet = () => ({});
   const servidor = crearServidor({
     alCorregir: (c) => alCorregirRef?.(c),
+    historial: { listar: () => historialRef?.listar() ?? { partidas: [] }, editar: (c) => historialRef?.editar(c) ?? { ok: false, estado: 503 } },
     capturar: capturaDeLaApk(base, secreto), hablar: vozDeLaApk(base, secreto), codigo,
     // Por qué se cerró la app la última vez (3.61.5, lo dice Android): el Diagnóstico del móvil lo enseña.
     // Y lo que la APK sabe de la tablet (3.63.0: versión, si graba, permisos, memoria), que escribe cada pocos segundos.
@@ -396,7 +465,7 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     const d = leerDatos();
     return {
       datos: { fecha: d.meta?.generatedAt ?? null, de: d.de === 0 ? 'web' : d.de == null ? null : 'apk' },
-      partidas: { apuntadas: partidas.todas().length, sinSubir: partidas.pendientes().length, clave: claveDeJugadorValida(claveConLaQueSube()), deQuien: claveDeJugadorValida(ajustes.delMovil()?.clave) ? 'tuya' : 'lector', error: ultimaSubida.error },
+      partidas: { apuntadas: partidas.todas().length, sinSubir: partidas.pendientes().length, porTabla: partidas.todas().filter((p) => p.resultadoDe === 'tabla').length, porPregunta: partidas.todas().filter((p) => p.resultadoDe === 'pregunta').length, clave: claveDeJugadorValida(claveConLaQueSube()), deQuien: claveDeJugadorValida(ajustes.delMovil()?.clave) ? 'tuya' : 'lector', error: ultimaSubida.error },
     };
   };
   const solo = crearSolo({
@@ -426,6 +495,37 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
   // Lo que quedó sin subir de otra vez, al poco de arrancar (no a los 10 minutos).
   const primeraSubida = setTimeout(subir, 30000);
   servidor.on('close', () => { clearInterval(cadaSubida); clearTimeout(primeraSubida); });
+  // «Mis partidas» de la APK (3.75.0): lo que dice la base de datos, con lo que
+  // la tablet aún no subió por encima, y arreglarlas desde ahí.
+  let deLaBase = new Map();
+  const listarPartidas = async () => {
+    const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
+    const clave = claveConLaQueSube();
+    const r = config && claveDeJugadorValida(clave) ? await traerMisPartidas({ config, clave }, { fetch: pedirBaseDeDatos }).catch(() => ({ error: 'red' })) : { error: 'sinBaseDeDatos' };
+    if (!r.error) deLaBase = new Map(r.partidas.filter((p) => Number.isFinite(p?.t)).map((p) => [p.t, p]));
+    const sinSubir = new Set(partidas.pendientes().map((p) => p.t));
+    const todas = new Map(deLaBase);
+    for (const p of partidas.todas()) if (sinSubir.has(p.t) || !todas.has(p.t)) todas.set(p.t, { ...p, sinSubir: sinSubir.has(p.t) });
+    const lista = [...todas.values()].sort((a, b) => b.t - a.t).slice(0, PARTIDAS_EN_LA_APK).map((p) => ({
+      t: p.t, pick: p.pick, gane: p.gane, ...(p.supuesto ? { supuesto: true } : {}), ...(p.sinSubir ? { sinSubir: true } : {}),
+      enemigos: p.draft?.enemigos ?? [], aliados: p.draft?.aliados ?? [], bans: p.bans ?? [], linea: p.draft?.linea ?? null,
+      ...(Number.isFinite(p.duracion) ? { duracion: p.duracion } : {}), ...(p.resultadoDe ? { resultadoDe: p.resultadoDe } : {}), ...(p.editada ? { editada: true } : {}),
+    }));
+    return { de: r.error ? 'tablet' : 'base', error: r.error ?? null, partidas: lista, heroes: (leerDatos().catalogo?.heroes ?? []).map((h) => h.name).filter(Boolean).sort() };
+  };
+  const editarPartida = (cuerpo) => {
+    const nombres = (leerDatos().catalogo?.heroes ?? []).map((h) => h.name).filter(Boolean);
+    const e = sanearEdicion(cuerpo, nombres);
+    if (e.error) return { ok: false, estado: 400, error: e.error };
+    const hecho = partidas.editar(e.t, e.cambios, deLaBase.get(e.t) ?? null);
+    if (!hecho) return { ok: false, estado: 404, error: 'no existe' };
+    // Si arreglaste el resultado y quedan las pantallas del final, se aprende la tabla buena.
+    const aprendidos = typeof e.cambios.gane === 'boolean' && e.cambios.gane !== hecho.antes.gane ? servidor.interno.aprenderResultadoDe(hecho.antes.desde, e.cambios.gane) : 0;
+    registrar(`Partida arreglada en la tablet (${Object.keys(e.cambios).join(', ')})${aprendidos ? '; aprendida la tabla del final' : ''}.`);
+    subir();
+    return { ok: true, aprendidos };
+  };
+  historialRef = { listar: listarPartidas, editar: editarPartida };
   servidor.partidas = partidas;
   servidor.subirPartidas = subir;
   soloRef = solo;

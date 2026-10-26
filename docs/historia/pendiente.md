@@ -264,3 +264,10 @@
   tablet suben con la clave del lector si el móvil no mandó la tuya
   (decidido por Javi: cuentan para el modelo, no salen en el móvil).
 - **Tres fallos silenciosos del modo «Sin móvil»** (26 de octubre de 2026): hechos en 3.74.3.
+- **El móvil como centro de mando de la tablet (pedido el 26 de octubre de
+  2026, para 3.76.0)**: que móvil y tablet compartan UNA clave (el móvil
+  adopta la del lector al vincularse si no tiene, o la tablet pasa sus
+  partidas a la del móvil), y que el móvil vea y arregle lo mismo que «Mis
+  partidas» de la APK, con los arreglos fundidos en los dos sentidos (hoy
+  `fundirPerfil` no pisa lo que ya tiene el móvil).
+

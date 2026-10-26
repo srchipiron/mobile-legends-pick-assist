@@ -33,6 +33,9 @@ export const DATOS_VIEJOS_H = 72;
 /** La APK escribe salud.json cada 15 s; con más de esto sin escribir y grabando, su hilo de salud murió o la app está colgada. */
 export const SALUD_CALLADA_MIN = 5;
 
+/** Con menos partidas con resultado no se dice nada de cuánto reconoce sola; y más de esta parte preguntadas es aviso. Decisión de producto. */
+export const RESULTADOS_PARA_MEDIR = 5, PREGUNTADAS_MAX = 0.5;
+
 /** Lo que se registra como «No se pudo» pero es el uso, no un fallo: la tablet sin grabar (el modo solo lo intenta igual). */
 export const NO_ES_FALLO = /no está grabando la pantalla/;
 /** Un fallo de Node de un arranque anterior se avisa durante esto; después ya es historia. */
@@ -77,6 +80,9 @@ export function revisarParte(parte, { ahora = Date.now() } = {}) {
   if (Number.isFinite(fecha) && (ahora - fecha) / 3600000 > DATOS_VIEJOS_H) avisos.push(`datos del juego de hace ${Math.round((ahora - fecha) / 3600000)} h${e.datos.de === 'apk' ? ' (los de la APK: no consigue bajar los nuevos)' : ''}`);
   if (e.partidas?.sinSubir > 0 && !e.partidas.clave) avisos.push(`${e.partidas.sinSubir} partidas solo en la tablet: falta la clave de jugador`);
   else if (e.partidas?.sinSubir > 0 && e.partidas.error) avisos.push(`${e.partidas.sinSubir} partidas sin subir (${e.partidas.error})`);
+  // Cuánto reconoce sola el resultado (3.75.0): el resto lo contestaste tú.
+  const conResultado = (e.partidas?.porTabla ?? 0) + (e.partidas?.porPregunta ?? 0);
+  if (conResultado >= RESULTADOS_PARA_MEDIR && e.partidas.porPregunta / conResultado > PREGUNTADAS_MAX) avisos.push(`la tablet solo reconoce sola el resultado de ${e.partidas.porTabla} de ${conResultado} partidas: el resto lo preguntó`);
   if (e.pendiente?.pregunta) avisos.push('hay una partida esperando a que digas cómo acabó');
   const salud = Number.isFinite(t.cuando) && Number.isFinite(d.cuando) ? (d.cuando - t.cuando) / 60000 : null; // los dos con el reloj de la tablet
   if (t.grabando && salud != null && salud > SALUD_CALLADA_MIN) avisos.push(`la APK no escribe su estado desde hace ${Math.round(salud)} min con la tablet grabando: lo de la tablet puede ser viejo o estar colgada`);

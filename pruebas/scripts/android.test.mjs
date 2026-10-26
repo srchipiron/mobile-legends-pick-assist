@@ -130,4 +130,16 @@ test('la APK dice de cuándo son los datos y si las partidas suben (3.73.1)', ()
   ok(/optJSONObject\("datos"\)/.test(principal) && /optJSONObject\("partidas"\)/.test(principal) && /falta tu clave/.test(principal), 'no dice la edad de los datos o que faltan partidas por subir sin clave');
 });
 
+test('cada pantalla de la APK está en el manifiesto, y solo la principal se abre desde fuera (3.75.0)', () => {
+  const dir = join(RAIZ, 'android/app/src/main/java/es/srchipiron/lector');
+  const manifiesto = readFileSync(join(RAIZ, 'android/app/src/main/AndroidManifest.xml'), 'utf8');
+  const pantallas = readdirSync(dir).filter((f) => /class \w+ : Activity\(\)/.test(readFileSync(join(dir, f), 'utf8'))).map((f) => f.replace('.kt', ''));
+  ok(pantallas.includes('Partidas') && pantallas.includes('Guia'), pantallas.join());
+  for (const p of pantallas) {
+    const m = manifiesto.match(new RegExp(`<activity android:name="\\.${p}"[^>]*>`));
+    ok(m, `${p} no está en el manifiesto: Android la cerraría al abrirla`);
+    if (p !== 'Principal') ok(/android:exported="false"/.test(m[0]), `${p} se puede abrir desde otra app`);
+  }
+});
+
 await terminar('scripts/android');

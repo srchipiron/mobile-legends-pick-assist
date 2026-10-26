@@ -1490,3 +1490,47 @@ recibe `pedirBaseDeDatos` (el fetch de la base de datos): las pruebas
 cambiaban `globalThis.fetch` y, como el arnés corre las asíncronas a la
 vez, se pisaban (la de 3.74.1 pasaba de suerte). Tres mutaciones.
 
+## Mis partidas y la guía en la APK (3.75.0)
+
+Javi: «un log de las partidas con sus fechas, picks… que pueda ver desde el
+apk y que sea lo que está en la base de datos… que pueda modificar… y que
+esos cambios se apliquen también en el log del programa para mejora», y «me
+ha costado encontrar eso de apuntar mis partidas. Haz una suite en el apk
+paso por paso».
+- `GET /partidas` y `POST /partida` (servir.mjs, solo `deLaApk`, con
+  `historial` que pasa en-tablet). `listarPartidas` trae `mis_partidas`
+  con la clave con la que sube (`claveConLaQueSube`) y pone ENCIMA lo que la
+  tablet aún no subió (`sinSubir`); sin base de datos, lo de la tablet
+  (`de: 'tablet'`). Hasta `PARTIDAS_EN_LA_APK` (200) y la lista de héroes.
+- `sanearEdicion`: solo héroes del catálogo (en su grafía), sin repetir
+  entre pick, enemigos y compañeros, ≤5/4/10. `partidas.editar` cambia la
+  partida (si solo estaba en la base de datos, la trae), quita la
+  estimación si cambia el pick, marca `editada` y la vuelve a subir.
+- Si cambia el RESULTADO, `interno.aprenderResultadoDe(desde, gane)`
+  aprende la tabla de ESE draft (`final.desde === desde`, con sus
+  fotogramas aún sin podar, 3 h) con `aprenderDelFinal`, que además quita
+  las plantillas del otro resultado que se le parezcan. Por eso la partida
+  apuntada sola guarda en la tablet `desde` y `resultadoDe` ('tabla' |
+  'pregunta'); la base de datos no los guarda (`paraLaComunidad`).
+  `/estado.partidas` cuenta `porTabla` y `porPregunta`, y la revisión
+  avisa si más de `PREGUNTADAS_MAX` (0,5) de al menos
+  `RESULTADOS_PARA_MEDIR` (5) se preguntaron.
+- La APK: `Partidas.kt` (lista, tocar abre el editor con Gané/Perdí, pick,
+  5 enemigos, 4 compañeros y 10 baneos con autocompletar) y `Guia.kt`
+  (`SECCIONES`: qué es, configurarlo paso a paso, draft, partida, cuando
+  no está seguro, Mis partidas, la base de datos, el móvil, mantenimiento;
+  se abre sola la primera vez, `guiaVista`). Botones arriba en Principal.
+  `android.test` exige que cada Activity esté en el manifiesto y que solo
+  `Principal` sea `exported`.
+- Lo que NO hace: un arreglo en la tablet no cambia la copia que ya tenga
+  el móvil (`fundirPerfil` no pisa lo suyo); eso es la 3.76.0 (el móvil
+  como centro de mando con la misma clave). Y arreglar los héroes de una
+  partida vieja no enseña caras: sin sus capturas (3 h) no hay de qué.
+- Pruebas en `en-tablet` (lista con lo pendiente encima, 403 desde un
+  navegador, editar la de la tablet y la de la base de datos, volver a
+  subir, 400/404, aprender solo si cambia el resultado), `solo` (`desde` y
+  `resultadoDe`), `puente-lector` (aprende solo con las pantallas de ese
+  draft), `revisar-tablet` y `android`. Catorce mutaciones; cinco
+  sobrevivían hasta hacer fallar la subida durante la prueba y mirar
+  `desde`/`resultadoDe`.
+

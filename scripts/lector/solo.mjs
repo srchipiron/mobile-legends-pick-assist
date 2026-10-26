@@ -309,8 +309,11 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
   const apuntarVigilada = (v, { gane, t, duracion = null, contestada = false }) => {
     if (!v || v.apuntada) return;
     v.apuntada = true;
-    const partida = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane, t, duracion, versionModelo: VERSION_MODELO });
-    if (!partida) return;
+    const sola = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane, t, duracion, versionModelo: VERSION_MODELO });
+    if (!sola) return;
+    // De qué draft es y cómo se supo el resultado (3.75.0), solo en la tablet (la base de datos no los guarda):
+    // para medir cuánto reconoce sola y para aprender la tabla si arreglas el resultado.
+    const partida = { ...sola, desde: v.desde, resultadoDe: contestada ? 'pregunta' : 'tabla' };
     apuntar(partida);
     // La corrección contestada ANTES de apuntar la partida (3.74.3): se aplica
     // ahora y la tarjeta no vuelve a salir. Antes se perdía y la partida subía
