@@ -1428,3 +1428,17 @@ de 2026, así que con la tuya no habría llegado ni uno. Siempre la misma, con
 tu clave o sin ella (la revisión agrupa por lector), y tu clave también se
 tapa en el parte. Cinco mutaciones, todas cazadas.
 
+**Lo que la revisión no veía (3.74.2, silent-failure-hunter)**: (1) el
+parte no tenía tope total y con un `fallo-nodo.txt` largo pasaba de los
+16.000 bytes de `subir_parte`: se rechazaba justo con un fallo. Hoy
+`parteDeSalud` cabe en `TOPE_PARTE_BYTES` (12.000): quita líneas del
+registro, luego acorta el fallo a 2.000 y luego errores, y marca
+`recortado` (la revisión lo avisa). (2) Con una lectura cada 5 s, 60
+líneas son 5 minutos y el parte sale cada 15: los errores van aparte
+(`errores`, los 10 últimos de `LINEA_DE_ERROR`, la misma expresión en la
+revisión), del final del registro (`FINAL_DEL_REGISTRO_BYTES`, 256 KB).
+(3) `revisarParte` avisa si `salud.json` lleva más de `SALUD_CALLADA_MIN`
+sin escribirse con la tablet grabando (el hilo «salud» de Lector.kt traga
+sus errores), si no hay fecha de datos, y lee `ultimoFallo.que` (salía
+«[object Object]»). Doce mutaciones, todas cazadas tras apretar dos.
+

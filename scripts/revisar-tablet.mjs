@@ -19,6 +19,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sanearConfig, bajarPartes } from '../src/app/basedatos.js';
+import { LINEA_DE_ERROR } from './lector/en-tablet.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -28,6 +29,9 @@ export const PARTE_CALLADO_MIN = 45;
 export const FALLOS_DE_CAPTURA_MAX = 0.2;
 /** Datos del juego más viejos que esto: decide con un meta que ya no es el de hoy. */
 export const DATOS_VIEJOS_H = 72;
+
+/** La APK escribe salud.json cada 15 s; con más de esto sin escribir y grabando, su hilo de salud murió o la app está colgada. */
+export const SALUD_CALLADA_MIN = 5;
 
 /** Los motivos de cierre de Salidas.kt que son un fallo (su `FALLOS`): una prueba los compara con el fichero. */
 export const CIERRE_POR_FALLO = /falta de memoria|fallo de la app|fallo del lector|dejó de responder|por gastar demasiado|la cerró el sistema|se cerró ella misma/;
@@ -44,19 +48,24 @@ export function revisarParte(parte, { ahora = Date.now() } = {}) {
   if (d.falloNodo) fallos.push(`el lector se cayó o no arrancó la última vez: ${String(d.falloNodo).split('\n')[0].slice(0, 200)}`);
   // Los cierres que son un fallo: los mismos textos que `FALLOS` de Salidas.kt (no «la cerraste tú» ni «se actualizó»).
   if (e.salida && CIERRE_POR_FALLO.test(e.salida)) avisos.push(`Android la cerró: ${e.salida.slice(0, 200)}`);
-  const errores = (d.log ?? []).filter((l) => /ERROR sin recoger|No se pudo|no se pudo leer|SyntaxError|TypeError|ReferenceError/.test(l));
+  // Los errores van aparte (`errores`, de todo el registro) y en las últimas líneas: sin repetir.
+  const errores = [...new Set([...(Array.isArray(d.errores) ? d.errores : []), ...(Array.isArray(d.log) ? d.log : [])].filter((l) => typeof l === 'string' && LINEA_DE_ERROR.test(l)))];
   if (errores.length) fallos.push(`errores en el registro (${errores.length}): ${errores.slice(-3).map((l) => l.slice(0, 160)).join(' | ')}`);
-  if (lector.lecturas > 10 && lector.fallosCaptura / lector.lecturas > FALLOS_DE_CAPTURA_MAX) avisos.push(`fallan ${lector.fallosCaptura} de ${lector.lecturas} capturas${lector.ultimoFallo ? ` (${String(lector.ultimoFallo).slice(0, 120)})` : ''}`);
+  if (lector.lecturas > 10 && lector.fallosCaptura / lector.lecturas > FALLOS_DE_CAPTURA_MAX) avisos.push(`fallan ${lector.fallosCaptura} de ${lector.lecturas} capturas${lector.ultimoFallo?.que ? ` (${String(lector.ultimoFallo.que).slice(0, 120)})` : ''}`);
   if (t.memoriaBaja) avisos.push(`la tablet va justa de memoria (${t.memoriaLibreMB ?? '?'} MB libres; la app usa ${t.memoriaAppMB ?? '?'} MB)`);
   if (t.bateriaLibre === false) avisos.push('el ahorro de batería puede cerrar la app con el juego delante');
   if (t.burbuja === false) avisos.push('la burbuja no tiene permiso');
   else if (t.grabando && /no llega|no deja|no contesta/.test(t.burbujaEstado ?? '')) fallos.push(`la burbuja no sale: ${t.burbujaEstado}`);
   if (e.solo && !e.solo.activo) avisos.push('el modo «Sin móvil» está apagado o sin línea: la tablet no decide sola');
   const fecha = Date.parse(e.datos?.fecha ?? '');
+  if (e.datos && !Number.isFinite(fecha)) avisos.push('la tablet no tiene datos del juego válidos: decide sin estadísticas');
   if (Number.isFinite(fecha) && (ahora - fecha) / 3600000 > DATOS_VIEJOS_H) avisos.push(`datos del juego de hace ${Math.round((ahora - fecha) / 3600000)} h${e.datos.de === 'apk' ? ' (los de la APK: no consigue bajar los nuevos)' : ''}`);
   if (e.partidas?.sinSubir > 0 && !e.partidas.clave) avisos.push(`${e.partidas.sinSubir} partidas solo en la tablet: falta la clave de jugador`);
   else if (e.partidas?.sinSubir > 0 && e.partidas.error) avisos.push(`${e.partidas.sinSubir} partidas sin subir (${e.partidas.error})`);
   if (e.pendiente?.pregunta) avisos.push('hay una partida esperando a que digas cómo acabó');
+  const salud = Number.isFinite(t.cuando) && Number.isFinite(d.cuando) ? (d.cuando - t.cuando) / 60000 : null; // los dos con el reloj de la tablet
+  if (t.grabando && salud != null && salud > SALUD_CALLADA_MIN) avisos.push(`la APK no escribe su estado desde hace ${Math.round(salud)} min con la tablet grabando: lo de la tablet puede ser viejo o estar colgada`);
+  if (d.recortado) avisos.push('el parte llegó recortado: el registro o el fallo eran demasiado largos');
   if (minutos != null && minutos > PARTE_CALLADO_MIN && t.grabando) avisos.push(`el último parte es de hace ${minutos} min con la tablet grabando: ¿se cerró?`);
   return { fallos, avisos, minutos, apk: t.apk ?? null, grabando: !!t.grabando, lecturas: lector.lecturas ?? 0 };
 }

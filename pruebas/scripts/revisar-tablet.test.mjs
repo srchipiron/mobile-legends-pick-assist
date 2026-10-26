@@ -6,9 +6,10 @@
  */
 import { readFileSync } from 'node:fs';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { revisarParte, revisarPartes, informe, PARTE_CALLADO_MIN, DATOS_VIEJOS_H, CIERRE_POR_FALLO } from '../../scripts/revisar-tablet.mjs';
+import { revisarParte, revisarPartes, informe, PARTE_CALLADO_MIN, DATOS_VIEJOS_H, CIERRE_POR_FALLO, SALUD_CALLADA_MIN } from '../../scripts/revisar-tablet.mjs';
 import { subirParte, bajarPartes } from '../../src/app/basedatos.js';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
+import { parteDeSalud } from '../../scripts/lector/en-tablet.mjs';
 
 const AHORA = Date.parse('2026-10-25T12:00:00Z');
 const hace = (min) => new Date(AHORA - min * 60000).toISOString();
@@ -88,6 +89,22 @@ test('los cierres de Android que avisan son justo los que Salidas.kt cuenta como
     eq(CIERRE_POR_FALLO.test(`Último cierre (hace 3 min): ${t} · usaba 900 MB`), fallos.has(r), `«${t}» (${r})`);
     eq(revisarParte({ j: 1, recibido: hace(5), d: sano({ salida: `Último cierre (hace 3 min): ${t}` }) }, { ahora: AHORA }).avisos.length, fallos.has(r) ? 1 : 0, `la revisión con «${t}»`);
   }
+});
+
+test('los puntos ciegos de la revisión (3.74.2): un error viejo del registro, la salud de la APK parada, sin datos y el fallo de captura legible', () => {
+  // Un error en la línea 36 de 180: fuera de las 60 últimas, pero dentro del parte.
+  const log = Array.from({ length: 180 }, (_, i) => (i === 36 ? 'No se pudo guardar la captura: ENOSPC' : `Lectura ${i} (700 ms): baneos Hirara, Marcel`)).join('\n');
+  const d = parteDeSalud({ estado: sano().estado, log, ahora: AHORA });
+  ok(revisarParte({ j: 1, recibido: hace(5), d }, { ahora: AHORA }).fallos.some((f) => /ENOSPC/.test(f)), 'el error de hace más de 60 líneas no llega a la revisión');
+  ok(revisarParte({ j: 1, recibido: hace(5), d: { ...sano(), recortado: true } }, { ahora: AHORA }).avisos.some((a) => /recortado/.test(a)), 'no dice que el parte llegó recortado');
+  // La APK dejó de escribir salud.json (su hilo murió) con la tablet grabando.
+  const parada = { ...sano({ tablet: { grabando: true, burbuja: true, cuando: AHORA - (SALUD_CALLADA_MIN + 10) * 60000 } }), cuando: AHORA };
+  ok(revisarParte({ j: 1, recibido: hace(1), d: parada }, { ahora: AHORA }).avisos.some((a) => /no escribe su estado/.test(a)), 'no ve la salud de la APK parada');
+  const viva = { ...sano({ tablet: { grabando: true, burbuja: true, cuando: AHORA - 20000 } }), cuando: AHORA };
+  eq(revisarParte({ j: 1, recibido: hace(1), d: viva }, { ahora: AHORA }).avisos.length, 0, 'avisa con la salud al día');
+  ok(revisarParte({ j: 1, recibido: hace(1), d: sano({ datos: { fecha: null, de: null } }) }, { ahora: AHORA }).avisos.some((a) => /sin estadísticas/.test(a)), 'no ve la tablet sin datos');
+  const captura = revisarParte({ j: 1, recibido: hace(1), d: sano({ lector: { lecturas: 50, fallosCaptura: 30, ultimoFallo: { cuando: 1, que: 'la APK no contesta' } } }) }, { ahora: AHORA });
+  ok(captura.avisos.some((a) => /la APK no contesta/.test(a) && !/object/.test(a)), JSON.stringify(captura.avisos));
 });
 
 await terminar('scripts/revisar-tablet');

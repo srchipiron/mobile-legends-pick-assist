@@ -237,6 +237,16 @@ export async function subirLoDeLaTablet({ partidas, clave, config, fetch = globa
 export const PARTE_CADA_MS = 15 * 60 * 1000;
 /** Las líneas del registro que van en cada parte, y su largo máximo. */
 export const LINEAS_DEL_PARTE = 60;
+/**
+ * Tope del parte entero, en bytes (3.74.2): el servidor rechaza más de
+ * 16.000 (`subir_parte`), y con un fallo de Node largo el parte pasaba de
+ * 19.000 y no llegaba justo cuando había algo que ver. Margen para el estado.
+ */
+export const TOPE_PARTE_BYTES = 12000;
+/** Las líneas del registro que son un error: van aparte en el parte para que no se salgan de las últimas 60. La revisión usa la misma. */
+export const LINEA_DE_ERROR = /ERROR sin recoger|No se pudo|no se pudo|fallaron|SyntaxError|TypeError|ReferenceError|RangeError|ENOSPC/;
+/** Los errores que van aparte en cada parte, los más recientes. */
+export const ERRORES_DEL_PARTE = 10;
 
 /**
  * Las últimas líneas del registro, limpias para salir de la tablet (3.74.0):
@@ -244,9 +254,9 @@ export const LINEAS_DEL_PARTE = 60;
  * caracteres de control, y cortas. Lo demás del registro son nombres de
  * héroe, tiempos y contadores.
  */
-export function lineasLimpias(texto, { secretos = [], max = LINEAS_DEL_PARTE } = {}) {
+export function lineasLimpias(texto, { secretos = [], max = LINEAS_DEL_PARTE, solo = null } = {}) {
   const tapar = secretos.filter((x) => typeof x === 'string' && x.length >= 8);
-  return String(texto ?? '').split('\n').filter((l) => l.trim()).slice(-max).map((l) => {
+  return String(texto ?? '').split('\n').filter((l) => l.trim() && (!solo || solo.test(l))).slice(-max).map((l) => {
     // Sin caracteres de control (limpiarTexto, el de la voz) y sin IP.
     let x = limpiarTexto(l).replace(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g, '[ip]');
     for (const sec of tapar) x = x.split(sec).join('[oculto]');
@@ -256,17 +266,29 @@ export function lineasLimpias(texto, { secretos = [], max = LINEAS_DEL_PARTE } =
 
 /**
  * El parte de salud de la tablet (3.74.0): lo que dice /estado, el fallo de
- * Node de la última vez si lo hubo y las últimas líneas del registro,
- * limpias. Lo sube `subirParte` con tu clave; la revisión automática lo lee.
+ * Node de la última vez si lo hubo, los últimos errores del registro (de
+ * todo él: con una lectura cada 5 s, 60 líneas son 5 minutos y el parte
+ * sale cada 15) y sus últimas líneas, limpias. Cabe siempre en
+ * `TOPE_PARTE_BYTES`: si no, quita primero líneas del registro y luego
+ * acorta el fallo, y lo dice en `recortado`. Lo sube `subirParte`.
  */
 export function parteDeSalud({ estado, log = '', falloNodo = null, secretos = [], ahora = Date.now() }) {
-  return {
+  const parte = {
     v: 1, cuando: ahora,
     estado,
     ...(falloNodo ? { falloNodo: lineasLimpias(falloNodo, { secretos, max: 30 }).join('\n') } : {}),
+    errores: lineasLimpias(log, { secretos, max: ERRORES_DEL_PARTE, solo: LINEA_DE_ERROR }),
     log: lineasLimpias(log, { secretos }),
   };
+  const mide = () => Buffer.byteLength(JSON.stringify(parte));
+  while (mide() > TOPE_PARTE_BYTES && parte.log.length) { parte.log.shift(); parte.recortado = true; }
+  if (mide() > TOPE_PARTE_BYTES && parte.falloNodo) { parte.falloNodo = parte.falloNodo.slice(0, 2000); parte.recortado = true; }
+  while (mide() > TOPE_PARTE_BYTES && parte.errores.length) { parte.errores.shift(); parte.recortado = true; }
+  return parte;
 }
+
+/** Lo último del registro: basta con el final para el parte, y un registro de meses no se lee entero cada 15 minutos. */
+export const FINAL_DEL_REGISTRO_BYTES = 256 * 1024;
 
 /**
  * La clave con la que la tablet sube sus PARTES (3.74.1): la suya, creada al
@@ -385,7 +407,7 @@ export async function principal(env = process.env) {
     const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
     if (!claveDeJugadorValida(clave) || !config) return;
     const leer = (f) => { try { return readFileSync(join(casa, f), 'utf8'); } catch { return null; } };
-    const parte = parteDeSalud({ estado: servidor.interno.estado(), log: leer('lector.log') ?? '', falloNodo: leer('fallo-nodo.txt'), secretos: [codigo, clave, ajustes.delMovil()?.clave] });
+    const parte = parteDeSalud({ estado: servidor.interno.estado(), log: (leer('lector.log') ?? '').slice(-FINAL_DEL_REGISTRO_BYTES), falloNodo: leer('fallo-nodo.txt'), secretos: [codigo, clave, ajustes.delMovil()?.clave] });
     const r = await subirParte({ config, clave, parte });
     if (r.error && r.error !== 'pronto') registrar(`El parte de salud no se pudo subir (${r.error}).`);
   };

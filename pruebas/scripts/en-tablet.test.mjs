@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector } from '../../scripts/lector/en-tablet.mjs';
+import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { claveDeJugadorValida } from '../../src/app/basedatos.js';
 import { pruebaDelReto } from '../../src/app/lector.js';
@@ -485,6 +485,25 @@ test('el parte de salud (3.74.0): sin IPs, sin el código ni tu clave, sin carac
   ok(!p.falloNodo.includes(CODIGO) && !p.falloNodo.includes('10.0.0.5'), `el fallo de Node sale sin limpiar: ${p.falloNodo}`);
   ok(!('falloNodo' in parteDeSalud({ estado: {}, log: '' })), 'sin fallo, falloNodo viaja igual');
   ok(JSON.stringify(p).length < 16000, 'el parte no cabe en lo que acepta el servidor');
+});
+
+test('el parte cabe siempre en lo que acepta el servidor, también con un fallo de Node largo, y los errores no se pierden (3.74.2)', async () => {
+  const s = supabaseFalso();
+  const config = { url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica };
+  const { subirParte } = await import('../../src/app/basedatos.js');
+  const largo = (i) => `Lectura ${i} (1300 ms, captura sin comprimir 283): ${'baneos Hirara, Marcel, Masha, Belerick, Eudora · '.repeat(8)}`;
+  const log = Array.from({ length: 200 }, (_, i) => (i === 50 ? 'ERROR sin recoger: TypeError: x' : largo(i))).join('\n');
+  const falloNodo = Array.from({ length: 40 }, (_, i) => `    at algo${i} (${'x'.repeat(280)})`).join('\n');
+  const p = parteDeSalud({ estado: { tablet: { apk: '3.74.2' }, lector: { lecturas: 1 } }, log, falloNodo, ahora: 1 });
+  ok(Buffer.byteLength(JSON.stringify(p)) <= TOPE_PARTE_BYTES, `el parte mide ${Buffer.byteLength(JSON.stringify(p))}`);
+  ok(p.recortado && p.falloNodo && p.log.length > 0, 'recorta sin decirlo, o se queda sin fallo o sin registro');
+  ok(p.errores.some((l) => /TypeError/.test(l)), 'el error de la línea 50 de 200 no va en el parte');
+  eq((await subirParte({ config, clave: 'Q'.repeat(43), parte: p }, { fetch: s.fetch })).error, undefined, 'el servidor lo rechaza');
+  ok(!parteDeSalud({ estado: {}, log: 'hola' }).recortado, 'dice recortado sin recortar');
+  // Diez errores largos y el fallo entero no caben juntos: se acorta el fallo, no se pierden los errores.
+  const errores = Array.from({ length: 12 }, (_, i) => `No se pudo leer ${i}: ${'y'.repeat(290)}`).join('\n');
+  const q = parteDeSalud({ estado: { tablet: { burbujaEstado: 'z'.repeat(1500) } }, log: errores, falloNodo, ahora: 1 });
+  ok(Buffer.byteLength(JSON.stringify(q)) <= TOPE_PARTE_BYTES && q.errores.length === 10 && q.falloNodo.length <= 2000, `con errores largos: ${Buffer.byteLength(JSON.stringify(q))} bytes, ${q.errores.length} errores`);
 });
 
 test('la tablet sube su parte con SU clave, aunque el móvil no haya mandado la tuya, y sin secretos (3.74.1)', async () => {

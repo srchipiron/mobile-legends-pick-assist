@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.74.2
+
+- El parte de salud de la tablet llega siempre. Con un fallo largo pasaba
+  del tamaño que acepta la base de datos y se perdía, justo cuando había
+  algo que ver. Ahora se recorta y lo dice.
+- Los errores del registro de Lector MLBB van aparte en el parte, así que
+  la revisión ve también los de hace más de 5 minutos.
+- La revisión diaria avisa además cuando la app de la tablet deja de
+  escribir su estado, cuando la tablet no tiene datos del juego válidos, y
+  dice el motivo real de las capturas fallidas.
+
 ## 3.74.1
 
 - Lector MLBB manda su parte de salud aunque el móvil no le haya pasado

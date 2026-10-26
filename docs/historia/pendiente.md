@@ -263,3 +263,14 @@
   como `anon` dentro de una transacción deshecha. Falta que la tablet tenga
   tu clave: la base de datos tenía 0 jugadores y 0 partidas, así que
   «Guardar mis partidas» no está puesto en el móvil.
+- **Tres fallos silenciosos del modo «Sin móvil», reproducidos el 26 de
+  octubre de 2026 y para la siguiente iteración** (guiones del
+  silent-failure-hunter): (a) dos partidas seguidas sin contestar: la
+  segunda pregunta pisa a la primera y esa partida no se apunta, sin
+  registro; la pregunta caduca a las 3 h en silencio; y la partida
+  contestada tarde se fecha con la hora de la respuesta (`t` es su
+  identidad). (b) Contestar «Enseña al lector» antes de que se apunte la
+  partida (`partida` null) no corrige nada y la tarjeta vuelve a salir.
+  (c) Las lecturas del propio modo solo cuentan como «el móvil lee» en la
+  APK (paso 6 de la guía).
+
