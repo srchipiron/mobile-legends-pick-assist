@@ -29,7 +29,7 @@ function estadoDeEnvio(envio, t) {
   return t('hist.autoNada');
 }
 
-export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null, maestriaUsada = null, perfil = null, envio = null, comunidad = null, onImportar = null, onOlvidar, onCorregir, onCambiarHeroe, onAnadir, onCerrar, t = tPorDefecto }) {
+export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null, maestriaUsada = null, perfil = null, envio = null, comunidad = null, onImportar = null, onOlvidar, onCorregir, onCambiarHeroe, onCambiarDraft = null, onAnadir, onCerrar, t = tPorDefecto }) {
   const [anadiendo, setAnadiendo] = useState(false);
   const [heroe, setHeroe] = useState(null);
   const [aviso, setAviso] = useState(null);
@@ -185,11 +185,58 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null,
                   <button key={h.name} className={p.pick === h.name ? 'elegido' : ''} onClick={() => { onCambiarHeroe?.(p.t, h.name); setCambiando(null); }}>{h.name}</button>
                 ))}
               </div>
+              {onCambiarDraft && datos?.heroes && <EditarDraft partida={p} heroes={datos.heroes} onCambiar={(cambios) => onCambiarDraft(p.t, cambios)} t={t} />}
             </div>
           )}
           </div>
         )))}
       </div>
     </Hoja>
+  );
+}
+
+/** Lo que cabe en cada equipo: cinco enemigos y cuatro compañeros (tú eres el quinto). */
+const TOPE_EQUIPO = { enemigos: 5, aliados: 4 };
+
+/**
+ * Quién iba en cada equipo (3.78.0), para arreglarlo desde el móvil como en
+ * «Mis partidas» de la tablet: quitar con la × o añadir escribiendo el
+ * nombre (la lista de todos los héroes, en su grafía). Se guarda al momento,
+ * con la hora del arreglo: así llega a la tablet y no lo pisa su copia.
+ */
+function EditarDraft({ partida, heroes, onCambiar, t }) {
+  const [escrito, setEscrito] = useState({ enemigos: '', aliados: '' });
+  const nombres = heroes.map((h) => h.name);
+  const porClave = new Map(nombres.map((n) => [n.toLowerCase(), n]));
+  const draft = partida.draft ?? {};
+  const listaId = `heroes-${partida.t}`;
+  const equipo = (lado) => {
+    const actuales = draft[lado] ?? [];
+    const nombre = porClave.get(escrito[lado].trim().toLowerCase());
+    const yaEsta = nombre && (nombre === partida.pick || [...(draft.enemigos ?? []), ...(draft.aliados ?? [])].includes(nombre));
+    const anadir = () => { onCambiar({ [lado]: [...actuales, nombre] }); setEscrito((e) => ({ ...e, [lado]: '' })); };
+    return (
+      <div className={`editar-equipo ${lado}`}>
+        <strong>{t(`hist.draft.${lado}`)}</strong>
+        <div className="editar-chips">
+          {actuales.map((n) => (
+            <span key={n} className="editar-chip">{n}<button className="x" aria-label={`${t('hist.draft.quitar')} · ${n}`} onClick={() => onCambiar({ [lado]: actuales.filter((x) => x !== n) })}>×</button></span>
+          ))}
+        </div>
+        {actuales.length < TOPE_EQUIPO[lado] && (
+          <div className="editar-anadir">
+            <input type="text" list={listaId} autoComplete="off" placeholder={t('hist.draft.escribe')} aria-label={`${t('hist.draft.anadir')} · ${t(`hist.draft.${lado}`)}`} value={escrito[lado]} onChange={(e) => setEscrito((x) => ({ ...x, [lado]: e.target.value }))} />
+            <button className="reset" disabled={!nombre || yaEsta} onClick={anadir}>{t('hist.draft.anadir')}</button>
+          </div>
+        )}
+      </div>
+    );
+  };
+  return (
+    <div className="editar-draft">
+      <datalist id={listaId}>{nombres.map((n) => <option key={n} value={n} />)}</datalist>
+      {equipo('enemigos')}
+      {equipo('aliados')}
+    </div>
   );
 }

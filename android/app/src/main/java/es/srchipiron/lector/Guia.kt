@@ -42,7 +42,7 @@ class Guia : Activity() {
                 "Si una cara no la reconoce sale «?»: sigue decidiendo con lo que sí ve.",
             ),
             "Durante la partida" to listOf(
-                "La burbuja se esconde para no molestar. La voz te da los consejos de tu héroe en su minuto (cuándo apretar, cuándo aguantar). Se calla en Ajustes → «Voz en partida».",
+                "La burbuja se esconde para no molestar. La voz te da los consejos de tu héroe en su minuto (cuándo apretar, cuándo aguantar). También avisa de la tortuga (a 1:30, sale a los 2:00) y del Lord (a los 7:00, sale a los 8:00). Se calla en Ajustes → «Voz en partida».",
                 "Al acabar, lee la pantalla del resultado y apunta la partida: fecha, tu pick, resultado, enemigos, compañeros, baneos y duración.",
             ),
             "Cuando no está seguro" to listOf(

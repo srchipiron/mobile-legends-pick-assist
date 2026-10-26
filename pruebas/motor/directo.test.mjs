@@ -8,7 +8,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { guionEnDirecto, cierresPorTramo, tramoDeMinutos, MINUTOS, MAX_PARTES } from '../../src/motor/directo.js';
+import { guionEnDirecto, cierresPorTramo, tramoDeMinutos, MINUTOS, MAX_PARTES, OBJETIVOS, ANTES_DEL_OBJETIVO } from '../../src/motor/directo.js';
 import { prepararDatos, planear } from '../../src/motor/draft.js';
 import { tramoDe } from '../../scripts/medir-fases.mjs';
 import es from '../../src/app/i18n/es.js';
@@ -55,9 +55,23 @@ test('el cambio de lado solo si el plan lo afirma (con tres por bando), dos minu
   const afirmado = guionEnDirecto(plan({ tendencia: 'pronto', ps: [0.6, 0.57, 0.53, 0.49, 0.46, 0.44], cambio: { minuto: 16, aFavor: false }, tarde: [{ clave: 'etapa.cambiaEnContra', params: { min: 16 } }] }));
   eq(afirmado.find((a) => a.partes[0].clave === 'directo.cambiaEnContra')?.min, 14, 'el cambio de lado no se dice dos minutos antes');
   const sinFases = guionEnDirecto(plan({ fases: null }));
-  ok(sinFases.length >= 1 && !claves(sinFases).some((c) => c.startsWith('directo.') && c !== 'directo.peleas'), `sin curvas habla de fases: ${claves(sinFases)}`);
+  ok(sinFases.length >= 1 && !claves(sinFases).some((c) => c.startsWith('directo.') && !['directo.peleas', 'directo.tortuga', 'directo.lord'].includes(c)), `sin curvas habla de fases: ${claves(sinFases)}`);
   eq(guionEnDirecto(null).length, 0);
   eq(cierresPorTramo(null).length, 0);
+});
+
+test('tortuga y Lord (3.78.0): siempre, con o sin fases, con su antelación y el minuto en que salen', () => {
+  for (const g of [guionEnDirecto(plan()), guionEnDirecto(plan({ fases: null }))]) {
+    const tortuga = g.find((a) => a.partes.some((p) => p.clave === 'directo.tortuga'));
+    const lord = g.find((a) => a.partes.some((p) => p.clave === 'directo.lord'));
+    eq(tortuga?.min, 1.5, 'la tortuga no se avisa a los 1:30');
+    eq(lord?.min, 7, 'el Lord no se avisa a los 7:00');
+    eq(tortuga.partes.find((p) => p.clave === 'directo.tortuga').params.min, 2);
+    eq(lord.partes.find((p) => p.clave === 'directo.lord').params.min, 8);
+    ok(g.every((a, i) => i === 0 || a.min >= g[i - 1].min), 'el guion con objetivos no va en orden de minutos');
+  }
+  // Tiempos del parche (wiki y Liquipedia, 26 de octubre de 2026): un tiempo equivocado es peor que ninguno.
+  eq(`${OBJETIVOS.tortuga}/${OBJETIVOS.lord}/${ANTES_DEL_OBJETIVO.tortuga}/${ANTES_DEL_OBJETIVO.lord}`, '2/8/0.5/1');
 });
 
 test('el cierre, uno por tramo con su probabilidad; y los tramos, repartidos igual que en la medida de las partidas pro', () => {

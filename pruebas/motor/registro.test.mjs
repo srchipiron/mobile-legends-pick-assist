@@ -7,7 +7,7 @@
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { sanear } from '../../src/motor/perfil.js';
-import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, medirFasesMias, aciertosDelLector, apuntar, olvidar, corregir, cambiarHeroe, marcarEditada, calibracion, modeloDe, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
+import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, medirFasesMias, aciertosDelLector, apuntar, olvidar, corregir, cambiarHeroe, cambiarDraft, marcarEditada, calibracion, modeloDe, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
 import { maestriaDesdeRegistro, maestriaEfectiva, winrateDeReferencia, TOPE_DE_SIEMPRE } from '../../src/motor/maestria.js';
 import { nombreClave } from '../../src/motor/nombres.js';
 import { generador } from '../../src/motor/robustez.js';
@@ -461,6 +461,18 @@ test('marcar una partida arreglada (3.76.0): solo esa, con la hora', () => {
   const ps = [{ t: 1, pick: 'A', gane: true }, { t: 2, pick: 'B', gane: true }];
   const m = marcarEditada(ps, 2, 777);
   ok(m[0] === ps[0] && m[1].editada === 777 && m[1].pick === 'B', JSON.stringify(m));
+});
+
+test('arreglar quién iba en cada equipo (3.78.0): sin repetir entre equipos ni con tu pick, con tope, y el resto de la partida igual', () => {
+  const ps = [{ t: 1, pick: 'Estes', gane: true, estimacion: 0.55, draft: { linea: 'roam', enemigos: ['Clint'], aliados: ['Gord'], rival: 'Clint' } }, { t: 2, pick: 'Gord', gane: false }];
+  const a = cambiarDraft(ps, 1, { enemigos: ['Khufra', 'Estes', 'Khufra', 'Gord', ' Layla '] });
+  eq(JSON.stringify(a[0].draft), JSON.stringify({ enemigos: ['Khufra', 'Layla'], aliados: ['Gord'], linea: 'roam' }), 'repite héroes, o se queda un rival que ya no está');
+  ok(a[0].estimacion === 0.55 && a[0].gane === true && a[1] === ps[1], 'toca el resto');
+  eq(JSON.stringify(cambiarDraft(ps, 1, { aliados: ['Clint', 'Selena', 'A', 'B', 'C', 'D'] })[0].draft.aliados), JSON.stringify(['Selena', 'A', 'B', 'C']), 'el compañero repite un enemigo o pasa de cuatro');
+  eq(cambiarDraft(ps, 1, { aliados: ['Selena'] })[0].draft.rival, 'Clint', 'pierde el rival al cambiar los compañeros');
+  eq(cambiarDraft(ps, 1, { enemigos: Array.from({ length: 8 }, (_, i) => `H${i}`) })[0].draft.enemigos.length, 5);
+  eq(cambiarDraft(ps, 2, { enemigos: ['Clint'] })[1].draft.enemigos[0], 'Clint', 'no arregla una partida sin draft');
+  ok(!('draft' in cambiarDraft([{ t: 3, pick: 'X', gane: true, draft: { enemigos: ['A'], aliados: [] } }], 3, { enemigos: [] })[0]), 'deja un draft vacío');
 });
 
 await terminar('motor/registro');

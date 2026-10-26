@@ -263,4 +263,13 @@ Javi: «que el móvil sea como un centro de comandos estadísticos del apk».
   vieja no pisa, una más nueva sí), `app/basedatos` (`queTraer`, el falso),
   `motor/perfil`, `motor/registro`, `app/lector` y `en-tablet` (`/clave`,
   `alDiaCon`). Veinte mutaciones, todas cazadas tras apretar dos.
+- **Quién iba en cada equipo, desde el móvil (3.78.0)**: `cambiarDraft`
+  (registro.js) cambia enemigos (hasta 5) y compañeros (hasta 4) de una
+  partida, sin tu pick ni repetidos ENTRE equipos (lo que no se toca cuenta
+  como ya puesto), y pasa por `sanearDraft`. `cambiarDraftPartida`
+  (usePersonal) la marca `editada`, así que viaja a la tablet como
+  cualquier arreglo. En el historial, `EditarDraft` (chips con × y un campo
+  con la lista de héroes). Pruebas en `motor/registro` y
+  `persistencia.e2e`; cuatro mutaciones cazadas, la del tope sobrevive
+  porque `sanearDraft` también corta en cinco (inofensiva).
 

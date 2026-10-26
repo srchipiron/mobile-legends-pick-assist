@@ -241,6 +241,31 @@ export const corregir = (partidas = [], t, gane) => partidas.map((p) => (p.t ===
  * Marca cuándo arreglaste una partida (3.76.0): entre el móvil y la tablet,
  * al juntarlas, gana la copia arreglada más tarde (`fundirPerfil`).
  */
+/**
+ * Arreglar quién iba en cada equipo de una partida (3.78.0): el lector se
+ * dejó a alguien o leyó a otro. Sin repetir entre equipos ni con tu pick, y
+ * como mucho cinco enemigos y cuatro compañeros; el rival marcado se queda
+ * solo si sigue entre los enemigos. La estimación se queda: es lo que la app
+ * dijo con lo que veía, y eso es justo lo que se mide.
+ */
+export function cambiarDraft(partidas = [], t, { enemigos, aliados } = {}) {
+  return partidas.map((p) => {
+    if (p.t !== t) return p;
+    const usados = new Set([p.pick]);
+    const limpiar = (lista, max) => (Array.isArray(lista) ? lista : []).filter((n) => typeof n === 'string' && n.trim()).map((n) => n.trim())
+      .filter((n) => (usados.has(n) ? false : (usados.add(n), true))).slice(0, max);
+    const antes = p.draft ?? {};
+    // Lo que no cambia ya está puesto: lo nuevo no puede repetirlo.
+    if (enemigos === undefined) (antes.enemigos ?? []).forEach((n) => usados.add(n));
+    if (aliados === undefined) (antes.aliados ?? []).forEach((n) => usados.add(n));
+    const e = enemigos === undefined ? (antes.enemigos ?? []) : limpiar(enemigos, 5);
+    const a = aliados === undefined ? (antes.aliados ?? []) : limpiar(aliados, 4);
+    const draft = sanearDraft({ ...antes, enemigos: e, aliados: a });
+    const { draft: _viejo, ...resto } = p;
+    return draft ? { ...resto, draft } : resto;
+  });
+}
+
 export const marcarEditada = (partidas = [], t, ahora = Date.now()) => partidas.map((p) => (p.t === t ? { ...p, editada: ahora } : p));
 
 /**

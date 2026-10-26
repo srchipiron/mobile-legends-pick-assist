@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CLAVES, leer, guardar } from './almacen.js';
 import { sanear, sanearOlvidadas } from '../../motor/perfil.js';
-import { apuntar, olvidar, corregir, cambiarHeroe, marcarEditada } from '../../motor/registro.js';
+import { apuntar, olvidar, corregir, cambiarHeroe, cambiarDraft, marcarEditada } from '../../motor/registro.js';
 import { maestriaEfectiva, fecharMaestria } from '../../motor/maestria.js';
 import { ajustePersonal } from '../../motor/registro.js';
 
@@ -60,6 +60,8 @@ export function usePersonal() {
   // Con la hora del arreglo (3.76.0): así llega a la tablet y no lo pisa la copia de allí.
   const corregirPartida = useCallback((t, gane) => guardarPartidas(marcarEditada(corregir(ultimas.current, t, gane), t)), [guardarPartidas]);
   const cambiarHeroePartida = useCallback((t, pick) => guardarPartidas(marcarEditada(cambiarHeroe(ultimas.current, t, pick), t)), [guardarPartidas]);
+  // Quién iba en cada equipo (3.78.0): el lector se dejó a alguien o leyó a otro.
+  const cambiarDraftPartida = useCallback((t, cambios) => guardarPartidas(marcarEditada(cambiarDraft(ultimas.current, t, cambios), t)), [guardarPartidas]);
 
   /**
    * Trae los datos de otro dispositivo. Vienen ya FUNDIDOS con los de aquí
@@ -71,5 +73,5 @@ export function usePersonal() {
     guardarOlvidadas(sanearOlvidadas(fundido.olvidadas));
   }, [guardarMaestria, guardarPartidas, guardarOlvidadas]);
 
-  return { maestria, maestriaUsada, ajuste, partidas, olvidadas, guardarMaestria, guardarPartidas, apuntarPartida, olvidarPartida, corregirPartida, cambiarHeroePartida, importarPerfil };
+  return { maestria, maestriaUsada, ajuste, partidas, olvidadas, guardarMaestria, guardarPartidas, apuntarPartida, olvidarPartida, corregirPartida, cambiarHeroePartida, cambiarDraftPartida, importarPerfil };
 }

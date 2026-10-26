@@ -168,6 +168,17 @@ las peleas, al final, problemas). Lo que conviene no volver a suponer:
   - Con el draft cerrado por la partida y un enemigo leído, la voz afirmaba
     fases que el plan escrito callaba.
   - Pruebas en `directo.test`; siete mutaciones.
+- **Tortuga y Lord (3.78.0)**, pedido por Javi con la condición de «un
+  tiempo equivocado es peor que ninguno». `OBJETIVOS` (tortuga 2, Lord 8,
+  minutos de partida) y `ANTES_DEL_OBJETIVO` (0,5 y 1) en directo.js son
+  DATOS DEL JUEGO, no calibrados: wiki, Liquipedia (parche 1.6.42 pasó el
+  Lord de 9 a 8) y guías del parche 2.2.16a, comprobados el 26 de octubre
+  de 2026. Si un parche los mueve, se cambian ahí y en la prueba que los
+  fija. Van en todos los guiones, también sin fases. Solo la PRIMERA
+  aparición: los respawns dependen de cuándo se mata, y el lector no lo ve.
+  Con el tope de voz (`VOZ_POR_VENTANA` 4 cada 3 min) caben: lo más
+  apretado es Lord a los 7, «aguantad» a los 8 y un cambio de lado a los
+  9. Prueba en `directo.test`, cuatro mutaciones.
 - **Liquipedia** (preguntado por Javi): la ficha de un héroe trae
   estadísticas base, enfriamientos por nivel y el texto de las habilidades,
   lo mismo que la API, y nada de en qué fase es fuerte. De Liquipedia se

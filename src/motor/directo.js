@@ -31,6 +31,18 @@ export const MAX_PARTES = 3;
  */
 export const MINUTOS = { inicio: 0.25, peleas: 5, momento: 9, aguanta: 8, giro: 15, final: 13, veinte: 19.5 };
 
+/**
+ * Cuándo sale cada objetivo por PRIMERA vez (3.78.0), en minutos de partida:
+ * dato del juego, no medida nuestra. Tortuga al 2:00 y Lord al 8:00 según
+ * la wiki del juego, Liquipedia (el parche 1.6.42 lo bajó de 9 a 8) y las
+ * guías del parche 2.2.16a, comprobado el 26 de octubre de 2026. Después
+ * reaparecen según cuándo los maten, y eso el lector no lo ve: solo se
+ * avisa del primero. Si un parche los mueve, se cambia AQUÍ.
+ */
+export const OBJETIVOS = { tortuga: 2, lord: 8 };
+/** Con cuánto se avisa antes de cada uno, en minutos. Decisión de producto: tiempo de ir. */
+export const ANTES_DEL_OBJETIVO = { tortuga: 0.5, lord: 1 };
+
 const pct = (p) => Math.round(p * 100);
 /** La probabilidad del tramo que empieza en `desde` (10, 12 … 20). */
 const pEn = (fases, desde) => fases?.puntos?.find((x) => x.desde === desde)?.p ?? null;
@@ -85,6 +97,9 @@ export function guionEnDirecto(plan) {
     // Pasado el 20: cuánto os queda.
     if (largo != null && medio != null) avisar(MINUTOS.veinte, [{ clave: largo >= 0.5 ? 'directo.veinteAFavor' : 'directo.veinteEnContra', params: { p: pct(largo) } }]);
   }
+  // Los objetivos (3.78.0): siempre, aunque no haya plan de fases: son la hora del juego, no del draft.
+  avisar(OBJETIVOS.tortuga - ANTES_DEL_OBJETIVO.tortuga, [{ clave: 'directo.tortuga', params: { min: OBJETIVOS.tortuga } }]);
+  avisar(OBJETIVOS.lord - ANTES_DEL_OBJETIVO.lord, [{ clave: 'directo.lord', params: { min: OBJETIVOS.lord } }]);
   // Tu peor cruce, si lo hay, con las peleas (es un problema de todas ellas).
   const evita = problemas.find((f) => f.clave === 'partida.evita');
   if (evita) {

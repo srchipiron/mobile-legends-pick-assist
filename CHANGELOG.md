@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.78.0
+
+- En el móvil ya puedes arreglar quién iba en cada equipo de una partida
+  apuntada: en el historial, toca la partida y quita o añade enemigos y
+  compañeros. Antes solo se podía en la tablet; desde el móvil, solo el
+  resultado y tu héroe. El arreglo se sube y la tablet lo ve igual.
+- La voz en partida avisa de los objetivos: «la tortuga sale en 30
+  segundos» al minuto 1:30 y «el Lord sale en un minuto» al minuto 7. Son
+  los tiempos del parche actual (tortuga a los 2:00, Lord a los 8:00),
+  comprobados hoy. Solo avisa de la primera aparición: lo que pasa después
+  depende de cuándo la matéis, y eso el lector no lo ve.
+
 ## 3.77.0
 
 - El móvil enseña el estado del sistema de un vistazo, en Ajustes → Lector

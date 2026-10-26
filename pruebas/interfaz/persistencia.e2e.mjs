@@ -133,6 +133,30 @@ await prueba('el héroe de una partida apuntada se cambia tocándolo, se guarda 
   } finally { await contexto.close(); }
 });
 
+await prueba('quién iba en cada equipo se arregla desde el historial del móvil: quitar, añadir, sin repetir, y con la hora del arreglo (3.78.0)', async () => {
+  const partida = { t: 3000, pick: 'Diggie', gane: false, origen: 'lector', recomendados: ['Diggie'], rango: 'glory', draft: { linea: 'roam', enemigos: ['Layla', 'Clint'], aliados: ['Gord'] } };
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:partidas': [partida] } });
+  try {
+    await abrirHoja(pagina, 1);
+    await pagina.locator('.partida-hero', { hasText: 'Diggie' }).click(); await pagina.waitForTimeout(200);
+    const enemigos = pagina.locator('.editar-equipo.enemigos');
+    await enemigos.getByRole('button', { name: /Layla/ }).click(); await pagina.waitForTimeout(300);
+    await enemigos.locator('input').fill('khufra');
+    await enemigos.getByRole('button', { name: /^(Añadir|Add)$/ }).click(); await pagina.waitForTimeout(300);
+    const aliados = pagina.locator('.editar-equipo.aliados');
+    await aliados.locator('input').fill('Clint');
+    ok(await aliados.getByRole('button', { name: /^(Añadir|Add)$/ }).isDisabled(), 'deja meter de compañero a un enemigo');
+    await aliados.locator('input').fill('Selena');
+    await aliados.getByRole('button', { name: /^(Añadir|Add)$/ }).click(); await pagina.waitForTimeout(400);
+    const [p] = await leer(pagina, 'roam-picker:partidas');
+    eq(JSON.stringify(p.draft.enemigos), JSON.stringify(['Clint', 'Khufra']), `los enemigos no se arreglan: ${JSON.stringify(p.draft)}`);
+    eq(JSON.stringify(p.draft.aliados), JSON.stringify(['Gord', 'Selena']), 'los compañeros no se arreglan');
+    ok(Number.isFinite(p.editada) && p.pick === 'Diggie' && p.gane === false, `sin la hora del arreglo, o toca el resto: ${JSON.stringify(p)}`);
+    eq(await pagina.locator('.partida-cambiar').count(), 1, 'arreglar el draft cierra el panel');
+    ok(!errores.length, `errores de página: ${errores}`);
+  } finally { await contexto.close(); }
+});
+
 await prueba('la calibración dice aparte la del modelo de hoy, y el Diagnóstico también (3.60.3)', async () => {
   // 20 del modelo de antes (sin `modelo`, de septiembre) y 6 del de hoy.
   const vieja = (i) => ({ t: Date.parse('2026-09-01T12:00:00Z') + i * 6e5, pick: 'Atlas', gane: i % 2 === 0, recomendados: ['Atlas'], rango: 'glory', estimacion: 0.6 });
