@@ -215,6 +215,32 @@ export function fundirBuilds(previo = {}, fresco = {}, heroList = []) {
 }
 
 /**
+ * Los objetos (3.81.1): la defensa sale SOLO de la ruta larga
+ * (`/equipment/expanded`, con `equiptips` de defensa) y la corta trae nombre,
+ * icono y a veces algún efecto. El 27 de octubre de 2026 la larga dio 500 y
+ * la corta 184 objetos: como el catálogo no venía vacío SUSTITUÍA al
+ * guardado, y se perdían la defensa de 33 objetos y los efectos de 19 (el
+ * comparador tiró la corrida). Si la corrida no trae NINGUNA defensa, la ruta
+ * larga no respondió: cada objeto conserva su defensa y su tipo de antes y
+ * sus efectos se juntan con los de hoy. Si trae alguna, manda lo de hoy (un
+ * objeto que pierde un efecto en un parche lo pierde de verdad).
+ */
+export function fundirEquipo(previo = {}, fresco = {}) {
+  if (!Object.keys(fresco ?? {}).length) return { equipo: previo ?? {}, conservados: 0 };
+  if (Object.values(fresco).some((o) => o?.magica || o?.fisica)) return { equipo: fresco, conservados: 0 };
+  const equipo = {};
+  let conservados = 0;
+  for (const [id, o] of Object.entries(fresco)) {
+    const viejo = previo?.[id];
+    if (!(viejo?.magica || viejo?.fisica || viejo?.efectos?.length || viejo?.tipo)) { equipo[id] = o; continue; }
+    const efectos = [...new Set([...(viejo.efectos ?? []), ...(o.efectos ?? [])])];
+    equipo[id] = { ...o, tipo: o.tipo ?? viejo.tipo ?? null, ...(viejo.magica ? { magica: viejo.magica } : {}), ...(viejo.fisica ? { fisica: viejo.fisica } : {}), ...(efectos.length ? { efectos } : {}) };
+    conservados += 1;
+  }
+  return { equipo, conservados };
+}
+
+/**
  * Frescas si se han descargado casi todas: con menos, lo que hay es la
  * matriz de otro día y la fecha no puede decir «hoy». Cruces Y parejas
  * (3.43.1): sin contar las parejas, una ruta de parejas vacía dejaba las de

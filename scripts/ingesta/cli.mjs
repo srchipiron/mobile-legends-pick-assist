@@ -15,7 +15,7 @@ import {
 } from './extraccion.mjs';
 import { fetchRelations } from './relaciones.mjs';
 import {
-  anotarFrescura, anotarHistoria, conservarFichasPrevias, estadisticasFrescas, fechaDeLaCorrida, fechaDeLaMatriz, fundirBuilds, fundirWinrateLinea,
+  anotarFrescura, anotarHistoria, conservarFichasPrevias, estadisticasFrescas, fechaDeLaCorrida, fechaDeLaMatriz, fundirBuilds, fundirEquipo, fundirWinrateLinea,
   kitsRehechos, leerPrevio, relacionesPrevias, relacionesDeLaCorrida,
 } from './fusion.mjs';
 import { bajarImagenes } from './imagenes.mjs';
@@ -157,9 +157,9 @@ async function main() {
   // dato es peor que tenerlo con un dia de retraso.
   let equipo = previous?.equipment ?? {};
   try {
-    const fresh = await fetchEquipo();
-    if (Object.keys(fresh).length) equipo = fresh;
-    console.log(`  · objetos: ${Object.keys(equipo).length}`);
+    const fundido = fundirEquipo(equipo, await fetchEquipo());
+    equipo = fundido.equipo;
+    console.log(`  · objetos: ${Object.keys(equipo).length}${fundido.conservados ? ` (${fundido.conservados} con la defensa o los efectos de antes: la ruta larga no respondió)` : ''}`);
   } catch (err) {
     console.warn(`  · objetos: fallo (${err.message}); conservo los anteriores`);
   }

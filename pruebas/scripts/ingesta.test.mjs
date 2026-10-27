@@ -18,7 +18,7 @@ import { callRoute, request } from '../../scripts/ingesta/descarga.mjs';
 import { estado } from '../../scripts/ingesta/contexto.mjs';
 import { idPrincipal, esIdDeHeroe, recogerPares, relationMap, pick } from '../../scripts/ingesta/relaciones.mjs';
 import { serializar } from '../../scripts/ingesta/salida.mjs';
-import { kitsRehechos, fundirWinrateLinea, relacionesDeLaCorrida, anotarHistoria } from '../../scripts/ingesta/fusion.mjs';
+import { kitsRehechos, fundirWinrateLinea, relacionesDeLaCorrida, anotarHistoria, fundirEquipo } from '../../scripts/ingesta/fusion.mjs';
 
 test('el rol y la línea se leen aunque vengan hondos en la respuesta', () => {
   // Forma REAL de la API: el titulo de la linea vive en el nivel 8. El limite de
@@ -499,6 +499,23 @@ test('las imágenes servidas por un proxy guardan la dirección de Moonton y no 
   eq(extraerCara(ficha(proxy)), moonton, 'la cara se guarda con la dirección del proxy');
   eq(huellaTexto(ficha(proxy)), huellaTexto(ficha(moonton)), 'cambiar la dirección de una imagen mueve la huella del kit');
   ok(huellaTexto(ficha(moonton)) !== huellaTexto({ data: { records: [{ data: { hero: { data: { heroid: 1, head: moonton, skill: [{ skilldesc: texto.replace('slow', 'stun') }] } } } }] } }), 'cambiar el texto ya no mueve la huella');
+});
+
+test('los objetos sin la ruta larga conservan su defensa y sus efectos; con ella, manda ella (3.81.1)', () => {
+  const previo = { 1: { nombre: 'Athena', magica: 22, efectos: ['vida'] }, 2: { nombre: 'Blade', fisica: 0, efectos: ['antisanacion'] }, 3: { nombre: 'Boots' } };
+  // La corta puede traer algún efecto (el crítico por sus estadísticas): eso no dice que la larga respondiera.
+  const corta = { 1: { nombre: 'Athena', icono: 'a' }, 2: { nombre: 'Blade', icono: 'b', efectos: ['critico'] }, 3: { nombre: 'Boots' }, 4: { nombre: 'Nuevo' } };
+  const r = fundirEquipo(previo, corta);
+  eq(JSON.stringify(r.equipo[1]), JSON.stringify({ nombre: 'Athena', icono: 'a', tipo: null, magica: 22, efectos: ['vida'] }), 'Athena pierde su defensa con la ruta corta');
+  eq(JSON.stringify(r.equipo[2].efectos), JSON.stringify(['antisanacion', 'critico']), 'los efectos de antes no se juntan con los de hoy');
+  ok(r.equipo[4] && r.conservados === 2, `${r.conservados} conservados`);
+  // Con la ruta larga, lo de hoy manda: un efecto quitado en un parche no vuelve.
+  const larga = { 1: { nombre: 'Athena', magica: 25 }, 2: { nombre: 'Blade' } };
+  const l = fundirEquipo(previo, larga);
+  // (Con la larga, Blade se queda sin la antisanación de antes.)
+  ok(l.equipo[1].magica === 25 && !l.equipo[2].efectos && l.conservados === 0, JSON.stringify(l));
+  // Sin nada fresco, lo de antes entero.
+  eq(fundirEquipo(previo, {}).equipo, previo);
 });
 
 test('una fila conservada se cose a las nuevas: los cruces siguen sumando 1 y las parejas siguen iguales (3.65.3)', () => {

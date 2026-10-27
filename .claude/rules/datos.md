@@ -223,6 +223,19 @@ ninguna constante.
   vuelta se separan como mucho 1,3·10⁻⁴ (redondeo a 4 decimales), con la
   mezcla 1,1·10⁻³. Prueba en `ingesta.test`, tres mutaciones.
 
+**Los objetos con la ruta larga caída (3.81.1)**: la defensa sale solo de
+`/equipment/expanded` (`equiptips`); la corta trae nombre, icono y a veces
+algún efecto. El 27 de octubre de 2026 la API daba 1101/1102 (Cloudflare) en
+estadísticas, talentos y la ruta larga, y la corta respondía: el catálogo
+de 184 SUSTITUÍA al guardado y se perdía la defensa (33 → 0) y los efectos
+(19 → 0). El comparador tiró la corrida, como debía; pero un día con solo
+eso caído habría tirado unas estadísticas frescas. Hoy `fundirEquipo`
+(fusion.mjs): sin NINGUNA defensa en la corrida, cada objeto conserva su
+defensa y su tipo y junta sus efectos con los de hoy; con alguna, manda lo
+de hoy. La señal es la defensa, no los efectos: la corta trae el crítico
+(lo cazó la ingesta simulada, que tira la larga en su tercera corrida).
+Pruebas en `ingesta.test` e `ingesta-simulada`; cuatro mutaciones.
+
 **La tier list de mlbb.gg y el 403 (3.59.4)**: desde el 4 de octubre de
 2026 `back.mlbb.gg` contesta 403 a los runners de GitHub (desde la sesión y
 desde un móvil contesta 200), y `fetchTiers` conservaba la anterior con su

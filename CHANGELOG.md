@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.81.1
+
+- Si la fuente de datos falla a medias, los objetos ya no pierden lo que
+  sabías de ellos (cuánta defensa dan, si llevan antisanación). El 27 de
+  octubre la fuente falló así y la actualización de los datos se descartó
+  entera por eso: la app siguió con los del día anterior, que es lo
+  correcto, pero un fallo solo de los objetos no debe tirar unos datos
+  buenos.
+
 ## 3.81.0
 
 - Cuando la tablet apunta sola una partida en la que no reconoció a algún

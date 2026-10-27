@@ -96,6 +96,8 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   let fallaLineaDe = null; let desplazaLinea = 0;
   let fallaRecientes = false;
   let fallaDetail = false;
+  // La ruta larga de objetos (con la defensa) da 500 y la corta responde (3.81.1, como el 27 de octubre de 2026).
+  let fallaEquipoLargo = false;
   let academyVacia = false;
   // Academy da 500 a las primeras N peticiones: la medida de rutas (y su reintento) falla (3.60.2).
   let academyFallaAlMedir = 0;
@@ -218,6 +220,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta) && parejaVacia(u, ruta)) return json({ data: { sub_hero: [] } });
     if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta) && parejaVaciaAlReintentar(u, ruta)) return json({ data: { sub_hero: [] } });
     if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta)) { marca('compat'); marca(`compat:${u.searchParams.get('rank')}`); return json(pares(3, signoDelRango)); }
+    if (ruta === '/api/equipment/expanded' && fallaEquipoLargo) { res.statusCode = 500; return res.end('{}'); }
     if (ruta === '/api/equipment/expanded') {
       marca('equipo');
       return json({ code: 0, data: { records: [{ data: {
@@ -461,7 +464,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     // antes 0 > -1 cambiaba la ruta por la vacía y la matriz entera salía
     // conservada.
     fallaCounters = false; fallaRecientes = false; fallaDetail = true; academyVacia = true; fallosCountersPendientes = 1;
-    fallaLineaDe = '2'; desplazaLinea = 0.01;
+    fallaLineaDe = '2'; desplazaLinea = 0.01; fallaEquipoLargo = true;
     const out3 = resolve(dir, 'ficha-caida.json');
     // Una foto de ayer en lo previo: la tercera corrida tiene que conservarla.
     const ayer = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
@@ -476,6 +479,10 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(r3.status, 0, `la tercera corrida no acaba bien: ${(r3.stdout + r3.stderr).slice(-400)}`);
     const d3 = JSON.parse(readFileSync(out3, 'utf8'));
     ok(d3.historia?.find((e) => e.fecha === ayer)?.glory?.Atlas?.[0] === 0.49 && new Set(d3.historia.map((e) => e.fecha)).size === d3.historia.length && d3.historia.at(-1)?.glory?.Atlas, `la historia de la corrida anterior no se conserva: ${JSON.stringify(d3.historia?.map((e) => e.fecha))}`);
+    // La ruta larga de objetos caída: cada objeto conserva su defensa y sus efectos de antes (3.81.1).
+    const obj3 = d3.equipment?.['90001'];
+    ok(obj3?.magica === 18 && obj3?.fisica === 5 && obj3?.efectos?.length, `con la ruta larga de objetos caída se pierde la defensa: ${JSON.stringify(obj3)}`);
+    fallaEquipoLargo = false;
     const atlas3 = d3.heroes.find((h) => h.name === 'Atlas');
     ok(atlas3?.speciality?.includes('Guard'), `con la ficha caída la speciality no se conserva: ${JSON.stringify(atlas3?.speciality)}`);
     eq(atlas3?.kitTexto, huellaTexto({ skilldesc: DESCRIPCION }), 'con la ficha caída la huella del texto no se conserva de la corrida anterior: avisaría de un rework falso');
