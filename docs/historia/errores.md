@@ -1168,3 +1168,17 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   dejar el error a la vista ANTES de cargar nada; con eso, un cierre se
   arregla en una vuelta en vez de en cuatro.
 
+- **El pick supuesto contaba como «siguió el consejo» (3.60.4 → 3.81.2)**:
+  apuntada sola sin tu fila leída ni pick fijado, la partida lleva el nº1
+  como pick (en el móvil desde 3.60.4, en la tablet desde 3.70.0). La marca
+  `supuesto` solo vivía en la tablet: no se guardaba en el móvil, ni en
+  `CAMPOS`, ni en el esquema. Así que el Veredicto, la medida de la
+  comunidad, la maestría (sumaba la partida al nº1, que pesa en el ranking),
+  la calibración y «Para ti» la trataban como un pick de verdad. En
+  `historial/partidas.json`, 17 de las 68 del lector tienen esa forma (pick
+  = nº1, sin `lector.tuyo`); no se pueden marcar hacia atrás con seguridad
+  (con el pick fijado a mano tampoco hay `tuyo`). Hoy `esSupuesta`
+  (registro.js) las saca de todo lo que mira con quién jugaste, y la marca
+  viaja a todas partes. Lección: un dato que cambia lo que significa un
+  campo («este pick no es tuyo») tiene que viajar con el campo, o cada
+  consumidor que no lo vea mide lo contrario de lo que cree.

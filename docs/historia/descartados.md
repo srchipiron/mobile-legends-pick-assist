@@ -597,3 +597,17 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   de rivales nuevas no salen: ningún héroe repite recorte entre drafts.
 - **El margen sobre el segundo en tu equipo (3.80.0)**: 0,79 con 0,05 daba
   +4 compañeros de 476 sin falsos; no compensa otra constante.
+- **La iteración del 27 de octubre de 2026 por la tarde (3.81.2)**: (1) las
+  dos ingestas fallidas del 26 (21:38) y el 27 (10:33): la primera, la API
+  con 500 en estadísticas y relaciones (`nadaFresco`: correcto); la
+  segunda, la de 3.81.1. Nada más que hacer. (2) `conHabilidades` 101 de
+  133 en la salud: son los héroes sin ningún efecto que contar (`[]` por
+  diseño), no una pérdida. (3) `recortesDe` ordena los ids como texto
+  (`-10` antes que `-9` en el mismo segundo): solo cambia cuál de las 8
+  últimas se mira, con capturas cada 1,5 s no pasa. (4) El Supabase falso
+  mide el recorte en caracteres y el SQL en bytes del `jsonb` (con
+  espacios): el margen de `TOPE_RECORTE_BYTES` (118.000 frente a 120.000)
+  cubre los ~200 bytes de diferencia; si se sube el tope, igualarlos antes.
+  (5) Los ids de las capturas de la corrección están protegidos de la poda
+  (`correccionVigente`), así que a los recortes no les faltan capturas al
+  acabar la partida.

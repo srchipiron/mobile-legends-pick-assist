@@ -1627,4 +1627,18 @@ de octubre de 2026. Javi lo aprobó («haz todo lo que has propuesto»).
   sobrevivieron al principio por pruebas flojas (la clave del jugador sin
   poner, la captura de fuera igual que las buenas, y los recortes malos
   frenados por «pronto» antes que por su forma).
+- Desde 3.81.2 cada salida de `subirRecortesDe` deja su línea y la
+  devuelve (sin comunidad.json, sin clave, ninguna captura recortable, no
+  caben, el servidor la rechaza, un fallo suelto), y las de fallo dicen «no
+  se pudo», que es lo que `LINEA_DE_ERROR` lleva a los errores del parte:
+  la frase de antes («no se pudieron subir») no casaba. Y `listarPartidas`
+  pone `supuesto` de la copia de la tablet sobre la de la base de datos
+  (que no lo guarda) si el pick no cambió: «Tu semana» y la lista de la APK
+  lo perdían al subirse. Pruebas en `en-tablet`, tres mutaciones.
 
+**apk.yml (3.81.2)**: pasa `npm test` antes de compilar (con la caché de
+`node_modules` que exige `workflows.test`) y se recompila con todo lo que
+`copiarLector` mete en la APK menos los datos. `android.test` lo exige: cada
+fichero copiado está en `paths:` y hay un paso `run: npm test` antes de `gh
+release` (el mandato, no la palabra: con la palabra bastaba el comentario).
+Dos mutaciones.

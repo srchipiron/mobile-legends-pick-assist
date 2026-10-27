@@ -62,7 +62,8 @@ export function juntarGloria({ mias = [], comunidad = [], desde = 0 }) {
   const vistas = new Set();
   const todas = [];
   for (const p of [...mias, ...comunidad.map((f) => f?.d)]) {
-    if (!p || !Number.isFinite(p.t) || p.t < desde) continue;
+    // Sin el pick supuesto (3.81.2): tu héroe va en el draft, y ese no se sabe.
+    if (!p || !Number.isFinite(p.t) || p.t < desde || p.supuesto === true) continue;
     const k = `${p.t}|${p.pick}`;
     if (vistas.has(k)) continue;
     vistas.add(k);

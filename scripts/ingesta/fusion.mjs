@@ -224,10 +224,22 @@ export function fundirBuilds(previo = {}, fresco = {}, heroList = []) {
  * larga no respondió: cada objeto conserva su defensa y su tipo de antes y
  * sus efectos se juntan con los de hoy. Si trae alguna, manda lo de hoy (un
  * objeto que pierde un efecto en un parche lo pierde de verdad).
+ *
+ * Y al revés (3.81.2): si alguna ruta no respondió (`completo: false`, lo
+ * cuenta `fetchEquipo`), un objeto guardado que hoy no llega se conserva. Con
+ * la corta caída llegaban los 152 de la larga y se perdían 32 objetos (nombre
+ * e icono de builds enteras), y el comparador habría tirado la corrida por
+ * `objetos`. Con todas las rutas respondiendo, el que falta se quita: Moonton
+ * retira objetos.
  */
-export function fundirEquipo(previo = {}, fresco = {}) {
-  if (!Object.keys(fresco ?? {}).length) return { equipo: previo ?? {}, conservados: 0 };
-  if (Object.values(fresco).some((o) => o?.magica || o?.fisica)) return { equipo: fresco, conservados: 0 };
+export function fundirEquipo(previo = {}, fresco = {}, { completo = true } = {}) {
+  if (!Object.keys(fresco ?? {}).length) return { equipo: previo ?? {}, conservados: Object.keys(previo ?? {}).length };
+  const faltan = completo ? [] : Object.keys(previo ?? {}).filter((id) => !(id in fresco));
+  const conFaltan = (r) => {
+    for (const id of faltan) r.equipo[id] = previo[id];
+    return { equipo: r.equipo, conservados: r.conservados + faltan.length };
+  };
+  if (Object.values(fresco).some((o) => o?.magica || o?.fisica)) return conFaltan({ equipo: { ...fresco }, conservados: 0 });
   const equipo = {};
   let conservados = 0;
   for (const [id, o] of Object.entries(fresco)) {
@@ -237,7 +249,7 @@ export function fundirEquipo(previo = {}, fresco = {}) {
     equipo[id] = { ...o, tipo: o.tipo ?? viejo.tipo ?? null, ...(viejo.magica ? { magica: viejo.magica } : {}), ...(viejo.fisica ? { fisica: viejo.fisica } : {}), ...(efectos.length ? { efectos } : {}) };
     conservados += 1;
   }
-  return { equipo, conservados };
+  return conFaltan({ equipo, conservados });
 }
 
 /**

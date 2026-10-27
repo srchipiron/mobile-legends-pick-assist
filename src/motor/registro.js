@@ -152,7 +152,7 @@ export const sanearFases = (f) => (Array.isArray(f) && f.length === TRAMOS.lengt
  * tuyas. Hasta tener unas decenas, el ± manda.
  */
 export function medirFasesMias(partidas = []) {
-  const filas = (partidas ?? []).filter((p) => !esPrevia(p) && sanearDuracion(p.duracion) && sanearFases(p.fases))
+  const filas = (partidas ?? []).filter((p) => !esPrevia(p) && !esSupuesta(p) && sanearDuracion(p.duracion) && sanearFases(p.fases))
     .map((p) => {
       const pf = p.fases[tramoDeMinutos(p.duracion)];
       const pb = typeof p.estimacion === 'number' ? p.estimacion : null;
@@ -204,6 +204,7 @@ export function apuntar(partidas, entrada, tope = 500) {
     ...(entrada.previa ? { previa: true } : {}),
     // Apuntada SOLA por el lector del resultado (3.32.0): se mide aparte.
     ...(entrada.origen === 'lector' ? { origen: 'lector' } : {}),
+    ...(entrada.supuesto === true ? { supuesto: true } : {}),
     ...(Array.isArray(entrada.bans) && entrada.bans.some((b) => typeof b === 'string' && b)
       ? { bans: entrada.bans.filter((b) => typeof b === 'string' && b).slice(0, 10) } : {}),
     ...(sanearDraft(entrada.draft) ? { draft: sanearDraft(entrada.draft) } : {}),
@@ -277,8 +278,11 @@ export const marcarEditada = (partidas = [], t, ahora = Date.now()) => partidas.
 export function cambiarHeroe(partidas = [], t, pick) {
   if (typeof pick !== 'string' || !pick.trim()) return partidas;
   return partidas.map((p) => {
-    if (p.t !== t || p.pick === pick) return p;
-    const { estimacion, fases, modelo, ...resto } = p;
+    if (p.t !== t) return p;
+    // Confirmar el mismo héroe de un pick supuesto quita la marca (3.81.2) y deja su estimación.
+    if (p.pick === pick) { if (!esSupuesta(p)) return p; const { supuesto, ...confirmada } = p; return confirmada; }
+    // Cambiado a mano, el pick ya no es supuesto.
+    const { estimacion, fases, modelo, supuesto, ...resto } = p;
     return { ...resto, pick };
   });
 }
@@ -288,6 +292,14 @@ export function cambiarHeroe(partidas = [], t, pick) {
  * la app acierta: jugar sin la app abierta no es ignorar su consejo.
  */
 export const esPrevia = (p) => !!p?.previa;
+
+/**
+ * ¿El pick es el nº1 SUPUESTO (3.81.2)? Lo apunta el lector sin tu fila leída
+ * ni tu pick fijado. El resultado es tuyo, el héroe no se sabe: no cuenta en
+ * nada que mire con quién jugaste (siguió el consejo, maestría, estimación,
+ * fases, tus héroes). Antes contaba siempre como «siguió el consejo».
+ */
+export const esSupuesta = (p) => p?.supuesto === true;
 
 /** ¿El pick estaba entre lo recomendado? Por clave, no crudo: la API cambia grafías. */
 export function siguioConsejo(partida) {
@@ -303,7 +315,7 @@ export function siguioConsejo(partida) {
  * «peor que una moneda» un tercio de las veces con 20 partidas.
  */
 export function calibracion(partidas = [], { porModelo = true } = {}) {
-  const con = partidas.filter((p) => !esPrevia(p) && typeof p.estimacion === 'number');
+  const con = partidas.filter((p) => !esPrevia(p) && !esSupuesta(p) && typeof p.estimacion === 'number');
   const n = con.length;
   if (!n) return { n: 0, concluyente: false, faltan: MINIMO_PARA_CALIBRAR };
   const media = (lista, f) => lista.reduce((acc, p) => acc + f(p), 0) / lista.length;
@@ -375,8 +387,9 @@ export function compararProporciones(a, na, b, nb) {
  */
 export function resumen(partidas = [], maestria = {}) {
   const conApp = partidas.filter((p) => !esPrevia(p));
-  const con = conApp.filter(siguioConsejo);
-  const sin = conApp.filter((p) => !siguioConsejo(p));
+  const medibles = conApp.filter((p) => !esSupuesta(p));
+  const con = medibles.filter(siguioConsejo);
+  const sin = medibles.filter((p) => !siguioConsejo(p));
   const wr = (lista) => (lista.length ? lista.filter((p) => p.gane).length / lista.length : null);
   const wrSiguiendo = wr(con);
   const referencia = winrateDeReferencia(maestriaDeSiempre(maestria, partidas.filter(esPrevia)));
@@ -410,6 +423,7 @@ export function resumen(partidas = [], maestria = {}) {
   return {
     total: partidas.length,
     previas: partidas.length - conApp.length,
+    supuestas: conApp.length - medibles.length,
     siguiendo: con.length,
     porLibre: sin.length,
     wrSiguiendo,
@@ -440,7 +454,7 @@ export function resumen(partidas = [], maestria = {}) {
 export const MINIMO_AJUSTE = 30;
 export const SIGMA_AJUSTE = 0.5;
 export function ajustePersonal(partidas = [], { minimo = MINIMO_AJUSTE, sigma = SIGMA_AJUSTE } = {}) {
-  const con = partidas.filter((p) => !esPrevia(p) && typeof p.gane === 'boolean' && typeof p.estimacion === 'number' && p.estimacion > 0 && p.estimacion < 1);
+  const con = partidas.filter((p) => !esPrevia(p) && !esSupuesta(p) && typeof p.gane === 'boolean' && typeof p.estimacion === 'number' && p.estimacion > 0 && p.estimacion < 1);
   if (con.length < minimo) return { n: con.length, activo: false, faltan: minimo - con.length };
   const lg = (q) => Math.log(q / (1 - q));
   const s2 = sigma * sigma;

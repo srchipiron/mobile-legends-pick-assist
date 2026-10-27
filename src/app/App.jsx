@@ -232,6 +232,8 @@ export default function App() {
     const est = heroe ? rec.estimacionCon(heroe) : null;
     personal.apuntarPartida({
       ...(t ? { t } : {}), ...(origen ? { origen } : {}),
+      // Sin tu pick fijado ni leído, el pick es el nº1 supuesto (3.81.2): no cuenta como «siguió el consejo».
+      ...(supuesto ? { supuesto: true } : {}),
       pick, gane, rango: datos.rango,
       recomendados: rec.ranking.slice(0, 3).map((r) => r.heroe.name),
       ...(est ? { estimacion: est.p } : {}),

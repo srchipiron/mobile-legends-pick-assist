@@ -49,7 +49,8 @@ export const claveDeJugadorValida = (c) => typeof c === 'string' && /^[A-Za-z0-9
 
 /** Los campos de una partida que van a la base de datos. Ni lector ni nada que no sirva para medir. */
 // `editada` (3.76.0): cuándo la arreglaste, para que entre móvil y tablet gane la copia arreglada más tarde.
-const CAMPOS = ['t', 'pick', 'gane', 'recomendados', 'rango', 'estimacion', 'modelo', 'previa', 'origen', 'bans', 'draft', 'duracion', 'fases', 'editada'];
+// `supuesto` (3.81.2): el pick es el nº1 porque no se leyó el tuyo; sin la marca contaba como «siguió el consejo».
+const CAMPOS = ['t', 'pick', 'gane', 'recomendados', 'rango', 'estimacion', 'modelo', 'previa', 'origen', 'bans', 'draft', 'duracion', 'fases', 'editada', 'supuesto'];
 export function paraLaComunidad(p) {
   const salida = {};
   for (const k of CAMPOS) if (p?.[k] !== undefined && p[k] !== null) salida[k] = p[k];

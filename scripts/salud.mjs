@@ -14,3 +14,21 @@ export function filasDeSalud(texto, { max = Infinity } = {}) {
   }
   return { filas: Number.isFinite(max) ? filas.slice(-max) : filas, rotas };
 }
+
+/**
+ * Lo que aguantan los datos sin actualizarse antes de abrir incidencia
+ * (3.81.2): el mismo límite de rancio que el despliegue (`::warning::`) y
+ * «El sistema» en Ajustes. Decisión de producto. Hasta aquí la vigilancia
+ * solo abría incidencia con un FALLO, y del 10 al 19 de octubre de 2026 la
+ * API caída dejó 353 filas sin un solo fallo: los datos envejecían y nadie se
+ * enteraba sin preguntar.
+ */
+export const DATOS_RANCIOS_H = 72;
+
+/** La frase de por qué hay que mirar, con la última fila del historial; null si los datos están al día o no se sabe. */
+export function datosRancios(filas = [], limite = DATOS_RANCIOS_H) {
+  const f = filas.at(-1);
+  const h = Number(f?.edadHoras);
+  if (!Number.isFinite(h) || h <= limite) return null;
+  return `Los datos que sirve la app tienen ${Math.round(h)} horas (son del ${String(f.datosDe ?? '?').slice(0, 16).replace('T', ' ')} UTC): la actualización lleva más de ${limite} horas sin entrar. Mira las corridas de «Actualizar datos meta».`;
+}

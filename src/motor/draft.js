@@ -9,7 +9,7 @@ import { simularFinales } from './robustez.js';
 import { aconsejarEquipo } from './equipo.js';
 import { analizarComposicion } from './composicion.js';
 import { analizarDraft, BRECHA_CLARA } from './analisis.js';
-import { esPrevia, compararProporciones } from './registro.js';
+import { esPrevia, esSupuesta, compararProporciones } from './registro.js';
 import { planDePartida } from './plan.js';
 import { elegirVentana, elegirRango, mediaDeWinrate, RANGO_DE_RESPALDO, tiersVigentes } from './ventana.js';
 import { movimientos } from './tendencia.js';
@@ -397,7 +397,7 @@ export function revisarPartida(datos, partida, { maestria = null } = {}) {
  * agrupado, como el Veredicto: nada se afirma dentro del margen).
  */
 export function revisarDrafts(datos, partidas = [], { maestria = null } = {}) {
-  const filas = partidas.filter((p) => !esPrevia(p)).map((p) => revisarPartida(datos, p, { maestria })).filter(Boolean);
+  const filas = partidas.filter((p) => !esPrevia(p) && !esSupuesta(p)).map((p) => revisarPartida(datos, p, { maestria })).filter(Boolean);
   const n = filas.length;
   if (!n) return { n: 0, filas };
   const bien = filas.filter((f) => f.veredicto === 'bien');

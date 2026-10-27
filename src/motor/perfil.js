@@ -153,6 +153,7 @@ export function sanear(perfil) {
       const fases = sanearFases(p.fases);
       if (fases) limpia.fases = fases; else delete limpia.fases;
       if (!(Number.isFinite(p.editada) && p.editada > 0)) delete limpia.editada;
+      if (p.supuesto !== true) delete limpia.supuesto;
       return limpia;
     });
   return { ...(perfil ?? {}), mastery, partidas, olvidadas: sanearOlvidadas(perfil?.olvidadas) };

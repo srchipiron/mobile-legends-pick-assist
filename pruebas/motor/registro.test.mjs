@@ -7,7 +7,7 @@
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { sanear } from '../../src/motor/perfil.js';
-import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, medirFasesMias, aciertosDelLector, apuntar, olvidar, corregir, cambiarHeroe, cambiarDraft, marcarEditada, calibracion, modeloDe, esPrevia, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
+import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, medirFasesMias, aciertosDelLector, apuntar, olvidar, corregir, cambiarHeroe, cambiarDraft, marcarEditada, calibracion, modeloDe, esPrevia, esSupuesta, ajustePersonal, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
 import { maestriaDesdeRegistro, maestriaEfectiva, winrateDeReferencia, TOPE_DE_SIEMPRE } from '../../src/motor/maestria.js';
 import { nombreClave } from '../../src/motor/nombres.js';
 import { generador } from '../../src/motor/robustez.js';
@@ -473,6 +473,28 @@ test('arreglar quién iba en cada equipo (3.78.0): sin repetir entre equipos ni 
   eq(cambiarDraft(ps, 1, { enemigos: Array.from({ length: 8 }, (_, i) => `H${i}`) })[0].draft.enemigos.length, 5);
   eq(cambiarDraft(ps, 2, { enemigos: ['Clint'] })[1].draft.enemigos[0], 'Clint', 'no arregla una partida sin draft');
   ok(!('draft' in cambiarDraft([{ t: 3, pick: 'X', gane: true, draft: { enemigos: ['A'], aliados: [] } }], 3, { enemigos: [] })[0]), 'deja un draft vacío');
+});
+
+test('el pick supuesto (3.81.2): se guarda, no cuenta como «siguió el consejo», ni en la estimación, ni en tu maestría; confirmarlo o cambiarlo quita la marca', () => {
+  const sup = (t, gane) => ({ t, pick: 'Diggie', gane, recomendados: ['Diggie', 'Rafaela', 'Estes'], estimacion: 0.9, modelo: VERSION_MODELO, origen: 'lector', supuesto: true });
+  const [guardada] = apuntar([], sup(1, true));
+  ok(esSupuesta(guardada) && guardada.supuesto === true, `apuntar pierde la marca: ${JSON.stringify(guardada)}`);
+  ok(!('supuesto' in apuntar([], { ...sup(1, true), supuesto: 'sí' })[0]), 'apuntar guarda una marca que no es true');
+  // Diez supuestas ganadas y diez de verdad: el Veredicto solo mira las de verdad.
+  const reales = Array.from({ length: 10 }, (_, i) => ({ t: 100 + i, pick: i < 5 ? 'Diggie' : 'Gord', gane: i % 2 === 0, recomendados: ['Diggie'], estimacion: 0.5, modelo: VERSION_MODELO }));
+  const supuestas = Array.from({ length: 10 }, (_, i) => sup(200 + i, true));
+  const r = resumen([...reales, ...supuestas]);
+  ok(r.siguiendo === 5 && r.porLibre === 5 && r.supuestas === 10, `las supuestas cuentan en el Veredicto: ${JSON.stringify({ s: r.siguiendo, l: r.porLibre, sup: r.supuestas })}`);
+  eq(calibracion([...reales, ...supuestas]).n, 10, 'la estimación de un pick supuesto entra en la calibración');
+  eq(ajustePersonal([...reales, ...supuestas], { minimo: 1 }).n, 10, 'el pick supuesto entra en «Para ti»');
+  eq(maestriaEfectiva({}, supuestas)[nombreClave('Diggie')], undefined, 'las supuestas suman partidas a la maestría del nº1');
+  // Cambiar el héroe quita la marca y la estimación; confirmar el mismo, solo la marca.
+  const cambiada = cambiarHeroe([guardada], 1, 'Rafaela')[0];
+  ok(cambiada.pick === 'Rafaela' && !cambiada.supuesto && !cambiada.estimacion, JSON.stringify(cambiada));
+  const confirmada = cambiarHeroe([guardada], 1, 'Diggie')[0];
+  ok(confirmada.pick === 'Diggie' && !confirmada.supuesto && confirmada.estimacion === 0.9, JSON.stringify(confirmada));
+  // El perfil la conserva (solo true).
+  ok(sanear({ partidas: [guardada] }).partidas[0].supuesto === true && !('supuesto' in sanear({ partidas: [{ ...guardada, supuesto: 1 }] }).partidas[0]), 'sanear no conserva la marca o deja pasar una rara');
 });
 
 await terminar('motor/registro');

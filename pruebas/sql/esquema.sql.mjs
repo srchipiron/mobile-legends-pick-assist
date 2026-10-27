@@ -176,6 +176,11 @@ try {
     eq(json(comoAnon(`select public.mis_partidas('${c}')`)).partidas.find((p) => p.t === 1788000000000).gane, false, 'una copia vieja pisa la arreglada');
     json(comoAnon(`select public.subir_partidas('${c}', '[{"t": 1788000000000, "pick": "Chou", "gane": true, "editada": 1788000900000}]'::jsonb)`));
     eq(json(comoAnon(`select public.mis_partidas('${c}')`)).partidas.find((p) => p.t === 1788000000000).gane, true, 'un arreglo más nuevo no entra');
+    // El pick supuesto (3.81.2): se guarda solo si es true.
+    json(comoAnon(`select public.subir_partidas('${c}', '[{"t": 1788000000010, "pick": "Chou", "gane": true, "supuesto": true}, {"t": 1788000000011, "pick": "Chou", "gane": true, "supuesto": "si"}]'::jsonb)`));
+    const sup = json(comoAnon(`select public.mis_partidas('${c}')`)).partidas;
+    eq(sup.find((p) => p.t === 1788000000010)?.supuesto, true, `no guarda la marca de pick supuesto: ${JSON.stringify(sup.find((p) => p.t === 1788000000010))}`);
+    ok(!('supuesto' in sup.find((p) => p.t === 1788000000011)), 'guarda una marca de pick supuesto que no es true');
   });
 
   test('los partes de la tablet (3.74.0): se suben con tu clave, uno cada pocos minutos, con tope y solo los recientes; se leen sin huella, y la tabla sigue cerrada', () => {

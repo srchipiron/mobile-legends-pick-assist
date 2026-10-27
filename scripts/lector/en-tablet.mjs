@@ -539,21 +539,25 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     apuntar: (p) => { if (partidas.apuntar(p)) subir(); },
     alCorregir: (c) => alCorregirRef?.(c),
     numerosDe: () => tusNumeros(partidas.todas()),
-    alSinLeer: (c) => { subirRecortesDe(c).catch(() => {}); },
+    alSinLeer: (c) => { subirRecortesDe(c).catch((e) => registrar(`Subir los recortes del draft: no se pudo (${e.message}).`)); },
     maestriaDe: () => { const m = ajustes.delMovil(); return maestriaEfectiva(m?.maestria ?? {}, partidas.todas().filter((p) => p.t > (m?.cuando ?? 0))); },
   });
   alCorregirRef = ({ partida, enemigos, aliados, tuyo }) => {
     if (Number.isFinite(partida) && partidas.corregir(partida, { enemigos, aliados, tuyo })) { registrar('Sin móvil: la partida apuntada lleva ya los héroes que dijiste.'); subir(); }
   };
   // Los recortes de un draft con héroes sin reconocer (3.81.0), con la clave del lector como los partes: para medir el lector.
+  // Cada salida deja su línea (3.81.2) y la devuelve: sin ella, «no llegan recortes» no tenía dónde mirarse.
+  // Las de fallo dicen «no se pudo», que es lo que `LINEA_DE_ERROR` lleva a los errores del parte.
   const subirRecortesDe = async (correccion) => {
+    const decir = (m) => { registrar(m); return m; };
     const clave = claveDelLector(casa);
     const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
-    if (!claveDeJugadorValida(clave) || !config) return;
-    const recorte = recorteParaSubir({ correccion, recortes: await servidor.interno.recortesDe(correccion?.ids), version: servidor.interno.estado()?.version });
-    if (!recorte) return;
+    if (!claveDeJugadorValida(clave) || !config) return decir(`Subir los recortes del draft: no se pudo (${config ? 'sin clave del lector' : 'sin comunidad.json'}).`);
+    const recortes = await servidor.interno.recortesDe(correccion?.ids);
+    const recorte = recorteParaSubir({ correccion, recortes, version: servidor.interno.estado()?.version });
+    if (!recorte) return decir(`Subir los recortes del draft: no se pudo (${recortes.length ? 'no caben o sin la partida' : 'ninguna captura del draft se pudo recortar'}).`);
     const r = await subirRecorte({ config, clave, recorte }, { fetch: pedirBaseDeDatos });
-    registrar(r.error ? `Los recortes del draft no se pudieron subir (${r.error}).` : `Recortes del draft subidos para medir el lector (${recorte.capturas.length} capturas, ${recorte.faltan} sin reconocer).`);
+    return decir(r.error ? `Subir los recortes del draft: no se pudo (${r.error}).` : `Recortes del draft subidos para medir el lector (${recorte.capturas.length} capturas, ${recorte.faltan} sin reconocer).`);
   };
   servidor.subirRecortesDe = subirRecortesDe;
   // El parte de salud (3.74.0): para que la revisión automática vea cómo va la tablet sin que nadie copie nada.
@@ -588,7 +592,12 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
       if (n) registrar(`${n} partidas arregladas en el móvil, al día en la tablet.`);
     }
     const sinSubir = new Set(partidas.pendientes().map((p) => p.t));
-    const todas = new Map(deLaBase);
+    // `supuesto` (el nº1 apuntado sin tu fila leída) no viajaba a la base de
+    // datos hasta 3.81.2: con la copia de allí de una subida de antes, «Tu
+    // semana» lo contaba como «cogiste el nº1». Lo pone la copia de la tablet
+    // mientras el pick siga siendo el mismo.
+    const locales = new Map(partidas.todas().map((p) => [p.t, p]));
+    const todas = new Map([...deLaBase].map(([t, b]) => [t, locales.get(t)?.supuesto && locales.get(t).pick === b.pick ? { ...b, supuesto: true } : b]));
     for (const p of partidas.todas()) if (sinSubir.has(p.t) || !todas.has(p.t)) todas.set(p.t, { ...p, sinSubir: sinSubir.has(p.t) });
     const lista = [...todas.values()].sort((a, b) => b.t - a.t).slice(0, PARTIDAS_EN_LA_APK).map((p) => ({
       t: p.t, pick: p.pick, gane: p.gane, ...(p.supuesto ? { supuesto: true } : {}), ...(p.sinSubir ? { sinSubir: true } : {}),

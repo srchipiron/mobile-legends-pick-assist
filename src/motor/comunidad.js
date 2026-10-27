@@ -1,4 +1,4 @@
-import { siguioConsejo, esPrevia, calibracion } from './registro.js';
+import { siguioConsejo, esPrevia, esSupuesta, calibracion } from './registro.js';
 
 /**
  * ¿Ayuda la app? Con las partidas de TODOS los jugadores de la base de datos
@@ -39,7 +39,7 @@ export function porJugador(filas = []) {
   const mapa = new Map();
   for (const f of filas) {
     const d = f?.d;
-    if (!d || typeof d !== 'object' || typeof d.pick !== 'string' || typeof d.gane !== 'boolean' || esPrevia(d)) continue;
+    if (!d || typeof d !== 'object' || typeof d.pick !== 'string' || typeof d.gane !== 'boolean' || esPrevia(d) || esSupuesta(d)) continue;
     const j = String(f.j);
     if (!mapa.has(j)) mapa.set(j, []);
     mapa.get(j).push(d);

@@ -12,7 +12,7 @@
  * fallo de verdad (fichero ilegible) sí sale con código 1.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { resumen, calibracion, esPrevia, siguioConsejo, aciertosDelLector, medirFasesMias } from '../src/motor/registro.js';
+import { resumen, calibracion, esPrevia, esSupuesta, siguioConsejo, aciertosDelLector, medirFasesMias } from '../src/motor/registro.js';
 import { prepararDatos, estimarCon, resolverNombres } from '../src/motor/draft.js';
 import { logit } from '../src/motor/modelo.js';
 import { logistica } from './medir-rival.mjs';
@@ -48,7 +48,7 @@ export function errorDeAuc(a, n1, n0) {
 export function repuntuar(partidas, datos) {
   const filas = [];
   for (const p of partidas) {
-    if (esPrevia(p) || !p.draft) continue;
+    if (esPrevia(p) || esSupuesta(p) || !p.draft) continue;
     const [yo] = resolverNombres(datos, [p.pick]);
     if (!yo) continue;
     const aliados = resolverNombres(datos, p.draft.aliados ?? []);
@@ -100,7 +100,7 @@ export function medir(registro, datos) {
   const porMes = new Map();
   // El mes en la hora de Javi (3.60.2): en UTC, una partida del 1 a la 01:27 contaba en el mes anterior.
   const mesDe = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit' });
-  for (const p of conApp) { const k = mesDe.format(new Date(p.t)).slice(0, 7); const m = porMes.get(k) ?? { mes: k, n: 0, ganadas: 0, siguiendo: 0 }; m.n += 1; m.ganadas += p.gane ? 1 : 0; m.siguiendo += siguioConsejo(p) ? 1 : 0; porMes.set(k, m); }
+  for (const p of conApp) { const k = mesDe.format(new Date(p.t)).slice(0, 7); const m = porMes.get(k) ?? { mes: k, n: 0, ganadas: 0, siguiendo: 0 }; m.n += 1; m.ganadas += p.gane ? 1 : 0; m.siguiendo += siguioConsejo(p) && !esSupuesta(p) ? 1 : 0; porMes.set(k, m); }
   salida.porMes = [...porMes.values()].sort((a, b) => a.mes.localeCompare(b.mes));
   salida.lector = aciertosDelLector(partidas);
   salida.fases = medirFasesMias(partidas);

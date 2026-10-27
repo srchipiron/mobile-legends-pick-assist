@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { esPrevia, siguioConsejo } from '../../motor/registro.js';
+import { esPrevia, esSupuesta, siguioConsejo } from '../../motor/registro.js';
 import { recogerPerfil, exportarPerfil } from '../../motor/perfil.js';
 import { urlDeIncidencia, TOPE_URL, tokenPlausible } from '../github.js';
 import { paraSubir } from '../envio.js';
@@ -175,7 +175,7 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null,
             {/* Tocar el héroe lo cambia (3.47.0): el lector puede apuntar uno que no jugaste. */}
             <button className="partida-hero" aria-expanded={cambiando === p.t} aria-label={`${t('hist.cambiarHeroe')} · ${p.pick}`} onClick={() => setCambiando((c) => (c === p.t ? null : p.t))}>{p.pick}</button>
             <span className={p.gane ? 'partida-bien' : 'partida-mal'}>{p.gane ? t('hist.gane') : t('hist.perdi')}</span>
-            <span className="partida-tipo">{esPrevia(p) ? t('hist.previa') : (siguioConsejo(p) ? t('hist.seguida') : t('hist.libre'))}</span>
+            <span className="partida-tipo">{esPrevia(p) ? t('hist.previa') : esSupuesta(p) ? t('hist.supuesta') : (siguioConsejo(p) ? t('hist.seguida') : t('hist.libre'))}</span>
             <button className="x" title={t('hist.cambiar')} aria-label={`${t('hist.cambiar')} · ${p.pick}`} onClick={() => onCorregir(p.t, !p.gane)}>⇄</button>
             <button className="x" title={t('hist.quitar')} aria-label={`${t('hist.quitar')} · ${p.pick}`} onClick={() => quitar(p.t)}>×</button>
           </div>

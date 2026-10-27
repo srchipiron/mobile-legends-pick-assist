@@ -162,6 +162,7 @@ export default {
   'hist.perdi': 'Perdí',
   'hist.seguida': 'con la app',
   'hist.libre': 'por libre',
+  'hist.supuesta': 'héroe sin leer',
   'hist.previa': 'historial',
   'hist.quitar': 'Quitar esta partida',
   'hist.quitada': '{hero}: quitada',

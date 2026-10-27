@@ -135,7 +135,9 @@ begin
       'rango', e.x->'rango', 'estimacion', e.x->'estimacion', 'modelo', e.x->'modelo', 'previa', e.x->'previa',
       'origen', e.x->'origen', 'bans', e.x->'bans', 'draft', e.x->'draft', 'duracion', e.x->'duracion', 'fases', e.x->'fases',
       -- Cuándo la arreglaste (3.76.0): al juntar móvil y tablet gana la copia arreglada más tarde.
-      'editada', case when jsonb_typeof(e.x->'editada') = 'number' then e.x->'editada' end))
+      'editada', case when jsonb_typeof(e.x->'editada') = 'number' then e.x->'editada' end,
+      -- El pick es el nº1 porque no se leyó el tuyo (3.81.2): no cuenta como «siguió el consejo».
+      'supuesto', case when e.x->'supuesto' = 'true'::jsonb then e.x->'supuesto' end))
   from jsonb_array_elements(lote) with ordinality as e(x, orden)
   order by (e.x->>'t')::numeric::bigint, e.orden desc
   -- Una copia arreglada más tarde no la pisa otra más vieja (3.76.0): el móvil

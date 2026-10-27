@@ -425,6 +425,9 @@ export async function fetchEquipo() {
   // "#10001" en vez de "Lantern of Hope". Gana la primera que dé cada campo,
   // asi que la que va delante (la del esquema) manda donde tiene dato.
   const rutas = [estado.ROUTES.equipment, ...(estado.ROUTES.equipment.alternativas ?? [])];
+  // Cuántas no respondieron (3.81.2): con alguna caída, `fundirEquipo`
+  // conserva los objetos guardados que hoy no llegan.
+  diagnostics.equipo = { rutas: rutas.length, caidas: 0 };
   for (const ruta of rutas) {
     // Sin valor inicial a proposito: si la ruta falla se sigue con la
     // siguiente, asi que `rows` solo se lee cuando la peticion ha ido bien.
@@ -432,6 +435,7 @@ export async function fetchEquipo() {
     try {
       ({ rows } = await callRoute(ruta, { size: 300, index: 1, lang: 'en' }));
     } catch {
+      diagnostics.equipo.caidas += 1;
       continue; // una ruta caida no puede costarnos las que si responden
     }
     for (const row of rows) {
