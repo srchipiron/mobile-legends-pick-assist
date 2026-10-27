@@ -638,9 +638,11 @@ test('«Mis partidas» de la APK (3.75.0): lo que dice la base de datos con lo q
     // Ya subida, arreglarla la vuelve a subir y la lista la enseña arreglada antes de subirse.
     await servidor.subirPartidas();
     eq(servidor.partidas.pendientes().length, 0);
-    // Ya subida, la de Diggie viene de la base de datos sin la marca: sigue siendo supuesta (3.81.2).
+    // Desde 3.81.2 la marca sube con la partida.
+    ok(s.jugadores.get(clave).partidas.get(1787000000000)?.supuesto === true, 'la marca de pick supuesto no sube a la base de datos');
+    // Subida con una versión de antes (sin la marca): la de Diggie viene de la base de datos sin ella y sigue siendo supuesta.
+    s.atender('subir_partidas', { clave, lote: [{ t: 1787000000000, pick: 'Diggie', gane: true, recomendados: ['Diggie'] }] }, { apikey: s.clavePublica });
     const subida = JSON.parse((await pedir(puerto, '/partidas', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
-    ok(s.jugadores.get(clave).partidas.get(1787000000000) && !s.jugadores.get(clave).partidas.get(1787000000000).supuesto, 'la prueba no sirve: la base de datos ya guarda `supuesto`');
     ok(subida.partidas.find((p) => p.t === 1787000000000)?.supuesto, `ya subida, la partida supuesta pierde la marca: ${JSON.stringify(subida.partidas.find((p) => p.t === 1787000000000))}`);
     sinSubir = true;
     // Arreglar la de la tablet: el resultado y un enemigo; se sube y aprende de la tabla.

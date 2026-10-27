@@ -60,6 +60,16 @@ test('todo lo que importa el lector de la tablet va dentro de la APK (3.70.0): u
     ok(!/\/[a-z]*v[a-z]*\.test\(|new RegExp\([^)]*['"][a-z]*v[a-z]*['"]\)/.test(texto), `${f} usa el indicador v de expresiones regulares`);
   }
   ok([...vistos].some((f) => f.startsWith('src/app/')), 'el recorrido no llega a lo que el lector importa de la app');
+  // Y apk.yml se recompila cuando cambia cualquier cosa que va dentro (3.81.2), menos los datos (la APK los baja sola).
+  const apk = readFileSync(join(RAIZ, '.github/workflows/apk.yml'), 'utf8');
+  const rutas = [...(/^\s*paths:\s*\[([^\]]*)\]/m.exec(apk)?.[1] ?? '').matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  const vigilado = (f) => rutas.some((r) => (r.endsWith('/**') ? f.startsWith(r.slice(0, -2)) : f === r));
+  for (const c of copias.filter((x) => x.carpeta !== 'public/data')) {
+    for (const f of c.solo.length ? c.solo.map((x) => `${c.carpeta}/${x}`) : [`${c.carpeta}/x.mjs`]) ok(vigilado(f), `${f} va dentro de la APK y apk.yml no se recompila cuando cambia`);
+  }
+  // Y no publica sin pasar las pruebas.
+  // El MANDATO, no la palabra: un comentario o el nombre del paso la dicen también.
+  ok(/^\s*run:\s*npm test\s*$/m.test(apk.slice(0, apk.indexOf('gh release'))), 'apk.yml publica sin pasar npm test');
 });
 
 test('el lector de la tablet solo llama a donde debe (3.70.0): su puerto interno, la web de Pick Assist y la base de datos', async () => {

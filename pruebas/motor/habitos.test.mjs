@@ -171,4 +171,13 @@ test('tu semana: el nº1 cogido por clave y su winrate frente al de las otras; s
   eq(tuSemana([{ t: ahora - HORA, pick: 'Layla', gane: true }], { ahora }).numeroUno, null);
 });
 
+test('tus héroes no cuentan el pick supuesto (3.81.2): el resultado sí, el héroe no se sabe', () => {
+  const ahora = Date.UTC(2026, 9, 27, 12);
+  const ps = Array.from({ length: 6 }, (_, i) => ({ t: ahora - (i + 1) * 3600000, pick: 'Diggie', gane: true, supuesto: true, recomendados: ['Diggie'] }));
+  const n = tusNumeros(ps, { ahora });
+  ok(n.n === 6 && n.racha?.n === 6 && !n.heroes.length, `las supuestas no cuentan el resultado, o cuentan como Diggie: ${JSON.stringify({ n: n.n, heroes: n.heroes })}`);
+  const s = tuSemana(ps, { ahora });
+  ok(s.n === 6 && !s.funcionan.length && !s.numeroUno, `tu semana cuenta el héroe supuesto: ${JSON.stringify(s.funcionan)}`);
+});
+
 terminar('motor/habitos');

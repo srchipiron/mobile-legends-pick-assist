@@ -88,4 +88,10 @@ test(`un jugador sin ${MINIMO_POR_RAMA} partidas en cada rama no entra en la com
   eq(medirComunidad('basura').partidas, 0, 'lanza o cuenta algo con basura');
 });
 
+test('el pick supuesto no entra en la medida de la comunidad (3.81.2): su pick es el nº1 porque no se leyó el tuyo', () => {
+  const filas = [{ j: 1, d: { t: 1, pick: 'Diggie', gane: true, recomendados: ['Diggie'], supuesto: true } }, { j: 1, d: { t: 2, pick: 'Gord', gane: false, recomendados: ['Diggie'] } }];
+  eq(porJugador(filas).get('1')?.length, 1, 'la supuesta cuenta como siguiendo la app');
+  eq(medirComunidad(filas).siguiendo.n, 0);
+});
+
 await terminar('motor/comunidad');

@@ -1636,3 +1636,9 @@ de octubre de 2026. Javi lo aprobó («haz todo lo que has propuesto»).
   (que no lo guarda) si el pick no cambió: «Tu semana» y la lista de la APK
   lo perdían al subirse. Pruebas en `en-tablet`, tres mutaciones.
 
+**apk.yml (3.81.2)**: pasa `npm test` antes de compilar (con la caché de
+`node_modules` que exige `workflows.test`) y se recompila con todo lo que
+`copiarLector` mete en la APK menos los datos. `android.test` lo exige: cada
+fichero copiado está en `paths:` y hay un paso `run: npm test` antes de `gh
+release` (el mandato, no la palabra: con la palabra bastaba el comentario).
+Dos mutaciones.

@@ -265,14 +265,10 @@
   (decidido por Javi: cuentan para el modelo, no salen en el móvil).
 - **Tres fallos silenciosos del modo «Sin móvil»** (26 de octubre de 2026): hechos en 3.74.3.
 - **El móvil como centro de mando de la tablet** (26 de octubre de 2026): hecho en 3.76.0 (una clave, arreglos en los dos sentidos). Queda: ver y arreglar en el móvil los ENEMIGOS y compañeros de una partida (hoy el historial del móvil cambia resultado y héroe).
-- **`supuesto` en la base de datos y en el móvil (27 de octubre de 2026,
-  iteración de 3.81.2)**: «Tu semana» (3.79.0) no cuenta el nº1 apuntado
-  sin tu fila leída, pero esa marca no llega a ningún sitio: no está en
-  `CAMPOS` (basedatos.js) ni en el esquema, y `guardarPartida` del móvil
-  recibe `supuesto` y no lo guarda. En el móvil, las partidas del lector sin
-  tu pick cuentan como «cogiste el nº1» (reproducido: 4 supuestas pasadas
-  por `paraLaComunidad` dan `cogido: 4`). La tablet lo arregla para sí desde
-  3.81.2 con su copia local. Arreglarlo entero es tocar persistencia: un
-  campo nuevo en la partida (`apuntar`/`sanear` de registro.js), en `CAMPOS`
-  y en `subir_partidas` (volver a pegar esa función en Supabase). Pendiente
-  de que Javi lo apruebe.
+- **`supuesto` en la base de datos y en el móvil (27 de octubre de 2026)**:
+  hecho en 3.81.2, con Javi dando permiso para decidir solo («toma tus
+  propias decisiones»). `subir_partidas` aplicada en su Supabase
+  (migración `partidas_supuesto_3_81_2`, probada como `anon` en una
+  transacción deshecha; los permisos, iguales).
+- **`apk.yml` sin `npm test`**: hecho en 3.81.2 (y recompila también con
+  `src/app/basedatos.js`, `src/app/i18n/**` y `public/comunidad.json`).

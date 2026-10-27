@@ -165,6 +165,7 @@ export default {
   'hist.perdi': 'Lost',
   'hist.seguida': 'with the app',
   'hist.libre': 'on your own',
+  'hist.supuesta': 'hero not read',
   'hist.previa': 'history',
   'hist.quitar': 'Remove this match',
   'hist.quitada': '{hero}: removed',

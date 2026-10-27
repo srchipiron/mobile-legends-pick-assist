@@ -152,7 +152,7 @@ export function maestriaEfectiva(maestria = {}, partidas = []) {
     if (!(Number(m?.games) > 0) || !Number.isFinite(Number(m?.winRate))) { salida[k] = m; continue; }
     salida[k] = { ...m, games: Math.min(Number(m.games), TOPE_DE_SIEMPRE), winRate: Number(m.winRate), deSiempre: Number(m.games) };
   }
-  for (const [nombre, m] of Object.entries(maestriaDesdeRegistro((partidas ?? []).filter((p) => !p?.previa)))) {
+  for (const [nombre, m] of Object.entries(maestriaDesdeRegistro((partidas ?? []).filter((p) => !p?.previa && p?.supuesto !== true)))) {
     const k = nombreClave(nombre); const base = salida[k];
     if (!(base?.games > 0) || base.winRate == null) { salida[k] = { ...m, apuntadas: m.games, wrApuntadas: m.winRate }; continue; }
     const games = base.games + m.games;

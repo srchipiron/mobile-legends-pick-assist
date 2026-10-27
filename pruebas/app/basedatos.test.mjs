@@ -125,6 +125,7 @@ test('qué se trae de la base de datos (3.76.0): lo que falta, sin lo quitado, y
   ];
   eq(JSON.stringify(queTraer(remotas, aqui).map((p) => p.t)), '[1,5]');
   ok(paraLaComunidad({ t: 1, pick: 'A', gane: true, editada: 7 }).editada === 7, 'la hora del arreglo no sube a la base de datos');
+  ok(paraLaComunidad({ t: 1, pick: 'A', gane: true, supuesto: true }).supuesto === true, 'la marca de pick supuesto no sube (3.81.2)');
   // El Supabase de pega hace lo mismo que el esquema: lo arreglado no lo pisa una copia vieja.
   const s = supabaseFalso();
   const c = { apikey: s.clavePublica }, clave = 'Z'.repeat(40);

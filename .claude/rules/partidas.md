@@ -284,3 +284,15 @@ Javi: «que el móvil sea como un centro de comandos estadísticos del apk».
   (en-tablet) en `/partidas` y `tuSemana` en Partidas.kt. Pruebas en
   `motor/habitos`, `en-tablet` y `persistencia.e2e`; ocho mutaciones.
 
+**El pick supuesto (3.81.2)**: apuntada sola sin tu fila leída ni pick
+fijado, el pick es el nº1 y la partida lleva `supuesto: true` (`apuntar`,
+`sanear`, `CAMPOS`, `subir_partidas`; solo `true`). `esSupuesta` (registro.js)
+la saca de todo lo que mira con quién jugaste: Veredicto (`resumen`, que
+cuenta `supuestas` aparte), calibración, `ajustePersonal`, `medirFasesMias`,
+`maestriaEfectiva`, la comunidad (`porJugador`), `revisarDrafts`, tus héroes
+en `tusNumeros` y `tuSemana`, `repuntuar` de medir-mias y `juntarGloria` del
+bot del modelo. El resultado sí cuenta (racha, sesión, winrate). Cambiar el
+héroe, o confirmar el mismo, quita la marca (`cambiarHeroe`). Las de antes
+de 3.81.2 no llevan la marca y no se pueden deducir con seguridad. Pruebas en
+`motor/registro`, `motor/comunidad`, `motor/habitos`, `app/basedatos`,
+`en-tablet` y `pruebas/sql`; ocho mutaciones.

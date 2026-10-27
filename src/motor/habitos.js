@@ -1,4 +1,4 @@
-import { esPrevia, compararProporciones, sanearDuracion } from './registro.js';
+import { esPrevia, esSupuesta, compararProporciones, sanearDuracion } from './registro.js';
 import { nombreClave } from './nombres.js';
 
 /**
@@ -101,7 +101,8 @@ export function tusNumeros(partidas = [], { ahora = Date.now(), hora = horaLocal
   // Por héroe, por clave normalizada («X.Borg» y «X Borg» son el mismo).
   const porHeroe = new Map();
   for (const p of lista) {
-    const clave = nombreClave(p.pick);
+    // El pick supuesto no dice con quién jugaste (3.81.2).
+    const clave = esSupuesta(p) ? null : nombreClave(p.pick);
     if (!clave) continue;
     if (!porHeroe.has(clave)) porHeroe.set(clave, { heroe: p.pick, partidas: [] });
     porHeroe.get(clave).partidas.push(p);
@@ -149,7 +150,7 @@ export function tuSemana(partidas = [], { ahora = Date.now() } = {}) {
 
   const porHeroe = new Map();
   for (const p of semana) {
-    const clave = nombreClave(p.pick);
+    const clave = esSupuesta(p) ? null : nombreClave(p.pick);
     if (!clave) continue;
     if (!porHeroe.has(clave)) porHeroe.set(clave, { heroe: p.pick, n: 0, ganadas: 0 });
     const h = porHeroe.get(clave); h.n++; if (p.gane) h.ganadas++;
@@ -158,7 +159,7 @@ export function tuSemana(partidas = [], { ahora = Date.now() } = {}) {
   salida.funcionan = heroes.filter((h) => h.saldo > 0).sort((a, b) => b.saldo - a.saldo || b.n - a.n).slice(0, HEROES_DE_LA_SEMANA).map(({ saldo, ...h }) => h);
   salida.cuestan = heroes.filter((h) => h.saldo < 0).sort((a, b) => a.saldo - b.saldo || b.n - a.n).slice(0, HEROES_DE_LA_SEMANA).map(({ saldo, ...h }) => h);
 
-  const conUno = semana.filter((p) => !p.supuesto && nombreClave(p.recomendados?.[0]) && nombreClave(p.pick));
+  const conUno = semana.filter((p) => !esSupuesta(p) && nombreClave(p.recomendados?.[0]) && nombreClave(p.pick));
   if (conUno.length) {
     const si = conUno.filter((p) => nombreClave(p.recomendados[0]) === nombreClave(p.pick));
     const no = conUno.filter((p) => !si.includes(p));

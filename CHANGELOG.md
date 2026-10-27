@@ -14,12 +14,19 @@ correcciones.
   ninguno de los que la app conocía (su nombre y su icono en las builds).
   Es el caso contrario al de 3.81.1: sin esto, una actualización de los
   datos buena se habría descartado entera por perder 32 objetos.
-- En «Mis partidas» y «Tu semana» de la tablet, una partida que la tablet
-  apuntó sin leer tu héroe (puso el nº1 de la app) sigue marcada así
-  después de subirse. Antes perdía la marca, y «Tu semana» la contaba como
-  «cogiste el nº1».
+- Las partidas apuntadas solas sin saber tu héroe (el lector no leyó tu
+  fila y se apuntó el nº1 de la app) ya no cuentan como «seguiste el
+  consejo». Ni en el Veredicto, ni en la medida de la comunidad, ni en tu
+  maestría, ni en «Para ti», ni en tus héroes de «Tus números» y «Tu
+  semana». Antes sí contaban, siempre a favor de la app: en tus partidas
+  hay unas 17 así. El historial las marca como «héroe sin leer», y si
+  eliges el héroe en la partida (aunque sea el mismo) la marca se quita.
+- La marca llega a la base de datos, al móvil y a la tablet.
 - Cuando la tablet no puede subir los recortes de un draft, lo dice en su
   registro y en el parte, con el motivo. Antes no dejaba rastro.
+- La app de la tablet ya no se publica sin pasar las pruebas, y se
+  actualiza también cuando cambian los textos o la conexión con la base de
+  datos (antes solo con cambios del lector o del motor).
 
 ## 3.81.1
 

@@ -592,10 +592,10 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
       if (n) registrar(`${n} partidas arregladas en el móvil, al día en la tablet.`);
     }
     const sinSubir = new Set(partidas.pendientes().map((p) => p.t));
-    // `supuesto` (el nº1 apuntado sin tu fila leída) no viaja a la base de
-    // datos: con la copia de allí, «Tu semana» lo contaba como «cogiste el nº1»
-    // y la lista lo enseñaba como tu pick (3.81.2). Lo pone la copia de la
-    // tablet mientras el pick siga siendo el mismo.
+    // `supuesto` (el nº1 apuntado sin tu fila leída) no viajaba a la base de
+    // datos hasta 3.81.2: con la copia de allí de una subida de antes, «Tu
+    // semana» lo contaba como «cogiste el nº1». Lo pone la copia de la tablet
+    // mientras el pick siga siendo el mismo.
     const locales = new Map(partidas.todas().map((p) => [p.t, p]));
     const todas = new Map([...deLaBase].map(([t, b]) => [t, locales.get(t)?.supuesto && locales.get(t).pick === b.pick ? { ...b, supuesto: true } : b]));
     for (const p of partidas.todas()) if (sinSubir.has(p.t) || !todas.has(p.t)) todas.set(p.t, { ...p, sinSubir: sinSubir.has(p.t) });
