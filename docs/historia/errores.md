@@ -1182,3 +1182,16 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   viaja a todas partes. Lección: un dato que cambia lo que significa un
   campo («este pick no es tuyo») tiene que viajar con el campo, o cada
   consumidor que no lo vea mide lo contrario de lo que cree.
+- **La tablet aprendía de la pantalla de carga (3.80.0 → 3.81.4)**: 3.80.0
+  pasó la lectura de 5 a 1,5 s sin pasar a tiempo las ventanas que se
+  contaban en capturas (los 20 ids del draft, las 8 de la corrección y de
+  los recortes, las 40 de la poda). Las últimas 8 pasaron a ser la pantalla
+  de carga y la fase de skins: «Enseña al lector» no aprendía nada y los
+  recortes no servían. Lección: al cambiar el ritmo de un bucle, toda
+  ventana contada en vueltas cambia de duración; búscalas y pásalas a tiempo.
+- **La tabla de recortes nunca llegó a Supabase (3.81.0 → 27 de octubre de
+  2026)**: el esquema se escribió y se probó en el Postgres local, pero no
+  se aplicó en el proyecto de Javi (en 3.74.0 y 3.76.0 sí se hizo). La
+  tablet fallaba al subir cada recorte y, hasta 3.81.2, sin decirlo.
+  Lección: un cambio de `supabase/esquema.sql` no está hecho hasta que se
+  aplica en el proyecto y se prueba allí como `anon`.

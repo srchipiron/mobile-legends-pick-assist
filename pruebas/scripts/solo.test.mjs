@@ -8,7 +8,7 @@ import { test, ok, eq, terminar, leerJson } from '../arnes.mjs';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, IDS_POR_DRAFT, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS } from '../../scripts/lector/solo.mjs';
+import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS } from '../../scripts/lector/solo.mjs';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
 import { crearServidor, RETENCION_CAPTURAS_MS } from '../../scripts/lector/servir.mjs';
 import { RAIZ } from '../arnes.mjs';
@@ -278,16 +278,21 @@ test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se pregunt
     leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: () => {},
     vigilar: (desde) => { final = { desde, resultado: null }; }, final: () => final, ponerResumen: (r) => resumenes.push(r),
     ponerCorreccion: (c) => correcciones.push(c),
+    protegerLecturas: (ids) => protegidas.push(ids),
   };
+  const protegidas = [];
   const sinLeer = [];
   const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: () => {}, alSinLeer: (x) => sinLeer.push(x) });
   await solo.tic();
   t += 5000; respuesta = conId(respuesta); await solo.tic();
   eq(correcciones.length, 0, 'pregunta en pleno draft');
+  // Las capturas del draft abierto se protegen de la poda (3.81.4).
+  eq(JSON.stringify(protegidas.at(-1)), JSON.stringify(['lectura-20261024-001', 'lectura-20261024-002']), 'no protege las capturas del draft abierto');
   // Las lecturas en partida no traen captura del draft: no cuentan.
   respuesta = { partida: true, rapida: true, id: 'lectura-de-la-partida' };
   t += 5000; await solo.tic(); t += 5000; await solo.tic();
   eq(correcciones.length, 1, 'al cerrarse el draft con «?» no lo pregunta');
+  eq(JSON.stringify(protegidas.at(-1)), '[]', 'cerrado el draft, sigue protegiendo sus capturas (las de la corrección las guarda ella)');
   const c = correcciones[0];
   eq(JSON.stringify(c.ids), JSON.stringify(['lectura-20261024-001', 'lectura-20261024-002']), 'no son las capturas del draft');
   eq(c.faltan, 5, 'no cuenta los que faltan (tres enemigos y dos compañeros)');
@@ -308,11 +313,21 @@ test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se pregunt
   eq(correccionDelDraft(entero, datos), null, 'pregunta sin faltar nadie');
   eq(correccionDelDraft({ ...entero, enemigos: [null, 'Khufra', 'Atlas', 'Franco', 'Tigreal'], ids: [] }, datos), null, 'pregunta sin capturas de las que aprender');
   eq(correccionDelDraft({ ...entero, enemigos: [null, 'Khufra', 'Atlas', 'Franco', 'Tigreal'] }, datos)?.faltan, 1);
-  // El draft recuerda como mucho IDS_POR_DRAFT capturas.
+  // El draft recuerda como mucho IDS_POR_DRAFT capturas, espaciadas (3.81.4): una lectura cada 1,5 s durante 3 minutos.
+  const idDe = (ms) => `lectura-${new Date(Date.UTC(2026, 9, 27, 22, 20) + ms).toISOString().replace(/[:.]/g, '-')}-1`;
+  const enElDraft = lectura({ tuyos: [N('Hirara'), N('Belerick')] });
   let d = null;
-  for (let i = 0; i < IDS_POR_DRAFT + 5; i += 1) d = acumularDraft(d, { ...lectura({ tuyos: [N('Hirara')] }), id: `lectura-${i}` }, i);
-  ok(d.ids.length === IDS_POR_DRAFT && d.ids.at(-1) === `lectura-${IDS_POR_DRAFT + 4}`, 'sin tope o sin las últimas');
-  ok(!acumularDraft(d, { ...lectura({ tuyos: [N('Hirara')] }), id: '../fuera' }, 99).ids.includes('../fuera'), 'entra un id sin forma');
+  for (let ms = 0; ms <= 180000; ms += 1500) d = acumularDraft(d, { ...enElDraft, id: idDe(ms) }, ms);
+  ok(d.ids.length === IDS_POR_DRAFT && d.ids.at(-1) === idDe(180000), `sin tope o sin la última: ${d.ids.length}`);
+  const instante = (id) => Date.parse(id.slice(8, 32).replace(/T(\d\d)-(\d\d)-(\d\d)-/, 'T$1:$2:$3.'));
+  const huecos = d.ids.slice(0, -1).map((id, i) => instante(d.ids[i + 1]) - instante(id));
+  ok(huecos.slice(0, -1).every((h) => h >= SEPARACION_IDS_MS), `capturas pegadas: ${huecos}`);
+  ok(instante(d.ids.at(-1)) - instante(d.ids[0]) >= 70000, 'las capturas no llegan a la fase de picks: son los últimos segundos');
+  // La pantalla de carga (sin la fila de baneos: «Gord 0,77» en los diez huecos) no entra.
+  const carga = acumularDraft(d, { ...lectura({ tuyos: [N('Wanwan')] }), id: idDe(181500) }, 181500);
+  eq(carga.ids.at(-1), idDe(180000), 'entra una captura que no es la pantalla del draft');
+  ok(!acumularDraft(d, { ...enElDraft, id: '../fuera' }, 99).ids.includes('../fuera'), 'entra un id sin forma');
+  eq(JSON.stringify(conCaptura([], 'lectura-x')), '["lectura-x"]');
 });
 
 test('la burbuja de la tablet sola dice el mejor de los tuyos si el nº1 no lo es (3.72.0)', () => {

@@ -1642,3 +1642,23 @@ de octubre de 2026. Javi lo aprobó («haz todo lo que has propuesto»).
 fichero copiado está en `paths:` y hay un paso `run: npm test` antes de `gh
 release` (el mandato, no la palabra: con la palabra bastaba el comentario).
 Dos mutaciones.
+
+**Las capturas que recuerda el draft (3.81.4)**: con la lectura cada 1,5 s
+(3.80.0), los 20 `ids` del draft eran los últimos 30 s, y las 8 que miran
+`/correccion` (`sanearCorreccion`), `corregir` y `recortesDe`, la pantalla
+de CARGA (se lee hasta ver el minimapa; el parte del 27 de octubre de 2026
+traía diez lecturas seguidas con «Gord 0,77» en los diez baneos) y la fase
+de skins. `esPantallaDeDraft` las tiraba y no se aprendía nada; los
+recortes salían de ahí. Hoy `acumularDraft` solo guarda capturas con
+`BANEOS_EN_EL_DRAFT` (2) baneos leídos y `conCaptura` las espacia
+`SEPARACION_IDS_MS` (4 s, el ritmo de antes) con la última siempre: 20
+llegan a 80 s del draft. `interno.protegerLecturas` (servir.mjs) las saca de
+la poda mientras el draft está abierto: las 40 de `MAX_CAPTURAS` son un
+minuto a ese ritmo. Medido sobre los 54 drafts de recortes de las
+incidencias (#56–#153, 106 capturas, con el lector de hoy): rivales leídos
+en 176 de 255 por draft y compañeros en 157 de 206; en los huecos de rivales
+sin leer el mejor candidato es el bueno en 8 de 153: casi todos enseñan la
+SKIN del rival (mirado en un mosaico), que la API no da (solo `head` y unos
+fondos de 1920×1080 en `/heroes/{id}/wallpapers`, no el retrato del panel).
+Pruebas en `solo` y `en-tablet`; cuatro mutaciones.
+

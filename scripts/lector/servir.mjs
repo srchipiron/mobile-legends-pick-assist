@@ -588,7 +588,9 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   const salud = { lecturas: 0, lecturasSolo: 0, vistazos: 0, fallosCaptura: 0, ultimoFallo: null };
   resultados = resultados ?? plantillasDeSerie();
   /** Guarda una captura y borra las que ya no hacen falta (3.34.0). */
-  const podar = () => { if (carpeta) podarCapturas(carpeta, { ahora: ahora(), maximos, proteger: new Set([...(final?.fotogramas ?? []).map((f) => f.id), ...(correccionVigente()?.ids ?? [])]) }); };
+  // Las del draft que está leyendo el modo solo tampoco (3.81.4): con una lectura cada 1,5 s, las 40 de `MAX_CAPTURAS` son un minuto.
+  let delDraft = [];
+  const podar = () => { if (carpeta) podarCapturas(carpeta, { ahora: ahora(), maximos, proteger: new Set([...(final?.fotogramas ?? []).map((f) => f.id), ...(correccionVigente()?.ids ?? []), ...delDraft]) }); };
   const guardarCaptura = (nombre, contenido, { conPoda = true } = {}) => {
     if (!carpeta) return;
     writeFileSync(join(carpeta, nombre), contenido);
@@ -1207,6 +1209,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     ponerResumen: (r) => { resumenActual = sanearResumen(r) ?? resumenActual; },
     // Lo que no reconoció (3.71.0), para preguntarlo en la APK.
     ponerCorreccion: (c) => { correccion = sanearCorreccion(c); },
+    /** Las capturas del draft abierto (3.81.4), para que la poda no se las lleve: solo ids con forma, como mucho las de un draft. */
+    protegerLecturas: (ids) => { delDraft = (Array.isArray(ids) ? ids : []).filter((id) => typeof id === 'string' && /^lectura-[\w-]+$/.test(id)).slice(-40); },
     correccion: () => correccionVigente(),
     /**
      * Los recortes de las capturas de un draft (3.81.0): solo ids con forma

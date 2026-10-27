@@ -620,3 +620,15 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   copia vieja (antes de los `TRAER_CADA_MS` 5 min) pisa la partida entera,
   sin fundir campo a campo. Es el diseño de 3.76.0 («gana la arreglada más
   tarde»); fundir por campo pediría una hora por campo. Se reabre si pasa.
+- **Leer las skins de los rivales (27 de octubre de 2026, 3.81.4)**: en los
+  54 drafts de recortes, casi todos los rivales sin leer enseñan su skin y
+  el mejor candidato es el bueno en 8 de 153 huecos. La API no da los
+  retratos de skin (solo `head` y fondos de algunas en
+  `/heroes/{id}/wallpapers`, a 1920×1080 y con otro encuadre). Se cubre
+  leyendo durante la fase de picks (1,5 s desde 3.80.0, antes de las
+  skins); medir cuánto, con los recortes nuevos.
+- **Los «de más» de los recortes**: 19 rivales y 25 compañeros. Los de
+  parecido alto (Julian 0,97, Selena 0,98, Karina 0,95) son de la verdad del
+  draft (o de quien solo miraba un héroe), no del lector; los de 0,80–0,86
+  (Yi Sun-shin, Wanwan, los imanes de siempre) son pocos para un umbral por
+  héroe.

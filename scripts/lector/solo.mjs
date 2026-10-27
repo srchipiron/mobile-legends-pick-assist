@@ -17,6 +17,7 @@
  * Solo MIRA la pantalla, como todo el lector: no toca el juego ni la cuenta.
  */
 import { readFileSync } from 'node:fs';
+import { momentoDe } from './aprender.mjs';
 import { nombreClave } from '../../src/motor/nombres.js';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
 import { VERSION_MODELO } from '../../src/motor/modelo.js';
@@ -57,6 +58,27 @@ export const draftVacio = () => ({ baneos: [], banHuecos: [null, null, null, nul
 export const BANEOS_DE_OTRO_DRAFT = 2;
 /** Las capturas del draft que se recuerdan para aprender de una corrección (3.71.0): las mismas que mira `/corregir`. */
 export const IDS_POR_DRAFT = 20;
+/**
+ * Qué capturas recuerda el draft (3.81.4). Desde 3.80.0 la tablet lee cada
+ * 1,5 s y no cada 5: las 20 últimas eran los últimos 30 s, y las 8 que miran
+ * la corrección y los recortes, la pantalla de CARGA (se lee hasta ver el
+ * minimapa: el 27 de octubre de 2026, diez lecturas seguidas con «Gord 0,77»
+ * en los diez baneos) y la fase de skins, de las que no se aprende a ningún
+ * rival. Solo entra la pantalla del draft (`BANEOS_EN_EL_DRAFT` baneos
+ * leídos, la fila de arriba que no existe en la carga; como
+ * `BANEOS_PARA_APRENDER` de aprender.mjs) y espaciadas `SEPARACION_IDS_MS`
+ * (el ritmo de antes de 3.80.0), con la última siempre: 20 llegan a 80 s
+ * del draft y las 8 últimas, a la fase de picks.
+ */
+export const BANEOS_EN_EL_DRAFT = 2;
+export const SEPARACION_IDS_MS = 4000;
+/** Añade la captura a las del draft: la última siempre, y entre las de antes al menos `SEPARACION_IDS_MS`. */
+export function conCaptura(ids = [], id) {
+  const previa = ids.at(-1), antes = ids.at(-2);
+  // La última solo estaba de paso si quedaba a menos de la separación de la anterior: se cambia por la nueva.
+  const depaso = previa && antes && momentoDe(previa) - momentoDe(antes) < SEPARACION_IDS_MS;
+  return [...(depaso ? ids.slice(0, -1) : ids), id].slice(-IDS_POR_DRAFT);
+}
 
 const nombres = (lista) => (Array.isArray(lista) ? lista : []).map((x) => (typeof x?.nombre === 'string' && x.nombre ? x.nombre : null));
 
@@ -110,7 +132,7 @@ export function acumularDraft(estado, lectura, ahora) {
   const ali = fundirHuecos(e.aliados, filas, tuyoFila);
   const cambio = nuevosBaneos.length !== e.baneos.length || enem.cambio || ali.cambio || tuyoFila !== e.tuyoFila;
   // La captura de esta lectura (3.71.0): si luego dices quién era el «?», el lector aprende de ella.
-  const ids = typeof lectura.id === 'string' && /^lectura-[\w-]+$/.test(lectura.id) ? [...(e.ids ?? []), lectura.id].slice(-IDS_POR_DRAFT) : e.ids ?? [];
+  const ids = typeof lectura.id === 'string' && /^lectura-[\w-]+$/.test(lectura.id) && baneos.length >= BANEOS_EN_EL_DRAFT ? conCaptura(e.ids ?? [], lectura.id) : e.ids ?? [];
   const nuevosHuecos = (e.banHuecos ?? Array(10).fill(null)).map((n, i) => n ?? huecosBan[i]);
   return { ...e, baneos: nuevosBaneos, banHuecos: nuevosHuecos, enemigos: enem.huecos, aliados: ali.huecos, tuyoFila, enPartida: 0, actividad: cambio ? ahora : e.actividad ?? (algo ? ahora : null), ids };
 }
@@ -411,6 +433,8 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     if (!r?.ok) return intervalos.error;
     const antes = draft;
     draft = acumularDraft(draft, r.lectura, ahora());
+    // Las capturas del draft abierto no se podan (3.81.4): a 1,5 s por lectura, las 40 que se guardan son un minuto.
+    interno.protegerLecturas?.(draft.cerrado ? [] : draft.ids);
     resumen.lecturas += 1;
     // Empezó otro draft sin saber cómo acabó la partida de antes: se pregunta.
     if (!draft.cerrado && vigilada && !vigilada.apuntada) {
