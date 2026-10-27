@@ -67,6 +67,12 @@ test('subir: la primera vez todas en lotes de 200, después solo las recientes; 
   const mias = await traerMisPartidas({ config, clave }, { fetch: s.fetch });
   eq(mias.partidas.length, 449);
   eq(s.jugadores.get(clave).referencia.winRate, 0.51, 'no sube el winrate de siempre');
+  // Un arreglo en una partida vieja (la 301.ª) sube aunque no esté entre las 200 más recientes (3.81.2).
+  const vieja = { ...partidas[10], gane: !partidas[10].gane, editada: Date.UTC(2026, 9, 27) };
+  await subirPartidas({ config, clave, partidas: [...partidas.slice(0, 10), vieja, ...partidas.slice(11, 449)], completo: true }, { fetch: s.fetch });
+  const lotes = s.llamadas.slice(4).filter((l) => Array.isArray(l.args.lote)).flatMap((l) => l.args.lote);
+  ok(lotes.length === POR_LOTE + 1 && lotes.some((p) => p.t === vieja.t), `el arreglo de una partida vieja no sube: ${lotes.length} partidas`);
+  eq(s.jugadores.get(clave).partidas.get(vieja.t)?.gane, vieja.gane, 'el arreglo no llega a la base de datos');
 });
 
 test('las cabeceras: la publishable va como apikey sin Authorization; la anon de siempre, con ella', async () => {

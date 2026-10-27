@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.81.3
+
+- Arreglar en el móvil una partida antigua (más allá de las 200 más
+  recientes) ya llega a la base de datos y a la tablet. Antes se quedaba
+  solo en el móvil aunque la app dijera que estaba todo subido.
+- Una partida arreglada en la tablet ya no le quita al móvil lo que el
+  lector leyó en ese draft, que es lo que sirve para medir cuánto acierta.
+
 ## 3.81.2
 
 - Si la fuente de datos responde a medias con los objetos, ya no se pierde
