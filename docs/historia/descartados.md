@@ -611,3 +611,12 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   (5) Los ids de las capturas de la corrección están protegidos de la poda
   (`correccionVigente`), así que a los recortes no les faltan capturas al
   acabar la partida.
+- **Dos sospechas de la revisión del móvil (27 de octubre de 2026, 3.81.3)**,
+  sin tocar: (1) con el reloj de la tablet por detrás del del móvil, un
+  arreglo de la tablet hecho justo después de uno del móvil se descarta en
+  el servidor (`editada` menor) sin aviso. Con la hora de red de Android el
+  desfase es de segundos; pedir `max(ahora, editada + 1)` no cubre el caso
+  real, que es editar en los dos a la vez. (2) Editar en un aparato con la
+  copia vieja (antes de los `TRAER_CADA_MS` 5 min) pisa la partida entera,
+  sin fundir campo a campo. Es el diseño de 3.76.0 («gana la arreglada más
+  tarde»); fundir por campo pediría una hora por campo. Se reabre si pasa.

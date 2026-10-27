@@ -117,14 +117,18 @@ export async function llamar(config, funcion, cuerpo, { fetch = globalThis.fetch
 
 /**
  * Sube las partidas: todas la primera vez (`completo` falso), en lotes de
- * POR_LOTE de la más nueva a la más vieja; después, solo las POR_LOTE más
- * recientes (las viejas no cambian casi nunca, y si cambian, «Subir todas»).
- * Las quitadas van en el primer lote para que se borren allí también.
+ * POR_LOTE de la más nueva a la más vieja; después, las POR_LOTE más
+ * recientes y, de las demás, las que arreglaste (`editada`, 3.81.2: desde
+ * 3.78.0 se arreglan resultado, héroe y equipos de cualquier partida, y un
+ * arreglo en la 201.ª no salía nunca del móvil mientras la app decía «al
+ * día»). El servidor no deja que una copia más vieja pise a otra arreglada
+ * después. Las quitadas van en el primer lote para que se borren allí también.
  */
 export async function subirPartidas({ config, clave, partidas = [], olvidadas = [], referencia = null, completo = false }, opciones = {}) {
-  const orden = [...partidas].filter((p) => Number.isFinite(p?.t)).sort((a, b) => b.t - a.t).map(paraLaComunidad);
+  const todas = [...partidas].filter((p) => Number.isFinite(p?.t)).sort((a, b) => b.t - a.t).map(paraLaComunidad);
+  const orden = completo ? [...todas.slice(0, POR_LOTE), ...todas.slice(POR_LOTE).filter((p) => Number.isFinite(p.editada))] : todas;
   const lotes = [];
-  for (let i = 0; i < (completo ? Math.min(orden.length, POR_LOTE) : orden.length); i += POR_LOTE) lotes.push(orden.slice(i, i + POR_LOTE));
+  for (let i = 0; i < orden.length; i += POR_LOTE) lotes.push(orden.slice(i, i + POR_LOTE));
   if (!lotes.length) lotes.push([]);
   let total = null;
   for (let i = 0; i < lotes.length; i += 1) {

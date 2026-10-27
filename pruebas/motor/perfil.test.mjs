@@ -212,6 +212,9 @@ test('al juntar, la copia arreglada más tarde gana, venga de donde venga (3.76.
   const fuera = { ...base, partidas: [{ t: 1, pick: 'Estes', gane: false, editada: 200 }, { t: 2, pick: 'Gord', gane: false }] };
   const f = fundirPerfil(aqui, fuera);
   eq(f.partidas.find((p) => p.t === 1).gane, false, 'la arreglada después fuera no gana');
+  // Lo que la base de datos no guarda (lo leído por el lector) se queda de la de aquí (3.81.2).
+  const conLector = fundirPerfil({ ...aqui, partidas: [{ ...aqui.partidas[0], lector: { enemigos: ['Clint'] } }] }, fuera).partidas.find((p) => p.t === 1);
+  ok(conLector.gane === false && conLector.lector?.enemigos?.[0] === 'Clint', `la arreglada fuera se lleva lo leído por el lector: ${JSON.stringify(conLector)}`);
   eq(f.partidas.find((p) => p.t === 2).gane, true, 'sin arreglos, gana la de fuera');
   const g = fundirPerfil(fuera, aqui);
   eq(g.partidas.find((p) => p.t === 1).gane, false, 'la arreglada antes fuera pisa la de aquí');

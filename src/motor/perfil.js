@@ -208,7 +208,10 @@ export function fundirPerfil(actual, entrante) {
       vistas.add(k);
       return true;
     })
-    .map((p) => { const fuera = deFuera.get(String(p.t ?? '')); return fuera && editadaDe(fuera) > editadaDe(p) ? fuera : p; })
+    // Lo que la base de datos no guarda (3.81.2: `lector`, lo leído en el
+    // draft) se queda de la copia local: sin esto, una partida arreglada en
+    // la tablet llegaba al móvil sin lo que mide al lector, justo la que falló.
+    .map((p) => { const fuera = deFuera.get(String(p.t ?? '')); return fuera && editadaDe(fuera) > editadaDe(p) ? (p.lector && !fuera.lector ? { ...fuera, lector: p.lector } : fuera) : p; })
     .sort((a, b) => (b.t ?? 0) - (a.t ?? 0));
   return {
     mastery,

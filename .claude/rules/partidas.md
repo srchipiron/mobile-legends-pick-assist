@@ -296,3 +296,15 @@ héroe, o confirmar el mismo, quita la marca (`cambiarHeroe`). Las de antes
 de 3.81.2 no llevan la marca y no se pueden deducir con seguridad. Pruebas en
 `motor/registro`, `motor/comunidad`, `motor/habitos`, `app/basedatos`,
 `en-tablet` y `pruebas/sql`; ocho mutaciones.
+
+**Lo que se perdía entre móvil y tablet (3.81.3, silent-failure-hunter)**:
+(1) con `completo`, `subirPartidas` subía solo las 200 más recientes y la
+huella se daba por subida: un arreglo (`editada`) en la 201.ª no salía del
+móvil. Hoy van también las de más atrás con `editada` (el servidor no deja
+que una copia vieja pise otra arreglada después). (2) `fundirPerfil` con la
+de fuera arreglada después la cogía ENTERA y se perdía `lector`, que la base
+de datos no guarda: hoy se queda el de la copia local. Solo `lector`: copiar
+cualquier campo local resucitaría lo que el arreglo quitó (la estimación al
+cambiar de héroe, `supuesto` al confirmarlo). Pruebas en `app/basedatos` y
+`motor/perfil`, dos mutaciones.
+
