@@ -8,6 +8,19 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.81.2
+
+- Si la fuente de datos responde a medias con los objetos, ya no se pierde
+  ninguno de los que la app conocía (su nombre y su icono en las builds).
+  Es el caso contrario al de 3.81.1: sin esto, una actualización de los
+  datos buena se habría descartado entera por perder 32 objetos.
+- En «Mis partidas» y «Tu semana» de la tablet, una partida que la tablet
+  apuntó sin leer tu héroe (puso el nº1 de la app) sigue marcada así
+  después de subirse. Antes perdía la marca, y «Tu semana» la contaba como
+  «cogiste el nº1».
+- Cuando la tablet no puede subir los recortes de un draft, lo dice en su
+  registro y en el parte, con el motivo. Antes no dejaba rastro.
+
 ## 3.81.1
 
 - Si la fuente de datos falla a medias, los objetos ya no pierden lo que

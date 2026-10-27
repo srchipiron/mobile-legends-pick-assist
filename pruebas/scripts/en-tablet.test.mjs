@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES } from '../../scripts/lector/en-tablet.mjs';
+import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { claveDeJugadorValida } from '../../src/app/basedatos.js';
 import { pruebaDelReto } from '../../src/app/lector.js';
@@ -625,17 +625,23 @@ test('«Mis partidas» de la APK (3.75.0): lo que dice la base de datos con lo q
     const clave = claveDelLector(casa);
     s.atender('subir_partidas', { clave, lote: [{ t: 1788000000000, pick: 'Estes', gane: true, draft: { linea: 'roam', enemigos: ['Clint'], aliados: [] } }] }, { apikey: s.clavePublica });
     servidor.partidas.apuntar({ t: 1788000060000, pick: 'Rafaela', gane: false, desde: 1787999000000, resultadoDe: 'tabla', draft: { linea: 'roam', enemigos: ['Khufra'], aliados: ['Gord'] } });
+    // Una apuntada sin tu fila leída (el nº1, `supuesto`), ya subida: la base de datos no guarda la marca.
+    servidor.partidas.apuntar({ t: 1787000000000, pick: 'Diggie', gane: true, supuesto: true, recomendados: ['Diggie'], draft: { linea: 'roam', enemigos: ['Khufra'], aliados: [] } });
     // Desde la app del móvil (con Origin) no se ve.
     eq((await pedir(puerto, '/partidas', { host: `127.0.0.1:${puerto}` })).estado, 403, 'el navegador ve tus partidas por /partidas');
     const lista = JSON.parse((await pedir(puerto, '/partidas', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
     eq(lista.de, 'base', JSON.stringify(lista));
-    eq(JSON.stringify(lista.partidas.map((p) => [p.t, p.pick, !!p.sinSubir])), JSON.stringify([[1788000060000, 'Rafaela', true], [1788000000000, 'Estes', false]]), 'no junta la base de datos con lo que falta por subir');
+    eq(JSON.stringify(lista.partidas.map((p) => [p.t, p.pick, !!p.sinSubir])), JSON.stringify([[1788000060000, 'Rafaela', true], [1788000000000, 'Estes', false], [1787000000000, 'Diggie', true]]), 'no junta la base de datos con lo que falta por subir');
     ok(lista.heroes.includes('Rafaela') && lista.heroes.length > 100, 'no manda la lista de héroes para elegir');
-    ok(lista.numeros?.n === 2 && lista.numeros.racha?.gane === false && lista.numeros.racha.n === 1, `no manda tus números (3.77.0): ${JSON.stringify(lista.numeros)}`);
+    ok(lista.numeros?.n === 3 && lista.numeros.racha?.gane === false && lista.numeros.racha.n === 1, `no manda tus números (3.77.0): ${JSON.stringify(lista.numeros)}`);
     ok('semana' in lista, 'no manda tu semana (3.79.0)');
     // Ya subida, arreglarla la vuelve a subir y la lista la enseña arreglada antes de subirse.
     await servidor.subirPartidas();
     eq(servidor.partidas.pendientes().length, 0);
+    // Ya subida, la de Diggie viene de la base de datos sin la marca: sigue siendo supuesta (3.81.2).
+    const subida = JSON.parse((await pedir(puerto, '/partidas', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
+    ok(s.jugadores.get(clave).partidas.get(1787000000000) && !s.jugadores.get(clave).partidas.get(1787000000000).supuesto, 'la prueba no sirve: la base de datos ya guarda `supuesto`');
+    ok(subida.partidas.find((p) => p.t === 1787000000000)?.supuesto, `ya subida, la partida supuesta pierde la marca: ${JSON.stringify(subida.partidas.find((p) => p.t === 1787000000000))}`);
     sinSubir = true;
     // Arreglar la de la tablet: el resultado y un enemigo; se sube y aprende de la tabla.
     const aprendidas = [];
@@ -734,8 +740,9 @@ test('los recortes de un draft sin leer entero (3.81.0): la tablet los sube SOLA
   try {
     const T = 1793000000000;
     const correccion = { ids: ['lectura-20261026-001', 'lectura-20261026-002', 'lectura-20261026-003', '../fuera', 'lectura-no-existe'], partida: T, cuando: T - 900000, faltan: 2, leidos: { enemigos: ['Clint', null, 'Khufra', null, null], aliados: ['Gord'], tuyoFila: 4, baneos: ['Hirara'] } };
-    await servidor.subirRecortesDe(correccion);
+    const dicho = await servidor.subirRecortesDe(correccion);
     eq(s.recortes.length, 1, 'no sube los recortes');
+    ok(/^Recortes del draft subidos/.test(dicho ?? '') && !LINEA_DE_ERROR.test(dicho), `subir no deja su línea: ${dicho}`);
     const r = s.recortes[0];
     ok(r.clave === claveDelLector(casa) && r.clave !== tuya, 'no van con la clave del lector');
     ok(r.d.partida === T && r.d.desde === T - 900000 && r.d.faltan === 2 && r.d.leidos.enemigos[0] === 'Clint', JSON.stringify({ ...r.d, capturas: undefined }));
@@ -748,9 +755,12 @@ test('los recortes de un draft sin leer entero (3.81.0): la tablet los sube SOLA
     for (const secreto of [CODIGO, SECRETO, r.clave, tuya, casa]) ok(!texto.includes(secreto), `el recorte lleva un secreto: ${secreto.slice(0, 6)}…`);
     eq(s.jugadores.size, 0, 'subir recortes toca tus partidas');
     // Sin capturas que existan no se sube nada; y uno al momento lo frena el servidor sin tirar nada.
-    await servidor.subirRecortesDe({ ...correccion, ids: ['lectura-no-existe'] });
-    await servidor.subirRecortesDe(correccion);
+    const sinCapturas = await servidor.subirRecortesDe({ ...correccion, ids: ['lectura-no-existe'] });
+    const pronto = await servidor.subirRecortesDe(correccion);
     eq(s.recortes.length, 1, 'sube sin capturas o dos seguidos');
+    // Lo que no se sube lo dice, y como error del parte (3.81.2): antes salía sin una línea.
+    ok(/ninguna captura/.test(sinCapturas ?? '') && LINEA_DE_ERROR.test(sinCapturas), `sin capturas no se sube y no lo dice: ${sinCapturas}`);
+    ok(LINEA_DE_ERROR.test(pronto ?? ''), `el rechazo del servidor no llega a los errores del parte: ${pronto}`);
   } finally { servidor.close(); apk.cerrar(); }
 });
 

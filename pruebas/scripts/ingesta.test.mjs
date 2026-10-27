@@ -516,6 +516,12 @@ test('los objetos sin la ruta larga conservan su defensa y sus efectos; con ella
   ok(l.equipo[1].magica === 25 && !l.equipo[2].efectos && l.conservados === 0, JSON.stringify(l));
   // Sin nada fresco, lo de antes entero.
   eq(fundirEquipo(previo, {}).equipo, previo);
+  // La corta caída (3.81.2): llega la larga sin Boots; con una ruta caída se conserva, con todas respondiendo se quita (retirado).
+  const sinBoots = fundirEquipo(previo, larga, { completo: false });
+  ok(sinBoots.equipo[3]?.nombre === 'Boots' && sinBoots.equipo[1].magica === 25 && sinBoots.conservados === 1, JSON.stringify(sinBoots));
+  ok(!fundirEquipo(previo, larga, { completo: true }).equipo[3], 'un objeto retirado se queda aunque respondan todas las rutas');
+  const cortaSola = fundirEquipo(previo, { 1: { nombre: 'Athena' } }, { completo: false });
+  ok(cortaSola.equipo[1].magica === 22 && cortaSola.equipo[3]?.nombre === 'Boots' && cortaSola.conservados === 3, JSON.stringify(cortaSola));
 });
 
 test('una fila conservada se cose a las nuevas: los cruces siguen sumando 1 y las parejas siguen iguales (3.65.3)', () => {

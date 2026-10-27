@@ -235,6 +235,14 @@ defensa y su tipo y junta sus efectos con los de hoy; con alguna, manda lo
 de hoy. La señal es la defensa, no los efectos: la corta trae el crítico
 (lo cazó la ingesta simulada, que tira la larga en su tercera corrida).
 Pruebas en `ingesta.test` e `ingesta-simulada`; cuatro mutaciones.
+Y al revés desde 3.81.2: `fetchEquipo` cuenta las rutas que no responden
+(`diagnostics.equipo`: `rutas`, `caidas`, `conservados`, también en el
+fichero) y, con alguna caída, `fundirEquipo(…, { completo: false })`
+conserva los objetos guardados que hoy no llegan. Con la corta caída
+llegaban solo los 152 de la larga y se perdían 32 (152 < 184 × `MARGEN`:
+el comparador tiraba la corrida). Con todas respondiendo, el que falta se
+quita (Moonton retira objetos). La ingesta simulada tira la corta en su
+cuarta corrida; tres mutaciones.
 
 **La tier list de mlbb.gg y el 403 (3.59.4)**: desde el 4 de octubre de
 2026 `back.mlbb.gg` contesta 403 a los runners de GitHub (desde la sesión y

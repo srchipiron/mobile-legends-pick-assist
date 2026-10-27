@@ -157,9 +157,11 @@ async function main() {
   // dato es peor que tenerlo con un dia de retraso.
   let equipo = previous?.equipment ?? {};
   try {
-    const fundido = fundirEquipo(equipo, await fetchEquipo());
+    const fresco = await fetchEquipo();
+    const fundido = fundirEquipo(equipo, fresco, { completo: !diagnostics.equipo?.caidas });
     equipo = fundido.equipo;
-    console.log(`  · objetos: ${Object.keys(equipo).length}${fundido.conservados ? ` (${fundido.conservados} con la defensa o los efectos de antes: la ruta larga no respondió)` : ''}`);
+    if (diagnostics.equipo) diagnostics.equipo.conservados = fundido.conservados;
+    console.log(`  · objetos: ${Object.keys(equipo).length}${fundido.conservados ? ` (${fundido.conservados} con lo de antes: ${diagnostics.equipo?.caidas ?? '?'} de ${diagnostics.equipo?.rutas ?? '?'} rutas no respondieron)` : ''}`);
   } catch (err) {
     console.warn(`  · objetos: fallo (${err.message}); conservo los anteriores`);
   }
@@ -373,6 +375,7 @@ async function main() {
       rutasMedidas: diagnostics.rutasMedidas ?? null,
       dano: diagnostics.dano ?? null,
       builds: diagnostics.builds ?? null,
+      equipo: diagnostics.equipo ?? null,
       lineas: diagnostics.lineas ?? null,
       rangos: diagnostics.rangos ?? null,
       recientes: diagnostics.recientes ?? null,

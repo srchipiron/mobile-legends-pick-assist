@@ -98,6 +98,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   let fallaDetail = false;
   // La ruta larga de objetos (con la defensa) da 500 y la corta responde (3.81.1, como el 27 de octubre de 2026).
   let fallaEquipoLargo = false;
+  let fallaEquipoCorto = false;
   let academyVacia = false;
   // Academy da 500 a las primeras N peticiones: la medida de rutas (y su reintento) falla (3.60.2).
   let academyFallaAlMedir = 0;
@@ -236,6 +237,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
         equiptips: '+65 Movement Speed<br>+35% Slow Reduction<br>+12 HP Regen', equipskill1: ' Side Effect: Loses 20 Movement Speed for 5s upon dealing or taking damage.',
       } }] } });
     }
+    if (ruta === '/api/equipment' && fallaEquipoCorto) { res.statusCode = 500; return res.end('{}'); }
     if (ruta === '/api/equipment') {
       marca('equipoCorto');
       // El Segundo Objeto da la antisanación por la pasiva en la ruta larga y
@@ -517,6 +519,8 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     // celdas bajado a lo que tiene la simulación: cruces y parejas salen de
     // Mítico, los dos del mismo rango, y lo marca.
     fallaDetail = false; academyVacia = false; fallaLineaDe = null; gloriaRuidosa = true;
+    // Y la ruta CORTA de objetos caída (3.81.2): la larga trae tres, lo guardado 184.
+    fallaEquipoCorto = true;
     // Y Atlas, rehecho, trae otra cara: se baja otra vez aunque el fichero ya esté (3.41.0).
     retratoNuevo = true;
     const out4 = resolve(dir, 'gloria-ruidosa.json');
@@ -527,6 +531,10 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     ]);
     eq(r4.status, 0, `la corrida con Gloria ruidosa no acaba bien: ${(r4.stdout + r4.stderr).slice(-400)}`);
     const d4 = JSON.parse(readFileSync(out4, 'utf8'));
+    fallaEquipoCorto = false;
+    const objetosGuardados = Object.keys(JSON.parse(readFileSync(previoSim, 'utf8')).equipment ?? {});
+    ok(objetosGuardados.length > 100 && objetosGuardados.every((id) => d4.equipment?.[id]), `con la ruta corta de objetos caída se pierden objetos guardados: ${Object.keys(d4.equipment ?? {}).length} de ${objetosGuardados.length}`);
+    ok(d4.equipment?.['90004']?.nombre === 'Botas Rápidas' && d4.diagnostics.equipo?.caidas === 1 && d4.diagnostics.equipo.conservados === objetosGuardados.length, `no se queda lo de la larga o no dice qué conservó: ${JSON.stringify(d4.diagnostics.equipo)}`);
     eq(d4.relaciones?.rango, 'mythic', `con Gloria incoherente los cruces no salen de Mítico: ${JSON.stringify(d4.relaciones)}`);
     ok(d4.relaciones?.coherencia?.counters < 0.8 && /no se parecen/.test(d4.relaciones?.motivo ?? ''), `no dice la coherencia ni el porqué: ${JSON.stringify(d4.relaciones)}`);
     eq(d4.counters.Atlas?.Khufra, 0.5123, `el cruce guardado no es el de Mítico (0.5123; el de Gloria ruidosa sería 0.4877): ${JSON.stringify(d4.counters.Atlas)}`);
