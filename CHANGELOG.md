@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.81.4
+
+- La tablet vuelve a aprender de lo que le enseñas: cuando le dices quién
+  era un héroe que no reconoció, ahora mira las capturas de la fase de
+  picks, que es donde se ve su cara. Desde la 3.80.0, al leer más a
+  menudo, solo se quedaba con los últimos segundos (la pantalla de carga y
+  las skins), donde no hay nada que aprender.
+- Los recortes que la tablet sube para mejorar la lectura también salen
+  ahora de la fase de picks, y no se borran mientras dura el draft.
+
 ## 3.81.3
 
 - Arreglar en el móvil una partida antigua (más allá de las 200 más

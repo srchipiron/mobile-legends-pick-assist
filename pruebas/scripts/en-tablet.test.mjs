@@ -398,6 +398,25 @@ test('la corrección protege sus capturas de la limpieza mientras se puede conte
   } finally { servidor.close(); }
 });
 
+test('las capturas del draft que lee el modo solo no se podan mientras está abierto (3.81.4)', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'en-tablet-poda-draft-'));
+  const ids = ['lectura-2026-10-27T22-20-00-000Z-1', 'lectura-2026-10-27T22-20-04-000Z-2', 'lectura-2026-10-27T22-20-08-000Z-3'];
+  for (const id of ids) writeFileSync(join(carpeta, `${id}.png`), 'x');
+  const servidor = crearServidor({ capturar: async () => png, enHilos: false, carpeta, maximos: { lectura: 1, fotograma: 1, resultado: 1 }, guardar: () => {}, guardarResultadosDe: () => {} });
+  try {
+    servidor.interno.protegerLecturas([ids[0], ids[1], '../fuera']);
+    const r = await servidor.interno.leer({});
+    for (let i = 0; i < 100 && !existsSync(join(carpeta, `${r.lectura.id}.png`)); i += 1) await new Promise((x) => setTimeout(x, 50));
+    ok(existsSync(join(carpeta, `${ids[0]}.png`)) && existsSync(join(carpeta, `${ids[1]}.png`)), 'se podan las capturas del draft abierto');
+    ok(!existsSync(join(carpeta, `${ids[2]}.png`)), 'la limpieza no borra lo que sobra');
+    // Cerrado el draft (sin nada que preguntar), ya se pueden podar.
+    servidor.interno.protegerLecturas([]);
+    const r2 = await servidor.interno.leer({});
+    for (let i = 0; i < 100 && existsSync(join(carpeta, `${ids[0]}.png`)); i += 1) await new Promise((x) => setTimeout(x, 50));
+    ok(r2.ok && !existsSync(join(carpeta, `${ids[0]}.png`)), 'las del draft cerrado se quedan para siempre');
+  } finally { servidor.close(); }
+});
+
 test('las partidas de la tablet se arreglan con tu corrección y se vuelven a subir (3.71.0)', () => {
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-arreglar-'));
   const partidas = partidasDeLaTablet(casa);
