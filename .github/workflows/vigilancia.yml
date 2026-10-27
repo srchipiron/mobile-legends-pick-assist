@@ -140,6 +140,16 @@ jobs:
             [ "$subido" = 1 ] || { echo "::error::push rechazado tres veces"; exit 1; }
           fi
 
+      # 3) Los datos no llevan días sin actualizarse (3.81.2). Un aviso del
+      #    diagnóstico no abre incidencia, y la API caída del 10 al 19 de
+      #    octubre de 2026 dejó 353 filas sin un solo fallo. Va DESPUÉS de
+      #    guardar la fila: lee la de esta corrida.
+      - name: Datos sin actualizar
+        id: rancios
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: node scripts/datos-rancios.mjs historial/salud.jsonl 2>&1 | tee /tmp/rancios.txt
+
       - name: Abrir incidencia si algo falla
         if: ${{ failure() || steps.guardar.outcome == 'failure' }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -151,6 +161,7 @@ jobs:
             const filaPerdida = '${{ steps.guardar.outcome }}' === 'failure';
             const cuerpo = [
               ...(filaPerdida ? ['**La fila de esta corrida NO se ha guardado en `historial/salud.jsonl`** (push rechazado tres veces). Si el diagnóstico de abajo dice que todo está bien, es solo eso.', ''] : []),
+              ...('${{ steps.rancios.outcome }}' === 'failure' ? [`**${leer('/tmp/rancios.txt').trim()}**`, ''] : []),
               'La vigilancia automática ha encontrado algo. Esto NO lo ha pulsado nadie:',
               'lo ha detectado la comprobación programada contra la app publicada.',
               '',

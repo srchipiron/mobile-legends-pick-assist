@@ -24,6 +24,10 @@ correcciones.
 - La marca llega a la base de datos, al móvil y a la tablet.
 - Cuando la tablet no puede subir los recortes de un draft, lo dice en su
   registro y en el parte, con el motivo. Antes no dejaba rastro.
+- Si los datos de la app pasan de 72 horas sin actualizarse, la vigilancia
+  abre una incidencia en GitHub (te llega como notificación) y la cierra
+  sola cuando vuelven. Antes solo avisaba con un fallo, y una API caída
+  durante días no lo es.
 - La app de la tablet ya no se publica sin pasar las pruebas, y se
   actualiza también cuando cambian los textos o la conexión con la base de
   datos (antes solo con cambios del lector o del motor).

@@ -117,6 +117,13 @@ Queda propuesto, sin hacer, porque cambia cuándo saltan las alarmas:
 - Un canal para los AVISOS: hoy solo un FALLO abre incidencia, y la caída
   del 10 al 19 de octubre dejó 353 filas sin un solo fallo. La propuesta es
   abrirla si el mismo aviso dura N corridas o si los datos pasan de 72 h.
+  HECHA la segunda mitad en 3.81.2: tras guardar su fila, la vigilancia
+  corre `scripts/datos-rancios.mjs` (`datosRancios` y `DATOS_RANCIOS_H` en
+  scripts/salud.mjs, el mismo 72 del despliegue y de «El sistema»), que sale
+  con 1 y abre la incidencia de siempre con el porqué arriba; se cierra sola
+  cuando los datos vuelven a entrar. Prueba en `scripts/salud`, dos
+  mutaciones. «El mismo aviso N corridas» sigue sin hacer: la fila de salud
+  cuenta los avisos, no dice cuáles.
 - Hacer FALLO los valores imposibles de winrate, cuotas y ban.
 - La mediana del historial, solo con filas sanas.
 - `tendencia.mjs` con más campos y por tramos.
