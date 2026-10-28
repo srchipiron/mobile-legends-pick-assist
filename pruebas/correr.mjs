@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Ejecuta todos los `*.test.mjs` de pruebas/ (o los que se pasen por
- * argumento), cada uno en su proceso, hasta tres a la vez, y devuelve rojo si
+ * argumento), cada uno en su proceso, hasta cuatro a la vez, y devuelve rojo si
  * alguno falla. Cada fichero se aísla: un `process.exit` o un error de
  * importación en uno no tapa a los demás, y la salida de cada uno se imprime
  * entera cuando acaba, sin mezclarse.
@@ -18,8 +18,8 @@ import { fileURLToPath } from 'node:url';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const RAIZ = resolve(AQUI, '..');
-// `--e2e`: las pruebas de navegador (pruebas/interfaz/*.e2e.mjs), de una en
-// una y sobre dist/ ya compilado. No van en `npm test`: publicar no depende
+// `--e2e`: las pruebas de navegador (pruebas/interfaz/*.e2e.mjs), sobre
+// dist/ ya compilado. No van en `npm test`: publicar no depende
 // de tener un Chrome a mano; corren en pruebas-ui.yml y a mano con
 // `npm run test:ui`.
 const E2E = process.argv.includes('--e2e');
@@ -39,7 +39,15 @@ const ficheros = listar(AQUI).filter((f) => !patrones.length || patrones.some((p
 if (!ficheros.length) { console.error('No hay ficheros de prueba que casen'); process.exit(2); }
 
 // Tantos a la vez como núcleos, hasta cuatro (3.74.4: eran tres fijos; el runner de GitHub y el móvil tienen cuatro).
-const PARALELO = E2E ? 1 : Math.max(1, Math.min(4, Number(process.env.PRUEBAS_PARALELO) || availableParallelism()));
+const PARALELO = Math.max(1, Math.min(4, Number(process.env.PRUEBAS_PARALELO) || (E2E ? availableParallelism() - 1 : availableParallelism())));
+/**
+ * Las de navegador iban de una en una: 13 minutos esperando antes de
+ * publicar (3.83.2). Hoy van a la vez (cada una con su Chrome y su puerto
+ * libre), dejando un núcleo libre para el servidor de cada prueba. Las de
+ * `SOLAS` van antes y sin nadie al lado: `actualizacion` cambia
+ * package.json un momento y compila dos veces.
+ */
+const SOLAS = ['actualizacion.e2e.mjs'];
 
 /**
  * Las más lentas primero (3.74.4): en orden alfabético, la de 60 s empezaba
@@ -53,7 +61,9 @@ const TIEMPOS = resolve(RAIZ, 'node_modules/.cache/pruebas-tiempos.json');
 let tiempos = {};
 try { tiempos = JSON.parse(readFileSync(resolve(AQUI, 'tiempos.json'), 'utf8')); } catch { /* sin foto, el orden de siempre */ }
 try { tiempos = { ...tiempos, ...JSON.parse(readFileSync(TIEMPOS, 'utf8')) }; } catch { /* la primera vez */ }
-if (!E2E) ficheros.sort((a, b) => (tiempos[relative(RAIZ, b)] ?? 0) - (tiempos[relative(RAIZ, a)] ?? 0));
+ficheros.sort((a, b) => (tiempos[relative(RAIZ, b)] ?? 0) - (tiempos[relative(RAIZ, a)] ?? 0));
+const solas = ficheros.filter((f) => SOLAS.some((n) => f.endsWith(n)));
+const juntas = ficheros.filter((f) => !solas.includes(f));
 if (E2E) comprobarDist();
 
 /**
@@ -101,15 +111,16 @@ function correr(fichero) {
 }
 
 async function trabajador() {
-  while (indice < ficheros.length) {
-    const f = ficheros[indice++];
+  while (indice < juntas.length) {
+    const f = juntas[indice++];
     resultados.push(await correr(f));
   }
 }
 
+for (const f of solas) resultados.push(await correr(f));
 await Promise.all(Array.from({ length: PARALELO }, trabajador));
 
-if (!E2E) {
+{
   try {
     mkdirSync(dirname(TIEMPOS), { recursive: true });
     writeFileSync(TIEMPOS, JSON.stringify({ ...tiempos, ...Object.fromEntries(resultados.map((r) => [r.nombre, r.segundos])) }));
