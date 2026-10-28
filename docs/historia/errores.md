@@ -1195,3 +1195,9 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   tablet fallaba al subir cada recorte y, hasta 3.81.2, sin decirlo.
   Lección: un cambio de `supabase/esquema.sql` no está hecho hasta que se
   aplica en el proyecto y se prueba allí como `anon`.
+- **Las partidas sin resultado se tiraban (3.73.0 → 3.81.5)**: si la tablet
+  no reconocía el final y no contestabas «¿Cómo acabó?» antes de la partida
+  siguiente, la de antes «se quedaba sin apuntar». El 27 de octubre de 2026,
+  unas 20 en una tarde, y el reconocimiento de la tabla no funcionaba en
+  ninguna. Lección: cuando un paso automático depende de que la persona
+  conteste, lo no contestado se guarda a la espera, no se tira.

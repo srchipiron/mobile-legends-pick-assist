@@ -176,8 +176,9 @@ export function partidasDeLaTablet(casa) {
     datos = {
       partidas: Array.isArray(j?.partidas) ? j.partidas.filter((p) => p && Number.isFinite(p.t) && typeof p.pick === 'string' && typeof p.gane === 'boolean') : [],
       subidas: Array.isArray(j?.subidas) ? j.subidas.filter(Number.isFinite) : [],
+      sinResultado: Array.isArray(j?.sinResultado) ? j.sinResultado.filter((p) => p && Number.isFinite(p.t) && typeof p.pick === 'string' && p.gane === undefined) : [],
     };
-  } catch { datos = { partidas: [], subidas: [] }; }
+  } catch { datos = { partidas: [], subidas: [], sinResultado: [] }; }
   const escribir = () => {
     try { writeFileSync(`${fichero}.tmp`, JSON.stringify(datos)); renameSync(`${fichero}.tmp`, fichero); } catch { /* sin disco: quedan en memoria */ }
   };
@@ -189,6 +190,21 @@ export function partidasDeLaTablet(casa) {
       return true;
     },
     todas: () => datos.partidas,
+    /**
+     * Las partidas de las que no se supo cómo acabaron (3.81.5): no reconoció
+     * la tabla y no contestaste a tiempo. Antes se tiraban («se queda sin
+     * apuntar»): el 27 de octubre de 2026, unas 20 en una tarde. Se guardan
+     * con su draft, sin `gane`, no se suben y salen en «Mis partidas» para que
+     * digas el resultado cuando quieras (`editar`).
+     */
+    guardarSinResultado(p) {
+      if (!p || !Number.isFinite(p.t) || typeof p.pick !== 'string' || datos.partidas.some((x) => x.t === p.t) || datos.sinResultado.some((x) => x.t === p.t)) return false;
+      const { gane, ...sin } = p;
+      datos.sinResultado = [sin, ...datos.sinResultado].sort((a, b) => b.t - a.t).slice(0, TOPE_SIN_RESULTADO);
+      escribir();
+      return true;
+    },
+    sinResultado: () => datos.sinResultado,
     pendientes: () => { const s = new Set(datos.subidas); return datos.partidas.filter((p) => !s.has(p.t)); },
     marcarSubidas(ts) {
       const vivas = new Set(datos.partidas.map((p) => p.t));
@@ -243,6 +259,15 @@ export function partidasDeLaTablet(casa) {
      */
     editar(t, cambios, base = null) {
       let i = datos.partidas.findIndex((p) => p.t === t);
+      // Una sin resultado pasa a ser partida en cuanto dices cómo acabó (3.81.5).
+      const sin = i < 0 ? datos.sinResultado.find((p) => p.t === t) : null;
+      if (sin) {
+        if (typeof cambios.gane !== 'boolean') return null;
+        datos.sinResultado = datos.sinResultado.filter((p) => p.t !== t);
+        datos.partidas = [{ ...sin, gane: cambios.gane }, ...datos.partidas].sort((a, b) => b.t - a.t).slice(0, TOPE_PARTIDAS_TABLET);
+        const hecho = this.editar(t, cambios);
+        return hecho && { ...hecho, antes: sin };
+      }
       if (i < 0) {
         if (!base || base.t !== t || typeof base.pick !== 'string' || typeof base.gane !== 'boolean') return null;
         datos.partidas = [base, ...datos.partidas].sort((a, b) => b.t - a.t).slice(0, TOPE_PARTIDAS_TABLET);
@@ -269,6 +294,8 @@ export function partidasDeLaTablet(casa) {
   };
 }
 
+/** Las partidas sin resultado que se guardan para contestarlas después (3.81.5): las de unos días de juego. */
+export const TOPE_SIN_RESULTADO = 50;
 /** Las partidas que enseña «Mis partidas» de la APK (3.75.0): las más nuevas. */
 export const PARTIDAS_EN_LA_APK = 200;
 
@@ -398,6 +425,30 @@ export function recorteParaSubir({ correccion, recortes, version = null }) {
     capturas,
   };
   // Si las dos no caben, va la primera (la que más leía).
+  while (Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES && recorte.capturas.length > 1) recorte.capturas.pop();
+  return Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES ? null : recorte;
+}
+
+/**
+ * Las pantallas del final de una partida cuyo resultado no se reconoció
+ * (3.81.5), para ver qué pinta la tablet ahí: las dos primeras sin marcador
+ * (fuera de partida) después de la última con él, que es donde sale
+ * VICTORIA/DERROTA; si no hay ninguna con marcador, las dos últimas sin él.
+ * La miniatura (160 px) y la franja de arriba (320 px), donde los nombres de
+ * los jugadores no se leen. Va a la tabla de los recortes con `tipo: 'final'`.
+ * null si no hay nada que subir.
+ */
+export function finalParaSubir({ desde, motivo = '', fotogramas = [], version = null }) {
+  const b64 = (x) => typeof x === 'string' && x.length > 0 && /^[A-Za-z0-9+/=]+$/.test(x);
+  const validas = (Array.isArray(fotogramas) ? fotogramas : []).filter((f) => typeof f?.id === 'string' && /^fotograma-[\w-]+$/.test(f.id) && b64(f.miniatura));
+  const ultimaEnPartida = validas.map((f) => !!f.marcador).lastIndexOf(true);
+  const fuera = validas.filter((f, i) => !f.marcador && i > ultimaEnPartida);
+  const elegidas = (fuera.length ? fuera.slice(0, 2) : validas.filter((f) => !f.marcador).slice(-2));
+  if (!elegidas.length || !Number.isFinite(desde)) return null;
+  const recorte = {
+    v: 1, tipo: 'final', version: typeof version === 'string' ? version : null, desde, motivo: String(motivo).slice(0, 80),
+    capturas: elegidas.map((f) => ({ id: f.id, minuto: Number.isFinite(f.minuto) ? f.minuto : null, miniatura: f.miniatura, ...(b64(f.tira) ? { tira: f.tira } : {}), tabla: !!f.tabla, parecido: Number.isFinite(f.resultadoParecido) ? f.resultadoParecido : null })),
+  };
   while (Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES && recorte.capturas.length > 1) recorte.capturas.pop();
   return Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES ? null : recorte;
 }
@@ -539,6 +590,8 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     apuntar: (p) => { if (partidas.apuntar(p)) subir(); },
     alCorregir: (c) => alCorregirRef?.(c),
     numerosDe: () => tusNumeros(partidas.todas()),
+    guardarSinResultado: (p) => partidas.guardarSinResultado(p),
+    alFinalSinLeer: (f) => { subirFinalDe(f).catch((e) => registrar(`Subir las pantallas del final: no se pudo (${e.message}).`)); },
     alSinLeer: (c) => { subirRecortesDe(c).catch((e) => registrar(`Subir los recortes del draft: no se pudo (${e.message}).`)); },
     maestriaDe: () => { const m = ajustes.delMovil(); return maestriaEfectiva(m?.maestria ?? {}, partidas.todas().filter((p) => p.t > (m?.cuando ?? 0))); },
   });
@@ -560,6 +613,18 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     return decir(r.error ? `Subir los recortes del draft: no se pudo (${r.error}).` : `Recortes del draft subidos para medir el lector (${recorte.capturas.length} capturas, ${recorte.faltan} sin reconocer).`);
   };
   servidor.subirRecortesDe = subirRecortesDe;
+  // Las pantallas del final sin reconocer (3.81.5), por el mismo camino y con la misma clave que los recortes.
+  const subirFinalDe = async (f) => {
+    const decir = (m) => { registrar(m); return m; };
+    const clave = claveDelLector(casa);
+    const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
+    if (!claveDeJugadorValida(clave) || !config) return decir(`Subir las pantallas del final: no se pudo (${config ? 'sin clave del lector' : 'sin comunidad.json'}).`);
+    const recorte = finalParaSubir({ ...f, version: servidor.interno.estado()?.version });
+    if (!recorte) return decir('Subir las pantallas del final: no se pudo (ninguna pantalla fuera de la partida).');
+    const r = await subirRecorte({ config, clave, recorte }, { fetch: pedirBaseDeDatos });
+    return decir(r.error ? `Subir las pantallas del final: no se pudo (${r.error}).` : `Pantallas del final subidas para ver por qué no se reconoció (${recorte.capturas.length}).`);
+  };
+  servidor.subirFinalDe = subirFinalDe;
   // El parte de salud (3.74.0): para que la revisión automática vea cómo va la tablet sin que nadie copie nada.
   const subirSuParte = async () => {
     const clave = claveDelLector(casa);
@@ -599,8 +664,9 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     const locales = new Map(partidas.todas().map((p) => [p.t, p]));
     const todas = new Map([...deLaBase].map(([t, b]) => [t, locales.get(t)?.supuesto && locales.get(t).pick === b.pick ? { ...b, supuesto: true } : b]));
     for (const p of partidas.todas()) if (sinSubir.has(p.t) || !todas.has(p.t)) todas.set(p.t, { ...p, sinSubir: sinSubir.has(p.t) });
-    const lista = [...todas.values()].sort((a, b) => b.t - a.t).slice(0, PARTIDAS_EN_LA_APK).map((p) => ({
-      t: p.t, pick: p.pick, gane: p.gane, ...(p.supuesto ? { supuesto: true } : {}), ...(p.sinSubir ? { sinSubir: true } : {}),
+    // Las sin resultado (3.81.5) van en la lista, para decir cómo acabaron; no en los números (no tienen resultado).
+    const lista = [...partidas.sinResultado().map((p) => ({ ...p, sinResultado: true })), ...todas.values()].sort((a, b) => b.t - a.t).slice(0, PARTIDAS_EN_LA_APK).map((p) => ({
+      t: p.t, pick: p.pick, ...(typeof p.gane === 'boolean' ? { gane: p.gane } : {}), ...(p.sinResultado ? { sinResultado: true } : {}), ...(p.supuesto ? { supuesto: true } : {}), ...(p.sinSubir ? { sinSubir: true } : {}),
       enemigos: p.draft?.enemigos ?? [], aliados: p.draft?.aliados ?? [], bans: p.bans ?? [], linea: p.draft?.linea ?? null,
       ...(Number.isFinite(p.duracion) ? { duracion: p.duracion } : {}), ...(p.resultadoDe ? { resultadoDe: p.resultadoDe } : {}), ...(p.editada ? { editada: true } : {}),
     }));

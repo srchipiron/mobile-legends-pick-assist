@@ -422,7 +422,7 @@ test('lo que se perdía sin el móvil (3.74.3): la pregunta pisada o caducada se
     let t = 20_000_000, final = null, respuesta = null, contestada = contestadaAntes;
     // Con id de captura: lo que no reconoce se pregunta en la tarjeta «Enseña al lector».
     let lista = { ...lectura({ tuyos: [N('Hirara'), N('Belerick')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 }), id: 'lectura-1' };
-    const preguntas = [], apuntadas = [], registro = [], corregidas = [], correcciones = [], sinLeer = [];
+    const preguntas = [], apuntadas = [], registro = [], corregidas = [], correcciones = [], sinLeer = [], sinResultado = [], finales = [];
     const interno = {
       leer: async () => ({ ok: true, lectura: lista }), delMovil: () => ({}), ponerConsejo: () => {},
       vigilar: (desde) => { final = { desde, activa: true, acabada: false, resultado: null, inicio: desde + 1000, duracion: null }; },
@@ -430,9 +430,9 @@ test('lo que se perdía sin el móvil (3.74.3): la pregunta pisada o caducada se
       ponerPregunta: (p) => preguntas.push(p), respuesta: () => { const r = respuesta; respuesta = null; return r; },
       correccionContestada: () => { const c = typeof contestada === 'function' ? contestada(final) : contestada; contestada = null; return c; },
     };
-    const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: (p) => apuntadas.push(p), registrar: (m) => registro.push(m), alCorregir: (c) => corregidas.push(c), alSinLeer: (c) => sinLeer.push(c) });
+    const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: (p) => apuntadas.push(p), registrar: (m) => registro.push(m), alCorregir: (c) => corregidas.push(c), alSinLeer: (c) => sinLeer.push(c), guardarSinResultado: (p) => { sinResultado.push(p); return true; }, alFinalSinLeer: (f) => finales.push(f) });
     return {
-      preguntas, apuntadas, registro, corregidas, correcciones, sinLeer,
+      preguntas, apuntadas, registro, corregidas, correcciones, sinLeer, sinResultado, finales,
       paso: async (ms = 5000) => { t += ms; await solo.tic(); }, saltar: (ms) => { t += ms; },
       leer: (l) => { lista = l; }, fin: (f) => { final = { ...final, ...f }; }, contestar: (r) => { respuesta = { ...r, cuando: t }; }, desde: () => final?.desde,
     };
@@ -470,7 +470,18 @@ test('lo que se perdía sin el móvil (3.74.3): la pregunta pisada o caducada se
   dos.fin({ acabada: true, activa: false });
   await dos.paso(20000);
   eq(dos.preguntas.length, 2, JSON.stringify(dos.preguntas.map((p) => p.id)));
-  ok(dos.registro.some((l) => /partida anterior .*se queda sin apuntar/.test(l)), `la partida pisada se pierde sin decirlo: ${dos.registro.slice(-3).join(' | ')}`);
+  // Desde 3.81.5 no se pierde: se guarda sin resultado, con su draft, para decirlo después en «Mis partidas».
+  ok(dos.registro.some((l) => /queda en «Mis partidas» sin resultado/.test(l)), `la partida pisada se pierde sin decirlo: ${dos.registro.slice(-3).join(' | ')}`);
+  const pisada = dos.sinResultado[0];
+  ok(dos.sinResultado.length === 1 && pisada.gane === undefined && pisada.pick && pisada.draft?.enemigos?.includes('Clint') && Number.isFinite(pisada.desde) && Number.isFinite(pisada.t), `la partida pisada no se guarda sin resultado: ${JSON.stringify(dos.sinResultado)}`);
+  eq(dos.apuntadas.length, 0, 'la pisada se apunta con un resultado inventado');
+  // Al preguntar, las pantallas del final de ESA partida van a ver por qué no se reconoció (3.81.5).
+  dos.fin({ fotogramas: [{ id: 'fotograma-1', miniatura: 'x' }] });
+  const caso = montar();
+  await jugar(caso);
+  caso.fin({ acabada: true, activa: false, fotogramas: [{ id: 'fotograma-2026-10-27T22-32-00-000Z', miniatura: 'iVBORw0KGgo=' }] });
+  await caso.paso(20000);
+  ok(caso.finales.length === 1 && caso.finales[0].desde === caso.desde() && caso.finales[0].fotogramas.length === 1 && caso.finales[0].motivo, `al preguntar no manda las pantallas del final: ${JSON.stringify(caso.finales)}`);
   // La pregunta caduca sin contestar: se dice.
   const caduca = montar();
   await jugar(caduca);
@@ -479,6 +490,7 @@ test('lo que se perdía sin el móvil (3.74.3): la pregunta pisada o caducada se
   eq(caduca.preguntas.length, 1);
   await caduca.paso(PREGUNTA_CADUCA_MS + 1000);
   ok(caduca.registro.some((l) => /a tiempo/.test(l)), 'la pregunta caduca en silencio');
+  eq(caduca.sinResultado.length, 1, 'la caducada no se guarda sin resultado');
   caduca.contestar({ desde: caduca.desde(), gane: true });
   await caduca.paso(1000);
   eq(caduca.apuntadas.length, 0, 'apunta con una respuesta a una pregunta que ya no está');

@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR } from '../../scripts/lector/en-tablet.mjs';
+import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, TOPE_SIN_RESULTADO, finalParaSubir } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { claveDeJugadorValida } from '../../src/app/basedatos.js';
 import { pruebaDelReto } from '../../src/app/lector.js';
@@ -398,6 +398,70 @@ test('la corrección protege sus capturas de la limpieza mientras se puede conte
   } finally { servidor.close(); }
 });
 
+test('las partidas sin resultado (3.81.5): se guardan con su draft, salen en «Mis partidas», no se suben ni cuentan, y al decir el resultado se apuntan y se suben', async () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-sin-resultado-'));
+  const s = supabaseFalso();
+  const { mkdirSync } = await import('node:fs');
+  mkdirSync(join(casa, 'datos'), { recursive: true });
+  writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
+  const apk = await apkDePega();
+  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  const puerto = servidor.address().port;
+  try {
+    const T = 1793100000000;
+    ok(servidor.partidas.guardarSinResultado({ t: T, pick: 'Diggie', desde: T - 900000, origen: 'lector', recomendados: ['Diggie'], draft: { linea: 'roam', enemigos: ['Clint', 'Khufra'], aliados: ['Gord'] } }), 'no la guarda');
+    ok(!servidor.partidas.guardarSinResultado({ t: T, pick: 'Diggie' }), 'la guarda dos veces');
+    eq(servidor.partidas.pendientes().length, 0, 'una sin resultado se sube');
+    await servidor.subirPartidas();
+    eq(s.jugadores.size, 0, 'una sin resultado llega a la base de datos');
+    const lista = JSON.parse((await pedir(puerto, '/partidas', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
+    const enLista = lista.partidas.find((p) => p.t === T);
+    ok(enLista?.sinResultado && !('gane' in enLista) && enLista.enemigos.join() === 'Clint,Khufra', `no sale en «Mis partidas» como sin resultado: ${JSON.stringify(enLista)}`);
+    eq(lista.numeros?.n ?? 0, 0, 'una sin resultado cuenta en tus números');
+    // Sin decir el resultado no se puede «arreglar»: sigue sin resultado.
+    eq((await mandarPost(puerto, '/partida', { t: T, enemigos: ['Clint', 'Khufra', 'Layla'] })).estado, 404);
+    // Con el resultado, se apunta, se sube y sale de las sin resultado.
+    const r = await mandarPost(puerto, '/partida', { t: T, gane: true });
+    eq(r.estado, 200, r.cuerpo);
+    eq(servidor.partidas.sinResultado().length, 0, 'sigue entre las sin resultado');
+    const apuntada = servidor.partidas.todas().find((p) => p.t === T);
+    ok(apuntada?.gane === true && apuntada.desde === T - 900000 && apuntada.draft.enemigos.length === 2, JSON.stringify(apuntada));
+    await servidor.subirPartidas();
+    const clave = claveDelLector(casa);
+    eq(s.jugadores.get(clave)?.partidas.get(T)?.gane, true, 'al decir el resultado no se sube');
+    // El tope: no crece sin fin.
+    for (let i = 1; i <= TOPE_SIN_RESULTADO + 5; i += 1) servidor.partidas.guardarSinResultado({ t: T + i, pick: 'Gord' });
+    eq(servidor.partidas.sinResultado().length, TOPE_SIN_RESULTADO);
+  } finally { servidor.close(); apk.cerrar(); }
+});
+
+test('las pantallas del final sin reconocer (3.81.5): las dos primeras fuera de la partida, a la tabla de recortes con la clave del lector', async () => {
+  const foto = (id, extra = {}) => ({ id: `fotograma-2026-10-27T22-${id}-000Z`, minuto: 10, miniatura: 'iVBORw0KGgo=', tira: 'iVBORw0KGgo=', ...extra });
+  const fotos = [foto('30-00', { marcador: 'iVBORw0KGgo=' }), foto('31-00'), foto('31-10', { marcador: 'iVBORw0KGgo=' }), foto('32-00'), foto('32-10'), foto('32-20'), foto('33-00')];
+  const r = finalParaSubir({ desde: 5, motivo: 'ya hay otro draft', fotogramas: fotos, version: '3.81.5' });
+  eq(r.capturas.map((c) => c.id.slice(-10)).join(), '32-00-000Z,32-10-000Z', 'no son las primeras pantallas de después de la partida');
+  ok(r.tipo === 'final' && r.desde === 5 && r.motivo === 'ya hay otro draft' && !JSON.stringify(r).includes('marcador'), JSON.stringify(r).slice(0, 200));
+  eq(finalParaSubir({ desde: 5, fotogramas: [foto('31-00'), foto('31-10'), foto('31-20')] }).capturas.length, 2, 'sin marcador no sube las últimas');
+  eq(finalParaSubir({ desde: 5, fotogramas: [{ ...foto('31-00'), id: '../x' }, foto('31-10', { miniatura: 'no <es> base64' })] }), null, 'sube una pantalla sin forma');
+  eq(finalParaSubir({ desde: null, fotogramas: fotos }), null, 'sin la partida no se puede cruzar');
+  const grande = 'A'.repeat(70000);
+  ok(finalParaSubir({ desde: 5, fotogramas: [foto('32-00', { miniatura: grande }), foto('32-10', { miniatura: grande })] }).capturas.length === 1, 'no deja la primera cuando no caben las dos');
+  // De punta a punta: con la clave del lector, por subir_recorte.
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-final-'));
+  const s = supabaseFalso();
+  const { mkdirSync } = await import('node:fs');
+  mkdirSync(join(casa, 'datos'), { recursive: true });
+  writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
+  const apk = await apkDePega();
+  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  try {
+    const dicho = await servidor.subirFinalDe({ desde: 5, motivo: 'ya hay otro draft', fotogramas: fotos });
+    ok(s.recortes.length === 1 && s.recortes[0].clave === claveDelLector(casa) && s.recortes[0].d.tipo === 'final', `no sube las pantallas del final: ${dicho}`);
+    ok(/Pantallas del final subidas/.test(dicho ?? ''), dicho);
+    ok(LINEA_DE_ERROR.test(await servidor.subirFinalDe({ desde: 5, fotogramas: [] })), 'sin pantallas no lo dice como error del parte');
+  } finally { servidor.close(); apk.cerrar(); }
+});
+
 test('las capturas del draft que lee el modo solo no se podan mientras está abierto (3.81.4)', async () => {
   const carpeta = mkdtempSync(join(tmpdir(), 'en-tablet-poda-draft-'));
   const ids = ['lectura-2026-10-27T22-20-00-000Z-1', 'lectura-2026-10-27T22-20-04-000Z-2', 'lectura-2026-10-27T22-20-08-000Z-3'];
@@ -457,6 +521,10 @@ test('el modo solo de la tablet lleva cómo arreglar la partida con tu correcci�
   const fuente = leerFichero(join(dirname(fileURLToPath(import.meta.url)), '../../scripts/lector/en-tablet.mjs'), 'utf8');
   const llamada = fuente.slice(fuente.indexOf('const solo = crearSolo({'), fuente.indexOf('});', fuente.indexOf('const solo = crearSolo({')));
   ok(/alCorregir: \(c\) => alCorregirRef\?\.\(c\)/.test(llamada), 'crearSolo no recibe alCorregir en en-tablet.mjs');
+
+  // Y desde 3.81.5, dónde guardar las partidas sin resultado y a quién mandar las pantallas del final.
+  ok(/guardarSinResultado: \(p\) => partidas\.guardarSinResultado\(p\)/.test(llamada), 'crearSolo no recibe guardarSinResultado: las partidas sin resultado se pierden');
+  ok(/alFinalSinLeer: \(f\) => \{ subirFinalDe\(f\)/.test(llamada), 'crearSolo no recibe alFinalSinLeer: las pantallas del final no se suben');
 });
 
 test('los datos con los que decide la tablet: los MÁS NUEVOS que tenga, no los primeros que encuentre (3.73.1)', () => {

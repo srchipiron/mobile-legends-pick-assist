@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.81.5
+
+- La tablet ya no pierde las partidas de las que no sabe el resultado. Antes,
+  si no contestabas «¿Cómo acabó?» antes de la siguiente, la partida se
+  tiraba: solo el 27 de octubre, unas 20. Ahora se queda en «Mis partidas»
+  como «Sin resultado», con su draft, y dices si ganaste o perdiste cuando
+  quieras. Al decirlo se apunta y se sube como las demás.
+- Cuando no reconoce el final de una partida, la tablet sube dos pantallas
+  pequeñas de después de la partida, donde sale victoria o derrota, para
+  arreglar por qué no las reconoce. A ese tamaño no se leen los nombres de
+  los jugadores.
+
 ## 3.81.4
 
 - La tablet vuelve a aprender de lo que le enseñas: cuando le dices quién

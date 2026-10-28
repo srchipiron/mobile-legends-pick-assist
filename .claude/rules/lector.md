@@ -1662,3 +1662,21 @@ SKIN del rival (mirado en un mosaico), que la API no da (solo `head` y unos
 fondos de 1920×1080 en `/heroes/{id}/wallpapers`, no el retrato del panel).
 Pruebas en `solo` y `en-tablet`; cuatro mutaciones.
 
+**Las partidas sin resultado y el final que no se ve (3.81.5)**: en los
+partes del 26 y 27 de octubre de 2026, 22 preguntas «¿Cómo acabó?», todas
+con el motivo «ya hay otro draft»: la vigilancia no vio la tabla ni una vez
+(`porTabla` 0) y sigue hasta el draft siguiente. Sin contestar, la partida
+se tiraba. Hoy `crearSolo` la guarda sin `gane` (`sinResultado`,
+`guardarSinResultado` → `partidasDeLaTablet.guardarSinResultado`, tope
+`TOPE_SIN_RESULTADO` 50, no se sube ni cuenta en `tusNumeros`), `/partidas`
+la lista con `sinResultado` y la APK la pinta en naranja sin resultado
+marcado (no deja guardar sin elegir: con `optBoolean` se habría apuntado
+como perdida). `editar` con `gane` la pasa a partida, la sube y, si quedan
+los fotogramas (3 h), aprende la tabla. Y al preguntar, `alFinalSinLeer`
+sube (`finalParaSubir`, `subirFinalDe`) las dos primeras pantallas sin
+marcador tras la última con él, miniatura y franja, a la tabla `recortes`
+con `tipo: 'final'` y la clave del lector: con ellas se mide por qué no se
+reconoce la tabla. Pruebas en `solo` y `en-tablet`; siete mutaciones. El
+Kotlin de `Partidas.kt` no se compila en el contenedor (sin SDK): lo
+compila `apk.yml`.
+
