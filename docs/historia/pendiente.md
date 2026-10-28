@@ -264,7 +264,7 @@
   tablet suben con la clave del lector si el móvil no mandó la tuya
   (decidido por Javi: cuentan para el modelo, no salen en el móvil).
 - **Tres fallos silenciosos del modo «Sin móvil»** (26 de octubre de 2026): hechos en 3.74.3.
-- **El móvil como centro de mando de la tablet** (26 de octubre de 2026): hecho en 3.76.0 (una clave, arreglos en los dos sentidos). Queda: ver y arreglar en el móvil los ENEMIGOS y compañeros de una partida (hoy el historial del móvil cambia resultado y héroe).
+- **El móvil como centro de mando de la tablet** (26 de octubre de 2026): hecho en 3.76.0 (una clave, arreglos en los dos sentidos). Lo que quedaba (arreglar en el móvil los ENEMIGOS y compañeros de una partida), hecho en 3.78.0 (`cambiarDraft`).
 - **`supuesto` en la base de datos y en el móvil (27 de octubre de 2026)**:
   hecho en 3.81.2, con Javi dando permiso para decidir solo («toma tus
   propias decisiones»). `subir_partidas` aplicada en su Supabase
