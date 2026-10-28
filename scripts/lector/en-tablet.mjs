@@ -582,7 +582,7 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     const d = leerDatos();
     return {
       datos: { fecha: d.meta?.generatedAt ?? null, de: d.de === 0 ? 'web' : d.de == null ? null : 'apk' },
-      partidas: { apuntadas: partidas.todas().length, sinSubir: partidas.pendientes().length, porTabla: partidas.todas().filter((p) => p.resultadoDe === 'tabla').length, porPregunta: partidas.todas().filter((p) => p.resultadoDe === 'pregunta').length, clave: claveDeJugadorValida(claveConLaQueSube()), deQuien: claveDeJugadorValida(ajustes.delMovil()?.clave) ? 'tuya' : 'lector', error: ultimaSubida.error },
+      partidas: { apuntadas: partidas.todas().length, sinSubir: partidas.pendientes().length, porTabla: partidas.todas().filter((p) => p.resultadoDe === 'tabla').length, porPregunta: partidas.todas().filter((p) => p.resultadoDe === 'pregunta').length, sinResultado: partidas.sinResultado().length, clave: claveDeJugadorValida(claveConLaQueSube()), deQuien: claveDeJugadorValida(ajustes.delMovil()?.clave) ? 'tuya' : 'lector', error: ultimaSubida.error },
     };
   };
   const solo = crearSolo({

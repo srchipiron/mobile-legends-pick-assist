@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.82.1
+
+- En Ajustes → «El sistema», el móvil te dice en rojo cuántas partidas
+  dejó la tablet sin resultado (las que no supo si ganaste o perdiste).
+  Hasta que las contestas en «Mis partidas» de la tablet no se suben ni
+  cuentan para tus números, así que ahora no se te quedan olvidadas. La
+  revisión diaria de la tablet también lo avisa.
+
 ## 3.82.0
 
 - Lo que arreglas en tu historial sirve ahora para mejorar la lectura de

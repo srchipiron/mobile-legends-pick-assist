@@ -40,6 +40,8 @@ test('lo que falla se dice como FALLO, y lo que conviene mirar como AVISO', () =
   ok(fallo(sano({ lector: { lecturas: 100, fallosCaptura: 50 } })).avisos.some((a) => /capturas/.test(a)), 'no ve las capturas que fallan');
   ok(fallo(sano({ datos: { fecha: hace((DATOS_VIEJOS_H + 1) * 60), de: 'apk' } })).avisos.some((a) => /APK/.test(a)), 'no ve los datos viejos');
   ok(fallo(sano({ partidas: { sinSubir: 4, clave: false } })).avisos.some((a) => /clave/.test(a)), 'no ve las partidas sin clave');
+  ok(fallo(sano({ partidas: { apuntadas: 3, sinSubir: 0, clave: true, sinResultado: 2 } })).avisos.some((a) => /2 partidas sin resultado/.test(a)), 'no ve las partidas sin resultado');
+  eq(fallo(sano()).avisos.length, 0, 'avisa de partidas sin resultado que no hay');
   ok(fallo(sano({ solo: { activo: false } })).avisos.length === 1, 'no ve el modo solo apagado');
   ok(fallo(sano({ pendiente: { pregunta: true } })).avisos.length === 1, 'no ve la pregunta pendiente');
   ok(fallo(sano({ salida: 'Android la cerró por falta de memoria' })).avisos.length === 1, 'no ve la salida por memoria');

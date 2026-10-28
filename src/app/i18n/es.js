@@ -527,6 +527,7 @@ export default {
   'sistema.partidas': '{n} partidas apuntadas, todas guardadas.',
   'sistema.partidasSinSubir': '{n} partidas apuntadas; {sinSubir} por subir.',
   'sistema.resultados': 'Resultado reconocido solo en {tabla} de {total} partidas; el resto lo preguntó.',
+  'sistema.sinResultado': '{n} partidas sin resultado: contéstalas en «Mis partidas» de la tablet: hasta entonces no se suben.',
   'sistema.datos': 'Datos del juego de hace {h} h.',
   'tablet.resumen.ganada': 'Ganada con {pick}',
   'tablet.resumen.perdida': 'Perdida con {pick}',

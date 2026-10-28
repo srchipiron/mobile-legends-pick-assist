@@ -555,11 +555,12 @@ test('/estado dice de cuándo son los datos y si tus partidas suben (3.73.1): si
   const puerto = servidor.address().port;
   try {
     servidor.partidas.apuntar({ t: 1788000000000, pick: 'Rafaela', gane: true });
+    servidor.partidas.guardarSinResultado({ t: 1788000600000, pick: 'Estes' });
     const e = JSON.parse((await pedir(puerto, '/estado', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
     // Sin nada bajado (LECTOR_SIN_SOLO no baja), decide con los que trae la APK, y lo dice.
     ok(typeof e.datos?.fecha === 'string' && e.datos.de === 'apk', `/estado no dice de cuándo son los datos ni de dónde: ${JSON.stringify(e.datos)}`);
     // Sin tu clave sube con la del lector (3.74.6) y lo dice.
-    eq(JSON.stringify(e.partidas), JSON.stringify({ apuntadas: 1, sinSubir: 1, porTabla: 0, porPregunta: 0, clave: true, deQuien: 'lector', error: null }), 'no dice con qué clave sube');
+    eq(JSON.stringify(e.partidas), JSON.stringify({ apuntadas: 1, sinSubir: 1, porTabla: 0, porPregunta: 0, sinResultado: 1, clave: true, deQuien: 'lector', error: null }), 'no dice con qué clave sube');
   } finally { servidor.close(); apk.cerrar(); }
 });
 
