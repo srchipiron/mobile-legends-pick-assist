@@ -632,3 +632,22 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   draft (o de quien solo miraba un héroe), no del lector; los de 0,80–0,86
   (Yi Sun-shin, Wanwan, los imanes de siempre) son pocos para un umbral por
   héroe.
+- **Guardar `supuesto` local al fundir con una copia arreglada después
+  (revisión de 3.83.1)**: en `alDiaCon` y `fundirPerfil` no se copia,
+  aunque el revisor lo propuso. Confirmar el héroe en el móvil QUITA la marca
+  a propósito (`cambiarHeroe`), y una copia de fuera sin marca no se
+  distingue de una vieja que nunca la tuvo: copiarla resucitaría marcas
+  quitadas por Javi. La causa (las viejas subidas sin marca) se arregla en
+  origen: la tablet las vuelve a subir una vez.
+- **Aprender de recortes de antes de 3.81.4 (sin pantalla de draft
+  comprobable)**: no hace falta filtrarlos: la tabla `recortes` estaba vacía
+  el 28 de octubre de 2026 (0 filas), así que no hay ninguno de esa época.
+- **La regla de draft de 3.83.0 sin fila de baneos** (modo sin baneos,
+  burbuja tapando la fila): el revisor no lo reprodujo como fallo; Javi
+  juega clasificatorias, que siempre traen baneos.
+- **`recortes_recientes` legible con la clave pública** (incluye las
+  miniaturas del final a 160 px) y **`subir_recorte` sin validar el PNG**
+  (llenar el plan gratuito): riesgo de privacidad bajo y de disponibilidad.
+  Cambiarlo es otra migración de Supabase, y el conector no deja aplicarlas
+  (el aviso de permiso no le llega a Javi). Queda en `pendiente.md`.
+

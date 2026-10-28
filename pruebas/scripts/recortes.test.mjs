@@ -6,7 +6,8 @@
  * lleven los nombres de los jugadores.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { escribirPng } from '../../scripts/lector/png.mjs';
+import { escribirPng, leerPng } from '../../scripts/lector/png.mjs';
+import { deflateSync, crc32 } from 'node:zlib';
 import { carasGuardadas, leerPicksEnemigos, leerAliados } from '../../scripts/lector/leer.mjs';
 import { recorteDePicks, recorteDeDraft, recortesDelDraft, mejoresRecortes, componerPicks, devolverPicks, CAJAS_ALIADOS, TOPE_RECORTE } from '../../scripts/lector/recortes.mjs';
 import { capturaCompleta, VERDAD } from '../fixtures/juego/captura.mjs';
@@ -98,6 +99,22 @@ test('un recorte que dice ser enorme no se descomprime (3.83.0): de la base de d
   let corto = null;
   try { devolverPicks('iVBO'); } catch (e) { corto = e; }
   ok(corto, 'un recorte sin cabecera no lanza');
+});
+
+test('un recorte que se infla a lo bestia no llega a la memoria (3.83.1): la cabecera dice 10×10 y los datos son 90 MB', () => {
+  const trozo = (tipo, datos) => { const l = Buffer.alloc(4); l.writeUInt32BE(datos.length); const td = Buffer.concat([Buffer.from(tipo, 'latin1'), datos]); const c = Buffer.alloc(4); c.writeUInt32BE(crc32(td)); return Buffer.concat([l, td, c]); };
+  const cabecera = Buffer.alloc(13); cabecera.writeUInt32BE(10, 0); cabecera.writeUInt32BE(10, 4); cabecera[8] = 8; cabecera[9] = 6;
+  const bomba = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), trozo('IHDR', cabecera), trozo('IDAT', deflateSync(Buffer.alloc(90_000_000))), trozo('IEND', Buffer.alloc(0))]);
+  ok(bomba.toString('base64').length < 120000, 'la bomba ya no cabe en lo que admite la tablet: la prueba no mide nada');
+  let lanzo = false;
+  try { leerPng(bomba); } catch { lanzo = true; }
+  ok(lanzo, 'leerPng infla un PNG mucho más de lo que dice su cabecera');
+  lanzo = false;
+  try { devolverPicks(bomba.toString('base64')); } catch { lanzo = true; }
+  ok(lanzo, 'un recorte bomba se devuelve como si nada');
+  // Y uno de verdad sigue leyéndose.
+  const r = recorteDePicks(img);
+  ok(devolverPicks(r).ancho === 2400, 'un recorte bueno ya no se lee');
 });
 
 await terminar('scripts/recortes');

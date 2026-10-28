@@ -12,6 +12,8 @@ import { filasDeSalud, datosRancios } from './salud.mjs';
 const ruta = process.argv[2] ?? 'historial/salud.jsonl';
 let texto = '';
 try { texto = readFileSync(ruta, 'utf8'); } catch (e) { console.log(`No se puede leer ${ruta}: ${e.message}`); process.exit(0); }
-const motivo = datosRancios(filasDeSalud(texto).filas);
+const filas = filasDeSalud(texto).filas;
+const motivo = datosRancios(filas);
 if (motivo) { console.log(motivo); process.exit(1); }
-console.log('Datos al día.');
+// Sin la edad no se abre incidencia (lo vigila el resto de la fila), pero tampoco se dice «al día» (3.83.1).
+console.log(Number.isFinite(Number(filas.at(-1)?.edadHoras)) ? 'Datos al día.' : 'No sé la edad de los datos: la última fila de salud no la trae.');

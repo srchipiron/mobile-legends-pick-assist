@@ -272,3 +272,10 @@
   transacción deshecha; los permisos, iguales).
 - **`apk.yml` sin `npm test`**: hecho en 3.81.2 (y recompila también con
   `src/app/basedatos.js`, `src/app/i18n/**` y `public/comunidad.json`).
+- **Dos cambios de Supabase propuestos por la revisión de 3.83.1** (28 de
+  octubre de 2026), sin aplicar porque el conector no hace llegar a Javi el
+  aviso de permiso: que `recortes_recientes` no devuelva `tipo = 'final'`
+  (las miniaturas del final, legibles con la clave pública) y que
+  `mis_recortes` no cuente las del final en sus 50 (un arreglo de hace días
+  puede quedarse fuera). Se pegan en el SQL Editor cuando Javi quiera.
+

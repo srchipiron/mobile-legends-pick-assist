@@ -177,11 +177,23 @@ export function partidasDeLaTablet(casa) {
       partidas: Array.isArray(j?.partidas) ? j.partidas.filter((p) => p && Number.isFinite(p.t) && typeof p.pick === 'string' && typeof p.gane === 'boolean') : [],
       subidas: Array.isArray(j?.subidas) ? j.subidas.filter(Number.isFinite) : [],
       sinResultado: Array.isArray(j?.sinResultado) ? j.sinResultado.filter((p) => p && Number.isFinite(p.t) && typeof p.pick === 'string' && p.gane === undefined) : [],
+      supuestoResubido: j?.supuestoResubido === true,
     };
-  } catch { datos = { partidas: [], subidas: [], sinResultado: [] }; }
+  } catch { datos = { partidas: [], subidas: [], sinResultado: [], supuestoResubido: true }; }
   const escribir = () => {
     try { writeFileSync(`${fichero}.tmp`, JSON.stringify(datos)); renameSync(`${fichero}.tmp`, fichero); } catch { /* sin disco: quedan en memoria */ }
   };
+  // Las `supuesto` subidas antes de 3.81.2 (revisión del 28 de octubre de
+  // 2026): la base de datos no guardaba la marca y, ya en `subidas`, nunca se
+  // volvían a subir; el móvil, el Veredicto y la comunidad las contaban como
+  // «siguió el consejo». Se suben otra vez UNA vez (el servidor acepta la copia
+  // si nadie la arregló después: `editada`).
+  if (!datos.supuestoResubido) {
+    const supuestas = new Set(datos.partidas.filter((p) => p.supuesto).map((p) => p.t));
+    datos.subidas = datos.subidas.filter((t) => !supuestas.has(t));
+    datos.supuestoResubido = true;
+    escribir();
+  }
   return {
     apuntar(p) {
       if (!p || !Number.isFinite(p.t) || datos.partidas.some((x) => x.t === p.t)) return false;
@@ -688,8 +700,10 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     if (!drafts.length) return null;
     const tanda = drafts.slice(0, ARREGLOS_POR_TANDA);
     const hecho = await servidor.interno.aprenderDeArreglos(tanda);
-    try { writeFileSync(`${fichero}.tmp`, JSON.stringify({ hechos: [...hechos, ...tanda.map((d) => d.clave)].slice(-500) })); renameSync(`${fichero}.tmp`, fichero); } catch { /* sin disco: se repetirá */ }
-    return decir(`Aprendido de ${hecho.mirados} drafts que arreglaste${hecho.aprendidos.length ? `: ${[...new Set(hecho.aprendidos)].join(', ')}` : ' (nada nuevo que no supiera)'}.`);
+    // Solo lo que de verdad se miró (o no tiene forma): lo que falló se reintenta (3.83.1).
+    try { writeFileSync(`${fichero}.tmp`, JSON.stringify({ hechos: [...hechos, ...(hecho.hechos ?? [])].slice(-500) })); renameSync(`${fichero}.tmp`, fichero); } catch { /* sin disco: se repetirá */ }
+    const fallidos = hecho.fallidos ? ` ${hecho.fallidos} no se pudo, lo intento la próxima vez.` : '';
+    return decir(`Aprendido de ${hecho.mirados} drafts que arreglaste${hecho.aprendidos.length ? `: ${[...new Set(hecho.aprendidos)].join(', ')}` : ' (nada nuevo que no supiera)'}.${fallidos}`);
   };
   servidor.aprenderDeLoArreglado = aprenderDeLoArreglado;
   const cadaArreglo = setInterval(() => { aprenderDeLoArreglado().catch((e) => registrar(`Aprender de lo arreglado: no se pudo (${e.message}).`)); }, ARREGLOS_CADA_MS);

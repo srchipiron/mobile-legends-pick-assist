@@ -36,6 +36,10 @@ test('datos de más de 72 horas abren la incidencia de la vigilancia (3.81.2); a
   const correr = (filas) => { writeFileSync(join(dir, 's.jsonl'), filas.map((f) => JSON.stringify(f)).join('\n')); return spawnSync(process.execPath, [join(RAIZ, 'scripts/datos-rancios.mjs'), join(dir, 's.jsonl')], { encoding: 'utf8' }); };
   eq(correr([{ edadHoras: 100, datosDe: 'x' }]).status, 1, 'con datos rancios no falla');
   eq(correr([{ edadHoras: 30 }]).status, 0, 'con datos al día falla');
+  // Sin la edad, ni incidencia ni «al día» (3.83.1).
+  const sinEdad = correr([{ fallos: 0 }]);
+  ok(sinEdad.status === 0 && /No sé la edad/.test(sinEdad.stdout) && !/al día/.test(sinEdad.stdout), `sin edad dice: ${sinEdad.stdout}`);
+  ok(/al día/.test(correr([{ edadHoras: 30 }]).stdout));
   // Y la vigilancia lo llama después de guardar la fila, con pipefail (bash), y lo pone en la incidencia.
   const v = readFileSync(join(RAIZ, '.github/workflows/vigilancia.yml'), 'utf8');
   const paso = v.indexOf('scripts/datos-rancios.mjs');

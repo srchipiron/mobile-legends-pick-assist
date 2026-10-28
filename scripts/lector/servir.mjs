@@ -1235,28 +1235,35 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
      * aprendizaje que «Enseña al lector» (sus guardas: una cara de compañero
      * entra confirmada en dos drafts y sin parecerse a otro héroe). Lo que
      * llega de la base de datos son datos: ids, base64 y nombres con forma, y
-     * como mucho `ARREGLOS_POR_TANDA` drafts. Devuelve cuántos se miraron y qué
-     * se aprendió; un fallo no tira el lector.
+     * como mucho `ARREGLOS_POR_TANDA` drafts. Devuelve cuántos se miraron, qué
+     * se aprendió y `hechos` (3.83.1): las `clave` de los drafts mirados o sin
+     * forma (no la tendrán nunca); los que fallan (el hilo sin memoria) no van,
+     * y se reintentan la próxima vez. Antes la tanda entera se daba por hecha.
+     * Un fallo no tira el lector.
      */
     aprenderDeArreglos: async (drafts) => {
       const texto = (x) => (typeof x === 'string' && x.length <= 40 ? x : null);
       const lista = (l, n) => (Array.isArray(l) ? l.map(texto).filter(Boolean).slice(0, n) : []);
+      const salida = { mirados: 0, aprendidos: [], hechos: [], fallidos: 0 };
+      const claveDe = (d) => (typeof d?.clave === 'string' ? d.clave : null);
       const buenos = (Array.isArray(drafts) ? drafts : []).slice(0, ARREGLOS_POR_TANDA).map((d) => {
         const verdad = { enemigos: lista(d?.verdad?.enemigos, 5), aliados: lista(d?.verdad?.aliados, 4), tuyo: texto(d?.verdad?.tuyo), baneos: [] };
         const pares = (Array.isArray(d?.capturas) ? d.capturas : []).slice(0, 2)
           .filter((c) => typeof c?.id === 'string' && /^lectura-[\w-]{1,80}$/.test(c.id) && typeof c.picks === 'string' && c.picks.length <= 120000 && /^[A-Za-z0-9+/=]+$/.test(c.picks))
           .map((c) => ({ id: c.id, picks: c.picks, verdad }));
-        return verdad.enemigos.length && pares.length ? pares : null;
+        if (verdad.enemigos.length && pares.length) return { pares, clave: claveDe(d) };
+        if (claveDe(d)) salida.hechos.push(claveDe(d));
+        return null;
       }).filter(Boolean);
-      const salida = { mirados: 0, aprendidos: [] };
-      for (const pares of buenos) {
+      for (const { pares, clave } of buenos) {
         while (aprendiendo) await aprendiendo.catch(() => {});
         try {
           aprendiendo = aprender({ pares, aprendido }).then((r) => { aprendido = r.aprendido; guardar(aprendido); return r; }).finally(() => { aprendiendo = null; });
           const r = await aprendiendo;
           salida.mirados += 1;
+          if (clave) salida.hechos.push(clave);
           salida.aprendidos.push(...r.informe.flatMap((l) => [...l.aprendidos.map((x) => x.nombre), ...(l.aliados?.aprendidos ?? [])]));
-        } catch (e) { registrar(`Aprender de lo arreglado: no se pudo (${e.message}).`); }
+        } catch (e) { salida.fallidos += 1; registrar(`Aprender de lo arreglado: no se pudo (${e.message}).`); }
       }
       return salida;
     },

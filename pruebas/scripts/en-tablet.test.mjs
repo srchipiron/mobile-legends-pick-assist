@@ -918,14 +918,19 @@ test('aprender de lo arreglado, de punta a punta (3.83.0): el recorte de la base
   s.atender('subir_recorte', { clave: claveDelLector(casa), recorte: { v: 1, partida: T, faltan: 1, capturas: [{ id, picks: recorteDePicks(capturaCompleta({ columna: 2 })), tuyoFila: VERDAD.tuyoFila }] } }, { apikey: s.clavePublica });
   // Arreglada en el móvil: el quinto rival era Layla.
   s.atender('subir_partidas', { clave: tuya, lote: [{ t: T, pick: VERDAD.tuyo, gane: true, editada: T + 1, draft: { linea: 'roam', enemigos: [...VERDAD.enemigos2.slice(0, 4), 'Layla'], aliados: VERDAD.aliados.slice(0, 4) } }] }, { apikey: s.clavePublica });
+  // Otro draft arreglado cuyo recorte es un PNG roto: el hilo falla con él (3.83.1) y no se da por hecho.
+  const T2 = T + 3600000, id2 = 'lectura-2026-10-27T23-20-00-000Z-1';
+  // (Directo a la tabla: el falso, como el de verdad, frena otro recorte en el mismo minuto.)
+  s.recortes.push({ clave: claveDelLector(casa), recibido: Date.now(), d: { v: 1, partida: T2, faltan: 1, capturas: [{ id: id2, picks: 'iVBORw0KGgo=' }] } });
+  s.atender('subir_partidas', { clave: tuya, lote: [{ t: T2, pick: VERDAD.tuyo, gane: false, editada: T2 + 1, draft: { linea: 'roam', enemigos: [...VERDAD.enemigos2.slice(0, 4), 'Layla'], aliados: VERDAD.aliados.slice(0, 4) } }] }, { apikey: s.clavePublica });
   const apk = await apkDePega();
   const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
   try {
     const dicho = await servidor.aprenderDeLoArreglado();
-    ok(/^Aprendido de 1 drafts que arreglaste/.test(dicho ?? ''), `no aprende del draft arreglado: ${dicho}`);
+    ok(/^Aprendido de 1 drafts que arreglaste/.test(dicho ?? '') && /1 no se pudo/.test(dicho ?? ''), `no aprende del draft arreglado, o calla el que falló: ${dicho}`);
     const hechos = JSON.parse(leerFichero(join(casa, 'arreglos.json'), 'utf8')).hechos;
-    eq(hechos.length, 1, 'no recuerda lo aprendido');
-    eq(await servidor.aprenderDeLoArreglado(), null, 'aprende dos veces del mismo draft');
+    eq(hechos.length, 1, 'no recuerda lo aprendido, o da por hecho el que falló');
+    ok(/^Aprendido de 0 drafts.*1 no se pudo/.test(await servidor.aprenderDeLoArreglado() ?? ''), 'aprende dos veces del mismo draft, o no reintenta el que falló');
   } finally { servidor.close(); apk.cerrar(); }
 });
 
@@ -941,6 +946,31 @@ test('recorteParaSubir (3.81.0): solo ids con forma, imágenes en base64, con su
   const dos = recorteParaSubir({ correccion, recortes: [cap('lectura-1', grande), cap('lectura-2', grande)] });
   ok(dos.capturas.length === 1 && dos.capturas[0].id === 'lectura-1' && Buffer.byteLength(JSON.stringify(dos)) <= TOPE_RECORTE_BYTES, 'no deja la primera cuando no caben las dos');
   eq(recorteParaSubir({ correccion, recortes: [cap('lectura-1', 'A'.repeat(130000))] }), null, 'sube uno que el servidor no admite');
+});
+
+test('aprender de lo arreglado (3.83.1): lo que falla no se da por hecho y se reintenta; lo que no tiene forma, sí', async () => {
+  let falla = true;
+  const servidor = crearServidor({ capturar: async () => { throw new Error('sin tablet'); }, registrar: () => {}, guardar: () => {}, aprender: async () => { if (falla) throw new Error('hilo sin memoria'); return { aprendido: { version: VERSION_APRENDIDO, aliados: {}, caras: {}, capturas: 1 }, informe: [] }; } });
+  const bueno = (clave) => ({ clave, verdad: { enemigos: ['Layla'], aliados: [], tuyo: null }, capturas: [{ id: 'lectura-1', picks: 'iVBORw0KGgo=' }] });
+  const sinForma = { clave: 'malo', verdad: { enemigos: ['Layla'] }, capturas: [{ id: '../fuera', picks: 'x' }] };
+  const r = await servidor.interno.aprenderDeArreglos([bueno('a'), sinForma, bueno('b')]);
+  ok(r.mirados === 0 && r.fallidos === 2 && r.hechos.join() === 'malo', `el hilo cae y se da por hecho: ${JSON.stringify(r)}`);
+  falla = false;
+  const r2 = await servidor.interno.aprenderDeArreglos([bueno('a'), bueno('b')]);
+  ok(r2.mirados === 2 && r2.hechos.join() === 'a,b' && !r2.fallidos, JSON.stringify(r2));
+});
+
+test('las partidas con el héroe sin leer subidas antes de 3.81.2 se suben otra vez, una sola vez (3.83.1)', () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-supuestas-'));
+  const p = (t, extra = {}) => ({ t, pick: 'Marcel', gane: true, recomendados: ['Marcel'], origen: 'lector', fuente: 'tablet', ...extra });
+  writeFileSync(join(casa, 'partidas.json'), JSON.stringify({ partidas: [p(3, { supuesto: true }), p(2), p(1, { supuesto: true })], subidas: [1, 2, 3] }));
+  const partidas = partidasDeLaTablet(casa);
+  eq(partidas.pendientes().map((x) => x.t).sort().join(), '1,3', 'las supuestas ya subidas no se vuelven a subir');
+  partidas.marcarSubidas([1, 3]);
+  eq(partidasDeLaTablet(casa).pendientes().length, 0, 'se suben otra vez en cada arranque');
+  // Un fichero nuevo (ya con la marca) no vuelve a subir nada.
+  writeFileSync(join(casa, 'partidas.json'), JSON.stringify({ partidas: [p(3, { supuesto: true })], subidas: [3], supuestoResubido: true }));
+  eq(partidasDeLaTablet(casa).pendientes().length, 0, 'con la marca puesta vuelve a subirlas');
 });
 
 terminar('scripts/en-tablet');

@@ -1736,3 +1736,33 @@ el 28 de octubre de 2026), las capturas tienen que ser de las
 `HORAS_ANTES_DE_LA_PARTIDA` (3) antes de la partida y con nombre de como
 mucho 80, y `devolverPicks` no descomprime un PNG que dice ser mayor que la
 composición entera (una bomba de 4000×5600 eran 90 MB). Cuatro mutaciones.
+
+## La revisión a la contra de 3.81.2–3.83.0 (3.83.1)
+
+Hecha por OTRA sesión deprisa (seis versiones en un día), revisada con
+`silent-failure-hunter` y `security-reviewer` el 28 de octubre de 2026.
+Seguridad: nada que toque la cuenta ni el token; envenenar el lector con
+recortes de otro no se puede (`mis_recortes` con la clave del lector, 256
+bits). Arreglado, cada uno con su prueba y su mutación (diez, todas cazadas):
+- **La bomba de PNG**: `leerPng` inflaba sin tope; un recorte de 117 KB daba
+  90 MB (156 MB de memoria). Hoy `maxOutputLength` sale de la cabecera
+  (filas con su filtro, y en Adam7 hasta el doble de filas) y
+  `MAX_PIXELES` (16 millones) corta una cabecera imposible. Prueba en
+  `recortes.test`; dos mutaciones (sin tope, y un tope corto que rompe las
+  imágenes de verdad).
+- **Aprender de lo arreglado daba la tanda entera por hecha** aunque el
+  hilo fallara: esos drafts no se reintentaban nunca y el registro decía
+  «nada nuevo». Hoy `aprenderDeArreglos` devuelve `hechos` (mirados o sin
+  forma) y `fallidos`, y `arreglos.json` guarda solo los hechos. Prueba en
+  `en-tablet` (la función y de punta a punta con un recorte roto que el hilo
+  de verdad no puede leer); tres mutaciones.
+- **Las `supuesto` subidas antes de 3.81.2** (ya en `subidas`) no llevaban
+  la marca a la base de datos: el móvil y la comunidad las contaban como
+  «siguió el consejo». `partidasDeLaTablet` las saca de `subidas` UNA vez
+  (`supuestoResubido` en partidas.json) y se suben otra vez; el servidor
+  acepta la copia si nadie la arregló después. Dos mutaciones.
+- `datos-rancios.mjs` decía «Datos al día.» sin saber la edad. Hoy lo dice
+  («No sé la edad…»), sin abrir incidencia (eso sigue siendo decisión de
+  `datosRancios`, con prueba).
+Lo que NO se tocó, con su porqué, en `docs/historia/descartados.md`.
+

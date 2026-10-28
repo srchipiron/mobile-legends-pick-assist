@@ -58,6 +58,9 @@ function desfiltrar(crudo, desde, fila, alto, bpp) {
   return { filas: salida, hasta: p };
 }
 
+/** Ni la pantalla más grande de una tablet llega (2960×1848 son 5,5 millones). */
+export const MAX_PIXELES = 16_000_000;
+
 export function leerPng(buf) {
   if (buf.subarray(0, 8).toString('hex') !== FIRMA) throw new Error('no es un PNG');
   let ancho = 0, alto = 0, bits = 0, tipo = 0, entrelazado = 0, paleta = null, trns = null;
@@ -80,7 +83,11 @@ export function leerPng(buf) {
     throw new Error(`PNG no admitido (bits ${bits}, tipo ${tipo})`);
   }
   const bytes = bits / 8, bpp = canales * bytes;
-  const crudo = inflateSync(Buffer.concat(datos));
+  // Lo que cabe según la cabecera (3.83.1): filas con su byte de filtro, y en
+  // Adam7 como mucho dos veces más filas. Sin tope, un PNG de 117 KB se
+  // inflaba a 90 MB (y un recorte bajado de la base de datos pasa por aquí).
+  if (!(ancho > 0 && alto > 0 && ancho * alto <= MAX_PIXELES)) throw new Error(`PNG de tamaño imposible (${ancho}×${alto})`);
+  const crudo = inflateSync(Buffer.concat(datos), { maxOutputLength: alto * (ancho * bpp + 1) + 2 * alto + 64 });
   if (!entrelazado && tipo === 6 && bits === 8) {
     // Lo que da `screencap -p`: las filas ya son el RGBA que se devuelve.
     return { ancho, alto, rgba: desfiltrar(crudo, 0, ancho * 4, alto, 4).filas };

@@ -8,6 +8,17 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.83.1
+
+- Las partidas que la tablet apuntó sin saber tu héroe antes del 27 de
+  octubre se suben otra vez con esa marca. Así dejan de contar en el móvil
+  como «seguiste el consejo» (con el héroe que la app supuso, no el tuyo).
+- Si la tablet no puede aprender de un draft que arreglaste (por ejemplo,
+  se queda sin memoria), lo vuelve a intentar más tarde y lo dice. Antes lo
+  daba por aprendido y no lo miraba nunca más.
+- La tablet no se deja tumbar por una imagen preparada para ocupar cientos
+  de megas al abrirla.
+
 ## 3.83.0
 
 - La tablet ya no pierde la partida que está vigilando. Al acabar una
