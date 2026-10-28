@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, TOPE_SIN_RESULTADO, finalParaSubir } from '../../scripts/lector/en-tablet.mjs';
+import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, TOPE_SIN_RESULTADO, finalParaSubir, draftsArreglados } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { claveDeJugadorValida } from '../../src/app/basedatos.js';
 import { pruebaDelReto } from '../../src/app/lector.js';
@@ -20,7 +20,9 @@ import { existsSync } from 'node:fs';
 import { aprenderResultado, reconocerResultado, plantillasIniciales, ZONA_PALABRA } from '../../scripts/lector/resultado.mjs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { readFileSync as leerFichero } from 'node:fs';
-import { capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
+import { capturaCompletaPng, capturaCompleta, VERDAD } from '../fixtures/juego/captura.mjs';
+import { recorteDePicks } from '../../scripts/lector/recortes.mjs';
+import { ARREGLOS_POR_TANDA } from '../../scripts/lector/servir.mjs';
 import { leerPng } from '../../scripts/lector/png.mjs';
 
 const png = capturaCompletaPng();
@@ -851,6 +853,70 @@ test('los recortes de un draft sin leer entero (3.81.0): la tablet los sube SOLA
     // Lo que no se sube lo dice, y como error del parte (3.81.2): antes salía sin una línea.
     ok(/ninguna captura/.test(sinCapturas ?? '') && LINEA_DE_ERROR.test(sinCapturas), `sin capturas no se sube y no lo dice: ${sinCapturas}`);
     ok(LINEA_DE_ERROR.test(pronto ?? ''), `el rechazo del servidor no llega a los errores del parte: ${pronto}`);
+  } finally { servidor.close(); apk.cerrar(); }
+});
+
+test('lo que arreglas en el historial (3.83.0): solo drafts que completó una persona, con nombres del catálogo, una vez', () => {
+  const nombres = ['Rafaela', 'Eudora', 'Gloo', 'Lesley', 'Layla', 'Clint', 'Guinevere', 'Novaria', 'Leomord', 'Estes'];
+  const draft = { linea: 'roam', enemigos: ['Rafaela', 'Eudora', 'Gloo', 'Lesley', 'Layla'], aliados: ['Clint', 'Guinevere', 'Novaria', 'Leomord'] };
+  const cap = { id: 'lectura-2026-10-27T22-20-00-000Z-1', picks: 'iVBORw0KGgo=' };
+  const recortes = [
+    { d: { partida: 1, capturas: [cap] } },
+    { d: { partida: 2, capturas: [cap] } },
+    { d: { tipo: 'final', partida: 1, capturas: [cap] } },
+    { d: { partida: 3, capturas: [cap] } },
+    { d: { partida: 4, capturas: [cap] } },
+    { d: { partida: 99, capturas: [cap] } },
+  ];
+  const partidas = [
+    { t: 1, pick: 'Estes', gane: true, draft },
+    // La tablet sola: le faltan dos (lo que leyó no es la verdad).
+    { t: 2, pick: 'Estes', gane: true, draft: { ...draft, enemigos: ['Rafaela', 'Eudora', 'Gloo'] } },
+    { t: 3, pick: 'Estes', gane: false, supuesto: true, draft },
+    { t: 4, pick: 'Estes', gane: false, draft: { ...draft, aliados: ['Clint', 'Guinevere', 'Novaria', 'Inventado'] } },
+  ];
+  const d = draftsArreglados({ recortes, partidas, nombres });
+  eq(d.map((x) => x.partida).join(), '1,3', 'aprende de un draft a medias, de un nombre fuera del catálogo, de una pantalla del final o sin su partida');
+  eq(d[0].verdad.tuyo, 'Estes'); eq(d[1].verdad.tuyo, null, 'el nº1 supuesto se aprende como tu cara');
+  eq(d[0].verdad.enemigos.join(), draft.enemigos.join());
+  eq(draftsArreglados({ recortes, partidas, nombres, hechos: d.map((x) => x.clave) }).length, 0, 'repite lo ya aprendido');
+  eq(draftsArreglados({ recortes: [null, { d: 'x' }, { d: { partida: 1 } }], partidas: [null, ...partidas], nombres }).length, 0, 'con datos raros saca algo');
+});
+
+test('aprender de lo arreglado, en el servidor (3.83.0): un draft cada vez, solo con forma, como mucho una tanda, y se guarda', async () => {
+  const vistos = [];
+  const guardados = [];
+  const servidor = crearServidor({ capturar: async () => { throw new Error('sin tablet'); }, registrar: () => {}, aprender: async ({ pares }) => { vistos.push(pares); return { aprendido: { version: VERSION_APRENDIDO, aliados: {}, caras: {}, capturas: vistos.length }, informe: [{ aprendidos: [{ nombre: 'Layla' }], aliados: { aprendidos: [] }, sinEncontrar: [] }] }; }, guardar: (a) => guardados.push(a) });
+  const bueno = { verdad: { enemigos: ['Layla'], aliados: [], tuyo: null }, capturas: [{ id: 'lectura-1', picks: 'iVBORw0KGgo=' }] };
+  const r = await servidor.interno.aprenderDeArreglos([bueno, { ...bueno, capturas: [{ id: '../fuera', picks: 'iVBORw0KGgo=' }] }, { ...bueno, capturas: [{ id: 'lectura-2', picks: 'no <base64>' }] }, { ...bueno, verdad: { enemigos: [] } }, ...Array(ARREGLOS_POR_TANDA + 3).fill(bueno)]);
+  eq(vistos.length, ARREGLOS_POR_TANDA - 3, 'aprende de un id o una imagen sin forma, sin enemigos, o pasa de la tanda');
+  ok(vistos.every((p) => p.length === 1 && p[0].picks && p[0].verdad.enemigos[0] === 'Layla' && p[0].verdad.baneos.length === 0), JSON.stringify(vistos[0]));
+  eq(guardados.length, vistos.length, 'no guarda lo aprendido');
+  ok(r.mirados === vistos.length && r.aprendidos.includes('Layla'), JSON.stringify(r));
+  eq((await servidor.interno.aprenderDeArreglos('x')).mirados, 0);
+});
+
+test('aprender de lo arreglado, de punta a punta (3.83.0): el recorte de la base de datos y la partida que arreglaste, por el hilo de verdad, una vez', async () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-arreglos-'));
+  const s = supabaseFalso();
+  const { mkdirSync } = await import('node:fs');
+  mkdirSync(join(casa, 'datos'), { recursive: true });
+  writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
+  const tuya = 'R'.repeat(43);
+  writeFileSync(join(casa, 'solo-movil.json'), JSON.stringify({ linea: 'roam', clave: tuya }));
+  const T = 1793140000000;
+  const id = 'lectura-2026-10-27T22-20-00-000Z-1';
+  s.atender('subir_recorte', { clave: 'k'.repeat(43), recorte: { v: 1, partida: T, faltan: 1, capturas: [{ id, picks: recorteDePicks(capturaCompleta({ columna: 2 })), tuyoFila: VERDAD.tuyoFila }] } }, { apikey: s.clavePublica });
+  // Arreglada en el móvil: el quinto rival era Layla.
+  s.atender('subir_partidas', { clave: tuya, lote: [{ t: T, pick: VERDAD.tuyo, gane: true, editada: T + 1, draft: { linea: 'roam', enemigos: [...VERDAD.enemigos2.slice(0, 4), 'Layla'], aliados: VERDAD.aliados.slice(0, 4) } }] }, { apikey: s.clavePublica });
+  const apk = await apkDePega();
+  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  try {
+    const dicho = await servidor.aprenderDeLoArreglado();
+    ok(/^Aprendido de 1 drafts que arreglaste/.test(dicho ?? ''), `no aprende del draft arreglado: ${dicho}`);
+    const hechos = JSON.parse(leerFichero(join(casa, 'arreglos.json'), 'utf8')).hechos;
+    eq(hechos.length, 1, 'no recuerda lo aprendido');
+    eq(await servidor.aprenderDeLoArreglado(), null, 'aprende dos veces del mismo draft');
   } finally { servidor.close(); apk.cerrar(); }
 });
 

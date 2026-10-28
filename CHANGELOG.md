@@ -8,6 +8,23 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.83.0
+
+- La tablet ya no pierde la partida que está vigilando. Al acabar una
+  partida (o en la carga o el vestíbulo) a veces «leía» un héroe suelto en
+  una pantalla que no era el draft, creía que empezaba otro y dejaba de
+  mirar el final de la partida de verdad: por eso casi nunca veía la tabla
+  de VICTORIA/DERROTA y te preguntaba «¿Cómo acabó?» con el siguiente
+  draft ya empezado. Ahora solo cuenta como draft la pantalla con la fila de
+  baneos a la vista. Así puede apuntar sola el resultado y medir cuánto duró
+  la partida.
+- Lo que arreglas en tu historial enseña a la tablet sola. Si corriges quién
+  iba en una partida que no leyó entera (en el móvil o en la tablet), cada
+  pocas horas la tablet baja las caras que guardó de ese draft y aprende de
+  ellas con lo que pusiste, con las mismas garantías de siempre: la cara de
+  un compañero solo entra si sale igual en dos drafts y no se parece a otro
+  héroe. Lo que la tablet leyó por su cuenta nunca cuenta como verdad.
+
 ## 3.82.1
 
 - En Ajustes → «El sistema», el móvil te dice en rojo cuántas partidas

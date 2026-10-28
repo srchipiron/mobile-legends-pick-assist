@@ -21,11 +21,11 @@ import { mkdirSync, readFileSync, writeFileSync, renameSync, statSync, existsSyn
 import { join, dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas, sanearAjustes, PUERTO, VISTAZO_MS } from './servir.mjs';
+import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas, sanearAjustes, PUERTO, VISTAZO_MS, ARREGLOS_POR_TANDA } from './servir.mjs';
 import { limpiarTexto } from './voz.mjs';
 import { leerCrudo, escribirPngRapido } from './png.mjs';
 import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo } from './solo.mjs';
-import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte, subirRecorte, traerMisPartidas } from '../../src/app/basedatos.js';
+import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte, subirRecorte, traerMisPartidas, bajarRecortes } from '../../src/app/basedatos.js';
 import { maestriaEfectiva } from '../../src/motor/maestria.js';
 import { tusNumeros, tuSemana } from '../../src/motor/habitos.js';
 
@@ -429,6 +429,43 @@ export function recorteParaSubir({ correccion, recortes, version = null }) {
   return Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES ? null : recorte;
 }
 
+/** Cada cuánto mira la tablet lo que arreglaste en el historial (3.83.0), y cuántos días de recortes. */
+export const ARREGLOS_CADA_MS = 6 * 60 * 60 * 1000;
+export const DIAS_DE_RECORTES = 30;
+
+/**
+ * Lo que arreglaste en el historial, para aprender (3.83.0). Un recorte
+ * (subido porque el draft dejó a alguien sin leer) cuya partida tiene hoy el
+ * draft ENTERO (cinco rivales y cuatro compañeros) es un draft que completó
+ * una persona: la tablet sola no lo habría dejado así. Lo que la tablet leyó
+ * por su cuenta NUNCA es la verdad (aprender de sus propias lecturas está
+ * descartado). Solo nombres del catálogo; tu pick solo si no es el nº1
+ * supuesto. `hechos`: claves ya aprendidas (`t:id`), que no se repiten.
+ * Devuelve `[{ clave, partida, capturas, verdad }]`.
+ */
+export function draftsArreglados({ recortes = [], partidas = [], nombres = [], hechos = [] } = {}) {
+  const delCatalogo = new Map(nombres.map((n) => [String(n).toLowerCase(), n]));
+  const bien = (l) => (Array.isArray(l) ? l.map((n) => (typeof n === 'string' ? delCatalogo.get(n.toLowerCase()) : null)) : []);
+  const porT = new Map((Array.isArray(partidas) ? partidas : []).filter((p) => Number.isFinite(p?.t) && p.draft).map((p) => [p.t, p]));
+  const ya = new Set(hechos);
+  const salida = [];
+  for (const fila of Array.isArray(recortes) ? recortes : []) {
+    const d = fila?.d ?? fila;
+    if (!d || typeof d !== 'object' || d.tipo === 'final' || !Array.isArray(d.capturas)) continue;
+    const p = porT.get(d.partida);
+    if (!p) continue;
+    const enemigos = bien(p.draft.enemigos), aliados = bien(p.draft.aliados);
+    if (enemigos.length !== 5 || aliados.length !== 4 || [...enemigos, ...aliados].some((n) => !n)) continue;
+    const capturas = d.capturas.filter((c) => typeof c?.id === 'string' && typeof c.picks === 'string');
+    const clave = `${p.t}:${capturas.map((c) => c.id).join(',')}`;
+    if (!capturas.length || ya.has(clave)) continue;
+    const tuyo = p.supuesto ? null : bien([p.pick])[0] ?? null;
+    salida.push({ clave, partida: p.t, capturas, verdad: { enemigos, aliados, tuyo } });
+    ya.add(clave);
+  }
+  return salida;
+}
+
 /**
  * Las pantallas del final de una partida cuyo resultado no se reconoció
  * (3.81.5), para ver qué pinta la tablet ahí: las dos primeras sin marcador
@@ -625,6 +662,31 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     return decir(r.error ? `Subir las pantallas del final: no se pudo (${r.error}).` : `Pantallas del final subidas para ver por qué no se reconoció (${recorte.capturas.length}).`);
   };
   servidor.subirFinalDe = subirFinalDe;
+  // Aprender de lo que arreglas en el historial (3.83.0): los recortes de los
+  // drafts que no leyó enteros, con la verdad que pusiste (en el móvil o en la
+  // tablet). Lo ya aprendido queda en `arreglos.json` y no se repite.
+  const aprenderDeLoArreglado = async () => {
+    const decir = (m) => { registrar(m); return m; };
+    const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
+    const clave = claveConLaQueSube();
+    if (!config || !claveDeJugadorValida(clave)) return decir(`Aprender de lo arreglado: no se pudo (${config ? 'sin clave' : 'sin comunidad.json'}).`);
+    const [r, m] = await Promise.all([bajarRecortes(config, { horas: DIAS_DE_RECORTES * 24, fetch: pedirBaseDeDatos }), traerMisPartidas({ config, clave }, { fetch: pedirBaseDeDatos })]);
+    if (r.error || m.error) return decir(`Aprender de lo arreglado: no se pudo (${r.error ?? m.error}).`);
+    const fichero = join(casa, 'arreglos.json');
+    let hechos = [];
+    try { const j = JSON.parse(readFileSync(fichero, 'utf8')); if (Array.isArray(j?.hechos)) hechos = j.hechos.filter((x) => typeof x === 'string'); } catch { /* primera vez */ }
+    const nombres = (leerDatos().catalogo?.heroes ?? []).map((h) => h.name).filter(Boolean);
+    const drafts = draftsArreglados({ recortes: r.recortes, partidas: m.partidas, nombres, hechos });
+    if (!drafts.length) return null;
+    const tanda = drafts.slice(0, ARREGLOS_POR_TANDA);
+    const hecho = await servidor.interno.aprenderDeArreglos(tanda);
+    try { writeFileSync(`${fichero}.tmp`, JSON.stringify({ hechos: [...hechos, ...tanda.map((d) => d.clave)].slice(-500) })); renameSync(`${fichero}.tmp`, fichero); } catch { /* sin disco: se repetirá */ }
+    return decir(`Aprendido de ${hecho.mirados} drafts que arreglaste${hecho.aprendidos.length ? `: ${[...new Set(hecho.aprendidos)].join(', ')}` : ' (nada nuevo que no supiera)'}.`);
+  };
+  servidor.aprenderDeLoArreglado = aprenderDeLoArreglado;
+  const cadaArreglo = setInterval(() => { aprenderDeLoArreglado().catch((e) => registrar(`Aprender de lo arreglado: no se pudo (${e.message}).`)); }, ARREGLOS_CADA_MS);
+  const primerArreglo = setTimeout(() => { aprenderDeLoArreglado().catch((e) => registrar(`Aprender de lo arreglado: no se pudo (${e.message}).`)); }, 5 * 60 * 1000);
+  servidor.on('close', () => { clearInterval(cadaArreglo); clearTimeout(primerArreglo); });
   // El parte de salud (3.74.0): para que la revisión automática vea cómo va la tablet sin que nadie copie nada.
   const subirSuParte = async () => {
     const clave = claveDelLector(casa);

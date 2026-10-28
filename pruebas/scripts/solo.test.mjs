@@ -20,7 +20,9 @@ const meta = leerJson('public/data/roam-meta.json');
 const datos = prepararDatos({ catalogo, meta, rango: 'glory' });
 const N = (n) => ({ nombre: n });
 const V = { nombre: null };
-const lectura = ({ tuyos = [], suyos = [], enemigos = [V, V, V, V, V], aliados = [V, V, V, V, V], tuyoFila = -1, partida = false } = {}) => ({ tuyos, suyos, enemigos, aliados, tuyoFila, partida });
+// Cada lectura de pega es de la pantalla del draft (3.83.0): lleva la fila de baneos (dos de ellos al final de la de ellos).
+const FILA = [V, V, V, N('Valir'), N('Cici')];
+const lectura = ({ tuyos = [], suyos = FILA, enemigos = [V, V, V, V, V], aliados = [V, V, V, V, V], tuyoFila = -1, partida = false } = {}) => ({ tuyos, suyos, enemigos, aliados, tuyoFila, partida });
 
 test('el draft junta lo leído: baneos de los dos lados sin repetir, huecos por jugador y tu fila', () => {
   let d = acumularDraft(null, lectura({ tuyos: [N('Hirara'), V], suyos: [N('Hirara'), N('Belerick')] }), 1000);
@@ -46,11 +48,27 @@ test('la partida cierra el draft y uno nuevo empieza tras unos minutos, no con l
   d = acumularDraft(d, lectura({ partida: true }), 20_000);
   ok(d.cerrado, 'dos lecturas en partida no cierran el draft');
   d = acumularDraft(d, lectura({ tuyos: [N('Masha')] }), 30_000);
-  ok(d.cerrado && d.baneos.join() === 'Hirara', 'una pantalla de nada más acabar abre otro draft');
+  ok(d.cerrado && d.baneos.join() === 'Hirara,Valir,Cici', 'una pantalla de nada más acabar abre otro draft');
   d = acumularDraft(d, lectura({ tuyos: [N('Masha')] }), 20_000 + MINUTOS_PARA_OTRO_DRAFT * 60000 + 1);
-  ok(!d.cerrado && d.baneos.join() === 'Masha' && !d.enemigos.some(Boolean), `el draft siguiente no empieza de cero: ${JSON.stringify(d)}`);
+  ok(!d.cerrado && d.baneos.join() === 'Masha,Valir,Cici' && !d.enemigos.some(Boolean), `el draft siguiente no empieza de cero: ${JSON.stringify(d)}`);
   eq(acumularDraft(draftVacio(), lectura({ partida: true }), 1).enPartida, 1);
   ok(!acumularDraft(acumularDraft(draftVacio(), lectura({ partida: true }), 1), lectura({ partida: true }), 2).cerrado, 'sin draft leído, la partida cierra un draft vacío');
+});
+
+test('lo leído fuera de la pantalla del draft no abre otro (3.83.0): un «Gord» suelto con los baneos en «?» no tira la partida vigilada', () => {
+  // El 27 de octubre de 2026 (parte de las 23:10): lecturas con los diez baneos en «?» y Gord o Sun en un hueco de rival.
+  let d = acumularDraft(null, lectura({ tuyos: [N('Hirara'), N('Belerick'), V, V, V], enemigos: [N('Clint'), V, V, V, V] }), 0);
+  d = acumularDraft(d, lectura({ partida: true }), 1000); d = acumularDraft(d, lectura({ partida: true }), 2000);
+  ok(d.cerrado, 'la partida no cierra el draft');
+  const suelta = lectura({ suyos: [], enemigos: [V, N('Sun'), V, V, N('Gord')] });
+  const tarde = acumularDraft(d, suelta, 2000 + (MINUTOS_PARA_OTRO_DRAFT + 5) * 60000);
+  ok(tarde.cerrado && tarde.cerradoEn === 1000 + 1000, `una pantalla sin fila de baneos abre otro draft: ${JSON.stringify(tarde)}`);
+  // Ni empieza uno de cero, ni mancha el que va abierto con un baneo solo.
+  eq(acumularDraft(draftVacio(), suelta, 5).enemigos.some(Boolean), false, 'sin baneos a la vista empieza un draft');
+  eq(acumularDraft(draftVacio(), lectura({ tuyos: [N('Hirara')], suyos: [] }), 5).baneos.length, 0, 'un baneo suelto empieza un draft');
+  // Con el draft abierto y su fila ya leída, un fotograma sin baneos (skins, una ventana) sigue sumando.
+  const abierto = acumularDraft(null, lectura({ tuyos: [N('Hirara'), N('Belerick'), V, V, V] }), 0);
+  eq(acumularDraft(abierto, lectura({ suyos: [], enemigos: [N('Clint'), V, V, V, V] }), 1000).enemigos[0], 'Clint', 'el draft abierto deja de sumar picks');
 });
 
 test('el consejo sale del motor de la app: en baneos a quién banear, en picks tu nº1 y los dos siguientes', () => {
@@ -324,7 +342,7 @@ test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se pregunt
   ok(huecos.slice(0, -1).every((h) => h >= SEPARACION_IDS_MS), `capturas pegadas: ${huecos}`);
   ok(instante(d.ids.at(-1)) - instante(d.ids[0]) >= 70000, 'las capturas no llegan a la fase de picks: son los últimos segundos');
   // La pantalla de carga (sin la fila de baneos: «Gord 0,77» en los diez huecos) no entra.
-  const carga = acumularDraft(d, { ...lectura({ tuyos: [N('Wanwan')] }), id: idDe(181500) }, 181500);
+  const carga = acumularDraft(d, { ...lectura({ tuyos: [N('Wanwan')], suyos: [] }), id: idDe(181500) }, 181500);
   eq(carga.ids.at(-1), idDe(180000), 'entra una captura que no es la pantalla del draft');
   ok(!acumularDraft(d, { ...enElDraft, id: '../fuera' }, 99).ids.includes('../fuera'), 'entra un id sin forma');
   eq(JSON.stringify(conCaptura([], 'lectura-x')), '["lectura-x"]');
@@ -346,9 +364,9 @@ test('el draft siguiente se ve por sus baneos, no solo por el reloj (3.72.5): tr
   d = acumularDraft(d, { partida: true }, T + 1000); d = acumularDraft(d, { partida: true }, T + 2000);
   ok(d.cerrado, 'la partida no cierra el draft');
   // La pantalla de carga (los mismos héroes, sin baneos) no es otro draft.
-  eq(acumularDraft(d, lectura({ enemigos: [N('Clint'), N('Khufra'), V, V, V] }), T + 30000).cerrado, true, 'la carga de la misma partida abre otro draft');
+  eq(acumularDraft(d, lectura({ suyos: [], enemigos: [N('Clint'), N('Khufra'), V, V, V] }), T + 30000).cerrado, true, 'la carga de la misma partida abre otro draft');
   // Un baneo nuevo solo (puede ser uno mal leído) tampoco.
-  eq(acumularDraft(d, lectura({ tuyos: [N('Lolita'), V, V, V, V] }), T + 60000).cerrado, true, 'un solo baneo distinto abre otro draft');
+  eq(acumularDraft(d, lectura({ tuyos: [N('Lolita'), V, V, V, V], suyos: [N('Eudora'), N('Saber'), V, V, V] }), T + 60000).cerrado, true, 'un solo baneo distinto abre otro draft');
   // Dos baneos que el de antes no tenía, al minuto: es otro draft, sin esperar los 3 minutos.
   const otro = acumularDraft(d, lectura({ tuyos: [N('Lolita'), N('Franco'), V, V, V] }), T + 60000);
   ok(!otro.cerrado && otro.baneos.includes('Lolita') && !otro.baneos.includes('Hirara') && !otro.enemigos.some(Boolean), `el draft nuevo no entra o se mezcla con el de antes: ${JSON.stringify(otro)}`);

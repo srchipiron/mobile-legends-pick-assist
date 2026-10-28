@@ -1696,3 +1696,33 @@ cuentan. Uso: `node scripts/medir-lector.mjs [--horas 168] [--json f.json]`
 (con la clave pública de `public/comunidad.json`, sin secretos). Pruebas en
 `medir-lector` y `app/basedatos`; tres mutaciones.
 
+
+## Solo la pantalla del draft abre un draft, y aprender de lo arreglado (3.83.0)
+
+**La vigilancia que se perdía**: en los partes del 26 y 27 de octubre de 2026
+salían 23 «Draft completo» en una tarde, 7 con «0 consejos en directo»: eran
+pantallas que no eran el draft (la del final, la carga, el vestíbulo, con los
+diez baneos en «?») donde el lector leía un «Gord» o un «Sun» suelto. Pasados
+`MINUTOS_PARA_OTRO_DRAFT` del cierre, `acumularDraft` abría otro draft con eso,
+la partida lo cerraba y `interno.vigilar` empezaba otra vigilancia: la de la
+partida de verdad se perdía, la tabla no se veía (`porTabla` 0) y todo acababa
+en «ya hay otro draft». Hoy una lectura solo cuenta con `BANEOS_EN_EL_DRAFT`
+(2) baneos leídos, o sumando a un draft ABIERTO que ya los tuvo (la fase de
+skins o una ventana encima siguen sumando). Una clásica sin baneos ya no forma
+draft en la tablet sola: Javi juega clasificatorias. Prueba en `solo.test`
+(las lecturas de pega llevan ya su fila de baneos, `FILA`); dos mutaciones.
+
+**Aprender de lo arreglado en el historial**: `aprenderDeLoArreglado`
+(en-tablet.mjs) cada `ARREGLOS_CADA_MS` (6 h; la primera a los 5 min) baja
+los recortes (`bajarRecortes`, `DIAS_DE_RECORTES` 30) y `mis_partidas` con la
+clave con la que sube. `draftsArreglados` se queda con los recortes cuya
+partida tiene hoy el draft ENTERO (5 + 4, nombres del catálogo): un recorte se
+sube porque el draft quedó a medias, así que entero lo completó una persona.
+Lo que la tablet leyó sola nunca es la verdad (ver `descartados.md`). Tu pick,
+solo si no es `supuesto`. `interno.aprenderDeArreglos` (servir.mjs) valida la
+forma (ids `lectura-…`, base64, ≤ `ARREGLOS_POR_TANDA` drafts) y aprende draft
+a draft por el mismo hilo (`aprender-tarea.mjs` acepta `picks` y lo devuelve a
+su sitio con `devolverPicks`), con las guardas de siempre. Lo hecho queda en
+`arreglos.json` (`t:ids`, 500). Pruebas en `en-tablet` (la función, el
+servidor y de punta a punta con el hilo de verdad y el Supabase de pega);
+siete mutaciones.
