@@ -6,7 +6,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { revisarParte, revisarPartes, informe, PARTE_CALLADO_MIN, DATOS_VIEJOS_H, CIERRE_POR_FALLO, SALUD_CALLADA_MIN, FALLO_ANTERIOR_H } from '../../scripts/revisar-tablet.mjs';
+import { PARTIDAS_SIN_APUNTAR, PARTIDAS_PARA_MEDIR, revisarParte, revisarPartes, informe, PARTE_CALLADO_MIN, DATOS_VIEJOS_H, CIERRE_POR_FALLO, SALUD_CALLADA_MIN, FALLO_ANTERIOR_H } from '../../scripts/revisar-tablet.mjs';
 import { subirParte, bajarPartes } from '../../src/app/basedatos.js';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { parteDeSalud } from '../../scripts/lector/en-tablet.mjs';
@@ -135,4 +135,14 @@ test('cuánto reconoce sola el resultado (3.75.0): aviso si pregunta más de la 
   eq(con(0, 4).length, 0, 'avisa con muy pocas partidas');
 });
 
-await terminar('scripts/revisar-tablet');
+await test('partidas jugadas sin apuntar (3.83.2): como el 27 de octubre, 5 h leyendo y ninguna apuntada, es FALLO', () => {
+  const con = (solo) => revisarParte({ j: 1, recibido: hace(5), d: sano({ solo: { activo: true, lecturas: 2811, ...solo } }) }, { ahora: AHORA });
+  ok(con({ partidas: PARTIDAS_SIN_APUNTAR, apuntadas: 0 }).fallos.some((f) => /no apuntó ninguna/.test(f)), 'no ve que la tablet no apunta');
+  eq(con({ partidas: PARTIDAS_SIN_APUNTAR - 1, apuntadas: 0 }).fallos.length, 0, 'con dos partidas ya es fallo');
+  ok(con({ partidas: PARTIDAS_PARA_MEDIR + 1, apuntadas: 2 }).avisos.some((a) => /apuntó 2 de las 6/.test(a)), 'no avisa de que apunta pocas');
+  const bien = con({ partidas: 8, apuntadas: 7 });
+  eq(bien.fallos.length + bien.avisos.length, 0, 'avisa con la tablet apuntando');
+  eq(con({}).fallos.length, 0, 'una APK de antes (sin la cuenta) da fallo');
+});
+
+terminar('scripts/revisar-tablet');

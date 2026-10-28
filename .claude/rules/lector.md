@@ -1766,3 +1766,14 @@ bits). Arreglado, cada uno con su prueba y su mutación (diez, todas cazadas):
   `datosRancios`, con prueba).
 Lo que NO se tocó, con su porqué, en `docs/historia/descartados.md`.
 
+**Partidas jugadas sin apuntar (3.83.2)**: el 27 de octubre de 2026 la tablet
+leyó 5 h (2.811 lecturas) y no apuntó ninguna partida, y `revisar-tablet`
+no lo vio: miraba lecturas, memoria y capturas, todo bien. Hoy el `resumen`
+de `crearSolo` cuenta `partidas` (drafts que acabaron en partida desde que
+arrancó) junto a `apuntadas`; la revisión da FALLO con
+`PARTIDAS_SIN_APUNTAR` (3) y ninguna apuntada, AVISO con
+`PARTIDAS_PARA_MEDIR` (5) y menos de la mitad, y «El sistema» del móvil lo
+dice (`sistema.jugadas`, en rojo con tres sin apuntar). Una APK anterior no
+lo cuenta y no da fallo. Pruebas en `solo`, `revisar-tablet` y
+`app/lector`; cuatro mutaciones.
+

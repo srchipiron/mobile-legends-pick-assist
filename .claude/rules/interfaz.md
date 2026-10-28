@@ -431,3 +431,11 @@ todo aficionado».
   coma decimal.
 - Pruebas en `motor/ficha` (propiedades sobre los datos reales) y
   `hojas.e2e`. Cuatro mutaciones.
+
+**Las pruebas de navegador en paralelo (3.83.2)**: iban de una en una (13
+min antes de cada publicación). Hoy `correr.mjs --e2e` las corre a la vez
+(núcleos − 1, hasta 4; `PRUEBAS_PARALELO` manda), las más lentas primero
+(`pruebas/tiempos.json` lleva también las de navegador), y las de `SOLAS`
+antes y sin nadie al lado: `actualizacion` cambia `package.json` un momento
+y compila dos veces. Cada prueba tiene su Chrome y su puerto libre.
+

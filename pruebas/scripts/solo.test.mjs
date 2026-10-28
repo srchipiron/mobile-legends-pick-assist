@@ -158,6 +158,7 @@ test('el bucle: decide y pone el consejo; se aparta si el móvil lee o manda el 
   // Lo que cuenta en /estado (3.69.3).
   const r = solo.resumen();
   ok(r.activo && r.linea === 'roam' && r.lecturas >= 4 && r.ultima?.enPartida === true && r.apartado === false, `el resumen no cuenta lo que hace: ${JSON.stringify(r)}`);
+  eq(r.partidas, 1, 'el resumen no cuenta la partida que empezó (3.83.2)');
   // Apagado, no lee.
   const apagado = crearSolo({ interno, ajustes: () => ({ activo: false }), datosPara: () => datos });
   const n = pedidas.length;
@@ -202,6 +203,7 @@ test('todo desde la tablet (3.70.0): al empezar la partida vigila el final y, co
   eq(resumenes.length, 1, 'no pone el resumen en la notificación');
   ok(/^Ganada con Rafaela/.test(resumenes[0].titulo) && /tablet/.test(resumenes[0].texto), JSON.stringify(resumenes[0]));
   eq(solo.resumen().apuntadas, 1);
+  eq(solo.resumen().partidas, 1, 'una partida cuenta dos veces, o ninguna (3.83.2)');
   // Con el móvil leyendo, la tablet no vigila ni apunta (lo hace la app).
   const otraVigilancia = [];
   eq(recortesPedidos, 0, 'pide recortes de un draft sin capturas (3.81.0)');

@@ -506,6 +506,7 @@ export default {
   'sistema.sinGrabar': 'The tablet is NOT recording: open Lector MLBB and tap «Empezar a leer».',
   'sistema.solo': 'Decides on its own with your lane ({linea}).',
   'sistema.soloApagado': '«Sin móvil» is off: pick your lane in Lector MLBB.',
+  'sistema.jugadas': 'Since it started: {n} {n|game|games}, {apuntadas} logged on its own.',
   'sistema.lecturas': '{n} reads in {minutos} min ({fallos} failed captures).',
   'sistema.partidas': '{n} games logged, all saved.',
   'sistema.partidasSinSubir': '{n} games logged; {sinSubir} to upload.',

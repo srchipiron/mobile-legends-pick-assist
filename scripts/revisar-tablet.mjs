@@ -35,6 +35,15 @@ export const SALUD_CALLADA_MIN = 5;
 
 /** Con menos partidas con resultado no se dice nada de cuánto reconoce sola; y más de esta parte preguntadas es aviso. Decisión de producto. */
 export const RESULTADOS_PARA_MEDIR = 5, PREGUNTADAS_MAX = 0.5;
+/**
+ * Partidas jugadas sin apuntar ninguna (3.83.2): el 27 de octubre de 2026 la
+ * tablet leyó 5 h (2.811 lecturas, «Sin móvil» activo) y no apuntó ni una, y
+ * la revisión no lo decía: todo lo que miraba estaba bien. Con
+ * `PARTIDAS_SIN_APUNTAR` partidas y ninguna apuntada, FALLO; con
+ * `PARTIDAS_PARA_MEDIR` y menos de `APUNTADAS_MIN` apuntadas, AVISO.
+ * Decisiones de producto (tres partidas seguidas sin ver el final no es mala suerte).
+ */
+export const PARTIDAS_SIN_APUNTAR = 3, PARTIDAS_PARA_MEDIR = 5, APUNTADAS_MIN = 0.5;
 
 /** Lo que se registra como «No se pudo» pero es el uso, no un fallo: la tablet sin grabar (el modo solo lo intenta igual). */
 export const NO_ES_FALLO = /no está grabando la pantalla/;
@@ -85,6 +94,10 @@ export function revisarParte(parte, { ahora = Date.now() } = {}) {
   // Cuánto reconoce sola el resultado (3.75.0): el resto lo contestaste tú.
   const conResultado = (e.partidas?.porTabla ?? 0) + (e.partidas?.porPregunta ?? 0);
   if (conResultado >= RESULTADOS_PARA_MEDIR && e.partidas.porPregunta / conResultado > PREGUNTADAS_MAX) avisos.push(`la tablet solo reconoce sola el resultado de ${e.partidas.porTabla} de ${conResultado} partidas: el resto lo preguntó`);
+  // ¿Ve la tablet el final de lo que juegas? (3.83.2): partidas desde que arrancó y cuántas apuntó sola.
+  const jugadas = Number(e.solo?.partidas) || 0, apuntadas = Number(e.solo?.apuntadas) || 0;
+  if (jugadas >= PARTIDAS_SIN_APUNTAR && apuntadas === 0) fallos.push(`desde que arrancó jugaste ${jugadas} partidas y la tablet no apuntó ninguna: no ve el final`);
+  else if (jugadas >= PARTIDAS_PARA_MEDIR && apuntadas / jugadas < APUNTADAS_MIN) avisos.push(`la tablet solo apuntó ${apuntadas} de las ${jugadas} partidas que jugaste desde que arrancó`);
   if (e.pendiente?.pregunta) avisos.push('hay una partida esperando a que digas cómo acabó');
   const salud = Number.isFinite(t.cuando) && Number.isFinite(d.cuando) ? (d.cuando - t.cuando) / 60000 : null; // los dos con el reloj de la tablet
   if (t.grabando && salud != null && salud > SALUD_CALLADA_MIN) avisos.push(`la APK no escribe su estado desde hace ${Math.round(salud)} min con la tablet grabando: lo de la tablet puede ser viejo o estar colgada`);

@@ -516,6 +516,11 @@ test('el sistema de un vistazo (3.77.0): lo que dice la tablet, y en rojo lo que
   eq(mal.find((l) => l.clave === 'sistema.sinResultado').params.n, 2);
   eq(lineasDelSistema({ ok: false }).length, 0);
   eq(lineasDelSistema({ ok: true }).length, 0, 'inventa líneas de una APK que no las dice');
+  // 3.83.2: partidas jugadas y apuntadas desde que arrancó; tres sin apuntar ninguna, en rojo.
+  const jugadas = (partidas, apuntadas) => lineasDelSistema({ ok: true, solo: { activo: true, linea: 'roam', partidas, apuntadas } }).find((l) => l.clave === 'sistema.jugadas');
+  ok(jugadas(3, 0)?.mal && jugadas(3, 0).params.n === 3, 'tres partidas sin apuntar no salen en rojo');
+  ok(jugadas(2, 0) && !jugadas(2, 0).mal && !jugadas(5, 4).mal, 'en rojo sin motivo');
+  eq(jugadas(0, 0), undefined, 'dice partidas antes de jugar ninguna');
 });
 
 await terminar('app/lector');

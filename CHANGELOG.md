@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.83.2
+
+- En Ajustes → «El sistema» el móvil te dice cuántas partidas has jugado
+  desde que arrancó la tablet y cuántas apuntó ella sola. Si juegas tres y
+  no apunta ninguna, sale en rojo: es que no está viendo el final de la
+  partida. La revisión diaria también lo avisa como fallo. Antes, cinco
+  horas jugando sin apuntar nada pasaban como «todo bien».
+
 ## 3.83.1
 
 - Las partidas que la tablet apuntó sin saber tu héroe antes del 27 de

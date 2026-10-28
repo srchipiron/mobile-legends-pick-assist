@@ -360,7 +360,9 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
   let ultimoConsejo = null;
   let reloj = null, parado = false;
   // Lo que se cuenta en /estado (3.69.3): sin esto no se sabía si la tablet leía sola.
-  const resumen = { activo: false, linea: null, origen: null, apartado: false, lecturas: 0, apuntadas: 0, ultima: null };
+  // `partidas` (3.83.2): los drafts que acabaron en partida desde que arrancó. Con `apuntadas`
+  // dice si la tablet ve el final: el 27 de octubre de 2026 leyó 5 h (2.811 lecturas) sin apuntar ninguna.
+  const resumen = { activo: false, linea: null, origen: null, apartado: false, lecturas: 0, partidas: 0, apuntadas: 0, ultima: null };
   /** Apunta UNA vez la partida vigilada, con el resultado leído o el que contestaste. */
   const apuntarVigilada = (v, { gane, t, duracion = null, contestada = false }) => {
     if (!v || v.apuntada) return;
@@ -477,6 +479,7 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     if (!draft.cerrado) vigilada = null;
     // Se acaba de cerrar (empezó la partida): a vigilar el final, como si la app lo pidiera.
     if (draft.cerrado && !antes.cerrado) {
+      resumen.partidas += 1;
       const datos = datosPara(a.rango);
       pendiente = correccionDelDraft(draft, datos);
       if (pendiente) {
