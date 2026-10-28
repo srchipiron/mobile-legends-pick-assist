@@ -9,12 +9,13 @@ import { readFileSync } from 'node:fs';
 import { leerPng } from './png.mjs';
 import { carasGuardadas } from './leer.mjs';
 import { aprenderDe, carasAprendidas, aliadasAprendidas } from './aprender.mjs';
-import { recortesDelDraft } from './recortes.mjs';
+import { recortesDelDraft, devolverPicks } from './recortes.mjs';
 
 const { pares, aprendido } = workerData;
 const caras = carasGuardadas();
 // Cada captura se decodifica al mirarla (14 MB cada una en un móvil): no todas a la vez.
-const leer = (p) => leerPng(readFileSync(p.png));
+// O, desde 3.83.0, el recorte de la base de datos devuelto a su sitio (lo arreglado en el historial).
+const leer = (p) => (typeof p.picks === 'string' ? devolverPicks(p.picks) : leerPng(readFileSync(p.png)));
 const resultado = aprenderDe(pares.map((p) => ({ id: p.id, img: () => leer(p), verdad: p.verdad })), { caras, aprendido });
 // Y los recortes de los picks para medir el lector (3.52.0), de las capturas
 // que SÍ eran la pantalla del draft. Un fallo aquí no tira lo aprendido.

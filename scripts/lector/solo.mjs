@@ -114,7 +114,16 @@ export function acumularDraft(estado, lectura, ahora) {
   const baneos = huecosBan.filter(Boolean);
   const enemigos = nombres(lectura.enemigos);
   const filas = nombres(lectura.aliados);
-  const algo = baneos.length || enemigos.some(Boolean) || filas.some(Boolean);
+  // Solo cuenta lo que se lee en la PANTALLA DEL DRAFT (3.83.0): con la fila de
+  // baneos a la vista, o sumando a un draft abierto que ya la tuvo. El 27 de
+  // octubre de 2026 la tablet leía un «Gord» o un «Sun» suelto en pantallas
+  // que no eran el draft (el final, la carga, el vestíbulo, con los diez baneos
+  // en «?»), abría otro draft con eso, lo cerraba con la partida y tiraba la
+  // vigilancia de la partida de verdad: 7 de 23 «Draft completo» en una tarde
+  // eran eso («0 consejos en directo») y la tabla del final no se vio ni una vez.
+  const deDraft = baneos.length >= BANEOS_EN_EL_DRAFT || (!e.cerrado && e.baneos.length >= BANEOS_EN_EL_DRAFT);
+  const algo = deDraft && (baneos.length || enemigos.some(Boolean) || filas.some(Boolean));
+  if (!deDraft) return e.enPartida ? { ...e, enPartida: 0 } : e;
   // ¿Otro draft? (3.72.5) Por lo que se ve, no solo por el reloj: un hueco
   // de baneo con OTRO héroe (alguien abandonó el draft y empezó otro) o,
   // tras la partida, baneos que el de antes no tenía. Antes solo valían los

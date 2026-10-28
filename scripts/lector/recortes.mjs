@@ -169,8 +169,11 @@ export function mejoresRecortes(ids, leer, caras, opciones = {}, maximo = RECORT
  * (±0,05, `recortes.test`). Lo usan `scripts/medir-lector.mjs` y las pruebas.
  */
 export function devolverPicks(b64) {
-  const r = leerPng(Buffer.from(b64, 'base64'));
   const ancho = CAJAS_ALIADOS[0][2] + CAJAS_ENEMIGOS[0][2], alto = ALTO_FILA * 5;
+  const bytes = Buffer.from(b64, 'base64');
+  // Un recorte es un tercio de esto (3.83.0): uno que dice ser más grande no se descomprime (de la base de datos puede llegar cualquier cosa).
+  if (bytes.length < 24 || bytes.readUInt32BE(16) * bytes.readUInt32BE(20) > ancho * alto) throw new Error('recorte demasiado grande');
+  const r = leerPng(bytes);
   const cap = { ancho: REFERENCIA.ancho, alto: REFERENCIA.alto, rgba: new Uint8Array(REFERENCIA.ancho * REFERENCIA.alto * 4) };
   const pixel = (x, y) => { const sx = Math.min(r.ancho - 1, Math.floor((x * r.ancho) / ancho)), sy = Math.min(r.alto - 1, Math.floor((y * r.alto) / alto)); return r.rgba.subarray((sy * r.ancho + sx) * 4, (sy * r.ancho + sx) * 4 + 4); };
   for (let i = 0; i < 5; i++) {

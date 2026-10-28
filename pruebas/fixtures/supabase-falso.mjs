@@ -76,6 +76,11 @@ export function supabaseFalso({ clavePublica = 'sb_publishable_prueba1234567890'
       const desde = ahora() - Math.min(Math.max(args.horas ?? 168, 1), 1440) * 3600000;
       return { status: 200, cuerpo: recortes.filter((x) => x.recibido > desde).slice(-50).reverse().map((x) => ({ j: 1, recibido: new Date(x.recibido).toISOString(), d: x.d })) };
     }
+    if (funcion === 'mis_recortes') {
+      if (!claveValida(args.clave)) return { status: 200, cuerpo: [] };
+      const desde = ahora() - Math.min(Math.max(args.horas ?? 720, 1), 1440) * 3600000;
+      return { status: 200, cuerpo: recortes.filter((x) => x.clave === args.clave && x.recibido > desde).slice(-50).reverse().map((x) => ({ recibido: new Date(x.recibido).toISOString(), d: x.d })) };
+    }
     if (funcion === 'partes_recientes') {
       const desde = ahora() - Math.min(Math.max(args.horas ?? 48, 1), 168) * 3600000;
       return { status: 200, cuerpo: partes.filter((x) => x.recibido > desde).sort((a, b) => b.recibido - a.recibido).map(({ j, recibido, d }) => ({ j, recibido: new Date(recibido).toISOString(), d })) };

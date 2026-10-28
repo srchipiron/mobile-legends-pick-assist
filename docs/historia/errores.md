@@ -1204,3 +1204,15 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   unas 20 en una tarde, y el reconocimiento de la tabla no funcionaba en
   ninguna. Lección: cuando un paso automático depende de que la persona
   conteste, lo no contestado se guarda a la espera, no se tira.
+
+## La tablet tiraba la vigilancia de la partida con una pantalla que no era el draft (3.83.0)
+
+Del 24 al 27 de octubre de 2026 la tablet sola no reconoció la tabla del final
+ni una vez y preguntó 22 veces «¿Cómo acabó?» con el draft siguiente ya
+empezado. No era la tabla: una lectura en la pantalla del final o de carga
+(diez baneos en «?», un rival «Gord» leído) abría otro draft pasados 3 minutos
+del cierre, la partida lo cerraba y empezaba otra vigilancia. Se vio
+ordenando las líneas «Draft completo» de los partes: siete con «0 consejos
+en directo». Lección: lo que identifica una pantalla (la fila de baneos) va
+antes que lo que se lee en ella; un nombre suelto no es un draft.
+

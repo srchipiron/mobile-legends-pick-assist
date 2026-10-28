@@ -240,6 +240,9 @@ export function guardarAprendido(a, fichero = FICHERO_APRENDIDO) {
   try { mkdirSync(resolve(fichero, '..'), { recursive: true }); writeFileSync(fichero, JSON.stringify(a)); } catch { /* sin disco: se aprende otra vez la próxima */ }
 }
 
+/** Drafts arreglados que se aprenden de una vez (3.83.0): unos segundos de hilo cada uno en la tablet. */
+export const ARREGLOS_POR_TANDA = 10;
+
 /** El aprendizaje de verdad, en un hilo aparte (aprender-tarea.mjs). */
 export function aprenderEnHilo({ pares, aprendido }) {
   return new Promise((resolver, rechazar) => {
@@ -1224,6 +1227,38 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
         const r = await recortar({ capturas: validos.map((id) => ({ id, png: join(carpeta, `${id}.png`) })), aprendido });
         return Array.isArray(r) ? r : [];
       } catch (e) { registrar(`No se pudieron recortar las capturas del draft: ${e.message}`); return []; }
+    },
+    /**
+     * Aprender de los drafts que arreglaste en el historial (3.83.0): cada
+     * draft son sus recortes (`picks`, las diez caras sin nombres, de la tabla
+     * `recortes`) con la verdad que dijiste. Uno a uno, por el mismo
+     * aprendizaje que «Enseña al lector» (sus guardas: una cara de compañero
+     * entra confirmada en dos drafts y sin parecerse a otro héroe). Lo que
+     * llega de la base de datos son datos: ids, base64 y nombres con forma, y
+     * como mucho `ARREGLOS_POR_TANDA` drafts. Devuelve cuántos se miraron y qué
+     * se aprendió; un fallo no tira el lector.
+     */
+    aprenderDeArreglos: async (drafts) => {
+      const texto = (x) => (typeof x === 'string' && x.length <= 40 ? x : null);
+      const lista = (l, n) => (Array.isArray(l) ? l.map(texto).filter(Boolean).slice(0, n) : []);
+      const buenos = (Array.isArray(drafts) ? drafts : []).slice(0, ARREGLOS_POR_TANDA).map((d) => {
+        const verdad = { enemigos: lista(d?.verdad?.enemigos, 5), aliados: lista(d?.verdad?.aliados, 4), tuyo: texto(d?.verdad?.tuyo), baneos: [] };
+        const pares = (Array.isArray(d?.capturas) ? d.capturas : []).slice(0, 2)
+          .filter((c) => typeof c?.id === 'string' && /^lectura-[\w-]{1,80}$/.test(c.id) && typeof c.picks === 'string' && c.picks.length <= 120000 && /^[A-Za-z0-9+/=]+$/.test(c.picks))
+          .map((c) => ({ id: c.id, picks: c.picks, verdad }));
+        return verdad.enemigos.length && pares.length ? pares : null;
+      }).filter(Boolean);
+      const salida = { mirados: 0, aprendidos: [] };
+      for (const pares of buenos) {
+        while (aprendiendo) await aprendiendo.catch(() => {});
+        try {
+          aprendiendo = aprender({ pares, aprendido }).then((r) => { aprendido = r.aprendido; guardar(aprendido); return r; }).finally(() => { aprendiendo = null; });
+          const r = await aprendiendo;
+          salida.mirados += 1;
+          salida.aprendidos.push(...r.informe.flatMap((l) => [...l.aprendidos.map((x) => x.nombre), ...(l.aliados?.aprendidos ?? [])]));
+        } catch (e) { registrar(`Aprender de lo arreglado: no se pudo (${e.message}).`); }
+      }
+      return salida;
     },
     correccionContestada: () => { const c = correccionContestada; correccionContestada = null; return c && ahora() - c.cuando <= RETENCION_CAPTURAS_MS ? c : null; },
     // Cómo acabó la partida (3.72.5): el modo solo pregunta y recoge la respuesta (una vez).
