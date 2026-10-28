@@ -339,7 +339,7 @@ export function ajustesEfectivos(apk, movil) {
 /** Lo que dura la pregunta de cómo acabó: lo mismo que `RETENCION_CAPTURAS_MS` de servir.mjs (una prueba lo compara). */
 export const PREGUNTA_CADUCA_MS = 3 * 3600000;
 
-export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout, apuntar = null, maestriaDe = () => null, alCorregir = null, numerosDe = () => null, alSinLeer = null }) {
+export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout, apuntar = null, maestriaDe = () => null, alCorregir = null, numerosDe = () => null, alSinLeer = null, guardarSinResultado = null, alFinalSinLeer = null }) {
   // La partida que se vigila para apuntarla sola (3.70.0): el draft de cuando
   // se cerró y su decisión, hasta que la tabla del final dé el resultado.
   let vigilada = null;
@@ -387,15 +387,43 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
    * apuntaba; hoy te lo pregunta la APK (y con tu respuesta aprende la tabla).
    */
   const pickDe = (v) => v.decision.tuyo?.name ?? v.decision.rec.eleccion?.heroe?.name ?? null;
+  /**
+   * La partida de la que no se supo el resultado (3.81.5) se guarda sin él,
+   * con su draft, para que lo digas después en «Mis partidas». Una vez.
+   */
+  const sinResultado = (v, motivo) => {
+    if (!v || v.apuntada) return;
+    v.apuntada = true;
+    const p = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane: false, t: instanteDe(v), versionModelo: VERSION_MODELO });
+    const guardada = p && guardarSinResultado ? guardarSinResultado({ ...p, desde: v.desde, gane: undefined }) : false;
+    registrar(guardada
+      ? `Sin móvil: la partida con ${pickDe(v) ?? '?'} queda en «Mis partidas» sin resultado (${motivo}): dilo ahí cuando quieras.`
+      : `Sin móvil: la partida con ${pickDe(v) ?? '?'} se queda sin apuntar: ${motivo}.`);
+  };
+  /** El instante de una partida vigilada: el del final si se vio; si no, el inicio más lo que duró; si no, el del draft (3.74.3). */
+  const instanteDe = (v) => {
+    const f = interno.final?.();
+    const deEsta = f?.desde === v.desde;
+    const duracion = deEsta && !f.inicioEstimado ? f.duracion : null;
+    return deEsta && Number.isFinite(f.resultadoEn) ? f.resultadoEn
+      : deEsta && Number.isFinite(f.inicio) && duracion != null ? Math.round(f.inicio + duracion * 60000)
+        : v.desde;
+  };
   const preguntar = (v, motivo) => {
     if (!v || v.apuntada || v.preguntada || !interno.ponerPregunta) return;
-    // La APK guarda UNA pregunta: la de antes, sin contestar, se pierde. Que se sepa (3.74.3).
-    if (preguntada && preguntada !== v && !preguntada.apuntada) registrar(`Sin móvil: la partida anterior (${pickDe(preguntada) ?? '?'}) se queda sin apuntar: no contestaste cómo acabó.`);
+    // La APK guarda UNA pregunta: la de antes, sin contestar, se guarda sin resultado (3.81.5; antes se perdía).
+    if (preguntada && preguntada !== v && !preguntada.apuntada) sinResultado(preguntada, 'no contestaste cómo acabó');
     v.preguntada = true;
     v.preguntadaEn = ahora();
     preguntada = v;
     const pick = pickDe(v);
     interno.ponerPregunta({ id: `pregunta-${v.desde}`, desde: v.desde, cuando: ahora(), pick });
+    // Las pantallas del final de ESTA partida (3.81.5), para ver por qué no se reconoció: del 27 de
+    // octubre de 2026 en adelante, todas las preguntas eran «ya hay otro draft», sin ver ninguna tabla.
+    const f = interno.final?.();
+    if (f?.desde === v.desde && Array.isArray(f.fotogramas) && f.fotogramas.length) {
+      try { alFinalSinLeer?.({ desde: v.desde, motivo, fotogramas: f.fotogramas }); } catch (e) { registrar(`No se pudieron preparar las pantallas del final: ${e.message}`); }
+    }
     interno.ponerResumen?.(resumenPregunta(v.desde, pick, v.idioma));
     registrar(`Sin móvil: no sé cómo acabó la partida (${motivo}); te lo pregunto en la app de la tablet.`);
   };
@@ -406,12 +434,8 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
       if (typeof contestada.gane === 'boolean') {
         const f = interno.final?.();
         const duracion = f?.desde === preguntada.desde && !f.inicioEstimado ? f.duracion : null;
-        // El instante es el del final si se vio; si no, el del inicio más lo que duró, y si no, el del draft (3.74.3): la hora de contestar puede ser horas después, y `t` es la identidad de la partida.
-        const deEsta = f?.desde === preguntada.desde;
-        const t = deEsta && Number.isFinite(f.resultadoEn) ? f.resultadoEn
-          : deEsta && Number.isFinite(f.inicio) && duracion != null ? Math.round(f.inicio + duracion * 60000)
-            : preguntada.desde;
-        apuntarVigilada(preguntada, { gane: contestada.gane, t, duracion, contestada: true });
+        // La hora de contestar puede ser horas después, y `t` es la identidad de la partida (3.74.3).
+        apuntarVigilada(preguntada, { gane: contestada.gane, t: instanteDe(preguntada), duracion, contestada: true });
       } else {
         preguntada.apuntada = true;
         registrar('Sin móvil: dijiste que esa partida no contó; no se apunta.');
@@ -420,7 +444,7 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     }
     // La pregunta caduca con sus capturas (la APK deja de enseñarla): que se sepa (3.74.3).
     if (preguntada && !preguntada.apuntada && ahora() - preguntada.preguntadaEn > PREGUNTA_CADUCA_MS) {
-      registrar(`Sin móvil: la partida con ${pickDe(preguntada) ?? '?'} se queda sin apuntar: no contestaste cómo acabó a tiempo.`);
+      sinResultado(preguntada, 'no contestaste cómo acabó a tiempo');
       preguntada = null;
     }
     const a = ajustes();

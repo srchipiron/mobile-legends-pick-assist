@@ -1662,3 +1662,37 @@ SKIN del rival (mirado en un mosaico), que la API no da (solo `head` y unos
 fondos de 1920×1080 en `/heroes/{id}/wallpapers`, no el retrato del panel).
 Pruebas en `solo` y `en-tablet`; cuatro mutaciones.
 
+**Las partidas sin resultado y el final que no se ve (3.81.5)**: en los
+partes del 26 y 27 de octubre de 2026, 22 preguntas «¿Cómo acabó?», todas
+con el motivo «ya hay otro draft»: la vigilancia no vio la tabla ni una vez
+(`porTabla` 0) y sigue hasta el draft siguiente. Sin contestar, la partida
+se tiraba. Hoy `crearSolo` la guarda sin `gane` (`sinResultado`,
+`guardarSinResultado` → `partidasDeLaTablet.guardarSinResultado`, tope
+`TOPE_SIN_RESULTADO` 50, no se sube ni cuenta en `tusNumeros`), `/partidas`
+la lista con `sinResultado` y la APK la pinta en naranja sin resultado
+marcado (no deja guardar sin elegir: con `optBoolean` se habría apuntado
+como perdida). `editar` con `gane` la pasa a partida, la sube y, si quedan
+los fotogramas (3 h), aprende la tabla. Y al preguntar, `alFinalSinLeer`
+sube (`finalParaSubir`, `subirFinalDe`) las dos primeras pantallas sin
+marcador tras la última con él, miniatura y franja, a la tabla `recortes`
+con `tipo: 'final'` y la clave del lector: con ellas se mide por qué no se
+reconoce la tabla. Pruebas en `solo` y `en-tablet`; siete mutaciones. El
+Kotlin de `Partidas.kt` no se compila en el contenedor (sin SDK): lo
+compila `apk.yml`.
+
+**Medir y aprender de lo que Javi arregla (3.82.0)**: `scripts/medir-lector.mjs`
+baja los recortes (`bajarRecortes`, `recortes_recientes`) y las partidas
+(`bajarComunidad`, también las `editada`), cruza cada recorte con su partida
+por `partida` = `t`, lee cada captura devuelta a su sitio (`devolverPicks`,
+recortes.mjs, la misma de `recortes.test`) y cuenta rivales, compañeros y tu
+fila (el pick `supuesto` no es tu fila de verdad). Luego repite `aprenderDe`
+sobre todos los drafts en orden y propone (`candidatas`, con `--json` listas
+para `caras-panel.json`) las caras de compañero confirmadas que no van de
+serie. NO escribe nada: lo que entra de serie se mira antes, como en 3.59.5
+y 3.80.0, porque un recorte mal etiquetado confunde a dos héroes para
+siempre. Los recortes sin partida (no apuntada, o de otra clave sin
+compartir) cuentan aparte; las pantallas del final (`tipo: 'final'`) solo se
+cuentan. Uso: `node scripts/medir-lector.mjs [--horas 168] [--json f.json]`
+(con la clave pública de `public/comunidad.json`, sin secretos). Pruebas en
+`medir-lector` y `app/basedatos`; tres mutaciones.
+

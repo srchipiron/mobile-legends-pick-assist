@@ -171,6 +171,8 @@ class Partidas : Activity() {
             background = GradientDrawable().apply { setColor(Color.rgb(28, 28, 30)); cornerRadius = dp(14).toFloat() }
         }
         val gane = p.optBoolean("gane")
+        // Sin resultado (3.81.5): no se reconoció el final y no se contestó a tiempo; se dice aquí.
+        val sinResultado = p.optBoolean("sinResultado")
         val pick = p.optString("pick")
         val marcas = listOfNotNull(
             if (p.optBoolean("supuesto")) "pick supuesto" else null,
@@ -179,9 +181,9 @@ class Partidas : Activity() {
             if (p.optBoolean("editada")) "arreglada" else null,
         )
         caja.addView(TextView(this).apply {
-            text = "${if (gane) "Ganada" else "Perdida"} · $pick"
+            text = "${if (sinResultado) "Sin resultado: toca y di cómo acabó" else if (gane) "Ganada" else "Perdida"} · $pick"
             textSize = 17f; typeface = Typeface.DEFAULT_BOLD
-            setTextColor(if (gane) Color.rgb(48, 209, 88) else Color.rgb(255, 69, 58))
+            setTextColor(if (sinResultado) Color.rgb(255, 159, 10) else if (gane) Color.rgb(48, 209, 88) else Color.rgb(255, 69, 58))
         })
         val dur = if (p.has("duracion")) " · ${p.optDouble("duracion").let { Math.round(it) }} min" else ""
         caja.addView(TextView(this).apply { text = fecha.format(Date(p.optLong("t"))) + dur + if (marcas.isNotEmpty()) " · ${marcas.joinToString(", ")}" else ""; textSize = 13f; setTextColor(Color.GRAY) })
@@ -203,11 +205,12 @@ class Partidas : Activity() {
 
     private fun pintarEditor(editor: LinearLayout, p: JSONObject) {
         editor.removeAllViews()
-        var gane = p.optBoolean("gane")
+        // Sin resultado (3.81.5) no hay ninguno marcado: guardar sin elegir lo apuntaría como perdida.
+        var gane: Boolean? = if (p.optBoolean("sinResultado")) null else p.optBoolean("gane")
         val resultado = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(8), 0, 0) }
         val bGane = Button(this).apply { text = "Gané" }
         val bPerdi = Button(this).apply { text = "Perdí" }
-        fun pintarResultado() { bGane.alpha = if (gane) 1f else 0.4f; bPerdi.alpha = if (gane) 0.4f else 1f }
+        fun pintarResultado() { bGane.alpha = if (gane == true) 1f else 0.4f; bPerdi.alpha = if (gane == false) 1f else 0.4f }
         bGane.setOnClickListener { gane = true; pintarResultado() }
         bPerdi.setOnClickListener { gane = false; pintarResultado() }
         pintarResultado()
@@ -233,8 +236,9 @@ class Partidas : Activity() {
             val todos = listOf(pick) + enemigos + aliados + bans
             val raros = todos.map { it.text.toString().trim() }.filter { it.isNotEmpty() && porNombre[it.lowercase()] == null }
             if (raros.isNotEmpty()) { aviso.text = "No conozco a: ${raros.joinToString(", ")}. Elige el nombre de la lista."; return@setOnClickListener }
+            val resultadoElegido = gane ?: run { aviso.text = "Di primero si ganaste o perdiste."; return@setOnClickListener }
             fun de(v: AutoCompleteTextView) = porNombre[v.text.toString().trim().lowercase()]
-            val cuerpo = JSONObject().put("t", p.optLong("t")).put("gane", gane)
+            val cuerpo = JSONObject().put("t", p.optLong("t")).put("gane", resultadoElegido)
                 .put("enemigos", JSONArray(enemigos.mapNotNull { de(it) }))
                 .put("aliados", JSONArray(aliados.mapNotNull { de(it) }))
                 .put("bans", JSONArray(bans.mapNotNull { de(it) }))

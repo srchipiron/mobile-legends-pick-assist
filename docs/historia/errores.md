@@ -1194,4 +1194,13 @@ Todos estos llegaron a producción y costaron rondas enteras de ida y vuelta:
   se aplicó en el proyecto de Javi (en 3.74.0 y 3.76.0 sí se hizo). La
   tablet fallaba al subir cada recorte y, hasta 3.81.2, sin decirlo.
   Lección: un cambio de `supabase/esquema.sql` no está hecho hasta que se
-  aplica en el proyecto y se prueba allí como `anon`.
+  aplica en el proyecto y se prueba allí como `anon`. La aplicó Javi desde
+  el SQL Editor el 28 de octubre de 2026 (la pregunta de confirmación del
+  conector de Supabase no le llegaba al móvil) y se probó como `anon` en una
+  transacción deshecha.
+- **Las partidas sin resultado se tiraban (3.73.0 → 3.81.5)**: si la tablet
+  no reconocía el final y no contestabas «¿Cómo acabó?» antes de la partida
+  siguiente, la de antes «se quedaba sin apuntar». El 27 de octubre de 2026,
+  unas 20 en una tarde, y el reconocimiento de la tabla no funcionaba en
+  ninguna. Lección: cuando un paso automático depende de que la persona
+  conteste, lo no contestado se guarda a la espera, no se tira.

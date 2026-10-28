@@ -8,6 +8,28 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.82.0
+
+- Lo que arreglas en tu historial sirve ahora para mejorar la lectura de
+  los héroes. Si corriges quién iba en una partida (los rivales, tus
+  compañeros o tu héroe), esa corrección se cruza con las caras que la
+  tablet subió de ese draft: así se mide qué leyó mal, hueco a hueco, y qué
+  skins de tus compañeros habituales pueden ir de serie para reconocerlas
+  siempre. Las caras nuevas se revisan antes de añadirse: una equivocada
+  haría que confundiera a dos héroes para siempre.
+
+## 3.81.5
+
+- La tablet ya no pierde las partidas de las que no sabe el resultado. Antes,
+  si no contestabas «¿Cómo acabó?» antes de la siguiente, la partida se
+  tiraba: solo el 27 de octubre, unas 20. Ahora se queda en «Mis partidas»
+  como «Sin resultado», con su draft, y dices si ganaste o perdiste cuando
+  quieras. Al decirlo se apunta y se sube como las demás.
+- Cuando no reconoce el final de una partida, la tablet sube dos pantallas
+  pequeñas de después de la partida, donde sale victoria o derrota, para
+  arreglar por qué no las reconoce. A ese tamaño no se leen los nombres de
+  los jugadores.
+
 ## 3.81.4
 
 - La tablet vuelve a aprender de lo que le enseñas: cuando le dices quién
