@@ -553,6 +553,9 @@ export const VISTAZO_MS = 10000;
  * El servidor, con la captura inyectada: en Termux es `capturarTablet`, en
  * las pruebas una captura de fichero.
  */
+/** Lo que vale la fase que dice el modo solo (3.84.0): unas vueltas de draft (1,5 s) o de fuera (12 s). */
+export const FASE_VALE_MS = 30000;
+
 export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, recortar = recortarEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux, codigo = null, estadoExtra = null, alCorregir = null, historial = null, claveDeLaTablet = null }) {
   // En la tablet (3.61.0) escucha en la wifi: con código, y aceptando su IP como `Host`.
   const portero = codigo ? crearPortero(codigo, { ahora }) : null;
@@ -560,6 +563,11 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   const retos = new Map();
   // Lo último que mandó la app para la tablet (3.62.0): en memoria, se pierde al reiniciar (la app lo vuelve a mandar).
   let consejoActual = null, resumenActual = null;
+  // En qué está la tablet sola (3.84.0): 'draft' o 'fuera', y cuándo lo dijo. La burbuja solo
+  // enseña lo pendiente (para tocar) FUERA del draft y de la partida: dentro taparía botones del juego.
+  let fase = null, faseEn = 0;
+  /** Una fase vale `FASE_VALE_MS`: con el modo solo parado o apartado por el móvil, no se sabe. */
+  const faseVigente = () => (fase && ahora() - faseEn <= FASE_VALE_MS ? fase : null);
   // Lo que no reconoció la tablet sola (3.71.0): la APK lo pregunta tras la partida.
   let correccion = null;
   // La corrección contestada antes de apuntar su partida (3.74.3), hasta que el modo solo la recoja.
@@ -1069,7 +1077,9 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       // Lo lee la APK de la tablet (3.62.0) para la burbuja y la notificación: sin `Origin`, desde 127.0.0.1 y con el código.
       // En partida, sin consejo: la APK quita la burbuja (también una de antes de 3.69.3).
       const escondida = seguidasEnPartida >= EN_PARTIDA_PARA_ESCONDER;
-      res.writeHead(200, cabeceras).end(JSON.stringify({ consejo: escondida ? null : consejoActual, resumen: resumenActual, enPartida: escondida }));
+      // Lo pendiente (3.84.0): solo si hay, para que la burbuja lo ofrezca fuera del draft y de la partida.
+      const pendiente = { pregunta: !!preguntaVigente(), correccion: !!correccionVigente() };
+      res.writeHead(200, cabeceras).end(JSON.stringify({ consejo: escondida ? null : consejoActual, resumen: resumenActual, enPartida: escondida, fase: escondida ? 'partida' : faseVigente(), pendiente }));
       return;
     }
     if (req.method === 'GET' && ruta === '/final') {
@@ -1212,6 +1222,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     ponerResumen: (r) => { resumenActual = sanearResumen(r) ?? resumenActual; },
     // Lo que no reconoció (3.71.0), para preguntarlo en la APK.
     ponerCorreccion: (c) => { correccion = sanearCorreccion(c); },
+    ponerFase: (f) => { if (f === 'draft' || f === 'fuera') { fase = f; faseEn = ahora(); } },
     /** Las capturas del draft abierto (3.81.4), para que la poda no se las lleve: solo ids con forma, como mucho las de un draft. */
     protegerLecturas: (ids) => { delDraft = (Array.isArray(ids) ? ids : []).filter((id) => typeof id === 'string' && /^lectura-[\w-]+$/.test(id)).slice(-40); },
     correccion: () => correccionVigente(),

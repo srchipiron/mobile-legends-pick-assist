@@ -33,6 +33,8 @@ import kotlin.concurrent.thread
  * SEGURIDAD: la burbuja NO se puede tocar (FLAG_NOT_TOUCHABLE) y va con
  * opacidad 0,8, el máximo con el que Android deja pasar los toques al juego
  * de debajo (Android 12+). Solo enseña texto: no toca nada del juego.
+ * Lo que sí se toca (contestar sin salir del juego, 3.84.0) es `Pendiente`,
+ * y solo sale fuera del draft y de la partida.
  */
 class Burbuja(private val contexto: Context) {
     companion object {
@@ -53,6 +55,8 @@ class Burbuja(private val contexto: Context) {
     private var titulo: TextView? = null
     private var detalle: TextView? = null
     @Volatile private var activa = false
+    /** Lo que hay que contestar (3.84.0), con un botoncito que sí se toca, solo fuera del draft y de la partida. */
+    private val pendiente = Pendiente(contexto)
 
     fun empezar() {
         if (activa) return
@@ -71,7 +75,7 @@ class Burbuja(private val contexto: Context) {
     fun parar() {
         activa = false
         estado = "parada"
-        principal.post { quitar() }
+        principal.post { quitar(); pendiente.quitarTodo() }
     }
 
     private fun leer(): JSONObject? {
@@ -94,6 +98,7 @@ class Burbuja(private val contexto: Context) {
             titulo?.text = consejo.optString("titulo")
             detalle?.text = consejo.optString("detalle", "").takeIf { it.isNotEmpty() && it != "null" } ?: ""
         }
+        if (Settings.canDrawOverlays(contexto)) pendiente.pintar(r, esq)
         r.optJSONObject("resumen")?.let { avisar(it) }
     }
 

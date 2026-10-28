@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.84.0
+
+- Ya no tienes que salir del juego para corregir un draft. Al acabar la
+  partida, si la tablet no reconoció a alguien (o no vio cómo acabó), sale
+  arriba un botón amarillo encima del juego. Tócalo y contestas ahí mismo:
+  los diez huecos con lo que sí leyó, y al escribir te salen los nombres
+  debajo para tocarlos. «Ahora no» lo deja para luego en la app.
+- El botón solo sale fuera del draft y de la partida, y se quita solo en
+  cuanto empieza el draft siguiente, para no taparte nada del juego. La
+  burbuja del consejo sigue igual: no se puede tocar.
+- Necesita la APK nueva (se actualiza sola desde la app).
+
 ## 3.83.2
 
 - En Ajustes → «El sistema» el móvil te dice cuántas partidas has jugado

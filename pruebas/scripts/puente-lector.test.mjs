@@ -612,6 +612,7 @@ test('¿Cómo acabó? (3.72.5): con la tabla sin palabra conocida, la APK lo pre
     eq((await apk('/pregunta')).cuerpo.pregunta, null);
     servidor.interno.ponerPregunta({ id: `pregunta-${desde}`, desde, cuando: Date.now(), pick: 'Rafaela' });
     eq(JSON.stringify((await apk('/pregunta')).cuerpo.pregunta), JSON.stringify({ id: `pregunta-${desde}`, pick: 'Rafaela' }), 'la APK no ve la pregunta');
+    eq((await apk('/consejo')).cuerpo.pendiente?.pregunta, true, 'la burbuja no sabe que hay una pregunta (3.84.0)');
     eq((await apk('/pregunta', null, { origen: 'https://srchipiron.github.io' })).estado, 403, 'un navegador lee la pregunta');
     eq((await apk('/pregunta', { id: `pregunta-${desde}`, gane: true }, { origen: 'https://srchipiron.github.io' })).estado, 403, 'un navegador contesta la pregunta');
     eq((await apk('/pregunta', { id: 'pregunta-1', gane: true })).estado, 409, 'contesta otra pregunta');
@@ -625,6 +626,7 @@ test('¿Cómo acabó? (3.72.5): con la tabla sin palabra conocida, la APK lo pre
     ok(respuesta?.desde === desde && respuesta.gane === true, `el modo solo no recibe la respuesta: ${JSON.stringify(respuesta)}`);
     eq(servidor.interno.respuesta(), null, 'la respuesta se recoge dos veces');
     eq((await apk('/pregunta')).cuerpo.pregunta, null, 'contestada, se sigue preguntando');
+    eq((await apk('/consejo')).cuerpo.pendiente?.pregunta, false, 'contestada, la burbuja la sigue ofreciendo');
     ok((await (await fetch(`${base}/estado`)).json()).resultados.gane >= 1, 'la tabla de victoria no queda aprendida');
     // Arreglar el resultado desde «Mis partidas» (3.75.0): solo aprende con las pantallas de ESE draft.
     eq(servidor.interno.aprenderResultadoDe(desde + 5, false), 0, 'aprende de las pantallas de otra partida');

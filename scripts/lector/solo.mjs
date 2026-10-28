@@ -512,6 +512,8 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
       enPartida: !!r.lectura?.partida,
       baneos: draft.baneos.length, enemigos: draft.enemigos.filter(Boolean).length, aliados: draft.aliados.filter(Boolean).length,
     };
+    // La fase, para la burbuja (3.84.0): tras cerrar el draft ya no es draft (la partida la ve el lector).
+    interno.ponerFase?.(draft.cerrado ? 'fuera' : (draft.baneos.length || draft.enemigos.some(Boolean) || draft.aliados.some(Boolean)) ? 'draft' : 'fuera');
     if (draft.cerrado) return intervalos.partida;
     const datos = datosPara(a.rango);
     const consejo = consejoSolo({ datos, draft, linea: a.linea, idioma: a.idioma, maestria: maestriaDe() });

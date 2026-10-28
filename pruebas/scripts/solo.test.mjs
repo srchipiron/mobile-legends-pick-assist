@@ -127,12 +127,14 @@ test('el bucle: decide y pone el consejo; se aparta si el móvil lee o manda el 
   const puestos = [], pedidas = [];
   let respuesta = lectura({ tuyos: [N('Hirara')], enemigos: [N('Clint'), V, V, V, V] });
   let movil = { leyo: null, consejo: null };
-  const interno = { leer: async (op) => { pedidas.push(op); return { ok: true, lectura: respuesta }; }, delMovil: () => movil, ponerConsejo: (c) => puestos.push(c) };
+  const interno = { leer: async (op) => { pedidas.push(op); return { ok: true, lectura: respuesta }; }, delMovil: () => movil, ponerConsejo: (c) => puestos.push(c), ponerFase: (f) => fases.push(f) };
+  const fases = [];
   const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t });
   eq(await solo.tic(), INTERVALOS_SOLO.draft);
   // 3.80.0: el último pick se ve con su dibujo unos segundos; a 5 s entre lecturas se escapaba.
   ok(INTERVALOS_SOLO.draft <= 2000, `en el draft se lee cada ${INTERVALOS_SOLO.draft} ms: el último pick se escapa`);
   eq(puestos.length, 1, 'no pone el consejo');
+  eq(fases.at(-1), 'draft', 'la burbuja no sabe que hay un draft (3.84.0): ofrecería corregir encima de él');
   ok(pedidas[0]?.rapida === true, 'no pide la lectura rápida (en partida reconocería caras)');
   await solo.tic();
   eq(puestos.length, 1, 'repite el mismo consejo en cada vuelta');
@@ -155,6 +157,7 @@ test('el bucle: decide y pone el consejo; se aparta si el móvil lee o manda el 
   await solo.tic();
   eq(await solo.tic(), INTERVALOS_SOLO.partida, 'en partida no espera más');
   ok(solo.estado().cerrado, 'la partida no cierra el draft');
+  eq(fases.at(-1), 'fuera', 'tras cerrar el draft la burbuja sigue creyendo que hay draft: no ofrece corregir');
   // Lo que cuenta en /estado (3.69.3).
   const r = solo.resumen();
   ok(r.activo && r.linea === 'roam' && r.lecturas >= 4 && r.ultima?.enPartida === true && r.apartado === false, `el resumen no cuenta lo que hace: ${JSON.stringify(r)}`);

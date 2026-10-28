@@ -22,7 +22,7 @@ import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { readFileSync as leerFichero } from 'node:fs';
 import { capturaCompletaPng, capturaCompleta, VERDAD } from '../fixtures/juego/captura.mjs';
 import { recorteDePicks } from '../../scripts/lector/recortes.mjs';
-import { ARREGLOS_POR_TANDA } from '../../scripts/lector/servir.mjs';
+import { ARREGLOS_POR_TANDA, FASE_VALE_MS } from '../../scripts/lector/servir.mjs';
 import { leerPng } from '../../scripts/lector/png.mjs';
 
 const png = capturaCompletaPng();
@@ -144,7 +144,7 @@ test('el consejo y el resumen que manda la app (3.62.0): solo la app los escribe
   // Lo que lee la APK: desde 127.0.0.1, sin Origin y con el código.
   const leerApk = async () => JSON.parse((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
   try {
-    eq(JSON.stringify(await leerApk()), JSON.stringify({ consejo: null, resumen: null, enPartida: false }));
+    eq(JSON.stringify(await leerApk()), JSON.stringify({ consejo: null, resumen: null, enPartida: false, fase: null, pendiente: { pregunta: false, correccion: false } }));
     eq(await mandar({ consejo: { titulo: 'Khufra 54%\u0007', detalle: 'nº2 Atlas · nº3 Franco' } }), 200);
     eq(JSON.stringify((await leerApk()).consejo), JSON.stringify({ titulo: 'Khufra 54%', detalle: 'nº2 Atlas · nº3 Franco' }), 'el consejo no llega limpio');
     eq(await mandar({ consejo: { titulo: 'x' } }, { origen: null }), 403, 'sin la app se escribe el consejo');
@@ -332,6 +332,19 @@ test('enseñar al lector desde la tablet (3.71.0): solo la APK lo lee y lo conte
     eq(JSON.parse((await leerApk()).cuerpo).correccion, null);
     servidor.interno.ponerCorreccion(pendiente);
     const c = JSON.parse((await leerApk()).cuerpo).correccion;
+    // La burbuja (3.84.0): sabe que hay algo que contestar y en qué fase está, para ofrecerlo solo fuera del draft y de la partida.
+    const burbuja = async () => JSON.parse((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
+    const b0 = await burbuja();
+    ok(b0.pendiente?.correccion === true && b0.pendiente?.pregunta === false && b0.fase === null, `la burbuja no ve la corrección pendiente: ${JSON.stringify(b0)}`);
+    servidor.interno.ponerFase('draft');
+    eq((await burbuja()).fase, 'draft', 'la fase del modo solo no llega a la burbuja');
+    servidor.interno.ponerFase('fuera');
+    servidor.interno.ponerFase('partida-o-lo-que-sea');
+    eq((await burbuja()).fase, 'fuera', 'una fase rara pisa la buena');
+    const t0 = t;
+    t += FASE_VALE_MS + 1;
+    eq((await burbuja()).fase, null, 'una fase vieja (modo solo parado) sigue valiendo: la burbuja se ofrecería en pleno draft');
+    t = t0;
     ok(c?.id === pendiente.id && c.heroes.length === heroes.length && c.leidos.enemigos[1] === 'Khufra' && !('ids' in c), `la APK no la ve, o ve las rutas de las capturas: ${JSON.stringify(c)}`);
     eq((await leerApk({ origen: 'https://srchipiron.github.io' })).estado, 403, 'un navegador (con Origin) lee la corrección');
     eq((await leerApk({ codigo: null })).estado, 401, 'se lee sin el código');

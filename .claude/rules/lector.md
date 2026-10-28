@@ -1777,3 +1777,22 @@ dice (`sistema.jugadas`, en rojo con tres sin apuntar). Una APK anterior no
 lo cuenta y no da fallo. Pruebas en `solo`, `revisar-tablet` y
 `app/lector`; cuatro mutaciones.
 
+**Contestar desde la burbuja (3.84.0)**: Javi, el 28 de octubre de 2026:
+«que no tenga que salirme del juego para corregir los drafts». `GET
+/consejo` da también `pendiente` ({pregunta, correccion}) y `fase`
+(«draft» o «fuera», la pone `crearSolo` en cada tic con `interno.ponerFase`;
+vale `FASE_VALE_MS`, 30 s, y sin ella es null: con el modo solo parado no se
+sabe si hay un draft delante; en partida, «partida»). `Pendiente.kt` pinta un
+botoncito TOCABLE arriba en el centro solo con fase «fuera» y sin partida, y
+al tocarlo un panel con foco (para el teclado, `FLAG_NOT_TOUCH_MODAL`: lo de
+fuera sigue yendo al juego) con lo mismo que las tarjetas de `Principal`,
+contra `/pregunta` y `/correccion`. Sin `AutoCompleteTextView` (su lista
+desplegable encima de otra app se pierde): al escribir salen botones con los
+héroes que empiezan así. La burbuja del consejo sigue NOT_TOUCHABLE. Con un
+draft o una partida, botón y panel se quitan solos. Hueco conocido: al
+empezar el draft, hasta leer dos baneos la fase sigue «fuera» (no se
+distingue la pantalla), así que el botón puede verse unos segundos arriba si
+lo pendiente sigue sin contestar. Pruebas en `en-tablet` y `puente-lector`
+(fase, caducidad, pendiente), `solo` (la fase que pone) y `android` (por
+forma: solo `Pendiente.kt` tiene una ventana tocable, mira la fase, se quita
+y solo habla con esas dos rutas); nueve mutaciones.

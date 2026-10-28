@@ -152,4 +152,24 @@ test('cada pantalla de la APK está en el manifiesto, y solo la principal se abr
   }
 });
 
+test('contestar sin salir del juego (3.84.0): la burbuja del consejo no se toca; lo único que se toca encima del juego es Pendiente.kt, solo fuera del draft y de la partida, y solo contesta al lector', () => {
+  // Sin comentarios: el que explica la seguridad nombra FLAG_NOT_TOUCHABLE.
+  const codigo = (f) => readFileSync(join(KOTLIN, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  const burbuja = codigo('Burbuja.kt');
+  ok(/FLAG_NOT_TOUCHABLE/.test(burbuja), 'la burbuja del consejo se puede tocar: taparía botones del draft');
+  // Toda ventana encima del juego sin FLAG_NOT_TOUCHABLE está en Pendiente.kt.
+  const tocables = readdirSync(KOTLIN).filter((f) => f.endsWith('.kt') && f !== 'Pendiente.kt').filter((f) => {
+    const k = codigo(f);
+    return /TYPE_APPLICATION_OVERLAY/.test(k) && !/FLAG_NOT_TOUCHABLE/.test(k);
+  });
+  eq(tocables.join(), '', 'una ventana tocable encima del juego fuera de Pendiente.kt');
+  const pendiente = codigo('Pendiente.kt');
+  ok(/optString\("fase"\) == "fuera" && !r\.optBoolean\("enPartida"\)/.test(pendiente), 'lo que se toca no mira la fase: saldría en pleno draft o partida');
+  ok(/if \(!fuera[^)]*\) \{ quitarChip\(\); cerrarPanel\(\)/.test(pendiente), 'al empezar un draft o una partida no se quita lo que se toca');
+  ok(/pendiente\.pintar\(r, esq\)/.test(burbuja), 'la burbuja no le pasa /consejo a Pendiente: nunca sale');
+  const rutas = [...pendiente.matchAll(/(?:pedir|mandar)\("([^"]+)"/g)].map((m) => m[1]);
+  ok(rutas.length > 0 && rutas.every((r) => r === '/pregunta' || r === '/correccion'), `Pendiente.kt llama a otra ruta del lector: ${rutas}`);
+  ok(!/Runtime|ProcessBuilder|AccessibilityService|dispatchGesture|Instrumentation/.test(pendiente), 'Pendiente.kt hace algo más que enseñar y contestar al lector');
+});
+
 await terminar('scripts/android');
