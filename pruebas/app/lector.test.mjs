@@ -511,8 +511,9 @@ test('el sistema de un vistazo (3.77.0): lo que dice la tablet, y en rojo lo que
   eq(bien.find((l) => l.clave === 'sistema.lecturas').params.n, 50, 'no cuenta las lecturas del modo solo');
   eq(JSON.stringify(bien.find((l) => l.clave === 'sistema.resultados').params), JSON.stringify({ tabla: 4, total: 6 }));
   eq(bien.find((l) => l.clave === 'sistema.datos').params.h, 12);
-  const mal = lineasDelSistema({ ok: true, tablet: { grabando: false }, solo: { activo: false }, lector: { lecturas: 20, fallosCaptura: 10, minutos: 5 }, partidas: { apuntadas: 3, sinSubir: 2, error: 'red' }, datos: { fecha: '2026-10-20T00:00:00Z' } }, { ahora });
-  eq(JSON.stringify(mal.filter((l) => l.mal).map((l) => l.clave)), JSON.stringify(['sistema.sinGrabar', 'sistema.soloApagado', 'sistema.lecturas', 'sistema.partidasSinSubir', 'sistema.datos']));
+  const mal = lineasDelSistema({ ok: true, tablet: { grabando: false }, solo: { activo: false }, lector: { lecturas: 20, fallosCaptura: 10, minutos: 5 }, partidas: { apuntadas: 3, sinSubir: 2, error: 'red', sinResultado: 2 }, datos: { fecha: '2026-10-20T00:00:00Z' } }, { ahora });
+  eq(JSON.stringify(mal.filter((l) => l.mal).map((l) => l.clave)), JSON.stringify(['sistema.sinGrabar', 'sistema.soloApagado', 'sistema.lecturas', 'sistema.partidasSinSubir', 'sistema.sinResultado', 'sistema.datos']));
+  eq(mal.find((l) => l.clave === 'sistema.sinResultado').params.n, 2);
   eq(lineasDelSistema({ ok: false }).length, 0);
   eq(lineasDelSistema({ ok: true }).length, 0, 'inventa líneas de una APK que no las dice');
 });

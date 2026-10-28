@@ -265,6 +265,8 @@ export function lineasDelSistema(estado, { ahora = Date.now() } = {}) {
     L.push({ clave: partidas.sinSubir ? 'sistema.partidasSinSubir' : 'sistema.partidas', params: { n: num(partidas.apuntadas), sinSubir: num(partidas.sinSubir) }, mal: num(partidas.sinSubir) > 0 && !!partidas.error });
     const total = num(partidas.porTabla) + num(partidas.porPregunta);
     if (total) L.push({ clave: 'sistema.resultados', params: { tabla: num(partidas.porTabla), total }, mal: false });
+    // Las que la tablet no supo cómo acabaron (3.82.1): sin resultado no cuentan para nada hasta que las contestes.
+    if (num(partidas.sinResultado) > 0) L.push({ clave: 'sistema.sinResultado', params: { n: num(partidas.sinResultado) }, mal: true });
   }
   const fecha = Date.parse(datos?.fecha ?? '');
   if (Number.isFinite(fecha)) { const h = Math.max(0, Math.round((ahora - fecha) / 3600000)); L.push({ clave: 'sistema.datos', params: { h }, mal: h > 72 }); }

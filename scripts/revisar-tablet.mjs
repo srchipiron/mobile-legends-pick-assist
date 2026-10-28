@@ -80,6 +80,8 @@ export function revisarParte(parte, { ahora = Date.now() } = {}) {
   if (Number.isFinite(fecha) && (ahora - fecha) / 3600000 > DATOS_VIEJOS_H) avisos.push(`datos del juego de hace ${Math.round((ahora - fecha) / 3600000)} h${e.datos.de === 'apk' ? ' (los de la APK: no consigue bajar los nuevos)' : ''}`);
   if (e.partidas?.sinSubir > 0 && !e.partidas.clave) avisos.push(`${e.partidas.sinSubir} partidas solo en la tablet: falta la clave de jugador`);
   else if (e.partidas?.sinSubir > 0 && e.partidas.error) avisos.push(`${e.partidas.sinSubir} partidas sin subir (${e.partidas.error})`);
+  // Las que no supo cómo acabaron (3.82.1): no suben hasta contestarlas.
+  if (e.partidas?.sinResultado > 0) avisos.push(`${e.partidas.sinResultado} partidas sin resultado en la tablet: sin contestarlas no cuentan`);
   // Cuánto reconoce sola el resultado (3.75.0): el resto lo contestaste tú.
   const conResultado = (e.partidas?.porTabla ?? 0) + (e.partidas?.porPregunta ?? 0);
   if (conResultado >= RESULTADOS_PARA_MEDIR && e.partidas.porPregunta / conResultado > PREGUNTADAS_MAX) avisos.push(`la tablet solo reconoce sola el resultado de ${e.partidas.porTabla} de ${conResultado} partidas: el resto lo preguntó`);

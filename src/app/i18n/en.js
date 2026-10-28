@@ -510,6 +510,7 @@ export default {
   'sistema.partidas': '{n} games logged, all saved.',
   'sistema.partidasSinSubir': '{n} games logged; {sinSubir} to upload.',
   'sistema.resultados': 'Result recognised on its own in {tabla} of {total} games; it asked for the rest.',
+  'sistema.sinResultado': '{n} games without a result: answer them in the tablet\'s «Mis partidas»: until then they are not uploaded.',
   'sistema.datos': 'Game data from {h} h ago.',
   'tablet.resumen.ganada': 'Won with {pick}',
   'tablet.resumen.perdida': 'Lost with {pick}',
