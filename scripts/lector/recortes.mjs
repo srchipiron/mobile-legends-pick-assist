@@ -21,7 +21,7 @@
  *
  * Puro: píxeles dentro, PNG y nombres fuera. Sin adb, sin red.
  */
-import { escribirPng } from './png.mjs';
+import { escribirPng, leerPng } from './png.mjs';
 import { reducir } from './miniatura.mjs';
 import { REFERENCIA, leerPicksEnemigos, leerAliados, filaPropia } from './leer.mjs';
 
@@ -161,3 +161,23 @@ export function mejoresRecortes(ids, leer, caras, opciones = {}, maximo = RECORT
   const elegidos = vistos.sort((a, b) => b.n - a.n || b.i - a.i).slice(0, maximo).sort((a, b) => a.i - b.i);
   return elegidos.map(({ id }) => { try { const r = recorteDeDraft(leer(id), caras, opciones); return r ? { id, ...r } : null; } catch { return null; } }).filter(Boolean);
 }
+
+/**
+ * El recorte de vuelta a su sitio (3.82.0): una pantalla negra de la
+ * referencia con las diez caras donde estaban, para leerla o aprender de ella
+ * como de una captura. Devuelto así, el lector lee las diez caras igual
+ * (±0,05, `recortes.test`). Lo usan `scripts/medir-lector.mjs` y las pruebas.
+ */
+export function devolverPicks(b64) {
+  const r = leerPng(Buffer.from(b64, 'base64'));
+  const ancho = CAJAS_ALIADOS[0][2] + CAJAS_ENEMIGOS[0][2], alto = ALTO_FILA * 5;
+  const cap = { ancho: REFERENCIA.ancho, alto: REFERENCIA.alto, rgba: new Uint8Array(REFERENCIA.ancho * REFERENCIA.alto * 4) };
+  const pixel = (x, y) => { const sx = Math.min(r.ancho - 1, Math.floor((x * r.ancho) / ancho)), sy = Math.min(r.alto - 1, Math.floor((y * r.alto) / alto)); return r.rgba.subarray((sy * r.ancho + sx) * 4, (sy * r.ancho + sx) * 4 + 4); };
+  for (let i = 0; i < 5; i++) {
+    const [ax, ay, aw, ah] = CAJAS_ALIADOS[i], [ex, ey, ew, eh] = CAJAS_ENEMIGOS[i];
+    for (let y = 0; y < ah; y++) for (let x = 0; x < aw; x++) cap.rgba.set(pixel(x, i * ALTO_FILA + y), ((ay + y) * REFERENCIA.ancho + ax + x) * 4);
+    for (let y = 0; y < eh; y++) for (let x = 0; x < ew; x++) cap.rgba.set(pixel(aw + x, i * ALTO_FILA + y), ((ey + y) * REFERENCIA.ancho + ex + x) * 4);
+  }
+  return cap;
+}
+

@@ -6,27 +6,14 @@
  * lleven los nombres de los jugadores.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { leerPng } from '../../scripts/lector/png.mjs';
 import { carasGuardadas, leerPicksEnemigos, leerAliados } from '../../scripts/lector/leer.mjs';
-import { recorteDePicks, recorteDeDraft, recortesDelDraft, mejoresRecortes, componerPicks, CAJAS_ALIADOS, CAJAS_ENEMIGOS, TOPE_RECORTE } from '../../scripts/lector/recortes.mjs';
+import { recorteDePicks, recorteDeDraft, recortesDelDraft, mejoresRecortes, componerPicks, devolverPicks, CAJAS_ALIADOS, TOPE_RECORTE } from '../../scripts/lector/recortes.mjs';
 import { capturaCompleta, VERDAD } from '../fixtures/juego/captura.mjs';
 
 const caras = carasGuardadas();
 const img = capturaCompleta({ columna: 2 });
 
-/** Devuelve el recorte a su sitio en una pantalla negra, ampliado al tamaño de la referencia. */
-function devolver(b64) {
-  const r = leerPng(Buffer.from(b64, 'base64'));
-  const ancho = CAJAS_ALIADOS[0][2] + CAJAS_ENEMIGOS[0][2], alto = 170 * 5;
-  const cap = { ancho: 2400, alto: 1504, rgba: new Uint8Array(2400 * 1504 * 4) };
-  const pixel = (x, y) => { const sx = Math.min(r.ancho - 1, Math.floor((x * r.ancho) / ancho)), sy = Math.min(r.alto - 1, Math.floor((y * r.alto) / alto)); return r.rgba.subarray((sy * r.ancho + sx) * 4, (sy * r.ancho + sx) * 4 + 4); };
-  for (let i = 0; i < 5; i++) {
-    const [ax, ay, aw, ah] = CAJAS_ALIADOS[i], [ex, ey, ew, eh] = CAJAS_ENEMIGOS[i];
-    for (let y = 0; y < ah; y++) for (let x = 0; x < aw; x++) cap.rgba.set(pixel(x, i * 170 + y), ((ay + y) * 2400 + ax + x) * 4);
-    for (let y = 0; y < eh; y++) for (let x = 0; x < ew; x++) cap.rgba.set(pixel(aw + x, i * 170 + y), ((ey + y) * 2400 + ex + x) * 4);
-  }
-  return cap;
-}
+const devolver = devolverPicks;
 
 test('el recorte cabe en un mensaje y, devuelto a su sitio, el lector lee las diez caras igual que en la captura', () => {
   const b64 = recorteDePicks(img);

@@ -212,6 +212,12 @@ export async function subirRecorte({ config, clave, recorte }, opciones = {}) {
   return llamar(config, 'subir_recorte', { clave, recorte }, opciones);
 }
 
+/** Los recortes de las últimas `horas` (3.82.0, como mucho 1.440 y 50 recortes): para medir el lector con `scripts/medir-lector.mjs`. */
+export async function bajarRecortes(config, { horas = 168, ...opciones } = {}) {
+  const r = await llamar(config, 'recortes_recientes', { horas }, opciones);
+  return r.error ? r : { recortes: Array.isArray(r.datos) ? r.datos : [] };
+}
+
 /** Los partes de las últimas `horas` (como mucho 168), de todos los lectores. */
 export async function bajarPartes(config, { horas = 48, ...opciones } = {}) {
   const r = await llamar(config, 'partes_recientes', { horas }, opciones);

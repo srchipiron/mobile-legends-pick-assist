@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.82.0
+
+- Lo que arreglas en tu historial sirve ahora para mejorar la lectura de
+  los héroes. Si corriges quién iba en una partida (los rivales, tus
+  compañeros o tu héroe), esa corrección se cruza con las caras que la
+  tablet subió de ese draft: así se mide qué leyó mal, hueco a hueco, y qué
+  skins de tus compañeros habituales pueden ir de serie para reconocerlas
+  siempre. Las caras nuevas se revisan antes de añadirse: una equivocada
+  haría que confundiera a dos héroes para siempre.
+
 ## 3.81.5
 
 - La tablet ya no pierde las partidas de las que no sabe el resultado. Antes,
