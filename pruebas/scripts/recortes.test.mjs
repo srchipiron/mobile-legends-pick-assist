@@ -6,6 +6,7 @@
  * lleven los nombres de los jugadores.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
+import { escribirPng } from '../../scripts/lector/png.mjs';
 import { carasGuardadas, leerPicksEnemigos, leerAliados } from '../../scripts/lector/leer.mjs';
 import { recorteDePicks, recorteDeDraft, recortesDelDraft, mejoresRecortes, componerPicks, devolverPicks, CAJAS_ALIADOS, TOPE_RECORTE } from '../../scripts/lector/recortes.mjs';
 import { capturaCompleta, VERDAD } from '../fixtures/juego/captura.mjs';
@@ -85,6 +86,18 @@ test('sin la verdad (3.81.0): de las capturas de un draft se recortan las dos qu
   ok(r.every((x) => x.picks && x.enemigos.length === 5 && x.aliados.length === 5), 'un recorte sin imagen o sin lo leído');
   eq(mejoresRecortes([], leer, caras).length, 0);
   eq(mejoresRecortes(['lectura-2', 'lectura-3'], leer, caras).map((x) => x.id).join(), 'lectura-2,lectura-3', 'con dos, van las dos en su orden');
+});
+
+test('un recorte que dice ser enorme no se descomprime (3.83.0): de la base de datos puede llegar cualquier cosa', () => {
+  // Un PNG de ceros de 4000×5600: unos pocos KB comprimidos, 90 MB al abrirlo.
+  const bomba = escribirPng({ ancho: 4000, alto: 5600, rgba: new Uint8Array(4000 * 5600 * 4) }).toString('base64');
+  const t0 = Date.now();
+  let error = null;
+  try { devolverPicks(bomba); } catch (e) { error = e; }
+  ok(error && /grande/.test(error.message) && Date.now() - t0 < 1000, `descomprime un recorte enorme: ${error?.message}`);
+  let corto = null;
+  try { devolverPicks('iVBO'); } catch (e) { corto = e; }
+  ok(corto, 'un recorte sin cabecera no lanza');
 });
 
 await terminar('scripts/recortes');

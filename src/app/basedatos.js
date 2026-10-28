@@ -218,6 +218,12 @@ export async function bajarRecortes(config, { horas = 168, ...opciones } = {}) {
   return r.error ? r : { recortes: Array.isArray(r.datos) ? r.datos : [] };
 }
 
+/** Los recortes de UN lector, por su clave (3.83.0): para que la tablet aprenda solo de los suyos. */
+export async function bajarMisRecortes(config, { clave, horas = 720, ...opciones } = {}) {
+  const r = await llamar(config, 'mis_recortes', { clave, horas }, opciones);
+  return r.error ? r : { recortes: Array.isArray(r.datos) ? r.datos : [] };
+}
+
 /** Los partes de las últimas `horas` (como mucho 168), de todos los lectores. */
 export async function bajarPartes(config, { horas = 48, ...opciones } = {}) {
   const r = await llamar(config, 'partes_recientes', { horas }, opciones);

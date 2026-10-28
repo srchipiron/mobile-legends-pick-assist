@@ -1726,3 +1726,13 @@ su sitio con `devolverPicks`), con las guardas de siempre. Lo hecho queda en
 `arreglos.json` (`t:ids`, 500). Pruebas en `en-tablet` (la función, el
 servidor y de punta a punta con el hilo de verdad y el Supabase de pega);
 siete mutaciones.
+
+La revisión de seguridad antes de publicar encontró que, con
+`recortes_recientes` (los de TODOS, legibles con la clave pública),
+cualquiera podía subir un recorte con el `partida` de una partida de Javi y
+enseñarle una cara falsa con su verdad. Hoy la tablet baja solo los suyos
+(`mis_recortes(clave, horas)` con la clave del lector, aplicada en Supabase
+el 28 de octubre de 2026), las capturas tienen que ser de las
+`HORAS_ANTES_DE_LA_PARTIDA` (3) antes de la partida y con nombre de como
+mucho 80, y `devolverPicks` no descomprime un PNG que dice ser mayor que la
+composición entera (una bomba de 4000×5600 eran 90 MB). Cuatro mutaciones.

@@ -1244,7 +1244,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       const buenos = (Array.isArray(drafts) ? drafts : []).slice(0, ARREGLOS_POR_TANDA).map((d) => {
         const verdad = { enemigos: lista(d?.verdad?.enemigos, 5), aliados: lista(d?.verdad?.aliados, 4), tuyo: texto(d?.verdad?.tuyo), baneos: [] };
         const pares = (Array.isArray(d?.capturas) ? d.capturas : []).slice(0, 2)
-          .filter((c) => typeof c?.id === 'string' && /^lectura-[\w-]+$/.test(c.id) && typeof c.picks === 'string' && c.picks.length <= 200000 && /^[A-Za-z0-9+/=]+$/.test(c.picks))
+          .filter((c) => typeof c?.id === 'string' && /^lectura-[\w-]{1,80}$/.test(c.id) && typeof c.picks === 'string' && c.picks.length <= 120000 && /^[A-Za-z0-9+/=]+$/.test(c.picks))
           .map((c) => ({ id: c.id, picks: c.picks, verdad }));
         return verdad.enemigos.length && pares.length ? pares : null;
       }).filter(Boolean);

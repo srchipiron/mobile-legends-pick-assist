@@ -859,28 +859,35 @@ test('los recortes de un draft sin leer entero (3.81.0): la tablet los sube SOLA
 test('lo que arreglas en el historial (3.83.0): solo drafts que completó una persona, con nombres del catálogo, una vez', () => {
   const nombres = ['Rafaela', 'Eudora', 'Gloo', 'Lesley', 'Layla', 'Clint', 'Guinevere', 'Novaria', 'Leomord', 'Estes'];
   const draft = { linea: 'roam', enemigos: ['Rafaela', 'Eudora', 'Gloo', 'Lesley', 'Layla'], aliados: ['Clint', 'Guinevere', 'Novaria', 'Leomord'] };
+  const T = Date.parse('2026-10-27T22:40:00Z');
   const cap = { id: 'lectura-2026-10-27T22-20-00-000Z-1', picks: 'iVBORw0KGgo=' };
+  // Una captura de otro día, o con un nombre larguísimo, no es de ese draft.
+  const deOtroDia = { id: 'lectura-2026-10-20T22-20-00-000Z-1', picks: 'iVBORw0KGgo=' };
+  const larga = { id: `lectura-2026-10-27T22-20-00-000Z-${'1'.repeat(100000)}`, picks: 'iVBORw0KGgo=' };
   const recortes = [
-    { d: { partida: 1, capturas: [cap] } },
-    { d: { partida: 2, capturas: [cap] } },
-    { d: { tipo: 'final', partida: 1, capturas: [cap] } },
-    { d: { partida: 3, capturas: [cap] } },
-    { d: { partida: 4, capturas: [cap] } },
+    { d: { partida: T, capturas: [cap, deOtroDia, larga] } },
+    { d: { partida: T + 1, capturas: [cap] } },
+    { d: { tipo: 'final', partida: T, capturas: [cap] } },
+    { d: { partida: T + 2, capturas: [cap] } },
+    { d: { partida: T + 3, capturas: [cap] } },
     { d: { partida: 99, capturas: [cap] } },
+    { d: { partida: T + 4, capturas: [deOtroDia] } },
   ];
   const partidas = [
-    { t: 1, pick: 'Estes', gane: true, draft },
+    { t: T, pick: 'Estes', gane: true, draft },
     // La tablet sola: le faltan dos (lo que leyó no es la verdad).
-    { t: 2, pick: 'Estes', gane: true, draft: { ...draft, enemigos: ['Rafaela', 'Eudora', 'Gloo'] } },
-    { t: 3, pick: 'Estes', gane: false, supuesto: true, draft },
-    { t: 4, pick: 'Estes', gane: false, draft: { ...draft, aliados: ['Clint', 'Guinevere', 'Novaria', 'Inventado'] } },
+    { t: T + 1, pick: 'Estes', gane: true, draft: { ...draft, enemigos: ['Rafaela', 'Eudora', 'Gloo'] } },
+    { t: T + 2, pick: 'Estes', gane: false, supuesto: true, draft },
+    { t: T + 3, pick: 'Estes', gane: false, draft: { ...draft, aliados: ['Clint', 'Guinevere', 'Novaria', 'Inventado'] } },
+    { t: T + 4, pick: 'Estes', gane: false, draft },
   ];
   const d = draftsArreglados({ recortes, partidas, nombres });
-  eq(d.map((x) => x.partida).join(), '1,3', 'aprende de un draft a medias, de un nombre fuera del catálogo, de una pantalla del final o sin su partida');
+  eq(d.map((x) => x.partida - T).join(), '0,2', 'aprende de un draft a medias, de un nombre fuera del catálogo, de una pantalla del final, sin su partida o con capturas de otro día');
+  eq(d[0].capturas.map((c) => c.id).join(), cap.id, 'entra una captura de otro día o con un nombre sin tope');
   eq(d[0].verdad.tuyo, 'Estes'); eq(d[1].verdad.tuyo, null, 'el nº1 supuesto se aprende como tu cara');
   eq(d[0].verdad.enemigos.join(), draft.enemigos.join());
   eq(draftsArreglados({ recortes, partidas, nombres, hechos: d.map((x) => x.clave) }).length, 0, 'repite lo ya aprendido');
-  eq(draftsArreglados({ recortes: [null, { d: 'x' }, { d: { partida: 1 } }], partidas: [null, ...partidas], nombres }).length, 0, 'con datos raros saca algo');
+  eq(draftsArreglados({ recortes: [null, { d: 'x' }, { d: { partida: T } }], partidas: [null, ...partidas], nombres }).length, 0, 'con datos raros saca algo');
 });
 
 test('aprender de lo arreglado, en el servidor (3.83.0): un draft cada vez, solo con forma, como mucho una tanda, y se guarda', async () => {
@@ -904,9 +911,11 @@ test('aprender de lo arreglado, de punta a punta (3.83.0): el recorte de la base
   writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
   const tuya = 'R'.repeat(43);
   writeFileSync(join(casa, 'solo-movil.json'), JSON.stringify({ linea: 'roam', clave: tuya }));
-  const T = 1793140000000;
+  const T = Date.parse('2026-10-27T22:40:00Z');
   const id = 'lectura-2026-10-27T22-20-00-000Z-1';
-  s.atender('subir_recorte', { clave: 'k'.repeat(43), recorte: { v: 1, partida: T, faltan: 1, capturas: [{ id, picks: recorteDePicks(capturaCompleta({ columna: 2 })), tuyoFila: VERDAD.tuyoFila }] } }, { apikey: s.clavePublica });
+  // Otro cualquiera sube un recorte con el instante de tu partida (los recortes de todos se leen): no cuenta.
+  s.atender('subir_recorte', { clave: 'X'.repeat(43), recorte: { v: 1, partida: T, faltan: 1, capturas: [{ id: 'lectura-2026-10-27T22-10-00-000Z-1', picks: recorteDePicks(capturaCompleta({ columna: 1 })) }] } }, { apikey: s.clavePublica });
+  s.atender('subir_recorte', { clave: claveDelLector(casa), recorte: { v: 1, partida: T, faltan: 1, capturas: [{ id, picks: recorteDePicks(capturaCompleta({ columna: 2 })), tuyoFila: VERDAD.tuyoFila }] } }, { apikey: s.clavePublica });
   // Arreglada en el móvil: el quinto rival era Layla.
   s.atender('subir_partidas', { clave: tuya, lote: [{ t: T, pick: VERDAD.tuyo, gane: true, editada: T + 1, draft: { linea: 'roam', enemigos: [...VERDAD.enemigos2.slice(0, 4), 'Layla'], aliados: VERDAD.aliados.slice(0, 4) } }] }, { apikey: s.clavePublica });
   const apk = await apkDePega();

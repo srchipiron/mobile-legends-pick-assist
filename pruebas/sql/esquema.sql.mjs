@@ -218,6 +218,13 @@ try {
     const leidos = json(comoAnon('select public.recortes_recientes(48)'));
     ok(leidos.length === 1 && leidos[0].d.partida === T0 && Number.isInteger(leidos[0].j) && !JSON.stringify(leidos).includes('huella'), `no se leen bien, o va la huella: ${JSON.stringify(leidos).slice(0, 200)}`);
     const yo = leidos[0].j;
+    // Los de UN lector, por su clave (3.83.0): otra clave no ve los de este, ni con un recorte suyo con el mismo instante.
+    const OTRO = 'o'.repeat(40);
+    ok(!comoAnon(`select public.subir_recorte('${OTRO}', ${recorte()})`).error);
+    const mios = json(comoAnon(`select public.mis_recortes('${LECTOR}', 48)`));
+    ok(mios.length === 1 && mios[0].d.partida === T0 && !('j' in mios[0]), `mis_recortes no da solo los de esa clave: ${JSON.stringify(mios).slice(0, 200)}`);
+    eq(json(comoAnon(`select public.mis_recortes('${'n'.repeat(40)}', 48)`)).length, 0, 'una clave sin recortes ve los de otro');
+    sql(`delete from public.recortes where jugador <> ${yo}`);
     ok(!sql(`insert into public.recortes (jugador, recibido, datos) select ${yo}, now() - make_interval(mins => 10 + g), '{}'::jsonb from generate_series(1, 320) g`).error);
     ok(!sql(`insert into public.recortes (jugador, recibido, datos) values (${yo}, now() - interval '61 days', '{}'::jsonb)`).error);
     sql(`update public.recortes set recibido = now() - interval '2 minutes' where jugador = ${yo} and datos ? 'partida'`);

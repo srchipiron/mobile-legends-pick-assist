@@ -25,7 +25,7 @@ import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas,
 import { limpiarTexto } from './voz.mjs';
 import { leerCrudo, escribirPngRapido } from './png.mjs';
 import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo } from './solo.mjs';
-import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte, subirRecorte, traerMisPartidas, bajarRecortes } from '../../src/app/basedatos.js';
+import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte, subirRecorte, traerMisPartidas, bajarMisRecortes } from '../../src/app/basedatos.js';
 import { maestriaEfectiva } from '../../src/motor/maestria.js';
 import { tusNumeros, tuSemana } from '../../src/motor/habitos.js';
 
@@ -432,6 +432,11 @@ export function recorteParaSubir({ correccion, recortes, version = null }) {
 /** Cada cuánto mira la tablet lo que arreglaste en el historial (3.83.0), y cuántos días de recortes. */
 export const ARREGLOS_CADA_MS = 6 * 60 * 60 * 1000;
 export const DIAS_DE_RECORTES = 30;
+/** Las capturas de un draft son de antes de apuntar su partida, y de no mucho antes (3.83.0). */
+export const HORAS_ANTES_DE_LA_PARTIDA = 3;
+
+/** El instante de una captura por su nombre (`lectura-2026-10-27T22-20-00-000Z-1`), o NaN. */
+const instanteDeCaptura = (id) => Date.parse(String(id).slice(8, 32).replace(/T(\d\d)-(\d\d)-(\d\d)-(\d+)Z$/, 'T$1:$2:$3.$4Z'));
 
 /**
  * Lo que arreglaste en el historial, para aprender (3.83.0). Un recorte
@@ -456,7 +461,9 @@ export function draftsArreglados({ recortes = [], partidas = [], nombres = [], h
     if (!p) continue;
     const enemigos = bien(p.draft.enemigos), aliados = bien(p.draft.aliados);
     if (enemigos.length !== 5 || aliados.length !== 4 || [...enemigos, ...aliados].some((n) => !n)) continue;
-    const capturas = d.capturas.filter((c) => typeof c?.id === 'string' && typeof c.picks === 'string');
+    // Capturas con nombre corto y de las horas antes de esa partida: una de otro momento no es de ese draft.
+    const capturas = d.capturas.filter((c) => typeof c?.id === 'string' && /^lectura-[\w-]{1,80}$/.test(c.id) && typeof c.picks === 'string'
+      && instanteDeCaptura(c.id) <= p.t + 5 * 60000 && instanteDeCaptura(c.id) >= p.t - HORAS_ANTES_DE_LA_PARTIDA * 3600000);
     const clave = `${p.t}:${capturas.map((c) => c.id).join(',')}`;
     if (!capturas.length || ya.has(clave)) continue;
     const tuyo = p.supuesto ? null : bien([p.pick])[0] ?? null;
@@ -670,7 +677,8 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
     const clave = claveConLaQueSube();
     if (!config || !claveDeJugadorValida(clave)) return decir(`Aprender de lo arreglado: no se pudo (${config ? 'sin clave' : 'sin comunidad.json'}).`);
-    const [r, m] = await Promise.all([bajarRecortes(config, { horas: DIAS_DE_RECORTES * 24, fetch: pedirBaseDeDatos }), traerMisPartidas({ config, clave }, { fetch: pedirBaseDeDatos })]);
+    // Solo los recortes de ESTA tablet (subidos con la clave del lector): los de todos los demás, no.
+    const [r, m] = await Promise.all([bajarMisRecortes(config, { clave: claveDelLector(casa), horas: DIAS_DE_RECORTES * 24, fetch: pedirBaseDeDatos }), traerMisPartidas({ config, clave }, { fetch: pedirBaseDeDatos })]);
     if (r.error || m.error) return decir(`Aprender de lo arreglado: no se pudo (${r.error ?? m.error}).`);
     const fichero = join(casa, 'arreglos.json');
     let hechos = [];

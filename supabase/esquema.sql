@@ -304,11 +304,27 @@ begin
   ), '[]'::jsonb);
 end $$;
 
+-- Los recortes de UN lector (3.83.0), por su clave: la tablet aprende solo de
+-- los suyos. Con `recortes_recientes` (de todos) cualquiera podía subir un
+-- recorte con el instante de una partida de Javi y enseñarle una cara falsa.
+create or replace function public.mis_recortes(clave text, horas int default 720) returns jsonb
+language plpgsql security definer stable set search_path = public, pg_temp as $$
+declare
+  yo bigint := (select id from public.jugadores where huella = public.huella_de(clave));
+begin
+  if yo is null then return '[]'::jsonb; end if;
+  return coalesce((
+    select jsonb_agg(jsonb_build_object('recibido', r.recibido, 'd', r.datos) order by r.recibido desc)
+    from (select * from public.recortes where jugador = yo and recibido > now() - make_interval(hours => least(greatest(coalesce(horas, 720), 1), 1440)) order by recibido desc limit 50) r
+  ), '[]'::jsonb);
+end $$;
+
 revoke all on function public.huella_de(text) from public;
 revoke all on function public.subir_parte(text, jsonb) from public;
 revoke all on function public.partes_recientes(int) from public;
 revoke all on function public.subir_recorte(text, jsonb) from public;
 revoke all on function public.recortes_recientes(int) from public;
+revoke all on function public.mis_recortes(text, int) from public;
 revoke all on function public.subir_partidas(text, jsonb, jsonb, jsonb) from public;
 revoke all on function public.mis_partidas(text) from public;
 revoke all on function public.borrar_mis_partidas(text) from public;
@@ -327,6 +343,7 @@ begin
       execute format('grant execute on function public.partes_recientes(int) to %I', r);
       execute format('grant execute on function public.subir_recorte(text, jsonb) to %I', r);
       execute format('grant execute on function public.recortes_recientes(int) to %I', r);
+      execute format('grant execute on function public.mis_recortes(text, int) to %I', r);
     end if;
   end loop;
 end $$;
