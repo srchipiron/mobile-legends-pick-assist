@@ -1,6 +1,167 @@
 {
- "actualizado": "2026-10-26T17:32:53.712Z",
+ "actualizado": "2026-10-28T20:04:59.664Z",
  "partidas": [
+  {
+   "t": 1793216456651,
+   "bans": [
+    "Eudora",
+    "Masha",
+    "Obsidia",
+    "Aulus",
+    "Paquito",
+    "Hirara",
+    "Lukas",
+    "Marcel",
+    "Gloo"
+   ],
+   "gane": true,
+   "pick": "Saber",
+   "draft": {
+    "enemigos": [
+     "Lancelot",
+     "Zetian",
+     "Wanwan",
+     "Yu Zhong"
+    ],
+    "aliados": [
+     "Lesley",
+     "Gatotkaca",
+     "Cecilion"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 35.9,
+   "supuesto": true,
+   "estimacion": 0.629,
+   "recomendados": [
+    "Saber",
+    "Minotaur",
+    "Natalia"
+   ]
+  },
+  {
+   "t": 1793213941664,
+   "bans": [
+    "Khufra",
+    "Masha",
+    "Hirara",
+    "Selena",
+    "Obsidia",
+    "Aulus",
+    "Marcel"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Zetian",
+     "Yi Sun-shin",
+     "Angela",
+     "Yu Zhong",
+     "Lesley"
+    ],
+    "aliados": [
+     "Pharsa",
+     "Miya",
+     "Benedetta",
+     "Gusion"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 20.7,
+   "estimacion": 0.59,
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Gloo"
+   ]
+  },
+  {
+   "t": 1793209921068,
+   "bans": [
+    "Joy",
+    "Lukas",
+    "Hirara",
+    "Masha",
+    "Aulus",
+    "Rafaela",
+    "Benedetta",
+    "Wanwan"
+   ],
+   "gane": true,
+   "pick": "Diggie",
+   "draft": {
+    "enemigos": [
+     "Miya",
+     "Carmilla",
+     "Eudora",
+     "Karina"
+    ],
+    "aliados": [
+     "Layla",
+     "Valir",
+     "Yi Sun-shin"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 11.7,
+   "estimacion": 0.593,
+   "recomendados": [
+    "Diggie",
+    "Floryn",
+    "Atlas"
+   ]
+  },
+  {
+   "t": 1793208756213,
+   "bans": [
+    "Obsidia",
+    "Paquito",
+    "Masha",
+    "Hirara",
+    "Marcel",
+    "Aulus",
+    "Lukas",
+    "Belerick"
+   ],
+   "gane": true,
+   "pick": "Minotaur",
+   "draft": {
+    "enemigos": [
+     "Eudora",
+     "Karina",
+     "Rafaela",
+     "Clint",
+     "Zilong"
+    ],
+    "aliados": [
+     "Vexana",
+     "Lesley",
+     "Alice",
+     "Suyou"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 13.9,
+   "estimacion": 0.567,
+   "recomendados": [
+    "Minotaur",
+    "Kalea",
+    "Saber"
+   ]
+  },
   {
    "t": 1793018570100,
    "gane": false,
@@ -23856,6 +24017,12 @@
   },
   {
    "cuando": "2026-10-26T17:32:53.712Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-10-28T20:04:59.664Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
