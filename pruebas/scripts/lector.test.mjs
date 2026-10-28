@@ -600,6 +600,20 @@ test('aceptarCercanos (3.80.0): umbral, margen sobre el segundo y nunca un nombr
   eq(CERCA_ENEMIGO < PARECIDO_MINIMO && MARGEN_CERCA_ENEMIGO > 0, true);
 });
 
+test('tu Minotaur de serie (3.84.1): la skin roja con la que la tablet apuntó «Floryn supuesto» el 28 de octubre de 2026', () => {
+  const g = capturaCompleta({ conAliados: false });
+  const col = leerPng(readFileSync(join(RAIZ, 'pruebas/fixtures/juego/aliados-minotaur.png')));
+  for (let y = 0; y < col.alto; y++) g.rgba.set(col.rgba.subarray(y * col.ancho * 4, (y + 1) * col.ancho * 4), ((228 + y) * g.ancho + 60) * 4);
+  const caras = carasGuardadas();
+  const sin = leerAliados(g, caras, { panel: carasDelPanel('aliados').filter((c) => c.nombre !== 'Minotaur') });
+  ok(!sin[3].nombre, `sin la cara de Minotaur tu fila ya sale ${sin[3].nombre}: la prueba no mide nada`);
+  const con = leerAliados(g, caras);
+  eq(con[3].nombre, 'Minotaur', `con las caras de serie tu fila sale ${con[3].nombre ?? '?'} (${con[3].parecido.toFixed(2)})`);
+  eq(con.filter((x) => x.nombre === 'Minotaur').length, 1, 'Minotaur sale en más de una fila');
+  eq(JSON.stringify(con.filter((_, i) => i !== 3).map((x) => x.nombre)), JSON.stringify(sin.filter((_, i) => i !== 3).map((x) => x.nombre)), 'la cara nueva cambia lo que se leía de los demás');
+  ok(!leerAliados(capturaCompleta(), caras).some((x) => x.nombre === 'Minotaur' && x.aprendida), 'la cara de Minotaur lee a Minotaur donde no está');
+});
+
 test('tu Estes de serie (3.80.0): tu fila de #75, un draft del que no sale la cara', () => {
   const g = capturaCompleta({ conAliados: false });
   const col = leerPng(readFileSync(join(RAIZ, 'pruebas/fixtures/juego/aliados-estes.png')));

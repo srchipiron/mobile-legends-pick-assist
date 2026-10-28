@@ -1796,3 +1796,27 @@ lo pendiente sigue sin contestar. Pruebas en `en-tablet` y `puente-lector`
 (fase, caducidad, pendiente), `solo` (la fase que pone) y `android` (por
 forma: solo `Pendiente.kt` tiene una ventana tocable, mira la fase, se quita
 y solo habla con esas dos rutas); nueve mutaciones.
+
+**Lo que dijeron los recortes del 28 de octubre de 2026 (3.84.1)**: 8
+partidas jugadas, 6 apuntadas solas (3.83.0 funciona) y 6 recortes. Con
+`medir-lector.mjs` los rivales salen 25 de 25 y tu equipo 17 de 20, pero
+**tu fila** solo 1 de 3, y por dos motivos distintos (montaje de los diez
+huecos de tu fila, scratch de la sesión):
+- **Tu Minotaur con la skin roja** no estaba en ninguna referencia: el
+  mismo draft apuntado como «Minotaur» en una partida salió «Floryn
+  supuesto» en otra. Va de serie en `caras-panel.json` (`aliados`), con las
+  guardas de siempre: 0,976 con la misma skin del otro draft y ningún otro
+  héroe por encima de 0,74. Tu fila 1 → 2 de 3, 0 falsos. Prueba en
+  `lector.test` (`aliados-minotaur.png`); una mutación (sin la cara).
+- **Eliges el último y tu héroe no llega a leerse**: en dos drafts las dos
+  mejores capturas tienen tu hueco aún vacío (el icono de hueco, con tu
+  pre-selección en un circulito). No hay captura con tu pick para medir.
+  Candidato SIN tocar: que la fase de skins (que hoy no toca el equipo si
+  cambian más de `CAMBIOS_A_LA_VEZ` huecos) sí rellene un hueco VACÍO; hace
+  falta una captura de esa fase para medir que no lee una skin como otro
+  héroe.
+- **Tu Floryn rosa** (draft de las 21:15 del 28): un solo draft con
+  verdad; entra de serie cuando salga en otro.
+- `version: null` en todos los recortes: era la versión del puente (ver
+  `docs/historia/errores.md`). Hoy va la de la APK (`salud.json`), con
+  prueba de punta a punta en `en-tablet`; una mutación.

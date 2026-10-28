@@ -657,13 +657,15 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
   // Los recortes de un draft con héroes sin reconocer (3.81.0), con la clave del lector como los partes: para medir el lector.
   // Cada salida deja su línea (3.81.2) y la devuelve: sin ella, «no llegan recortes» no tenía dónde mirarse.
   // Las de fallo dicen «no se pudo», que es lo que `LINEA_DE_ERROR` lleva a los errores del parte.
+  // La versión de la APK (3.84.1), la que escribe en salud.json: `estado().version` es la del puente (un número) y los recortes llegaban con `version: null`.
+  const versionDeLaApk = () => servidor.interno.estado()?.tablet?.apk ?? null;
   const subirRecortesDe = async (correccion) => {
     const decir = (m) => { registrar(m); return m; };
     const clave = claveDelLector(casa);
     const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
     if (!claveDeJugadorValida(clave) || !config) return decir(`Subir los recortes del draft: no se pudo (${config ? 'sin clave del lector' : 'sin comunidad.json'}).`);
     const recortes = await servidor.interno.recortesDe(correccion?.ids);
-    const recorte = recorteParaSubir({ correccion, recortes, version: servidor.interno.estado()?.version });
+    const recorte = recorteParaSubir({ correccion, recortes, version: versionDeLaApk() });
     if (!recorte) return decir(`Subir los recortes del draft: no se pudo (${recortes.length ? 'no caben o sin la partida' : 'ninguna captura del draft se pudo recortar'}).`);
     const r = await subirRecorte({ config, clave, recorte }, { fetch: pedirBaseDeDatos });
     return decir(r.error ? `Subir los recortes del draft: no se pudo (${r.error}).` : `Recortes del draft subidos para medir el lector (${recorte.capturas.length} capturas, ${recorte.faltan} sin reconocer).`);
@@ -675,7 +677,7 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     const clave = claveDelLector(casa);
     const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
     if (!claveDeJugadorValida(clave) || !config) return decir(`Subir las pantallas del final: no se pudo (${config ? 'sin clave del lector' : 'sin comunidad.json'}).`);
-    const recorte = finalParaSubir({ ...f, version: servidor.interno.estado()?.version });
+    const recorte = finalParaSubir({ ...f, version: versionDeLaApk() });
     if (!recorte) return decir('Subir las pantallas del final: no se pudo (ninguna pantalla fuera de la partida).');
     const r = await subirRecorte({ config, clave, recorte }, { fetch: pedirBaseDeDatos });
     return decir(r.error ? `Subir las pantallas del final: no se pudo (${r.error}).` : `Pantallas del final subidas para ver por qué no se reconoció (${recorte.capturas.length}).`);

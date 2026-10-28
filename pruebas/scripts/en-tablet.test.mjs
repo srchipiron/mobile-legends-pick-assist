@@ -467,11 +467,13 @@ test('las pantallas del final sin reconocer (3.81.5): las dos primeras fuera de 
   const { mkdirSync } = await import('node:fs');
   mkdirSync(join(casa, 'datos'), { recursive: true });
   writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
+  writeFileSync(join(casa, 'salud.json'), JSON.stringify({ apk: '3.84.1' }));
   const apk = await apkDePega();
   const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
   try {
     const dicho = await servidor.subirFinalDe({ desde: 5, motivo: 'ya hay otro draft', fotogramas: fotos });
     ok(s.recortes.length === 1 && s.recortes[0].clave === claveDelLector(casa) && s.recortes[0].d.tipo === 'final', `no sube las pantallas del final: ${dicho}`);
+    eq(s.recortes[0].d.version, '3.84.1', 'la pantalla del final no dice de qué APK es');
     ok(/Pantallas del final subidas/.test(dicho ?? ''), dicho);
     ok(LINEA_DE_ERROR.test(await servidor.subirFinalDe({ desde: 5, fotogramas: [] })), 'sin pantallas no lo dice como error del parte');
   } finally { servidor.close(); apk.cerrar(); }
@@ -840,6 +842,8 @@ test('los recortes de un draft sin leer entero (3.81.0): la tablet los sube SOLA
   // Con tu clave de jugador puesta, los recortes siguen yendo con la del lector (como los partes).
   const tuya = 'R'.repeat(43);
   writeFileSync(join(casa, 'solo-movil.json'), JSON.stringify({ linea: 'roam', clave: tuya }));
+  // La versión que escribe la APK (3.84.1): hasta entonces los recortes llegaban con `version: null`.
+  writeFileSync(join(casa, 'salud.json'), JSON.stringify({ apk: '3.84.1' }));
   const apk = await apkDePega();
   const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
   try {
@@ -851,6 +855,7 @@ test('los recortes de un draft sin leer entero (3.81.0): la tablet los sube SOLA
     const r = s.recortes[0];
     ok(r.clave === claveDelLector(casa) && r.clave !== tuya, 'no van con la clave del lector');
     ok(r.d.partida === T && r.d.desde === T - 900000 && r.d.faltan === 2 && r.d.leidos.enemigos[0] === 'Clint', JSON.stringify({ ...r.d, capturas: undefined }));
+    eq(r.d.version, '3.84.1', 'el recorte no dice de qué APK es');
     eq(r.d.capturas.length, 2, 'no son dos capturas');
     ok(r.d.capturas.every((c) => /^lectura-20261026-00[123]$/.test(c.id) && c.enemigos.length === 5 && c.aliados.length === 5), 'una captura de fuera o sin lo leído');
     const vuelta = leerPng(Buffer.from(r.d.capturas[0].picks, 'base64'));

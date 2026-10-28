@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.84.1
+
+- La tablet reconoce tu Minotaur con la skin roja. Hasta ahora no la
+  conocía y, si no veía tu héroe, apuntaba la partida con el nº1 como
+  «pick supuesto» (el 28 de octubre a las 22:25 puso Floryn y era
+  Minotaur: puedes arreglarla en «Mis partidas»).
+- Lo que la tablet sube para medir el lector dice ya de qué versión de la
+  APK es.
+
 ## 3.84.0
 
 - Ya no tienes que salir del juego para corregir un draft. Al acabar la

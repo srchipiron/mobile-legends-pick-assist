@@ -1216,3 +1216,11 @@ ordenando las líneas «Draft completo» de los partes: siete con «0 consejos
 en directo». Lección: lo que identifica una pantalla (la fila de baneos) va
 antes que lo que se lee en ella; un nombre suelto no es un draft.
 
+## Los recortes de la tablet llegaban sin la versión de la APK (3.81.0 → 3.84.1)
+
+Los siete recortes del 28 de octubre de 2026 tenían `version: null`: la
+tablet pasaba `estado().version`, que es la versión del PUENTE (el número
+1), y `recorteParaSubir` solo acepta texto. Las pruebas unitarias le daban
+la versión a mano y la de punta a punta no la miraba. Lección: si una
+prueba de punta a punta sube algo, comprueba cada campo con lo que de
+verdad lo rellena, no solo que se sube.
