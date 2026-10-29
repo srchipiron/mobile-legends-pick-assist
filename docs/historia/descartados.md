@@ -658,3 +658,11 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   hay drafts nuevos (no se distingue de «sin recortes»): solo diagnóstico.
   (3) Leer el circulito de pre-selección de tu hueco: a un tercio mide
   13 px y sale cortado en los recortes; sin capturas a tamaño real no se mide.
+- **La revisión de 3.87.0 (29 de octubre de 2026)**, sin tocar: (1) una
+  Content-Security-Policy para la app (propuesta del revisor de seguridad,
+  riesgo bajo y no de este cambio): `connect-src` tendría que dejar pasar
+  la IP de la tablet en la wifi, que cambia (3.65.4), y una regla corta
+  deja sin lector sin avisar; se reabre si algún día entra HTML de fuera.
+  (2) Con `#capturas` y sin línea, `mandarALaTablet` llevaría `linea: null`
+  en los ajustes: no corre (sin línea no hay consejo) y `sanearAjustes` lo
+  tira; no reproducido.

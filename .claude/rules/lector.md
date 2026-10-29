@@ -1641,6 +1641,10 @@ de octubre de 2026. Javi lo aprobó («haz todo lo que has propuesto»).
   «Capturas» ni `aprenderDeLoArreglado` veían quién era. Hoy
   `mejoresRecortes` toma la última del draft y la que más lee de las demás.
   Prueba en `recortes.test`, dos mutaciones.
+  Desde 3.87.1, la última que LEE a alguien (una negra, la carga o una
+  ventana encima quitaban el sitio a la segunda mejor), y si no caben las
+  dos (`TOPE_RECORTE_BYTES`), `recorteParaSubir` se queda con la última,
+  no con la primera. Pruebas en `recortes` y `en-tablet`, tres mutaciones.
 
 **apk.yml (3.81.2)**: pasa `npm test` antes de compilar (con la caché de
 `node_modules` que exige `workflows.test`) y se recompila con todo lo que

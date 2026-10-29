@@ -467,3 +467,8 @@ app» y «un apartado SOLO para las partidas y las capturas».
   principio sobrevivió una: «sin mirar el campo», porque la prueba no
   escribía en ningún campo fuera de una hoja. Hoy escribe «ABE» en el código
   de la tablet.
+- Desde 3.87.1 las teclas solo abren algo con el draft a la vista
+  (`.app .draft`) y sin ninguna `.sheet` ni `[role=dialog]`. El Diagnóstico
+  (`informe`), las novedades del pie (estado de `Pie`), el aviso del QR y
+  la puerta de la licencia no son `hoja`, y E abría el selector encima.
+  Prueba en `pc.e2e` (Diagnóstico y novedades), una mutación.

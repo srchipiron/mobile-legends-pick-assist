@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.87.1
+
+- En el ordenador, las teclas E, A y B ya no abren el selector encima del
+  Diagnóstico o de las novedades: solo con el draft a la vista.
+- La tablet no guarda una captura negra o de la pantalla de carga como «la
+  última del draft»: guarda la última en la que se ve a alguien. Y si las
+  dos no caben, sube esa, la de tu pick, no la de antes.
+
 ## 3.87.0
 
 - La app tiene modo ordenador. Con la pantalla ancha, Partidas, Capturas,

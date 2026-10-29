@@ -957,7 +957,7 @@ test('aprender de lo arreglado, de punta a punta (3.83.0): el recorte de la base
   } finally { servidor.close(); apk.cerrar(); }
 });
 
-test('recorteParaSubir (3.81.0): solo ids con forma, imágenes en base64, con su partida, y si no caben las dos, la primera', () => {
+test('recorteParaSubir (3.81.0): solo ids con forma, imágenes en base64, con su partida, y si no caben las dos, la última (3.87.1)', () => {
   const cap = (id, picks = 'iVBORw0KGgo=') => ({ id, picks, enemigos: [{ nombre: 'Clint', candidato: 'Clint', parecido: 0.9 }], aliados: [], tuyoFila: 2 });
   const correccion = { partida: 5, cuando: 4, faltan: 1, leidos: { enemigos: ['Clint'], aliados: [], tuyoFila: 2, baneos: [] } };
   const r = recorteParaSubir({ correccion, recortes: [cap('../x'), cap('lectura-1'), cap('lectura-2', 'no es <base64>'), cap('lectura-3'), cap('lectura-4')], version: '3.81.0' });
@@ -967,7 +967,7 @@ test('recorteParaSubir (3.81.0): solo ids con forma, imágenes en base64, con su
   eq(recorteParaSubir({ correccion, recortes: [] }), null);
   const grande = 'A'.repeat(70000);
   const dos = recorteParaSubir({ correccion, recortes: [cap('lectura-1', grande), cap('lectura-2', grande)] });
-  ok(dos.capturas.length === 1 && dos.capturas[0].id === 'lectura-1' && Buffer.byteLength(JSON.stringify(dos)) <= TOPE_RECORTE_BYTES, 'no deja la primera cuando no caben las dos');
+  ok(dos.capturas.length === 1 && dos.capturas[0].id === 'lectura-2' && Buffer.byteLength(JSON.stringify(dos)) <= TOPE_RECORTE_BYTES, 'no deja la última (la de tu pick) cuando no caben las dos');
   eq(recorteParaSubir({ correccion, recortes: [cap('lectura-1', 'A'.repeat(130000))] }), null, 'sube uno que el servidor no admite');
 });
 

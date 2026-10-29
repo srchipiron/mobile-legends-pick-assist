@@ -115,7 +115,10 @@ export default function App() {
   const teclaRef = useRef(null);
   teclaRef.current = (e) => {
     if (!linea || soloCapturas) return;
-    const destino = atajoDe({ key: e.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey, repeat: e.repeat, enCampo: escribiendoEn(e.target) }, { hoja, fase: draft.fase });
+    // Solo con el draft a la vista (3.87.1): el Diagnóstico, las novedades del pie, el aviso del QR o la
+    // puerta de la licencia no son `hoja`, y E abría el selector encima de ellos.
+    const tapado = !document.querySelector('.app .draft') || !!document.querySelector('.sheet, [role="dialog"]');
+    const destino = atajoDe({ key: e.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey, repeat: e.repeat, enCampo: escribiendoEn(e.target) }, { hoja: hoja ?? (tapado ? 'otra' : null), fase: draft.fase });
     if (!destino) return;
     e.preventDefault();
     abrir(destino);

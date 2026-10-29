@@ -436,8 +436,9 @@ export function recorteParaSubir({ correccion, recortes, version = null }) {
     leidos: { enemigos: nombres(l.enemigos), aliados: nombres(l.aliados), tuyoFila: Number.isInteger(l.tuyoFila) ? l.tuyoFila : -1, baneos: nombres(l.baneos) },
     capturas,
   };
-  // Si las dos no caben, va la primera (la que más leía).
-  while (Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES && recorte.capturas.length > 1) recorte.capturas.pop();
+  // Si las dos no caben, va la ÚLTIMA (3.87.1): la del draft más avanzado, con tu pick ya puesto
+  // (`mejoresRecortes`, 3.86.5). Antes se quedaba la primera y se perdía justo esa.
+  while (Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES && recorte.capturas.length > 1) recorte.capturas.shift();
   return Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES ? null : recorte;
 }
 

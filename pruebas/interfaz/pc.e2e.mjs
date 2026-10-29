@@ -78,6 +78,21 @@ await prueba('E, A y B abren su selector; escribiendo en un campo, no', async ()
   eq(await pagina.locator('.sheet').count(), 0, 'escribir en el código de la tablet abre un selector');
   eq(await codigo.inputValue(), 'ABE', 'las letras no llegan al campo');
   await codigo.blur();
+  // Con el Diagnóstico o las novedades abiertos (no son `hoja`), tampoco (3.87.1).
+  await pagina.locator('.barra-pc').getByRole('button', { name: 'Diagnóstico' }).click();
+  await pagina.locator('.sheet').first().waitFor();
+  await pagina.keyboard.press('e');
+  await pagina.waitForTimeout(200);
+  eq(await pagina.locator('.sheet-bandos').count(), 0, 'E abre el selector encima del Diagnóstico');
+  await pagina.keyboard.press('Escape');
+  await pagina.locator('.sheet').waitFor({ state: 'detached' });
+  await pagina.locator('.pie-version').click();
+  await pagina.locator('.sheet').first().waitFor();
+  await pagina.keyboard.press('b');
+  await pagina.waitForTimeout(200);
+  eq(await pagina.locator('.sheet').count(), 1, 'B abre el selector encima de las novedades');
+  await pagina.keyboard.press('Escape');
+  await pagina.locator('.sheet').waitFor({ state: 'detached' });
   // Con Control (copiar, pegar) no abre nada.
   await pagina.keyboard.press('Control+a');
   await pagina.waitForTimeout(200);
