@@ -446,3 +446,24 @@ sola pasaba. Era medir a los 250 ms una hoja que entra en 260 ms: a mitad
 del deslizamiento la caja de 32 px mide 31,99. Reproducido midiendo a los
 90 ms (mismo fallo en dos tamaños). Hoy espera a `getAnimations({ subtree:
 true })` de la hoja. Si otra prueba mide algo dentro de una hoja, igual.
+
+**El modo ordenador (3.87.0)**. Javi: «haz también el modo PC para toda la
+app» y «un apartado SOLO para las partidas y las capturas».
+- Desde `ANCHO_PC` (1.100 px, el corte de las dos columnas de tarjetas),
+  `BarraPC` pone a la vista, bajo el draft, lo que en el móvil vive en
+  «Ajustes»: Partidas, Capturas del lector, Maestría, Meta, Perfil y
+  Diagnóstico. En el móvil es `display: none`: no mueve la nº1.
+- Teclas (`src/app/atajos.js`, puro): E enemigos, A tu equipo, B baneos.
+  Nunca escribiendo en un campo, con una hoja abierta, con Control/Cmd/Alt
+  ni con la tecla mantenida (Control+A no abre nada). En baneos, solo B.
+- `#capturas` abre la app SOLO en «Capturas» (`soloCapturas` en App.jsx),
+  aunque no haya línea elegida. Ahí se pega la clave del móvil
+  (`PegarClave`, sacado de `Comunidad.jsx`). Cerrar quita el `#capturas`
+  con `replaceState`: recargar no te mete otra vez.
+- En «Capturas»: caras a `ESCALA_PC` (0,7) en pantalla ancha, la captura
+  entera al lado de los dos equipos, y al guardar sube la siguiente
+  pendiente.
+- Pruebas en `app/atajos.test` y `interfaz/pc.e2e`, doce mutaciones. Al
+  principio sobrevivió una: «sin mirar el campo», porque la prueba no
+  escribía en ningún campo fuera de una hoja. Hoy escribe «ABE» en el código
+  de la tablet.

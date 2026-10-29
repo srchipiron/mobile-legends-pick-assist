@@ -796,5 +796,12 @@ export default {
   'revisar.error.nombre': 'Hay un nombre que no es de ningún héroe: elígelo de la lista.',
   'revisar.error.tuyo': 'Falta tu héroe (el hueco marcado «Tú»).',
   'revisar.error.repetido': 'Hay un héroe repetido.',
+  'revisar.enlace': 'En el ordenador, abre directamente:',
+  'revisar.pegaClave': 'Pega aquí tu clave de jugador (en el móvil: Ajustes → Partidas → Copiar) y se traen tus partidas.',
+  'revisar.entera': 'Ver la captura entera',
+  'pc.barra': 'Secciones',
+  'pc.capturas': 'Capturas del lector',
+  'pc.teclas': 'Teclas: E enemigos · A tu equipo · B baneos · Esc cierra. Dentro, escribe y pulsa Intro.',
+  'pc.teclasBaneos': 'Teclas: B baneos · Esc cierra. Dentro, escribe y pulsa Intro.',
   'revisar.cara': 'Captura de {equipo} {n}',
 };

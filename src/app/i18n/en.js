@@ -779,5 +779,12 @@ export default {
   'revisar.error.nombre': 'A name isn\'t any hero: pick it from the list.',
   'revisar.error.tuyo': 'Your hero is missing (the slot marked «You»).',
   'revisar.error.repetido': 'A hero is repeated.',
+  'revisar.enlace': 'On a computer, open directly:',
+  'revisar.pegaClave': 'Paste your player key here (on the phone: Settings → Matches → Copy) to bring your matches.',
+  'revisar.entera': 'See the whole screenshot',
+  'pc.barra': 'Sections',
+  'pc.capturas': 'Reader screenshots',
+  'pc.teclas': 'Keys: E enemies · A your team · B bans · Esc closes. Inside, type and press Enter.',
+  'pc.teclasBaneos': 'Keys: B bans · Esc closes. Inside, type and press Enter.',
   'revisar.cara': 'Screenshot of {equipo} {n}',
 };

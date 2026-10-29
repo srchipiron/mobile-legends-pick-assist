@@ -142,9 +142,9 @@ export function recortesDelDraft(informe, leer, caras, opciones = {}, maximo = R
 }
 
 /**
- * Sin la verdad (3.81.0, la tablet sola): de las capturas de un draft, las
- * `maximo` que más héroes leían (enemigos y tu equipo; a igualdad, las más
- * nuevas), en su orden. Las del final del draft suelen ser ya la fase de
+ * Sin la verdad (3.81.0, la tablet sola): de las capturas de un draft, la
+ * última (3.86.5) y las que más héroes leían (enemigos y tu equipo; a
+ * igualdad, las más nuevas) hasta `maximo`, en su orden. Las del final del draft suelen ser ya la fase de
  * skins, y las primeras, picks a medias: las que más leen son las del draft
  * casi entero. Cada captura se decodifica al mirarla.
  */
@@ -158,7 +158,12 @@ export function mejoresRecortes(ids, leer, caras, opciones = {}, maximo = RECORT
       vistos.push({ id, i, n });
     } catch { /* una captura que no se lee no cuenta */ }
   });
-  const elegidos = vistos.sort((a, b) => b.n - a.n || b.i - a.i).slice(0, maximo).sort((a, b) => a.i - b.i);
+  // La última del draft va siempre (3.86.5): Javi elige el último y su hueco solo lleva su héroe (con la
+  // foto de la skin) al final; las que más leen son de antes, con su hueco vacío. Con ella se ve quién era,
+  // desde el PC y al aprender de lo arreglado.
+  const ultima = vistos.reduce((u, v) => (!u || v.i > u.i ? v : u), null);
+  const porLeidos = vistos.filter((v) => v !== ultima).sort((a, b) => b.n - a.n || b.i - a.i);
+  const elegidos = (ultima && maximo > 0 ? [ultima, ...porLeidos.slice(0, maximo - 1)] : []).sort((a, b) => a.i - b.i);
   return elegidos.map(({ id }) => { try { const r = recorteDeDraft(leer(id), caras, opciones); return r ? { id, ...r } : null; } catch { return null; } }).filter(Boolean);
 }
 

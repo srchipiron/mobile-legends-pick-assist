@@ -807,6 +807,17 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .revisar-tu { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 .revisar-guardar { width: 100%; margin-top: 12px; }
 .revisar-todas { margin-left: 8px; }
+.revisar-ver-entera { margin-left: auto; }
+/* La captura entera (3.87.0): la tablet la sube a un tercio; aquí se ve a tamaño de pantalla de la tablet. */
+.revisar-entera { display: block; width: min(280px, 100%); height: auto; justify-self: center; border-radius: var(--r-sm); background: #000; }
+.revisar-enlace a { color: var(--gold); word-break: break-all; }
+.revisar-lista { display: flex; flex-direction: column; }
+/* «Capturas» sola (#capturas, 3.87.0): solo la hoja; el contenedor no pinta nada. */
+.solo-capturas { display: contents; }
+.revisar-clave { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 12px; }
+/* La barra del ordenador (3.87.0): solo desde 1.100 px (ver la @media de abajo). */
+.barra-pc { display: none; }
+.barra-pc-teclas { flex-basis: 100%; margin: 4px 0 0; font-size: 12px; color: var(--muted); }
 .editar-equipo { display: flex; flex-direction: column; }
 .editar-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
 .editar-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 10px; border-radius: 999px; border: 1px solid var(--line); }
@@ -1222,6 +1233,10 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   /* Lo que no es una tarjeta ocupa las dos columnas: la cabecera, los avisos,
      el analisis del draft, la leyenda y el pie legal. */
   .results > :not(.pick) { grid-column: 1 / -1; }
+  /* El modo ordenador (3.87.0): lo de «Ajustes» a la vista, a un clic. */
+  .barra-pc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .barra-pc .reset { flex: 1 1 calc(50% - 4px); min-height: 40px; }
+  .solo-capturas .sheet { padding-left: max(16px, calc((100vw - 1400px) / 2)); padding-right: max(16px, calc((100vw - 1400px) / 2)); }
 }
 
 @media (prefers-reduced-motion: no-preference) {

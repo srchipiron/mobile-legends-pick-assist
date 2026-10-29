@@ -8,6 +8,21 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.87.0
+
+- La app tiene modo ordenador. Con la pantalla ancha, Partidas, Capturas,
+  Maestría, Meta, Perfil y Diagnóstico están a la vista, a un clic, sin
+  abrir «Ajustes». Y con el teclado: E abre enemigos, A tu equipo y B
+  baneos. Escribe el nombre y pulsa Intro; Esc cierra.
+- «Capturas» tiene su propia página: abre la app con `#capturas` al final
+  de la dirección y solo salen tus drafts con sus capturas. En un ordenador
+  nuevo, pega ahí tu clave del móvil y se traen tus partidas. En el
+  ordenador las caras salen más grandes. «Ver la captura entera» enseña las
+  diez juntas. Al guardar una, sube la siguiente que falta.
+- La tablet guarda siempre la ÚLTIMA captura del draft, la que enseña tu
+  héroe ya elegido con su skin. Antes guardaba las que más héroes leían,
+  que eran de antes de tu pick, y tu hueco salía vacío.
+
 ## 3.86.4
 
 - Lo que enseñas a la tablet ya no se pierde por borrar capturas antes de

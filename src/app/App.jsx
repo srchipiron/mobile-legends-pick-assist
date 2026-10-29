@@ -33,6 +33,8 @@ import { useAhora } from './estado/useAhora.js';
 import { ApuntarPartida } from './componentes/ApuntarPartida.jsx';
 import { HistorialPartidas } from './componentes/HistorialPartidas.jsx';
 import { RevisarCapturas } from './componentes/RevisarCapturas.jsx';
+import { BarraPC } from './componentes/BarraPC.jsx';
+import { atajoDe, escribiendoEn } from './atajos.js';
 import { Perfil } from './componentes/Perfil.jsx';
 import { EditorDeMaestria } from './componentes/EditorDeMaestria.jsx';
 import { Meta } from './componentes/Meta.jsx';
@@ -56,7 +58,11 @@ export default function App() {
   useActualizacion();
 
   // 'enemigos' | 'aliados' | 'baneos' | 'maestria' | 'historial' | 'revisar' | 'perfil' | 'linea' | 'apuntar' | { build }
-  const [hoja, setHoja] = useState(null);
+  // «Capturas» (3.87.0): la app abierta con `#capturas` es SOLO eso, para el
+  // ordenador: las capturas de los drafts que la tablet no leyó entero.
+  const conCapturas = () => typeof window !== 'undefined' && window.location.hash === '#capturas';
+  const [soloCapturas, setSoloCapturas] = useState(conCapturas);
+  const [hoja, setHoja] = useState(() => (conCapturas() ? 'revisar' : null));
   // El orden de las caras del selector de picks (3.17.0): se calcula al ABRIR
   // la hoja o al cambiar de pestaña y no se mueve mientras se toca. Lo que se
   // toca a contrarreloj no cambia de sitio (errores ya cometidos: los chips
@@ -72,6 +78,17 @@ export default function App() {
     return () => clearTimeout(reloj);
   }, [lector.aviso]);
   const cerrar = () => setHoja(null);
+  useEffect(() => {
+    const alCambiar = () => { if (conCapturas()) { setSoloCapturas(true); setHoja('revisar'); } };
+    window.addEventListener('hashchange', alCambiar);
+    return () => window.removeEventListener('hashchange', alCambiar);
+  }, []);
+  // Salir de «Capturas» deja la app normal y quita el `#capturas`: recargar no vuelve a meterte.
+  const cerrarCapturas = () => {
+    try { window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`); } catch { /* sin historial */ }
+    setSoloCapturas(false);
+    setHoja(null);
+  };
 
   const enemigos = useMemo(() => resolverNombres(datos, draft.enemigos), [datos, draft.enemigos]);
   const aliados = useMemo(() => resolverNombres(datos, draft.aliados), [datos, draft.aliados]);
@@ -94,6 +111,20 @@ export default function App() {
     }
     setHoja(h);
   };
+  // Las teclas del ordenador (3.87.0): E, A y B abren el selector de su bando sin soltar el teclado.
+  const teclaRef = useRef(null);
+  teclaRef.current = (e) => {
+    if (!linea || soloCapturas) return;
+    const destino = atajoDe({ key: e.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey, repeat: e.repeat, enCampo: escribiendoEn(e.target) }, { hoja, fase: draft.fase });
+    if (!destino) return;
+    e.preventDefault();
+    abrir(destino);
+  };
+  useEffect(() => {
+    const alPulsar = (e) => teclaRef.current?.(e);
+    window.addEventListener('keydown', alPulsar);
+    return () => window.removeEventListener('keydown', alPulsar);
+  }, []);
   // Si el meta llega con la hoja de picks ya abierta (se tocó un hueco al
   // arrancar), la rejilla se quedaba alfabética hasta reabrirla. Solo con
   // `datos`: tocar un héroe NO reordena (lo que se toca a contrarreloj no se mueve).
@@ -576,7 +607,7 @@ export default function App() {
   if (!carga.catalogo) return <div className="results"><p className="empty-state">{t('app.cargando')}</p></div>;
 
   // Primer arranque: sin línea no hay nada que recomendar.
-  if (!linea) {
+  if (!linea && !soloCapturas) {
     return (
       <div className="app">
         <ElegirLinea valor={null} onElegir={setLinea} t={t} idioma={idioma} onIdioma={setIdioma} idiomas={IDIOMAS} />
@@ -655,7 +686,7 @@ export default function App() {
           onCerrar={cerrar} t={t}
         />
       )}
-      {hoja === 'revisar' && <RevisarCapturas partidas={personal.partidas} datos={datos} comunidad={comunidad} onGuardar={personal.revisarPartida} onCerrar={cerrar} t={t} />}
+      {hoja === 'revisar' && <RevisarCapturas partidas={personal.partidas} datos={datos} comunidad={comunidad} perfil={datosPerfil} onImportar={traerPerfil} onGuardar={personal.revisarPartida} onCerrar={soloCapturas ? cerrarCapturas : cerrar} t={t} />}
       {hoja === 'perfil' && <Perfil datos={datosPerfil} onImportar={traerPerfil} onCerrar={cerrar} t={t} />}
       {hoja === 'meta' && <Meta datos={datos} linea={linea} onFicha={(nombre) => deHojaAHoja({ ficha: nombre })} onCerrar={cerrar} t={t} />}
       {hoja?.ficha && <FichaDeHeroe datos={datos} nombre={hoja.ficha} onOtro={(nombre) => setHoja({ ficha: nombre })} onCerrar={cerrar} t={t} />}
@@ -668,6 +699,10 @@ export default function App() {
 
   // La puerta va DESPUÉS de todos los hooks: cerrarla no puede cambiar su orden.
   if (!licencia.pasa) return <PuertaDeLicencia licencia={licencia} t={t} />;
+  // «Capturas» sola: ni draft ni lector detrás, solo la hoja.
+  if (soloCapturas && hoja === 'revisar') return <div className="solo-capturas">{hojas}</div>;
+
+  const barra = <BarraPC abrir={abrir} onDiagnostico={lanzarDiagnostico} conCapturas={!!comunidad.config} fase={draft.fase} t={t} />;
 
   if (draft.fase === 'baneos') {
     return (
@@ -681,7 +716,7 @@ export default function App() {
           onQuitar={(h) => draft.quitar('baneos', h)}
           onAPicks={() => draft.setFase('picks')}
           lector={lectorConVoz} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} vozCallada={vozCallada} onVoz={cambiarVoz}
-          pie={pie}
+          pie={pie} barra={barra}
         />
         {/* El aviso y el selector en el MISMO sitio que en picks (segundo y
             tercer hijo): si no, al cambiar de fase React los vuelve a montar.
@@ -705,7 +740,7 @@ export default function App() {
         onResultado={apuntarAMano}
         lector={lectorConVoz} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} vozCallada={vozCallada} onVoz={cambiarVoz}
         lectorTablet={lectorTablet} onLectorTablet={setLectorTablet} onAdministracion={verAdmin ? () => abrir('admin') : null} ajuste={personal.ajuste}
-        pie={pie}
+        pie={pie} barra={barra}
       />
       {deshacer}
       {vinculo}

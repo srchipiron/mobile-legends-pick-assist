@@ -1635,6 +1635,12 @@ de octubre de 2026. Javi lo aprobó («haz todo lo que has propuesto»).
   pone `supuesto` de la copia de la tablet sobre la de la base de datos
   (que no lo guarda) si el pick no cambió: «Tu semana» y la lista de la APK
   lo perdían al subirse. Pruebas en `en-tablet`, tres mutaciones.
+- **La última captura va siempre (3.86.5)**. Javi: «mi héroe no se lee
+  porque es el último pick casi siempre y al elegir se cambia a la foto de
+  la skin». Las dos que más leían eran de antes, con su hueco vacío, y ni
+  «Capturas» ni `aprenderDeLoArreglado` veían quién era. Hoy
+  `mejoresRecortes` toma la última del draft y la que más lee de las demás.
+  Prueba en `recortes.test`, dos mutaciones.
 
 **apk.yml (3.81.2)**: pasa `npm test` antes de compilar (con la caché de
 `node_modules` que exige `workflows.test`) y se recompila con todo lo que

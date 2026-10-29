@@ -40,14 +40,14 @@ await prueba('las caras de cada hueco con lo leído; guardar arregla la partida 
   s.recortes.push({ clave: 'M'.repeat(43), recibido: Date.now() - 1000, d: { v: 1, partida: T + 1, capturas: [{ id: 'lectura-x', picks: 'PHN2ZyBvbmxvYWQ9YWxlcnQoMSk+' }], leidos } });
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: 1280, height: 900 }, almacen: { ...LINEA, 'roam-picker:partidas': [PARTIDA, { ...PARTIDA, t: T + 1 }] }, sinServiceWorker: true, antes: conBaseDeDatos(s) });
   await abrirAjustes(pagina);
-  await pagina.getByRole('button', { name: 'Partidas', exact: true }).click();
+  await pagina.locator('.more').getByRole('button', { name: 'Partidas', exact: true }).click();
   await pagina.getByRole('button', { name: 'Revisar con las capturas del lector' }).click();
   await pagina.locator('.revisar-partida').first().waitFor();
   eq(await pagina.locator('.revisar-partida').count(), 1, 'sale el recorte sin PNG, o no sale el bueno');
   eq(await pagina.locator('.revisar-cara').count(), 10, 'no salen las diez caras');
   const fondo = await pagina.locator('.revisar-cara').nth(7).evaluate((el) => ({ img: window.getComputedStyle(el).backgroundImage.slice(0, 40), pos: window.getComputedStyle(el).backgroundPosition }));
   ok(fondo.img.startsWith('url("data:image/png;base64,iVBOR'), `la cara no es la captura: ${fondo.img}`);
-  eq(fondo.pos, '-86px -153px', 'la cara del tercer enemigo no está en su sitio');
+  eq(fondo.pos, '-133px -238px', 'la cara del tercer enemigo no está en su sitio (a 1.280 px, la escala del ordenador)');
   eq(await pagina.getByLabel('Enemigos 1', { exact: true }).inputValue(), 'Clint', 'lo leído no está en su hueco');
   eq(await pagina.getByLabel('Tu equipo 4', { exact: true }).inputValue(), '', 'tu fila sale con el pick supuesto');
   ok(await pagina.locator('.revisar-hueco.tuyo').count() === 1, 'no se marca tu fila');

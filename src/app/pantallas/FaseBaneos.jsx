@@ -11,7 +11,7 @@ import { IDIOMAS } from '../i18n/index.js';
  * multi-toque se abre desde cualquier hueco o desde el botón grande, y el
  * único camino hacia delante es «Ir a los picks».
  */
-export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, rangoDatos = '', sinWinrates, idioma, onIdioma, tacto, onTacto, onAbrirSelector, onBanear, onQuitar, onAPicks, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, vozCallada = false, onVoz = null, pie }) {
+export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, rangoDatos = '', sinWinrates, idioma, onIdioma, tacto, onTacto, onAbrirSelector, onBanear, onQuitar, onAPicks, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, vozCallada = false, onVoz = null, pie, barra = null }) {
   const baneados = new Set(baneos.map((h) => h.name));
   return (
     <div className="app fase-baneos">
@@ -52,6 +52,7 @@ export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, 
         <BaneosSugeridos t={t} items={baneos.length < 10 ? sugeridos : []} onBanear={onBanear} rango={rangoDatos} plan={plan.map((x) => x.heroe.name)} />
         {/* Sin winrates (API caída en el primer arranque) la fase quedaba con huecos «+» y un selector alfabético sin explicación. */}
         {sinWinrates ? <div className="notice">{t('app.sinWinrates')}</div> : null}
+        {barra}
         <AvisoLegal t={t} idioma={idioma} onIdioma={onIdioma} idiomas={IDIOMAS} tacto={tacto} onTacto={onTacto} />
       </aside>
       {pie}

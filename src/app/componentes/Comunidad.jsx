@@ -18,17 +18,14 @@ function Comparacion({ c, clave, t }) {
 }
 
 /**
- * La base de datos de partidas de todos (3.69.0), dentro de «Tus partidas».
- * Solo sale con `comunidad.json` publicado. Guardar las tuyas es una casilla
- * que se pone a propósito (las partidas salen del móvil); ver si la app
- * ayuda, con las de todos, no pide nada.
+ * Pegar tu clave de jugador y traerte tus partidas (3.69.0). Aparte desde
+ * 3.87.0: «Capturas» la pide también, porque en el ordenador es lo primero.
  */
-export function Comunidad({ comunidad, perfil, onImportar, t = tPorDefecto }) {
+export function PegarClave({ comunidad, perfil, onImportar, avisar = null, t = tPorDefecto }) {
   const [pegada, setPegada] = useState('');
-  const [aviso, setAviso] = useState(null);
-  if (!comunidad?.config) return null;
-  const e = comunidad.estadisticas;
-
+  const [propio, setPropio] = useState(null);
+  // Con la clave buena este formulario desaparece: el aviso lo enseña quien lo monta, si puede.
+  const setAviso = avisar ?? setPropio;
   const usar = async () => {
     const r = await comunidad.usarClave(pegada);
     if (r.error) { setAviso({ mal: true, texto: t(`comunidad.error.${['clave', 'red', 'config'].includes(r.error) ? r.error : 'otro'}`) }); return; }
@@ -36,6 +33,26 @@ export function Comunidad({ comunidad, perfil, onImportar, t = tPorDefecto }) {
     setPegada('');
     setAviso({ mal: false, texto: t('comunidad.traidas', { n: r.partidas.length }) });
   };
+  return (
+    <>
+      <input type="password" autoComplete="off" spellCheck={false} value={pegada} placeholder={t('comunidad.pegaClave')} aria-label={t('comunidad.pegaClave')} onChange={(ev) => setPegada(ev.target.value)} />
+      <button className="ancho" disabled={!pegada.trim()} onClick={usar}>{t('comunidad.usarClave')}</button>
+      {propio && <p className={propio.mal ? 'nota mal' : 'nota bien'} role="status">{propio.texto}</p>}
+    </>
+  );
+}
+
+/**
+ * La base de datos de partidas de todos (3.69.0), dentro de «Tus partidas».
+ * Solo sale con `comunidad.json` publicado. Guardar las tuyas es una casilla
+ * que se pone a propósito (las partidas salen del móvil); ver si la app
+ * ayuda, con las de todos, no pide nada.
+ */
+export function Comunidad({ comunidad, perfil, onImportar, t = tPorDefecto }) {
+  const [aviso, setAviso] = useState(null);
+  if (!comunidad?.config) return null;
+  const e = comunidad.estadisticas;
+
   const borrar = async () => {
     if (!window.confirm(t('comunidad.borrarSeguro'))) return;
     const r = await comunidad.borrar();
@@ -67,8 +84,7 @@ export function Comunidad({ comunidad, perfil, onImportar, t = tPorDefecto }) {
           <p className="nota">{t('comunidad.queEs')}</p>
           <button className="ancho" onClick={comunidad.activar}>{t('comunidad.activar')}</button>
           <p className="nota">{t('comunidad.yaTengo')}</p>
-          <input type="password" autoComplete="off" spellCheck={false} value={pegada} placeholder={t('comunidad.pegaClave')} aria-label={t('comunidad.pegaClave')} onChange={(ev) => setPegada(ev.target.value)} />
-          <button className="ancho" disabled={!pegada.trim()} onClick={usar}>{t('comunidad.usarClave')}</button>
+          <PegarClave comunidad={comunidad} perfil={perfil} onImportar={onImportar} avisar={setAviso} t={t} />
         </>
       )}
       {aviso && <p className={aviso.mal ? 'nota mal' : 'nota bien'} role="status">{aviso.texto}</p>}

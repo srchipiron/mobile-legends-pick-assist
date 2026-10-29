@@ -77,13 +77,15 @@ test('de las capturas del aprendizaje se recortan las DOS ÚLTIMAS que eran la p
   eq(recortesDelDraft(conAciertos, () => img, caras).map((x) => x.id).join(), 'lectura-1,lectura-3', 'no recorta las que más enemigos leían, en su orden');
 });
 
-test('sin la verdad (3.81.0): de las capturas de un draft se recortan las dos que más héroes leen, en su orden; una que no se lee no cuenta', () => {
+test('sin la verdad (3.81.0): de las capturas de un draft se recortan la que más héroes lee y la última (3.86.5), en su orden; una que no se lee no cuenta', () => {
   const negra = { ancho: 2400, alto: 1504, rgba: new Uint8Array(2400 * 1504 * 4) };
   const media = capturaCompleta({ columna: 2, conAliados: false });
   const capturas = { 'lectura-1': img, 'lectura-2': negra, 'lectura-3': media, 'lectura-4': img, 'lectura-5': negra };
   const leer = (id) => { if (id === 'lectura-6') throw new Error('rota'); return capturas[id]; };
   const r = mejoresRecortes(['lectura-1', 'lectura-2', 'lectura-3', 'lectura-4', 'lectura-5', 'lectura-6'], leer, caras);
-  eq(r.map((x) => x.id).join(), 'lectura-1,lectura-4', 'no son las dos que más leen');
+  // La que más lee (a igualdad, la más nueva) y la ÚLTIMA que se lee (3.86.5: con tu pick ya puesto).
+  eq(r.map((x) => x.id).join(), 'lectura-4,lectura-5', 'no son la que más lee y la última');
+  eq(mejoresRecortes(['lectura-1', 'lectura-2', 'lectura-4'], leer, caras).map((x) => x.id).join(), 'lectura-1,lectura-4', 'con la última entre las que más leen, la otra no es la siguiente que más lee');
   ok(r.every((x) => x.picks && x.enemigos.length === 5 && x.aliados.length === 5), 'un recorte sin imagen o sin lo leído');
   eq(mejoresRecortes([], leer, caras).length, 0);
   eq(mejoresRecortes(['lectura-2', 'lectura-3'], leer, caras).map((x) => x.id).join(), 'lectura-2,lectura-3', 'con dos, van las dos en su orden');
