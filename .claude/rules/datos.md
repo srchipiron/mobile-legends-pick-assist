@@ -244,6 +244,19 @@ el comparador tiraba la corrida). Con todas respondiendo, el que falta se
 quita (Moonton retira objetos). La ingesta simulada tira la corta en su
 cuarta corrida; tres mutaciones.
 
+**Las estadísticas por rango, con reintento (3.87.2)**: el 28 de octubre
+(21:40) y el 29 (11:30) de 2026 el bot pidió las estadísticas de los cuatro
+rangos y la API dio «Error 1101: Worker threw exception» a las cuatro en
+un segundo; un minuto después la misma API servía builds y líneas. Sin un
+rango fresco, el comparador tiró las dos corridas enteras (bien hecho: la
+app siguió con las del despliegue). Hoy `estadisticasConReintento`
+(cli.mjs) vuelve a pedir los rangos que fallaron tras
+`REINTENTOS_ESTADISTICAS_MS` (20 y 60 s), solo con fallos de paso
+(`esFalloDePaso`: 5xx o 429; sin red o con un 4xx no se espera), y para la
+ventana de 7 días y la de 3. `diagnostics.reintentoEstadisticas` dice
+cuántas vueltas y qué rangos se recuperaron. La ingesta simulada da 500
+dos veces a Gloria y exige que salga fresca; cuatro mutaciones.
+
 **La tier list de mlbb.gg y el 403 (3.59.4)**: desde el 4 de octubre de
 2026 `back.mlbb.gg` contesta 403 a los runners de GitHub (desde la sesión y
 desde un móvil contesta 200), y `fetchTiers` conservaba la anterior con su

@@ -8,6 +8,13 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.87.2
+
+- Los datos del meta se actualizan aunque la API falle un momento. El 28 y
+  el 29 de octubre el bot que baja winrates y baneos se paró dos veces
+  porque la API dio error justo en esa petición, y un minuto después ya
+  respondía. Ahora espera y lo vuelve a pedir antes de rendirse.
+
 ## 3.87.1
 
 - En el ordenador, las teclas E, A y B ya no abren el selector encima del

@@ -31,6 +31,45 @@ import { elegirRangoDeRelaciones, RANGO_DE_RESPALDO } from '../../src/motor/vent
 
 export { parseArgs } from './contexto.mjs';
 
+
+/**
+ * Las esperas antes de volver a pedir las estadísticas de los rangos que
+ * fallaron (3.87.2). El 28 de octubre (21:40) y el 29 (11:30) de 2026 la
+ * ruta de estadísticas dio «Error 1101: Worker threw exception» en los
+ * cuatro rangos en un segundo, y un minuto después la misma API servía
+ * builds y líneas: sin un rango fresco, el comparador tiró las dos corridas
+ * del bot enteras. Decisión de producto, como `REINTENTO_RELACIONES_MS`:
+ * dos vueltas más, como mucho 80 s, y solo con fallos de paso.
+ */
+export const REINTENTOS_ESTADISTICAS_MS = [20000, 60000];
+/**
+ * Un fallo de paso: el servidor contestó con un error suyo (5xx) o con
+ * «demasiadas peticiones» (429). Un 4xx o «no acepta days» no se arregla
+ * esperando, y sin red o sin respuesta (la API caída del todo) esperar 80 s
+ * dos veces solo alarga la corrida.
+ */
+export const esFalloDePaso = (e) => e?.status >= 500 || e?.status === 429;
+
+/** Las estadísticas de cada rango de `RANKS` a `dias`, con los reintentos. Nunca lanza: lo que no llega va en `fallos`. */
+async function estadisticasConReintento(dias) {
+  const datos = {}, fallos = {};
+  let pendientes = [...RANKS], vueltas = 0;
+  const fallaronAlPrincipio = new Set();
+  for (;;) {
+    for (const rank of pendientes) {
+      try { datos[rank] = await fetchStats(rank, dias); delete fallos[rank]; } catch (err) { fallos[rank] = err; if (!vueltas) fallaronAlPrincipio.add(rank); }
+      await sleep(250);
+    }
+    pendientes = pendientes.filter((r) => fallos[r] && esFalloDePaso(fallos[r]));
+    if (!pendientes.length || vueltas >= REINTENTOS_ESTADISTICAS_MS.length) break;
+    console.log(`  · estadísticas a ${dias} días: ${pendientes.join(', ')} fallaron; las pido otra vez en ${REINTENTOS_ESTADISTICAS_MS[vueltas] / 1000} s`);
+    await sleep(REINTENTOS_ESTADISTICAS_MS[vueltas]);
+    vueltas += 1;
+  }
+  const reintento = vueltas ? { vueltas, recuperados: [...fallaronAlPrincipio].filter((r) => datos[r]), sinRecuperar: [...fallaronAlPrincipio].filter((r) => !datos[r]) } : null;
+  return { datos, fallos, reintento };
+}
+
 async function main() {
   console.log(`Ingesta MLBB · rangos=${RANKS.join(',')} · ventana=${DAYS}d`);
 
@@ -101,19 +140,21 @@ async function main() {
   // (no resolvía menos) y engañaba a la puerta de frescura del despliegue.
   const frescos = [];
   diagnostics.rangos = {};
+  const semana = await estadisticasConReintento(DAYS);
+  if (semana.reintento) diagnostics.reintentoEstadisticas = semana.reintento;
   for (const rank of RANKS) {
-    try {
-      const s = await fetchStats(rank);
+    const s = semana.datos[rank];
+    if (s) {
       if (Object.keys(s).length) { statsByRank[rank] = s; frescos.push(rank); }
       diagnostics.rangos[rank] = `${Object.keys(s).length} héroes`;
       console.log(`  · ${rank}: ${Object.keys(s).length} héroes`);
-    } catch (err) {
+    } else {
+      const err = semana.fallos[rank];
       // Antes solo salía por consola y en la app no había forma de saber que
       // faltaban tres de los cuatro rangos.
       diagnostics.rangos[rank] = `fallo: ${err.message.slice(0, 120)}`;
       console.warn(`  · ${rank}: fallo (${err.message}); conservo lo anterior`);
     }
-    await sleep(250);
   }
   const stats = statsByRank[RANK] ?? Object.values(statsByRank)[0] ?? previous?.stats ?? {};
 
@@ -123,16 +164,17 @@ async function main() {
   // Es un extra: un fallo aqui no tira la corrida ni deja de publicar.
   const recientesPorRango = {};
   diagnostics.recientes = {};
+  const corta = await estadisticasConReintento(DIAS_RECIENTES);
   for (const rank of RANKS) {
-    try {
-      const s = await fetchStats(rank, DIAS_RECIENTES);
+    const s = corta.datos[rank];
+    if (s) {
       if (Object.keys(s).length) recientesPorRango[rank] = s;
       diagnostics.recientes[rank] = `${Object.keys(s).length} héroes`;
-    } catch (err) {
+    } else {
+      const err = corta.fallos[rank];
       diagnostics.recientes[rank] = `fallo: ${err.message.slice(0, 120)}`;
       console.warn(`  · ${rank} (${DIAS_RECIENTES} días): fallo (${err.message}); la app usará la ventana de ${DAYS}`);
     }
-    await sleep(250);
   }
   const recientes = Object.keys(recientesPorRango).length ? { dias: DIAS_RECIENTES, statsByRank: recientesPorRango } : null;
 
@@ -378,6 +420,7 @@ async function main() {
       equipo: diagnostics.equipo ?? null,
       lineas: diagnostics.lineas ?? null,
       rangos: diagnostics.rangos ?? null,
+      reintentoEstadisticas: diagnostics.reintentoEstadisticas ?? null,
       recientes: diagnostics.recientes ?? null,
       tiers: diagnostics.tiers ?? null,
       ok: [...new Set(diagnostics.ok)].slice(0, 6),

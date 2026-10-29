@@ -107,6 +107,8 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   // 3.43.1: las estadísticas de Mítico (el rango de respaldo) caídas, y la
   // ruta de parejas contestando sin ningún par.
   let fallaMitico = false; let parejasVacias = false;
+  // Las estadísticas de un rango dan 500 las primeras N veces (3.87.2): «Error 1101», como el 28 y el 29 de octubre de 2026.
+  let fallaGloriaVeces = 0;
   // 3.43.2: la curva por duración en porcentaje (otra forma de la ruta).
   let curvaEnPorcentaje = false;
   // Un rework que le quita el último control (3.37.0): la ficha llega sin nada que contar.
@@ -168,6 +170,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
       const corta = u.searchParams.get('days') === '3';
       if (corta && fallaRecientes) { res.statusCode = 500; return res.end('{}'); }
       if (fallaMitico && u.searchParams.get('rank') === 'mythic') { res.statusCode = 500; return res.end('{}'); }
+      if (!corta && fallaGloriaVeces > 0 && u.searchParams.get('rank') === 'glory') { fallaGloriaVeces -= 1; res.statusCode = 500; return res.end('{"title":"Error 1101: Worker threw exception"}'); }
       marca(`${corta ? 'rank3' : 'rank'}:${u.searchParams.get('rank')}`);
       return json({ code: 0, data: { records: heroes.map((h) => ({ data: {
         main_heroid: h.id, main_hero: { data: { name: h.name } },
@@ -412,7 +415,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     // Las estadísticas de Mítico caídas con todo lo demás bien (3.43.1): la
     // guarda de rango compara Gloria con Mítico y puntúa con él, así que un
     // Mítico conservado de otra corrida no puede salir con la fecha de hoy.
-    fallaCounters = false; fallaRecientes = false; fallaMitico = true;
+    fallaCounters = false; fallaRecientes = false; fallaMitico = true; fallaGloriaVeces = 2;
     const outM = resolve(dir, 'sin-mitico.json');
     const rM = await correrIngesta([
       '--base', `http://127.0.0.1:${puerto}/api`, '--previo', previoSim,
@@ -422,7 +425,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     eq(rM.status, 0, `la ingesta sin Mítico no acaba bien: ${(rM.stdout + rM.stderr).slice(-400)}`);
     const dM = JSON.parse(readFileSync(outM, 'utf8'));
     ok(golpes['rank:mythic'] > 1, 'con --ranks glory no se pide el rango de respaldo');
-    ok(dM.diagnostics.frescos.includes('glory') && !dM.diagnostics.frescos.includes('mythic'), `rangos frescos: ${dM.diagnostics.frescos}`);
+    ok(dM.diagnostics.frescos.includes('glory') && !dM.diagnostics.frescos.includes('mythic'), `rangos frescos (Gloria da 500 dos veces y se reintenta): ${dM.diagnostics.frescos}`);
+    eq(fallaGloriaVeces, 0, 'no se volvió a pedir Gloria tras su 500');
+    eq(JSON.stringify(dM.diagnostics.reintentoEstadisticas), JSON.stringify({ vueltas: 2, recuperados: ['glory'], sinRecuperar: ['mythic'] }), `el reintento no queda en el diagnóstico: ${JSON.stringify(dM.diagnostics.reintentoEstadisticas)}`);
     eq(dM.diagnostics.frescosRecursos?.parejas > 100, true, `con la matriz entera no cuenta las parejas: ${JSON.stringify(dM.diagnostics.frescosRecursos)}`);
     eq(dM.generatedAt, guardada.generatedAt, 'con Mítico conservado la corrida se fecha como si fuera nueva');
     eq(dM.diagnostics.conservado, true, 'no dice que Mítico es de otra corrida');
