@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.85.0
+
+- Cuando la tablet no ve tu héroe (casi siempre eliges el último y tu
+  hueco pasa enseguida a la foto de la skin), al acabar te pregunta
+  «¿Con quién jugaste tú?» con tus héroes habituales como botones: un
+  toque y listo, también desde el botón amarillo encima del juego.
+- Con tu respuesta aprende la foto de esa skin, y en cuanto la vea en dos
+  drafts te reconoce sola, sin preguntarte más.
+
 ## 3.84.1
 
 - La tablet reconoce tu Minotaur con la skin roja. Hasta ahora no la

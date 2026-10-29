@@ -439,3 +439,10 @@ min antes de cada publicación). Hoy `correr.mjs --e2e` las corre a la vez
 antes y sin nadie al lado: `actualizacion` cambia `package.json` un momento
 y compila dos veces. Cada prueba tiene su Chrome y su puerto libre.
 
+
+**Medir una hoja a mitad de su entrada (3.85.0)**: `responsive.e2e` falló
+una vez en la tanda en paralelo («meta-ficha 306×32» por debajo de 32 px) y
+sola pasaba. Era medir a los 250 ms una hoja que entra en 260 ms: a mitad
+del deslizamiento la caja de 32 px mide 31,99. Reproducido midiendo a los
+90 ms (mismo fallo en dos tamaños). Hoy espera a `getAnimations({ subtree:
+true })` de la hoja. Si otra prueba mide algo dentro de una hoja, igual.

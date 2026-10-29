@@ -330,8 +330,9 @@ test('enseñar al lector desde la tablet (3.71.0): solo la APK lo lee y lo conte
   const pendiente = { id: `correccion-${t}`, cuando: t, ids: ['lectura-a', 'lectura-b', '../../etc'], heroes, partida: t + 60000, leidos: { enemigos: ['Clint', 'Khufra', null, null, null], aliados: ['Gord', null, null, null, 'Rafaela'], tuyoFila: 4, baneos: ['Hirara', 'Eudora'] } };
   try {
     eq(JSON.parse((await leerApk()).cuerpo).correccion, null);
-    servidor.interno.ponerCorreccion(pendiente);
+    servidor.interno.ponerCorreccion({ ...pendiente, tuyos: ['Rafaela', 'Nadie', '<b>'] });
     const c = JSON.parse((await leerApk()).cuerpo).correccion;
+    eq(JSON.stringify(c?.tuyos), JSON.stringify(['Rafaela']), 'tus habituales (3.85.0) no llegan a la APK, o llega uno que no está en la lista');
     // La burbuja (3.84.0): sabe que hay algo que contestar y en qué fase está, para ofrecerlo solo fuera del draft y de la partida.
     const burbuja = async () => JSON.parse((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
     const b0 = await burbuja();

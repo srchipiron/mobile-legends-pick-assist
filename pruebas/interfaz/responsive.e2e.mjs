@@ -72,6 +72,9 @@ for (const [ancho, alto] of [[320, 568], [360, 640], [768, 1024], [640, 360]]) {
     for (const [nombre, abrir] of Object.entries(hojas)) {
       await abrir();
       await pagina.locator('.sheet').first().waitFor();
+      // Hasta que acabe la entrada de la hoja (260 ms, @starting-style): a mitad del deslizamiento un botón de
+      // 32 px mide 31,99 y, con la máquina cargada, 250 ms no bastaban (29 de octubre de 2026, «meta-ficha 306×32»).
+      await pagina.locator('.sheet').first().evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
       await pagina.waitForTimeout(250);
       await comprobar(pagina, `${tam} hoja ${nombre}`);
       await cerrarHoja(pagina);

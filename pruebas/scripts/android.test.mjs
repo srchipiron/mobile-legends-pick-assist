@@ -172,4 +172,12 @@ test('contestar sin salir del juego (3.84.0): la burbuja del consejo no se toca;
   ok(!/Runtime|ProcessBuilder|AccessibilityService|dispatchGesture|Instrumentation/.test(pendiente), 'Pendiente.kt hace algo más que enseñar y contestar al lector');
 });
 
+test('tu héroe con un toque (3.85.0): la burbuja y la app de la tablet ponen tus habituales en «Tú»', () => {
+  for (const f of ['Pendiente.kt', 'Principal.kt']) {
+    const k = readFileSync(join(KOTLIN, f), 'utf8');
+    ok(/optJSONArray\("tuyos"\)/.test(k), `${f} no lee tus habituales`);
+    ok(/aliados\[filaTuya\]\.setText\(h\)/.test(k), `${f}: tocar un habitual no lo pone en tu hueco`);
+  }
+});
+
 await terminar('scripts/android');

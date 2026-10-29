@@ -1820,3 +1820,22 @@ huecos de tu fila, scratch de la sesión):
 - `version: null` en todos los recortes: era la versión del puente (ver
   `docs/historia/errores.md`). Hoy va la de la APK (`salud.json`), con
   prueba de punta a punta en `en-tablet`; una mutación.
+
+**Tu héroe con un toque (3.85.0)**: Javi, el 29 de octubre de 2026: «mi
+héroe no se lee porque es el último pick casi siempre y al elegirlo se
+cambia a la fotillo de la skin». Cuadra con los recortes (tu hueco vacío o
+ya con la skin, y la tarde del 28: 9 apuntadas, 4 con «pick supuesto»).
+`tusHabituales` (solo.mjs) da los `HABITUALES` (6) héroes de tu línea con
+más partidas en la maestría (`deSiempre` o `games`), sin los que ya salen en
+el draft; `correccionDelDraft` los pone en `tuyos` SOLO si falta tu fila;
+`sanearCorreccion` deja solo nombres de la lista y `GET /correccion` los
+manda. La burbuja (`Pendiente.kt`) y la tarjeta de la app (`Principal.kt`)
+los enseñan como botones «¿Con quién jugaste tú?» que rellenan «Tú». Con la
+respuesta, el lector aprende la cara de ESA skin de las capturas del draft
+(las 8 últimas, que ya incluyen el pick puesto) y, confirmada en dos drafts
+(las guardas de 3.58.0), la lee sola. Lo que NO se hizo: leer el circulito
+de pre-selección del hueco vacío (a 1/3 en los recortes mide 13 px y sale
+cortado: sin capturas a tamaño real no se puede medir) ni rellenar huecos
+vacíos con la fase de skins (sin captura de esa fase). Pruebas en `solo`,
+`en-tablet` y `android`; siete mutaciones.
+

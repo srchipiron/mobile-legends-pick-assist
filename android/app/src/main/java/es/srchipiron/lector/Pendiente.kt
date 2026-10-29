@@ -201,6 +201,10 @@ class Pendiente(private val contexto: Context) {
             })
             e.setOnFocusChangeListener { _, foco -> if (foco) sugerir() }
         }
+        // Tu héroe con un toque (3.85.0): eliges el último y tu hueco pasa a la foto de la skin, que el lector no conoce.
+        val tuyos = c.optJSONArray("tuyos")?.let { a -> List(a.length()) { a.optString(it) } }.orEmpty().filter { porNombre[it.lowercase()] != null }
+        val filaTuyos = LinearLayout(contexto).apply { orientation = LinearLayout.VERTICAL }
+        caja.addView(filaTuyos)
         caja.addView(TextView(contexto).apply { text = "Enemigos"; textSize = 14f; setTextColor(Color.rgb(255, 69, 58)) })
         val enemigos = List(5) { i -> campo(nombre(leidos.optJSONArray("enemigos"), i), "Enemigo ${i + 1}").also { caja.addView(it) } }
         caja.addView(TextView(contexto).apply { text = "Tu equipo"; textSize = 14f; setTextColor(Color.rgb(10, 132, 255)); setPadding(0, dp(6), 0, 0) })
@@ -210,6 +214,12 @@ class Pendiente(private val contexto: Context) {
         val iniciales = if (sinFila) List(5) { nombre(leidosAliados, it) }.filter { it.isNotEmpty() }.take(4).let { it + List(5 - it.size) { "" } }.take(4) + "" else List(5) { nombre(leidosAliados, it) }
         val filaTuya = if (sinFila) 4 else tuyoFila
         val aliados = List(5) { i -> campo(iniciales[i], if (i == filaTuya) "Tú" else "Compañero ${i + 1}").also { caja.addView(it) } }
+        if (tuyos.isNotEmpty() && aliados[filaTuya].text.isBlank()) {
+            filaTuyos.addView(TextView(contexto).apply { text = "¿Con quién jugaste tú?"; textSize = 14f; setTextColor(Color.rgb(255, 214, 10)) })
+            val botonesTuyos = LinearLayout(contexto).apply { orientation = LinearLayout.HORIZONTAL }
+            for (h in tuyos) botonesTuyos.addView(Button(contexto).apply { text = h; isAllCaps = false; setOnClickListener { aliados[filaTuya].setText(h); sugerencias.removeAllViews() } })
+            filaTuyos.addView(HorizontalScrollView(contexto).apply { addView(botonesTuyos) })
+        }
         // Las sugerencias, justo debajo de los huecos (el teclado tapa la mitad de abajo).
         caja.addView(tira)
         val aviso = TextView(contexto).apply { textSize = 13f; setTextColor(Color.WHITE); setPadding(0, dp(4), 0, 0) }

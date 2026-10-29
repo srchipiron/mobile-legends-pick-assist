@@ -19,7 +19,7 @@
 import { readFileSync } from 'node:fs';
 import { momentoDe } from './aprender.mjs';
 import { nombreClave } from '../../src/motor/nombres.js';
-import { prepararDatos, recomendar } from '../../src/motor/draft.js';
+import { prepararDatos, recomendar, poolDe } from '../../src/motor/draft.js';
 import { VERSION_MODELO } from '../../src/motor/modelo.js';
 import { crearT } from '../../src/app/i18n/index.js';
 import { guionTraducido } from '../../src/app/i18n/guion.js';
@@ -245,7 +245,24 @@ export function guionSolo(decision, idioma = 'es') {
  * quién era y el lector aprende de tu respuesta como de una corrección del
  * móvil. null si no falta nadie, si no hay capturas o si no hay datos.
  */
-export function correccionDelDraft(draft, datos) {
+/**
+ * Tus héroes de siempre en la línea (3.85.0), para contestar «Tú» con un
+ * toque. Javi: «mi héroe no se lee porque es el último pick casi siempre y
+ * al elegirlo se cambia a la foto de la skin». Por número de partidas de la
+ * maestría (las de siempre y las apuntadas), sin los que ya salen en el
+ * draft. `HABITUALES`: los que caben en una fila (decisión de producto).
+ */
+export const HABITUALES = 6;
+export function tusHabituales(datos, linea, maestria, yaSalen = []) {
+  const no = new Set(yaSalen.filter(Boolean).map(nombreClave));
+  const partidas = (h) => { const m = maestria?.[nombreClave(h.name)]; return Number(m?.deSiempre ?? m?.games) || 0; };
+  return poolDe(datos, linea).map((h) => ({ nombre: h.name, n: partidas(h) }))
+    .filter((x) => x.n > 0 && !no.has(nombreClave(x.nombre)))
+    .sort((a, b) => b.n - a.n || a.nombre.localeCompare(b.nombre))
+    .slice(0, HABITUALES).map((x) => x.nombre);
+}
+
+export function correccionDelDraft(draft, datos, { tuyos = [] } = {}) {
   if (!draft?.cerrado || !draft.ids?.length || !datos?.heroes?.length) return null;
   const porClave = new Map(datos.heroes.map((h) => [nombreClave(h.name), h.name]));
   const nombre = (n) => (n ? porClave.get(nombreClave(n)) ?? null : null);
@@ -260,6 +277,8 @@ export function correccionDelDraft(draft, datos) {
     leidos: { enemigos, aliados, tuyoFila: draft.tuyoFila, baneos: draft.baneos.slice(0, 10) },
     faltan,
     heroes: [...porClave.values()].sort((a, b) => a.localeCompare(b)),
+    // Solo si falta el tuyo: sin tu fila leída, o con ella vacía.
+    ...(!(draft.tuyoFila >= 0 && aliados[draft.tuyoFila]) && tuyos.length ? { tuyos: tuyos.map(nombre).filter(Boolean) } : {}),
   };
 }
 
@@ -481,7 +500,7 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     if (draft.cerrado && !antes.cerrado) {
       resumen.partidas += 1;
       const datos = datosPara(a.rango);
-      pendiente = correccionDelDraft(draft, datos);
+      pendiente = correccionDelDraft(draft, datos, { tuyos: tusHabituales(datos, a.linea, maestriaDe(), [...draft.enemigos, ...draft.aliados, ...draft.baneos]) });
       if (pendiente) {
         interno.ponerCorreccion?.(pendiente);
         registrar(`Sin móvil: ${pendiente.faltan} sin reconocer en este draft; al acabar te pregunto quién era${pendiente.faltan === 1 ? '' : 'n'}.`);

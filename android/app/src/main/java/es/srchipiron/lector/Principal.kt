@@ -25,6 +25,7 @@ import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -452,6 +453,10 @@ class Principal : Activity() {
             text = "En tu última partida no reconoció a todos. Escribe quién era el que falta (lo que sí leyó ya está puesto) y toca «Enseñar»: aprende de las capturas de ese draft y la próxima vez lo reconoce."
             textSize = 14f; setTextColor(Color.LTGRAY); setPadding(0, dp(4), 0, dp(8))
         })
+        // Tu héroe con un toque (3.85.0): eliges el último y tu hueco pasa a la foto de la skin, que el lector no conoce.
+        val tuyos = c.optJSONArray("tuyos")?.let { a -> List(a.length()) { a.optString(it) } }.orEmpty().filter { h -> heroes.any { it.equals(h, ignoreCase = true) } }
+        val filaTuyos = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        corregir.addView(filaTuyos)
         corregir.addView(TextView(this).apply { text = "Enemigos"; textSize = 15f; setTextColor(Color.rgb(255, 69, 58)) })
         val enemigos = List(5) { i -> campo(nombre(leidos.optJSONArray("enemigos"), i), "Enemigo ${i + 1}").also { corregir.addView(it) } }
         corregir.addView(TextView(this).apply { text = "Tu equipo"; textSize = 15f; setTextColor(Color.rgb(10, 132, 255)); setPadding(0, dp(8), 0, 0) })
@@ -461,6 +466,12 @@ class Principal : Activity() {
         val iniciales = if (sinFila) List(5) { nombre(leidosAliados, it) }.filter { it.isNotEmpty() }.take(4).let { it + List(5 - it.size) { "" } }.take(4) + "" else List(5) { nombre(leidosAliados, it) }
         val filaTuya = if (sinFila) 4 else tuyoFila
         val aliados = List(5) { i -> campo(iniciales[i], if (i == filaTuya) "Tú" else "Compañero ${i + 1}").also { corregir.addView(it) } }
+        if (tuyos.isNotEmpty() && aliados[filaTuya].text.isBlank()) {
+            filaTuyos.addView(TextView(this).apply { text = "¿Con quién jugaste tú?"; textSize = 15f; setTextColor(Color.rgb(255, 214, 10)) })
+            val botonesTuyos = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            for (h in tuyos) botonesTuyos.addView(Button(this).apply { text = h; isAllCaps = false; setOnClickListener { aliados[filaTuya].setText(h); aliados[filaTuya].dismissDropDown() } })
+            filaTuyos.addView(HorizontalScrollView(this).apply { addView(botonesTuyos) })
+        }
         val aviso = TextView(this).apply { textSize = 14f; setTextColor(Color.WHITE); setPadding(0, dp(6), 0, 0) }
         val ensenar = Button(this).apply { text = "Enseñar" }
         val ahoraNo = Button(this).apply { text = "Ahora no" }

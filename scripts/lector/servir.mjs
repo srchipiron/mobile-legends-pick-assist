@@ -429,6 +429,8 @@ export function sanearCorreccion(c) {
     id: c.id, cuando: c.cuando, ids, heroes,
     leidos: { enemigos: huecos(l.enemigos), aliados: huecos(l.aliados), tuyoFila: Number.isInteger(l.tuyoFila) && l.tuyoFila >= 0 && l.tuyoFila < 5 ? l.tuyoFila : -1, baneos: (Array.isArray(l.baneos) ? l.baneos : []).map(nombre).filter(Boolean).slice(0, 10) },
     ...(Number.isFinite(c.partida) ? { partida: c.partida } : {}),
+    // Tus habituales (3.85.0), para contestar «Tú» con un toque: solo héroes de la lista.
+    ...(Array.isArray(c.tuyos) ? { tuyos: c.tuyos.map(nombre).filter((n) => n && heroes.includes(n)).slice(0, 6) } : {}),
   };
 }
 /**
@@ -1132,7 +1134,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       if (!deLaApk(req)) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'solo la tablet' })); return; }
       const c = correccionVigente();
       if (req.method === 'GET') {
-        res.writeHead(200, cabeceras).end(JSON.stringify({ correccion: c ? { id: c.id, cuando: c.cuando, leidos: c.leidos, heroes: c.heroes } : null }));
+        res.writeHead(200, cabeceras).end(JSON.stringify({ correccion: c ? { id: c.id, cuando: c.cuando, leidos: c.leidos, heroes: c.heroes, tuyos: c.tuyos ?? [] } : null }));
         return;
       }
       const cuerpo = await leerCuerpo(req);

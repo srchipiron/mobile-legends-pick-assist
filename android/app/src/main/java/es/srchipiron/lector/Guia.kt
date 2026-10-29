@@ -48,6 +48,7 @@ class Guia : Activity() {
             "Cuando no está seguro" to listOf(
                 "«¿Cómo acabó tu partida?»: si no reconoce el final, te lo pregunta arriba del todo. Con tu respuesta apunta la partida y APRENDE esa pantalla, así la próxima la reconoce sola.",
                 "«Enseña al lector»: si no reconoció a algún héroe del draft, te pide quién era. Con eso aprende su cara de las capturas y corrige la partida.",
+                "Si no vio TU héroe (pasa al elegir el último: tu hueco cambia enseguida a la foto de la skin), te ofrece tus habituales como botones. Un toque, y aprende esa skin: en cuanto la vea en dos partidas, te reconoce sola.",
                 "Sin salir del juego: al acabar la partida sale arriba un botón amarillo («Enseña al lector» o «¿Cómo acabó?»). Tócalo y contesta ahí mismo; al escribir salen los nombres debajo. Solo sale fuera del draft y de la partida, y se quita solo en cuanto empieza el draft siguiente.",
             ),
             "Mis partidas" to listOf(

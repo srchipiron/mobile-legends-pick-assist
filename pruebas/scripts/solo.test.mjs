@@ -8,7 +8,7 @@ import { test, ok, eq, terminar, leerJson } from '../arnes.mjs';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS } from '../../scripts/lector/solo.mjs';
+import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, tusHabituales, HABITUALES, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS } from '../../scripts/lector/solo.mjs';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
 import { crearServidor, RETENCION_CAPTURAS_MS } from '../../scripts/lector/servir.mjs';
 import { RAIZ } from '../arnes.mjs';
@@ -351,6 +351,30 @@ test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se pregunt
   eq(carga.ids.at(-1), idDe(180000), 'entra una captura que no es la pantalla del draft');
   ok(!acumularDraft(d, { ...enElDraft, id: '../fuera' }, 99).ids.includes('../fuera'), 'entra un id sin forma');
   eq(JSON.stringify(conCaptura([], 'lectura-x')), '["lectura-x"]');
+});
+
+test('tu héroe con un toque (3.85.0): si no se leyó tu fila, la corrección trae tus habituales de la línea, sin los que ya salen en el draft', async () => {
+  const maestria = { minotaur: { games: 120, winRate: 0.6 }, floryn: { games: 80, winRate: 0.55 }, rafaela: { games: 40, winRate: 0.5 }, diggie: { games: 30, winRate: 0.5 }, estes: { games: 20, winRate: 0.5 }, angela: { games: 10, winRate: 0.5 }, mathilda: { games: 5, winRate: 0.5 }, layla: { games: 500, winRate: 0.5 } };
+  const h = tusHabituales(datos, 'roam', maestria, ['Floryn', null]);
+  eq(h[0], 'Minotaur', `no van por partidas: ${h}`);
+  ok(!h.includes('Floryn'), 'ofrece uno que ya sale en el draft');
+  ok(!h.includes('Layla'), 'ofrece uno que no es de tu línea');
+  eq(h.length, HABITUALES, 'no caben o sobran');
+  eq(tusHabituales(datos, 'roam', null).length, 0, 'sin maestría se inventa habituales');
+  const draft = { ...draftVacio(), baneos: ['Hirara'], enemigos: ['Clint', 'Khufra', 'Atlas', 'Franco', 'Tigreal'], aliados: ['Gord', 'Selena', 'Layla', 'Zilong', null], tuyoFila: 4, cerrado: true, cerradoEn: 1, ids: ['lectura-1'] };
+  eq(JSON.stringify(correccionDelDraft(draft, datos, { tuyos: ['Minotaur', 'Nadie'] }).tuyos), JSON.stringify(['Minotaur']), 'sin tu fila no los trae, o trae uno que no existe');
+  ok(!('tuyos' in correccionDelDraft({ ...draft, aliados: ['Gord', 'Selena', 'Layla', null, 'Rafaela'] }, datos, { tuyos: ['Minotaur'] })), 'con tu héroe leído los ofrece igual');
+  // De punta a punta: el modo solo los saca de tu maestría al cerrar el draft.
+  let t = 5_000_000, n = 0;
+  const conId = (l) => ({ ...l, id: `lectura-20261029-${String(n += 1).padStart(3, '0')}` });
+  let respuesta = conId(lectura({ tuyos: [N('Hirara'), N('Belerick')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, V], tuyoFila: 4 }));
+  const correcciones = [];
+  const interno = { leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: () => {}, vigilar: () => {}, final: () => null, ponerCorreccion: (c) => correcciones.push(c) };
+  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, maestriaDe: () => maestria });
+  await solo.tic();
+  respuesta = { partida: true, rapida: true };
+  t += 5000; await solo.tic(); t += 5000; await solo.tic();
+  eq(correcciones[0]?.tuyos?.[0], 'Minotaur', `la corrección del modo solo no trae tus habituales: ${JSON.stringify(correcciones[0]?.tuyos)}`);
 });
 
 test('la burbuja de la tablet sola dice el mejor de los tuyos si el nº1 no lo es (3.72.0)', () => {
