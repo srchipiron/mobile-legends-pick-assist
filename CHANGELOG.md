@@ -8,6 +8,13 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.86.4
+
+- Lo que enseñas a la tablet ya no se pierde por borrar capturas antes de
+  tiempo. Mientras aprendía de un draft corregido seguía leyendo y borraba
+  capturas viejas, a veces justo las que estaba mirando, y ese aprendizaje
+  entero fallaba.
+
 ## 3.86.3
 
 - Con la app del móvil abierta en un draft viejo, la tablet ya no pierde la

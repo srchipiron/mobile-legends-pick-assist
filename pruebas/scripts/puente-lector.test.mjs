@@ -225,6 +225,33 @@ test('tres correcciones a la vez aprenden una tras otra, sin pisarse (3.60.4)', 
   eq(guardados.join(), '1,2,3', `una tanda pisa a otra: ${guardados}`);
 });
 
+test('la poda no se lleva las capturas que se están aprendiendo (3.86.4: «No se pudo aprender: ENOENT» con la tablet leyendo cada 1,5 s)', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'lector-en-uso-'));
+  const viejas = ['lectura-2026-10-28T19-04-37-286Z-807', 'lectura-2026-10-28T19-04-41-286Z-808'];
+  for (const id of viejas) writeFileSync(join(carpeta, `${id}.png`), png);
+  let soltar; const espera = new Promise((r) => { soltar = r; });
+  const vistas = [];
+  const aprender = async ({ pares, aprendido }) => {
+    await espera;
+    // Lo que hace el hilo de verdad: leer cada captura del disco.
+    for (const p of pares) vistas.push(existsSync(p.png));
+    return { aprendido: { version: VERSION_APRENDIDO, picks: null, caras: {}, capturas: (aprendido?.capturas ?? 0) + 1 }, informe: [] };
+  };
+  await conServidor({ capturar: () => png, carpeta, aprender, guardar: () => {}, maximos: { lectura: 2, fotograma: 2, resultado: 2 } }, async (base) => {
+    const corregida = fetch(`${base}/corregir`, { method: 'POST', headers: { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: viejas, enemigos: ['Clint'] }) });
+    await new Promise((r) => setTimeout(r, 50));
+    // Mientras aprende, la tablet sigue leyendo: cada lectura guarda su captura y poda con tope 2.
+    for (let i = 0; i < 4; i++) await fetch(`${base}/leer`, { headers: cab });
+    ok(await hasta(() => readdirSync(carpeta).filter((f) => /^lectura-.*\.png$/.test(f)).length >= 4), 'la prueba necesita capturas nuevas guardadas');
+    soltar();
+    eq((await corregida).status, 200);
+    // Acabado el aprendizaje, la poda siguiente ya se las puede llevar.
+    await fetch(`${base}/leer`, { headers: cab });
+    ok(await hasta(() => viejas.every((id) => !existsSync(join(carpeta, `${id}.png`)))), 'acabado el aprendizaje, siguen protegidas para siempre');
+  });
+  eq(JSON.stringify(vistas), JSON.stringify([true, true]), 'la poda se lleva una captura a mitad del aprendizaje');
+});
+
 test('un aprendizaje que falla contesta 500 y el lector sigue vivo (antes se caía el proceso entero)', async () => {
   const carpeta = mkdtempSync(join(tmpdir(), 'lector-falla-'));
   writeFileSync(join(carpeta, 'lectura-1.png'), png);

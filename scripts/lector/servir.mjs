@@ -603,7 +603,14 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   /** Guarda una captura y borra las que ya no hacen falta (3.34.0). */
   // Las del draft que está leyendo el modo solo tampoco (3.81.4): con una lectura cada 1,5 s, las 40 de `MAX_CAPTURAS` son un minuto.
   let delDraft = [];
-  const podar = () => { if (carpeta) podarCapturas(carpeta, { ahora: ahora(), maximos, proteger: new Set([...(final?.fotogramas ?? []).map((f) => f.id), ...(correccionVigente()?.ids ?? []), ...delDraft]) }); };
+  // Las capturas que un hilo está leyendo (3.86.4): aprender tarda decenas de segundos y la tablet sigue
+  // leyendo cada 1,5 s; la poda se las llevaba a medias («No se pudo aprender: ENOENT», 28 de octubre de 2026).
+  const enUso = new Map();
+  const usando = async (ids, fn) => {
+    for (const id of ids) enUso.set(id, (enUso.get(id) ?? 0) + 1);
+    try { return await fn(); } finally { for (const id of ids) { const n = (enUso.get(id) ?? 1) - 1; if (n > 0) enUso.set(id, n); else enUso.delete(id); } }
+  };
+  const podar = () => { if (carpeta) podarCapturas(carpeta, { ahora: ahora(), maximos, proteger: new Set([...(final?.fotogramas ?? []).map((f) => f.id), ...(correccionVigente()?.ids ?? []), ...delDraft, ...enUso.keys()]) }); };
   const guardarCaptura = (nombre, contenido, { conPoda = true } = {}) => {
     if (!carpeta) return;
     writeFileSync(join(carpeta, nombre), contenido);
@@ -890,6 +897,9 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     for (const id of validos) writeFileSync(join(carpeta, `${id}.verdad.json`), JSON.stringify(verdad));
     const pares = validos.sort().slice(-CAPTURAS_A_MIRAR).map((id) => ({ id, png: join(carpeta, `${id}.png`), verdad }));
     if (!pares.length || !verdad.enemigos.length) return { aprendido: false, motivo: 'nada que cruzar' };
+    return usando(pares.map((p) => p.id), () => corregirCon(pares, verdad));
+  };
+  const corregirCon = async (pares, verdad) => {
     // `while` y no `if` (3.60.4): con tres correcciones a la vez, las dos que
     // esperaban arrancaban juntas sobre el mismo `aprendido` y una pisaba a la otra.
     while (aprendiendo) await aprendiendo.catch(() => {});
@@ -1247,7 +1257,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       const validos = (Array.isArray(ids) ? ids : []).filter((id) => typeof id === 'string' && /^lectura-[\w-]+$/.test(id) && carpeta && existsSync(join(carpeta, `${id}.png`))).sort().slice(-CAPTURAS_A_MIRAR);
       if (!validos.length) return [];
       try {
-        const r = await recortar({ capturas: validos.map((id) => ({ id, png: join(carpeta, `${id}.png`) })), aprendido });
+        const r = await usando(validos, () => recortar({ capturas: validos.map((id) => ({ id, png: join(carpeta, `${id}.png`) })), aprendido }));
         return Array.isArray(r) ? r : [];
       } catch (e) { registrar(`No se pudieron recortar las capturas del draft: ${e.message}`); return []; }
     },

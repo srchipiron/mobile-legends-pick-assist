@@ -1899,3 +1899,12 @@ reinicio del lector), y eso quitaba la partida que vigilaba la tablet. Hoy
 `vigilar` (servir.mjs) no acepta un `desde` anterior al de la vigilancia en
 marcha (lo dice una vez en el registro, `ignoradas`); uno más nuevo sí
 entra. Prueba en `directo-lector`; dos mutaciones.
+
+**Las capturas en uso no se podan (3.86.4)**: «No se pudo aprender: ENOENT
+… lectura-…-807.png» en el parte del 28 de octubre de 2026. Aprender tarda
+decenas de segundos y la tablet sigue leyendo cada 1,5 s: cada captura
+nueva poda a `MAX_CAPTURAS` y se llevaba las que el hilo iba a leer, y la
+tanda entera fallaba. Hoy `usando(ids, fn)` (servir.mjs) las apunta en
+`enUso` mientras dura (también la espera a la tanda anterior) y `podar`
+las protege; `recortesDe` igual. Prueba en `puente-lector` (aprender lento,
+cuatro lecturas con tope 2, y al acabar sí se podan); tres mutaciones.
