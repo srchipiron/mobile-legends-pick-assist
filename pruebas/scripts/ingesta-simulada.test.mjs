@@ -116,7 +116,9 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
   // Mítico cortado a mitad de la segunda tanda (3.37.0): solo los primeros tres héroes traen cruces.
   let miticoAMedias = false, miticosServidos = 0;
   // Mítico (el respaldo) caído en su primera pasada entera y de vuelta después (3.87.4): la primera de cada héroe da 500.
-  let miticoCaido = false; const miticoYaCaido = new Set();
+  let miticoCaido = false; const miticoYaCaido = new Map();
+  // Gloria (el pedido) caída en su primera pasada entera (3.87.5): la primera de cada héroe da 500.
+  let gloriaCaida = false; const gloriaYaCaida = new Set();
   // La API a medias (3.57.5): los `fallarPrimeros` héroes de Gloria que se
   // piden (menos Atlas, el del sondeo de rutas) dan 500 la PRIMERA vez.
   let fallarPrimeros = 0; const fallaronYa = new Set();
@@ -217,7 +219,8 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     }
     const signoDelRango = gloriaRuidosa && u.searchParams.get('rank') === 'glory' ? -1 : 1;
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && academyFallaAlMedir > 0) { academyFallaAlMedir -= 1; res.statusCode = 500; return res.end('{}'); }
-    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && miticoCaido && u.searchParams.get('rank') === 'mythic' && !miticoYaCaido.has(ruta)) { miticoYaCaido.add(ruta); res.statusCode = 500; return res.end('{"title":"Error 1101: Worker threw exception"}'); }
+    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && miticoCaido && u.searchParams.get('rank') === 'mythic' && (miticoYaCaido.get(ruta) ?? 0) < 2) { miticoYaCaido.set(ruta, (miticoYaCaido.get(ruta) ?? 0) + 1); res.statusCode = 500; return res.end('{"title":"Error 1101: Worker threw exception"}'); }
+    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && gloriaCaida && u.searchParams.get('rank') === 'glory' && !gloriaYaCaida.has(ruta)) { gloriaYaCaida.add(ruta); res.statusCode = 500; return res.end('{"title":"Error 1101: Worker threw exception"}'); }
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && miticoAMedias && u.searchParams.get('rank') === 'mythic' && ++miticosServidos > 3) return json({ data: { sub_hero: [] } });
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && fallaUnaVez(u, ruta, 4)) { res.statusCode = 500; return res.end('{}'); }
     if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && cruceVacioAlReintentar(u, ruta, 4)) return json({ data: { sub_hero: [] } });
@@ -400,8 +403,8 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     ok(d2.generatedAt !== guardada.generatedAt, 'con estadísticas nuevas y la matriz conservada la corrida no sale con fecha de hoy');
     eq(d2.relaciones?.descargada, guardada.relaciones?.descargada ?? guardada.generatedAt, `la matriz conservada no lleva la fecha en que se descargó: ${JSON.stringify(d2.relaciones)}`);
     eq(d2.diagnostics.conservado, true, 'no dice que conserva la matriz');
-    // Con la API caída del todo no hay segunda pasada: doblaría el tiempo por nada.
-    eq(d2.diagnostics.relations?.reintentados, undefined, `con todo caído se reintenta: ${JSON.stringify(d2.diagnostics.relations)}`);
+    // Con la API caída del todo hay UNA segunda pasada (3.87.5: los ratos de «Error 1101» duran un minuto) y no recupera nada.
+    ok(d2.diagnostics.relations?.reintentados > 0 && d2.diagnostics.relations?.recuperados === 0, `con todo caído no se reintenta una vez: ${JSON.stringify(d2.diagnostics.relations)}`);
     // Con la ventana corta caída no se conserva la de ayer (unos «recientes»
     // viejos son peores que ninguno): simplemente no va, y la app cae a 7.
     ok(d2.recientes === undefined, `la ventana corta caída sale conservada o inventada: ${JSON.stringify(d2.recientes)}`);
@@ -628,6 +631,22 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     ok(miticoYaCaido.size >= 20, `la prueba no ha llegado a tirar Mítico: ${miticoYaCaido.size}`);
     ok(dMC.relaciones?.rango === 'glory' && dMC.relaciones?.coherencia?.counters > 0.99 && !dMC.relaciones?.motivo, `con Mítico de vuelta no se comprueba Gloria: ${JSON.stringify(dMC.relaciones)}`);
     ok(dMC.diagnostics.respaldoReintentado?.antes === 0 && dMC.diagnostics.respaldoReintentado?.despues > 0, `el reintento de Mítico no queda en el diagnóstico: ${JSON.stringify(dMC.diagnostics.respaldoReintentado)}`);
+
+    // Décima (3.87.5): Gloria cae ENTERA en su primera pasada y vuelve (el 29
+    // de octubre de 2026 a las 16:32: 0 de 133 en 41 s). Con la segunda pasada
+    // de toda la vida solo para «la mitad o menos», la matriz no se renovaba.
+    gloriaCaida = true;
+    const outGC = resolve(dir, 'gloria-caida-un-rato.json');
+    const rGC = await correrIngesta([
+      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', out5,
+      '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', outGC, '--celdas-para-comparar', '1', '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
+      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
+    ]);
+    gloriaCaida = false;
+    eq(rGC.status, 0, `la corrida con Gloria caída un rato no acaba bien: ${(rGC.stdout + rGC.stderr).slice(-400)}`);
+    const dGC = JSON.parse(readFileSync(outGC, 'utf8'));
+    ok(gloriaYaCaida.size >= 20, `la prueba no ha llegado a tirar Gloria: ${gloriaYaCaida.size}`);
+    ok(dGC.relaciones?.rango === 'glory' && dGC.relaciones?.coherencia?.counters > 0.99 && !dGC.diagnostics.conservado, `con Gloria de vuelta la matriz no sale fresca: ${JSON.stringify({ r: dGC.relaciones, c: dGC.diagnostics.conservado })}`);
 
     // Octava (3.60.2): academy (la ruta larga) falla al MEDIR las rutas y gana
     // la del esquema, que trae menos (aquí 2 de 4; en la API real, 10 de 132).

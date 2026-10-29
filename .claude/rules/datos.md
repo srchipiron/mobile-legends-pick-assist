@@ -271,6 +271,21 @@ esa pasada falla deprisa (0,3 s por héroe). La ingesta simulada tira la
 primera petición de Mítico de cada héroe; cuatro mutaciones, sobrevive una
 inofensiva (reintentar también con el pedido a medias solo cuesta tiempo).
 
+**La segunda pasada también con casi todo caído (3.87.5)**: la corrida de
+las 16:32 del 29 de octubre de 2026 dio 0 de 133 en Gloria en 41 s, y a
+las 16:40 la misma ruta, con los mismos parámetros y el mismo `fetch`,
+respondía 9 de 9 desde la sesión: la ruta de cruces tiene ratos de un
+minuto en que lo tira todo («Error 1101»; vistos a las 11:30, 15:49 y
+16:32). La regla de 3.57.5 («solo con la mitad o menos caída, con la API
+caída reintentarlo todo doblaría el tiempo») no se sostiene: una pasada
+que falla tarda 0,3 s por héroe. Hoy, con más de la mitad caída,
+`fetchRelations` espera `REINTENTO_CAIDA_MS` (60 s) y vuelve a pedirlos UNA
+vez, pero solo si la API contestó con un error suyo (`fallosDePaso`: 5xx o
+429); sin red, sin ruta o con un 4xx, no. La ingesta simulada tira la
+primera petición de Gloria de cada héroe (la matriz tiene que salir
+fresca) y con la API caída del todo exige una segunda pasada que no
+recupera nada; tres mutaciones.
+
 **La tier list de mlbb.gg y el 403 (3.59.4)**: desde el 4 de octubre de
 2026 `back.mlbb.gg` contesta 403 a los runners de GitHub (desde la sesión y
 desde un móvil contesta 200), y `fetchTiers` conservaba la anterior con su

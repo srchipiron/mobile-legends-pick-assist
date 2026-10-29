@@ -204,6 +204,8 @@ export async function fetchRelations(roamNames, stats, heroList, rango = RANK, {
   };
 
   const remedidas = {};
+  // Los fallos en que la API CONTESTÓ con un error suyo (5xx, 429): los de un rato malo (3.87.5).
+  let fallosDePaso = 0;
   const pedir = async (name) => {
     const id = idPorNombre.get(norm(name)) ?? name;
     try {
@@ -255,6 +257,7 @@ export async function fetchRelations(roamNames, stats, heroList, rango = RANK, {
         diagnostics.relations.muestra = JSON.stringify(c.data).slice(0, 900);
       }
     } catch (err) {
+      if (err?.status >= 500 || err?.status === 429) fallosDePaso += 1;
       if (diagnostics.relations.errores.length < 4) {
         diagnostics.relations.errores.push(`${name}: ${err.message}`);
       }
@@ -271,13 +274,19 @@ export async function fetchRelations(roamNames, stats, heroList, rango = RANK, {
   // Cloudflare) el 14 de octubre de 2026 el bot bajó 106 de 133: por debajo
   // del 90% de `anotarFrescura`, el comparador tiró la corrida entera con
   // las estadísticas, los talentos y las builds frescos. Los fallos eran
-  // pasajeros. Solo si falló como mucho la mitad (decisión de producto):
-  // con la API caída del todo, reintentarlo todo doblaría el tiempo por nada.
+  // pasajeros. Hasta 3.87.5 solo con la mitad o menos caída («con la API
+  // caída del todo reintentarlo todo doblaría el tiempo»): el 29 de octubre
+  // de 2026 la ruta de cruces lo tiró TODO en ratos de un minuto (11:30,
+  // 15:49, 16:32) y respondía antes y después, y una pasada que falla tarda
+  // 40 s (0,3 s por héroe), no lo que una buena. Con más de la mitad caída
+  // se espera más (`REINTENTO_CAIDA_MS`), una vez.
   const falta = (n) => !Object.keys(counters[n] ?? {}).length || !Object.keys(synergies[n] ?? {}).length;
   const fallidos = roamNames.filter(falta);
-  if (fallidos.length && fallidos.length <= roamNames.length / 2) {
-    console.log(`  · ${fallidos.length} sin cruces o sin parejas: se piden otra vez`);
-    await sleep(REINTENTO_RELACIONES_MS);
+  const casiTodos = fallidos.length > roamNames.length / 2;
+  // Sin red, sin ruta o con un 4xx, esperar no arregla nada: la segunda pasada con casi todo caído solo si la API contestó.
+  if (fallidos.length && (!casiTodos || fallosDePaso > 0)) {
+    console.log(`  · ${fallidos.length} sin cruces o sin parejas: se piden otra vez en ${(casiTodos ? REINTENTO_CAIDA_MS : REINTENTO_RELACIONES_MS) / 1000} s`);
+    await sleep(casiTodos ? REINTENTO_CAIDA_MS : REINTENTO_RELACIONES_MS);
     for (const name of fallidos) await pedir(name);
     diagnostics.relations.reintentados = fallidos.length;
     diagnostics.relations.recuperados = fallidos.filter((n) => !falta(n)).length;
@@ -294,3 +303,5 @@ export const FILA_CORTA = 20, REMEDIDAS_MAXIMAS = 3;
 
 /** Pausa antes de la segunda pasada: los fallos de la API vienen en rachas. Decisión de producto. */
 export const REINTENTO_RELACIONES_MS = 20000;
+/** Pausa antes de la segunda pasada con más de la mitad caída (3.87.5): los ratos de «Error 1101» del 29 de octubre de 2026 duraban un minuto. Decisión de producto. */
+export const REINTENTO_CAIDA_MS = 60000;

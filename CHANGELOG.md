@@ -8,6 +8,13 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.87.5
+
+- Más probabilidades de que los counters y las sinergias se renueven cada
+  día. La API de datos tiene ratos de un minuto en que no da ninguno. Antes,
+  si caían todos a la vez, el bot ni lo volvía a intentar; ahora espera un
+  minuto y prueba otra vez.
+
 ## 3.87.4
 
 - Los counters y las sinergias vuelven a actualizarse. Llevaban desde el
