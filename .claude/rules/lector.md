@@ -1890,3 +1890,12 @@ partida vista tarde y no se vigila, no se pregunta ni se apunta (lo dice el
 registro). Con la de antes acabada, o pasados los 5 minutos, es otra.
 Prueba en `solo.test` con la pantalla de carga de ese día; cuatro
 mutaciones.
+
+**Nunca hacia atrás (3.86.3)**: el 28 de octubre de 2026 los partes traen
+33 «Draft completo» para 10 partidas, algunos con la MISMA hora repetida 15
+minutos después: la app del móvil, abierta con un draft viejo, vuelve a
+mandar `/vigilar` cada vez que `/final` no es el suyo (así sobrevive a un
+reinicio del lector), y eso quitaba la partida que vigilaba la tablet. Hoy
+`vigilar` (servir.mjs) no acepta un `desde` anterior al de la vigilancia en
+marcha (lo dice una vez en el registro, `ignoradas`); uno más nuevo sí
+entra. Prueba en `directo-lector`; dos mutaciones.

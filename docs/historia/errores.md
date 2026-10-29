@@ -1236,3 +1236,12 @@ Rafaela «supuesto». Se vio leyendo el registro del parte línea a línea.
 Lección: dos procesos que pueden empezar lo mismo (aquí, vigilar una
 partida) necesitan una regla de quién manda; «el último que llega» pisa al
 que sabía más.
+
+## El móvil y la tablet se quitaban la partida (28 de octubre de 2026, 3.86.3)
+
+33 «Draft completo» en los partes para 10 partidas jugadas, algunos con la
+misma hora repetida un cuarto de hora después. La app del móvil vuelve a
+mandar vigilar su draft cada vez que `/final` no es el suyo, y `vigilar`
+aceptaba cualquier instante: un draft viejo desalojaba a la partida en
+juego. Lección: lo que identifica algo por su instante no debe dejar que un
+instante anterior lo sustituya; el tiempo solo va hacia delante.

@@ -816,6 +816,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     idioma: IDIOMAS_VOZ.includes(cuerpo?.idioma) ? cuerpo.idioma : 'es',
   });
   /** Empieza (o sigue, si es el mismo draft) a vigilar el final del draft completado en `desde`. */
+  /** Los drafts viejos que alguien pidió vigilar y no se vigilan (para decirlo una vez). */
+  const ignoradas = new Set();
   const vigilar = (desde, cuerpo = {}) => {
     // La app dice en cada aviso si la voz va callada: así sobrevive a un reinicio del lector.
     if (typeof cuerpo?.callar === 'boolean') callada = cuerpo.callar;
@@ -826,6 +828,12 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
         const m = final.inicio ? (ahora() - final.inicio) / 60000 : -1;
         Object.assign(final, nuevo, { dichos: new Set(nuevo.guion.map((a, i) => (a.min <= m ? i : -1)).filter((i) => i >= 0)) });
       }
+      return final;
+    }
+    // Nunca hacia atrás (3.86.3): el 28 de octubre de 2026 el móvil, con su draft viejo abierto, volvía
+    // a mandar vigilar cada vez que `/final` no era el suyo, y la tablet y él se quitaban la partida.
+    if (final && Number.isFinite(final.desde) && desde < final.desde) {
+      if (!ignoradas.has(desde)) { ignoradas.add(desde); registrar(`No vuelvo a vigilar el draft de las ${hora(desde)}: ya vigilo uno más nuevo (${hora(final.desde)}).`); }
       return final;
     }
     pararVigilancia();

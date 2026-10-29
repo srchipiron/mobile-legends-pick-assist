@@ -8,6 +8,13 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.86.3
+
+- Con la app del móvil abierta en un draft viejo, la tablet ya no pierde la
+  partida que está vigilando. El móvil volvía a pedir vigilar su draft cada
+  pocos segundos y le quitaba la partida en juego; ahora un draft más viejo
+  no sustituye nunca a uno más nuevo.
+
 ## 3.86.2
 
 - Si el móvil lleva el draft, la tablet ya no se queda con esa partida. El

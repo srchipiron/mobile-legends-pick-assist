@@ -483,4 +483,23 @@ test('la app manda «callar» con cada aviso de vigilancia: un lector recién ar
   } finally { servidor.close(); }
 });
 
+test('nunca hacia atrás (3.86.3): un /vigilar de un draft más viejo no quita la partida que ya se vigila', async () => {
+  const registro = [];
+  const p = await lectorDePrueba({ registrar: (l) => registro.push(l) });
+  try {
+    const viejo = Date.now() - 20 * 60000, nuevo = Date.now() - 2 * 60000;
+    await p.vigilar({ desde: nuevo });
+    eq((await p.final()).desde, nuevo);
+    // El móvil, con su draft viejo abierto, vuelve a pedirlo (lo hace cada vez que /final no es el suyo).
+    await p.vigilar({ desde: viejo });
+    await p.vigilar({ desde: viejo });
+    eq((await p.final()).desde, nuevo, 'un draft más viejo quita la partida que se vigila');
+    eq(registro.filter((l) => /No vuelvo a vigilar/.test(l)).length, 1, 'no lo dice, o lo dice en cada petición');
+    // Uno más nuevo sí entra.
+    const otro = Date.now() - 30000;
+    await p.vigilar({ desde: otro });
+    eq((await p.final()).desde, otro, 'un draft más nuevo no entra');
+  } finally { p.cerrar(); }
+});
+
 await terminar('scripts/directo-lector');
