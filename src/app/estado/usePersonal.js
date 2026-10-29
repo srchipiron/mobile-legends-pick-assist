@@ -62,6 +62,8 @@ export function usePersonal() {
   const cambiarHeroePartida = useCallback((t, pick) => guardarPartidas(marcarEditada(cambiarHeroe(ultimas.current, t, pick), t)), [guardarPartidas]);
   // Quién iba en cada equipo (3.78.0): el lector se dejó a alguien o leyó a otro.
   const cambiarDraftPartida = useCallback((t, cambios) => guardarPartidas(marcarEditada(cambiarDraft(ultimas.current, t, cambios), t)), [guardarPartidas]);
+  // Con las capturas del lector (3.86.0): tu pick y los dos equipos de una vez, con una sola hora de arreglo.
+  const revisarPartida = useCallback((t, { pick, enemigos, aliados }) => guardarPartidas(marcarEditada(cambiarDraft(cambiarHeroe(ultimas.current, t, pick), t, { enemigos, aliados }), t)), [guardarPartidas]);
 
   /**
    * Trae los datos de otro dispositivo. Vienen ya FUNDIDOS con los de aquí
@@ -73,5 +75,5 @@ export function usePersonal() {
     guardarOlvidadas(sanearOlvidadas(fundido.olvidadas));
   }, [guardarMaestria, guardarPartidas, guardarOlvidadas]);
 
-  return { maestria, maestriaUsada, ajuste, partidas, olvidadas, guardarMaestria, guardarPartidas, apuntarPartida, olvidarPartida, corregirPartida, cambiarHeroePartida, cambiarDraftPartida, importarPerfil };
+  return { maestria, maestriaUsada, ajuste, partidas, olvidadas, guardarMaestria, guardarPartidas, apuntarPartida, olvidarPartida, corregirPartida, cambiarHeroePartida, cambiarDraftPartida, revisarPartida, importarPerfil };
 }

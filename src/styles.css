@@ -793,6 +793,20 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .lector-tablet .sistema { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); }
 /* Quién iba en cada equipo (3.78.0), en el historial: chips con su × y un campo para añadir. */
 .editar-draft { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+/* Revisar con las capturas del lector (3.86.0): cara y campo por hueco, los dos equipos lado a lado si caben. */
+.revisar-abrir { width: 100%; margin-bottom: 12px; }
+.revisar-partida { border: 1px solid var(--line); border-radius: var(--r); padding: 12px; margin: 12px 0; background: var(--glass); }
+.revisar-partida.pendiente { border-color: var(--gold); }
+.revisar-partida h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 15px; }
+.revisar-equipos { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.revisar-equipo { display: flex; flex-direction: column; gap: 6px; }
+.revisar-hueco { display: flex; align-items: center; gap: 8px; }
+.revisar-hueco.tuyo .revisar-cara { box-shadow: 0 0 0 2px var(--gold); }
+.revisar-cara { flex: none; border-radius: var(--r-sm); background-repeat: no-repeat; background-color: #000; }
+.revisar-hueco input, .revisar-tu input { flex: 1; min-width: 0; min-height: 40px; padding: 8px 12px; border-radius: var(--r-sm); border: 1px solid transparent; background: var(--field); color: var(--text); font-size: 16px; }
+.revisar-tu { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.revisar-guardar { width: 100%; margin-top: 12px; }
+.revisar-todas { margin-left: 8px; }
 .editar-equipo { display: flex; flex-direction: column; }
 .editar-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
 .editar-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 10px; border-radius: 999px; border: 1px solid var(--line); }

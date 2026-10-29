@@ -30,7 +30,7 @@ function estadoDeEnvio(envio, t) {
   return t('hist.autoNada');
 }
 
-export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null, maestriaUsada = null, perfil = null, envio = null, comunidad = null, onImportar = null, onOlvidar, onCorregir, onCambiarHeroe, onCambiarDraft = null, onAnadir, onCerrar, t = tPorDefecto }) {
+export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null, maestriaUsada = null, perfil = null, envio = null, comunidad = null, onImportar = null, onOlvidar, onCorregir, onCambiarHeroe, onCambiarDraft = null, onRevisar = null, onAnadir, onCerrar, t = tPorDefecto }) {
   const [anadiendo, setAnadiendo] = useState(false);
   const [heroe, setHeroe] = useState(null);
   const [aviso, setAviso] = useState(null);
@@ -113,6 +113,8 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null,
         {/* Lo primero al abrir tus partidas: para qué las estás apuntando.
             Dentro del cuerpo que se desplaza: fijo arriba dejaba 208 px para
             la lista en un móvil de 640 de alto. */}
+        {/* Con las capturas del lector (3.86.0): lo que no vio, cara a cara. También desde el PC. */}
+        {onRevisar && comunidad?.config && <button className="reset revisar-abrir" onClick={onRevisar}>{t('revisar.abrir')}</button>}
         <Veredicto partidas={partidas} maestria={maestria} t={t} />
         <TuSemana partidas={partidas} t={t} />
         <TusNumeros partidas={partidas} t={t} />

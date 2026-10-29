@@ -1839,3 +1839,21 @@ cortado: sin capturas a tamaño real no se puede medir) ni rellenar huecos
 vacíos con la fase de skins (sin captura de esa fase). Pruebas en `solo`,
 `en-tablet` y `android`; siete mutaciones.
 
+**Revisar con las capturas, desde el PC o el móvil (3.86.0)**: Javi: «desde
+el PC, ¿puedo corregirte los picks? Haz algún sistema para ver las capturas
+y ayudarte a identificar cada héroe». `RevisarCapturas.jsx` (desde «Tus
+partidas», solo con base de datos) baja `recortes_recientes` (60 días, 50 como
+mucho) y `revisiones` (src/app/revisar.js, puro) los cruza con TUS partidas
+por `partida` = `t`: las diez caras (fondo CSS de la composición de
+recortes.mjs con `encuadre`) y un campo por hueco con lo leído; lo arreglado
+después cae en el hueco vacío (`completar`), tu fila sale vacía con el pick
+`supuesto`. Guardar (`cambiosDeRevision` → `revisarPartida` de usePersonal:
+`cambiarHeroe` + `cambiarDraft` + `marcarEditada`) arregla la partida; la
+tablet la aprende con SUS recortes (`aprenderDeLoArreglado`, draft entero).
+Lo de la base de datos lo escribe cualquiera: la imagen solo pasa como PNG
+en base64 sin comillas y con tope (`imagenValida`), ids con forma, nombres
+del catálogo; un recorte ajeno con tu `t` solo enseña una imagen rara a
+quien la mira, no enseña nada a la tablet. En el PC hace falta tu clave en
+«Guardar mis partidas» (la misma del móvil). Pruebas en `app/revisar` y
+`revisar.e2e`; nueve mutaciones.
+

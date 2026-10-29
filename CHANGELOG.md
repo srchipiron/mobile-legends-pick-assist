@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.86.0
+
+- Puedes corregir los drafts desde el ordenador viendo las caras. En «Tus
+  partidas» → «Revisar con las capturas del lector» salen las diez caras
+  de cada draft que la tablet no leyó entero, con un campo al lado de cada
+  una. Escribes quién era, tocas «Guardar» y la partida queda arreglada; la
+  tablet aprende esas caras en las próximas horas.
+- Va igual en el móvil. En el ordenador abre la app y pon tu clave en
+  «Guardar mis partidas» (la misma del móvil) para traer tus partidas.
+
 ## 3.85.0
 
 - Cuando la tablet no ve tu héroe (casi siempre eliges el último y tu

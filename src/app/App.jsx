@@ -32,6 +32,7 @@ import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
 import { ApuntarPartida } from './componentes/ApuntarPartida.jsx';
 import { HistorialPartidas } from './componentes/HistorialPartidas.jsx';
+import { RevisarCapturas } from './componentes/RevisarCapturas.jsx';
 import { Perfil } from './componentes/Perfil.jsx';
 import { EditorDeMaestria } from './componentes/EditorDeMaestria.jsx';
 import { Meta } from './componentes/Meta.jsx';
@@ -54,7 +55,7 @@ export default function App() {
   const personal = usePersonal();
   useActualizacion();
 
-  // 'enemigos' | 'aliados' | 'baneos' | 'maestria' | 'historial' | 'perfil' | 'linea' | 'apuntar' | { build }
+  // 'enemigos' | 'aliados' | 'baneos' | 'maestria' | 'historial' | 'revisar' | 'perfil' | 'linea' | 'apuntar' | { build }
   const [hoja, setHoja] = useState(null);
   // El orden de las caras del selector de picks (3.17.0): se calcula al ABRIR
   // la hoja o al cambiar de pestaña y no se mueve mientras se toca. Lo que se
@@ -650,9 +651,11 @@ export default function App() {
           partidas={personal.partidas} maestria={personal.maestria} maestriaUsada={personal.maestriaUsada} datos={datos} pool={rec.pool} perfil={datosPerfil} envio={envio} comunidad={comunidad} onImportar={traerPerfil}
           onOlvidar={personal.olvidarPartida} onCorregir={personal.corregirPartida} onCambiarHeroe={personal.cambiarHeroePartida} onCambiarDraft={personal.cambiarDraftPartida}
           onAnadir={(heroe, gane) => personal.apuntarPartida({ pick: heroe, gane, previa: true, rango: datos.rango })}
+          onRevisar={() => deHojaAHoja('revisar')}
           onCerrar={cerrar} t={t}
         />
       )}
+      {hoja === 'revisar' && <RevisarCapturas partidas={personal.partidas} datos={datos} comunidad={comunidad} onGuardar={personal.revisarPartida} onCerrar={cerrar} t={t} />}
       {hoja === 'perfil' && <Perfil datos={datosPerfil} onImportar={traerPerfil} onCerrar={cerrar} t={t} />}
       {hoja === 'meta' && <Meta datos={datos} linea={linea} onFicha={(nombre) => deHojaAHoja({ ficha: nombre })} onCerrar={cerrar} t={t} />}
       {hoja?.ficha && <FichaDeHeroe datos={datos} nombre={hoja.ficha} onOtro={(nombre) => setHoja({ ficha: nombre })} onCerrar={cerrar} t={t} />}
