@@ -8,6 +8,12 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.87.3
+
+- En «Capturas», tu hueco vacío trae tus héroes más jugados como botones:
+  un toque y está puesto. En las capturas de antes de la 3.86.5 tu hueco
+  sale vacío y había que acordarse y escribirlo.
+
 ## 3.87.2
 
 - Los datos del meta se actualizan aunque la API falle un momento. El 28 y

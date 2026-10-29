@@ -786,5 +786,6 @@ export default {
   'pc.capturas': 'Reader screenshots',
   'pc.teclas': 'Keys: E enemies · A your team · B bans · Esc closes. Inside, type and press Enter.',
   'pc.teclasBaneos': 'Keys: B bans · Esc closes. Inside, type and press Enter.',
+  'revisar.tuyos': 'Your most played',
   'revisar.cara': 'Screenshot of {equipo} {n}',
 };

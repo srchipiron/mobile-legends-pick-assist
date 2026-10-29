@@ -814,6 +814,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .revisar-lista { display: flex; flex-direction: column; }
 /* «Capturas» sola (#capturas, 3.87.0): solo la hoja; el contenedor no pinta nada. */
 .solo-capturas { display: contents; }
+.revisar-tuyos { display: flex; flex-wrap: wrap; gap: 6px; }
+.revisar-hueco:has(.revisar-tuyos) { flex-wrap: wrap; }
 .revisar-guardada { font-weight: 600; }
 .revisar-clave { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 12px; }
 /* La barra del ordenador (3.87.0): solo desde 1.100 px (ver la @media de abajo). */

@@ -4,7 +4,7 @@
  * lo que se guarda.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { revisiones, cambiosDeRevision, porRevisar, imagenValida, encuadre, TOPE_IMAGEN } from '../../src/app/revisar.js';
+import { revisiones, cambiosDeRevision, porRevisar, imagenValida, encuadre, tusMasJugados, TOPE_IMAGEN } from '../../src/app/revisar.js';
 
 const HEROES = ['Atlas', 'Clint', 'Franco', 'Gord', 'Khufra', 'Layla', 'Minotaur', 'Rafaela', 'Selena', 'Tigreal', 'Zilong', 'Floryn'];
 const PNG = 'iVBORw0KGgoAAAANSUhEUg==';
@@ -66,6 +66,15 @@ test('porRevisar y el encuadre de cada cara', () => {
   eq(e.posicion, '-95px -170px', 'la cara del tercer enemigo no está en su sitio');
   eq(e.ancho, 115);
   eq(encuadre('aliados', 0, 1).fondo, '420px 850px');
+});
+
+test('tus más jugados para tu hueco (3.87.3): por partidas, sin supuestos, sin los que ya salen y del catálogo', () => {
+  const p = (pick, t, extra = {}) => ({ pick, t, gane: true, ...extra });
+  const partidas = [p('Minotaur', 1), p('Floryn', 2), p('Minotaur', 3), p('rafaela', 4), p('Rafaela', 5), p('Floryn', 6, { supuesto: true }), p('Nadie', 7), p('Gord', 8)];
+  eq(tusMasJugados(partidas, HEROES).join(), 'Rafaela,Minotaur,Gord,Floryn', 'no van por partidas (a igualdad, la más reciente), o cuenta un supuesto o un nombre fuera del catálogo');
+  eq(tusMasJugados(partidas, HEROES, ['Gord', 'minotaur']).join(), 'Rafaela,Floryn', 'sale uno que ya está en el draft');
+  eq(tusMasJugados(partidas, HEROES, [], 2).length, 2);
+  eq(tusMasJugados(null, HEROES).length, 0);
 });
 
 await terminar('app/revisar');

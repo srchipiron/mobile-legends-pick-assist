@@ -38,7 +38,7 @@ await prueba('las caras de cada hueco con lo leído; guardar arregla la partida 
   s.recortes.push({ clave: 'L'.repeat(43), recibido: Date.now() - 3600000, d: { v: 1, partida: T, faltan: 3, capturas: [{ id: 'lectura-2026-10-28T21-02-27-027Z-1517', picks: PNG }], leidos } });
   // Otro con una «imagen» que no es un PNG, de una partida tuya: no sale.
   s.recortes.push({ clave: 'M'.repeat(43), recibido: Date.now() - 1000, d: { v: 1, partida: T + 1, capturas: [{ id: 'lectura-x', picks: 'PHN2ZyBvbmxvYWQ9YWxlcnQoMSk+' }], leidos } });
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: 1280, height: 900 }, almacen: { ...LINEA, 'roam-picker:partidas': [PARTIDA, { ...PARTIDA, t: T + 1 }] }, sinServiceWorker: true, antes: conBaseDeDatos(s) });
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: 1280, height: 900 }, almacen: { ...LINEA, 'roam-picker:partidas': [PARTIDA, { ...PARTIDA, t: T + 1 }, { ...PARTIDA, t: T - 9e6, pick: 'Minotaur', supuesto: false }] }, sinServiceWorker: true, antes: conBaseDeDatos(s) });
   await abrirAjustes(pagina);
   await pagina.locator('.more').getByRole('button', { name: 'Partidas', exact: true }).click();
   await pagina.getByRole('button', { name: 'Revisar con las capturas del lector' }).click();
@@ -54,7 +54,12 @@ await prueba('las caras de cada hueco con lo leído; guardar arregla la partida 
   // Sin tu héroe no se guarda.
   await pagina.getByRole('button', { name: 'Guardar' }).click();
   ok(/Falta tu héroe/.test(await pagina.locator('.revisar-partida .nota').textContent()), 'guarda sin tu héroe');
-  await pagina.getByLabel('Tu equipo 4', { exact: true }).fill('Minotaur');
+  // Tu hueco vacío trae tus más jugados (3.87.3): un toque lo rellena (aquí, Floryn es supuesto y no sale).
+  const tuyos = pagina.getByRole('group', { name: 'Tus más jugados' });
+  eq((await tuyos.getByRole('button').allTextContents()).join(), 'Minotaur', 'no salen tus más jugados, o sale un pick supuesto');
+  await tuyos.getByRole('button', { name: 'Minotaur' }).click();
+  eq(await pagina.getByLabel('Tu equipo 4', { exact: true }).inputValue(), 'Minotaur', 'el botón no rellena tu hueco');
+  ok(!(await tuyos.count()), 'los botones siguen con tu hueco ya relleno');
   await pagina.getByLabel('Enemigos 3', { exact: true }).fill('Zilong');
   await pagina.getByLabel('Tu equipo 3', { exact: true }).fill('Rafaela');
   await pagina.getByRole('button', { name: 'Guardar' }).click();

@@ -803,5 +803,6 @@ export default {
   'pc.capturas': 'Capturas del lector',
   'pc.teclas': 'Teclas: E enemigos · A tu equipo · B baneos · Esc cierra. Dentro, escribe y pulsa Intro.',
   'pc.teclasBaneos': 'Teclas: B baneos · Esc cierra. Dentro, escribe y pulsa Intro.',
+  'revisar.tuyos': 'Tus más jugados',
   'revisar.cara': 'Captura de {equipo} {n}',
 };

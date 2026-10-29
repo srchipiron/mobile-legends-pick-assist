@@ -90,6 +90,29 @@ export function cambiosDeRevision({ enemigos = [], aliados = [], tuyoFila = -1, 
   return { pick, enemigos: e.filter(Boolean), aliados: companeros.slice(0, 4) };
 }
 
+/** Cuántos de tus héroes salen como botón junto a tu hueco (3.87.3): los mismos que la burbuja de la tablet (`HABITUALES`). */
+export const TUS_HABITUALES = 6;
+
+/**
+ * Tus héroes más jugados en tus partidas (3.87.3), para rellenar TU hueco
+ * con un toque: en las capturas de antes de 3.86.5 tu hueco sale vacío
+ * (eliges el último) y había que acordarse y escribirlo. Sin los que ya
+ * salen en el draft ni los supuestos (no los jugaste seguro); a igualdad,
+ * el último jugado. Solo nombres del catálogo.
+ */
+export function tusMasJugados(partidas = [], heroes = [], fuera = [], n = TUS_HABITUALES) {
+  const porClave = new Map((heroes ?? []).map((h) => [String(h).toLowerCase(), h]));
+  const salen = new Set((fuera ?? []).filter((x) => typeof x === 'string').map((x) => x.toLowerCase()));
+  const cuenta = new Map();
+  for (const p of partidas ?? []) {
+    const nombre = typeof p?.pick === 'string' ? porClave.get(p.pick.toLowerCase()) : null;
+    if (!nombre || p.supuesto === true || salen.has(nombre.toLowerCase())) continue;
+    const c = cuenta.get(nombre) ?? { n: 0, t: 0 };
+    cuenta.set(nombre, { n: c.n + 1, t: Math.max(c.t, Number.isFinite(p.t) ? p.t : 0) });
+  }
+  return [...cuenta.entries()].sort((a, b) => b[1].n - a[1].n || b[1].t - a[1].t).slice(0, n).map(([h]) => h);
+}
+
 /**
  * Cómo pintar la cara de un hueco con la imagen compuesta como fondo:
  * tamaño de la caja y del fondo, y su posición, a `escala` píxeles por

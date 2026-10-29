@@ -478,3 +478,8 @@ app» y «un apartado SOLO para las partidas y las capturas».
   «Guardada» sale arriba (`.revisar-guardada`): la partida arreglada deja
   de estar pendiente y se iba de la lista con su aviso. Pruebas en `pc.e2e`
   y `revisar.e2e`, dos mutaciones.
+- Desde 3.87.3, con TU hueco vacío salen tus más jugados como botones
+  (`tusMasJugados` en revisar.js: por partidas, sin supuestos ni los que ya
+  salen en el draft, `TUS_HABITUALES` 6 como la burbuja). En 4 de los 6
+  drafts pendientes del 28 de octubre tu pick era supuesto. Pruebas en
+  `app/revisar` y `revisar.e2e`, cinco mutaciones.

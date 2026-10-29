@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { bajarRecortes } from '../basedatos.js';
-import { revisiones, cambiosDeRevision, encuadre, HORAS_DE_RECORTES } from '../revisar.js';
+import { revisiones, cambiosDeRevision, encuadre, tusMasJugados, HORAS_DE_RECORTES } from '../revisar.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { PegarClave } from './Comunidad.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
@@ -91,7 +91,7 @@ export function RevisarCapturas({ partidas, datos, comunidad, perfil, onImportar
         {recortes && !partidas.length && <p className="nota">{t('revisar.sinPartidas')}</p>}
         {guardada && <p className="nota bien revisar-guardada" role="status">{t('revisar.guardada')}</p>}
         <div className="revisar-lista">
-          {vistas.map((r) => <Revision key={r.t} r={r} nombres={nombres} escala={escala} onGuardar={(t0, c) => { onGuardar(t0, c); setGuardada(true); aLaSiguiente(t0); }} onCambio={() => setGuardada(false)} t={t} />)}
+          {vistas.map((r) => <Revision key={r.t} r={r} nombres={nombres} partidas={partidas} escala={escala} onGuardar={(t0, c) => { onGuardar(t0, c); setGuardada(true); aLaSiguiente(t0); }} onCambio={() => setGuardada(false)} t={t} />)}
         </div>
       </div>
     </Hoja>
@@ -103,7 +103,7 @@ function Cara({ png, lado, i, etiqueta, escala }) {
   return <span className="revisar-cara" role="img" aria-label={etiqueta} style={{ width: e.ancho, height: e.alto, backgroundImage: `url("data:image/png;base64,${png}")`, backgroundSize: e.fondo, backgroundPosition: e.posicion }} />;
 }
 
-function Revision({ r, nombres, escala, onGuardar, onCambio, t }) {
+function Revision({ r, nombres, partidas, escala, onGuardar, onCambio, t }) {
   const [captura, setCaptura] = useState(0);
   const [entera, setEntera] = useState(false);
   const [enemigos, setEnemigos] = useState(() => r.enemigos.map((n) => n ?? ''));
@@ -111,6 +111,17 @@ function Revision({ r, nombres, escala, onGuardar, onCambio, t }) {
   const [tuyo, setTuyo] = useState(r.tuyoFila < 0 && !r.partida.supuesto ? r.partida.pick ?? '' : '');
   const [aviso, setAviso] = useState(null);
   const png = r.capturas[captura]?.png ?? r.capturas[0].png;
+  // Tus más jugados para tu hueco (3.87.3), sin los que ya están escritos en esta partida.
+  const tuyos = useMemo(() => tusMasJugados(partidas, nombres, [...enemigos, ...aliados.filter((_, i) => i !== r.tuyoFila)]), [partidas, nombres, enemigos, aliados, r.tuyoFila]);
+  const ponerTuyo = (h) => {
+    if (r.tuyoFila >= 0) setAliados((x) => x.map((n, k) => (k === r.tuyoFila ? h : n))); else setTuyo(h);
+    setAviso(null); onCambio?.();
+  };
+  const botonesTuyos = tuyos.length > 0 && (
+    <div className="revisar-tuyos" role="group" aria-label={t('revisar.tuyos')}>
+      {tuyos.map((h) => <button key={h} type="button" className="filtro" onClick={() => ponerTuyo(h)}>{h}</button>)}
+    </div>
+  );
   const campo = (lado, lista, poner, i) => (
     <input
       type="text" list="revisar-heroes" autoComplete="off" value={lista[i]}
@@ -142,6 +153,7 @@ function Revision({ r, nombres, escala, onGuardar, onCambio, t }) {
             <div key={i} className={`revisar-hueco${i === r.tuyoFila ? ' tuyo' : ''}`}>
               <Cara png={png} lado="aliados" i={i} escala={escala} etiqueta={t('revisar.cara', { equipo: t('revisar.aliados'), n: i + 1 })} />
               {campo('aliados', aliados, setAliados, i)}
+              {i === r.tuyoFila && !aliados[i] && botonesTuyos}
             </div>
           ))}
           {r.tuyoFila < 0 && (
@@ -149,6 +161,7 @@ function Revision({ r, nombres, escala, onGuardar, onCambio, t }) {
               <input type="text" list="revisar-heroes" autoComplete="off" value={tuyo} aria-label={t('revisar.tu')} onChange={(ev) => { setTuyo(ev.target.value); setAviso(null); }} />
             </label>
           )}
+          {r.tuyoFila < 0 && !tuyo && botonesTuyos}
         </div>
         <div className="revisar-equipo">
           <strong>{t('revisar.enemigos')}</strong>
