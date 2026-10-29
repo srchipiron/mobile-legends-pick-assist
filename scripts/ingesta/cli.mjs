@@ -43,6 +43,13 @@ export { parseArgs } from './contexto.mjs';
  */
 export const REINTENTOS_ESTADISTICAS_MS = [20000, 60000];
 /**
+ * La espera antes de volver a pedir los cruces del rango de respaldo cuando
+ * el pedido llegó entero y el respaldo no (3.87.4). Decisión de producto: el
+ * 29 de octubre de 2026 la API pasó un minuto tirándolo todo y se recuperó;
+ * con ella caída, la segunda pasada falla deprisa (0,3 s por héroe).
+ */
+export const REINTENTO_RESPALDO_MS = 60000;
+/**
  * Un fallo de paso: el servidor contestó con un error suyo (5xx) o con
  * «demasiadas peticiones» (429). Un 4xx o «no acepta days» no se arregla
  * esperando, y sin red o sin respuesta (la API caída del todo) esperar 80 s
@@ -312,7 +319,19 @@ async function main() {
     if (respaldo && filasCon(fresh)) {
       const diagPedido = diagnostics.relations;
       try {
-        const otras = await fetchRelations(nombresPedir, stats, heroList, respaldo, { remedir });
+        let otras = await fetchRelations(nombresPedir, stats, heroList, respaldo, { remedir });
+        // El pedido llegó casi entero y el respaldo no (3.87.4): la API tiene ratos de minutos en
+        // que lo tira todo («Error 1101»), y sin respaldo el pedido no se comprueba y se queda la
+        // matriz guardada. Se espera y se pide el respaldo UNA vez más, quedándose con la mejor.
+        const minimas = Math.ceil(0.9 * nombresPedir.length);
+        if (filasCon(fresh) >= minimas && filasCon(otras) < minimas) {
+          const antes = filasCon(otras);
+          console.log(`  · ${respaldo}: ${antes} de ${nombresPedir.length} para comprobar ${RANK}; lo pido otra vez en ${REINTENTO_RESPALDO_MS / 1000} s`);
+          await sleep(REINTENTO_RESPALDO_MS);
+          const otraVez = await fetchRelations(nombresPedir, stats, heroList, respaldo, { remedir });
+          if (filasCon(otraVez) > antes) otras = otraVez;
+          diagnostics.respaldoReintentado = { antes, despues: filasCon(otras) };
+        }
         // El respaldo tiene que llegar casi entero (el 90%, el mismo listón
         // que `anotarFrescura`) para poder sustituir al pedido.
         relacionesRango = guarda({ pedidas: fresh, respaldo: otras });
@@ -421,6 +440,7 @@ async function main() {
       lineas: diagnostics.lineas ?? null,
       rangos: diagnostics.rangos ?? null,
       reintentoEstadisticas: diagnostics.reintentoEstadisticas ?? null,
+      respaldoReintentado: diagnostics.respaldoReintentado ?? null,
       recientes: diagnostics.recientes ?? null,
       tiers: diagnostics.tiers ?? null,
       ok: [...new Set(diagnostics.ok)].slice(0, 6),

@@ -257,6 +257,20 @@ ventana de 7 días y la de 3. `diagnostics.reintentoEstadisticas` dice
 cuántas vueltas y qué rangos se recuperaron. La ingesta simulada da 500
 dos veces a Gloria y exige que salga fresca; cuatro mutaciones.
 
+**El respaldo de los cruces, otra vez si cae entero (3.87.4)**: el 29 de
+octubre de 2026 el bot bajó los cruces de Gloria casi enteros (121 de 133)
+y Mítico, el que los comprueba, cayó entero (0 de 120 en 38 s, «Error
+1101»): sin comprobar, la guarda siguió con la matriz de Mítico del 27 y
+tiró la Gloria fresca. Dos días sin cruces nuevos. La segunda pasada de
+`fetchRelations` no entra con más de la mitad caída (y así sigue: con la API
+caída de verdad no se dobla el tiempo). Hoy, si el pedido llegó al 90% y el
+respaldo no, cli.mjs espera `REINTENTO_RESPALDO_MS` (60 s) y pide el
+respaldo UNA vez más, quedándose con la pasada que trae más filas
+(`diagnostics.respaldoReintentado`: `antes`, `despues`). Con la API caída,
+esa pasada falla deprisa (0,3 s por héroe). La ingesta simulada tira la
+primera petición de Mítico de cada héroe; cuatro mutaciones, sobrevive una
+inofensiva (reintentar también con el pedido a medias solo cuesta tiempo).
+
 **La tier list de mlbb.gg y el 403 (3.59.4)**: desde el 4 de octubre de
 2026 `back.mlbb.gg` contesta 403 a los runners de GitHub (desde la sesión y
 desde un móvil contesta 200), y `fetchTiers` conservaba la anterior con su

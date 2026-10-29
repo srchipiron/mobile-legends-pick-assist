@@ -8,6 +8,13 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.87.4
+
+- Los counters y las sinergias vuelven a actualizarse. Llevaban desde el
+  27 de octubre sin cambiar: el bot bajaba los de Gloria, pero los de
+  Mítico, con los que se comprueban, caían justo ese minuto y se quedaba
+  la matriz vieja. Ahora espera un minuto y los vuelve a pedir.
+
 ## 3.87.3
 
 - En «Capturas», tu hueco vacío trae tus héroes más jugados como botones:
