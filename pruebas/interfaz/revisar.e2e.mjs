@@ -59,6 +59,8 @@ await prueba('las caras de cada hueco con lo leído; guardar arregla la partida 
   await pagina.getByLabel('Tu equipo 3', { exact: true }).fill('Rafaela');
   await pagina.getByRole('button', { name: 'Guardar' }).click();
   await pagina.waitForTimeout(300);
+  // Arreglada deja de estar pendiente y sale de la lista: el «Guardada» va arriba y se ve (3.87.1).
+  ok(await pagina.locator('.revisar-guardada').isVisible(), 'guardar no dice nada: la partida se va y su aviso con ella');
   const p = (await leer(pagina, 'roam-picker:partidas')).find((x) => x.t === T);
   eq(p.pick, 'Minotaur', 'tu pick no se guarda');
   ok(!p.supuesto, 'sigue como pick supuesto');

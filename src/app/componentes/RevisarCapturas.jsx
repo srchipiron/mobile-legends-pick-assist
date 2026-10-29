@@ -40,6 +40,8 @@ export function RevisarCapturas({ partidas, datos, comunidad, perfil, onImportar
   const [error, setError] = useState(null);
   const [todas, setTodas] = useState(false);
   const [avisoClave, setAvisoClave] = useState(null);
+  // «Guardada» va aquí y no en la partida (3.87.1): guardada, deja de estar pendiente y sale de la lista.
+  const [guardada, setGuardada] = useState(false);
   const escala = useAncho() ? ESCALA_PC : ESCALA;
   const config = comunidad?.config ?? null;
   useEffect(() => {
@@ -87,8 +89,9 @@ export function RevisarCapturas({ partidas, datos, comunidad, perfil, onImportar
           </p>
         )}
         {recortes && !partidas.length && <p className="nota">{t('revisar.sinPartidas')}</p>}
+        {guardada && <p className="nota bien revisar-guardada" role="status">{t('revisar.guardada')}</p>}
         <div className="revisar-lista">
-          {vistas.map((r) => <Revision key={r.t} r={r} nombres={nombres} escala={escala} onGuardar={(t0, c) => { onGuardar(t0, c); aLaSiguiente(t0); }} t={t} />)}
+          {vistas.map((r) => <Revision key={r.t} r={r} nombres={nombres} escala={escala} onGuardar={(t0, c) => { onGuardar(t0, c); setGuardada(true); aLaSiguiente(t0); }} onCambio={() => setGuardada(false)} t={t} />)}
         </div>
       </div>
     </Hoja>
@@ -100,7 +103,7 @@ function Cara({ png, lado, i, etiqueta, escala }) {
   return <span className="revisar-cara" role="img" aria-label={etiqueta} style={{ width: e.ancho, height: e.alto, backgroundImage: `url("data:image/png;base64,${png}")`, backgroundSize: e.fondo, backgroundPosition: e.posicion }} />;
 }
 
-function Revision({ r, nombres, escala, onGuardar, t }) {
+function Revision({ r, nombres, escala, onGuardar, onCambio, t }) {
   const [captura, setCaptura] = useState(0);
   const [entera, setEntera] = useState(false);
   const [enemigos, setEnemigos] = useState(() => r.enemigos.map((n) => n ?? ''));
@@ -113,14 +116,14 @@ function Revision({ r, nombres, escala, onGuardar, t }) {
       type="text" list="revisar-heroes" autoComplete="off" value={lista[i]}
       aria-label={`${t(`revisar.${lado}`)} ${i + 1}`}
       placeholder={lado === 'aliados' && i === r.tuyoFila ? t('revisar.tu') : t('revisar.quien')}
-      onChange={(ev) => { const v = ev.target.value; poner((x) => x.map((n, k) => (k === i ? v : n))); setAviso(null); }}
+      onChange={(ev) => { const v = ev.target.value; poner((x) => x.map((n, k) => (k === i ? v : n))); setAviso(null); onCambio?.(); }}
     />
   );
   const guardar = () => {
     const c = cambiosDeRevision({ enemigos, aliados, tuyoFila: r.tuyoFila, tuyo }, nombres);
     if (c.error) { setAviso({ mal: true, texto: t(`revisar.error.${c.error}`) }); return; }
     onGuardar(r.t, c);
-    setAviso({ mal: false, texto: t('revisar.guardada') });
+    setAviso(null);
   };
   return (
     <section id={`revisar-${r.t}`} className={`revisar-partida${r.pendiente ? ' pendiente' : ''}`}>

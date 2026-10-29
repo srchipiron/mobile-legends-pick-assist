@@ -122,6 +122,10 @@ await prueba('#capturas abre solo «Capturas»: pegas la clave, se traen tus par
   await pagina.getByRole('button', { name: 'Cerrar' }).click();
   await pagina.locator('.revisar').waitFor({ state: 'detached' });
   ok(!(await pagina.evaluate(() => window.location.hash)), 'el #capturas sigue: recargar te mete otra vez');
+  // Y «atrás» tampoco (3.87.1): el #capturas se quita al abrir, no se queda debajo en el historial.
+  await pagina.goBack().catch(() => {});
+  await pagina.waitForTimeout(500);
+  eq(await pagina.locator('.revisar').count(), 0, 'atrás tras cerrar vuelve a abrir «Capturas»');
   eq(errores.length, 0, errores.join(' | '));
   await contexto.close();
 });

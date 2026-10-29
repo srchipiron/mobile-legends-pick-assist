@@ -15,6 +15,9 @@ correcciones.
 - La tablet no guarda una captura negra o de la pantalla de carga como «la
   última del draft»: guarda la última en la que se ve a alguien. Y si las
   dos no caben, sube esa, la de tu pick, no la de antes.
+- En «Capturas», al guardar sale «Guardada» arriba (antes la partida se
+  iba de la lista sin decir nada), y tras cerrar, «atrás» ya no la vuelve a
+  abrir.
 
 ## 3.87.0
 

@@ -472,3 +472,9 @@ app» y «un apartado SOLO para las partidas y las capturas».
   (`informe`), las novedades del pie (estado de `Pie`), el aviso del QR y
   la puerta de la licencia no son `hoja`, y E abría el selector encima.
   Prueba en `pc.e2e` (Diagnóstico y novedades), una mutación.
+- Desde 3.87.1 el `#capturas` se quita AL ABRIR (`quitarCapturas`, con
+  `replaceState` en el inicializador del estado, antes de que la hoja meta
+  su entrada): quitado al cerrar, «atrás» volvía a abrir «Capturas». Y
+  «Guardada» sale arriba (`.revisar-guardada`): la partida arreglada deja
+  de estar pendiente y se iba de la lista con su aviso. Pruebas en `pc.e2e`
+  y `revisar.e2e`, dos mutaciones.

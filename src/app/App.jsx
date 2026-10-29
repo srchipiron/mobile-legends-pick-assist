@@ -61,8 +61,11 @@ export default function App() {
   // «Capturas» (3.87.0): la app abierta con `#capturas` es SOLO eso, para el
   // ordenador: las capturas de los drafts que la tablet no leyó entero.
   const conCapturas = () => typeof window !== 'undefined' && window.location.hash === '#capturas';
-  const [soloCapturas, setSoloCapturas] = useState(conCapturas);
-  const [hoja, setHoja] = useState(() => (conCapturas() ? 'revisar' : null));
+  // El `#capturas` se quita en cuanto se lee (3.87.1): si se quedaba en el historial, «atrás» tras
+  // cerrar volvía a abrir «Capturas». Antes de cualquier efecto: la hoja mete su entrada después.
+  const quitarCapturas = () => { try { window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}`); } catch { /* sin historial */ } };
+  const [soloCapturas, setSoloCapturas] = useState(() => { const si = conCapturas(); if (si) quitarCapturas(); return si; });
+  const [hoja, setHoja] = useState(() => (soloCapturas ? 'revisar' : null));
   // El orden de las caras del selector de picks (3.17.0): se calcula al ABRIR
   // la hoja o al cambiar de pestaña y no se mueve mientras se toca. Lo que se
   // toca a contrarreloj no cambia de sitio (errores ya cometidos: los chips
@@ -79,13 +82,12 @@ export default function App() {
   }, [lector.aviso]);
   const cerrar = () => setHoja(null);
   useEffect(() => {
-    const alCambiar = () => { if (conCapturas()) { setSoloCapturas(true); setHoja('revisar'); } };
+    const alCambiar = () => { if (conCapturas()) { quitarCapturas(); setSoloCapturas(true); setHoja('revisar'); } };
     window.addEventListener('hashchange', alCambiar);
     return () => window.removeEventListener('hashchange', alCambiar);
   }, []);
-  // Salir de «Capturas» deja la app normal y quita el `#capturas`: recargar no vuelve a meterte.
+  // Salir de «Capturas» deja la app normal; el `#capturas` ya no está: ni recargar ni «atrás» vuelven a meterte.
   const cerrarCapturas = () => {
-    try { window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`); } catch { /* sin historial */ }
     setSoloCapturas(false);
     setHoja(null);
   };
