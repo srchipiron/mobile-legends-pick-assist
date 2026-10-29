@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-29T15:50:18.448Z",
+  "generatedAt": "2026-10-29T16:33:09.593Z",
   "rank": "glory",
   "relaciones": {
     "rango": "mythic",
@@ -4137,10 +4137,15 @@
     },
     "builds": {
       "pedidas": 165,
-      "heroes": 133,
-      "builds": 495,
-      "errores": [],
-      "conservadas": 0
+      "heroes": 49,
+      "builds": 177,
+      "errores": [
+        "Dyrroth/jungle: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and ",
+        "Ling/jungle: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and ",
+        "X.Borg/exp: HTTP 500 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1101/\",\"title\":\"Error 1101: Worker threw exception\",\"status\":500,\"detail\":\"A Worker script configured by the website owner threw an unhandled exception while processing this request.\",\"i",
+        "Terizla/exp: HTTP 500 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1101/\",\"title\":\"Error 1101: Worker threw exception\",\"status\":500,\"detail\":\"A Worker script configured by the website owner threw an unhandled exception while processing this request.\",\"i"
+      ],
+      "conservadas": 106
     },
     "equipo": {
       "rutas": 2,
@@ -4149,12 +4154,17 @@
     },
     "lineas": {
       "pedidas": 165,
-      "heroes": 133,
-      "valores": 165,
-      "curvas": 165,
-      "errores": [],
-      "conservados": 0,
-      "curvasConservadas": 0
+      "heroes": 0,
+      "valores": 0,
+      "curvas": 0,
+      "errores": [
+        "Hirara/jungle: HTTP 500 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1101/\",\"title\":\"Error 1101: Worker threw exception\",\"status\":500,\"detail\":\"A Worker script configured by the website owner threw an unhandled exception while processing this request.\",\"i",
+        "Marcel/roam: HTTP 500 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1101/\",\"title\":\"Error 1101: Worker threw exception\",\"status\":500,\"detail\":\"A Worker script configured by the website owner threw an unhandled exception while processing this request.\",\"i",
+        "Sora/exp: HTTP 500 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1101/\",\"title\":\"Error 1101: Worker threw exception\",\"status\":500,\"detail\":\"A Worker script configured by the website owner threw an unhandled exception while processing this request.\",\"i",
+        "Obsidia/gold: HTTP 500 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1101/\",\"title\":\"Error 1101: Worker threw exception\",\"status\":500,\"detail\":\"A Worker script configured by the website owner threw an unhandled exception while processing this request.\",\"i"
+      ],
+      "conservados": 165,
+      "curvasConservadas": 165
     },
     "rangos": {
       "epic": "133 héroes",
@@ -4163,6 +4173,7 @@
       "glory": "133 héroes"
     },
     "reintentoEstadisticas": null,
+    "respaldoReintentado": null,
     "recientes": {
       "epic": "133 héroes",
       "legend": "133 héroes",
