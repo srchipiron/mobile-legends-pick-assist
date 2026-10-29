@@ -8,7 +8,7 @@ import { test, ok, eq, terminar, leerJson } from '../arnes.mjs';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, tusHabituales, HABITUALES, faseDe, LECTURAS_PARA_FUERA, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS } from '../../scripts/lector/solo.mjs';
+import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, tusHabituales, HABITUALES, faseDe, LECTURAS_PARA_FUERA, MINUTOS_ENTRE_PARTIDAS, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS } from '../../scripts/lector/solo.mjs';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
 import { crearServidor, RETENCION_CAPTURAS_MS } from '../../scripts/lector/servir.mjs';
 import { RAIZ } from '../arnes.mjs';
@@ -352,6 +352,33 @@ test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se pregunt
   eq(carga.ids.at(-1), idDe(180000), 'entra una captura que no es la pantalla del draft');
   ok(!acumularDraft(d, { ...enElDraft, id: '../fuera' }, 99).ids.includes('../fuera'), 'entra un id sin forma');
   eq(JSON.stringify(conCaptura([], 'lectura-x')), '["lectura-x"]');
+});
+
+test('una partida que ya se vigila no se pisa (3.86.2): el móvil llevaba el draft y la tablet cierra el suyo con la pantalla de carga', async () => {
+  let t = 30_000_000, respuesta = lectura({ enemigos: [N('Yi Sun-shin'), V, V, V, N('Fredrinn')], aliados: [N('Wanwan'), V, V, V, V], tuyoFila: -1 });
+  // El móvil mandó vigilar su draft hace 60 s y la partida sigue: la tablet no lo sabía.
+  let final = { desde: t - 60000, activa: true, acabada: false, resultado: null };
+  const vigiladas = [], correcciones = [], registro = [];
+  const interno = { leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: () => {}, vigilar: (desde) => { vigiladas.push(desde); final = { desde, activa: true }; }, final: () => final, ponerCorreccion: (c) => correcciones.push(c) };
+  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: () => {}, registrar: (m) => registro.push(m) });
+  await solo.tic();
+  respuesta = { partida: true, rapida: true };
+  t += 5000; await solo.tic(); t += 5000; await solo.tic();
+  ok(solo.estado().cerrado, 'la prueba necesita un draft cerrado');
+  eq(vigiladas.length, 0, 'la tablet pisa la vigilancia del móvil con su draft de la pantalla de carga');
+  eq(correcciones.length, 0, 'pregunta por los héroes de un draft que no es');
+  ok(registro.some((l) => /ya se vigila/.test(l)), 'no deja rastro de por qué no la apunta');
+  // Pasados MINUTOS_ENTRE_PARTIDAS, o con la de antes acabada, es otra partida y se vigila.
+  for (const [nombre, antes] of [['más tarde', { desde: 0, activa: true }], ['la de antes acabada', { desde: Infinity, activa: false, acabada: true }]]) {
+    let t2 = 40_000_000, r2 = lectura({ enemigos: [N('Clint'), V, V, V, V] });
+    let f2 = { ...antes, desde: antes.desde === 0 ? t2 - MINUTOS_ENTRE_PARTIDAS * 60000 - 1 : t2 - 30000 };
+    const v2 = [];
+    const solo2 = crearSolo({ interno: { ...interno, leer: async () => ({ ok: true, lectura: r2 }), vigilar: (d) => { v2.push(d); f2 = { desde: d, activa: true }; }, final: () => f2 }, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t2, apuntar: () => {} });
+    await solo2.tic();
+    r2 = { partida: true, rapida: true };
+    t2 += 5000; await solo2.tic(); t2 += 5000; await solo2.tic();
+    eq(v2.length, 1, `${nombre}: no vigila la partida nueva`);
+  }
 });
 
 test('la fase de la burbuja tocable (3.86.1): «fuera» solo tras lecturas seguidas sin nadie; al empezar el draft, con un baneo leído, ya no', async () => {

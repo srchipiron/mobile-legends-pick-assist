@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.86.2
+
+- Si el móvil lleva el draft, la tablet ya no se queda con esa partida. El
+  28 de octubre la tablet leyó la pantalla de carga como si fuera otro
+  draft y apuntó la partida de las 21:27 con siete héroes sin leer y
+  Rafaela «supuesto»: arréglala en «Tus partidas» si te acuerdas de
+  quién iba.
+
 ## 3.86.1
 
 - El botón amarillo de la burbuja ya no sale al empezar un draft: espera a

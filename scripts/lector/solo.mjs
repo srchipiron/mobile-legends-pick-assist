@@ -43,6 +43,16 @@ export const MOVIL_ACTIVO_MS = 60000;
 export const EN_PARTIDA_PARA_CERRAR = 2;
 /** Tras cerrar, un draft nuevo solo se acepta pasado esto (las pantallas del final no son un draft). */
 export const MINUTOS_PARA_OTRO_DRAFT = 3;
+/**
+ * Una partida no dura menos que esto (3.86.2, decisión de dominio: un draft
+ * más la carga y una partida rehecha pasan de 5 minutos). Si ya se vigila
+ * una partida que empezó hace menos, el draft que la tablet acaba de cerrar
+ * es ESA partida vista tarde, no otra: el 28 de octubre de 2026 el móvil
+ * llevaba el draft (9 consejos), la tablet apartada leyó la pantalla de
+ * carga como un draft nuevo, lo cerró 97 s después y pisó la vigilancia del
+ * móvil con siete héroes sin leer y el nº1 «supuesto».
+ */
+export const MINUTOS_ENTRE_PARTIDAS = 5;
 /** Un draft sin cambios en este tiempo se da por abandonado. */
 export const MINUTOS_DRAFT_ABANDONADO = 15;
 /** Como `CAMBIOS_A_LA_VEZ` de la app: más huecos ya leídos cambiando a la vez es la fase de skins (imanes). */
@@ -516,7 +526,12 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     }
     if (!draft.cerrado) vigilada = null;
     // Se acaba de cerrar (empezó la partida): a vigilar el final, como si la app lo pidiera.
-    if (draft.cerrado && !antes.cerrado) {
+    const yaVigilada = interno.final?.();
+    // Solo con esa vigilancia aún en marcha: si ya vio el final, el draft nuevo es otra partida.
+    const dePasada = draft.cerrado && !antes.cerrado && Number.isFinite(yaVigilada?.desde) && yaVigilada.desde !== draft.cerradoEn && yaVigilada.activa !== false && !yaVigilada.acabada && !yaVigilada.resultado
+      && draft.cerradoEn - yaVigilada.desde >= 0 && draft.cerradoEn - yaVigilada.desde < MINUTOS_ENTRE_PARTIDAS * 60000;
+    if (dePasada) registrar(`Sin móvil: esta partida ya se vigila desde hace ${Math.round((draft.cerradoEn - yaVigilada.desde) / 1000)} s (el móvil llevaba el draft); no la apunto yo.`);
+    if (draft.cerrado && !antes.cerrado && !dePasada) {
       resumen.partidas += 1;
       const datos = datosPara(a.rango);
       pendiente = correccionDelDraft(draft, datos, { tuyos: tusHabituales(datos, a.linea, maestriaDe(), [...draft.enemigos, ...draft.aliados, ...draft.baneos]) });

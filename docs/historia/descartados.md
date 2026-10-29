@@ -651,3 +651,10 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   Cambiarlo es otra migración de Supabase, y el conector no deja aplicarlas
   (el aviso de permiso no le llega a Javi). Queda en `pendiente.md`.
 
+- **Sospechas de la revisión del 29 de octubre de 2026, sin tocar**: (1)
+  `draftsArreglados` compara nombres con `toLowerCase` y no con
+  `nombreClave`; hoy las partidas guardan la grafía del catálogo, así que no
+  se ha visto fallar. (2) `aprenderDeLoArreglado` no deja línea cuando no
+  hay drafts nuevos (no se distingue de «sin recortes»): solo diagnóstico.
+  (3) Leer el circulito de pre-selección de tu hueco: a un tercio mide
+  13 px y sale cortado en los recortes; sin capturas a tamaño real no se mide.

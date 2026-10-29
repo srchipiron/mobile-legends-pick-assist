@@ -1224,3 +1224,15 @@ tablet pasaba `estado().version`, que es la versión del PUENTE (el número
 la versión a mano y la de punta a punta no la miraba. Lección: si una
 prueba de punta a punta sube algo, comprueba cada campo con lo que de
 verdad lo rellena, no solo que se sube.
+
+## La tablet pisó la partida que vigilaba el móvil (28 de octubre de 2026, 3.86.2)
+
+A las 21:06 el móvil llevaba el draft y mandó vigilar la partida (9
+consejos). La tablet, apartada mientras el móvil leía, volvió a leer 60 s
+después: la pantalla de carga (con la fila de baneos y las skins de todos)
+le pareció un draft nuevo, lo cerró con el minimapa a los 97 s y llamó a
+`vigilar` con el suyo. La partida se apuntó con siete héroes sin leer y
+Rafaela «supuesto». Se vio leyendo el registro del parte línea a línea.
+Lección: dos procesos que pueden empezar lo mismo (aquí, vigilar una
+partida) necesitan una regla de quién manda; «el último que llega» pisa al
+que sabía más.

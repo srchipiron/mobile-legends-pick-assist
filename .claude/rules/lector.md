@@ -1881,3 +1881,12 @@ Sin tocar: con el panel abierto el juego recibe los toques de fuera
 marcados como «parcialmente tapados» (FLAG_WINDOW_IS_PARTIALLY_OBSCURED);
 solo pasa en el vestíbulo y con el panel que abres tú.
 
+**No pisar la partida que ya se vigila (3.86.2)**: ver
+`docs/historia/errores.md` (28 de octubre de 2026). Al cerrar un draft,
+`crearSolo` mira `interno.final()`: si hay una vigilancia EN MARCHA (sin
+`acabada` ni `resultado`) que empezó hace menos de `MINUTOS_ENTRE_PARTIDAS`
+(5, dominio: draft + carga + la partida más corta), ese draft es la misma
+partida vista tarde y no se vigila, no se pregunta ni se apunta (lo dice el
+registro). Con la de antes acabada, o pasados los 5 minutos, es otra.
+Prueba en `solo.test` con la pantalla de carga de ese día; cuatro
+mutaciones.
