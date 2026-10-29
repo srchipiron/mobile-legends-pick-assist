@@ -167,6 +167,8 @@ test('contestar sin salir del juego (3.84.0): la burbuja del consejo no se toca;
   ok(/optString\("fase"\) == "fuera" && !r\.optBoolean\("enPartida"\)/.test(pendiente), 'lo que se toca no mira la fase: saldría en pleno draft o partida');
   ok(/if \(!fuera[^)]*\) \{ quitarChip\(\); cerrarPanel\(\)/.test(pendiente), 'al empezar un draft o una partida no se quita lo que se toca');
   ok(/pendiente\.pintar\(r, esq\)/.test(burbuja), 'la burbuja no le pasa /consejo a Pendiente: nunca sale');
+  // 3.86.1: sin respuesta del lector (o con un fallo) se quita: no se sabe qué hay delante.
+  ok(/if \(r == null\) \{.*pendiente\.quitarTodo\(\)/.test(burbuja) && /catch \(e: Throwable\) \{ estado = "no llega.*pendiente\.quitarTodo\(\)/.test(burbuja), 'con el lector sin contestar, el botón o el panel se quedan encima del juego');
   const rutas = [...pendiente.matchAll(/(?:pedir|mandar)\("([^"]+)"/g)].map((m) => m[1]);
   ok(rutas.length > 0 && rutas.every((r) => r === '/pregunta' || r === '/correccion'), `Pendiente.kt llama a otra ruta del lector: ${rutas}`);
   ok(!/Runtime|ProcessBuilder|AccessibilityService|dispatchGesture|Instrumentation/.test(pendiente), 'Pendiente.kt hace algo más que enseñar y contestar al lector');

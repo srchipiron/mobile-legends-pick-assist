@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.86.1
+
+- El botón amarillo de la burbuja ya no sale al empezar un draft: espera a
+  ver dos veces seguidas que no hay draft ni partida delante, y se quita si
+  la tablet deja de leer o el lector no contesta.
+- «Revisar con las capturas» no enseña una partida si alguien más subió un
+  recorte con su misma hora: así nadie puede colarte caras falsas.
+
 ## 3.86.0
 
 - Puedes corregir los drafts desde el ordenador viendo las caras. En «Tus

@@ -156,6 +156,7 @@ test('el consejo y el resumen que manda la app (3.62.0): solo la app los escribe
     await mandar({ consejo: null });
     eq((await leerApk()).consejo, null, 'el consejo no se borra');
     eq((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: null, codigo: null })).estado, 401, 'el consejo se lee sin el código');
+    eq((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: 'https://srchipiron.github.io' })).estado, 403, 'un navegador lee el consejo y lo pendiente (3.86.1)');
   } finally { servidor.close(); apk.cerrar(); }
 });
 
@@ -342,6 +343,9 @@ test('enseñar al lector desde la tablet (3.71.0): solo la APK lo lee y lo conte
     servidor.interno.ponerFase('fuera');
     servidor.interno.ponerFase('partida-o-lo-que-sea');
     eq((await burbuja()).fase, 'fuera', 'una fase rara pisa la buena');
+    servidor.interno.ponerFase(null);
+    eq((await burbuja()).fase, null, 'sin leer (3.86.1) se queda la fase de antes');
+    servidor.interno.ponerFase('fuera');
     const t0 = t;
     t += FASE_VALE_MS + 1;
     eq((await burbuja()).fase, null, 'una fase vieja (modo solo parado) sigue valiendo: la burbuja se ofrecería en pleno draft');

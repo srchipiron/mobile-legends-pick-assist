@@ -367,12 +367,30 @@ export function ajustesEfectivos(apk, movil) {
 /** Lo que dura la pregunta de cómo acabó: lo mismo que `RETENCION_CAPTURAS_MS` de servir.mjs (una prueba lo compara). */
 export const PREGUNTA_CADUCA_MS = 3 * 3600000;
 
+/**
+ * La fase para la burbuja tocable (3.84.0, afinada en 3.86.1): «fuera» solo
+ * tras `LECTURAS_PARA_FUERA` lecturas seguidas sin leer a nadie y fuera de
+ * partida. Al empezar un draft no se ve que lo es hasta leer dos baneos
+ * (`acumularDraft`): con «fuera» por no leer nada, el botón salía encima de
+ * los primeros baneos. Un nombre suelto (un «Gord» en el vestíbulo) la deja
+ * en «draft» una vuelta: se equivoca hacia no enseñar el botón.
+ */
+export const LECTURAS_PARA_FUERA = 2;
+const leeAlguien = (l) => !!l && !l.partida && [l.tuyos, l.suyos, l.enemigos, l.aliados].some((x) => Array.isArray(x) && x.some((h) => h?.nombre));
+export function faseDe(draft, lectura, vacias) {
+  if (lectura?.partida) return 'partida';
+  const abierto = !draft?.cerrado && (draft?.baneos?.length || draft?.enemigos?.some(Boolean) || draft?.aliados?.some(Boolean));
+  return abierto || vacias < LECTURAS_PARA_FUERA ? 'draft' : 'fuera';
+}
+
 export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout, apuntar = null, maestriaDe = () => null, alCorregir = null, numerosDe = () => null, alSinLeer = null, guardarSinResultado = null, alFinalSinLeer = null }) {
   // La partida que se vigila para apuntarla sola (3.70.0): el draft de cuando
   // se cerró y su decisión, hasta que la tabla del final dé el resultado.
   let vigilada = null;
   // Lo que no reconoció del último draft (3.71.0), para preguntártelo en la APK.
   let pendiente = null;
+  // Lecturas seguidas fuera de partida sin leer a nadie (3.86.1): la fase «fuera» las pide (ver `LECTURAS_PARA_FUERA`).
+  let vacias = 0;
   // La partida de la que se te preguntó cómo acabó (3.72.5), hasta que contestes.
   let preguntada = null;
   let draft = draftVacio();
@@ -479,12 +497,13 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     }
     const a = ajustes();
     Object.assign(resumen, { activo: !!a.activo, linea: a.linea ?? null, origen: a.origen ?? null, apartado: false });
-    if (!a.activo) return intervalos.vacio;
+    // Sin leer, la fase de antes no vale (3.86.1): la burbuja tocable no sale sin saber qué hay delante.
+    if (!a.activo) { interno.ponerFase?.(null); return intervalos.vacio; }
     const movil = interno.delMovil();
     const t = ahora();
-    if ((movil.leyo && t - movil.leyo < MOVIL_ACTIVO_MS) || (movil.consejo && t - movil.consejo < MOVIL_ACTIVO_MS)) { resumen.apartado = true; return intervalos.vacio; }
+    if ((movil.leyo && t - movil.leyo < MOVIL_ACTIVO_MS) || (movil.consejo && t - movil.consejo < MOVIL_ACTIVO_MS)) { resumen.apartado = true; interno.ponerFase?.(null); return intervalos.vacio; }
     const r = await interno.leer({ rapida: true });
-    if (!r?.ok) return intervalos.error;
+    if (!r?.ok) { interno.ponerFase?.(null); return intervalos.error; }
     const antes = draft;
     draft = acumularDraft(draft, r.lectura, ahora());
     // Las capturas del draft abierto no se podan (3.81.4): a 1,5 s por lectura, las 40 que se guardan son un minuto.
@@ -532,7 +551,7 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
       baneos: draft.baneos.length, enemigos: draft.enemigos.filter(Boolean).length, aliados: draft.aliados.filter(Boolean).length,
     };
     // La fase, para la burbuja (3.84.0): tras cerrar el draft ya no es draft (la partida la ve el lector).
-    interno.ponerFase?.(draft.cerrado ? 'fuera' : (draft.baneos.length || draft.enemigos.some(Boolean) || draft.aliados.some(Boolean)) ? 'draft' : 'fuera');
+    interno.ponerFase?.(faseDe(draft, r.lectura, (vacias = leeAlguien(r.lectura) || r.lectura?.partida ? 0 : vacias + 1)));
     if (draft.cerrado) return intervalos.partida;
     const datos = datosPara(a.rango);
     const consejo = consejoSolo({ datos, draft, linea: a.linea, idioma: a.idioma, maestria: maestriaDe() });

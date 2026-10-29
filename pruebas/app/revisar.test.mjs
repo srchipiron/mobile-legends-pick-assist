@@ -42,6 +42,8 @@ test('lo de la base de datos lo escribe cualquiera: solo PNG en base64 acotado, 
   const nombres = revisiones([recorte({ leidos: { enemigos: ['<b>', 'Nadie'], aliados: [], tuyoFila: 9 } })], [partida()], HEROES)[0];
   ok(nombres.enemigos.slice(0, 2).every((n) => n !== '<b>' && n !== 'Nadie'), 'un nombre que no es del catálogo llega al hueco');
   eq(nombres.tuyoFila, -1, 'una fila imposible pasa');
+  // Otro lector sube un recorte con el instante de tu partida (3.86.1): no se sabe cuál es el tuyo y no sale.
+  eq(revisiones([recorte(), { ...recorte(), j: 7 }], [partida()], HEROES).length, 0, 'sale una partida con recortes de dos lectores');
 });
 
 test('lo que se guarda: tu pick de tu fila, cinco enemigos y cuatro compañeros, sin repetir', () => {

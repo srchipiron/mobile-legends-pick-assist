@@ -45,12 +45,19 @@ export function revisiones(recortes = [], partidas = [], heroes = []) {
   const porClave = new Map((heroes ?? []).map((n) => [String(n).toLowerCase(), n]));
   const nombre = (n) => (typeof n === 'string' ? porClave.get(n.toLowerCase()) ?? null : null);
   const porT = new Map((partidas ?? []).filter((p) => Number.isFinite(p?.t)).map((p) => [p.t, p]));
+  // Los recortes los puede subir cualquiera con la clave pública (3.86.1, revisión de seguridad): si la
+  // misma partida trae recortes de DOS lectores, uno se hace pasar por el tuyo y no se sabe cuál; no sale.
+  const lectores = new Map();
+  for (const fila of recortes ?? []) {
+    const d = fila?.d ?? fila;
+    if (Number.isFinite(d?.partida)) lectores.set(d.partida, new Set([...(lectores.get(d.partida) ?? []), fila?.j ?? null]));
+  }
   const vistas = new Map();
   for (const fila of recortes ?? []) {
     const d = fila?.d ?? fila;
     if (!d || typeof d !== 'object' || d.tipo === 'final' || !Number.isFinite(d.partida)) continue;
     const partida = porT.get(d.partida);
-    if (!partida || vistas.has(d.partida)) continue;
+    if (!partida || vistas.has(d.partida) || lectores.get(d.partida).size > 1) continue;
     const capturas = (Array.isArray(d.capturas) ? d.capturas : []).filter((c) => typeof c?.id === 'string' && /^lectura-[\w-]{1,80}$/.test(c.id) && imagenValida(c.picks)).slice(0, 2).map((c) => ({ id: c.id, png: c.picks }));
     if (!capturas.length) continue;
     const l = d.leidos ?? {};

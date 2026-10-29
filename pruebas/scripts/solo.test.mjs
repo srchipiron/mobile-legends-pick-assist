@@ -8,7 +8,7 @@ import { test, ok, eq, terminar, leerJson } from '../arnes.mjs';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, tusHabituales, HABITUALES, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS } from '../../scripts/lector/solo.mjs';
+import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, tusHabituales, HABITUALES, faseDe, LECTURAS_PARA_FUERA, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS } from '../../scripts/lector/solo.mjs';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
 import { crearServidor, RETENCION_CAPTURAS_MS } from '../../scripts/lector/servir.mjs';
 import { RAIZ } from '../arnes.mjs';
@@ -143,6 +143,7 @@ test('el bucle: decide y pone el consejo; se aparta si el móvil lee o manda el 
   const antes = pedidas.length;
   eq(await solo.tic(), INTERVALOS_SOLO.vacio);
   eq(solo.resumen().apartado, true, 'el resumen no dice que se aparta por el móvil');
+  eq(fases.at(-1), null, 'apartada por el móvil, la tablet deja una fase vieja: el botón saldría sobre el draft que lee el móvil (3.86.1)');
   eq(pedidas.length, antes, 'lee con el móvil leyendo (dos lecturas a la vez)');
   movil = { leyo: null, consejo: t - 1000 };
   respuesta = lectura({ tuyos: [N('Hirara')], enemigos: [N('Clint'), N('Khufra'), V, V, V] });
@@ -157,7 +158,7 @@ test('el bucle: decide y pone el consejo; se aparta si el móvil lee o manda el 
   await solo.tic();
   eq(await solo.tic(), INTERVALOS_SOLO.partida, 'en partida no espera más');
   ok(solo.estado().cerrado, 'la partida no cierra el draft');
-  eq(fases.at(-1), 'fuera', 'tras cerrar el draft la burbuja sigue creyendo que hay draft: no ofrece corregir');
+  eq(fases.at(-1), 'partida', 'en partida la burbuja tocable no sabe que se juega (3.86.1)');
   // Lo que cuenta en /estado (3.69.3).
   const r = solo.resumen();
   ok(r.activo && r.linea === 'roam' && r.lecturas >= 4 && r.ultima?.enPartida === true && r.apartado === false, `el resumen no cuenta lo que hace: ${JSON.stringify(r)}`);
@@ -351,6 +352,36 @@ test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se pregunt
   eq(carga.ids.at(-1), idDe(180000), 'entra una captura que no es la pantalla del draft');
   ok(!acumularDraft(d, { ...enElDraft, id: '../fuera' }, 99).ids.includes('../fuera'), 'entra un id sin forma');
   eq(JSON.stringify(conCaptura([], 'lectura-x')), '["lectura-x"]');
+});
+
+test('la fase de la burbuja tocable (3.86.1): «fuera» solo tras lecturas seguidas sin nadie; al empezar el draft, con un baneo leído, ya no', async () => {
+  const cerrado = { ...draftVacio(), baneos: ['Hirara', 'Eudora'], enemigos: ['Clint', null, null, null, null], cerrado: true, cerradoEn: 1 };
+  const nada = lectura({ suyos: [V, V, V, V, V] });
+  const unBaneo = lectura({ tuyos: [N('Hirara')], suyos: [V, V, V, V, V] });
+  eq(faseDe(cerrado, { partida: true }, 5), 'partida');
+  eq(faseDe(cerrado, nada, LECTURAS_PARA_FUERA - 1), 'draft', 'una sola lectura vacía ya da «fuera»');
+  eq(faseDe(cerrado, nada, LECTURAS_PARA_FUERA), 'fuera');
+  eq(faseDe({ ...cerrado, cerrado: false }, nada, 9), 'draft', 'con un draft abierto da «fuera»');
+  // El bucle: tras la partida, dos lecturas sin nadie dan «fuera»; el primer baneo del draft siguiente (aún sin abrirlo) la quita.
+  let t = 7_000_000, respuesta = lectura({ enemigos: [N('Clint'), V, V, V, V] });
+  const fases = [];
+  const interno = { leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: () => {}, vigilar: () => {}, final: () => null, ponerFase: (f) => fases.push(f) };
+  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t });
+  await solo.tic();
+  respuesta = { partida: true, rapida: true };
+  t += 5000; await solo.tic(); t += 5000; await solo.tic();
+  respuesta = nada;
+  t += 20000; await solo.tic();
+  eq(fases.at(-1), 'draft', 'la primera lectura tras la partida ya da «fuera»');
+  t += 20000; await solo.tic();
+  eq(fases.at(-1), 'fuera', 'tras la partida, sin nadie en dos lecturas, no da «fuera»');
+  respuesta = unBaneo;
+  t += 20000; await solo.tic();
+  eq(fases.at(-1), 'draft', 'con el primer baneo del draft siguiente sigue «fuera»: el botón tapa los baneos');
+  // Una captura fallida no deja la fase de antes.
+  interno.leer = async () => ({ ok: false, error: 'captura' });
+  await solo.tic();
+  eq(fases.at(-1), null, 'sin captura queda la fase vieja');
 });
 
 test('tu héroe con un toque (3.85.0): si no se leyó tu fila, la corrección trae tus habituales de la línea, sin los que ya salen en el draft', async () => {

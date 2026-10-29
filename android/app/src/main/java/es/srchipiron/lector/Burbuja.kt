@@ -65,8 +65,9 @@ class Burbuja(private val contexto: Context) {
             while (activa) {
                 try {
                     val r = leer()
-                    if (r == null) estado = "el lector no contesta" else principal.post { pintar(r) }
-                } catch (e: Throwable) { estado = "no llega al lector: ${e.javaClass.simpleName}" }
+                    // Sin el lector no se sabe qué hay delante (3.86.1): lo que se toca no se queda encima del juego.
+                    if (r == null) { estado = "el lector no contesta"; principal.post { pendiente.quitarTodo() } } else principal.post { pintar(r) }
+                } catch (e: Throwable) { estado = "no llega al lector: ${e.javaClass.simpleName}"; principal.post { pendiente.quitarTodo() } }
                 Thread.sleep(2000)
             }
         }

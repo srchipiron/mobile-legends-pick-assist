@@ -1857,3 +1857,27 @@ quien la mira, no enseña nada a la tablet. En el PC hace falta tu clave en
 «Guardar mis partidas» (la misma del móvil). Pruebas en `app/revisar` y
 `revisar.e2e`; nueve mutaciones.
 
+**La revisión de 3.84–3.86 (3.86.1)**, con `security-reviewer` y
+`silent-failure-hunter` el 29 de octubre de 2026 (nada crítico: ni la
+cuenta, ni el token, ni el código de vinculación). Arreglado, cada uno con
+su prueba y su mutación (ocho, todas cazadas):
+- **El botón tocable sobre los primeros baneos**: `ponerFase` daba «fuera»
+  en cuanto no se leía nada, y un draft nuevo no se abre hasta leer dos
+  baneos. Hoy `faseDe` (solo.mjs) da «fuera» solo tras
+  `LECTURAS_PARA_FUERA` (2) lecturas seguidas sin nadie, «partida» con el
+  minimapa, y cualquier nombre leído la pone en «draft» (se equivoca hacia
+  no enseñar el botón).
+- **La fase vieja**: apagado, apartado por el móvil o con la captura
+  fallida, `tic` salía sin tocarla y valía 30 s. Hoy `ponerFase(null)`.
+- **El panel encima con el lector caído**: `Burbuja.kt` quita botón y panel
+  (`pendiente.quitarTodo`) si `/consejo` no contesta o falla.
+- `GET /consejo` exige `deLaApk` (solo la tablet lo lee).
+- **Recortes ajenos en «Revisar con las capturas»**: cualquiera con la
+  clave pública sube recortes, y quien sepa el `t` de una partida tuya
+  (`partidas_comunidad` lo enseña) podía poner uno falso. Si una partida
+  trae recortes de dos lectores (`j`), no sale. Queda: inundar el top 50
+  de `recortes_recientes` y que los tuyos no salgan (no engaña, esconde).
+Sin tocar: con el panel abierto el juego recibe los toques de fuera
+marcados como «parcialmente tapados» (FLAG_WINDOW_IS_PARTIALLY_OBSCURED);
+solo pasa en el vestíbulo y con el panel que abres tú.
+

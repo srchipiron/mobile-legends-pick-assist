@@ -1076,6 +1076,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       return;
     }
     if (req.method === 'GET' && ruta === '/consejo') {
+      // Solo la APK (3.86.1): la app del móvil escribe el consejo, no lo lee.
+      if (!deLaApk(req)) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'solo la tablet' })); return; }
       // Lo lee la APK de la tablet (3.62.0) para la burbuja y la notificación: sin `Origin`, desde 127.0.0.1 y con el código.
       // En partida, sin consejo: la APK quita la burbuja (también una de antes de 3.69.3).
       const escondida = seguidasEnPartida >= EN_PARTIDA_PARA_ESCONDER;
@@ -1224,7 +1226,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     ponerResumen: (r) => { resumenActual = sanearResumen(r) ?? resumenActual; },
     // Lo que no reconoció (3.71.0), para preguntarlo en la APK.
     ponerCorreccion: (c) => { correccion = sanearCorreccion(c); },
-    ponerFase: (f) => { if (f === 'draft' || f === 'fuera') { fase = f; faseEn = ahora(); } },
+    ponerFase: (f) => { if (f === null || f === 'draft' || f === 'fuera' || f === 'partida') { fase = f; faseEn = ahora(); } },
     /** Las capturas del draft abierto (3.81.4), para que la poda no se las lleve: solo ids con forma, como mucho las de un draft. */
     protegerLecturas: (ids) => { delDraft = (Array.isArray(ids) ? ids : []).filter((id) => typeof id === 'string' && /^lectura-[\w-]+$/.test(id)).slice(-40); },
     correccion: () => correccionVigente(),
