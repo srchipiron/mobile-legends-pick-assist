@@ -100,8 +100,18 @@ function fundirHuecos(antes, leidos, saltar = -1) {
   const huecos = antes.map((n, i) => {
     const nuevo = leidos[i];
     if (!nuevo || nuevo === n) return n;
+    // La misma lectura lo ve en dos huecos: uno de los dos es un imán, y no se sabe cuál.
+    if (leidos.some((x, j) => j !== i && x === nuevo)) return n;
     cambio = true;
     return nuevo;
+  });
+  // Un héroe está en UN hueco de su equipo (3.88.1): el recién leído gana y
+  // sale del hueco donde se leyó antes. El 29 de octubre de 2026 la tablet
+  // apuntó a Gord en dos huecos de tus compañeros (lo vio en uno y, más
+  // tarde, en el de al lado).
+  huecos.forEach((n, i) => {
+    if (!n || n === antes[i]) return;
+    huecos.forEach((m, j) => { if (j !== i && m === n) huecos[j] = null; });
   });
   return { huecos, cambio };
 }

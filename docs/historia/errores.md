@@ -1245,3 +1245,9 @@ mandar vigilar su draft cada vez que `/final` no es el suyo, y `vigilar`
 aceptaba cualquier instante: un draft viejo desalojaba a la partida en
 juego. Lección: lo que identifica algo por su instante no debe dejar que un
 instante anterior lo sustituya; el tiempo solo va hacia delante.
+- **Gord dos veces en tu equipo (29 de octubre de 2026, 3.88.1)** — la
+  tablet sola juntaba lo leído hueco a hueco (`fundirHuecos`, solo.mjs) sin
+  mirar los otros huecos del equipo: Gord leído en uno y luego en el de al
+  lado quedó en los dos, y la partida se apuntó así (69 bien y 7 mal en las
+  14 de esa noche). Hoy un héroe ocupa un solo hueco de su equipo. Lección:
+  lo que se junta por partes tiene que comprobar el todo.

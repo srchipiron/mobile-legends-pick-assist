@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.88.1
+
+- La tablet ya no apunta al mismo héroe en dos huecos de un equipo. Si lo
+  ve en un hueco y luego en otro, se queda en el último y el primero se
+  vacía. Si una misma lectura lo ve en dos huecos a la vez, no se fía de
+  ninguna y deja lo que había. El 29 de octubre de 2026 una partida quedó
+  con Gord dos veces entre tus compañeros.
+
 ## 3.88.0
 
 - Nuevo: «Análisis», el panel de tus partidas. La tablet las apunta y la app

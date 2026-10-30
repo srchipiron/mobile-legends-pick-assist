@@ -1918,3 +1918,10 @@ tanda entera fallaba. Hoy `usando(ids, fn)` (servir.mjs) las apunta en
 `enUso` mientras dura (también la espera a la tanda anterior) y `podar`
 las protege; `recortesDe` igual. Prueba en `puente-lector` (aprender lento,
 cuatro lecturas con tope 2, y al acabar sí se podan); tres mutaciones.
+
+**Un héroe, un hueco (3.88.1)**: `fundirHuecos` (solo.mjs) junta lo leído
+hueco a hueco, y el 29 de octubre de 2026 dejó a Gord en dos huecos de tus
+compañeros. Hoy el recién leído gana y sale del hueco donde estaba antes.
+Si una misma lectura lo ve en dos huecos, no entra en ninguno. Vale para
+rivales y para tu equipo (con tu fila). Prueba en `solo.test`, tres
+mutaciones.

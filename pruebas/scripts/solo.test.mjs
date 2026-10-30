@@ -35,6 +35,21 @@ test('el draft junta lo leído: baneos de los dos lados sin repetir, huecos por 
   eq(d.aliados[0], 'Gord', 'un «?» borra lo leído');
 });
 
+test('un héroe no se queda en dos huecos de su equipo: el recién leído gana', () => {
+  let d = acumularDraft(null, lectura({ aliados: [N('Gord'), V, V, V, V], enemigos: [N('Clint'), V, V, V, V] }), 1);
+  d = acumularDraft(d, lectura({ aliados: [V, N('Gord'), V, V, V], enemigos: [V, N('Clint'), V, V, V] }), 2);
+  eq(d.aliados.filter((n) => n === 'Gord').length, 1, 'Gord se queda en dos huecos de tu equipo');
+  eq(d.aliados[1], 'Gord', 'no gana la lectura nueva');
+  eq(d.enemigos.join(), ',Clint,,,', 'un rival se queda en dos huecos');
+  // La misma lectura lo ve en dos huecos: ninguno gana, y lo de antes se queda.
+  d = acumularDraft(d, lectura({ aliados: [N('Selena'), V, N('Selena'), V, V] }), 3);
+  eq(d.aliados.filter((n) => n === 'Selena').length, 0, 'un héroe visto en dos huecos a la vez entra');
+  eq(d.aliados[1], 'Gord');
+  // Otro distinto en otro hueco no quita a nadie.
+  d = acumularDraft(d, lectura({ aliados: [N('Estes'), V, V, V, V] }), 4);
+  eq(d.aliados.filter(Boolean).join(), 'Estes,Gord');
+});
+
 test('la fase de skins (muchos huecos cambiando a la vez) no toca ese equipo', () => {
   let d = acumularDraft(null, lectura({ enemigos: [N('Clint'), N('Khufra'), N('Layla'), N('Saber'), V] }), 1);
   d = acumularDraft(d, lectura({ enemigos: [N('Wanwan'), N('Wanwan'), N('Joy'), N('Joy'), V] }), 2);
