@@ -308,3 +308,36 @@ cualquier campo local resucitaría lo que el arreglo quitó (la estimación al
 cambiar de héroe, `supuesto` al confirmarlo). Pruebas en `app/basedatos` y
 `motor/perfil`, dos mutaciones.
 
+## El análisis de tus partidas (3.88.0)
+
+Javi: «que la app sirva como dashboard de partidas, estadísticas, con qué
+juego mejor… la tablet lee todo y lleva los datos a la app, que los analiza
+y los interpreta». La tablet apunta; el móvil (o el PC) analiza.
+- `src/motor/analitica.js` (puro, reloj y día inyectados): `evolucion`
+  (`SEMANAS_EN_LA_EVOLUCION` 12 semanas de 7 días hacia atrás, la última =
+  los últimos 7 días como «Tu semana»; las vacías con `wr: null`),
+  `porCompaneros` (`lado` aliados o enemigos, desde `MINIMO_CON_UNO` 8
+  partidas, Wilson y «mejor/peor» solo fuera de tu media; los mejores por
+  el borde BAJO y los peores por el ALTO, `CUANTOS_POR_LISTA` 5), `porLinea`
+  y `porDia` (cada grupo contra el resto con `compararProporciones`, desde
+  10; los días de lunes a domingo) y `conLaApp` (su nº1, uno de sus tres y
+  por libre; las supuestas no cuentan). Todo decisión de producto.
+- Lo que ya había se reutiliza tal cual: `tusNumeros` (racha, sesión,
+  franjas, duraciones, tras perder, héroes), `tuSemana` y el Veredicto.
+- La pantalla, `Analitica.jsx` (hoja `analisis`): cifras arriba, la
+  evolución en SVG (una serie, barras del azul de tu equipo, tu media en raya
+  discontinua, el número exacto en `<title>`), filas con intervalo (tramo
+  95%, punto, raya de tu media) para héroes, compañeros y rivales, y los
+  grupos con su margen. Se abre desde Ajustes («Análisis», entre Perfil y
+  Meta: las pruebas abren por posición los tres primeros y Meta la última),
+  la barra del PC, «Tus partidas» y `#analisis` (página suelta, como
+  `#capturas`: `PAGINAS_SUELTAS` en App.jsx).
+- Con las 264 de Javi (30 de octubre de 2026): con Lukas de compañero 5 de
+  15 (peor que tu media), contra Brody 2 de 10 (peor), contra Ixia 12 de 13
+  (mejor); el resto cabe en el margen.
+- Pruebas en `motor/analitica` e `interfaz/analitica` (más `idioma.e2e` con
+  partidas, para que el análisis entero pase por la prueba del inglés).
+  Diez mutaciones; dos sobrevivían hasta que los datos de la prueba
+  distinguieron el orden por partidas del de lunes a domingo, y el winrate
+  del borde bajo.
+

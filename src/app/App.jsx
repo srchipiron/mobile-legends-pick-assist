@@ -34,6 +34,7 @@ import { ApuntarPartida } from './componentes/ApuntarPartida.jsx';
 import { HistorialPartidas } from './componentes/HistorialPartidas.jsx';
 import { RevisarCapturas } from './componentes/RevisarCapturas.jsx';
 import { BarraPC } from './componentes/BarraPC.jsx';
+import { Analitica } from './componentes/Analitica.jsx';
 import { atajoDe, escribiendoEn } from './atajos.js';
 import { Perfil } from './componentes/Perfil.jsx';
 import { EditorDeMaestria } from './componentes/EditorDeMaestria.jsx';
@@ -47,6 +48,9 @@ import { Administracion, PuertaDeLicencia } from './componentes/Administracion.j
  * guardados a héroes, se decide qué pantalla y qué hoja se ven, y se cablean
  * las acciones.
  */
+/** Las páginas que se abren solas desde un enlace (3.87.0 y 3.88.0): hash → hoja. */
+const PAGINAS_SUELTAS = { '#capturas': 'revisar', '#analisis': 'analisis' };
+
 export default function App() {
   const { t, linea, setLinea, rango, setRango, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto, vozCallada, setVozCallada, lectorTablet, setLectorTablet, vinculoPendiente, confirmarVinculo } = useAjustes();
   // `t` es también el instante de una partida dentro de guardarPartida: allí se traduce con este.
@@ -58,14 +62,14 @@ export default function App() {
   useActualizacion();
 
   // 'enemigos' | 'aliados' | 'baneos' | 'maestria' | 'historial' | 'revisar' | 'perfil' | 'linea' | 'apuntar' | { build }
-  // «Capturas» (3.87.0): la app abierta con `#capturas` es SOLO eso, para el
-  // ordenador: las capturas de los drafts que la tablet no leyó entero.
-  const conCapturas = () => typeof window !== 'undefined' && window.location.hash === '#capturas';
-  // El `#capturas` se quita en cuanto se lee (3.87.1): si se quedaba en el historial, «atrás» tras
-  // cerrar volvía a abrir «Capturas». Antes de cualquier efecto: la hoja mete su entrada después.
-  const quitarCapturas = () => { try { window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}`); } catch { /* sin historial */ } };
-  const [soloCapturas, setSoloCapturas] = useState(() => { const si = conCapturas(); if (si) quitarCapturas(); return si; });
-  const [hoja, setHoja] = useState(() => (soloCapturas ? 'revisar' : null));
+  // Las páginas sueltas, para el ordenador: la app abierta con `#capturas`
+  // (3.87.0) o `#analisis` (3.88.0) es SOLO esa hoja.
+  const paginaDelHash = () => (typeof window !== 'undefined' ? PAGINAS_SUELTAS[window.location.hash] ?? null : null);
+  // El hash se quita en cuanto se lee (3.87.1): si se quedaba en el historial, «atrás» tras
+  // cerrar volvía a abrir la página. Antes de cualquier efecto: la hoja mete su entrada después.
+  const quitarHash = () => { try { window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}`); } catch { /* sin historial */ } };
+  const [soloPagina, setSoloPagina] = useState(() => { const p = paginaDelHash(); if (p) quitarHash(); return p; });
+  const [hoja, setHoja] = useState(() => soloPagina);
   // El orden de las caras del selector de picks (3.17.0): se calcula al ABRIR
   // la hoja o al cambiar de pestaña y no se mueve mientras se toca. Lo que se
   // toca a contrarreloj no cambia de sitio (errores ya cometidos: los chips
@@ -82,13 +86,13 @@ export default function App() {
   }, [lector.aviso]);
   const cerrar = () => setHoja(null);
   useEffect(() => {
-    const alCambiar = () => { if (conCapturas()) { quitarCapturas(); setSoloCapturas(true); setHoja('revisar'); } };
+    const alCambiar = () => { const p = paginaDelHash(); if (p) { quitarHash(); setSoloPagina(p); setHoja(p); } };
     window.addEventListener('hashchange', alCambiar);
     return () => window.removeEventListener('hashchange', alCambiar);
   }, []);
-  // Salir de «Capturas» deja la app normal; el `#capturas` ya no está: ni recargar ni «atrás» vuelven a meterte.
-  const cerrarCapturas = () => {
-    setSoloCapturas(false);
+  // Salir de una página suelta deja la app normal; el hash ya no está: ni recargar ni «atrás» vuelven a meterte.
+  const cerrarSuelta = () => {
+    setSoloPagina(null);
     setHoja(null);
   };
 
@@ -116,7 +120,7 @@ export default function App() {
   // Las teclas del ordenador (3.87.0): E, A y B abren el selector de su bando sin soltar el teclado.
   const teclaRef = useRef(null);
   teclaRef.current = (e) => {
-    if (!linea || soloCapturas) return;
+    if (!linea || soloPagina) return;
     // Solo con el draft a la vista (3.87.1): el Diagnóstico, las novedades del pie, el aviso del QR o la
     // puerta de la licencia no son `hoja`, y E abría el selector encima de ellos.
     const tapado = !document.querySelector('.app .draft') || !!document.querySelector('.sheet, [role="dialog"]');
@@ -612,7 +616,7 @@ export default function App() {
   if (!carga.catalogo) return <div className="results"><p className="empty-state">{t('app.cargando')}</p></div>;
 
   // Primer arranque: sin línea no hay nada que recomendar.
-  if (!linea && !soloCapturas) {
+  if (!linea && !soloPagina) {
     return (
       <div className="app">
         <ElegirLinea valor={null} onElegir={setLinea} t={t} idioma={idioma} onIdioma={setIdioma} idiomas={IDIOMAS} />
@@ -688,10 +692,12 @@ export default function App() {
           onOlvidar={personal.olvidarPartida} onCorregir={personal.corregirPartida} onCambiarHeroe={personal.cambiarHeroePartida} onCambiarDraft={personal.cambiarDraftPartida}
           onAnadir={(heroe, gane) => personal.apuntarPartida({ pick: heroe, gane, previa: true, rango: datos.rango })}
           onRevisar={() => deHojaAHoja('revisar')}
+          onAnalisis={() => deHojaAHoja('analisis')}
           onCerrar={cerrar} t={t}
         />
       )}
-      {hoja === 'revisar' && <RevisarCapturas partidas={personal.partidas} datos={datos} comunidad={comunidad} perfil={datosPerfil} onImportar={traerPerfil} onGuardar={personal.revisarPartida} onCerrar={soloCapturas ? cerrarCapturas : cerrar} t={t} />}
+      {hoja === 'revisar' && <RevisarCapturas partidas={personal.partidas} datos={datos} comunidad={comunidad} perfil={datosPerfil} onImportar={traerPerfil} onGuardar={personal.revisarPartida} onCerrar={soloPagina === 'revisar' ? cerrarSuelta : cerrar} t={t} />}
+      {hoja === 'analisis' && <Analitica partidas={personal.partidas} maestria={personal.maestria} datos={datos} onCerrar={soloPagina === 'analisis' ? cerrarSuelta : cerrar} t={t} />}
       {hoja === 'perfil' && <Perfil datos={datosPerfil} onImportar={traerPerfil} onCerrar={cerrar} t={t} />}
       {hoja === 'meta' && <Meta datos={datos} linea={linea} onFicha={(nombre) => deHojaAHoja({ ficha: nombre })} onCerrar={cerrar} t={t} />}
       {hoja?.ficha && <FichaDeHeroe datos={datos} nombre={hoja.ficha} onOtro={(nombre) => setHoja({ ficha: nombre })} onCerrar={cerrar} t={t} />}
@@ -705,7 +711,7 @@ export default function App() {
   // La puerta va DESPUÉS de todos los hooks: cerrarla no puede cambiar su orden.
   if (!licencia.pasa) return <PuertaDeLicencia licencia={licencia} t={t} />;
   // «Capturas» sola: ni draft ni lector detrás, solo la hoja.
-  if (soloCapturas && hoja === 'revisar') return <div className="solo-capturas">{hojas}</div>;
+  if (soloPagina && hoja === soloPagina) return <div className="solo-pagina">{hojas}</div>;
 
   const barra = <BarraPC abrir={abrir} onDiagnostico={lanzarDiagnostico} conCapturas={!!comunidad.config} fase={draft.fase} t={t} />;
 

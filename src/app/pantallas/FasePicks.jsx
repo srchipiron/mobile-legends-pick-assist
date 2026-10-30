@@ -149,6 +149,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
             <button className="reset" onClick={() => abrir('maestria')}>{t('app.maestria')}</button>
             <button className="reset" onClick={() => abrir('historial')}>{t('hist.boton')}</button>
             <button className="reset" onClick={() => abrir('perfil')}>{t('perfil.boton')}</button>
+            <button className="reset" onClick={() => abrir('analisis')}>{t('ana.boton')}</button>
             {/* Al final a propósito: las pruebas de navegador abren maestría e historial por posición. */}
             <button className="reset" onClick={() => abrir('meta')}>{t('meta.boton')}</button>
           </div>

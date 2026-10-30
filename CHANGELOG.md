@@ -8,6 +8,21 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.88.0
+
+- Nuevo: «Análisis», el panel de tus partidas. La tablet las apunta y la app
+  las analiza: cuántas llevas y cuánto ganas, tu racha, los últimos 7 días,
+  una gráfica semana a semana, con qué héroe juegas mejor, con qué
+  compañeros ganas y con cuáles te cuesta, a qué rivales ganas y cuáles te
+  ganan, qué días y horas te van mejor, y si te ayuda coger lo que dice la
+  app. Cada porcentaje lleva su margen, y «mejor» o «peor» que tu media
+  solo sale cuando no puede ser suerte.
+- Se abre desde Ajustes → «Análisis», desde «Tus partidas», desde la barra
+  en el ordenador o, en el PC, con `#analisis` al final de la dirección.
+- La × para quitar un héroe del draft mide siempre lo justo para tocarla
+  bien, con cualquier letra del móvil: con algunas fuentes se quedaba
+  más pequeña.
+
 ## 3.87.5
 
 - Más probabilidades de que los counters y las sinergias se renueven cada

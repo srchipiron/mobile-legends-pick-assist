@@ -9,6 +9,7 @@ import { tPorDefecto } from './tPorDefecto.js';
 export function BarraPC({ abrir, onDiagnostico, conCapturas, fase, t = tPorDefecto }) {
   return (
     <nav className="barra-pc" aria-label={t('pc.barra')}>
+      <button className="reset" onClick={() => abrir('analisis')}>{t('ana.boton')}</button>
       <button className="reset" onClick={() => abrir('historial')}>{t('hist.boton')}</button>
       {conCapturas && <button className="reset" onClick={() => abrir('revisar')}>{t('pc.capturas')}</button>}
       <button className="reset" onClick={() => abrir('maestria')}>{t('app.maestria')}</button>

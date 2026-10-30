@@ -18,6 +18,8 @@ await prueba('la interfaz en inglés no enseña español', async () => {
       'roam-picker:linea': 'roam',
       'roam-picker:draft': { enemies: ['Layla', 'Fanny'], allies: ['Chou'], bans: ['Ling'], enemyRoam: null, fase: 'picks' },
       'roam-picker:mastery': { Khufra: { games: 40, winRate: 0.6 } },
+      // Partidas de sobra para que el análisis (3.88.0) pinte todos sus bloques, no solo «sin partidas».
+      'roam-picker:partidas': Array.from({ length: 40 }, (_, i) => ({ t: Date.now() - (i + 1) * 36e5 * 20, pick: i % 2 ? 'Floryn' : 'Rafaela', gane: i % 3 !== 0, recomendados: ['Floryn', 'Rafaela', 'Diggie'], draft: { linea: 'roam', aliados: ['Gord', 'Layla'], enemigos: ['Clint', 'Khufra'] } })),
     },
   });
   eq(await pagina.evaluate(() => document.documentElement.lang), 'en', 'el html no lleva lang=en');
@@ -28,7 +30,7 @@ await prueba('la interfaz en inglés no enseña español', async () => {
   mirar(await pagina.locator('.equipo').innerText(), 'equipo');
   await pagina.locator('.more summary').click(); await pagina.waitForTimeout(200);
   mirar(await pagina.locator('.more').innerText(), 'ajustes');
-  for (const [nombre, i] of [['maestria', 0], ['historial', 1], ['perfil', 2]]) {
+  for (const [nombre, i] of [['maestria', 0], ['historial', 1], ['perfil', 2], ['analisis', 3]]) {
     await pagina.locator('.more .tools .reset').nth(i).click(); await pagina.waitForTimeout(300);
     const d = pagina.locator('[role=dialog]').last();
     mirar(await d.innerText(), nombre);

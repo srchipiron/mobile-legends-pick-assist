@@ -172,6 +172,10 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
    negativo. Medido en 3.6.0 en doce tamaños de pantalla: la × salía de 27 a
    31 px de ancho y la marca de rival de 21 a 25; desde entonces, 32 o más. */
 .slot .x { color: var(--muted); font-size: 18px; line-height: 1; padding: 10px 11px; margin: -10px -9px; }
+/* Los 32 px de toque de la × no pueden depender de la letra (3.88.0): con una
+   fuente donde «×» mide 12 px, el botón se quedaba en 30 (responsive.e2e en
+   un contenedor con otras fuentes). La caja mínima, centrada. */
+.slot .x { min-width: 32px; text-align: center; }
 .slot .slot-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* La cara dentro del hueco del draft.
@@ -812,10 +816,43 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .revisar-entera { display: block; width: min(280px, 100%); height: auto; justify-self: center; border-radius: var(--r-sm); background: #000; }
 .revisar-enlace a { color: var(--gold); word-break: break-all; }
 .revisar-lista { display: flex; flex-direction: column; }
-/* «Capturas» sola (#capturas, 3.87.0): solo la hoja; el contenedor no pinta nada. */
-.solo-capturas { display: contents; }
+/* Una página suelta (#capturas, #analisis): solo la hoja; el contenedor no pinta nada. */
+.solo-pagina { display: contents; }
 .revisar-tuyos { display: flex; flex-wrap: wrap; gap: 6px; }
 .revisar-hueco:has(.revisar-tuyos) { flex-wrap: wrap; }
+/* El análisis de tus partidas (3.88.0): un panel. Cifras arriba, una serie
+   por gráfica (una barra por semana, en el azul de tu equipo), la media como
+   raya discontinua y cada porcentaje con su intervalo. */
+.analitica { gap: 12px; }
+.ana-abrir { margin-bottom: 8px; }
+.ana-cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.ana-cifra { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); box-shadow: var(--brillo); }
+.ana-cifra span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.ana-cifra strong { font-family: var(--font-num); font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ana-cifra small { font-size: 12px; color: var(--muted); }
+.ana-bloque { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); box-shadow: var(--brillo); }
+.ana-bloque h3 { margin: 0 0 2px; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.ana-dos { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.ana-evolucion { width: 100%; height: auto; max-height: 200px; display: block; }
+.ana-evolucion text { font-size: 9px; }
+.ana-rejilla { stroke: var(--line); stroke-width: 1; }
+.ana-barra { fill: var(--ally); }
+.ana-barra:hover { fill: color-mix(in srgb, var(--ally) 75%, white); }
+.ana-vacia { fill: var(--line-hi); }
+.ana-media { stroke: var(--text); stroke-width: 1.5; stroke-dasharray: 4 3; opacity: 0.7; }
+.ana-n { fill: var(--muted); font-size: 10px; font-family: var(--font-num); }
+.ana-filas { display: flex; flex-direction: column; gap: 4px; }
+.ana-fila { display: grid; grid-template-columns: minmax(0, 1.8fr) 2.8em 5.4em minmax(56px, 1.4fr); align-items: center; gap: 8px; font-size: 13px; font-variant-numeric: tabular-nums; padding: 4px 0; }
+.ana-nombre { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ana-wr { font-family: var(--font-num); font-weight: 700; text-align: right; }
+.ana-n-fila { color: var(--muted); font-size: 12px; }
+.ana-intervalo { position: relative; height: 14px; border-radius: 7px; background: var(--glass); }
+.ana-tramo { position: absolute; top: 4px; height: 6px; border-radius: 3px; background: var(--line-hi); }
+.ana-raya { position: absolute; top: 0; width: 0; height: 14px; border-left: 1.5px dashed var(--muted); }
+.ana-punto { position: absolute; top: 2px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 2px var(--panel); }
+.ana-lado { grid-column: 1 / -1; font-size: 11px; color: var(--muted); }
+.ana-fila.mejor .ana-lado, .ana-grupo.mejor { color: var(--c-comp); }
+.ana-fila.peor .ana-lado, .ana-grupo.peor { color: var(--enemy); }
 .revisar-guardada { font-weight: 600; }
 .revisar-clave { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 12px; }
 /* La barra del ordenador (3.87.0): solo desde 1.100 px (ver la @media de abajo). */
@@ -1239,7 +1276,10 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   /* El modo ordenador (3.87.0): lo de «Ajustes» a la vista, a un clic. */
   .barra-pc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
   .barra-pc .reset { flex: 1 1 calc(50% - 4px); min-height: 40px; }
-  .solo-capturas .sheet { padding-left: max(16px, calc((100vw - 1400px) / 2)); padding-right: max(16px, calc((100vw - 1400px) / 2)); }
+  /* El análisis en el ordenador: las cuatro listas de compañeros y rivales de dos en dos. */
+  .ana-dos { grid-template-columns: 1fr 1fr; }
+  .ana-evolucion { max-height: 220px; }
+  .solo-pagina .sheet { padding-left: max(16px, calc((100vw - 1400px) / 2)); padding-right: max(16px, calc((100vw - 1400px) / 2)); }
 }
 
 @media (prefers-reduced-motion: no-preference) {
