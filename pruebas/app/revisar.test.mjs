@@ -4,7 +4,10 @@
  * lo que se guarda.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { revisiones, cambiosDeRevision, porRevisar, imagenValida, encuadre, tusMasJugados, TOPE_IMAGEN } from '../../src/app/revisar.js';
+import { readFileSync } from 'node:fs';
+import { revisiones, cambiosDeRevision, porRevisar, imagenValida, encuadre, tusMasJugados, companerosHabituales, carasParaHueco, CARAS_POR_HUECO, TOPE_IMAGEN } from '../../src/app/revisar.js';
+import { prepararDatos, probablesDelBando } from '../../src/motor/draft.js';
+import { RAIZ } from '../arnes.mjs';
 
 const HEROES = ['Atlas', 'Clint', 'Franco', 'Gord', 'Khufra', 'Layla', 'Minotaur', 'Rafaela', 'Selena', 'Tigreal', 'Zilong', 'Floryn'];
 const PNG = 'iVBORw0KGgoAAAANSUhEUg==';
@@ -75,6 +78,38 @@ test('tus más jugados para tu hueco (3.87.3): por partidas, sin supuestos, sin 
   eq(tusMasJugados(partidas, HEROES, ['Gord', 'minotaur']).join(), 'Rafaela,Floryn', 'sale uno que ya está en el draft');
   eq(tusMasJugados(partidas, HEROES, [], 2).length, 2);
   eq(tusMasJugados(null, HEROES).length, 0);
+});
+
+const leerJson = (f) => JSON.parse(readFileSync(`${RAIZ}/${f}`, 'utf8'));
+
+test('tus compañeros de siempre (3.89.0): por veces a tu lado, sin los del draft, del catálogo', () => {
+  const ps = [
+    { t: 1, draft: { aliados: ['Gord', 'Selena', 'Nadie'] } },
+    { t: 2, draft: { aliados: ['gord', 'Layla'] } },
+    { t: 3, draft: { aliados: ['Gord', 'Selena'] } },
+    { t: 4 }, null,
+  ];
+  eq(companerosHabituales(ps, HEROES).join(), 'Gord,Selena,Layla', 'no van por veces a tu lado');
+  eq(companerosHabituales(ps, HEROES, ['Gord']).join(), 'Selena,Layla', 'sale uno que ya está en el draft');
+  eq(companerosHabituales(ps, HEROES, [], 1).join(), 'Gord');
+});
+
+test('las caras al tocar un hueco (3.89.0): los tuyos delante, luego el motor, nunca uno del draft; buscando, el que empieza así', () => {
+  const datos = prepararDatos({ catalogo: leerJson('public/data/heroes.json'), meta: leerJson('public/data/roam-meta.json'), rango: 'glory' });
+  const fuera = ['Clint', 'Khufra', 'Gord'];
+  const c = carasParaHueco(datos, { lado: 'enemigos', equipo: ['Clint', 'Khufra'], fuera });
+  eq(c.length, CARAS_POR_HUECO);
+  ok(!c.some((h) => fuera.includes(h.name)), 'sale uno que ya está en el draft');
+  const motor = probablesDelBando(datos, { equipo: ['Clint', 'Khufra'].map((n) => datos.heroes.find((h) => h.name === n)), bando: 'enemigos' }).filter((h) => !fuera.includes(h.name)).slice(0, CARAS_POR_HUECO);
+  eq(c.map((h) => h.name).join(), motor.map((h) => h.name).join(), 'los rivales no van en el orden del motor');
+  const a = carasParaHueco(datos, { lado: 'aliados', equipo: ['Gord'], fuera, linea: 'roam', primeros: ['Zilong', 'Gord', 'Nadie', 'Layla'] });
+  eq(a.slice(0, 2).map((h) => h.name).join(), 'Zilong,Layla', 'tus compañeros de siempre no van delante (o va uno del draft o uno que no existe)');
+  eq(new Set(a.map((h) => h.name)).size, a.length, 'una cara sale dos veces');
+  const b = carasParaHueco(datos, { lado: 'enemigos', fuera, buscar: 'la' });
+  ok(b.length && b.every((h) => /la/i.test(h.name)), 'buscando sale uno que no casa');
+  ok(b[0].name.toLowerCase().startsWith('la'), `buscando «la» no van primero los que empiezan así: ${b[0].name}`);
+  ok(!carasParaHueco(datos, { lado: 'enemigos', fuera, buscar: 'clin' }).length, 'buscando sale uno del draft');
+  eq(carasParaHueco(null, {}).length, 0);
 });
 
 await terminar('app/revisar');

@@ -8,6 +8,24 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.89.0
+
+- La tablet ya no te pide entre partida y partida que le digas quién era el
+  héroe que no reconoció. Ni la notificación de cada partida ni el botón de
+  la burbuja lo piden; solo sigue preguntando cómo acabó cuando no vio el
+  resultado. Lo que no reconoció se guarda igual, con sus capturas.
+- «Capturas» (en el móvil o en el ordenador) es ahora el sitio para
+  revisarlo todo de golpe al acabar la sesión, sin escribir. Toca la cara
+  de un hueco y salen debajo 24 caras para elegir. En tu equipo van delante
+  tus compañeros de siempre, en tu fila tus héroes y en el suyo lo más
+  probable para ese draft. Si no está, el buscador encuentra cualquiera.
+  Al elegir, se abre solo el siguiente hueco vacío: un draft son unos pocos
+  toques y «Guardar». Medido con tus 260 partidas: el rival que falta sale
+  entre esas 24 caras en 7 de cada 10 huecos.
+- Cada draft que arreglas así enseña a la tablet esas caras en las horas
+  siguientes. Las skins de tus amigos, que son las que más se le escapan,
+  se leen solas en cuanto las arreglas en dos drafts.
+
 ## 3.88.1
 
 - La tablet ya no apunta al mismo héroe en dos huecos de un equipo. Si lo

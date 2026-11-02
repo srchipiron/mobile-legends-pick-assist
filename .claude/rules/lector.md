@@ -1925,3 +1925,25 @@ compañeros. Hoy el recién leído gana y sale del hueco donde estaba antes.
 Si una misma lectura lo ve en dos huecos, no entra en ninguno. Vale para
 rivales y para tu equipo (con tu fila). Prueba en `solo.test`, tres
 mutaciones.
+
+**Corregir sin parar de jugar (3.89.0)**. Javi: «juego una partida detrás de
+otra y en equipo, no me da tiempo a ir corrigiendo aunque me salga la
+notificación».
+- La tablet ya no lo pide en la partida: `resumenSolo` no lleva la línea de
+  «toca para decirle quién era» (y ya no recibe `faltan`), y `GET /consejo`
+  da siempre `pendiente.correccion: false`. La burbuja solo ofrece «¿Cómo
+  acabó?». La corrección se sigue guardando (tarjeta de la APK al abrirla)
+  y los recortes se suben igual.
+- Lo de verdad se hace en «Capturas»: la cara de cada hueco es un botón.
+  Abre `ElegirCara` con `carasParaHueco` (revisar.js): `primeros` (tu fila:
+  `tusMasJugados`; tu equipo: `companerosHabituales`, los que más salen a tu
+  lado), luego `probablesDelBando` del motor, sin nadie del draft,
+  `CARAS_POR_HUECO` (24); buscando, cualquiera, primero los que empiezan
+  así. Elegir abre el siguiente hueco vacío.
+- Medido en sus 260 partidas, quitando un hueco cada vez y mirando si sale:
+  rivales, motor 32% entre 6, 48% entre 12 y 70% entre 24. Compañeros: los
+  de siempre 23/33/48% (6/12/24) y el motor 9/20/35%. Juega con amigos,
+  pero no siempre con los mismos héroes: unos botones fijos no bastaban
+  (descartados.md).
+- Pruebas en `app/revisar` y `revisar.e2e` (390 px, sin teclado), `solo` y
+  `en-tablet`; diez mutaciones, todas cazadas.

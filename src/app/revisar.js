@@ -1,3 +1,6 @@
+import { probablesDelBando } from '../motor/draft.js';
+import { filtrarPorNombre } from '../motor/alias.js';
+
 /**
  * Revisar lo que no vio el lector, con sus capturas (3.86.0). Javi: «desde
  * el PC, ¿puedo corregirte los picks? Haz algún sistema para ver las
@@ -122,4 +125,56 @@ export function encuadre(lado, i, escala) {
   const c = COMPOSICION[lado === 'enemigos' ? 'enemigo' : 'aliado'];
   const r = (x) => Math.round(x * escala);
   return { ancho: r(c.ancho), alto: r(c.alto), fondo: `${r(COMPOSICION.ancho)}px ${r(COMPOSICION.alto)}px`, posicion: `${-r(c.x)}px ${-r(i * COMPOSICION.fila)}px` };
+}
+
+/** Cuántos de tus compañeros de siempre van delante al elegir un compañero (3.89.0): los mismos que tus héroes (`TUS_HABITUALES`). */
+export const COMPANEROS_HABITUALES = TUS_HABITUALES;
+
+/**
+ * Los héroes que más salen a tu lado en tus partidas (3.89.0), sin los que
+ * ya están en el draft. Juegas con amigos: el hueco que no se leyó suele ser
+ * uno de los suyos. Medido en tus 260 partidas: el que falta está entre
+ * estos seis en el 23% de los huecos, y entre los seis primeros del motor
+ * solo en el 9%.
+ */
+export function companerosHabituales(partidas = [], heroes = [], fuera = [], n = COMPANEROS_HABITUALES) {
+  const porClave = new Map((heroes ?? []).map((h) => [String(h).toLowerCase(), h]));
+  const salen = new Set((fuera ?? []).filter((x) => typeof x === 'string').map((x) => x.toLowerCase()));
+  const cuenta = new Map();
+  for (const p of partidas ?? []) {
+    for (const a of Array.isArray(p?.draft?.aliados) ? p.draft.aliados : []) {
+      const nombre = typeof a === 'string' ? porClave.get(a.toLowerCase()) : null;
+      if (!nombre || salen.has(nombre.toLowerCase())) continue;
+      cuenta.set(nombre, (cuenta.get(nombre) ?? 0) + 1);
+    }
+  }
+  return [...cuenta.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, n).map(([h]) => h);
+}
+
+/** Cuántas caras salen al tocar un hueco (3.89.0): el rival que falta está entre las 24 primeras del motor en el 70% de tus huecos. Decisión de producto. */
+export const CARAS_POR_HUECO = 24;
+
+/**
+ * Las caras para elegir quién va en un hueco (3.89.0), en orden: `primeros`
+ * (tus héroes o tus compañeros de siempre) y luego lo que el motor da por
+ * más probable en ese equipo (`probablesDelBando`, el orden del selector de
+ * la app). Buscando, cualquiera que case. Nunca uno que ya está en el draft
+ * (`fuera`). `datos`: lo de `prepararDatos`.
+ */
+export function carasParaHueco(datos, { lado = 'enemigos', equipo = [], fuera = [], linea = null, primeros = [], buscar = '', n = CARAS_POR_HUECO } = {}) {
+  const heroes = datos?.heroes ?? [];
+  if (!heroes.length) return [];
+  const porClave = new Map(heroes.map((h) => [h.name.toLowerCase(), h]));
+  const de = (x) => (typeof x === 'string' ? porClave.get(x.toLowerCase()) ?? null : null);
+  const no = new Set((fuera ?? []).map(de).filter(Boolean));
+  if (buscar.trim()) {
+    // Primero los que EMPIEZAN por lo escrito, como en el selector de la app.
+    const q = buscar.trim().toLowerCase();
+    const empieza = (h) => (h.name.toLowerCase().startsWith(q) ? 0 : 1);
+    return filtrarPorNombre(heroes, buscar).filter((h) => !no.has(h)).sort((a, b) => empieza(a) - empieza(b)).slice(0, n);
+  }
+  const delEquipo = (equipo ?? []).map(de).filter(Boolean);
+  const probables = datos.meta?.stats && datos.lineas ? probablesDelBando(datos, { equipo: delEquipo, linea, bando: lado }) : heroes;
+  const orden = [...(primeros ?? []).map(de).filter(Boolean), ...probables];
+  return [...new Set(orden)].filter((h) => !no.has(h)).slice(0, n);
 }

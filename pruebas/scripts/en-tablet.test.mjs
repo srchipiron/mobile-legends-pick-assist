@@ -337,7 +337,8 @@ test('enseñar al lector desde la tablet (3.71.0): solo la APK lo lee y lo conte
     // La burbuja (3.84.0): sabe que hay algo que contestar y en qué fase está, para ofrecerlo solo fuera del draft y de la partida.
     const burbuja = async () => JSON.parse((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
     const b0 = await burbuja();
-    ok(b0.pendiente?.correccion === true && b0.pendiente?.pregunta === false && b0.fase === null, `la burbuja no ve la corrección pendiente: ${JSON.stringify(b0)}`);
+    // 3.89.0: la burbuja ya no ofrece «quién era» entre partidas (no da tiempo); la tarjeta de la APK sí lo tiene.
+    ok(b0.pendiente?.correccion === false && b0.pendiente?.pregunta === false && b0.fase === null, `la burbuja ofrece la corrección: ${JSON.stringify(b0)}`);
     servidor.interno.ponerFase('draft');
     eq((await burbuja()).fase, 'draft', 'la fase del modo solo no llega a la burbuja');
     servidor.interno.ponerFase('fuera');

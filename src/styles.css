@@ -820,6 +820,17 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .solo-pagina { display: contents; }
 .revisar-tuyos { display: flex; flex-wrap: wrap; gap: 6px; }
 .revisar-hueco:has(.revisar-tuyos) { flex-wrap: wrap; }
+/* Elegir tocando la cara (3.89.0): la cara es un botón y las caras para elegir salen debajo de su hueco. */
+button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
+.revisar-cara[aria-expanded="true"] { outline: 2px solid var(--text); outline-offset: 2px; }
+.revisar-hueco:has(.revisar-elegir) { flex-wrap: wrap; }
+.revisar-elegir { flex-basis: 100%; display: flex; flex-direction: column; gap: 6px; }
+.revisar-elegir input { min-height: 40px; padding: 8px 12px; border-radius: var(--r-sm); border: 1px solid transparent; background: var(--field); color: var(--text); font-size: 16px; }
+.hero-grid.revisar-caras { max-height: none; overflow: visible; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 4px; }
+/* Cara grande y el nombre debajo: cinco por fila a 390 px, y la captura sigue a la vista encima. */
+.hero-grid.revisar-caras button { flex-direction: column; justify-content: center; gap: 2px; padding: 6px 2px; min-height: 0; font-size: 11px; text-align: center; }
+.revisar-caras .grid-cara { width: 40px; height: 40px; }
+.revisar-caras .grid-nombre { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* El análisis de tus partidas (3.88.0): un panel. Cifras arriba, una serie
    por gráfica (una barra por semana, en el azul de tu equipo), la media como
    raya discontinua y cada porcentaje con su intervalo. */

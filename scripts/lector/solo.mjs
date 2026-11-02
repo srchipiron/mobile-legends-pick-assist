@@ -318,7 +318,12 @@ export function resumenPregunta(desde, pick, idioma = 'es') {
 /** Desde cuántas derrotas seguidas el resumen dice cómo te va tras perder. Decisión de producto. */
 export const RACHA_PARA_AVISAR = 2;
 
-export function resumenSolo(partida, idioma = 'es', faltan = 0, numeros = null) {
+/**
+ * Desde 3.89.0 no pide que le digas quién era el que no reconoció: juegas
+ * una partida detrás de otra y no hay tiempo. Eso se revisa después, de
+ * golpe, en «Capturas» del móvil o del ordenador.
+ */
+export function resumenSolo(partida, idioma = 'es', numeros = null) {
   const en = idioma === 'en';
   const primero = partida.recomendados?.[0];
   // Cómo va la sesión y, tras perder, cómo te suele ir en la siguiente (3.77.0): con TUS partidas
@@ -341,8 +346,6 @@ export function resumenSolo(partida, idioma = 'es', faltan = 0, numeros = null) 
       en ? 'Logged by the tablet.' : 'Apuntada por la tablet.',
       sesion,
       racha,
-      // Lo que no reconoció (3.71.0): tocando la notificación se lo dices y aprende.
-      faltan > 0 ? (en ? `Tap to tell the reader who the ${faltan === 1 ? 'unknown hero was' : `${faltan} unknown heroes were`}: it learns from it.` : `Toca para decirle al lector quién ${faltan === 1 ? 'era el que no reconoció' : `eran los ${faltan} que no reconoció`}: aprende de ello.`) : null,
     ].filter(Boolean).join(' '),
   };
 }
@@ -443,7 +446,7 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     // La corrección sabe de qué partida es: al contestarla, se arregla también su draft.
     const deEsta = pendiente?.cuando === v.desde ? pendiente : null;
     if (deEsta) { pendiente = { ...deEsta, partida: partida.t }; interno.ponerCorreccion?.(pendiente); }
-    interno.ponerResumen?.(resumenSolo(partida, v.idioma, deEsta?.faltan ?? 0, numerosDe()));
+    interno.ponerResumen?.(resumenSolo(partida, v.idioma, numerosDe()));
     resumen.apuntadas = (resumen.apuntadas ?? 0) + 1;
     if (sinLeer) { try { alSinLeer?.({ ids: sinLeer.ids, leidos: sinLeer.leidos, faltan: sinLeer.faltan, cuando: sinLeer.cuando, partida: partida.t }); } catch (e) { registrar(`No se pudieron preparar los recortes del draft: ${e.message}`); } }
     registrar(`Sin móvil: partida apuntada${contestada ? ' con lo que contestaste' : ''}, ${partida.gane ? 'ganada' : 'perdida'} con ${partida.pick}.`);

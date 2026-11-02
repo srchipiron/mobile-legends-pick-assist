@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { bajarRecortes } from '../basedatos.js';
-import { revisiones, cambiosDeRevision, encuadre, tusMasJugados, HORAS_DE_RECORTES } from '../revisar.js';
+import { revisiones, cambiosDeRevision, encuadre, tusMasJugados, companerosHabituales, carasParaHueco, HORAS_DE_RECORTES } from '../revisar.js';
+import { Cara as CaraDeHeroe } from './Imagen.jsx';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { PegarClave } from './Comunidad.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
@@ -91,25 +92,56 @@ export function RevisarCapturas({ partidas, datos, comunidad, perfil, onImportar
         {recortes && !partidas.length && <p className="nota">{t('revisar.sinPartidas')}</p>}
         {guardada && <p className="nota bien revisar-guardada" role="status">{t('revisar.guardada')}</p>}
         <div className="revisar-lista">
-          {vistas.map((r) => <Revision key={r.t} r={r} nombres={nombres} partidas={partidas} escala={escala} onGuardar={(t0, c) => { onGuardar(t0, c); setGuardada(true); aLaSiguiente(t0); }} onCambio={() => setGuardada(false)} t={t} />)}
+          {vistas.map((r) => <Revision key={r.t} r={r} datos={datos} nombres={nombres} partidas={partidas} escala={escala} onGuardar={(t0, c) => { onGuardar(t0, c); setGuardada(true); aLaSiguiente(t0); }} onCambio={() => setGuardada(false)} t={t} />)}
         </div>
       </div>
     </Hoja>
   );
 }
 
-function Cara({ png, lado, i, etiqueta, escala }) {
+function Cara({ png, lado, i, etiqueta, escala, abierto, onTocar }) {
   const e = encuadre(lado, i, escala);
-  return <span className="revisar-cara" role="img" aria-label={etiqueta} style={{ width: e.ancho, height: e.alto, backgroundImage: `url("data:image/png;base64,${png}")`, backgroundSize: e.fondo, backgroundPosition: e.posicion }} />;
+  const estilo = { width: e.ancho, height: e.alto, backgroundImage: `url("data:image/png;base64,${png}")`, backgroundSize: e.fondo, backgroundPosition: e.posicion };
+  // La cara es el botón (3.89.0): tocarla abre las caras para elegir quién es, sin escribir.
+  return <button type="button" className="revisar-cara" aria-label={etiqueta} aria-expanded={abierto} style={estilo} onClick={onTocar} />;
 }
 
-function Revision({ r, nombres, partidas, escala, onGuardar, onCambio, t }) {
+/**
+ * Elegir quién va en un hueco tocando su cara (3.89.0). Javi: «juego una
+ * partida detrás de otra… no me da tiempo a ir corrigiendo». Revisar varias
+ * de golpe tenía que ser tocar, no escribir: aquí salen las caras más
+ * probables (tus héroes o tus compañeros de siempre delante, luego el
+ * motor) y un buscador para el resto.
+ */
+function ElegirCara({ datos, opciones, onElegir, t }) {
+  const [buscar, setBuscar] = useState('');
+  const caras = useMemo(() => carasParaHueco(datos, { ...opciones, buscar }), [datos, opciones, buscar]);
+  return (
+    <div className="revisar-elegir">
+      <input type="search" autoComplete="off" value={buscar} placeholder={t('app.buscar')} aria-label={t('revisar.buscarHeroe')} onChange={(ev) => setBuscar(ev.target.value)}
+        onKeyDown={(ev) => { if (ev.key === 'Enter' && caras[0]) onElegir(caras[0].name); }} />
+      <div className="hero-grid revisar-caras">
+        {caras.map((h) => (
+          <button key={h.name} type="button" onClick={() => onElegir(h.name)}>
+            <CaraDeHeroe heroe={h} className="grid-cara" tam={40} />
+            <span className="grid-nombre">{h.name}</span>
+          </button>
+        ))}
+        {!caras.length && <p className="empty-state">{t('app.sinNombre')}</p>}
+      </div>
+    </div>
+  );
+}
+
+function Revision({ r, datos, nombres, partidas, escala, onGuardar, onCambio, t }) {
   const [captura, setCaptura] = useState(0);
   const [entera, setEntera] = useState(false);
   const [enemigos, setEnemigos] = useState(() => r.enemigos.map((n) => n ?? ''));
   const [aliados, setAliados] = useState(() => r.aliados.map((n) => n ?? ''));
   const [tuyo, setTuyo] = useState(r.tuyoFila < 0 && !r.partida.supuesto ? r.partida.pick ?? '' : '');
   const [aviso, setAviso] = useState(null);
+  // El hueco con las caras abiertas: { lado, i } o null.
+  const [abierto, setAbierto] = useState(null);
   const png = r.capturas[captura]?.png ?? r.capturas[0].png;
   // Tus más jugados para tu hueco (3.87.3), sin los que ya están escritos en esta partida.
   const tuyos = useMemo(() => tusMasJugados(partidas, nombres, [...enemigos, ...aliados.filter((_, i) => i !== r.tuyoFila)]), [partidas, nombres, enemigos, aliados, r.tuyoFila]);
@@ -121,6 +153,30 @@ function Revision({ r, nombres, partidas, escala, onGuardar, onCambio, t }) {
     <div className="revisar-tuyos" role="group" aria-label={t('revisar.tuyos')}>
       {tuyos.map((h) => <button key={h} type="button" className="filtro" onClick={() => ponerTuyo(h)}>{h}</button>)}
     </div>
+  );
+  const enDraft = [...enemigos, ...aliados, ...(r.tuyoFila < 0 ? [tuyo] : [])].filter(Boolean);
+  // Lo que se ofrece al tocar una cara: en tu fila, tus héroes; en tu equipo, tus compañeros de siempre; en el suyo, el motor.
+  const opcionesDe = (lado, i) => {
+    const lista = lado === 'enemigos' ? enemigos : aliados;
+    const equipo = lista.filter((n, k) => n && k !== i && !(lado === 'aliados' && k === r.tuyoFila));
+    const primeros = lado === 'enemigos' ? [] : i === r.tuyoFila ? tuyos : companerosHabituales(partidas, nombres, enDraft);
+    return { lado, equipo, fuera: enDraft, linea: r.partida.draft?.linea ?? null, primeros };
+  };
+  const opciones = useMemo(() => (abierto ? opcionesDe(abierto.lado, abierto.i) : null), [abierto, enemigos, aliados, tuyo, tuyos, partidas]);
+  // Elegida una, se abre el siguiente hueco vacío: revisar un draft son unos pocos toques seguidos.
+  const elegir = (lado, i, nombre) => {
+    const poner = lado === 'enemigos' ? setEnemigos : setAliados;
+    const nuevos = { enemigos: [...enemigos], aliados: [...aliados] };
+    nuevos[lado][i] = nombre;
+    poner(nuevos[lado]);
+    setAviso(null); onCambio?.();
+    const huecos = [...nuevos.aliados.map((n, k) => ['aliados', k, n]), ...nuevos.enemigos.map((n, k) => ['enemigos', k, n])];
+    const siguiente = huecos.find(([l, k, n]) => !n && !(l === lado && k === i));
+    setAbierto(siguiente ? { lado: siguiente[0], i: siguiente[1] } : null);
+  };
+  const tocar = (lado, i) => setAbierto((a) => (a?.lado === lado && a.i === i ? null : { lado, i }));
+  const elegirAqui = (lado, i) => abierto?.lado === lado && abierto.i === i && (
+    <ElegirCara datos={datos} opciones={opciones} onElegir={(n) => elegir(lado, i, n)} t={t} />
   );
   const campo = (lado, lista, poner, i) => (
     <input
@@ -151,9 +207,10 @@ function Revision({ r, nombres, partidas, escala, onGuardar, onCambio, t }) {
           <strong>{t('revisar.aliados')}</strong>
           {aliados.map((_, i) => (
             <div key={i} className={`revisar-hueco${i === r.tuyoFila ? ' tuyo' : ''}`}>
-              <Cara png={png} lado="aliados" i={i} escala={escala} etiqueta={t('revisar.cara', { equipo: t('revisar.aliados'), n: i + 1 })} />
+              <Cara png={png} lado="aliados" i={i} escala={escala} etiqueta={t('revisar.cara', { equipo: t('revisar.aliados'), n: i + 1 })} abierto={abierto?.lado === 'aliados' && abierto.i === i} onTocar={() => tocar('aliados', i)} />
               {campo('aliados', aliados, setAliados, i)}
               {i === r.tuyoFila && !aliados[i] && botonesTuyos}
+              {elegirAqui('aliados', i)}
             </div>
           ))}
           {r.tuyoFila < 0 && (
@@ -167,8 +224,9 @@ function Revision({ r, nombres, partidas, escala, onGuardar, onCambio, t }) {
           <strong>{t('revisar.enemigos')}</strong>
           {enemigos.map((_, i) => (
             <div key={i} className="revisar-hueco">
-              <Cara png={png} lado="enemigos" i={i} escala={escala} etiqueta={t('revisar.cara', { equipo: t('revisar.enemigos'), n: i + 1 })} />
+              <Cara png={png} lado="enemigos" i={i} escala={escala} etiqueta={t('revisar.cara', { equipo: t('revisar.enemigos'), n: i + 1 })} abierto={abierto?.lado === 'enemigos' && abierto.i === i} onTocar={() => tocar('enemigos', i)} />
               {campo('enemigos', enemigos, setEnemigos, i)}
+              {elegirAqui('enemigos', i)}
             </div>
           ))}
         </div>

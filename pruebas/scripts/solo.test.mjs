@@ -306,7 +306,7 @@ test('callar la voz: en la APK o en la app del móvil (3.71.0)', () => {
   eq(ajustesEfectivos(null, { linea: 'mid', vozCallada: true }).callar, true, 'con la línea del móvil, no respeta su voz callada');
 });
 
-test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se pregunta con las capturas del draft, sabe de qué partida es y la notificación lo dice', async () => {
+test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se guarda con las capturas del draft y sabe de qué partida es; la notificación no lo pide (3.89.0)', async () => {
   let t = 9_000_000;
   let n = 0;
   const conId = (l) => ({ ...l, id: `lectura-20261024-${String(n += 1).padStart(3, '0')}` });
@@ -346,7 +346,8 @@ test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se pregunt
   eq(sinLeer.length, 1, 'al apuntar un draft con «?» no pide sus recortes');
   ok(sinLeer[0].partida === t - 19000 && sinLeer[0].faltan === 5 && sinLeer[0].ids.length === 2 && sinLeer[0].leidos.enemigos[0] === 'Clint', JSON.stringify(sinLeer[0]));
   eq(sinLeer[0].cuando, solo.estado().cerradoEn ?? sinLeer[0].cuando);
-  ok(/Toca para decirle al lector quién eran los 5/.test(resumenes[0]?.texto ?? ''), `la notificación no lo dice: ${resumenes[0]?.texto}`);
+  // 3.89.0: la notificación ya no te pide que se lo digas (juegas una detrás de otra); se revisa luego en «Capturas».
+  ok(resumenes[0] && !/Toca para decirle|no reconoció/.test(resumenes[0].texto), `la notificación pide corregir: ${resumenes[0]?.texto}`);
   // Un draft leído entero no pregunta nada; y sin capturas, tampoco.
   const entero = { ...draftVacio(), baneos: ['Hirara'], enemigos: ['Clint', 'Khufra', 'Atlas', 'Franco', 'Tigreal'], aliados: ['Gord', 'Selena', 'Layla', 'Zilong', 'Rafaela'], cerrado: true, cerradoEn: 1, ids: ['lectura-1'] };
   eq(correccionDelDraft(entero, datos), null, 'pregunta sin faltar nadie');
@@ -656,15 +657,15 @@ test('el resumen de la partida dice cómo va la sesión y, en racha mala, cómo 
   const partida = { t: 5, pick: 'Rafaela', gane: false, recomendados: ['Rafaela'] };
   const sesion = { n: 4, ganadas: 1 };
   const peor = { racha: { gane: false, n: 3 }, sesion, trasPerder: { wr: 0.38, n: 40, wrResto: 0.6, nResto: 60, seVe: true, dif: -0.22 } };
-  const r1 = resumenSolo(partida, 'es', 0, peor).texto;
+  const r1 = resumenSolo(partida, 'es', peor).texto;
   ok(/Hoy: 1 ganadas, 3 perdidas/.test(r1) && /3 derrotas seguidas: tras perder ganas un 38% \(si no, un 60%\)\. Quizá toca un descanso/.test(r1), r1);
   const igual = { ...peor, trasPerder: { ...peor.trasPerder, seVe: false } };
-  ok(/perder no empeora la siguiente/.test(resumenSolo(partida, 'es', 0, igual).texto) && !/descanso/.test(resumenSolo(partida, 'es', 0, igual).texto), 'afirma lo que no se distingue');
+  ok(/perder no empeora la siguiente/.test(resumenSolo(partida, 'es', igual).texto) && !/descanso/.test(resumenSolo(partida, 'es', igual).texto), 'afirma lo que no se distingue');
   const unaSola = { ...peor, racha: { gane: false, n: 1 } };
-  ok(!/derrotas seguidas/.test(resumenSolo(partida, 'es', 0, unaSola).texto), 'habla de racha con una sola derrota');
-  ok(!/Hoy/.test(resumenSolo(partida, 'es', 0, { ...peor, sesion: { n: 1, ganadas: 0 } }).texto), 'dice la sesión con una partida');
-  ok(/A break might help/.test(resumenSolo(partida, 'en', 0, peor).texto));
-  eq(resumenSolo(partida, 'es').texto, resumenSolo(partida, 'es', 0, null).texto, 'sin números, cambia el resumen de siempre');
+  ok(!/derrotas seguidas/.test(resumenSolo(partida, 'es', unaSola).texto), 'habla de racha con una sola derrota');
+  ok(!/Hoy/.test(resumenSolo(partida, 'es', { ...peor, sesion: { n: 1, ganadas: 0 } }).texto), 'dice la sesión con una partida');
+  ok(/A break might help/.test(resumenSolo(partida, 'en', peor).texto));
+  eq(resumenSolo(partida, 'es').texto, resumenSolo(partida, 'es', null).texto, 'sin números, cambia el resumen de siempre');
   // El modo solo lo pide al apuntar.
   let t = 20_000_000, final = null;
   const resumenes = [];

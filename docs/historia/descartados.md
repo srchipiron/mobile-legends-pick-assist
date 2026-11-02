@@ -666,3 +666,9 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   (2) Con `#capturas` y sin línea, `mandarALaTablet` llevaría `linea: null`
   en los ajustes: no corre (sin línea no hay consejo) y `sanearAjustes` lo
   tira; no reproducido.
+- **Botones fijos con tus compañeros de siempre para el hueco que falta
+  (2 de noviembre de 2026)**: medido en las 260 partidas de Javi, el
+  compañero que falta está entre los seis que más salen a su lado solo en
+  el 23% de los huecos (25% en las 30 últimas). Juega con amigos, pero no
+  siempre con los mismos héroes. Se hizo una rejilla de 24 caras con
+  buscador (`carasParaHueco`, 3.89.0), en la que estos van delante.

@@ -1100,7 +1100,9 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       // En partida, sin consejo: la APK quita la burbuja (también una de antes de 3.69.3).
       const escondida = seguidasEnPartida >= EN_PARTIDA_PARA_ESCONDER;
       // Lo pendiente (3.84.0): solo si hay, para que la burbuja lo ofrezca fuera del draft y de la partida.
-      const pendiente = { pregunta: !!preguntaVigente(), correccion: !!correccionVigente() };
+      // Desde 3.89.0 solo la pregunta del resultado: «quién era» no se ofrece entre partida y partida
+      // (no da tiempo); queda en la tarjeta de la APK y se revisa de golpe en «Capturas».
+      const pendiente = { pregunta: !!preguntaVigente(), correccion: false };
       res.writeHead(200, cabeceras).end(JSON.stringify({ consejo: escondida ? null : consejoActual, resumen: resumenActual, enPartida: escondida, fase: escondida ? 'partida' : faseVigente(), pendiente }));
       return;
     }

@@ -76,6 +76,47 @@ await prueba('las caras de cada hueco con lo leído; guardar arregla la partida 
   await contexto.close();
 });
 
+await prueba('en el móvil, sin escribir (3.89.0): tocar la cara abre caras para elegir, y elegir salta al siguiente hueco vacío', async () => {
+  const s = supabaseFalso();
+  s.recortes.push({ clave: 'L'.repeat(43), recibido: Date.now() - 3600000, d: { v: 1, partida: T, faltan: 3, capturas: [{ id: 'lectura-2026-10-28T21-02-27-027Z-1517', picks: PNG }], leidos } });
+  // Tus partidas de antes: juegas con alguien que lleva Tigreal (tu compañero de siempre) y tú con Minotaur.
+  const antes = [1, 2, 3].map((k) => ({ ...PARTIDA, t: T - k * 9e6, pick: 'Minotaur', supuesto: false, draft: { ...PARTIDA.draft, aliados: ['Tigreal', 'Gord', 'Selena', 'Layla'] } }));
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: 390, height: 844 }, almacen: { ...LINEA, 'roam-picker:partidas': [PARTIDA, ...antes] }, sinServiceWorker: true, antes: conBaseDeDatos(s) });
+  await abrirAjustes(pagina);
+  await pagina.locator('.more').getByRole('button', { name: 'Partidas', exact: true }).click();
+  await pagina.getByRole('button', { name: 'Revisar con las capturas del lector' }).click();
+  await pagina.locator('.revisar-partida').first().waitFor();
+  // El tercer rival no se leyó: su cara es un botón y abre caras, sin teclado.
+  await pagina.getByRole('button', { name: 'Captura de Enemigos 3', exact: true }).click();
+  const elegir = pagina.locator('.revisar-elegir');
+  await elegir.waitFor();
+  ok(await elegir.locator('.hero-grid button').count() >= 12, 'no salen caras para elegir');
+  ok(!(await elegir.locator('.hero-grid button').allTextContents()).some((n) => ['Clint', 'Khufra', 'Atlas', 'Franco', 'Gord'].includes(n.trim())), 'sale uno que ya está en el draft');
+  await elegir.getByRole('searchbox').fill('zil');
+  await elegir.getByRole('button', { name: 'Zilong' }).click();
+  eq(await pagina.getByLabel('Enemigos 3', { exact: true }).inputValue(), 'Zilong', 'la cara elegida no va a su hueco');
+  // Salta solo al siguiente vacío: el tercero de tu equipo, con tu compañero de siempre delante.
+  eq(await pagina.locator('.revisar-elegir').count(), 1, 'quedan dos selectores abiertos, o ninguno');
+  eq(await pagina.getByRole('button', { name: 'Captura de Tu equipo 3', exact: true }).getAttribute('aria-expanded'), 'true', 'no salta al siguiente hueco vacío');
+  eq((await pagina.locator('.revisar-elegir .hero-grid button').first().textContent()).trim(), 'Tigreal', 'tu compañero de siempre no va el primero');
+  await pagina.locator('.revisar-elegir .hero-grid button').first().click();
+  eq(await pagina.getByLabel('Tu equipo 3', { exact: true }).inputValue(), 'Tigreal');
+  // Y luego tu fila, con tus héroes delante.
+  eq((await pagina.locator('.revisar-elegir .hero-grid button').first().textContent()).trim(), 'Minotaur', 'en tu fila no van tus héroes delante');
+  await pagina.locator('.revisar-elegir .hero-grid button').first().click();
+  eq(await pagina.locator('.revisar-elegir').count(), 0, 'con todo relleno sigue abierto');
+  const ancho = await pagina.evaluate(() => document.querySelector('.revisar').scrollWidth - document.querySelector('.revisar').clientWidth);
+  ok(ancho <= 1, `se sale del ancho del móvil (${ancho} px)`);
+  await pagina.getByRole('button', { name: 'Guardar' }).click();
+  await pagina.waitForTimeout(300);
+  const p = (await leer(pagina, 'roam-picker:partidas')).find((x) => x.t === T);
+  eq(p.pick, 'Minotaur', 'tu pick elegido con un toque no se guarda');
+  eq(JSON.stringify(p.draft.enemigos), JSON.stringify(['Clint', 'Khufra', 'Zilong', 'Atlas', 'Franco']));
+  ok(p.draft.aliados.includes('Tigreal'), 'el compañero elegido no se guarda');
+  eq(errores.length, 0, errores.join(' | '));
+  await contexto.close();
+});
+
 await prueba('sin base de datos el botón no sale', async () => {
   const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:partidas': [PARTIDA] }, sinServiceWorker: true, antes: async (p) => p.route(`${url}comunidad.json*`, (r) => r.fulfill({ status: 404, body: '' })) });
   await abrirAjustes(pagina);
