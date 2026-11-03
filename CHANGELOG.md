@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.89.1
+
+- La tablet ya no apunta partidas fantasma. El 2 de noviembre apuntó una
+  victoria a las 22:29, con «Marcel» como tu pick y un draft con solo
+  «Gord», seis minutos después de la partida de verdad de las 22:23. Hoy
+  un draft solo se abre con dos baneos de héroes distintos. Y una tabla del
+  final que llega menos de 10 minutos después de la anterior es la misma
+  partida y no se apunta otra vez. Entre dos partidas tuyas nunca han
+  pasado menos de 12 minutos, y ninguna ha durado menos de 8.
+
 ## 3.89.0
 
 - La tablet ya no te pide entre partida y partida que le digas quién era el

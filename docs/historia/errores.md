@@ -1251,3 +1251,12 @@ instante anterior lo sustituya; el tiempo solo va hacia delante.
   lado quedó en los dos, y la partida se apuntó así (69 bien y 7 mal en las
   14 de esa noche). Hoy un héroe ocupa un solo hueco de su equipo. Lección:
   lo que se junta por partes tiene que comprobar el todo.
+- **La victoria fantasma (2 de noviembre de 2026, 3.89.1)** — a las 22:29
+  la tablet apuntó una partida ganada con «Marcel supuesto» y un draft de un
+  solo héroe («Gord» en dos huecos de baneo y en un rival), 6,6 minutos
+  después de la de las 22:23. Un «Gord» leído en una pantalla que no era el
+  draft contaba como dos baneos y abría uno; la partida siguiente lo
+  cerraba y la tabla del final se apuntaba otra vez. Hoy los baneos se
+  cuentan por héroes distintos, y una tabla a menos de
+  `MINUTOS_ENTRE_TABLAS` (10) de la anterior no se apunta. Lección:
+  «cuántos» se cuenta en cosas distintas, no en huecos.

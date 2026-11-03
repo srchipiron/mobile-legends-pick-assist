@@ -1947,3 +1947,13 @@ notificación».
   (descartados.md).
 - Pruebas en `app/revisar` y `revisar.e2e` (390 px, sin teclado), `solo` y
   `en-tablet`; diez mutaciones, todas cazadas.
+
+**Ni fantasmas ni la misma tabla dos veces (3.89.1)**: ver errores.md (2 de
+noviembre de 2026). `acumularDraft` cuenta `BANEOS_EN_EL_DRAFT` en héroes
+distintos (`banDistintos`), también para guardar capturas. `crearSolo`
+recuerda la última tabla apuntada (`ultimaTabla`) y no apunta otra a menos
+de `MINUTOS_ENTRE_TABLAS` (10). Medido en la base de datos el 3 de
+noviembre: 126 partidas con duración, ninguna por debajo de 8 minutos (p01
+9,9), y entre dos de Javi seguidas nunca menos de 12. Pruebas en
+`solo.test`, cuatro mutaciones (la del 10 cambiado por 1000 sobrevivía
+hasta fijar la tercera partida a 12 minutos y no a la constante + 2).

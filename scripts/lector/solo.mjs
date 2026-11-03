@@ -53,6 +53,14 @@ export const MINUTOS_PARA_OTRO_DRAFT = 3;
  * móvil con siete héroes sin leer y el nº1 «supuesto».
  */
 export const MINUTOS_ENTRE_PARTIDAS = 5;
+/**
+ * Lo menos que separa dos tablas del final de verdad (3.89.1): draft, carga y
+ * una partida. Medido en la base de datos el 3 de noviembre de 2026: ninguna
+ * de 126 partidas con duración bajó de 8 minutos (p01 9,9) y entre dos
+ * partidas seguidas de Javi nunca hubo menos de 12. La victoria fantasma del
+ * 2 de noviembre llegó 6,6 minutos después de la anterior: era su misma tabla.
+ */
+export const MINUTOS_ENTRE_TABLAS = 10;
 /** Un draft sin cambios en este tiempo se da por abandonado. */
 export const MINUTOS_DRAFT_ABANDONADO = 15;
 /** Como `CAMBIOS_A_LA_VEZ` de la app: más huecos ya leídos cambiando a la vez es la fase de skins (imanes). */
@@ -141,7 +149,10 @@ export function acumularDraft(estado, lectura, ahora) {
   // en «?»), abría otro draft con eso, lo cerraba con la partida y tiraba la
   // vigilancia de la partida de verdad: 7 de 23 «Draft completo» en una tarde
   // eran eso («0 consejos en directo») y la tabla del final no se vio ni una vez.
-  const deDraft = baneos.length >= BANEOS_EN_EL_DRAFT || (!e.cerrado && e.baneos.length >= BANEOS_EN_EL_DRAFT);
+  // Héroes DISTINTOS (3.89.1): el 2 de noviembre de 2026 un «Gord» leído en dos huecos de baneo de una
+  // pantalla que no era el draft abrió uno, la partida lo cerró y se apuntó una victoria fantasma.
+  const banDistintos = new Set(baneos).size;
+  const deDraft = banDistintos >= BANEOS_EN_EL_DRAFT || (!e.cerrado && e.baneos.length >= BANEOS_EN_EL_DRAFT);
   const algo = deDraft && (baneos.length || enemigos.some(Boolean) || filas.some(Boolean));
   if (!deDraft) return e.enPartida ? { ...e, enPartida: 0 } : e;
   // ¿Otro draft? (3.72.5) Por lo que se ve, no solo por el reloj: un hueco
@@ -161,7 +172,7 @@ export function acumularDraft(estado, lectura, ahora) {
   const ali = fundirHuecos(e.aliados, filas, tuyoFila);
   const cambio = nuevosBaneos.length !== e.baneos.length || enem.cambio || ali.cambio || tuyoFila !== e.tuyoFila;
   // La captura de esta lectura (3.71.0): si luego dices quién era el «?», el lector aprende de ella.
-  const ids = typeof lectura.id === 'string' && /^lectura-[\w-]+$/.test(lectura.id) && baneos.length >= BANEOS_EN_EL_DRAFT ? conCaptura(e.ids ?? [], lectura.id) : e.ids ?? [];
+  const ids = typeof lectura.id === 'string' && /^lectura-[\w-]+$/.test(lectura.id) && banDistintos >= BANEOS_EN_EL_DRAFT ? conCaptura(e.ids ?? [], lectura.id) : e.ids ?? [];
   const nuevosHuecos = (e.banHuecos ?? Array(10).fill(null)).map((n, i) => n ?? huecosBan[i]);
   return { ...e, baneos: nuevosBaneos, banHuecos: nuevosHuecos, enemigos: enem.huecos, aliados: ali.huecos, tuyoFila, enPartida: 0, actividad: cambio ? ahora : e.actividad ?? (algo ? ahora : null), ids };
 }
@@ -410,6 +421,8 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
   // La partida que se vigila para apuntarla sola (3.70.0): el draft de cuando
   // se cerró y su decisión, hasta que la tabla del final dé el resultado.
   let vigilada = null;
+  // Cuándo se vio la última tabla del final apuntada (3.89.1), para no apuntar dos veces la misma.
+  let ultimaTabla = null;
   // Lo que no reconoció del último draft (3.71.0), para preguntártelo en la APK.
   let pendiente = null;
   // Lecturas seguidas fuera de partida sin leer a nadie (3.86.1): la fase «fuera» las pide (ver `LECTURAS_PARA_FUERA`).
@@ -564,7 +577,13 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     // Con el resultado de la tabla, la partida se apunta sola (una vez).
     if (vigilada && !vigilada.apuntada) {
       const f = interno.final?.();
-      if (f?.desde === vigilada.desde && (f.resultado === 'gane' || f.resultado === 'perdi')) {
+      const repetida = f?.desde === vigilada.desde && Number.isFinite(f.resultadoEn) && Number.isFinite(ultimaTabla) && f.resultadoEn - ultimaTabla < MINUTOS_ENTRE_TABLAS * 60000;
+      if (repetida && (f.resultado === 'gane' || f.resultado === 'perdi')) {
+        // La misma pantalla del final que ya se apuntó: no hay partida entre medias (3.89.1).
+        vigilada.apuntada = true;
+        registrar(`Sin móvil: la tabla del final llega ${Math.round((f.resultadoEn - ultimaTabla) / 60000 * 10) / 10} min después de la anterior; es la misma partida y no la apunto otra vez.`);
+      } else if (f?.desde === vigilada.desde && (f.resultado === 'gane' || f.resultado === 'perdi')) {
+        if (Number.isFinite(f.resultadoEn)) ultimaTabla = f.resultadoEn;
         apuntarVigilada(vigilada, { gane: f.resultado === 'gane', t: Number.isFinite(f.resultadoEn) ? f.resultadoEn : ahora(), duracion: f.inicioEstimado ? null : f.duracion });
       } else if (f?.desde === vigilada.desde && f.acabada) {
         // Se vio la tabla del final, pero sin palabra conocida (la victoria se aprende).

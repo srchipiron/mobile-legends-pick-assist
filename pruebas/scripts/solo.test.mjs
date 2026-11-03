@@ -8,7 +8,7 @@ import { test, ok, eq, terminar, leerJson } from '../arnes.mjs';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, tusHabituales, HABITUALES, faseDe, LECTURAS_PARA_FUERA, MINUTOS_ENTRE_PARTIDAS, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS } from '../../scripts/lector/solo.mjs';
+import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, tusHabituales, HABITUALES, faseDe, LECTURAS_PARA_FUERA, MINUTOS_ENTRE_PARTIDAS, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MINUTOS_ENTRE_TABLAS, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS } from '../../scripts/lector/solo.mjs';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
 import { crearServidor, RETENCION_CAPTURAS_MS } from '../../scripts/lector/servir.mjs';
 import { RAIZ } from '../arnes.mjs';
@@ -186,6 +186,53 @@ test('el bucle: decide y pone el consejo; se aparta si el móvil lee o manda el 
   // Un fallo de captura (no graba) espera y no rompe.
   const roto = crearSolo({ interno: { ...interno, leer: async () => ({ ok: false, estado: 502, error: 'captura' }) }, ajustes: () => ({ activo: true, linea: 'roam' }), datosPara: () => datos });
   eq(await roto.tic(), INTERVALOS_SOLO.error);
+});
+
+test('el mismo héroe en dos huecos de baneo no abre un draft (3.89.1): la victoria fantasma del 2 de noviembre', () => {
+  // 22:29 del 2 de noviembre de 2026: «Gord» en dos huecos de baneo y en un rival, en una pantalla que no era el draft.
+  const fantasma = lectura({ tuyos: [N('Gord'), V, V, V, V], suyos: [N('Gord'), V, V, V, V], enemigos: [N('Gord'), V, V, V, V] });
+  const d = acumularDraft(draftVacio(), fantasma, 5);
+  eq(d.baneos.length, 0, `el mismo héroe en dos huecos de baneo abre un draft: ${JSON.stringify(d.baneos)}`);
+  eq(d.enemigos.some(Boolean), false);
+  // Dos distintos sí: es la pantalla del draft.
+  ok(acumularDraft(draftVacio(), lectura({ tuyos: [N('Gord'), V], suyos: [N('Atlas'), V] }), 5).baneos.length === 2, 'dos baneos distintos no abren el draft');
+  // Y los dos equipos baneando al mismo héroe sigue valiendo dentro de un draft ya abierto.
+  const abierto = acumularDraft(draftVacio(), lectura({ tuyos: [N('Hirara'), N('Atlas')], suyos: [N('Hirara'), V] }), 5);
+  eq(abierto.baneos.join(), 'Hirara,Atlas');
+});
+
+test('la misma tabla del final no se apunta dos veces (3.89.1): otra a menos de MINUTOS_ENTRE_TABLAS es la misma partida', async () => {
+  let t = 7_000_000;
+  const draftLeido = (ban) => lectura({ tuyos: [N(ban), N('Belerick')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 });
+  let respuesta = draftLeido('Hirara');
+  let final = null;
+  const apuntadas = [], registro = [];
+  const interno = {
+    leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: () => {},
+    vigilar: (desde) => { final = { desde, resultado: null }; }, final: () => final, ponerResumen: () => {},
+  };
+  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: (p) => apuntadas.push(p), registrar: (l) => registro.push(l) });
+  const jugar = async (ban, minutosHastaLaTabla) => {
+    respuesta = draftLeido(ban); await solo.tic();
+    respuesta = { partida: true, rapida: true };
+    t += 5000; await solo.tic(); t += 5000; await solo.tic();
+    final = { ...final, resultado: 'gane', resultadoEn: final.desde + minutosHastaLaTabla * 60000, inicioEstimado: true, acabada: true };
+    t += 20000; await solo.tic();
+    t = Math.max(t, final.resultadoEn) + (MINUTOS_PARA_OTRO_DRAFT + 1) * 60000;
+  };
+  await jugar('Hirara', 12);
+  eq(apuntadas.length, 1, 'la primera no se apunta');
+  const primera = apuntadas[0].t;
+  // Un draft «nuevo» y su tabla a los pocos minutos de la anterior: es la misma pantalla del final.
+  await jugar('Atlas', 0.5);
+  ok(final.resultadoEn - primera < MINUTOS_ENTRE_TABLAS * 60000, 'la prueba no pone la tabla cerca');
+  eq(apuntadas.length, 1, `la misma tabla se apunta otra vez: ${JSON.stringify(apuntadas.map((p) => p.t))}`);
+  ok(registro.some((l) => /es la misma partida/.test(l)), 'no lo dice en el registro');
+  // Una partida de verdad después, sí.
+  // A 12 minutos del draft (la tabla, a unos 16 de la anterior): lo más corto entre dos partidas de Javi en la base de datos.
+  await jugar('Lukas', 12);
+  ok(apuntadas.length < 2 || apuntadas[1].t - apuntadas[0].t < 25 * 60000, 'la prueba deja demasiado hueco');
+  eq(apuntadas.length, 2, 'la partida siguiente, de verdad, no se apunta');
 });
 
 test('todo desde la tablet (3.70.0): al empezar la partida vigila el final y, con el resultado, apunta la partida una vez y pone el resumen', async () => {
