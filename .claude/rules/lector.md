@@ -1957,3 +1957,19 @@ noviembre: 126 partidas con duración, ninguna por debajo de 8 minutos (p01
 9,9), y entre dos de Javi seguidas nunca menos de 12. Pruebas en
 `solo.test`, cuatro mutaciones (la del 10 cambiado por 1000 sobrevivía
 hasta fijar la tercera partida a 12 minutos y no a la constante + 2).
+
+**La ráfaga del final (3.89.2)**: las 8 pantallas del final que la tablet
+subió sin reconocer (31 de octubre a 3 de noviembre de 2026, recortes
+`tipo: 'final'`, miniaturas miradas a mano) eran la explosión de la base, la
+pantalla de rango y el draft siguiente, a 10 s una de otra: la tabla pasaba
+entre dos capturas. En esos días, 71 partidas por la tabla y casi todas
+ganadas; las perdidas acababan en «¿Cómo acabó?» sin contestar (3
+`sinResultado`) y no llegaban a la base de datos. Hoy, en cuanto deja de
+verse el minimapa tras verlo (`enJuego` → no), `rafagaHasta` = t +
+`rafagaMs` (90 s) y se captura cada `rapidoMs` (2 s). `tocaCapturarFinal`
+(pura) decide con medio latido de margen; el reloj de la vigilancia late al
+paso más corto (`latido`). Pruebas en `directo-lector` (la función, que
+empieza sin minimapa y no en partida, una captura por paso aunque el reloj
+lata deprisa); seis mutaciones. Las de contar capturas con el reloj de
+verdad fallaban con el código bien: el arnés corre las pruebas a la vez y
+cada captura tardaba segundos.

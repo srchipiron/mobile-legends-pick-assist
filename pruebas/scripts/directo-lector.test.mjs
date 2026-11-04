@@ -12,7 +12,7 @@ import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
 import { parecidoAPartida, enPartida, UMBRAL_PARTIDA, recorteMarcador } from '../../scripts/lector/partida.mjs';
 import { limpiarTexto, TOPE_VOZ, hablarConTermux } from '../../scripts/lector/voz.mjs';
-import { crearServidor, plantillasDeSerie, VIGILANCIA, RETRASO_MAXIMO_MIN, VOZ_POR_VENTANA } from '../../scripts/lector/servir.mjs';
+import { crearServidor, plantillasDeSerie, tocaCapturarFinal, VIGILANCIA, RETRASO_MAXIMO_MIN, VOZ_POR_VENTANA } from '../../scripts/lector/servir.mjs';
 import { tramoDeMinutos } from '../../src/motor/directo.js';
 import { fundirFinal } from '../../src/app/lector.js';
 import { capturaCompletaPng, pantallaDeFinal } from '../fixtures/juego/captura.mjs';
@@ -122,6 +122,54 @@ test('el guion se dice en su minuto de PARTIDA (inicio visto por el minimapa), l
     ok(await hasta(() => dichos.length >= 3), 'no dice el cierre');
     eq(dichos[2], `en:${cierres[tramoDeMinutos(f.duracion)]}`, 'el cierre no es el de su tramo');
     eq(f.voz, 'ok', 'no dice que la voz va bien');
+  } finally { servidor.close(); }
+});
+
+test('la ráfaga del final (3.89.2): cuándo toca capturar, al paso de siempre o deprisa mientras dura', () => {
+  const v = VIGILANCIA, latido = Math.min(v.intervaloMs, v.intervaloInicioMs, v.rapidoMs);
+  ok(v.rapidoMs <= 2000 && v.rafagaMs >= 60000, `la ráfaga no es rápida o no dura: ${v.rapidoMs} ms durante ${v.rafagaMs} ms`);
+  const t = 1_000_000;
+  // En partida: a los 10 s sí (con medio latido de margen), a los 2 s no.
+  ok(!tocaCapturarFinal({ ultimaFinal: t - 2000 }, t, v, latido), 'en partida captura cada 2 s');
+  ok(tocaCapturarFinal({ ultimaFinal: t - v.intervaloMs + latido / 2 }, t, v, latido), 'un latido un pelo antes de los 10 s deja la captura para el siguiente');
+  // En la ráfaga: a los 2 s sí.
+  ok(tocaCapturarFinal({ ultimaFinal: t - v.rapidoMs, rafagaHasta: t + 1000 }, t, v, latido), 'en la ráfaga no captura deprisa');
+  // Pasada la ráfaga, al paso de siempre.
+  ok(!tocaCapturarFinal({ ultimaFinal: t - v.rapidoMs, rafagaHasta: t - 1 }, t, v, latido), 'la ráfaga no acaba');
+});
+
+test('la ráfaga empieza al dejar de verse el minimapa, no en partida', async () => {
+  const juegoPng = escribirPng(ampliada(pantallas.find((p) => p.f.startsWith('juego-')).img, 3));
+  const fueraPng = escribirPng(ampliada(pantallas.find((p) => p.f === 'fuera-0.png').img, 3));
+  let pantalla = juegoPng, capturas = 0;
+  const registro = [];
+  const vigilancia = { ...VIGILANCIA, desdeMin: 0, intervaloMs: 15, intervaloInicioMs: 15, rapidoMs: 15 };
+  const servidor = crearServidor({ capturar: () => { capturas += 1; return pantalla; }, vigilancia, enHilos: false, registrar: (l) => registro.push(l) });
+  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${servidor.address().port}`;
+  const cab = { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' };
+  const hasta = async (cond, ms = 8000) => { const t0 = Date.now(); while (!cond() && Date.now() - t0 < ms) await new Promise((r) => setTimeout(r, 15)); return cond(); };
+  try {
+    await fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify({ desde: Date.now() }) });
+    ok(await hasta(() => capturas >= 3), 'no captura en partida');
+    ok(!registro.some((l) => /Sin minimapa/.test(l)), 'en partida empieza la ráfaga');
+    pantalla = fueraPng;
+    const antes = capturas;
+    ok(await hasta(() => capturas >= antes + 2), 'deja de capturar');
+    ok(registro.some((l) => /Sin minimapa/.test(l)), 'sin minimapa no empieza la ráfaga');
+  } finally { servidor.close(); }
+});
+
+test('en partida, una captura por paso aunque el reloj lata más deprisa (3.89.2)', async () => {
+  const juegoPng = escribirPng(ampliada(pantallas.find((p) => p.f.startsWith('juego-')).img, 3));
+  let capturas = 0;
+  // El reloj late cada 15 ms (la ráfaga) y el paso normal es de 100 s: en 400 ms, una sola captura.
+  const servidor = crearServidor({ capturar: () => { capturas += 1; return juegoPng; }, vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 100000, intervaloInicioMs: 100000, rapidoMs: 15 }, enHilos: false });
+  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  try {
+    await fetch(`http://127.0.0.1:${servidor.address().port}/vigilar`, { method: 'POST', headers: { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' }, body: JSON.stringify({ desde: Date.now() }) });
+    await new Promise((r) => setTimeout(r, 400));
+    eq(capturas, 1, `captura a cada latido y no a cada paso: ${capturas}`);
   } finally { servidor.close(); }
 });
 

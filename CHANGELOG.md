@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.89.2
+
+- La tablet ya no se pierde la pantalla del resultado. Cuando acaba la
+  partida, mira la pantalla cada 2 segundos durante minuto y medio, en vez
+  de cada 10. Las ocho veces que no supo cómo acabó tu partida, del 31 de
+  octubre al 3 de noviembre, sí vio la explosión de la base y la pantalla
+  del rango, pero la tabla del resultado pasó entre dos capturas. Esas
+  partidas, casi siempre derrotas, se quedaban «sin resultado» en la tablet
+  y no llegaban a tus estadísticas.
+
 ## 3.89.1
 
 - La tablet ya no apunta partidas fantasma. El 2 de noviembre apuntó una

@@ -184,7 +184,28 @@ export function podarCapturas(carpeta, { ahora = Date.now(), retencionMs = RETEN
  * En cuanto sale la tabla se deja de mirar a los dos minutos. Decisión de
  * producto: una partida de Gloria casi nunca pasa de 30.
  */
-export const VIGILANCIA = { desdeMin: 8, hastaMin: 25, intervaloMs: 10000, maxFotogramas: 8, inicioDesdeMin: 0, inicioEstimadoMin: 1, intervaloInicioMs: 20000, partidaHastaMin: 40 };
+/*
+ * La ráfaga del final (3.89.2): en cuanto deja de verse el minimapa tras verlo
+ * (acaba la partida), una captura cada `rapidoMs` durante `rafagaMs`. Cada
+ * 10 s la tabla pasaba entre dos capturas: las 8 pantallas del final sin
+ * reconocer del 31 de octubre al 3 de noviembre de 2026 eran la explosión de
+ * la base, la de rango y el draft siguiente, a 10 s una de otra, y ninguna
+ * la tabla. Las derrotas se quedaban sin apuntar. 2 s es lo que tarda una
+ * lectura entera en la tablet (0,6–1,6 s); 90 s, de la explosión a la
+ * pantalla de rango con margen. Decisiones de producto.
+ */
+export const VIGILANCIA = { desdeMin: 8, hastaMin: 25, intervaloMs: 10000, maxFotogramas: 8, inicioDesdeMin: 0, inicioEstimadoMin: 1, intervaloInicioMs: 20000, partidaHastaMin: 40, rapidoMs: 2000, rafagaMs: 90000 };
+
+/**
+ * ¿Toca capturar el final ahora? Cada `intervaloMs`, o cada `rapidoMs` mientras
+ * dura la ráfaga (`rafagaHasta`). El reloj late cada `latido`, así que se da
+ * medio latido de margen: sin él, un latido que llega un pelo antes de los
+ * 10 s dejaba la captura para el siguiente (12 s).
+ */
+export function tocaCapturarFinal({ ultimaFinal = 0, rafagaHasta = 0 } = {}, t, vigilancia = VIGILANCIA, latido = Math.min(vigilancia.intervaloMs, vigilancia.rapidoMs)) {
+  const paso = rafagaHasta > t ? Math.min(vigilancia.rapidoMs, vigilancia.intervaloMs) : vigilancia.intervaloMs;
+  return t - ultimaFinal >= paso - latido / 2;
+}
 
 /**
  * Los consejos EN DIRECTO (3.44.0): con el draft completo la app manda el
@@ -593,6 +614,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   let ultimaDelMovil = null, consejoDelMovil = null;
   // Lo que no se pida, como siempre (las pruebas encogen solo algunos plazos).
   const vigilancia = { ...VIGILANCIA, ...vigilanciaPedida };
+  // El reloj de la vigilancia late al paso más corto; cada parte decide si le toca.
+  const latido = Math.min(vigilancia.intervaloMs, vigilancia.intervaloInicioMs, vigilancia.rapidoMs);
   // Las lecturas, en tres hilos a la vez (3.39.0); `enHilos: false` las hace aquí.
   const lector = enHilos ? lectorEnHilos({ caras, registrar }) : null;
   let n = 0, aprendiendo = null;
@@ -743,6 +766,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       } finally { capturandoFinal = false; }
       return;
     }
+    if (!tocaCapturarFinal(final, t, vigilancia, latido)) return;
+    final.ultimaFinal = t;
     capturandoFinal = true;
     try {
       let png;
@@ -754,7 +779,14 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       }
       if (final !== yo) return;
       const img = leerPng(png);
-      anotarPartida(enPartida(img));
+      const dentro = enPartida(img);
+      anotarPartida(dentro);
+      // Deja de verse el minimapa: ha acabado (o un menú encima). A mirar deprisa.
+      if (final.enJuego && !dentro && !(final.rafagaHasta > t)) {
+        final.rafagaHasta = t + vigilancia.rafagaMs;
+        registrar(`Sin minimapa a los ${Math.round((t - final.desde) / 60000)} minutos del draft: miro la pantalla cada ${vigilancia.rapidoMs / 1000} s para ver la tabla del final.`);
+      }
+      final.enJuego = dentro;
       detectarInicio(final, img, t, vigilancia.intervaloMs);
       const f = fotogramaDe(img, final.anterior);
       final.anterior = f.pequena;
@@ -765,7 +797,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       guardarCaptura(`${id}.png`, png, { conPoda: false });
       const leido = reconocerResultado(tiraDe(img), resultados);
       // El marcador a resolución completa, para aprender sus dígitos (3.44.0): solo en partida.
-      const marcador = !leido.tabla && enPartida(img) ? recorteMarcador(img) : null;
+      const marcador = !leido.tabla && dentro ? recorteMarcador(img) : null;
       const foto = { id, minuto: Math.round((t - final.desde) / 60000), miniatura: f.miniatura, tira: f.tira, ...(marcador ? { marcador } : {}), tabla: leido.tabla, resultado: leido.resultado, resultadoParecido: Math.round(leido.parecido * 1000) / 1000 };
       // Hasta `maxFotogramas` pantallas distintas; la de la TABLA viaja
       // siempre, reconozca o no la palabra (sustituye a la última que no sea
@@ -844,9 +876,9 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       return final;
     }
     pararVigilancia();
-    final = { desde, hasta: desde + vigilancia.hastaMin * 60000, activa: true, fotogramas: [], resultado: null, resultadoId: null, resultadoEn: null, anterior: null, fallos: 0, ...nuevo, dichos: new Set(), dichosVoz: 0, saltados: 0, vistoFuera: false, acabada: false, inicio: null, inicioEstimado: false, seguidas: 0, primera: null, ultimaInicio: 0, fallosInicio: 0, duracion: null, voz: null };
+    final = { desde, hasta: desde + vigilancia.hastaMin * 60000, activa: true, fotogramas: [], resultado: null, resultadoId: null, resultadoEn: null, anterior: null, fallos: 0, ...nuevo, dichos: new Set(), dichosVoz: 0, saltados: 0, vistoFuera: false, acabada: false, inicio: null, inicioEstimado: false, seguidas: 0, primera: null, ultimaInicio: 0, fallosInicio: 0, duracion: null, voz: null, ultimaFinal: 0, enJuego: false, rafagaHasta: 0 };
     if (ahora() > final.hasta) { final.activa = false; return final; }
-    relojFinal = setInterval(vigilarTic, Math.min(vigilancia.intervaloMs, vigilancia.intervaloInicioMs));
+    relojFinal = setInterval(vigilarTic, latido);
     relojFinal.unref?.();
     registrar(`Draft completo a las ${hora(desde)}: busco el inicio de la partida desde el minuto ${vigilancia.inicioDesdeMin} (${final.guion.length} consejos en directo) y vigilo el final del minuto ${vigilancia.desdeMin} al ${vigilancia.hastaMin}.`);
     // La partida ya empezó y las lecturas la vieron empezar (3.46.0).
