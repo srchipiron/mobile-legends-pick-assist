@@ -21,6 +21,7 @@ import { momentoDe } from './aprender.mjs';
 import { nombreClave } from '../../src/motor/nombres.js';
 import { prepararDatos, recomendar, poolDe } from '../../src/motor/draft.js';
 import { VERSION_MODELO } from '../../src/motor/modelo.js';
+import { buildEnUnaLinea } from '../../src/motor/builds.js';
 import { crearT } from '../../src/app/i18n/index.js';
 import { guionTraducido } from '../../src/app/i18n/guion.js';
 
@@ -178,8 +179,8 @@ export function acumularDraft(estado, lectura, ahora) {
 }
 
 const TEXTOS = {
-  es: { banea: (l) => `Banea: ${l}`, tuNumeroUno: (h) => `Tu nº1 ahora: ${h}`, luego: (l) => `Luego: ${l}`, tuyos: (h) => `De los tuyos: ${h}`, baneos: 'Fase de baneos', picks: 'Fase de picks' },
-  en: { banea: (l) => `Ban: ${l}`, tuNumeroUno: (h) => `Your no. 1 now: ${h}`, luego: (l) => `Then: ${l}`, tuyos: (h) => `Yours: ${h}`, baneos: 'Ban phase', picks: 'Pick phase' },
+  es: { build: (h, l) => `${h}: ${l}`, buildDetalle: 'Tu build', banea: (l) => `Banea: ${l}`, tuNumeroUno: (h) => `Tu nº1 ahora: ${h}`, luego: (l) => `Luego: ${l}`, tuyos: (h) => `De los tuyos: ${h}`, baneos: 'Fase de baneos', picks: 'Fase de picks' },
+  en: { build: (h, l) => `${h}: ${l}`, buildDetalle: 'Your build', banea: (l) => `Ban: ${l}`, tuNumeroUno: (h) => `Your no. 1 now: ${h}`, luego: (l) => `Then: ${l}`, tuyos: (h) => `Yours: ${h}`, baneos: 'Ban phase', picks: 'Pick phase' },
 };
 
 /**
@@ -219,6 +220,12 @@ export function consejoSolo({ datos, draft, linea, idioma = 'es', maestria = nul
       const lista = (rec.baneosSugeridos ?? []).map((b) => b.heroe?.name).filter((n) => n && !yaBaneados.has(n)).slice(0, 3);
       // La fase delante en la segunda línea (3.69.2), igual que lo que manda el móvil.
       if (lista.length && baneos.length < 10) return { titulo: t.banea(lista.join(' · ')), detalle: [t.baneos, rec.eleccion?.heroe ? t.tuNumeroUno(rec.eleccion.heroe.name) : null].filter(Boolean).join(' · ') };
+    }
+    // Con tu héroe ya elegido (tu fila leída), lo útil es su build para este draft (3.90.1): la burbuja
+    // se ve hasta que empieza la partida (también en la pantalla de carga), así entras sabiendo qué comprar.
+    if (d.tuyo) {
+      const b = buildEnUnaLinea({ builds: datos.crudo?.builds, equipment: datos.crudo?.equipment, heroe: d.tuyo, linea, enemigos });
+      if (b) return { titulo: t.build(d.tuyo.name, b.objetos.slice(0, 3).join(' → ')), detalle: [t.picks, t.buildDetalle, b.objetos.length > 3 ? `+ ${b.objetos.slice(3).join(' → ')}` : null, [b.emblema, b.hechizo].filter(Boolean).join(' · ') || null].filter(Boolean).join(' · ') };
     }
     const e = rec.eleccion;
     if (!e?.heroe) return null;

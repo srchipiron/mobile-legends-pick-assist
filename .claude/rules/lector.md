@@ -1993,3 +1993,16 @@ El Supabase de pega daba `j: 1` a todos los recortes y la real da el
 jugador de cada lector: arreglado, si no la prueba no podía distinguir
 lectores. Pruebas en `solo`, `en-tablet`, `app/revisar` y `revisar.e2e`;
 diez mutaciones, todas cazadas.
+
+**La build en la burbuja (3.90.1)**: «implementa todo» tras la búsqueda de
+3.90.0 (Blitz pone la build sola). Con tu fila leída (`decision.tuyo`),
+`consejoSolo` da `buildEnUnaLinea` (builds.js: `buildParaElDraft` sobre
+`buildsDe`, la MISMA elección que «Plan y objetos» de la app) en vez de tu
+nº1: «Héroe: A → B → C» y en el detalle el resto, el emblema y el hechizo.
+Sin builds de ese héroe en esa línea, lo de siempre. La burbuja se esconde
+con dos capturas en partida, así que se ve en la pantalla de carga. Solo la
+tablet sola: el consejo que manda el móvil (`consejoParaLaTablet`) no
+cambia. Los «momentos destacados» (Mobalytics) no se pueden hacer: piden
+vídeo. Prueba en `solo.test` con Diggie contra Clint, Khufra y Layla (la
+build para ese draft no es la más usada, con los datos del 4 de noviembre
+de 2026); cuatro mutaciones.

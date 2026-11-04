@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.90.1
+
+- En cuanto la tablet lee tu héroe, la burbuja te dice su build para ese
+  draft: los tres primeros objetos, el resto, el emblema y el hechizo. Es la
+  misma que la app enseña primero en «Plan y objetos», ajustada a los
+  rivales. Se ve hasta que empieza la partida, también en la pantalla de
+  carga, así que entras sabiendo qué comprar sin abrir nada. Antes la
+  burbuja seguía diciendo tu nº1 cuando ya habías elegido.
+
 ## 3.90.0
 
 - Las partidas de las que la tablet no supo el resultado ya no se quedan

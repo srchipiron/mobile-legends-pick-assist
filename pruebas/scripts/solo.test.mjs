@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, tusHabituales, HABITUALES, faseDe, LECTURAS_PARA_FUERA, MINUTOS_ENTRE_PARTIDAS, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MINUTOS_ENTRE_TABLAS, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS } from '../../scripts/lector/solo.mjs';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
+import { buildsDe, buildParaElDraft, objetosDe } from '../../src/motor/builds.js';
 import { crearServidor, RETENCION_CAPTURAS_MS } from '../../scripts/lector/servir.mjs';
 import { RAIZ } from '../arnes.mjs';
 import { crearT } from '../../src/app/i18n/index.js';
@@ -103,6 +104,26 @@ test('el consejo sale del motor de la app: en baneos a quién banear, en picks t
   eq(consejoSolo({ datos: null, draft, linea: 'roam' }), null);
   eq(consejoSolo({ datos, draft: draftVacio(), linea: 'roam' }), null, 'sin nada leído da consejo');
   eq(consejoSolo({ datos, draft: { ...draft, cerrado: true }, linea: 'roam' }), null, 'en partida da consejo');
+});
+
+test('con tu héroe elegido, la burbuja dice su build para este draft (3.90.1): la misma que «Plan y objetos» de la app', () => {
+  const draft = acumularDraft(null, lectura({ tuyos: [N('Hirara')], enemigos: [N('Clint'), N('Khufra'), N('Layla'), V, V], aliados: [V, V, V, V, N('Diggie')], tuyoFila: 4 }), 1);
+  const c = consejoSolo({ datos, draft, linea: 'roam' });
+  const H = (n) => datos.heroes.find((h) => h.name === n);
+  // Diggie contra estos tres: la build que mejor encaja NO es la más usada (con los datos del 4 de noviembre de 2026).
+  const lista = buildsDe(datos.crudo.builds, 'Diggie', 'roam');
+  ok(lista.length > 1, 'la prueba necesita builds de Diggie en roam');
+  const elegida = lista[buildParaElDraft(lista, datos.crudo.equipment, [H('Clint'), H('Khufra'), H('Layla')], 'roam', { builds: datos.crudo.builds }).indice];
+  const nombres = objetosDe(datos.crudo.equipment, elegida).map((o) => o.nombre);
+  eq(c?.titulo, `Diggie: ${nombres.slice(0, 3).join(' → ')}`, `la build no es la de la app para este draft: ${JSON.stringify(c)}`);
+  ok(/^Fase de picks · Tu build/.test(c.detalle) && (!elegida.emblema || c.detalle.includes(elegida.emblema)), `el detalle no dice el resto: ${c.detalle}`);
+  ok(/^Pick phase · Your build/.test(consejoSolo({ datos, draft, linea: 'roam', idioma: 'en' }).detalle), 'en inglés sale en español');
+  // Sin tu fila leída, lo de siempre: tu nº1.
+  const sinTuyo = consejoSolo({ datos, draft: { ...draft, tuyoFila: -1 }, linea: 'roam' });
+  ok(/ \d+%$/.test(sinTuyo.titulo), `sin tu héroe no da tu nº1: ${sinTuyo.titulo}`);
+  // Sin builds de ese héroe en esa línea, también.
+  const sinBuilds = consejoSolo({ datos: { ...datos, crudo: { ...datos.crudo, builds: {} } }, draft, linea: 'roam' });
+  ok(/ \d+%$/.test(sinBuilds.titulo), 'sin builds se queda sin consejo');
 });
 
 test('los ajustes de la APK: sin línea, apagado; nada raro entra', () => {

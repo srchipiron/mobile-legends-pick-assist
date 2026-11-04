@@ -293,9 +293,9 @@ test('un solo aparato (3.66.0): con la línea elegida en la APK, la tablet lee, 
   try {
     await servidor.solo.tic();
     const { consejo } = JSON.parse((await pedir(puerto, '/consejo', { origen: null })).cuerpo);
-    // La captura de la prueba es la fase de picks con Clint y Khufra de enemigos: el consejo es un pick de roam con porcentaje.
-    ok(/^[A-Z][\w .'-]+ \d+%$/.test(consejo?.titulo ?? ''), `la tablet no pone su consejo: ${JSON.stringify(consejo)}`);
-    ok(/^Fase de picks · Luego: /.test(consejo?.detalle ?? ''), `sin la fase o sin los dos siguientes: ${JSON.stringify(consejo)}`);
+    // La captura de la prueba es la fase de picks con Clint y Khufra de enemigos y tu fila (Estes) ya leída:
+    // desde 3.90.1 el consejo es la build de tu héroe para ese draft.
+    ok(/^Estes: .+ → .+/.test(consejo?.titulo ?? '') && /^Fase de picks · Tu build/.test(consejo.detalle ?? ''), `la tablet no pone su consejo: ${JSON.stringify(consejo)}`);
     const d = servidor.solo.estado();
     ok(d.enemigos.includes('Clint') && d.enemigos.includes('Khufra') && d.baneos.length >= 8, `el draft acumulado no es el de la captura: ${JSON.stringify(d)}`);
     // El móvil lee: la tablet se aparta.

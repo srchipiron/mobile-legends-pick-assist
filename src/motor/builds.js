@@ -290,3 +290,18 @@ export function coberturaBuilds(pool, builds, linea) {
   const con = (pool ?? []).filter((h) => buildsDe(builds, h, linea).length).length;
   return { total, con };
 }
+
+/**
+ * La build en una línea, para la burbuja de la tablet (3.90.1): la que la
+ * app enseña primero en «Plan y objetos» para ESTE draft (`buildParaElDraft`
+ * sobre `buildsDe`), con los nombres de sus objetos, el emblema y el hechizo.
+ * Como Blitz, que pone la build sola al entrar en la partida. null sin builds.
+ */
+export function buildEnUnaLinea({ builds, equipment, heroe, linea, enemigos = [] }) {
+  const lista = buildsDe(builds, heroe, linea);
+  if (!lista.length) return null;
+  const b = lista[buildParaElDraft(lista, equipment, enemigos, linea, { builds }).indice] ?? lista[0];
+  const objetos = objetosDe(equipment, b).map((o) => o.nombre);
+  if (!objetos.length) return null;
+  return { objetos, emblema: b.emblema ?? null, hechizo: b.hechizo ?? null };
+}
