@@ -5,9 +5,10 @@
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { readFileSync } from 'node:fs';
-import { revisiones, cambiosDeRevision, porRevisar, imagenValida, encuadre, tusMasJugados, companerosHabituales, carasParaHueco, CARAS_POR_HUECO, TOPE_IMAGEN } from '../../src/app/revisar.js';
+import { revisiones, cambiosDeRevision, porRevisar, imagenValida, encuadre, tusMasJugados, companerosHabituales, carasParaHueco, sinResultado, MINUTOS_MISMA_PARTIDA, CARAS_POR_HUECO, TOPE_IMAGEN } from '../../src/app/revisar.js';
 import { prepararDatos, probablesDelBando } from '../../src/motor/draft.js';
 import { RAIZ } from '../arnes.mjs';
+import { MINUTOS_ENTRE_TABLAS } from '../../scripts/lector/solo.mjs';
 
 const HEROES = ['Atlas', 'Clint', 'Franco', 'Gord', 'Khufra', 'Layla', 'Minotaur', 'Rafaela', 'Selena', 'Tigreal', 'Zilong', 'Floryn'];
 const PNG = 'iVBORw0KGgoAAAANSUhEUg==';
@@ -110,6 +111,29 @@ test('las caras al tocar un hueco (3.89.0): los tuyos delante, luego el motor, n
   ok(b[0].name.toLowerCase().startsWith('la'), `buscando «la» no van primero los que empiezan así: ${b[0].name}`);
   ok(!carasParaHueco(datos, { lado: 'enemigos', fuera, buscar: 'clin' }).length, 'buscando sale uno del draft');
   eq(carasParaHueco(null, {}).length, 0);
+});
+
+test('las partidas sin resultado (3.89.4): solo de TU lector, sin las ya contestadas ni las descartadas, con sus pantallas', () => {
+  eq(MINUTOS_MISMA_PARTIDA, MINUTOS_ENTRE_TABLAS, 'la app y el lector no separan las partidas igual');
+  const T2 = T + 3 * 3600000;
+  const fin = (j, t, extra = {}) => ({ j, recibido: '2026-11-04T21:00:00Z', d: { v: 1, tipo: 'final', desde: t - 900000, motivo: 'vi la tabla del final pero no la reconozco', capturas: [{ id: 'fotograma-1', miniatura: PNG }, { id: 'fotograma-2', miniatura: 'no es png' }], partida: { t, pick: 'floryn', origen: 'lector', supuesto: true, recomendados: ['Floryn', 'Nadie'], draft: { linea: 'roam', enemigos: ['Clint', 'Nadie'], aliados: ['Gord'] }, bans: ['Atlas'] }, ...extra } });
+  // El recorte de una partida tuya dice cuál es tu lector (j: 1).
+  const recortes = [recorte(), fin(1, T2), fin(2, T2 + 3600000), fin(1, T2 + 7200000)];
+  const r = sinResultado(recortes, [partida()], HEROES);
+  eq(r.map((x) => x.t).join(), `${T2 + 7200000},${T2}`, 'sale la de otro lector, o no salen las tuyas en orden');
+  const p = r[1].partida;
+  ok(p.pick === 'Floryn' && p.supuesto && !('gane' in p) && p.draft.enemigos.join() === 'Clint' && p.recomendados.join() === 'Floryn' && p.bans.join() === 'Atlas', `la partida no sale saneada: ${JSON.stringify(p)}`);
+  eq(r[1].pantallas.length, 1, 'enseña una pantalla que no es un PNG');
+  // Ya contestada (en la tablet o aquí): el mismo héroe a menos de una partida.
+  const contestada = { t: T2 + 60000, pick: 'Floryn', gane: false, rango: 'glory' };
+  eq(sinResultado(recortes, [partida(), contestada], HEROES).map((x) => x.t).join(), `${T2 + 7200000}`, 'una contestada sigue saliendo');
+  eq(sinResultado(recortes, [partida(), { ...contestada, pick: 'Gord' }], HEROES).length, 2, 'otra partida de otro héroe la quita');
+  // Descartada.
+  eq(sinResultado(recortes, [partida()], HEROES, [T2]).map((x) => x.t).join(), `${T2 + 7200000}`, 'una descartada sigue saliendo');
+  // Sin ninguna partida tuya con recorte no se sabe cuál es tu lector: no sale nada.
+  eq(sinResultado([fin(1, T2)], [partida()], HEROES).length, 0, 'sale sin saber cuál es tu lector');
+  // Dos lectores con recortes de tu misma partida: no se fía de ninguno.
+  eq(sinResultado([recorte(), { ...recorte(), j: 3 }, fin(1, T2)], [partida()], HEROES).length, 0, 'se fía de un lector que comparte tu partida con otro');
 });
 
 await terminar('app/revisar');

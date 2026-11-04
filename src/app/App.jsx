@@ -696,7 +696,7 @@ export default function App() {
           onCerrar={cerrar} t={t}
         />
       )}
-      {hoja === 'revisar' && <RevisarCapturas partidas={personal.partidas} datos={datos} comunidad={comunidad} perfil={datosPerfil} onImportar={traerPerfil} onGuardar={personal.revisarPartida} onCerrar={soloPagina === 'revisar' ? cerrarSuelta : cerrar} t={t} />}
+      {hoja === 'revisar' && <RevisarCapturas partidas={personal.partidas} olvidadas={personal.olvidadas} onApuntar={personal.apuntarPartida} onDescartar={personal.olvidarPartida} datos={datos} comunidad={comunidad} perfil={datosPerfil} onImportar={traerPerfil} onGuardar={personal.revisarPartida} onCerrar={soloPagina === 'revisar' ? cerrarSuelta : cerrar} t={t} />}
       {hoja === 'analisis' && <Analitica partidas={personal.partidas} maestria={personal.maestria} datos={datos} onCerrar={soloPagina === 'analisis' ? cerrarSuelta : cerrar} t={t} />}
       {hoja === 'perfil' && <Perfil datos={datosPerfil} onImportar={traerPerfil} onCerrar={cerrar} t={t} />}
       {hoja === 'meta' && <Meta datos={datos} linea={linea} onFicha={(nombre) => deHojaAHoja({ ficha: nombre })} onCerrar={cerrar} t={t} />}

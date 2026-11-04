@@ -650,6 +650,9 @@ test('lo que se perdía sin el móvil (3.74.3): la pregunta pisada o caducada se
   caso.fin({ acabada: true, activa: false, fotogramas: [{ id: 'fotograma-2026-10-27T22-32-00-000Z', miniatura: 'iVBORw0KGgo=' }] });
   await caso.paso(20000);
   ok(caso.finales.length === 1 && caso.finales[0].desde === caso.desde() && caso.finales[0].fotogramas.length === 1 && caso.finales[0].motivo, `al preguntar no manda las pantallas del final: ${JSON.stringify(caso.finales)}`);
+  // Con la partida sin resultado (3.89.4), para contestarla en «Capturas» del móvil: su draft, sin resultado inventado.
+  const conPartida = caso.finales[0].partida;
+  ok(conPartida && conPartida.pick && conPartida.draft?.enemigos?.includes('Clint') && !('gane' in conPartida) && Number.isFinite(conPartida.t) && conPartida.origen === 'lector', `las pantallas del final van sin la partida, o con un resultado: ${JSON.stringify(conPartida)}`);
   // La pregunta caduca sin contestar: se dice.
   const caduca = montar();
   await jugar(caduca);

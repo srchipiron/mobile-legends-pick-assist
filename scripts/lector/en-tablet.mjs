@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas, sanearAjustes, PUERTO, VISTAZO_MS, ARREGLOS_POR_TANDA } from './servir.mjs';
 import { limpiarTexto } from './voz.mjs';
 import { leerCrudo, escribirPngRapido } from './png.mjs';
-import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo } from './solo.mjs';
+import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, MINUTOS_ENTRE_TABLAS } from './solo.mjs';
 import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte, subirRecorte, traerMisPartidas, bajarMisRecortes } from '../../src/app/basedatos.js';
 import { maestriaEfectiva } from '../../src/motor/maestria.js';
 import { tusNumeros, tuSemana } from '../../src/motor/habitos.js';
@@ -495,7 +495,27 @@ export function draftsArreglados({ recortes = [], partidas = [], nombres = [], h
  * los jugadores no se leen. Va a la tabla de los recortes con `tipo: 'final'`.
  * null si no hay nada que subir.
  */
-export function finalParaSubir({ desde, motivo = '', fotogramas = [], version = null }) {
+/**
+ * La partida sin resultado que va con las pantallas del final (3.89.4), con
+ * forma fija: lo que `apuntar` (registro.js) sabe guardar, sin `gane`. Los
+ * nombres son los del catálogo de la tablet; la app los vuelve a sanear.
+ */
+export function partidaSinResultado(p) {
+  if (!p || typeof p !== 'object' || !Number.isFinite(p.t) || typeof p.pick !== 'string' || !p.pick || p.pick.length > 40) return null;
+  const nombres = (l, n) => (Array.isArray(l) ? l.filter((x) => typeof x === 'string' && x && x.length <= 40).slice(0, n) : []);
+  return {
+    t: p.t, pick: p.pick, origen: 'lector',
+    ...(p.supuesto === true ? { supuesto: true } : {}),
+    ...(typeof p.rango === 'string' && p.rango.length <= 20 ? { rango: p.rango } : {}),
+    recomendados: nombres(p.recomendados, 3),
+    ...(typeof p.estimacion === 'number' && p.estimacion > 0 && p.estimacion < 1 ? { estimacion: p.estimacion, ...(Number.isInteger(p.modelo) ? { modelo: p.modelo } : {}) } : {}),
+    ...(nombres(p.bans, 10).length ? { bans: nombres(p.bans, 10) } : {}),
+    draft: { linea: typeof p.draft?.linea === 'string' && p.draft.linea.length <= 10 ? p.draft.linea : null, enemigos: nombres(p.draft?.enemigos, 5), aliados: nombres(p.draft?.aliados, 4) },
+    ...(Number.isFinite(p.duracion) && p.duracion >= 3 && p.duracion <= 90 ? { duracion: p.duracion } : {}),
+  };
+}
+
+export function finalParaSubir({ desde, motivo = '', fotogramas = [], version = null, partida = null }) {
   const b64 = (x) => typeof x === 'string' && x.length > 0 && /^[A-Za-z0-9+/=]+$/.test(x);
   const validas = (Array.isArray(fotogramas) ? fotogramas : []).filter((f) => typeof f?.id === 'string' && /^fotograma-[\w-]+$/.test(f.id) && b64(f.miniatura));
   const ultimaEnPartida = validas.map((f) => !!f.marcador).lastIndexOf(true);
@@ -504,6 +524,7 @@ export function finalParaSubir({ desde, motivo = '', fotogramas = [], version = 
   if (!elegidas.length || !Number.isFinite(desde)) return null;
   const recorte = {
     v: 1, tipo: 'final', version: typeof version === 'string' ? version : null, desde, motivo: String(motivo).slice(0, 80),
+    ...(partidaSinResultado(partida) ? { partida: partidaSinResultado(partida) } : {}),
     capturas: elegidas.map((f) => ({ id: f.id, minuto: Number.isFinite(f.minuto) ? f.minuto : null, miniatura: f.miniatura, ...(b64(f.tira) ? { tira: f.tira } : {}), tabla: !!f.tabla, parecido: Number.isFinite(f.resultadoParecido) ? f.resultadoParecido : null })),
   };
   while (Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES && recorte.capturas.length > 1) recorte.capturas.pop();
@@ -752,7 +773,11 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     const todas = new Map([...deLaBase].map(([t, b]) => [t, locales.get(t)?.supuesto && locales.get(t).pick === b.pick ? { ...b, supuesto: true } : b]));
     for (const p of partidas.todas()) if (sinSubir.has(p.t) || !todas.has(p.t)) todas.set(p.t, { ...p, sinSubir: sinSubir.has(p.t) });
     // Las sin resultado (3.81.5) van en la lista, para decir cómo acabaron; no en los números (no tienen resultado).
-    const lista = [...partidas.sinResultado().map((p) => ({ ...p, sinResultado: true })), ...todas.values()].sort((a, b) => b.t - a.t).slice(0, PARTIDAS_EN_LA_APK).map((p) => ({
+    // Una sin resultado que ya contestaste en «Capturas» del móvil (3.89.4) llega de la base de datos con su
+    // resultado: el mismo héroe a menos de una partida de distancia. No sale dos veces.
+    const yaContestadas = [...todas.values()].filter((x) => typeof x.gane === 'boolean');
+    const contestada = (s) => yaContestadas.some((x) => x.pick === s.pick && Math.abs(x.t - s.t) < MINUTOS_ENTRE_TABLAS * 60000);
+    const lista = [...partidas.sinResultado().filter((p) => !contestada(p)).map((p) => ({ ...p, sinResultado: true })), ...todas.values()].sort((a, b) => b.t - a.t).slice(0, PARTIDAS_EN_LA_APK).map((p) => ({
       t: p.t, pick: p.pick, ...(typeof p.gane === 'boolean' ? { gane: p.gane } : {}), ...(p.sinResultado ? { sinResultado: true } : {}), ...(p.supuesto ? { supuesto: true } : {}), ...(p.sinSubir ? { sinSubir: true } : {}),
       enemigos: p.draft?.enemigos ?? [], aliados: p.draft?.aliados ?? [], bans: p.bans ?? [], linea: p.draft?.linea ?? null,
       ...(Number.isFinite(p.duracion) ? { duracion: p.duracion } : {}), ...(p.resultadoDe ? { resultadoDe: p.resultadoDe } : {}), ...(p.editada ? { editada: true } : {}),

@@ -8,6 +8,19 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.90.0
+
+- Las partidas de las que la tablet no supo el resultado ya no se quedan
+  perdidas en la tablet. Salen arriba en «Capturas» del móvil o del
+  ordenador, con las pantallas del final que vio. Tocas Gané o Perdí y pasan
+  a tus estadísticas con su draft. Antes había que contestar «¿Cómo acabó?»
+  en la tablet entre partida y partida. Como no daba tiempo, se quedaban sin
+  resultado, y casi siempre eran derrotas: tu winrate salía más alto de lo
+  que es.
+- Si no la jugaste, «No la jugué» la quita. Si ya la contestaste en la
+  tablet, no sale. Y solo salen las de tu tablet: nadie de fuera puede
+  colarte una partida.
+
 ## 3.89.3
 
 - La app quita sola las partidas fantasma que apuntó la tablet, en tu móvil

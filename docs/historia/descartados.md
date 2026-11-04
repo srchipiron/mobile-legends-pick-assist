@@ -672,3 +672,9 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   el 23% de los huecos (25% en las 30 últimas). Juega con amigos, pero no
   siempre con los mismos héroes. Se hizo una rejilla de 24 caras con
   buscador (`carasParaHueco`, 3.89.0), en la que estos van delante.
+- **De la búsqueda de apps parecidas (4 de noviembre de 2026)**: importar
+  solo la build al empezar (como Blitz) ya lo dice la voz del guion, y Javi
+  la tiene callada (los partes dicen «sin decir (voz callada)»). Repetirlo
+  en la burbuja no se puede: en partida se esconde. Los «momentos
+  destacados» de Mobalytics piden el vídeo de la partida, y aquí solo hay
+  capturas sueltas. No se hizo ninguno de los dos.

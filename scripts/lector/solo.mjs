@@ -506,7 +506,10 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     // octubre de 2026 en adelante, todas las preguntas eran «ya hay otro draft», sin ver ninguna tabla.
     const f = interno.final?.();
     if (f?.desde === v.desde && Array.isArray(f.fotogramas) && f.fotogramas.length) {
-      try { alFinalSinLeer?.({ desde: v.desde, motivo, fotogramas: f.fotogramas }); } catch (e) { registrar(`No se pudieron preparar las pantallas del final: ${e.message}`); }
+      // Con la partida sin resultado (3.89.4): con ella, «Capturas» del móvil pregunta Gané/Perdí al acabar la sesión.
+      const sin = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane: false, t: instanteDe(v), versionModelo: VERSION_MODELO });
+      const partida = sin ? (({ gane, ...resto }) => resto)(sin) : null;
+      try { alFinalSinLeer?.({ desde: v.desde, motivo, fotogramas: f.fotogramas, ...(partida ? { partida } : {}) }); } catch (e) { registrar(`No se pudieron preparar las pantallas del final: ${e.message}`); }
     }
     interno.ponerResumen?.(resumenPregunta(v.desde, pick, v.idioma));
     registrar(`Sin móvil: no sé cómo acabó la partida (${motivo}); te lo pregunto en la app de la tablet.`);

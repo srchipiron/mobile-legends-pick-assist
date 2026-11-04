@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, TOPE_SIN_RESULTADO, finalParaSubir, draftsArreglados } from '../../scripts/lector/en-tablet.mjs';
+import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, TOPE_SIN_RESULTADO, finalParaSubir, partidaSinResultado, draftsArreglados } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { claveDeJugadorValida } from '../../src/app/basedatos.js';
 import { pruebaDelReto } from '../../src/app/lector.js';
@@ -450,6 +450,14 @@ test('las partidas sin resultado (3.81.5): se guardan con su draft, salen en «M
     await servidor.subirPartidas();
     const clave = claveDelLector(casa);
     eq(s.jugadores.get(clave)?.partidas.get(T)?.gane, true, 'al decir el resultado no se sube');
+    // Contestada en «Capturas» del móvil (3.89.4): llega de la base de datos con su resultado y la de la tablet no sale dos veces.
+    const T2 = T + 3600000;
+    servidor.partidas.guardarSinResultado({ t: T2, pick: 'Floryn', desde: T2 - 900000, origen: 'lector', draft: { linea: 'roam', enemigos: ['Clint'], aliados: [] } });
+    servidor.partidas.guardarSinResultado({ t: T2 + 3600000, pick: 'Floryn', desde: T2, origen: 'lector', draft: { linea: 'roam', enemigos: ['Clint'], aliados: [] } });
+    s.atender('subir_partidas', { clave, lote: [{ t: T2 + 60000, pick: 'Floryn', gane: false, rango: 'glory' }], quitar: [] }, { apikey: s.clavePublica });
+    const lista2 = JSON.parse((await pedir(puerto, '/partidas', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
+    ok(!lista2.partidas.some((p) => p.t === T2 && p.sinResultado), 'la contestada en el móvil sigue saliendo sin resultado en la tablet');
+    ok(lista2.partidas.some((p) => p.t === T2 + 3600000 && p.sinResultado), 'se lleva una sin resultado de otra partida');
     // El tope: no crece sin fin.
     for (let i = 1; i <= TOPE_SIN_RESULTADO + 5; i += 1) servidor.partidas.guardarSinResultado({ t: T + i, pick: 'Gord' });
     eq(servidor.partidas.sinResultado().length, TOPE_SIN_RESULTADO);
@@ -465,6 +473,12 @@ test('las pantallas del final sin reconocer (3.81.5): las dos primeras fuera de 
   eq(finalParaSubir({ desde: 5, fotogramas: [foto('31-00'), foto('31-10'), foto('31-20')] }).capturas.length, 2, 'sin marcador no sube las últimas');
   eq(finalParaSubir({ desde: 5, fotogramas: [{ ...foto('31-00'), id: '../x' }, foto('31-10', { miniatura: 'no <es> base64' })] }), null, 'sube una pantalla sin forma');
   eq(finalParaSubir({ desde: null, fotogramas: fotos }), null, 'sin la partida no se puede cruzar');
+  // La partida sin resultado viaja con forma fija (3.89.4): sin `gane`, sin campos de más y con nombres con tope.
+  const sin = { t: 7, pick: 'Estes', supuesto: true, rango: 'glory', recomendados: ['Estes', 'Floryn', 'Rafaela', 'Diggie'], estimacion: 0.55, modelo: 4, bans: ['Hirara', 42], draft: { linea: 'roam', enemigos: ['Clint', 'x'.repeat(50)], aliados: ['Gord'] }, duracion: 14, gane: true, lector: { ids: ['lectura-1'] }, clave: 'secreta' };
+  const conPartida = finalParaSubir({ desde: 5, fotogramas: fotos, partida: sin });
+  eq(JSON.stringify(conPartida.partida), JSON.stringify({ t: 7, pick: 'Estes', origen: 'lector', supuesto: true, rango: 'glory', recomendados: ['Estes', 'Floryn', 'Rafaela'], estimacion: 0.55, modelo: 4, bans: ['Hirara'], draft: { linea: 'roam', enemigos: ['Clint'], aliados: ['Gord'] }, duracion: 14 }), 'la partida del final no va con su forma fija');
+  eq(partidaSinResultado({ t: 'x', pick: 'Estes' }), null);
+  ok(!('partida' in finalParaSubir({ desde: 5, fotogramas: fotos, partida: { pick: 'Estes' } })), 'sube una partida sin instante');
   const grande = 'A'.repeat(70000);
   ok(finalParaSubir({ desde: 5, fotogramas: [foto('32-00', { miniatura: grande }), foto('32-10', { miniatura: grande })] }).capturas.length === 1, 'no deja la primera cuando no caben las dos');
   // De punta a punta: con la clave del lector, por subir_recorte.

@@ -10,6 +10,8 @@ export function supabaseFalso({ clavePublica = 'sb_publishable_prueba1234567890'
   const partes = [];
   const recortes = [];
   const jugadores = new Map(); // huella (aquí, la clave) → { id, referencia, partidas: Map(t → datos) }
+  const lectores = new Map();
+  const idDeLector = (clave) => { if (jugadores.has(clave)) return jugadores.get(clave).id; if (!lectores.has(clave)) lectores.set(clave, 1000 + lectores.size); return lectores.get(clave); };
   let siguiente = 1;
   const llamadas = [];
   const error = (message, status = 400) => ({ status, cuerpo: { code: 'P0001', message } });
@@ -74,7 +76,8 @@ export function supabaseFalso({ clavePublica = 'sb_publishable_prueba1234567890'
     }
     if (funcion === 'recortes_recientes') {
       const desde = ahora() - Math.min(Math.max(args.horas ?? 168, 1), 1440) * 3600000;
-      return { status: 200, cuerpo: recortes.filter((x) => x.recibido > desde).slice(-50).reverse().map((x) => ({ j: 1, recibido: new Date(x.recibido).toISOString(), d: x.d })) };
+      // Como la real, `j` es el jugador del lector que lo subió (3.89.4: antes todos salían con 1).
+      return { status: 200, cuerpo: recortes.filter((x) => x.recibido > desde).slice(-50).reverse().map((x) => ({ j: idDeLector(x.clave), recibido: new Date(x.recibido).toISOString(), d: x.d })) };
     }
     if (funcion === 'mis_recortes') {
       if (!claveValida(args.clave)) return { status: 200, cuerpo: [] };

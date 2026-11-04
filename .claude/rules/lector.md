@@ -1973,3 +1973,23 @@ empieza sin minimapa y no en partida, una captura por paso aunque el reloj
 lata deprisa); seis mutaciones. Las de contar capturas con el reloj de
 verdad fallaban con el código bien: el arnés corre las pruebas a la vez y
 cada captura tardaba segundos.
+
+**El resultado se dice en «Capturas», no entre partidas (3.90.0)**. Javi:
+«céntrate en facilidad de uso… automatizar todo». Mirado en la web lo que
+hacen las apps parecidas (Blitz importa solo, Porofessor y Mobalytics hacen
+la revisión de después de la partida); aquí lo que faltaba era que la
+revisión de después se pudiera hacer de una vez. Al preguntar, `crearSolo`
+manda con las pantallas del final la partida sin resultado (`partidaSolo`
+sin `gane`), y `finalParaSubir` la sube con forma fija
+(`partidaSinResultado`) en el recorte `tipo: 'final'`. En el móvil,
+`sinResultado` (revisar.js) la enseña arriba en «Capturas» con sus
+pantallas y Gané/Perdí (`apuntarPartida`) o «No la jugué» (`olvidarPartida`).
+Solo las de TU lector: el `j` de los recortes que casan con tus partidas
+(y si una partida tiene recortes de dos lectores, no se fía de ninguno).
+Fuera las ya contestadas: el mismo héroe a menos de
+`MINUTOS_MISMA_PARTIDA` (= `MINUTOS_ENTRE_TABLAS`, con prueba). La tablet
+tampoco enseña dos veces la que contestaste en el móvil (`listarPartidas`).
+El Supabase de pega daba `j: 1` a todos los recortes y la real da el
+jugador de cada lector: arreglado, si no la prueba no podía distinguir
+lectores. Pruebas en `solo`, `en-tablet`, `app/revisar` y `revisar.e2e`;
+diez mutaciones, todas cazadas.

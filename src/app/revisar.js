@@ -178,3 +178,51 @@ export function carasParaHueco(datos, { lado = 'enemigos', equipo = [], fuera = 
   const orden = [...(primeros ?? []).map(de).filter(Boolean), ...probables];
   return [...new Set(orden)].filter((h) => !no.has(h)).slice(0, n);
 }
+
+/** Lo más cerca que caen dos partidas tuyas (3.89.4): el `MINUTOS_ENTRE_TABLAS` del lector (hay prueba de que son iguales). */
+export const MINUTOS_MISMA_PARTIDA = 10;
+
+/**
+ * Las partidas que la tablet no supo cómo acabaron (3.89.4), para decirlo en
+ * «Capturas» con un toque al acabar la sesión: Javi juega una detrás de otra
+ * y no contesta el «¿Cómo acabó?» de la tablet, así que se quedaban allí sin
+ * resultado (casi siempre derrotas) y no llegaban a sus números. Llegan en
+ * las pantallas del final (`tipo: 'final'`, con `partida`) y solo de TU
+ * lector: el `j` de los recortes que casan con tus partidas (los sube
+ * cualquiera con la clave pública). Fuera las ya contestadas (el mismo
+ * héroe a menos de `MINUTOS_MISMA_PARTIDA`, en la tablet o aquí) y las que
+ * descartaste (`olvidadas`). De la más nueva a la más vieja.
+ */
+export function sinResultado(recortes = [], partidas = [], heroes = [], olvidadas = []) {
+  const porClave = new Map((heroes ?? []).map((n) => [String(n).toLowerCase(), n]));
+  const nombre = (n) => (typeof n === 'string' ? porClave.get(n.toLowerCase()) ?? null : null);
+  const mias = new Set((partidas ?? []).filter((p) => Number.isFinite(p?.t)).map((p) => p.t));
+  const lectores = new Map();
+  for (const fila of recortes ?? []) {
+    const d = fila?.d ?? fila;
+    if (d?.tipo !== 'final' && Number.isFinite(d?.partida) && mias.has(d.partida)) lectores.set(d.partida, new Set([...(lectores.get(d.partida) ?? []), fila?.j]));
+  }
+  const tuyos = new Set([...lectores.values()].filter((s) => s.size === 1).map((s) => [...s][0]).filter((j) => j != null));
+  const quitadas = new Set(olvidadas ?? []);
+  const vistas = new Map();
+  for (const fila of recortes ?? []) {
+    const d = fila?.d ?? fila;
+    const p = d?.partida;
+    if (d?.tipo !== 'final' || !tuyos.has(fila?.j) || !p || typeof p !== 'object' || !Number.isFinite(p.t) || !nombre(p.pick) || quitadas.has(p.t) || vistas.has(p.t)) continue;
+    const pick = nombre(p.pick);
+    if ((partidas ?? []).some((x) => typeof x?.gane === 'boolean' && x.pick === pick && Math.abs(x.t - p.t) < MINUTOS_MISMA_PARTIDA * 60000)) continue;
+    const lista = (l, n) => (Array.isArray(l) ? l.map(nombre).filter(Boolean).slice(0, n) : []);
+    vistas.set(p.t, {
+      t: p.t,
+      pantallas: (Array.isArray(d.capturas) ? d.capturas : []).map((c) => c?.miniatura).filter(imagenValida).slice(0, 2),
+      partida: {
+        t: p.t, pick, origen: 'lector', ...(p.supuesto === true ? { supuesto: true } : {}), rango: typeof p.rango === 'string' ? p.rango : null,
+        recomendados: lista(p.recomendados, 3), bans: lista(p.bans, 10),
+        ...(typeof p.estimacion === 'number' ? { estimacion: p.estimacion, ...(Number.isInteger(p.modelo) ? { modelo: p.modelo } : {}) } : {}),
+        draft: { linea: typeof p.draft?.linea === 'string' ? p.draft.linea : null, enemigos: lista(p.draft?.enemigos, 5), aliados: lista(p.draft?.aliados, 4) },
+        ...(Number.isFinite(p.duracion) ? { duracion: p.duracion } : {}),
+      },
+    });
+  }
+  return [...vistas.values()].sort((a, b) => b.t - a.t);
+}

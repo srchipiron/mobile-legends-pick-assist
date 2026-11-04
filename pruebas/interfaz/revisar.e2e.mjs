@@ -117,6 +117,31 @@ await prueba('en el móvil, sin escribir (3.89.0): tocar la cara abre caras para
   await contexto.close();
 });
 
+await prueba('las partidas sin resultado (3.89.4): sus pantallas del final y Gané/Perdí con un toque, solo las de tu lector', async () => {
+  const s = supabaseFalso();
+  const T2 = T + 3 * 3600000;
+  const fin = (clave, t) => ({ clave, recibido: Date.now() - 1000, d: { v: 1, tipo: 'final', desde: t - 900000, motivo: 'vi la tabla del final pero no la reconozco', capturas: [{ id: 'fotograma-1', miniatura: PNG }], partida: { t, pick: 'Floryn', origen: 'lector', supuesto: true, recomendados: ['Floryn', 'Rafaela', 'Diggie'], draft: { linea: 'roam', enemigos: ['Clint', 'Khufra'], aliados: ['Gord'] }, bans: ['Atlas'] } } });
+  s.recortes.push({ clave: 'L'.repeat(43), recibido: Date.now() - 3600000, d: { v: 1, partida: T, faltan: 3, capturas: [{ id: 'lectura-2026-10-28T21-02-27-027Z-1517', picks: PNG }], leidos } });
+  s.recortes.push(fin('L'.repeat(43), T2));
+  // Otra de otro lector (cualquiera con la clave pública puede subirla): no sale.
+  s.recortes.push(fin('M'.repeat(43), T2 + 3600000));
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: 390, height: 844 }, almacen: { ...LINEA, 'roam-picker:partidas': [PARTIDA] }, sinServiceWorker: true, antes: conBaseDeDatos(s) });
+  await abrirAjustes(pagina);
+  await pagina.locator('.more').getByRole('button', { name: 'Partidas', exact: true }).click();
+  await pagina.getByRole('button', { name: 'Revisar con las capturas del lector' }).click();
+  const seccion = pagina.locator('.revisar-sin-resultado');
+  await seccion.waitFor();
+  eq(await seccion.locator('.revisar-fin').count(), 1, 'sale la de otro lector, o no sale la tuya');
+  ok(/Floryn/.test(await seccion.textContent()), 'no dice con quién jugaste');
+  eq(await seccion.locator('img').count(), 1, 'no enseña la pantalla del final');
+  await seccion.getByRole('button', { name: 'Perdí' }).click();
+  await seccion.waitFor({ state: 'detached' });
+  const p = (await leer(pagina, 'roam-picker:partidas')).find((x) => x.t === T2);
+  ok(p && p.gane === false && p.pick === 'Floryn' && p.origen === 'lector' && p.supuesto === true && p.draft.enemigos.join() === 'Clint,Khufra' && p.bans.join() === 'Atlas', `la partida no se apunta con su draft y el resultado: ${JSON.stringify(p)}`);
+  eq(errores.length, 0, errores.join(' | '));
+  await contexto.close();
+});
+
 await prueba('sin base de datos el botón no sale', async () => {
   const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:partidas': [PARTIDA] }, sinServiceWorker: true, antes: async (p) => p.route(`${url}comunidad.json*`, (r) => r.fulfill({ status: 404, body: '' })) });
   await abrirAjustes(pagina);
