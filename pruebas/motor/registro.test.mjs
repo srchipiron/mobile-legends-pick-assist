@@ -7,7 +7,7 @@
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { sanear } from '../../src/motor/perfil.js';
-import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, medirFasesMias, aciertosDelLector, apuntar, olvidar, corregir, cambiarHeroe, cambiarDraft, marcarEditada, calibracion, modeloDe, esPrevia, esSupuesta, ajustePersonal, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
+import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, medirFasesMias, aciertosDelLector, apuntar, olvidar, corregir, cambiarHeroe, cambiarDraft, marcarEditada, calibracion, modeloDe, esPrevia, esSupuesta, esFantasma, ajustePersonal, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
 import { maestriaDesdeRegistro, maestriaEfectiva, winrateDeReferencia, TOPE_DE_SIEMPRE } from '../../src/motor/maestria.js';
 import { nombreClave } from '../../src/motor/nombres.js';
 import { generador } from '../../src/motor/robustez.js';
@@ -495,6 +495,29 @@ test('el pick supuesto (3.81.2): se guarda, no cuenta como «siguió el consejo�
   ok(confirmada.pick === 'Diggie' && !confirmada.supuesto && confirmada.estimacion === 0.9, JSON.stringify(confirmada));
   // El perfil la conserva (solo true).
   ok(sanear({ partidas: [guardada] }).partidas[0].supuesto === true && !('supuesto' in sanear({ partidas: [{ ...guardada, supuesto: 1 }] }).partidas[0]), 'sanear no conserva la marca o deja pasar una rara');
+});
+
+test('las partidas fantasma de la tablet (3.89.3): las dos del 2 de noviembre sí; las de verdad, las arregladas y las apuntadas a mano sin draft, no', () => {
+  // Tal como están en la base de datos, y pasadas por `sanear` como al cargar en el móvil.
+  const fantasmas = [
+    { t: 1793640067108, bans: ['Atlas'], gane: true, pick: 'Marcel', draft: { linea: 'roam', aliados: [], enemigos: [] }, rango: 'glory', modelo: 4, origen: 'lector', duracion: 12.9, supuesto: true, estimacion: 0.559 },
+    { t: 1793654987603, bans: ['Gord'], gane: true, pick: 'Marcel', draft: { linea: 'roam', aliados: [], enemigos: ['Gord'] }, rango: 'glory', modelo: 4, origen: 'lector', supuesto: true, estimacion: 0.55 },
+  ];
+  const buenas = [
+    { t: 1793654592593, bans: ['Masha', 'Hirara', 'Aulus'], gane: true, pick: 'Minotaur', draft: { linea: 'roam', aliados: ['Vale', 'Moskov', 'Aamon'], enemigos: ['Rafaela', 'Nolan', 'Eudora', 'Bruno', 'Kalea'] }, rango: 'glory', origen: 'lector' },
+    // Supuesta y con poco leído, pero con dos baneos distintos: una partida de verdad que se leyó mal.
+    { t: 1793650767649, bans: ['Aulus', 'Masha'], gane: true, pick: 'Lolita', draft: { linea: 'roam', aliados: [], enemigos: [] }, rango: 'glory', origen: 'lector', supuesto: true },
+    // La arreglaste tú: manda lo que dijiste.
+    { ...fantasmas[1], t: 1793654987999, editada: 1793691709308 },
+    // Apuntada a mano en agosto, sin draft.
+    { t: 1788107122606, pick: 'Minotaur', gane: true, rango: 'glory' },
+    // Gané/Perdí del recordatorio sin pick fijado: supuesta y sin draft, pero la apuntaste tú.
+    { t: 1793000000000, pick: 'Floryn', gane: false, rango: 'glory', supuesto: true, draft: { linea: 'roam', aliados: [], enemigos: [] } },
+  ];
+  const cargadas = sanear({ partidas: [...fantasmas, ...buenas] }).partidas;
+  eq(cargadas.length, 7, 'sanear se lleva alguna');
+  eq(cargadas.filter(esFantasma).map((p) => p.t).sort().join(), fantasmas.map((p) => p.t).sort().join(), `no reconoce las fantasma, o cae una de verdad: ${cargadas.filter(esFantasma).map((p) => p.t)}`);
+  ok(!esFantasma(null) && !esFantasma({}), 'una sin forma cuenta como fantasma');
 });
 
 await terminar('motor/registro');

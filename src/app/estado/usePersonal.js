@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CLAVES, leer, guardar } from './almacen.js';
 import { sanear, sanearOlvidadas } from '../../motor/perfil.js';
-import { apuntar, olvidar, corregir, cambiarHeroe, cambiarDraft, marcarEditada } from '../../motor/registro.js';
+import { apuntar, olvidar, corregir, cambiarHeroe, cambiarDraft, marcarEditada, esFantasma } from '../../motor/registro.js';
 import { maestriaEfectiva, fecharMaestria } from '../../motor/maestria.js';
 import { ajustePersonal } from '../../motor/registro.js';
 
@@ -57,6 +57,15 @@ export function usePersonal() {
     guardarOlvidadas(sanearOlvidadas([t, ...ultimasOlvidadas.current]));
     guardarPartidas(olvidar(ultimas.current, t));
   }, [guardarPartidas, guardarOlvidadas]);
+  // Las partidas fantasma de la tablet (3.89.3) se quitan solas, como si las
+  // quitaras tú: con su marca, para que se borren también de la base de datos
+  // y no vuelvan al fundir. Sin esto, el móvil las volvía a subir.
+  useEffect(() => {
+    const fantasmas = partidas.filter(esFantasma).map((p) => p.t);
+    if (!fantasmas.length) return;
+    guardarOlvidadas(sanearOlvidadas([...fantasmas, ...ultimasOlvidadas.current]));
+    guardarPartidas(ultimas.current.filter((p) => !esFantasma(p)));
+  }, [partidas, guardarPartidas, guardarOlvidadas]);
   // Con la hora del arreglo (3.76.0): así llega a la tablet y no lo pisa la copia de allí.
   const corregirPartida = useCallback((t, gane) => guardarPartidas(marcarEditada(corregir(ultimas.current, t, gane), t)), [guardarPartidas]);
   const cambiarHeroePartida = useCallback((t, pick) => guardarPartidas(marcarEditada(cambiarHeroe(ultimas.current, t, pick), t)), [guardarPartidas]);

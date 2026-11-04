@@ -341,3 +341,18 @@ y los interpreta». La tablet apunta; el móvil (o el PC) analiza.
   distinguieron el orden por partidas del de lunes a domingo, y el winrate
   del borde bajo.
 
+**Las partidas fantasma se quitan solas (3.89.3)**. Javi: «consigue
+permisos para poder borrar las partidas que crees que no son correctas…
+quiero que hagas tú todo». `esFantasma` (registro.js): `origen: 'lector'`,
+`supuesto`, sin `editada`, como mucho un héroe leído y menos de dos baneos
+distintos. Es exactamente lo que 3.89.1 ya no deja apuntar. En la base de
+datos, el 4 de noviembre de 2026, solo lo cumplían las dos del 2 de
+noviembre (las apuntadas a mano de agosto y septiembre sin draft no llevan
+`origen`). `usePersonal` las quita como `olvidarPartida`, con marca en
+`olvidadas`, así que la siguiente subida las borra también de la base de
+datos (`quitar`). Borrarlas solo allí no bastaba: el móvil sube todas las
+suyas y las habría vuelto a subir. Borrar a mano en Supabase pide
+confirmación en el conector, y a esa pregunta nadie contestó a tiempo.
+Pruebas en `motor/registro` (las de la base de datos pasadas por `sanear`)
+y `comunidad.e2e` (del móvil, de la base de datos, sin volver a subir);
+siete mutaciones.

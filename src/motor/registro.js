@@ -235,6 +235,19 @@ export function modeloDe(p) {
 /** Quitar una partida apuntada por error. */
 export const olvidar = (partidas = [], t) => partidas.filter((p) => p.t !== t);
 
+/**
+ * Una partida fantasma (3.89.3): la apuntó la tablet sola, con tu pick
+ * supuesto, sin haber leído casi nada del draft (uno o ningún héroe y menos
+ * de dos baneos distintos) y nadie la arregló después. Es lo que 3.89.1
+ * impide apuntar: «Gord» en dos huecos de baneo de una pantalla que no era
+ * el draft, y la tabla del final de la partida anterior. Las dos del 2 de
+ * noviembre de 2026 eran así. Las apuntadas a mano sin draft (agosto y
+ * septiembre, `origen` ausente) son partidas de verdad y no lo son.
+ */
+export const esFantasma = (p) => !!p && p.origen === 'lector' && p.supuesto === true && !Number.isFinite(p.editada)
+  && (Array.isArray(p.draft?.enemigos) ? p.draft.enemigos.length : 0) + (Array.isArray(p.draft?.aliados) ? p.draft.aliados.length : 0) <= 1
+  && new Set(Array.isArray(p.bans) ? p.bans : []).size < 2;
+
 /** Cambiar el resultado de una partida mal apuntada. */
 export const corregir = (partidas = [], t, gane) => partidas.map((p) => (p.t === t ? { ...p, gane: !!gane } : p));
 

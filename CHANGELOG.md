@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.89.3
+
+- La app quita sola las partidas fantasma que apuntó la tablet, en tu móvil
+  y en la base de datos. Son las que llevan tu pick supuesto, casi ningún
+  héroe leído y menos de dos baneos distintos, como las dos «Marcel» del 2
+  de noviembre. Se quitan como si las quitaras tú, así que no vuelven. Las
+  que arreglaste y las que apuntaste a mano no se tocan nunca.
+
 ## 3.89.2
 
 - La tablet ya no se pierde la pantalla del resultado. Cuando acaba la

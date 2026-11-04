@@ -136,6 +136,26 @@ await prueba('lo que apuntó la tablet sola llega a la app al abrirla, sin repet
   await contexto.close();
 });
 
+await prueba('una partida fantasma de la tablet (3.89.3) se quita sola: del móvil y de la base de datos, y no vuelve', async () => {
+  const s = supabaseFalso();
+  const clave = 'F'.repeat(43);
+  // La del 2 de noviembre de 2026 a las 22:29: tu pick supuesto, un héroe leído y un baneo.
+  const fantasma = { t: 1793654987603, bans: ['Gord'], gane: true, pick: 'Marcel', draft: { linea: 'roam', aliados: [], enemigos: ['Gord'] }, rango: 'glory', origen: 'lector', supuesto: true, recomendados: ['Marcel', 'Atlas', 'Khufra'] };
+  // Ya está en la base de datos (la subió la tablet).
+  s.atender('subir_partidas', { clave, lote: [...PARTIDAS.map(({ lector, ...p }) => p), fantasma], quitar: [] }, { apikey: PUBLICA });
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, {
+    almacen: { ...LINEA, 'roam-picker:partidas': [...PARTIDAS, fantasma], 'roam-picker:comunidad': { activo: true, clave, completo: true, config: { url: SUPA, clave: PUBLICA } } },
+    sinServiceWorker: true, antes: conBaseDeDatos(s),
+  });
+  ok(await esperar(async () => !(await leer(pagina, 'roam-picker:partidas')).some((p) => p.t === fantasma.t)), 'la fantasma sigue en el móvil');
+  ok((await leer(pagina, 'roam-picker:olvidadas'))?.includes(fantasma.t), 'se quita sin marca: volvería al fundir');
+  ok(await esperar(() => !s.jugadores.get(clave).partidas.has(fantasma.t), 12000), 'la fantasma sigue en la base de datos');
+  eq((await leer(pagina, 'roam-picker:partidas')).length, PARTIDAS.length, 'se lleva una partida de verdad');
+  ok(!s.llamadas.filter((l) => l.funcion === 'subir_partidas').some((l) => l.args.lote.some((p) => p.t === fantasma.t) && l.args.clave === clave && l !== s.llamadas[0]), 'la vuelve a subir');
+  eq(errores.length, 0, errores.join(' | '));
+  await contexto.close();
+});
+
 await prueba('la Administración publica la dirección y la clave pública, y no deja publicar la secreta', async () => {
   const s = supabaseFalso();
   const admin = await crearClaveDeAdministrador();
