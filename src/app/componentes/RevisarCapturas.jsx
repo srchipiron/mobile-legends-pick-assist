@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { bajarRecortes } from '../basedatos.js';
+import { bajarRecortes, bajarMisRecortes, claveDeJugadorValida } from '../basedatos.js';
 import { revisiones, cambiosDeRevision, encuadre, tusMasJugados, companerosHabituales, carasParaHueco, sinResultado, HORAS_DE_RECORTES } from '../revisar.js';
 import { Cara as CaraDeHeroe } from './Imagen.jsx';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
@@ -54,10 +54,19 @@ export function RevisarCapturas({ partidas, olvidadas = [], datos, comunidad, pe
     });
     return () => { vivo = false; };
   }, [config]);
+  // Las pantallas del final con la partida sin resultado (3.90.2): solo las subidas con TU clave.
+  const [propios, setPropios] = useState([]);
+  const clave = comunidad?.clave ?? null;
+  useEffect(() => {
+    if (!config || !claveDeJugadorValida(clave)) return undefined;
+    let vivo = true;
+    bajarMisRecortes(config, { clave, horas: HORAS_DE_RECORTES }).then((r) => { if (vivo && !r.error) setPropios(r.recortes); });
+    return () => { vivo = false; };
+  }, [config, clave]);
   const nombres = useMemo(() => (datos?.heroes ?? []).map((h) => h.name), [datos]);
   const lista = useMemo(() => (recortes ? revisiones(recortes, partidas, nombres) : []), [recortes, partidas, nombres]);
   const pendientes = lista.filter((r) => r.pendiente);
-  const sinAcabar = useMemo(() => (recortes ? sinResultado(recortes, partidas, nombres, olvidadas) : []), [recortes, partidas, nombres, olvidadas]);
+  const sinAcabar = useMemo(() => sinResultado(propios, partidas, nombres, olvidadas), [propios, partidas, nombres, olvidadas]);
   const vistas = todas ? lista : pendientes;
   // Guardada una, la siguiente que falta sube a la vista: de una en una, sin buscarla.
   const aLaSiguiente = (t0) => {
@@ -121,8 +130,8 @@ function SinResultado({ lista, onApuntar, onDescartar, t }) {
             </div>
           )}
           <div className="revisar-fin-botones">
-            <button type="button" className="reset partida-bien" onClick={() => onApuntar({ ...s.partida, gane: true })}>{t('revisar.gane')}</button>
-            <button type="button" className="reset partida-mal" onClick={() => onApuntar({ ...s.partida, gane: false })}>{t('revisar.perdi')}</button>
+            <button type="button" className="reset partida-bien" onClick={() => onApuntar({ ...s.partida, gane: true, editada: Date.now() })}>{t('revisar.gane')}</button>
+            <button type="button" className="reset partida-mal" onClick={() => onApuntar({ ...s.partida, gane: false, editada: Date.now() })}>{t('revisar.perdi')}</button>
             {onDescartar && <button type="button" className="filtro" onClick={() => onDescartar(s.t)}>{t('revisar.noJugada')}</button>}
           </div>
         </div>

@@ -2006,3 +2006,23 @@ cambia. Los «momentos destacados» (Mobalytics) no se pueden hacer: piden
 vídeo. Prueba en `solo.test` con Diggie contra Clint, Khufra y Layla (la
 build para ese draft no es la más usada, con los datos del 4 de noviembre
 de 2026); cuatro mutaciones.
+
+**Las sin resultado, solo con TU clave y con UN instante (3.90.2)**. La
+revisión a la contra de 3.90.0 encontró que «solo las de tu lector» no se
+cumplía: `recortes_recientes` lo lee y lo escribe cualquiera con la clave
+pública, así que se podía colar una tarjeta falsa con el `t` de una partida
+tuya, y «No la jugué» la borraba. Hoy:
+- La tablet sube las pantallas del final con `claveConLaQueSube()` (la tuya
+  si el móvil la mandó) y el móvil las lee con `mis_recortes` y su clave
+  (`bajarMisRecortes`). Sin clave de jugador en el móvil, no salen.
+- `sinResultado` no enseña ninguna con el instante de una partida tuya.
+- El instante se fija UNA vez al preguntar (`v.tSinResultado`): el mismo en
+  la tablet, en el recorte y en lo que contestes en la APK. Calculado
+  después (al caducar, al contestar), con otro draft ya vigilado, salía la
+  hora del draft y la partida quedaba dos veces.
+- Contestada = el MISMO `t` en el móvil (`mias.has`) y en la tablet
+  (`listarPartidas`). La ventana de diez minutos con el mismo héroe se fue:
+  escondía la de otra partida seguida con el mismo héroe, que es lo normal
+  en roam. `MINUTOS_MISMA_PARTIDA` ya no existe.
+Pruebas en `solo`, `en-tablet`, `app/revisar`, `motor/registro` y
+`revisar.e2e`; diez mutaciones, todas cazadas.

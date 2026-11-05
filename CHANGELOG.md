@@ -8,6 +8,20 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.90.2
+
+- Las partidas sin resultado de «Capturas» salen ahora solo si las subió tu
+  tablet con tu clave. En 3.90.0 alguien de fuera podía colarte una con la
+  hora de una partida tuya, y «No la jugué» la habría borrado. No pasó, pero
+  ya no se puede. Necesitas tener tu clave en el móvil, como para ver tus
+  partidas.
+- La partida que contestas en «Capturas» ya no se borra sola. Si la tablet
+  no había leído casi nada del draft, la limpieza de fantasmas la tomaba
+  por una.
+- Una partida sin resultado tiene la misma hora en la tablet y en el móvil,
+  así que al contestarla en un sitio desaparece del otro. Tampoco se
+  esconde porque jugaras otra con el mismo héroe justo después.
+
 ## 3.90.1
 
 - En cuanto la tablet lee tu héroe, la burbuja te dice su build para ese

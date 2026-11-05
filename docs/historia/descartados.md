@@ -678,3 +678,9 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   en la burbuja no se puede: en partida se esconde. Los «momentos
   destacados» de Mobalytics piden el vídeo de la partida, y aquí solo hay
   capturas sueltas. No se hizo ninguno de los dos.
+- **Salvar de la limpieza de fantasmas a las partidas con duración
+  (3.90.2)** — lo propuso la revisión a la contra («una de verdad con
+  duración se borraría»). Mirado contra la base de datos: la primera
+  fantasma del 2 de noviembre lleva `duracion: 12.9` (la tabla de la
+  partida anterior), así que la regla la habría dejado. Lo que sí entró es
+  `editada`: lo que contestaste tú no se borra nunca.

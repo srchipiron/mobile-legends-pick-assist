@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas, sanearAjustes, PUERTO, VISTAZO_MS, ARREGLOS_POR_TANDA } from './servir.mjs';
 import { limpiarTexto } from './voz.mjs';
 import { leerCrudo, escribirPngRapido } from './png.mjs';
-import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, MINUTOS_ENTRE_TABLAS } from './solo.mjs';
+import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo } from './solo.mjs';
 import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte, subirRecorte, traerMisPartidas, bajarMisRecortes } from '../../src/app/basedatos.js';
 import { maestriaEfectiva } from '../../src/motor/maestria.js';
 import { tusNumeros, tuSemana } from '../../src/motor/habitos.js';
@@ -696,7 +696,9 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
   // Las pantallas del final sin reconocer (3.81.5), por el mismo camino y con la misma clave que los recortes.
   const subirFinalDe = async (f) => {
     const decir = (m) => { registrar(m); return m; };
-    const clave = claveDelLector(casa);
+    // Con la clave con la que suben tus partidas (3.90.2): el móvil las lee con `mis_recortes` y TU clave.
+    // Con la del lector las leía de `recortes_recientes`, que sube cualquiera: se podía colar una partida falsa.
+    const clave = claveConLaQueSube();
     const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
     if (!claveDeJugadorValida(clave) || !config) return decir(`Subir las pantallas del final: no se pudo (${config ? 'sin clave del lector' : 'sin comunidad.json'}).`);
     const recorte = finalParaSubir({ ...f, version: versionDeLaApk() });
@@ -774,9 +776,8 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     for (const p of partidas.todas()) if (sinSubir.has(p.t) || !todas.has(p.t)) todas.set(p.t, { ...p, sinSubir: sinSubir.has(p.t) });
     // Las sin resultado (3.81.5) van en la lista, para decir cómo acabaron; no en los números (no tienen resultado).
     // Una sin resultado que ya contestaste en «Capturas» del móvil (3.89.4) llega de la base de datos con su
-    // resultado: el mismo héroe a menos de una partida de distancia. No sale dos veces.
-    const yaContestadas = [...todas.values()].filter((x) => typeof x.gane === 'boolean');
-    const contestada = (s) => yaContestadas.some((x) => x.pick === s.pick && Math.abs(x.t - s.t) < MINUTOS_ENTRE_TABLAS * 60000);
+    // resultado y su mismo instante (3.90.2: fijado al preguntar). No sale dos veces.
+    const contestada = (s) => typeof todas.get(s.t)?.gane === 'boolean';
     const lista = [...partidas.sinResultado().filter((p) => !contestada(p)).map((p) => ({ ...p, sinResultado: true })), ...todas.values()].sort((a, b) => b.t - a.t).slice(0, PARTIDAS_EN_LA_APK).map((p) => ({
       t: p.t, pick: p.pick, ...(typeof p.gane === 'boolean' ? { gane: p.gane } : {}), ...(p.sinResultado ? { sinResultado: true } : {}), ...(p.supuesto ? { supuesto: true } : {}), ...(p.sinSubir ? { sinSubir: true } : {}),
       enemigos: p.draft?.enemigos ?? [], aliados: p.draft?.aliados ?? [], bans: p.bans ?? [], linea: p.draft?.linea ?? null,

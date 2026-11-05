@@ -117,27 +117,37 @@ await prueba('en el móvil, sin escribir (3.89.0): tocar la cara abre caras para
   await contexto.close();
 });
 
-await prueba('las partidas sin resultado (3.89.4): sus pantallas del final y Gané/Perdí con un toque, solo las de tu lector', async () => {
+await prueba('las partidas sin resultado (3.89.4, 3.90.2): sus pantallas del final y Gané/Perdí con un toque, solo las subidas con TU clave', async () => {
   const s = supabaseFalso();
   const T2 = T + 3 * 3600000;
-  const fin = (clave, t) => ({ clave, recibido: Date.now() - 1000, d: { v: 1, tipo: 'final', desde: t - 900000, motivo: 'vi la tabla del final pero no la reconozco', capturas: [{ id: 'fotograma-1', miniatura: PNG }], partida: { t, pick: 'Floryn', origen: 'lector', supuesto: true, recomendados: ['Floryn', 'Rafaela', 'Diggie'], draft: { linea: 'roam', enemigos: ['Clint', 'Khufra'], aliados: ['Gord'] }, bans: ['Atlas'] } } });
+  const clave = 'J'.repeat(43);
+  const fin = (k, t) => ({ clave: k, recibido: Date.now() - 1000, d: { v: 1, tipo: 'final', desde: t - 900000, motivo: 'vi la tabla del final pero no la reconozco', capturas: [{ id: 'fotograma-1', miniatura: PNG }], partida: { t, pick: 'Floryn', origen: 'lector', supuesto: true, recomendados: ['Floryn', 'Rafaela', 'Diggie'], draft: { linea: 'roam', enemigos: ['Clint', 'Khufra'], aliados: ['Gord'] }, bans: ['Atlas'] } } });
   s.recortes.push({ clave: 'L'.repeat(43), recibido: Date.now() - 3600000, d: { v: 1, partida: T, faltan: 3, capturas: [{ id: 'lectura-2026-10-28T21-02-27-027Z-1517', picks: PNG }], leidos } });
-  s.recortes.push(fin('L'.repeat(43), T2));
-  // Otra de otro lector (cualquiera con la clave pública puede subirla): no sale.
+  // La tablet sube las pantallas del final con tu clave de jugador (3.90.2).
+  s.recortes.push(fin(clave, T2));
+  // Cualquiera con la clave pública puede subir una con otra clave: no sale (antes salía la de cualquier
+  // lector, y «No la jugué» sobre una con el instante de una partida tuya la borraba).
   s.recortes.push(fin('M'.repeat(43), T2 + 3600000));
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: 390, height: 844 }, almacen: { ...LINEA, 'roam-picker:partidas': [PARTIDA] }, sinServiceWorker: true, antes: conBaseDeDatos(s) });
+  s.recortes.push(fin('M'.repeat(43), T));
+  const comunidad = { activo: true, clave, completo: true, config: { url: SUPA, clave: s.clavePublica } };
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: 390, height: 844 }, almacen: { ...LINEA, 'roam-picker:partidas': [PARTIDA], 'roam-picker:comunidad': comunidad }, sinServiceWorker: true, antes: conBaseDeDatos(s) });
   await abrirAjustes(pagina);
   await pagina.locator('.more').getByRole('button', { name: 'Partidas', exact: true }).click();
   await pagina.getByRole('button', { name: 'Revisar con las capturas del lector' }).click();
   const seccion = pagina.locator('.revisar-sin-resultado');
   await seccion.waitFor();
-  eq(await seccion.locator('.revisar-fin').count(), 1, 'sale la de otro lector, o no sale la tuya');
+  eq(await seccion.locator('.revisar-fin').count(), 1, 'sale la subida con otra clave, o no sale la tuya');
   ok(/Floryn/.test(await seccion.textContent()), 'no dice con quién jugaste');
   eq(await seccion.locator('img').count(), 1, 'no enseña la pantalla del final');
+  const antes = Date.now();
   await seccion.getByRole('button', { name: 'Perdí' }).click();
   await seccion.waitFor({ state: 'detached' });
   const p = (await leer(pagina, 'roam-picker:partidas')).find((x) => x.t === T2);
   ok(p && p.gane === false && p.pick === 'Floryn' && p.origen === 'lector' && p.supuesto === true && p.draft.enemigos.join() === 'Clint,Khufra' && p.bans.join() === 'Atlas', `la partida no se apunta con su draft y el resultado: ${JSON.stringify(p)}`);
+  // Con la hora de contestar (3.90.2): sin ella, la limpieza de fantasmas la borraba al momento.
+  ok(Number.isFinite(p.editada) && p.editada >= antes, `la contestada no lleva «editada»: ${JSON.stringify(p)}`);
+  await pagina.waitForTimeout(500);
+  ok((await leer(pagina, 'roam-picker:partidas')).some((x) => x.t === T2), 'la contestada se borra sola');
   eq(errores.length, 0, errores.join(' | '));
   await contexto.close();
 });

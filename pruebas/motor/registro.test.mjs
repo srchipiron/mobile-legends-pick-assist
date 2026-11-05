@@ -509,15 +509,21 @@ test('las partidas fantasma de la tablet (3.89.3): las dos del 2 de noviembre s�
     { t: 1793650767649, bans: ['Aulus', 'Masha'], gane: true, pick: 'Lolita', draft: { linea: 'roam', aliados: [], enemigos: [] }, rango: 'glory', origen: 'lector', supuesto: true },
     // La arreglaste tú: manda lo que dijiste.
     { ...fantasmas[1], t: 1793654987999, editada: 1793691709308 },
+    // La contestaste en «Capturas» (3.90.2): sin draft leído, pero con Gané/Perdí tuyo.
+    { ...fantasmas[0], t: 1793640067999, editada: 1793691709400 },
     // Apuntada a mano en agosto, sin draft.
     { t: 1788107122606, pick: 'Minotaur', gane: true, rango: 'glory' },
     // Gané/Perdí del recordatorio sin pick fijado: supuesta y sin draft, pero la apuntaste tú.
     { t: 1793000000000, pick: 'Floryn', gane: false, rango: 'glory', supuesto: true, draft: { linea: 'roam', aliados: [], enemigos: [] } },
   ];
   const cargadas = sanear({ partidas: [...fantasmas, ...buenas] }).partidas;
-  eq(cargadas.length, 7, 'sanear se lleva alguna');
+  eq(cargadas.length, 8, 'sanear se lleva alguna');
   eq(cargadas.filter(esFantasma).map((p) => p.t).sort().join(), fantasmas.map((p) => p.t).sort().join(), `no reconoce las fantasma, o cae una de verdad: ${cargadas.filter(esFantasma).map((p) => p.t)}`);
   ok(!esFantasma(null) && !esFantasma({}), 'una sin forma cuenta como fantasma');
+  // Contestada en «Capturas» y apuntada (3.90.2): `apuntar` guarda la hora y deja de ser fantasma.
+  const contestada = apuntar([], { ...fantasmas[0], editada: 1793691709500 })[0];
+  ok(contestada.editada === 1793691709500 && !esFantasma(contestada), `apuntar pierde el «editada» y la contestada se borraría sola: ${JSON.stringify(contestada)}`);
+  ok(!('editada' in apuntar([], { ...fantasmas[0], editada: 'ayer' })[0]), 'apuntar guarda un «editada» que no es una hora');
 });
 
 await terminar('motor/registro');

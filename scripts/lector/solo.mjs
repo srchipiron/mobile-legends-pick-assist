@@ -485,7 +485,8 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
   const sinResultado = (v, motivo) => {
     if (!v || v.apuntada) return;
     v.apuntada = true;
-    const p = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane: false, t: instanteDe(v), versionModelo: VERSION_MODELO });
+    // El instante fijado al preguntar (3.90.2): calculado aquí, con el final ya de otro draft, salía la hora del draft.
+    const p = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane: false, t: v.tSinResultado ?? instanteDe(v), versionModelo: VERSION_MODELO });
     const guardada = p && guardarSinResultado ? guardarSinResultado({ ...p, desde: v.desde, gane: undefined }) : false;
     registrar(guardada
       ? `Sin móvil: la partida con ${pickDe(v) ?? '?'} queda en «Mis partidas» sin resultado (${motivo}): dilo ahí cuando quieras.`
@@ -506,6 +507,9 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     if (preguntada && preguntada !== v && !preguntada.apuntada) sinResultado(preguntada, 'no contestaste cómo acabó');
     v.preguntada = true;
     v.preguntadaEn = ahora();
+    // Su instante, UNA vez (3.90.2): el mismo en la tablet, en las pantallas del final y en lo que contestes,
+    // aquí o en «Capturas» del móvil. Calculado después, con el final de otro draft, era otro.
+    v.tSinResultado = instanteDe(v);
     preguntada = v;
     const pick = pickDe(v);
     interno.ponerPregunta({ id: `pregunta-${v.desde}`, desde: v.desde, cuando: ahora(), pick });
@@ -514,7 +518,7 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     const f = interno.final?.();
     if (f?.desde === v.desde && Array.isArray(f.fotogramas) && f.fotogramas.length) {
       // Con la partida sin resultado (3.89.4): con ella, «Capturas» del móvil pregunta Gané/Perdí al acabar la sesión.
-      const sin = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane: false, t: instanteDe(v), versionModelo: VERSION_MODELO });
+      const sin = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane: false, t: v.tSinResultado, versionModelo: VERSION_MODELO });
       const partida = sin ? (({ gane, ...resto }) => resto)(sin) : null;
       try { alFinalSinLeer?.({ desde: v.desde, motivo, fotogramas: f.fotogramas, ...(partida ? { partida } : {}) }); } catch (e) { registrar(`No se pudieron preparar las pantallas del final: ${e.message}`); }
     }
@@ -529,7 +533,7 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
         const f = interno.final?.();
         const duracion = f?.desde === preguntada.desde && !f.inicioEstimado ? f.duracion : null;
         // La hora de contestar puede ser horas después, y `t` es la identidad de la partida (3.74.3).
-        apuntarVigilada(preguntada, { gane: contestada.gane, t: instanteDe(preguntada), duracion, contestada: true });
+        apuntarVigilada(preguntada, { gane: contestada.gane, t: preguntada.tSinResultado ?? instanteDe(preguntada), duracion, contestada: true });
       } else {
         preguntada.apuntada = true;
         registrar('Sin móvil: dijiste que esa partida no contó; no se apunta.');

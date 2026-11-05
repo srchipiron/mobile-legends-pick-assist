@@ -356,3 +356,9 @@ confirmación en el conector, y a esa pregunta nadie contestó a tiempo.
 Pruebas en `motor/registro` (las de la base de datos pasadas por `sanear`)
 y `comunidad.e2e` (del móvil, de la base de datos, sin volver a subir);
 siete mutaciones.
+Desde 3.90.2 una partida contestada en «Capturas» lleva `editada` (lo pone
+el botón y `apuntar` ya no lo tira): sin eso, la contestada sin draft leído
+era fantasma y se borraba al momento. La duración NO salva a una partida:
+la primera fantasma del 2 de noviembre la llevaba (12,9 min, de la tabla de
+la anterior). Lo propuso la revisión a la contra y se midió contra la base
+de datos antes de hacerlo.

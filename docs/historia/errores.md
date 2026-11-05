@@ -1260,3 +1260,14 @@ instante anterior lo sustituya; el tiempo solo va hacia delante.
   cuentan por héroes distintos, y una tabla a menos de
   `MINUTOS_ENTRE_TABLAS` (10) de la anterior no se apunta. Lección:
   «cuántos» se cuenta en cosas distintas, no en huecos.
+- **«Solo las de tu tablet» no era verdad (3.90.0 → 3.90.2)** — las
+  partidas sin resultado de «Capturas» salían de `recortes_recientes`, que
+  cualquiera con la clave pública lee y escribe, y se filtraban por el
+  jugador de los recortes que casaban con tus partidas. Una subida de fuera
+  con el instante de una partida tuya salía como tuya, y «No la jugué» la
+  borraba. Además la contestada en «Capturas» se borraba sola como
+  fantasma (no llevaba `editada`) y el instante se recalculaba al caducar,
+  así que la tablet la enseñaba dos veces. Nadie lo explotó ni se perdió
+  nada (no había ninguna sin resultado en la base de datos). Lección: lo
+  que manda a borrar se lee con la clave del dueño, nunca de una tabla
+  pública.

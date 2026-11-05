@@ -205,6 +205,8 @@ export function apuntar(partidas, entrada, tope = 500) {
     // Apuntada SOLA por el lector del resultado (3.32.0): se mide aparte.
     ...(entrada.origen === 'lector' ? { origen: 'lector' } : {}),
     ...(entrada.supuesto === true ? { supuesto: true } : {}),
+    // La hora de un arreglo hecho al apuntar (3.90.2: contestar en «Capturas» es decirlo tú).
+    ...(Number.isFinite(entrada.editada) ? { editada: entrada.editada } : {}),
     ...(Array.isArray(entrada.bans) && entrada.bans.some((b) => typeof b === 'string' && b)
       ? { bans: entrada.bans.filter((b) => typeof b === 'string' && b).slice(0, 10) } : {}),
     ...(sanearDraft(entrada.draft) ? { draft: sanearDraft(entrada.draft) } : {}),
@@ -242,7 +244,11 @@ export const olvidar = (partidas = [], t) => partidas.filter((p) => p.t !== t);
  * impide apuntar: «Gord» en dos huecos de baneo de una pantalla que no era
  * el draft, y la tabla del final de la partida anterior. Las dos del 2 de
  * noviembre de 2026 eran así. Las apuntadas a mano sin draft (agosto y
- * septiembre, `origen` ausente) son partidas de verdad y no lo son.
+ * septiembre, `origen` ausente) son partidas de verdad y no lo son. Desde
+ * 3.90.2 tampoco una que contestaste (`editada`, que pone «Capturas» al
+ * decir Gané/Perdí): la revisión a la contra borró así la que acababas de
+ * contestar. La duración NO la salva: la primera fantasma del 2 de noviembre
+ * la llevaba (12,9 min, la tabla de la partida anterior).
  */
 export const esFantasma = (p) => !!p && p.origen === 'lector' && p.supuesto === true && !Number.isFinite(p.editada)
   && (Array.isArray(p.draft?.enemigos) ? p.draft.enemigos.length : 0) + (Array.isArray(p.draft?.aliados) ? p.draft.aliados.length : 0) <= 1

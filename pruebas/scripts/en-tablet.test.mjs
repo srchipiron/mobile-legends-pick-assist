@@ -454,10 +454,13 @@ test('las partidas sin resultado (3.81.5): se guardan con su draft, salen en «M
     const T2 = T + 3600000;
     servidor.partidas.guardarSinResultado({ t: T2, pick: 'Floryn', desde: T2 - 900000, origen: 'lector', draft: { linea: 'roam', enemigos: ['Clint'], aliados: [] } });
     servidor.partidas.guardarSinResultado({ t: T2 + 3600000, pick: 'Floryn', desde: T2, origen: 'lector', draft: { linea: 'roam', enemigos: ['Clint'], aliados: [] } });
-    s.atender('subir_partidas', { clave, lote: [{ t: T2 + 60000, pick: 'Floryn', gane: false, rango: 'glory' }], quitar: [] }, { apikey: s.clavePublica });
+    // El móvil la apunta con el MISMO instante (3.90.2); una suya un minuto después de otra no la tapa.
+    servidor.partidas.guardarSinResultado({ t: T2 + 7200000, pick: 'Floryn', desde: T2 + 3600000, origen: 'lector', draft: { linea: 'roam', enemigos: ['Clint'], aliados: [] } });
+    s.atender('subir_partidas', { clave, lote: [{ t: T2, pick: 'Floryn', gane: false, rango: 'glory' }, { t: T2 + 7200000 + 60000, pick: 'Floryn', gane: true, rango: 'glory' }], quitar: [] }, { apikey: s.clavePublica });
     const lista2 = JSON.parse((await pedir(puerto, '/partidas', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
     ok(!lista2.partidas.some((p) => p.t === T2 && p.sinResultado), 'la contestada en el móvil sigue saliendo sin resultado en la tablet');
     ok(lista2.partidas.some((p) => p.t === T2 + 3600000 && p.sinResultado), 'se lleva una sin resultado de otra partida');
+    ok(lista2.partidas.some((p) => p.t === T2 + 7200000 && p.sinResultado), 'una partida un minuto después tapa la que sigue sin resultado');
     // El tope: no crece sin fin.
     for (let i = 1; i <= TOPE_SIN_RESULTADO + 5; i += 1) servidor.partidas.guardarSinResultado({ t: T + i, pick: 'Gord' });
     eq(servidor.partidas.sinResultado().length, TOPE_SIN_RESULTADO);
@@ -497,6 +500,18 @@ test('las pantallas del final sin reconocer (3.81.5): las dos primeras fuera de 
     ok(/Pantallas del final subidas/.test(dicho ?? ''), dicho);
     ok(LINEA_DE_ERROR.test(await servidor.subirFinalDe({ desde: 5, fotogramas: [] })), 'sin pantallas no lo dice como error del parte');
   } finally { servidor.close(); apk.cerrar(); }
+  // Con tu clave del móvil (3.90.2), con ella: el móvil las lee con `mis_recortes` y tu clave, no de las de todos.
+  const tuya = 'P'.repeat(43);
+  const casa2 = mkdtempSync(join(tmpdir(), 'en-tablet-final-tuya-'));
+  mkdirSync(join(casa2, 'datos'), { recursive: true });
+  writeFileSync(join(casa2, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
+  writeFileSync(join(casa2, 'solo-movil.json'), JSON.stringify({ linea: 'roam', clave: tuya }));
+  const apk2 = await apkDePega();
+  const servidor2 = await principal({ LECTOR_INTERNO: apk2.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa2, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  try {
+    await servidor2.subirFinalDe({ desde: 6, motivo: 'ya hay otro draft', fotogramas: fotos });
+    eq(s.recortes.at(-1)?.clave, tuya, 'con tu clave, las pantallas del final suben con la del lector');
+  } finally { servidor2.close(); apk2.cerrar(); }
 });
 
 test('las capturas del draft que lee el modo solo no se podan mientras está abierto (3.81.4)', async () => {

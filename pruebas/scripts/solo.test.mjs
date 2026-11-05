@@ -668,12 +668,30 @@ test('lo que se perdía sin el móvil (3.74.3): la pregunta pisada o caducada se
   dos.fin({ fotogramas: [{ id: 'fotograma-1', miniatura: 'x' }] });
   const caso = montar();
   await jugar(caso);
-  caso.fin({ acabada: true, activa: false, fotogramas: [{ id: 'fotograma-2026-10-27T22-32-00-000Z', miniatura: 'iVBORw0KGgo=' }] });
+  // Con el inicio y la duración vistos: su instante es el final, no el del draft.
+  caso.fin({ acabada: true, activa: false, inicio: caso.desde() + 60000, duracion: 14, fotogramas: [{ id: 'fotograma-2026-10-27T22-32-00-000Z', miniatura: 'iVBORw0KGgo=' }] });
   await caso.paso(20000);
   ok(caso.finales.length === 1 && caso.finales[0].desde === caso.desde() && caso.finales[0].fotogramas.length === 1 && caso.finales[0].motivo, `al preguntar no manda las pantallas del final: ${JSON.stringify(caso.finales)}`);
   // Con la partida sin resultado (3.89.4), para contestarla en «Capturas» del móvil: su draft, sin resultado inventado.
   const conPartida = caso.finales[0].partida;
+  eq(conPartida.t, caso.desde() + 60000 + 14 * 60000, 'la partida del recorte no va con el instante del final');
   ok(conPartida && conPartida.pick && conPartida.draft?.enemigos?.includes('Clint') && !('gane' in conPartida) && Number.isFinite(conPartida.t) && conPartida.origen === 'lector', `las pantallas del final van sin la partida, o con un resultado: ${JSON.stringify(conPartida)}`);
+  // El mismo instante en el recorte y en la guardada sin resultado (3.90.2): el móvil la apunta con el del
+  // recorte y la tablet la da por contestada solo si coincide. Calculado al caducar, con el final de otro draft, era otro.
+  caso.fin({ acabada: true, activa: false, desde: caso.desde() + 3600000, resultadoEn: caso.desde() + 4000000 });
+  await caso.paso(PREGUNTA_CADUCA_MS + 1000);
+  eq(caso.sinResultado[0]?.t, conPartida.t, 'la partida del recorte y la guardada sin resultado llevan instantes distintos');
+  // Contestada en la tablet cuando ya hay otro draft vigilado (3.90.2): con el instante de al preguntar, el que
+  // lleva la guardada en el móvil; recalculado, era la hora del draft y la partida salía dos veces.
+  const luego = montar();
+  await jugar(luego);
+  const desdeLuego = luego.desde();
+  luego.fin({ acabada: true, activa: false, inicio: desdeLuego + 60000, duracion: 14 });
+  await luego.paso(20000);
+  luego.fin({ desde: desdeLuego + 3600000, activa: true, acabada: false, inicio: null, duracion: null });
+  luego.contestar({ desde: desdeLuego, gane: true });
+  await luego.paso(1000);
+  eq(luego.apuntadas[0]?.t, desdeLuego + 60000 + 14 * 60000, 'la contestada con otro draft en marcha cambia de instante');
   // La pregunta caduca sin contestar: se dice.
   const caduca = montar();
   await jugar(caduca);
