@@ -520,12 +520,15 @@ export function finalParaSubir({ desde, motivo = '', fotogramas = [], version = 
   const validas = (Array.isArray(fotogramas) ? fotogramas : []).filter((f) => typeof f?.id === 'string' && /^fotograma-[\w-]+$/.test(f.id) && b64(f.miniatura));
   const ultimaEnPartida = validas.map((f) => !!f.marcador).lastIndexOf(true);
   const fuera = validas.filter((f, i) => !f.marcador && i > ultimaEnPartida);
-  const elegidas = (fuera.length ? fuera.slice(0, 2) : validas.filter((f) => !f.marcador).slice(-2));
+  // Con ráfaga (3.90.3), la primera y la última de ella: el final de verdad, y no el vestíbulo de después.
+  const rafaga = validas.filter((f) => f.rafaga === true && !f.marcador);
+  const elegidas = rafaga.length ? [...new Set([rafaga[0], rafaga[rafaga.length - 1]])]
+    : (fuera.length ? fuera.slice(0, 2) : validas.filter((f) => !f.marcador).slice(-2));
   if (!elegidas.length || !Number.isFinite(desde)) return null;
   const recorte = {
     v: 1, tipo: 'final', version: typeof version === 'string' ? version : null, desde, motivo: String(motivo).slice(0, 80),
     ...(partidaSinResultado(partida) ? { partida: partidaSinResultado(partida) } : {}),
-    capturas: elegidas.map((f) => ({ id: f.id, minuto: Number.isFinite(f.minuto) ? f.minuto : null, miniatura: f.miniatura, ...(b64(f.tira) ? { tira: f.tira } : {}), tabla: !!f.tabla, parecido: Number.isFinite(f.resultadoParecido) ? f.resultadoParecido : null })),
+    capturas: elegidas.map((f) => ({ id: f.id, minuto: Number.isFinite(f.minuto) ? f.minuto : null, miniatura: f.miniatura, ...(b64(f.tira) ? { tira: f.tira } : {}), tabla: !!f.tabla, ...(f.rafaga === true ? { rafaga: true } : {}), parecido: Number.isFinite(f.resultadoParecido) ? f.resultadoParecido : null })),
   };
   while (Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES && recorte.capturas.length > 1) recorte.capturas.pop();
   return Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES ? null : recorte;

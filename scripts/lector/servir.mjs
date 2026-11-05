@@ -798,7 +798,9 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       const leido = reconocerResultado(tiraDe(img), resultados);
       // El marcador a resolución completa, para aprender sus dígitos (3.44.0): solo en partida.
       const marcador = !leido.tabla && dentro ? recorteMarcador(img) : null;
-      const foto = { id, minuto: Math.round((t - final.desde) / 60000), miniatura: f.miniatura, tira: f.tira, ...(marcador ? { marcador } : {}), tabla: leido.tabla, resultado: leido.resultado, resultadoParecido: Math.round(leido.parecido * 1000) / 1000 };
+      // Las de la ráfaga (3.90.3) son las del final de verdad: la explosión, la tabla, el rango.
+      const rafaga = final.rafagaHasta > t;
+      const foto = { id, minuto: Math.round((t - final.desde) / 60000), miniatura: f.miniatura, tira: f.tira, ...(marcador ? { marcador } : {}), ...(rafaga ? { rafaga: true } : {}), tabla: leido.tabla, resultado: leido.resultado, resultadoParecido: Math.round(leido.parecido * 1000) / 1000 };
       // Hasta `maxFotogramas` pantallas distintas; la de la TABLA viaja
       // siempre, reconozca o no la palabra (sustituye a la última que no sea
       // tabla). Hasta 3.36.0 solo entraba con la palabra reconocida, y la de
@@ -808,8 +810,13 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       // no sea tabla. Quedándose las primeras, las ocho eran pantallas de
       // juego de los minutos 8 y 9 (15 de 15 incidencias desde 3.33.0) y las
       // del final (rango, MVP, estadísticas) no entraban nunca.
+      // Y desde 3.90.3 una de después de la ráfaga (el vestíbulo, 20 minutos
+      // más tarde) no saca a una de la ráfaga: el 4 de noviembre de 2026 las
+      // pantallas del vestíbulo se llevaron las del final, y no se pudo ver por
+      // qué no se reconoció la tabla.
       if (final.fotogramas.length >= vigilancia.maxFotogramas) {
-        const i = final.fotogramas.findIndex((x) => !x.tabla);
+        const sale = (x) => !x.tabla && (rafaga || !x.rafaga);
+        const i = final.fotogramas.findIndex(sale);
         if (i >= 0) final.fotogramas.splice(i, 1);
         else if (!leido.tabla) { podar(); return; }
         else final.fotogramas.shift();

@@ -2026,3 +2026,17 @@ tuya, y «No la jugué» la borraba. Hoy:
   en roam. `MINUTOS_MISMA_PARTIDA` ya no existe.
 Pruebas en `solo`, `en-tablet`, `app/revisar`, `motor/registro` y
 `revisar.e2e`; diez mutaciones, todas cazadas.
+
+**Las pantallas de la ráfaga se quedan (3.90.3)**. La noche del 4 de
+noviembre de 2026 (partes 239–243) la tablet apuntó dos partidas por la
+tabla, pero la tercera (Rafaela, 20:27–20:39 UTC) no: la ráfaga empezó a
+las 20:39:05, la pantalla dejó de cambiar a las 20:39:17 y se quedó quieta
+20 minutos (las lecturas del modo solo leían «Gord 0,76» en los veinte
+huecos, una pantalla oscura). Las dos que subió al preguntar eran del
+VESTÍBULO (minuto 33): con 8 sitios y «se quedan las últimas», el
+vestíbulo había sacado a las del final. Hoy cada fotograma de la ráfaga
+lleva `rafaga: true`, uno de después no saca a ninguno de ellos (sí a uno
+de partida) y `finalParaSubir` sube la primera y la última de la ráfaga.
+Con eso, la próxima vez que no se vea la tabla, «Capturas» enseña el final
+de verdad y se puede medir por qué. Pruebas en `directo-lector` (con un
+reloj de pega) y `en-tablet`; cinco mutaciones.

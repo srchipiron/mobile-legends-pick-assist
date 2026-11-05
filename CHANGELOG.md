@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.90.3
+
+- Cuando la tablet no reconoce el final de una partida, ahora guarda y
+  enseña en «Capturas» las pantallas de ese final, no las del vestíbulo de
+  después. El 4 de noviembre se perdió así una partida: la tablet no vio la
+  tabla y lo que subió eran pantallas de 20 minutos más tarde. Con las
+  buenas se puede ver qué falló y arreglarlo.
+
 ## 3.90.2
 
 - Las partidas sin resultado de «Capturas» salen ahora solo si las subió tu

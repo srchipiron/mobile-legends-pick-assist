@@ -474,6 +474,11 @@ test('las pantallas del final sin reconocer (3.81.5): las dos primeras fuera de 
   eq(r.capturas.map((c) => c.id.slice(-10)).join(), '32-00-000Z,32-10-000Z', 'no son las primeras pantallas de después de la partida');
   ok(r.tipo === 'final' && r.desde === 5 && r.motivo === 'ya hay otro draft' && !JSON.stringify(r).includes('marcador'), JSON.stringify(r).slice(0, 200));
   eq(finalParaSubir({ desde: 5, fotogramas: [foto('31-00'), foto('31-10'), foto('31-20')] }).capturas.length, 2, 'sin marcador no sube las últimas');
+  // Con ráfaga (3.90.3): la primera y la última de ella, aunque detrás venga el vestíbulo.
+  const conRafaga = [foto('30-00', { marcador: 'iVBORw0KGgo=' }), foto('30-02', { rafaga: true }), foto('30-04', { rafaga: true }), foto('30-06', { rafaga: true }), foto('50-00'), foto('50-10')];
+  const r2 = finalParaSubir({ desde: 5, fotogramas: conRafaga });
+  eq(r2.capturas.map((c) => `${c.id.slice(-10)}${c.rafaga ? '*' : ''}`).join(), '30-02-000Z*,30-06-000Z*', 'con ráfaga no sube la primera y la última de ella');
+  eq(finalParaSubir({ desde: 5, fotogramas: [foto('30-02', { rafaga: true }), foto('50-00')] }).capturas.length, 1, 'con una sola de la ráfaga la sube dos veces o sube el vestíbulo');
   eq(finalParaSubir({ desde: 5, fotogramas: [{ ...foto('31-00'), id: '../x' }, foto('31-10', { miniatura: 'no <es> base64' })] }), null, 'sube una pantalla sin forma');
   eq(finalParaSubir({ desde: null, fotogramas: fotos }), null, 'sin la partida no se puede cruzar');
   // La partida sin resultado viaja con forma fija (3.89.4): sin `gane`, sin campos de más y con nombres con tope.

@@ -1271,3 +1271,10 @@ instante anterior lo sustituya; el tiempo solo va hacia delante.
   nada (no había ninguna sin resultado en la base de datos). Lección: lo
   que manda a borrar se lee con la clave del dueño, nunca de una tabla
   pública.
+- **El vestíbulo se llevó las pantallas del final (4 de noviembre de 2026,
+  3.90.3)** — la tablet no vio la tabla de una partida y, al preguntar,
+  subió dos pantallas del vestíbulo de 20 minutos después: los 8 sitios se
+  quedan las últimas pantallas distintas, y las del final de verdad ya no
+  estaban. Hoy las de la ráfaga no salen por las de después. Lección: lo que
+  se guarda para diagnosticar un fallo se elige por lo que explica el fallo,
+  no por ser lo último.

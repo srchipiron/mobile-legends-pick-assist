@@ -173,6 +173,32 @@ test('en partida, una captura por paso aunque el reloj lata más deprisa (3.89.2
   } finally { servidor.close(); }
 });
 
+test('las pantallas de la ráfaga no las saca el vestíbulo de después (3.90.3)', async () => {
+  // El 4 de noviembre de 2026 la tabla no se vio, y las pantallas que subió la tablet eran del vestíbulo,
+  // 20 minutos después: las del final se habían ido de las 8. Aquí, 3 sitios.
+  const png = (f) => escribirPng(ampliada(pantallas.find((p) => p.f === f).img, 3));
+  const [juego, f0, f1, f4, f5, f7] = ['juego-17.png', 'fuera-0.png', 'fuera-2.png', 'fuera-4.png', 'fuera-5.png', 'fuera-7.png'].map(png);
+  let pantalla = juego, capturas = 0, desfase = 0;
+  const servidor = crearServidor({ capturar: () => { capturas += 1; return pantalla; }, ahora: () => Date.now() + desfase, vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 15, intervaloInicioMs: 15, rapidoMs: 15, rafagaMs: 60000, maxFotogramas: 3, hastaMin: 600, partidaHastaMin: 600 }, enHilos: false });
+  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${servidor.address().port}`;
+  const cab = { Origin: 'https://srchipiron.github.io', 'Content-Type': 'application/json' };
+  const final = async () => (await fetch(`${base}/final`, { headers: cab })).json();
+  const pasar = async (n = 3) => { const antes = capturas; const t0 = Date.now(); while (capturas < antes + n && Date.now() - t0 < 8000) await new Promise((r) => setTimeout(r, 15)); };
+  try {
+    await fetch(`${base}/vigilar`, { method: 'POST', headers: cab, body: JSON.stringify({ desde: Date.now() }) });
+    await pasar();
+    for (const p of [f0, f1]) { pantalla = p; await pasar(); }
+    const enLaRafaga = (await final()).fotogramas.filter((f) => f.rafaga).map((f) => f.id);
+    ok(enLaRafaga.length === 2 && (await final()).fotogramas.every((f) => f.rafaga || f.marcador), `las del final no van marcadas de la ráfaga: ${JSON.stringify((await final()).fotogramas.map((f) => [f.rafaga, !!f.marcador]))}`);
+    // Pasada la ráfaga, el vestíbulo: no saca a ninguna de la ráfaga.
+    desfase = 120000;
+    for (const p of [f4, f5, f7]) { pantalla = p; await pasar(); }
+    const quedan = (await final()).fotogramas;
+    ok(enLaRafaga.every((id) => quedan.some((f) => f.id === id)), `el vestíbulo se lleva las del final: ${quedan.map((f) => `${f.id.slice(-12)}${f.rafaga ? '*' : ''}`).join(', ')}`);
+  } finally { servidor.close(); }
+});
+
 /** Un lector con la tablet y el reloj en manos de la prueba (3.44.1). */
 async function lectorDePrueba(opciones = {}) {
   const p = { pantalla: null, desfase: 0, dichos: [] };
