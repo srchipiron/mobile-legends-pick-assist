@@ -2040,3 +2040,15 @@ de partida) y `finalParaSubir` sube la primera y la última de la ráfaga.
 Con eso, la próxima vez que no se vea la tabla, «Capturas» enseña el final
 de verdad y se puede medir por qué. Pruebas en `directo-lector` (con un
 reloj de pega) y `en-tablet`; cinco mutaciones.
+
+**Las capturas que se miran, repartidas por el draft (3.90.4)**. Los dos
+recortes del 4 de noviembre de 2026 no enseñaban el draft: uno era el menú
+de equipamiento encima del draft (con un Zetian falso a 0,81) y el otro la
+pantalla de carga (con un Gord falso). Javi pasa los últimos segundos del
+draft en ese menú, y las `CAPTURAS_A_MIRAR` (8) eran las ÚLTIMAS, una cada
+4 s: medio minuto de menú. Hoy `capturasAMirar` (servir.mjs) da 8
+repartidas por los ids del draft (hasta 20, 80 s) con la primera y la
+última, y la usan `sanearCorreccion`, `corregir` y `recortesDe`. Y en
+`mejoresRecortes` «la última que lee» tiene que leer al menos la mitad que
+la mejor: un falso suelto ya no la hace pasar. Pruebas en `puente-lector`,
+`recortes` y `en-tablet`; siete mutaciones.

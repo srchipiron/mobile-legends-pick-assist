@@ -90,6 +90,14 @@ test('sin la verdad (3.81.0): de las capturas de un draft se recortan la que má
   ok(r.every((x) => x.picks && x.enemigos.length === 5 && x.aliados.length === 5), 'un recorte sin imagen o sin lo leído');
   eq(mejoresRecortes([], leer, caras).length, 0);
   eq(mejoresRecortes(['lectura-2', 'lectura-3'], leer, caras).map((x) => x.id).join(), 'lectura-2,lectura-3', 'con dos, van las dos en su orden');
+  // Una última que lee MUCHO menos que la mejor (3.90.4: el menú de equipamiento encima del draft, con un
+  // Zetian falso) no va como «la última»: van la mejor y la siguiente.
+  const casiNegra = { ancho: media.ancho, alto: media.alto, rgba: new Uint8Array(media.rgba) };
+  for (let y = 230 + 216; y < casiNegra.alto; y++) casiNegra.rgba.fill(0, (y * casiNegra.ancho + 1900) * 4, (y + 1) * casiNegra.ancho * 4);
+  const leeCasi = leerPicksEnemigos(casiNegra, caras).filter((l) => l.nombre).length;
+  ok(leeCasi >= 1 && leeCasi * 2 < 10, `la casi negra lee ${leeCasi}: la prueba no prueba nada`);
+  const conMenu = { 'lectura-1': img, 'lectura-2': media, 'lectura-3': casiNegra };
+  eq(mejoresRecortes(['lectura-1', 'lectura-2', 'lectura-3'], (id) => conMenu[id], caras).map((x) => x.id).join(), 'lectura-1,lectura-2', 'la última que casi no lee quita el sitio a una que lee');
 });
 
 test('un recorte que dice ser enorme no se descomprime (3.83.0): de la base de datos puede llegar cualquier cosa', () => {

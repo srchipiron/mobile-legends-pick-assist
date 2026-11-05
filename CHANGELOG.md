@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.90.4
+
+- Las capturas del draft que la tablet sube a «Capturas» y de las que
+  aprende ya no son solo las del último medio minuto. Ese medio minuto
+  sueles pasarlo en el menú de equipamiento, así que ninguna enseñaba las
+  caras. Ahora se reparten por todo el draft, así que en «Capturas» ves
+  caras de verdad para corregir, y el lector aprende más.
+
 ## 3.90.3
 
 - Cuando la tablet no reconoce el final de una partida, ahora guarda y

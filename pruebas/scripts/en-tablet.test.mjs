@@ -401,6 +401,10 @@ test('enseñar al lector desde la tablet (3.71.0): solo la APK lo lee y lo conte
   eq(sanearCorreccion({ ...pendiente, id: '../x' }), null);
   eq(sanearCorreccion({ ...pendiente, ids: ['../../etc'] }), null, 'sin capturas válidas, se pregunta igual');
   ok(sanearCorreccion({ ...pendiente, ids: Array.from({ length: 30 }, (_, i) => `lectura-${i}`) }).ids.length === CAPTURAS_A_MIRAR, 'sin tope de capturas');
+  // Repartidas por el draft (3.90.4), no las últimas: la primera también.
+  const veinte = Array.from({ length: 20 }, (_, i) => `lectura-2026-11-04T19-46-${String(i * 3).padStart(2, '0')}-000Z-${i}`);
+  const repartidas = sanearCorreccion({ ...pendiente, ids: veinte }).ids;
+  ok(repartidas[0] === veinte[0] && repartidas.at(-1) === veinte.at(-1), `la corrección mira solo los últimos segundos del draft: ${repartidas}`);
   eq(sanearCorreccion({ ...pendiente, heroes: ['<script>'] }), null, 'entra un nombre de héroe con cualquier cosa');
 });
 

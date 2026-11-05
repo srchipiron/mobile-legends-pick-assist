@@ -124,6 +124,18 @@ export function guardarResultadosEn(r, fichero = FICHERO_RESULTADOS) {
 
 /** Cuántas de las últimas capturas de una corrección se miran para elegir las `CAPTURAS_POR_CORRECCION` que sean la pantalla del draft. */
 export const CAPTURAS_A_MIRAR = 8;
+/**
+ * Las `CAPTURAS_A_MIRAR` de un draft, REPARTIDAS por él con la primera y la
+ * última (3.90.4), en su orden. Las ocho últimas eran los últimos ~30 s del
+ * draft (una cada 4 s): el 4 de noviembre de 2026, el menú de equipamiento
+ * encima del draft en las ocho, y ni los recortes ni el aprendizaje vieron
+ * una cara.
+ */
+export function capturasAMirar(ids, n = CAPTURAS_A_MIRAR) {
+  const orden = [...new Set(ids ?? [])].sort();
+  if (orden.length <= n) return orden;
+  return [...new Set(Array.from({ length: n }, (_, i) => orden[Math.round((i * (orden.length - 1)) / (n - 1))]))];
+}
 
 /**
  * Las capturas se borran solas (3.34.0, «se me está llenando el móvil de
@@ -441,7 +453,8 @@ export const MAESTRIA_MAX = 200;
 export function sanearCorreccion(c) {
   const nombre = (n) => (typeof n === 'string' && n.length <= 30 && NOMBRE_DE_HEROE.test(n) ? n : null);
   if (!c || typeof c.id !== 'string' || !/^correccion-\d{1,15}$/.test(c.id) || !Number.isFinite(c.cuando)) return null;
-  const ids = (Array.isArray(c.ids) ? c.ids : []).filter((id) => typeof id === 'string' && /^lectura-[\w-]+$/.test(id)).slice(-CAPTURAS_A_MIRAR);
+  const todas = (Array.isArray(c.ids) ? c.ids : []).filter((id) => typeof id === 'string' && /^lectura-[\w-]+$/.test(id));
+  const ids = capturasAMirar(todas);
   const heroes = (Array.isArray(c.heroes) ? c.heroes : []).map(nombre).filter(Boolean).slice(0, 400);
   const huecos = (l) => [0, 1, 2, 3, 4].map((i) => (Array.isArray(l) ? nombre(l[i]) : null));
   if (!ids.length || !heroes.length) return null;
@@ -934,7 +947,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     const verdad = { enemigos: nombres(enemigos).slice(0, 5), baneos: nombres(baneos), aliados: nombres(aliados).slice(0, 4), tuyo: typeof tuyo === 'string' ? tuyo.slice(0, 40) : null, cuando: new Date().toISOString() };
     const validos = (Array.isArray(ids) ? ids : []).filter((id) => /^lectura-[\w-]+$/.test(id) && existsSync(join(carpeta, `${id}.png`)));
     for (const id of validos) writeFileSync(join(carpeta, `${id}.verdad.json`), JSON.stringify(verdad));
-    const pares = validos.sort().slice(-CAPTURAS_A_MIRAR).map((id) => ({ id, png: join(carpeta, `${id}.png`), verdad }));
+    const pares = capturasAMirar(validos).map((id) => ({ id, png: join(carpeta, `${id}.png`), verdad }));
     if (!pares.length || !verdad.enemigos.length) return { aprendido: false, motivo: 'nada que cruzar' };
     return usando(pares.map((p) => p.id), () => corregirCon(pares, verdad));
   };
@@ -1291,14 +1304,15 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     correccion: () => correccionVigente(),
     /**
      * Los recortes de las capturas de un draft (3.81.0): solo ids con forma
-     * que existan en la carpeta, las `CAPTURAS_A_MIRAR` últimas. [] si no hay
+     * que existan en la carpeta, `CAPTURAS_A_MIRAR` repartidas por el draft. [] si no hay
      * o si el hilo falla: medir no puede tirar el lector.
      */
     recortesDe: async (ids) => {
-      const validos = (Array.isArray(ids) ? ids : []).filter((id) => typeof id === 'string' && /^lectura-[\w-]+$/.test(id) && carpeta && existsSync(join(carpeta, `${id}.png`))).sort().slice(-CAPTURAS_A_MIRAR);
+      const validos = (Array.isArray(ids) ? ids : []).filter((id) => typeof id === 'string' && /^lectura-[\w-]+$/.test(id) && carpeta && existsSync(join(carpeta, `${id}.png`)));
       if (!validos.length) return [];
       try {
-        const r = await usando(validos, () => recortar({ capturas: validos.map((id) => ({ id, png: join(carpeta, `${id}.png`) })), aprendido }));
+        const mirar = capturasAMirar(validos);
+        const r = await usando(mirar, () => recortar({ capturas: mirar.map((id) => ({ id, png: join(carpeta, `${id}.png`) })), aprendido }));
         return Array.isArray(r) ? r : [];
       } catch (e) { registrar(`No se pudieron recortar las capturas del draft: ${e.message}`); return []; }
     },

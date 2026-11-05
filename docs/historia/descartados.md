@@ -684,3 +684,11 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   fantasma del 2 de noviembre lleva `duracion: 12.9` (la tabla de la
   partida anterior), así que la regla la habría dejado. Lo que sí entró es
   `editada`: lo que contestaste tú no se borra nunca.
+- **«Las derrotas se leen como victorias» (5 de noviembre de 2026)** — de
+  84 partidas desde el 24 de octubre, 81 ganadas. Mirado en los partes: las
+  tablas leídas dicen VICTORIA a 0,93–1,00; las que no se reconocen («palabra
+  sin plantilla 0,50», 3 veces) acaban en «sin resultado», y entre partidas
+  jugadas y apuntadas faltan 1–4 por tarde. Lo que encaja es que las
+  derrotas se pierden, no que se lean al revés. Desde 3.90.0 salen en
+  «Capturas» para contestarlas. Se vuelve a mirar con las pantallas de la
+  ráfaga (3.90.3) delante.

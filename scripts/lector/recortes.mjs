@@ -162,7 +162,10 @@ export function mejoresRecortes(ids, leer, caras, opciones = {}, maximo = RECORT
   // foto de la skin) al final; las que más leen son de antes, con su hueco vacío. Con ella se ve quién era,
   // desde el PC y al aprender de lo arreglado. La última que LEE a alguien (3.87.1): una negra, la carga o
   // una ventana encima no enseñan nada y quitaban el sitio a la segunda mejor.
-  const ultima = vistos.filter((v) => v.n > 0).reduce((u, v) => (!u || v.i > u.i ? v : u), null);
+  // Y que lea al menos la mitad que la mejor (3.90.4): el 4 de noviembre de 2026 la última «que leía» era el
+  // menú de equipamiento encima del draft, con un Zetian falso a 0,81, y la carga con un Gord falso.
+  const mejor = vistos.reduce((m, v) => Math.max(m, v.n), 0);
+  const ultima = vistos.filter((v) => v.n > 0 && v.n * 2 >= mejor).reduce((u, v) => (!u || v.i > u.i ? v : u), null);
   const porLeidos = vistos.filter((v) => v !== ultima).sort((a, b) => b.n - a.n || b.i - a.i);
   const elegidos = (maximo > 0 ? (ultima ? [ultima, ...porLeidos.slice(0, maximo - 1)] : porLeidos.slice(0, maximo)) : []).sort((a, b) => a.i - b.i);
   return elegidos.map(({ id }) => { try { const r = recorteDeDraft(leer(id), caras, opciones); return r ? { id, ...r } : null; } catch { return null; } }).filter(Boolean);

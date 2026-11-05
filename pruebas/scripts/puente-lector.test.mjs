@@ -7,7 +7,7 @@ import { mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync, exist
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { crearServidor, lectorEnHilos, leerCaptura, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS, EN_PARTIDA_PARA_ESCONDER, VISTAZO_MS, sanearAjustes, sanearPregunta } from '../../scripts/lector/servir.mjs';
+import { crearServidor, lectorEnHilos, leerCaptura, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS, EN_PARTIDA_PARA_ESCONDER, VISTAZO_MS, sanearAjustes, sanearPregunta, capturasAMirar } from '../../scripts/lector/servir.mjs';
 import { guardarResultados } from '../../scripts/lector/resultado.mjs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { carasGuardadas, vaciosAliadoGuardados } from '../../scripts/lector/leer.mjs';
@@ -294,8 +294,10 @@ test('una corrección de la app guarda la verdad junto a la captura, aprende de 
     eq(`${verdad.aliados.join()}|${verdad.tuyo}`, `Saber,Layla,${'X'.repeat(40)}|Estes`, `la verdad guardada no lleva tu equipo (solo nombres, de 40 caracteres como mucho): ${JSON.stringify(verdad)}`);
     ok(tandas[0].pares.every((p) => p.verdad.aliados?.length === 3 && p.verdad.tuyo === 'Estes'), 'tu equipo no llega al aprendizaje');
     eq(tandas.length, 1, 'no aprende una vez por corrección');
-    eq(tandas[0].pares.length, CAPTURAS_A_MIRAR, `mira ${tandas[0].pares.length} capturas y no las ${CAPTURAS_A_MIRAR} últimas`);
-    eq(tandas[0].pares.map((p) => p.id).join(), ids.slice(-CAPTURAS_A_MIRAR).join(), 'no mira las ÚLTIMAS capturas');
+    eq(tandas[0].pares.length, CAPTURAS_A_MIRAR, `mira ${tandas[0].pares.length} capturas y no ${CAPTURAS_A_MIRAR}`);
+    // Repartidas por el draft, con la primera y la última (3.90.4): las ocho últimas eran el menú de equipamiento.
+    eq(tandas[0].pares.map((p) => p.id).join(), capturasAMirar(ids).join(), 'no mira las capturas repartidas por el draft');
+    ok(tandas[0].pares[0].id === [...ids].sort()[0] && tandas[0].pares.at(-1).id === [...ids].sort().at(-1), 'no mira la primera y la última del draft');
     ok(tandas[0].pares.every((p) => p.verdad.baneos?.join() === 'Hirara'), 'la verdad que llega al aprendizaje no lleva los baneos (sin ellos no se distingue la pantalla del draft)');
     eq(guardadas.length, 1, 'lo aprendido no se guarda en disco');
     // Con unos huecos aprendidos de pega (fuera de la columna) la lectura siguiente sigue viendo a Clint: la geometría medida manda (3.30.1).
@@ -666,6 +668,30 @@ test('¿Cómo acabó? (3.72.5): con la tabla sin palabra conocida, la APK lo pre
     eq(sanearPregunta({ id: '../x', desde, cuando: desde }), null);
     eq(sanearPregunta({ id: `pregunta-${desde}`, desde, cuando: desde, pick: '<b>' }).pick, null, 'entra un pick con cualquier cosa');
   } finally { servidor.close(); }
+});
+
+test('las capturas que se miran de un draft (3.90.4): repartidas, con la primera y la última, en su orden y sin repetir', () => {
+  const ids = Array.from({ length: 20 }, (_, i) => `lectura-2026-11-04T19-46-${String(i * 3).padStart(2, '0')}-000Z-${300 + i}`);
+  const r = capturasAMirar([...ids].reverse());
+  eq(r.length, CAPTURAS_A_MIRAR);
+  eq(r[0], ids[0], 'no mira la primera');
+  eq(r.at(-1), ids.at(-1), 'no mira la última');
+  ok(r.every((id, i) => i === 0 || id > r[i - 1]), `no van en su orden: ${r}`);
+  // Repartidas: entre dos seguidas nunca más de tres huecos (20 en 8).
+  ok(r.every((id, i) => i === 0 || ids.indexOf(id) - ids.indexOf(r[i - 1]) <= 3), `amontonadas: ${r.map((id) => ids.indexOf(id))}`);
+  eq(capturasAMirar(ids.slice(0, 5)).join(), ids.slice(0, 5).join(), 'con pocas no van todas');
+  eq(capturasAMirar([ids[1], ids[1], ids[0]]).join(), `${ids[0]},${ids[1]}`, 'repite una');
+  eq(capturasAMirar(undefined).length, 0);
+});
+
+test('los recortes del draft miran las capturas repartidas, no las últimas (3.90.4)', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'lector-recortes-'));
+  const ids = Array.from({ length: 12 }, (_, i) => `lectura-2026-11-04T19-46-${String(i * 4).padStart(2, '0')}-000Z-${400 + i}`);
+  for (const id of ids) writeFileSync(join(carpeta, `${id}.png`), 'x');
+  const pedidas = [];
+  const servidor = crearServidor({ caras, carpeta, recortar: async ({ capturas }) => { pedidas.push(capturas.map((c) => c.id)); return []; } });
+  await servidor.interno.recortesDe(ids);
+  eq((pedidas[0] ?? []).join(), capturasAMirar(ids).join(), `recorta las últimas del draft: ${pedidas[0]}`);
 });
 
 await terminar('scripts/puente-lector');
