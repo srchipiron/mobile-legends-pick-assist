@@ -386,7 +386,7 @@ test('la huella del modelo: si cambia la estimación, sube VERSION_MODELO (3.60.
   const datos = prepararDatos({ catalogo: { heroes: nombres.map((name) => ({ name, role: 'Fighter', tags: [] })) }, meta, rango: 'glory' });
   const r = recomendar(datos, { linea: 'roam', enemigos: ['H01', 'H02', 'H03'], aliados: ['H06', 'H07'], baneos: ['H09'], maestria: { H05: { games: 120, winRate: 0.6 } }, conSimulacion: false });
   const huella = r.ranking.map((c) => `${c.heroe.name}:${c.p.toFixed(6)}`).join(' ');
-  const HUELLAS = { 3: 'H05:0.520020 H35:0.512588 H30:0.511246 H15:0.509890 H10:0.506061 H25:0.494137 H00:0.489856 H20:0.487107', 4: 'H35:0.536965 H30:0.535567 H15:0.534087 H10:0.530273 H05:0.520020 H25:0.518188 H00:0.513880 H20:0.511161' };
+  const HUELLAS = { 3: 'H05:0.520020 H35:0.512588 H30:0.511246 H15:0.509890 H10:0.506061 H25:0.494137 H00:0.489856 H20:0.487107', 4: 'H35:0.536965 H30:0.535567 H15:0.534087 H10:0.530273 H05:0.520020 H25:0.518188 H00:0.513880 H20:0.511161', 5: 'H35:0.512588 H30:0.511246 H15:0.509890 H10:0.506061 H25:0.494137 H00:0.489856 H20:0.487107 H05:0.483528' };
   eq(huella, HUELLAS[VERSION_MODELO], `la estimación cambió sin subir VERSION_MODELO (src/motor/modelo.js): ${huella}`);
 });
 

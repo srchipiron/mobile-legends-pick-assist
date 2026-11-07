@@ -170,7 +170,7 @@ export default {
   'hist.cambiarHeroe': 'Cambiar el héroe',
   'hist.cambiarHeroePregunta': '¿Con qué héroe jugaste?',
   'hist.anadir': 'Añadir partidas de tu historial del juego',
-  'hist.anadirPista': 'Cuentan para tu maestría y hacen la recomendación más tuya. NO cuentan para comprobar si la app acierta: cuando las jugaste no había consejo que seguir.',
+  'hist.anadirPista': 'Cuentan para tus números (no para la recomendación: tus resultados no deciden qué héroe te propone). NO cuentan para comprobar si la app acierta: cuando las jugaste no había consejo que seguir.',
   'hist.elegirHeroe': 'Con qué héroe',
   'hist.anadida': 'Añadida: {hero}, {resultado}.',
   'hist.enviar': 'Enviar mis partidas al proyecto',
@@ -484,7 +484,7 @@ export default {
 
 
   // --- maestría y partidas ---
-  'maestria.explicacion': 'Copia partidas y winrate de tu perfil del juego. El winrate en porcentaje: 50,6 o 50.6. Por debajo de 20 partidas cuenta poco. Las partidas que apuntes con la app después de guardar se suman solas; cuando vuelvas a copiar los números del juego, ya van incluidas.',
+  'maestria.explicacion': 'Copia partidas y winrate de tu perfil del juego. El winrate en porcentaje: 50,6 o 50.6. Es para tus números: tus victorias y derrotas no deciden qué héroe te recomienda (cuántas partidas llevas sí dice cuáles son «los tuyos»). Las partidas que apuntes con la app después de guardar se suman solas; cuando vuelvas a copiar los números del juego, ya van incluidas.',
   'maestria.heroe': 'Héroe',
   'maestria.partidas': 'Partidas',
   'maestria.winrate': 'Winrate %',

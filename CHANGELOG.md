@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.93.0
+
+- Tus victorias y derrotas ya no influyen en qué héroe te recomienda la
+  app, ni en el móvil ni en la tablet. La recomendación y sus porcentajes
+  salen solo de los datos de tu rango: lo que gana cada héroe, sus cruces,
+  sus parejas y el draft. Antes, tu porcentaje con cada héroe sustituía al
+  suyo y te empujaba hacia unos y te alejaba de otros.
+- Lo que sí se sigue usando es cuánto juegas a cada héroe, que no tiene que
+  ver con ganar o perder: «el mejor de los tuyos» bajo la nº1, «Mis héroes»
+  y tus habituales al corregir en «Capturas». Tus estadísticas siguen
+  ahí, pero solo para que las mires.
+
 ## 3.92.0
 
 - Los consejos ya tienen en cuenta qué tipo de héroe llevas. A un apoyo

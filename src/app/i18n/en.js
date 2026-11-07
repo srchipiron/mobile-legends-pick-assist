@@ -173,7 +173,7 @@ export default {
   'hist.cambiarHeroe': 'Change the hero',
   'hist.cambiarHeroePregunta': 'Which hero did you play?',
   'hist.anadir': 'Add matches from your in-game history',
-  'hist.anadirPista': 'They count towards your mastery and make the pick more yours. They do NOT count towards checking whether the app works: when you played them there was no advice to follow.',
+  'hist.anadirPista': 'They count towards your stats (not the recommendation: your results do not decide which hero it suggests). They do NOT count towards checking whether the app works: when you played them there was no advice to follow.',
   'hist.elegirHeroe': 'Which hero',
   'hist.anadida': 'Added: {hero}, {resultado}.',
   'hist.enviar': 'Send my matches to the project',
@@ -468,7 +468,7 @@ export default {
   'build.objetosEnIngles': 'Item names stay in English, like the game data.',
 
 
-  'maestria.explicacion': 'Copy matches and win rate from your in-game profile. Win rate as a percentage: 50.6. Below 20 matches it barely counts. Matches you log with the app after saving are added on their own; when you copy the in-game numbers again, they are already included.',
+  'maestria.explicacion': 'Copy matches and win rate from your in-game profile. Win rate as a percentage: 50.6. It is for your stats: your wins and losses do not decide which hero it recommends (how many matches you have still says which are «yours»). Matches you log with the app after saving are added on their own; when you copy the in-game numbers again, they are already included.',
   'maestria.heroe': 'Hero',
   'maestria.partidas': 'Matches',
   'maestria.winrate': 'Win rate %',

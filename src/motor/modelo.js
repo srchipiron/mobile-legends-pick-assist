@@ -46,9 +46,10 @@ import { COUNTER_RULES } from './reglas.js';
  * `modelo.test` falla hasta que se sube. 1: hasta 3.3; 2: desde 3.4.0
  * (equilibrio de daño, disponibilidad); 3: desde 3.56.0 (tu maestría con
  * tus partidas con la app); 4: desde 3.72.0 (tu nivel a todos los héroes,
- * no solo a los jugados).
+ * no solo a los jugados); 5: desde 3.93.0 (tus resultados fuera de la nota:
+ * `RESULTADOS_EN_LA_NOTA` en draft.js, decidido por Javi).
  */
-export const VERSION_MODELO = 4;
+export const VERSION_MODELO = 5;
 /**
  * Cuándo se PUBLICÓ cada cambio (el commit de su versión): las partidas de
  * antes de 3.60.3 no llevan `modelo` y se reparten por su instante. Es

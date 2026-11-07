@@ -392,4 +392,20 @@ test('los cruces y parejas del draft (3.92.0): cada enemigo con su cruce y cada 
   eq(planear(datos, { yo, enemigos, aliados, linea: 'roam' }).cruces.contra.length, 5, 'el plan no lleva los cruces del draft');
 });
 
+test('tus resultados no deciden nada (3.93.0, Javi): con una maestría exagerada, el ranking, las probabilidades, la simulación y el plan salen idénticos', () => {
+  const datos = prepararDatos({ catalogo: leerJson('public/data/heroes.json'), meta });
+  const h = (n) => datos.porNombre.get(n);
+  const draft = { linea: 'roam', enemigos: ['Layla', 'Khufra', 'Valentina'].map(h), aliados: ['Gord', 'Fanny'].map(h), baneos: ['Hirara'].map(h) };
+  // Un 95% con Estes en 300 partidas y un 5% con Rafaela: antes subía a uno y hundía al otro.
+  const maestria = { Estes: { games: 300, winRate: 0.95 }, Rafaela: { games: 300, winRate: 0.05 }, Diggie: { games: 40, winRate: 0.7 } };
+  const sin = recomendar(datos, { ...draft, miPick: h('Estes') }), con = recomendar(datos, { ...draft, maestria, miPick: h('Estes') });
+  const firma = (r) => r.ranking.map((x) => `${x.heroe.name}:${x.p.toFixed(6)}`).join(',');
+  eq(firma(con), firma(sin), 'tus victorias y derrotas mueven el ranking o sus probabilidades');
+  eq(JSON.stringify(con.robustez), JSON.stringify(sin.robustez), 'tus resultados cambian la simulación');
+  eq(con.partida.fases?.pBase, sin.partida.fases?.pBase, 'tus resultados cambian la estimación del plan');
+  eq(JSON.stringify(con.ranking.map((x) => x.motivos.map((m) => m.clave))), JSON.stringify(sin.ranking.map((x) => x.motivos.map((m) => m.clave))), 'una tarjeta habla de tu winrate con el héroe');
+  // Lo que sí queda: cuánto juegas a cada uno (no si ganas).
+  eq(deLosTuyos(sin.ranking, maestria)?.heroe?.name ?? null, deLosTuyos(con.ranking, maestria)?.heroe?.name ?? null);
+});
+
 await terminar('motor/draft');

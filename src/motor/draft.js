@@ -152,11 +152,26 @@ export function rivalDeLinea(datos, { linea, enemigos = [], marcado = null } = {
   return { nombre: detectarRivalDeLinea(enemigos, datos.lineas, linea, datos.frecuencias), marcado: false };
 }
 
+/**
+ * Tus resultados NO deciden (3.93.0). Javi, el 7 de noviembre de 2026:
+ * «quiero que olvides el ganado/perdido mío, no quiero que la selección de
+ * personaje la bases en eso y que no afecte en nada». La maestría (tu
+ * winrate con cada héroe y tu nivel general) entraba en la nota en lugar
+ * del término público del héroe; desde aquí la nota es SOLO el dato público
+ * (héroes, cruces, parejas, equilibrio, lo que falta por salir). Es el
+ * único sitio por donde entra: ranking, estimación, simulación y plan pasan
+ * por estas tres funciones, en la app y en la tablet. Lo que sí se sigue
+ * usando, porque no es ganado/perdido: CUÁNTO juegas a cada héroe
+ * (`deLosTuyos`, «Mis héroes», tus habituales en «Capturas»).
+ */
+export const RESULTADOS_EN_LA_NOTA = false;
+const paraLaNota = (maestria) => (RESULTADOS_EN_LA_NOTA ? maestria : null);
+
 /** Lo que recibe `ordenarPicks` para este draft. Los candidatos son los héroes que el enemigo aún podría elegir. */
 export function contextoDe(datos, { enemigos = [], aliados = [], baneos = [], maestria = null, lineasAbiertas = null } = {}) {
   const cogidos = new Set([...enemigos, ...aliados, ...baneos].map((h) => h.name));
   return {
-    enemigos, aliados, baneos, maestria,
+    enemigos, aliados, baneos, maestria: paraLaNota(maestria),
     meta: datos.meta,
     lineas: datos.lineas,
     lineasAbiertas: lineasAbiertas ?? lineasEnemigasAbiertas(datos, enemigos),
@@ -173,7 +188,7 @@ export function ordenar(datos, { linea, ...draft }) {
 /** La probabilidad de ganar con UN héroe concreto (el que apuntas, aunque no sea el nº1). */
 export function estimarCon(datos, { yo, enemigos = [], aliados = [], baneos = [], maestria = null }) {
   return evaluarDraft({
-    aliados, yo, enemigos, baneos, maestria,
+    aliados, yo, enemigos, baneos, maestria: paraLaNota(maestria),
     meta: datos.meta, lineas: datos.lineas,
     lineasAbiertas: lineasEnemigasAbiertas(datos, enemigos), poolsPorLinea: datos.poolsPorLinea,
   });
@@ -185,7 +200,7 @@ export function simular(datos, { linea, enemigos = [], aliados = [], baneos = []
   if (!enemigos.length || enemigos.length >= 5 || !pool.length) return null;
   return simularFinales({
     pool, enemigos, aliados, lineasAbiertas: lineasEnemigasAbiertas(datos, enemigos), poolsPorLinea: datos.poolsPorLinea,
-    ctx: { meta: datos.meta, maestria, baneos, lineas: datos.lineas },
+    ctx: { meta: datos.meta, maestria: paraLaNota(maestria), baneos, lineas: datos.lineas },
     ...(n ? { n } : {}), ...(semilla != null ? { semilla } : {}),
   });
 }

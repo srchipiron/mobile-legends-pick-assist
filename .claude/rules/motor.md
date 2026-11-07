@@ -146,6 +146,17 @@ se repite en cada corrida de `pro.yml` al log. NO vuelvas a suponer:
   del modelo lo irá viendo. `deLosTuyos` (draft.js) da el mejor de los que
   juega («tuyo» = con partidas, lo mismo que «Mis héroes») para la línea
   tras la nº1 (`.de-los-tuyos`) y la burbuja (app y tablet sola).
+- **TUS RESULTADOS FUERA DE LA NOTA (3.93.0, decidido por Javi)**: «quiero
+  que olvides el ganado/perdido mío, no quiero que la selección de personaje
+  la bases en eso y que no afecte en nada». `RESULTADOS_EN_LA_NOTA = false`
+  (draft.js): `contextoDe`, `estimarCon` y `simular` pasan la maestría como
+  null, así que ranking, probabilidad, simulación y plan son solo el dato
+  público, en la app y en la tablet (todo pasa por ahí). Lo de «la maestría
+  sustituye al término de héroe» y «tu nivel vale para todos» de abajo
+  sigue en `modelo.js` pero no se usa. `VERSION_MODELO` 5. CUÁNTO juegas
+  sigue contando (`deLosTuyos`, «Mis héroes», tus habituales): no es
+  ganado/perdido. Prueba en `draft.test` (una maestría exagerada no mueve
+  nada); cuatro mutaciones. NO se vuelve a meter sin que Javi lo pida.
 - **Las reglas por etiqueta** solo entran sin dato (cruce o pareja nula) y a
   la equivalencia de 1.x: la regla más fuerte vale un cruce del 56%
   (`CRUCE_POR_REGLA_MAXIMA`); las de peligro en los baneos, igual.
