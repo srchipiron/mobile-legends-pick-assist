@@ -1,6 +1,2754 @@
 {
- "actualizado": "2026-10-30T15:18:32.413Z",
+ "actualizado": "2026-11-07T11:15:25.975Z",
  "partidas": [
+  {
+   "t": 1794050063019,
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Khufra",
+    "Belerick",
+    "Masha",
+    "Aulus",
+    "Lukas",
+    "Obsidia",
+    "Suyou"
+   ],
+   "gane": true,
+   "pick": "Kadita",
+   "draft": {
+    "enemigos": [
+     "Eudora",
+     "Chou",
+     "Zetian",
+     "Yi Sun-shin"
+    ],
+    "aliados": [
+     "Lesley",
+     "Cici",
+     "Minotaur",
+     "Karina"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "duracion": 12.8,
+   "recomendados": [
+    "Carmilla",
+    "Gloo",
+    "Diggie"
+   ]
+  },
+  {
+   "t": 1793996849576,
+   "bans": [
+    "Obsidia",
+    "Eudora",
+    "Hirara",
+    "Lukas",
+    "Saber",
+    "Marcel",
+    "Lesley",
+    "Paquito",
+    "Benedetta"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Cyclops",
+     "Rafaela",
+     "Zetian",
+     "Hanabi"
+    ],
+    "aliados": [
+     "Hanzo",
+     "Kadita",
+     "Moskov",
+     "Aldous"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 12.5,
+   "estimacion": 0.581,
+   "recomendados": [
+    "Floryn",
+    "Estes",
+    "Gloo"
+   ]
+  },
+  {
+   "t": 1793995597210,
+   "bans": [
+    "Miya",
+    "Hirara",
+    "Barats",
+    "Rafaela",
+    "Obsidia",
+    "Eudora",
+    "Masha",
+    "Marcel",
+    "Guinevere"
+   ],
+   "gane": true,
+   "pick": "Gord",
+   "draft": {
+    "enemigos": [
+     "Lukas",
+     "Lesley",
+     "Khufra",
+     "Arlott"
+    ],
+    "aliados": [
+     "Kadita",
+     "Thamuz"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "duracion": 14.5,
+   "recomendados": [
+    "Floryn",
+    "Estes",
+    "Minotaur"
+   ]
+  },
+  {
+   "t": 1793994310144,
+   "bans": [
+    "Hirara",
+    "Eudora",
+    "Obsidia",
+    "Masha",
+    "Kadita",
+    "Marcel",
+    "Rafaela",
+    "Fredrinn"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Estes",
+     "Lesley",
+     "Arlott",
+     "Roger",
+     "Odette"
+    ],
+    "aliados": [
+     "Irithel",
+     "Fanny",
+     "Belerick"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 18,
+   "estimacion": 0.537,
+   "recomendados": [
+    "Floryn",
+    "Gloo",
+    "Atlas"
+   ]
+  },
+  {
+   "t": 1793992528254,
+   "bans": [
+    "Lukas",
+    "Hirara",
+    "Selena",
+    "Marcel",
+    "Aulus",
+    "Gloo",
+    "Obsidia",
+    "Angela",
+    "Paquito"
+   ],
+   "gane": true,
+   "pick": "Estes",
+   "draft": {
+    "enemigos": [
+     "Aldous",
+     "Miya",
+     "Xavier",
+     "Alucard"
+    ],
+    "aliados": [
+     "Zetian",
+     "Hayabusa",
+     "Lesley"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 21.6,
+   "estimacion": 0.599,
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Estes"
+   ]
+  },
+  {
+   "t": 1793990844701,
+   "bans": [
+    "Masha",
+    "Khufra",
+    "Marcel",
+    "Aulus",
+    "Hirara",
+    "Lukas",
+    "Paquito",
+    "Johnson"
+   ],
+   "gane": true,
+   "pick": "Minotaur",
+   "draft": {
+    "enemigos": [
+     "Selena",
+     "Silvanna",
+     "Obsidia",
+     "Suyou"
+    ],
+    "aliados": [
+     "Eudora",
+     "Miya",
+     "Yi Sun-shin"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 11.5,
+   "estimacion": 0.562,
+   "recomendados": [
+    "Gloo",
+    "Rafaela",
+    "Diggie"
+   ]
+  },
+  {
+   "t": 1793989761028,
+   "bans": [
+    "Selena",
+    "Aulus",
+    "Sun",
+    "Hirara",
+    "Angela",
+    "Eudora",
+    "Masha",
+    "Marcel",
+    "Obsidia",
+    "Yi Sun-shin"
+   ],
+   "gane": true,
+   "pick": "Estes",
+   "draft": {
+    "enemigos": [
+     "Lukas",
+     "Khufra",
+     "Cecilion",
+     "Clint",
+     "Jawhead"
+    ],
+    "aliados": [
+     "Valir",
+     "Brody",
+     "Hanzo",
+     "Terizla"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 11.7,
+   "supuesto": true,
+   "estimacion": 0.659,
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Gloo"
+   ]
+  },
+  {
+   "t": 1793988438573,
+   "bans": [
+    "Aulus",
+    "Masha",
+    "Paquito",
+    "Eudora",
+    "Obsidia",
+    "Lukas",
+    "Marcel",
+    "Khufra"
+   ],
+   "gane": true,
+   "pick": "Belerick",
+   "draft": {
+    "enemigos": [
+     "Beatrix",
+     "Novaria",
+     "Sun",
+     "Gusion",
+     "Minotaur"
+    ],
+    "aliados": [
+     "Xavier",
+     "Moskov",
+     "Julian",
+     "Alucard"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 11.7,
+   "estimacion": 0.523,
+   "recomendados": [
+    "Gloo",
+    "Natalia",
+    "Khaleed"
+   ]
+  },
+  {
+   "t": 1793987265298,
+   "bans": [
+    "Minotaur",
+    "Hirara",
+    "Obsidia",
+    "Lesley",
+    "Lukas",
+    "Marcel",
+    "Aulus",
+    "Masha",
+    "Belerick",
+    "Khufra"
+   ],
+   "gane": true,
+   "pick": "Carmilla",
+   "draft": {
+    "enemigos": [
+     "Eudora",
+     "Badang",
+     "Miya",
+     "Paquito",
+     "Sora"
+    ],
+    "aliados": [
+     "Claude",
+     "Valir",
+     "Fredrinn"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 11.9,
+   "estimacion": 0.657,
+   "recomendados": [
+    "Diggie",
+    "Floryn",
+    "Carmilla"
+   ]
+  },
+  {
+   "t": 1793915232526,
+   "bans": [
+    "Eudora",
+    "Marcel",
+    "Hirara",
+    "Obsidia",
+    "Masha",
+    "Lukas",
+    "Wanwan",
+    "Aulus",
+    "Minotaur"
+   ],
+   "gane": true,
+   "pick": "Gloo",
+   "draft": {
+    "enemigos": [
+     "Yi Sun-shin",
+     "Selena",
+     "Lapu-Lapu",
+     "Beatrix"
+    ],
+    "aliados": [
+     "Nolan",
+     "Moskov",
+     "Bane",
+     "Cyclops"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 11.2,
+   "estimacion": 0.639,
+   "recomendados": [
+    "Gloo",
+    "Floryn",
+    "Rafaela"
+   ]
+  },
+  {
+   "t": 1793913898050,
+   "bans": [
+    "Masha",
+    "Aulus",
+    "Lukas",
+    "Carmilla",
+    "Hirara",
+    "Marcel",
+    "Khufra"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Bruno",
+     "Kimmy",
+     "Estes",
+     "Lesley"
+    ],
+    "aliados": [
+     "Kagura",
+     "Obsidia",
+     "Dyrroth",
+     "Balmond"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 9,
+   "estimacion": 0.501,
+   "recomendados": [
+    "Rafaela",
+    "Floryn",
+    "Gloo"
+   ]
+  },
+  {
+   "t": 1793912911408,
+   "bans": [
+    "Hirara",
+    "Aulus",
+    "Masha",
+    "Minotaur",
+    "Lesley",
+    "Marcel",
+    "Belerick",
+    "Lukas"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Badang",
+     "Yve",
+     "Esmeralda",
+     "Saber",
+     "Edith"
+    ],
+    "aliados": [
+     "Kagura",
+     "Paquito",
+     "Obsidia"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 16.3,
+   "estimacion": 0.555,
+   "recomendados": [
+    "Rafaela",
+    "Floryn",
+    "Estes"
+   ]
+  },
+  {
+   "t": 1793911502891,
+   "bans": [
+    "Estes",
+    "Masha",
+    "Aamon",
+    "Marcel",
+    "Lukas",
+    "Obsidia",
+    "Hirara",
+    "Yi Sun-shin",
+    "Wanwan"
+   ],
+   "gane": true,
+   "pick": "Diggie",
+   "draft": {
+    "enemigos": [
+     "Clint",
+     "Khufra",
+     "Vale"
+    ],
+    "aliados": [
+     "Aldous",
+     "Chang'e",
+     "Ixia",
+     "Lancelot"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 19.2,
+   "estimacion": 0.507,
+   "recomendados": [
+    "Diggie",
+    "Gloo",
+    "Carmilla"
+   ]
+  },
+  {
+   "t": 1793909776252,
+   "bans": [
+    "Hirara",
+    "Aulus",
+    "Clint",
+    "Lukas",
+    "Eudora",
+    "Marcel",
+    "Estes",
+    "Minotaur"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Khufra",
+     "Moskov",
+     "Lylia",
+     "Yin",
+     "Nolan"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Masha",
+     "Bane",
+     "Cyclops"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 11.6,
+   "estimacion": 0.655,
+   "recomendados": [
+    "Rafaela",
+    "Chip",
+    "Gloo"
+   ]
+  },
+  {
+   "t": 1793908778514,
+   "bans": [
+    "Selena",
+    "Aulus",
+    "Khufra",
+    "Hirara",
+    "Obsidia",
+    "Marcel",
+    "Rafaela",
+    "Lukas",
+    "Masha",
+    "Kalea"
+   ],
+   "gane": true,
+   "pick": "Kagura",
+   "draft": {
+    "enemigos": [
+     "Nana",
+     "Angela",
+     "Roger",
+     "Fanny",
+     "Alice"
+    ],
+    "aliados": [
+     "Mathilda",
+     "Carmilla",
+     "Moskov",
+     "Aamon"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "duracion": 19.2,
+   "recomendados": [
+    "Minsitthar",
+    "Minotaur",
+    "Badang"
+   ]
+  },
+  {
+   "t": 1793907039495,
+   "bans": [
+    "Aulus",
+    "Masha",
+    "Lukas",
+    "Belerick",
+    "Hirara",
+    "Marcel",
+    "Khufra",
+    "Layla"
+   ],
+   "gane": true,
+   "pick": "Brody",
+   "draft": {
+    "enemigos": [
+     "Obsidia",
+     "X.Borg",
+     "Paquito",
+     "Zetian",
+     "Sun"
+    ],
+    "aliados": [
+     "Arlott",
+     "Alice",
+     "Lunox",
+     "Rafaela"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "duracion": 16.2,
+   "recomendados": [
+    "Minotaur",
+    "Badang",
+    "Saber"
+   ]
+  },
+  {
+   "t": 1793823341856,
+   "bans": [
+    "Wanwan",
+    "Bruno"
+   ],
+   "gane": true,
+   "pick": "Marcel",
+   "draft": {
+    "enemigos": [],
+    "aliados": [
+     "Gord"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 14.9,
+   "supuesto": true,
+   "estimacion": 0.601,
+   "recomendados": [
+    "Marcel",
+    "Minotaur",
+    "Saber"
+   ]
+  },
+  {
+   "t": 1793822272736,
+   "bans": [
+    "Mathilda",
+    "Gord"
+   ],
+   "gane": true,
+   "pick": "Khufra",
+   "draft": {
+    "enemigos": [
+     "Gord",
+     "Angela",
+     "Chang'e"
+    ],
+    "aliados": [
+     "Arlott",
+     "Aamon",
+     "Mathilda",
+     "Obsidia"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 10.6,
+   "supuesto": true,
+   "estimacion": 0.703,
+   "recomendados": [
+    "Khufra",
+    "Gloo",
+    "Rafaela"
+   ]
+  },
+  {
+   "t": 1793743448113,
+   "bans": [
+    "Hirara",
+    "Masha",
+    "Aulus",
+    "Marcel",
+    "Lukas",
+    "Obsidia",
+    "Rafaela"
+   ],
+   "gane": true,
+   "pick": "Mathilda",
+   "draft": {
+    "enemigos": [
+     "Clint",
+     "Esmeralda",
+     "Tigreal",
+     "Nana",
+     "Suyou"
+    ],
+    "aliados": [
+     "Paquito",
+     "Lesley",
+     "Harley",
+     "Zetian"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 15.1,
+   "estimacion": 0.591,
+   "recomendados": [
+    "Gloo",
+    "Minotaur",
+    "Khufra"
+   ]
+  },
+  {
+   "t": 1793742101218,
+   "bans": [
+    "Marcel",
+    "Hanzo",
+    "Belerick",
+    "Masha",
+    "Saber",
+    "Sun",
+    "Wanwan",
+    "Aulus",
+    "Eudora"
+   ],
+   "gane": true,
+   "pick": "Kagura",
+   "draft": {
+    "enemigos": [
+     "Layla",
+     "Selena",
+     "Paquito",
+     "Gloo",
+     "Nolan"
+    ],
+    "aliados": [
+     "Ixia",
+     "Mathilda",
+     "Esmeralda",
+     "Leomord"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "duracion": 18.3,
+   "recomendados": [
+    "Carmilla",
+    "Rafaela",
+    "Faramis"
+   ]
+  },
+  {
+   "t": 1793740555723,
+   "bans": [
+    "Aulus",
+    "Masha",
+    "Belerick",
+    "Estes",
+    "Selena",
+    "Khufra",
+    "Paquito",
+    "Hirara",
+    "Marcel",
+    "Saber"
+   ],
+   "gane": true,
+   "pick": "Mathilda",
+   "draft": {
+    "enemigos": [
+     "Lukas",
+     "Layla",
+     "Zetian",
+     "Carmilla",
+     "Arlott"
+    ],
+    "aliados": [
+     "Yin",
+     "Novaria",
+     "Wanwan"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 14.2,
+   "estimacion": 0.523,
+   "recomendados": [
+    "Floryn",
+    "Gloo",
+    "Rafaela"
+   ]
+  },
+  {
+   "t": 1793739460218,
+   "bans": [
+    "Hirara",
+    "Masha",
+    "Marcel",
+    "Kagura",
+    "Aulus",
+    "Obsidia",
+    "Eudora",
+    "Lukas"
+   ],
+   "gane": true,
+   "pick": "Estes",
+   "draft": {
+    "enemigos": [
+     "Miya",
+     "Lylia",
+     "Atlas",
+     "Yi Sun-shin"
+    ],
+    "aliados": [
+     "Popol and Kupa",
+     "Belerick",
+     "Gord"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 11.2,
+   "estimacion": 0.508,
+   "recomendados": [
+    "Natalia",
+    "Minotaur",
+    "Saber"
+   ]
+  },
+  {
+   "t": 1793738065233,
+   "bans": [
+    "Kagura",
+    "Marcel",
+    "Paquito",
+    "Obsidia",
+    "Hirara",
+    "Masha",
+    "Lukas",
+    "Wanwan",
+    "Aulus"
+   ],
+   "gane": true,
+   "pick": "Minotaur",
+   "draft": {
+    "enemigos": [
+     "Khufra",
+     "Zetian",
+     "Dyrroth",
+     "Lesley",
+     "Nolan"
+    ],
+    "aliados": [
+     "Wanwan",
+     "Gusion",
+     "Gord"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 11.9,
+   "estimacion": 0.611,
+   "recomendados": [
+    "Minotaur",
+    "Kalea",
+    "Saber"
+   ]
+  },
+  {
+   "t": 1793736415967,
+   "bans": [
+    "Obsidia",
+    "Masha",
+    "Paquito",
+    "Lukas",
+    "Belerick",
+    "Wanwan",
+    "Aulus",
+    "Hirara",
+    "Marcel"
+   ],
+   "gane": true,
+   "pick": "Rafaela",
+   "draft": {
+    "enemigos": [
+     "Esmeralda",
+     "Wanwan",
+     "Rafaela"
+    ],
+    "aliados": [
+     "Eudora",
+     "Cici",
+     "Lesley",
+     "Julian"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "duracion": 16.1,
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Minotaur"
+   ]
+  },
+  {
+   "t": 1793733822574,
+   "bans": [
+    "Carmilla",
+    "Obsidia",
+    "Khufra",
+    "Masha",
+    "Marcel",
+    "Hirara",
+    "Aulus",
+    "Paquito",
+    "Melissa"
+   ],
+   "gane": true,
+   "pick": "Minotaur",
+   "draft": {
+    "enemigos": [
+     "Eudora",
+     "Yi Sun-shin",
+     "Helcurt",
+     "Angela",
+     "Layla"
+    ],
+    "aliados": [
+     "Julian",
+     "Kimmy",
+     "Badang",
+     "Aamon"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 14.1,
+   "estimacion": 0.562,
+   "recomendados": [
+    "Lolita",
+    "Minotaur",
+    "Kalea"
+   ]
+  },
+  {
+   "t": 1793732598907,
+   "bans": [
+    "Marcel",
+    "Hirara",
+    "Khufra",
+    "Masha",
+    "Eudora",
+    "Lukas",
+    "Aulus"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Sun",
+     "Harley",
+     "Paquito",
+     "Obsidia",
+     "Minotaur"
+    ],
+    "aliados": [
+     "Melissa",
+     "Karina",
+     "Minsitthar",
+     "Cyclops"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 12.6,
+   "estimacion": 0.532,
+   "recomendados": [
+    "Khaleed",
+    "Kalea",
+    "Lolita"
+   ]
+  },
+  {
+   "t": 1793730715680,
+   "bans": [
+    "Hirara",
+    "Eudora",
+    "Khufra",
+    "Marcel",
+    "Paquito",
+    "Obsidia",
+    "Aulus",
+    "Masha"
+   ],
+   "gane": true,
+   "pick": "Estes",
+   "draft": {
+    "enemigos": [
+     "Cyclops",
+     "Lukas",
+     "Wanwan",
+     "Selena"
+    ],
+    "aliados": [
+     "Miya",
+     "Vexana",
+     "Badang",
+     "Julian"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "estimacion": 0.572,
+   "recomendados": [
+    "Lolita",
+    "Estes",
+    "Minotaur"
+   ]
+  },
+  {
+   "t": 1793659228670,
+   "bans": [
+    "Hirara",
+    "Belerick",
+    "Marcel",
+    "Estes",
+    "Khufra",
+    "Masha",
+    "Aulus",
+    "X.Borg"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Faramis",
+     "Miya",
+     "Nana",
+     "Cyclops",
+     "Hylos"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Eudora",
+     "Tigreal",
+     "Fanny"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "editada": 1793691701112,
+   "duracion": 15.4,
+   "estimacion": 0.547,
+   "recomendados": [
+    "Rafaela",
+    "Floryn",
+    "Carmilla"
+   ]
+  },
+  {
+   "t": 1793658043539,
+   "bans": [
+    "Marcel",
+    "Masha",
+    "Hirara",
+    "Belerick",
+    "Obsidia",
+    "Lukas",
+    "Aulus",
+    "Paquito"
+   ],
+   "gane": true,
+   "pick": "Minotaur",
+   "draft": {
+    "enemigos": [
+     "Selena",
+     "Bane",
+     "Franco",
+     "Layla",
+     "Julian"
+    ],
+    "aliados": [
+     "Eudora",
+     "Granger",
+     "Tigreal"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "editada": 1793691716939,
+   "duracion": 12.4,
+   "estimacion": 0.558,
+   "recomendados": [
+    "Rafaela",
+    "Floryn",
+    "Gloo"
+   ]
+  },
+  {
+   "t": 1793656816683,
+   "bans": [
+    "Masha",
+    "Marcel",
+    "Belerick",
+    "Eudora",
+    "Obsidia",
+    "Aulus",
+    "Hirara",
+    "Paquito"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Angela",
+     "Zetian",
+     "Suyou",
+     "Sun",
+     "Layla"
+    ],
+    "aliados": [
+     "Lesley",
+     "Kadita",
+     "Julian",
+     "Tigreal"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 13.4,
+   "estimacion": 0.568,
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Estes"
+   ]
+  },
+  {
+   "t": 1793654592593,
+   "bans": [
+    "Masha",
+    "Hirara",
+    "Aulus",
+    "Marcel",
+    "Obsidia",
+    "Selena",
+    "Lukas",
+    "Belerick",
+    "Paquito"
+   ],
+   "gane": true,
+   "pick": "Minotaur",
+   "draft": {
+    "enemigos": [
+     "Rafaela",
+     "Nolan",
+     "Eudora",
+     "Bruno",
+     "Kalea"
+    ],
+    "aliados": [
+     "Vale",
+     "Yu Zhong",
+     "Moskov",
+     "Aamon"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "editada": 1793691709308,
+   "duracion": 12.1,
+   "estimacion": 0.522,
+   "recomendados": [
+    "Minotaur",
+    "Tigreal",
+    "Badang"
+   ]
+  },
+  {
+   "t": 1793652088976,
+   "bans": [
+    "Masha",
+    "Aulus",
+    "Hirara",
+    "Marcel",
+    "Rafaela",
+    "Obsidia",
+    "Belerick",
+    "Estes",
+    "Minotaur"
+   ],
+   "gane": true,
+   "pick": "Moskov",
+   "draft": {
+    "enemigos": [
+     "Eudora",
+     "Martis",
+     "Kaja",
+     "Ixia",
+     "Guinevere"
+    ],
+    "aliados": [
+     "Paquito",
+     "Lukas",
+     "Floryn",
+     "Zetian"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "duracion": 11.9,
+   "recomendados": [
+    "Atlas",
+    "Carmilla",
+    "Khufra"
+   ]
+  },
+  {
+   "t": 1793650767649,
+   "bans": [
+    "Aulus",
+    "Masha",
+    "Hirara",
+    "Belerick",
+    "Lukas",
+    "Marcel",
+    "Dyrroth",
+    "Obsidia",
+    "Angela"
+   ],
+   "gane": true,
+   "pick": "Gord",
+   "draft": {
+    "enemigos": [
+     "Paquito",
+     "Selena",
+     "Floryn",
+     "Moskov",
+     "Aamon"
+    ],
+    "aliados": [
+     "Lesley",
+     "Alice",
+     "Gloo"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "editada": 1793691744599,
+   "duracion": 15.9,
+   "recomendados": [
+    "Lolita",
+    "Saber",
+    "Gloo"
+   ]
+  },
+  {
+   "t": 1793648141095,
+   "bans": [
+    "Lukas",
+    "Masha",
+    "Paquito",
+    "Hirara",
+    "Eudora",
+    "Aulus",
+    "Marcel",
+    "Selena"
+   ],
+   "gane": true,
+   "pick": "Gloo",
+   "draft": {
+    "enemigos": [
+     "Gord",
+     "Silvanna",
+     "Suyou",
+     "Floryn",
+     "Brody"
+    ],
+    "aliados": [
+     "Miya",
+     "Valir",
+     "Yi Sun-shin",
+     "Argus"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "editada": 1793691763977,
+   "duracion": 18.9,
+   "estimacion": 0.553,
+   "recomendados": [
+    "Gloo",
+    "Atlas",
+    "Carmilla"
+   ]
+  },
+  {
+   "t": 1793646460291,
+   "bans": [
+    "Hirara",
+    "Aulus",
+    "Lukas",
+    "Masha",
+    "Marcel",
+    "Eudora",
+    "Paquito",
+    "Wanwan"
+   ],
+   "gane": false,
+   "pick": "Diggie",
+   "draft": {
+    "enemigos": [
+     "Ixia",
+     "Dyrroth",
+     "Suyou"
+    ],
+    "aliados": [
+     "Alpha",
+     "Layla",
+     "Saber",
+     "Kadita"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 14.6,
+   "estimacion": 0.599,
+   "recomendados": [
+    "Rafaela",
+    "Gloo",
+    "Carmilla"
+   ]
+  },
+  {
+   "t": 1793645276816,
+   "bans": [
+    "Aulus",
+    "Marcel",
+    "Masha",
+    "Obsidia",
+    "Estes",
+    "Hirara",
+    "Lukas",
+    "Eudora",
+    "Atlas",
+    "Bruno"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Rafaela",
+     "Paquito",
+     "Novaria",
+     "Alice",
+     "Tigreal"
+    ],
+    "aliados": [
+     "Lesley",
+     "Lylia",
+     "Balmond",
+     "Fanny"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 20.4,
+   "estimacion": 0.454,
+   "recomendados": [
+    "Diggie",
+    "Floryn",
+    "Edith"
+   ]
+  },
+  {
+   "t": 1793643708345,
+   "bans": [
+    "Obsidia",
+    "Marcel",
+    "Hirara",
+    "Masha",
+    "Carmilla",
+    "Aulus",
+    "Lukas",
+    "Khufra",
+    "Paquito",
+    "Gord"
+   ],
+   "gane": true,
+   "pick": "Gloo",
+   "draft": {
+    "enemigos": [
+     "Kadita",
+     "Tigreal",
+     "Dyrroth",
+     "Harley",
+     "Karrie"
+    ],
+    "aliados": [
+     "Eudora",
+     "Clint",
+     "Yu Zhong",
+     "Ling"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "editada": 1793691785099,
+   "duracion": 16.2,
+   "estimacion": 0.649,
+   "recomendados": [
+    "Rafaela",
+    "Diggie",
+    "Floryn"
+   ]
+  },
+  {
+   "t": 1793642340650,
+   "bans": [
+    "Beatrix",
+    "Zetian",
+    "Wanwan",
+    "Aulus",
+    "Lukas",
+    "Masha",
+    "Selena",
+    "Obsidia",
+    "Hirara",
+    "Marcel"
+   ],
+   "gane": true,
+   "pick": "Diggie",
+   "draft": {
+    "enemigos": [
+     "Atlas",
+     "Zetian",
+     "Fredrinn"
+    ],
+    "aliados": [
+     "Xavier",
+     "Clint",
+     "Paquito",
+     "Gusion"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 13,
+   "estimacion": 0.572,
+   "recomendados": [
+    "Diggie",
+    "Rafaela",
+    "Minotaur"
+   ]
+  },
+  {
+   "t": 1793641202713,
+   "bans": [
+    "Kaja",
+    "Aulus",
+    "Hirara",
+    "Lukas",
+    "Selena",
+    "Khufra",
+    "Marcel",
+    "Yi Sun-shin",
+    "Atlas"
+   ],
+   "gane": true,
+   "pick": "Valir",
+   "draft": {
+    "enemigos": [
+     "Obsidia",
+     "Eudora",
+     "Paquito",
+     "Rafaela",
+     "Thamuz"
+    ],
+    "aliados": [
+     "Bruno",
+     "Yu Zhong",
+     "Martis",
+     "Estes"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "editada": 1793691817795,
+   "duracion": 13.7,
+   "recomendados": [
+    "Kalea",
+    "Minotaur",
+    "Akai"
+   ]
+  },
+  {
+   "t": 1793589060479,
+   "bans": [
+    "Hirara",
+    "Moskov",
+    "Masha",
+    "Belerick",
+    "Hilda",
+    "Lukas",
+    "Kalea",
+    "Marcel"
+   ],
+   "gane": true,
+   "pick": "Estes",
+   "draft": {
+    "enemigos": [
+     "Chou",
+     "Rafaela",
+     "Obsidia",
+     "Nana",
+     "Selena"
+    ],
+    "aliados": [
+     "Layla",
+     "Eudora",
+     "Yi Sun-shin"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "editada": 1793691859642,
+   "duracion": 12.4,
+   "estimacion": 0.633,
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Gloo"
+   ]
+  },
+  {
+   "t": 1793587834821,
+   "bans": [
+    "Lukas",
+    "Aulus",
+    "Hirara",
+    "Obsidia",
+    "Marcel",
+    "Belerick",
+    "Masha",
+    "Akai",
+    "Wanwan"
+   ],
+   "gane": true,
+   "pick": "Diggie",
+   "draft": {
+    "enemigos": [
+     "Novaria",
+     "Benedetta",
+     "Tigreal",
+     "Clint",
+     "Nolan"
+    ],
+    "aliados": [
+     "Valir",
+     "Gusion",
+     "Balmond",
+     "Moskov"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 17,
+   "estimacion": 0.619,
+   "recomendados": [
+    "Natalia",
+    "Gloo",
+    "Khufra"
+   ]
+  },
+  {
+   "t": 1793586480696,
+   "bans": [
+    "Hirara",
+    "Lukas",
+    "Obsidia",
+    "Aulus",
+    "Masha",
+    "Marcel",
+    "Khufra",
+    "Sun",
+    "Gord"
+   ],
+   "gane": true,
+   "pick": "Gloo",
+   "draft": {
+    "enemigos": [
+     "Floryn",
+     "Zetian",
+     "Vale",
+     "Martis"
+    ],
+    "aliados": [
+     "Valir",
+     "Moskov",
+     "Paquito",
+     "Fanny"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 13.6,
+   "estimacion": 0.607,
+   "recomendados": [
+    "Gloo",
+    "Carmilla",
+    "Rafaela"
+   ]
+  },
+  {
+   "t": 1793585294437,
+   "bans": [
+    "Marcel",
+    "Eudora",
+    "Masha",
+    "Hirara",
+    "Belerick",
+    "Khufra",
+    "Paquito"
+   ],
+   "gane": true,
+   "pick": "Valir",
+   "draft": {
+    "enemigos": [
+     "Selena",
+     "Baxia",
+     "Cyclops",
+     "Hanabi",
+     "Aulus"
+    ],
+    "aliados": [
+     "Wanwan",
+     "Freya",
+     "Estes",
+     "Yi Sun-shin"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "duracion": 11.1,
+   "recomendados": [
+    "Atlas",
+    "Carmilla",
+    "Edith"
+   ]
+  },
+  {
+   "t": 1793584260668,
+   "bans": [
+    "Hirara",
+    "Lukas",
+    "Masha",
+    "Khufra",
+    "Aulus",
+    "Belerick",
+    "Marcel",
+    "Lesley",
+    "Esmeralda"
+   ],
+   "gane": true,
+   "pick": "Kalea",
+   "draft": {
+    "enemigos": [
+     "Minotaur",
+     "Eudora",
+     "Nolan",
+     "Obsidia",
+     "Benedetta"
+    ],
+    "aliados": [
+     "Gusion",
+     "Valir",
+     "Dyrroth"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 10.1,
+   "supuesto": true,
+   "estimacion": 0.568,
+   "recomendados": [
+    "Kalea",
+    "Saber",
+    "Natalia"
+   ]
+  },
+  {
+   "t": 1793582999747,
+   "bans": [
+    "Hirara",
+    "Masha",
+    "Lukas",
+    "Aulus",
+    "Belerick",
+    "Obsidia",
+    "Marcel",
+    "Khufra",
+    "Gord"
+   ],
+   "gane": true,
+   "pick": "Gloo",
+   "draft": {
+    "enemigos": [
+     "Aamon",
+     "Paquito",
+     "Lesley",
+     "Johnson",
+     "Vexana"
+    ],
+    "aliados": [
+     "Valir",
+     "Tigreal",
+     "Hanabi",
+     "Lancelot"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 17.1,
+   "estimacion": 0.562,
+   "recomendados": [
+    "Gloo",
+    "Estes",
+    "Rafaela"
+   ]
+  },
+  {
+   "t": 1793581720592,
+   "bans": [
+    "Marcel",
+    "Masha",
+    "Hirara",
+    "Khufra",
+    "Lukas",
+    "Yi Sun-shin",
+    "Minotaur",
+    "Belerick"
+   ],
+   "gane": true,
+   "pick": "Gloo",
+   "draft": {
+    "enemigos": [
+     "Aulus",
+     "Angela",
+     "Obsidia",
+     "Paquito",
+     "Kagura"
+    ],
+    "aliados": [
+     "Valir",
+     "Lesley",
+     "Hayabusa",
+     "Tigreal"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "duracion": 16.4,
+   "recomendados": [
+    "Edith",
+    "Estes",
+    "Rafaela"
+   ]
+  },
+  {
+   "t": 1793580270813,
+   "bans": [
+    "Hirara",
+    "Masha",
+    "Gloo",
+    "Hanzo",
+    "Saber",
+    "Belerick",
+    "Lesley",
+    "Obsidia",
+    "Estes"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Aurora",
+     "Angela",
+     "Granger",
+     "Fredrinn",
+     "Alice"
+    ],
+    "aliados": [
+     "Valir",
+     "Tigreal",
+     "Aulus",
+     "Brody"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 15.9,
+   "estimacion": 0.569,
+   "recomendados": [
+    "Floryn",
+    "Edith",
+    "Rafaela"
+   ]
+  },
+  {
+   "t": 1793578945472,
+   "bans": [
+    "Belerick",
+    "Marcel",
+    "Lukas",
+    "Obsidia",
+    "Masha",
+    "Hirara",
+    "Khufra"
+   ],
+   "gane": true,
+   "pick": "Claude",
+   "draft": {
+    "enemigos": [
+     "Eudora",
+     "Suyou",
+     "Miya",
+     "Carmilla",
+     "Guinevere"
+    ],
+    "aliados": [
+     "Fredrinn",
+     "Rafaela",
+     "Mathilda"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "duracion": 14.2,
+   "recomendados": [
+    "Minsitthar",
+    "Kalea",
+    "Badang"
+   ]
+  },
+  {
+   "t": 1793577712821,
+   "bans": [
+    "Belerick",
+    "Marcel",
+    "Aulus",
+    "Lesley",
+    "Hirara",
+    "Saber",
+    "Masha",
+    "Obsidia",
+    "Karina",
+    "Gord"
+   ],
+   "gane": true,
+   "pick": "Diggie",
+   "draft": {
+    "enemigos": [
+     "Tigreal",
+     "Zhuxin",
+     "Bruno",
+     "Nolan",
+     "X.Borg"
+    ],
+    "aliados": [
+     "Claude",
+     "Cici",
+     "Alpha"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 12.6,
+   "estimacion": 0.547,
+   "recomendados": [
+    "Diggie",
+    "Faramis",
+    "Rafaela"
+   ]
+  },
+  {
+   "t": 1793575330113,
+   "bans": [
+    "Marcel",
+    "Masha",
+    "Aulus",
+    "Kaja",
+    "Eudora",
+    "Hirara",
+    "Lukas",
+    "Chou",
+    "Wanwan"
+   ],
+   "gane": true,
+   "pick": "Natalia",
+   "draft": {
+    "enemigos": [
+     "Cici",
+     "Lesley",
+     "Selena",
+     "Cyclops"
+    ],
+    "aliados": [
+     "Yu Zhong",
+     "Obsidia",
+     "Hirara"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 12.9,
+   "estimacion": 0.362,
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Rafaela"
+   ]
+  },
+  {
+   "t": 1793574272947,
+   "bans": [
+    "Aulus",
+    "Masha",
+    "Marcel",
+    "Hirara",
+    "Eudora",
+    "Gloo",
+    "Paquito",
+    "Lukas",
+    "Gusion",
+    "Estes"
+   ],
+   "gane": true,
+   "pick": "Natalia",
+   "draft": {
+    "enemigos": [
+     "Angela",
+     "Dyrroth",
+     "Nana",
+     "Clint",
+     "Aamon"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Zetian",
+     "Rafaela"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 10,
+   "estimacion": 0.591,
+   "recomendados": [
+    "Saber",
+    "Minsitthar",
+    "Kalea"
+   ]
+  },
+  {
+   "t": 1793573287931,
+   "bans": [
+    "Marcel",
+    "Masha",
+    "Hirara",
+    "Lukas",
+    "Belerick",
+    "Kaja",
+    "X.Borg",
+    "Paquito",
+    "Beatrix"
+   ],
+   "gane": true,
+   "pick": "Minotaur",
+   "draft": {
+    "enemigos": [
+     "Hanabi",
+     "Carmilla",
+     "Kagura",
+     "Badang",
+     "Alice"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Wanwan",
+     "Yi Sun-shin",
+     "Natalia"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 12.7,
+   "estimacion": 0.402,
+   "recomendados": [
+    "Floryn",
+    "Angela",
+    "Rafaela"
+   ]
+  },
+  {
+   "t": 1793489088356,
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Atlas",
+    "Masha",
+    "Aulus",
+    "Belerick",
+    "Lukas",
+    "Obsidia"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Paquito",
+     "Valir",
+     "Karrie",
+     "Hylos",
+     "Yi Sun-shin"
+    ],
+    "aliados": [
+     "Balmond",
+     "Esmeralda",
+     "Kadita"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 21,
+   "estimacion": 0.462,
+   "recomendados": [
+    "Rafaela",
+    "Floryn",
+    "Estes"
+   ]
+  },
+  {
+   "t": 1793487508964,
+   "bans": [
+    "Eudora",
+    "Marcel",
+    "Hirara",
+    "Masha",
+    "Obsidia",
+    "Barats",
+    "Lukas",
+    "Aulus"
+   ],
+   "gane": true,
+   "pick": "Gloo",
+   "draft": {
+    "enemigos": [
+     "Lesley",
+     "Nana",
+     "X.Borg",
+     "Esmeralda"
+    ],
+    "aliados": [
+     "Kadita",
+     "Paquito",
+     "Clint",
+     "Julian"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 14.4,
+   "estimacion": 0.67,
+   "recomendados": [
+    "Rafaela",
+    "Estes",
+    "Gloo"
+   ]
+  },
+  {
+   "t": 1793486305495,
+   "bans": [
+    "Karina",
+    "Hirara",
+    "Aulus",
+    "Marcel",
+    "Masha",
+    "Gloo",
+    "Lukas",
+    "Gord"
+   ],
+   "gane": true,
+   "pick": "Estes",
+   "draft": {
+    "enemigos": [
+     "Eudora",
+     "Alice",
+     "Atlas",
+     "Paquito",
+     "Karrie"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Kadita",
+     "Leomord"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 13,
+   "estimacion": 0.548,
+   "recomendados": [
+    "Diggie",
+    "Rafaela",
+    "Floryn"
+   ]
+  },
+  {
+   "t": 1793484307217,
+   "bans": [
+    "Hanzo",
+    "Hirara",
+    "Eudora",
+    "Aulus",
+    "Marcel",
+    "Lukas",
+    "Khufra",
+    "Masha",
+    "Estes",
+    "Lesley"
+   ],
+   "gane": true,
+   "pick": "Minotaur",
+   "draft": {
+    "enemigos": [
+     "Obsidia",
+     "Karina",
+     "Dyrroth",
+     "Badang",
+     "Chang'e"
+    ],
+    "aliados": [
+     "Valir",
+     "Miya",
+     "Harley"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 11.7,
+   "estimacion": 0.596,
+   "recomendados": [
+    "Minotaur",
+    "Lolita",
+    "Kalea"
+   ]
+  },
+  {
+   "t": 1793482363290,
+   "bans": [
+    "Aulus",
+    "Zhask",
+    "Lukas",
+    "Eudora",
+    "Hirara",
+    "Obsidia",
+    "Khufra",
+    "Paquito"
+   ],
+   "gane": false,
+   "pick": "Estes",
+   "draft": {
+    "enemigos": [
+     "Sun",
+     "Nolan",
+     "Lesley",
+     "Badang",
+     "Vale"
+    ],
+    "aliados": [
+     "Lunox",
+     "Brody",
+     "Hayabusa"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "estimacion": 0.571,
+   "recomendados": [
+    "Floryn",
+    "Gloo",
+    "Rafaela"
+   ]
+  },
+  {
+   "t": 1793482044449,
+   "bans": [
+    "Minsitthar",
+    "Hirara",
+    "Belerick",
+    "Lukas",
+    "Masha",
+    "Marcel",
+    "Aulus",
+    "Gloo",
+    "Gord",
+    "Fredrinn"
+   ],
+   "gane": true,
+   "pick": "Estes",
+   "draft": {
+    "enemigos": [
+     "Selena",
+     "Obsidia",
+     "Fanny",
+     "Angela",
+     "Balmond"
+    ],
+    "aliados": [
+     "Freya",
+     "Lunox",
+     "Saber",
+     "Yi Sun-shin"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 18.9,
+   "estimacion": 0.622,
+   "recomendados": [
+    "Floryn",
+    "Estes",
+    "Rafaela"
+   ]
+  },
+  {
+   "t": 1793480523956,
+   "bans": [
+    "Hirara",
+    "Nana",
+    "Aulus",
+    "Atlas",
+    "Argus",
+    "Saber",
+    "Belerick",
+    "Eudora",
+    "Obsidia",
+    "Marcel"
+   ],
+   "gane": true,
+   "pick": "Estes",
+   "draft": {
+    "enemigos": [
+     "Layla",
+     "Vexana",
+     "Esmeralda",
+     "Tigreal",
+     "Alpha"
+    ],
+    "aliados": [
+     "Lesley",
+     "Paquito",
+     "Zetian",
+     "Fanny"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 16,
+   "estimacion": 0.579,
+   "recomendados": [
+    "Carmilla",
+    "Rafaela",
+    "Diggie"
+   ]
+  },
+  {
+   "t": 1793479218291,
+   "bans": [
+    "Obsidia",
+    "Hirara",
+    "Aulus",
+    "Paquito",
+    "Khufra",
+    "Belerick",
+    "Lukas",
+    "Yi Sun-shin",
+    "Esmeralda",
+    "Eudora"
+   ],
+   "gane": true,
+   "pick": "Estes",
+   "draft": {
+    "enemigos": [
+     "Masha",
+     "X.Borg",
+     "Novaria",
+     "Lesley",
+     "Lancelot"
+    ],
+    "aliados": [
+     "Cici",
+     "Zetian",
+     "Layla",
+     "Saber"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 11.6,
+   "estimacion": 0.621,
+   "recomendados": [
+    "Estes",
+    "Floryn",
+    "Rafaela"
+   ]
+  },
+  {
+   "t": 1793477728631,
+   "bans": [
+    "Masha",
+    "Belerick",
+    "Hirara",
+    "Obsidia",
+    "Marcel",
+    "Lukas",
+    "Paquito",
+    "Eudora"
+   ],
+   "gane": true,
+   "pick": "Miya",
+   "draft": {
+    "enemigos": [
+     "Lesley",
+     "Cyclops",
+     "Angela",
+     "Arlott",
+     "Freya"
+    ],
+    "aliados": [
+     "Aulus",
+     "Bruno",
+     "Estes"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "duracion": 12.2,
+   "recomendados": [
+    "Atlas",
+    "Edith",
+    "Carmilla"
+   ]
+  },
+  {
+   "t": 1793476701568,
+   "bans": [
+    "Obsidia",
+    "Hirara",
+    "Aulus",
+    "Eudora",
+    "Masha",
+    "Marcel",
+    "Paquito",
+    "Selena"
+   ],
+   "gane": true,
+   "pick": "Guinevere",
+   "draft": {
+    "enemigos": [
+     "Kalea",
+     "Zetian",
+     "Yi Sun-shin",
+     "Chou",
+     "Arlott"
+    ],
+    "aliados": [
+     "Aurora",
+     "Minotaur",
+     "Hanzo",
+     "Miya"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "duracion": 14.9,
+   "recomendados": [
+    "Edith",
+    "Gloo",
+    "Carmilla"
+   ]
+  },
+  {
+   "t": 1793475281047,
+   "bans": [
+    "Eudora",
+    "Paquito",
+    "Lukas",
+    "Gloo",
+    "Suyou",
+    "Aulus",
+    "Belerick",
+    "Layla",
+    "Lesley"
+   ],
+   "gane": true,
+   "pick": "Estes",
+   "draft": {
+    "enemigos": [
+     "Selena",
+     "Julian",
+     "Angela",
+     "Hanabi",
+     "Leomord"
+    ],
+    "aliados": [
+     "Hirara",
+     "Odette",
+     "Barats",
+     "Miya"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 13.6,
+   "estimacion": 0.571,
+   "recomendados": [
+    "Rafaela",
+    "Floryn",
+    "Edith"
+   ]
+  },
+  {
+   "t": 1793472858307,
+   "bans": [
+    "Hirara",
+    "Eudora",
+    "Carmilla",
+    "Marcel",
+    "Lukas",
+    "Obsidia",
+    "Khufra",
+    "Saber",
+    "Aulus",
+    "Gord"
+   ],
+   "gane": true,
+   "pick": "Diggie",
+   "draft": {
+    "enemigos": [
+     "Masha",
+     "Hanabi",
+     "Kagura",
+     "Gloo"
+    ],
+    "aliados": [
+     "Hylos",
+     "Kimmy",
+     "Paquito",
+     "Lunox"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 10.9,
+   "estimacion": 0.4,
+   "recomendados": [
+    "Natalia",
+    "Minsitthar",
+    "Kalea"
+   ]
+  },
+  {
+   "t": 1793469155805,
+   "bans": [
+    "Estes",
+    "Aulus",
+    "Lukas",
+    "Hirara",
+    "Marcel",
+    "Gloo",
+    "Khufra",
+    "Masha",
+    "Badang"
+   ],
+   "gane": true,
+   "pick": "Minotaur",
+   "draft": {
+    "enemigos": [
+     "Obsidia",
+     "Selena",
+     "Novaria",
+     "Kagura"
+    ],
+    "aliados": [
+     "Julian",
+     "Valir",
+     "Popol and Kupa"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 13.2,
+   "estimacion": 0.608,
+   "recomendados": [
+    "Minotaur",
+    "Kalea",
+    "Hilda"
+   ]
+  },
+  {
+   "t": 1793406704595,
+   "bans": [
+    "Masha",
+    "Hirara",
+    "Hayabusa",
+    "Hanzo",
+    "Aulus",
+    "Gloo",
+    "Belerick",
+    "Lukas",
+    "Marcel"
+   ],
+   "gane": true,
+   "pick": "Claude",
+   "draft": {
+    "enemigos": [
+     "Miya",
+     "Selena",
+     "Angela",
+     "Sora",
+     "Freya"
+    ],
+    "aliados": [
+     "Zetian",
+     "Paquito",
+     "Lapu-Lapu",
+     "Floryn"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "origen": "lector",
+   "duracion": 11.2,
+   "recomendados": [
+    "Khufra",
+    "Atlas",
+    "Kalea"
+   ]
+  },
+  {
+   "t": 1793405533747,
+   "bans": [
+    "Hirara",
+    "Marcel",
+    "Aulus",
+    "Carmilla",
+    "Obsidia",
+    "Masha",
+    "Lukas",
+    "Wanwan"
+   ],
+   "gane": true,
+   "pick": "Diggie",
+   "draft": {
+    "enemigos": [
+     "Eudora",
+     "Granger",
+     "Yu Zhong",
+     "Khufra",
+     "Joy"
+    ],
+    "aliados": [
+     "Novaria",
+     "Paquito",
+     "Lapu-Lapu",
+     "Aamon"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 14.4,
+   "estimacion": 0.506,
+   "recomendados": [
+    "Diggie",
+    "Minotaur",
+    "Rafaela"
+   ]
+  },
+  {
+   "t": 1793404218617,
+   "bans": [
+    "Hirara",
+    "Masha",
+    "Saber",
+    "Estes",
+    "Eudora",
+    "Aulus",
+    "Rafaela",
+    "Paquito",
+    "Marcel",
+    "Lukas"
+   ],
+   "gane": true,
+   "pick": "Diggie",
+   "draft": {
+    "enemigos": [
+     "Khufra",
+     "Cecilion",
+     "Ling",
+     "Ruby",
+     "Lesley"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Chou",
+     "Faramis",
+     "Suyou"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 16.6,
+   "estimacion": 0.529,
+   "recomendados": [
+    "Floryn",
+    "Angela",
+    "Diggie"
+   ]
+  },
   {
    "t": 1793319184063,
    "bans": [
@@ -23766,7 +26514,11 @@
    "desde": 1790416654416
   }
  },
- "olvidadas": [],
+ "olvidadas": [
+  1794042762923,
+  1793654987603,
+  1793640067108
+ ],
  "envios": [
   {
    "cuando": "2026-09-25T09:06:22.198Z",
@@ -24838,6 +27590,12 @@
   },
   {
    "cuando": "2026-10-30T15:18:32.413Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-11-07T11:15:25.975Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
