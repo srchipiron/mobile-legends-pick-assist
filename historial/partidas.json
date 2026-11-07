@@ -1,6 +1,44 @@
 {
- "actualizado": "2026-11-07T11:15:25.975Z",
+ "actualizado": "2026-11-07T11:45:17.652Z",
  "partidas": [
+  {
+   "t": 1794051828234,
+   "bans": [
+    "Marcel",
+    "Hirara",
+    "Khufra",
+    "Masha",
+    "Belerick",
+    "Aulus",
+    "Paquito",
+    "Lukas"
+   ],
+   "gane": true,
+   "pick": "Floryn",
+   "draft": {
+    "enemigos": [
+     "Nolan",
+     "Bruno"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Yi Sun-shin",
+     "Kadita"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 23,
+   "supuesto": true,
+   "estimacion": 0.611,
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Gloo"
+   ]
+  },
   {
    "t": 1794050063019,
    "bans": [
@@ -27596,6 +27634,12 @@
   },
   {
    "cuando": "2026-11-07T11:15:25.975Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-11-07T11:45:17.652Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
