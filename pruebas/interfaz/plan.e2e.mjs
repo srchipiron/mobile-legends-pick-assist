@@ -42,6 +42,10 @@ for (const ancho of [390, 320]) {
     eq(tramos.length, 6, `no salen las seis barras de la partida: ${tramos.join(' ')}`);
     ok(tramos.every((x) => /^\d{1,2}%$/.test(x.trim())), `un porcentaje de tramo raro: ${tramos.join(' ')}`);
     ok((await pagina.locator('.curva-resumen').textContent()).trim().length > 20, 'la partida no se resume en una frase');
+    // Los cruces y parejas de este draft (3.92.0): un chip por enemigo con su porcentaje y por compañero con sus puntos.
+    eq(await pagina.locator('.plan-cruces .cruces-lista').first().locator('.cruce-chip').count(), 3, 'no salen los tres enemigos con su cruce');
+    const chips = await pagina.locator('.plan-cruces .cruce-chip').allTextContents();
+    ok(chips.some((x) => /^Layla \d{2},\d%$/.test(x.trim())) && chips.some((x) => /^Miya [+−]\d+,\d$/.test(x.trim())), `los cruces o la pareja no llevan su número: ${chips.join(' | ')}`);
     const etapas = await pagina.locator('.plan-etapa li').allTextContents();
     ok(etapas.every((x) => x.trim() && !/[{}]|etapa\.|partida\.|problema\./.test(x)), `una frase de etapa sin traducir: ${etapas.join(' | ')}`);
     await pagina.locator('.plan-copiar').click(); await pagina.waitForTimeout(200);

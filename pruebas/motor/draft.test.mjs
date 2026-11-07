@@ -10,7 +10,8 @@ import { catalogo, h } from '../fixtures/catalogo.mjs';
 import { LINEAS, equilibrioEsperado } from '../../src/motor/catalogo.js';
 import {
   rangoActivo, prepararDatos, resolverNombres, poolDe,
-  lineasEnemigasAbiertas, rivalDeLinea, recomendar, eleccionDe, planDePicks, ordenar, winrateEnLinea, probablesDelBando, composicionDe, baneosSugeridos, siguientesBaneos, deLosTuyos } from '../../src/motor/draft.js';
+  lineasEnemigasAbiertas, rivalDeLinea, recomendar, eleccionDe, planDePicks, ordenar, winrateEnLinea, probablesDelBando, composicionDe, baneosSugeridos, siguientesBaneos, deLosTuyos, crucesDelDraft, planear } from '../../src/motor/draft.js';
+import { cruce, sinergia, mediaDeSinergia, CRUCE_DESTACABLE, CRUCE_MALO } from '../../src/motor/matrices.js';
 import { elegirVentana, elegirRango, mediaDeWinrate } from '../../src/motor/ventana.js';
 import { indexarPorNombre } from '../../src/motor/nombres.js';
 
@@ -370,6 +371,25 @@ test('«De los tuyos» (3.72.0): el primero del ranking con partidas tuyas, solo
   eq(deLosTuyos(ranking, { Rafaela: { games: 0, winRate: 0.6 } }), null, 'cuenta un héroe sin partidas');
   eq(deLosTuyos(ranking, {}), null);
   eq(deLosTuyos([], { Rafaela: { games: 3, winRate: 0.5 } }), null);
+});
+
+test('los cruces y parejas del draft (3.92.0): cada enemigo con su cruce y cada compañero con su pareja, de las matrices que puntúan, ordenados y con su lado', () => {
+  const datos = prepararDatos({ catalogo: leerJson('public/data/heroes.json'), meta });
+  const h = (n) => datos.porNombre.get(n);
+  const yo = h('Estes');
+  const enemigos = ['Layla', 'Khufra', 'Valentina', 'Ling', 'Saber'].map(h), aliados = ['Gord', 'Fanny', 'Lesley', 'Yu Zhong', 'Estes'].map(h);
+  const r = crucesDelDraft(datos, { yo, enemigos, aliados });
+  eq(r.contra.length, 5, 'no salen los cinco enemigos');
+  eq(r.con.map((x) => x.nombre).sort().join(), 'Fanny,Gord,Lesley,Yu Zhong', 'sale tu propio héroe como pareja, o falta un compañero');
+  ok(r.contra.every((x) => x.pct === cruce(datos.meta.counters, 'Estes', x.nombre)), 'el cruce no es el de la matriz que puntúa');
+  ok(r.contra.every((x, i) => i === 0 || x.pct <= r.contra[i - 1].pct) && r.con.every((x, i) => i === 0 || x.puntos <= r.con[i - 1].puntos), 'no van ordenados de mejor a peor');
+  ok(r.contra.every((x) => x.lado === (x.pct >= CRUCE_DESTACABLE ? 'gana' : x.pct <= CRUCE_MALO ? 'pierde' : 'parejo')), 'el lado no sale de los cortes de siempre');
+  // Los puntos: la pareja menos la pareja media, la misma media con la que puntúa el modelo.
+  const centro = mediaDeSinergia(datos.meta.synergies, datos.lineas, datos.meta.stats ?? null);
+  ok(r.con.every((x) => x.puntos === Math.round((sinergia(datos.meta.synergies, 'Estes', x.nombre) - centro) * 1000) / 10), 'los puntos no salen de la pareja menos la media');
+  eq(crucesDelDraft(datos, { yo: null, enemigos }).contra.length, 0, 'sin héroe salen cruces');
+  // Va en el plan.
+  eq(planear(datos, { yo, enemigos, aliados, linea: 'roam' }).cruces.contra.length, 5, 'el plan no lleva los cruces del draft');
 });
 
 await terminar('motor/draft');

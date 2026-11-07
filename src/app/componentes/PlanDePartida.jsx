@@ -59,12 +59,41 @@ function Etapa({ titulo, frases, clase, t }) {
  * «Copiar para el chat» copia solo lo del equipo, en una línea, para
  * pegarlo en el chat del juego.
  */
+/**
+ * Los cruces y las parejas de tu héroe con cada uno de ESTE draft (3.92.0):
+ * el dato de las matrices, con su número, en verde lo claro a favor y en
+ * rojo lo claro en contra.
+ */
+function CrucesDelDraft({ cruces, yo, t }) {
+  const { contra = [], con = [] } = cruces ?? {};
+  if (!contra.length && !con.length) return null;
+  const chip = (x, texto) => <li key={x.nombre} className={`cruce-chip cruce-${x.lado}`}>{texto}</li>;
+  return (
+    <div className="plan-bloque plan-cruces">
+      <p className="plan-sub">{t('cruces.titulo', { yo: yo?.name ?? '' })}</p>
+      {contra.length > 0 && (
+        <>
+          <p className="cruces-rotulo">{t('cruces.contra')}</p>
+          <ul className="cruces-lista">{contra.map((x) => chip(x, t('cruces.pct', { nombre: x.nombre, pct: (x.pct * 100).toFixed(1) })))}</ul>
+        </>
+      )}
+      {con.length > 0 && (
+        <>
+          <p className="cruces-rotulo">{t('cruces.con')}</p>
+          <ul className="cruces-lista">{con.map((x) => chip(x, t('cruces.pp', { nombre: x.nombre, signo: x.puntos >= 0 ? '+' : '−', pp: Math.abs(x.puntos).toFixed(1) })))}</ul>
+        </>
+      )}
+      <p className="cruces-leyenda">{t('cruces.leyenda', { yo: yo?.name ?? '' })}</p>
+    </div>
+  );
+}
+
 export function PlanDePartida({ plan, yo, t = tPorDefecto }) {
   const [copiado, setCopiado] = useState(false);
   const equipo = plan?.equipo ?? [];
   const etapas = plan?.etapas ?? { temprano: [], medio: plan?.tuyo ?? [], tarde: [] };
   const problemas = plan?.problemas ?? [];
-  const algo = plan?.fases || equipo.length || problemas.length || etapas.temprano.length || etapas.medio.length || etapas.tarde.length;
+  const algo = plan?.fases || plan?.cruces?.contra?.length || plan?.cruces?.con?.length || equipo.length || problemas.length || etapas.temprano.length || etapas.medio.length || etapas.tarde.length;
   if (!algo) {
     return <section className="plan-partida"><p className="build-vacio">{t('partida.vacio')}</p></section>;
   }
@@ -78,6 +107,7 @@ export function PlanDePartida({ plan, yo, t = tPorDefecto }) {
     <section className="plan-partida">
       <p className="build-nucleo">{t('partida.titulo', { yo: yo?.name ?? '' })}</p>
       {plan?.fases && <CurvaDePartida fases={plan.fases} t={t} />}
+      <CrucesDelDraft cruces={plan?.cruces} yo={yo} t={t} />
       <Etapa titulo={t('etapa.temprano')} frases={etapas.temprano} clase="etapa-temprano" t={t} />
       <Etapa titulo={t('etapa.medio')} frases={etapas.medio} clase="etapa-medio" t={t} />
       <Etapa titulo={t('etapa.tarde')} frases={etapas.tarde} clase="etapa-tarde" t={t} />

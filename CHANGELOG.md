@@ -8,6 +8,23 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.92.0
+
+- Los consejos ya tienen en cuenta qué tipo de héroe llevas. A un apoyo
+  como Estes, Rafaela o Floryn ya no le dice «juega agresivo desde el
+  principio», sino que rote pronto y lleve a su equipo a pelear. Tampoco
+  dice «no le dejéis farmear» de un apoyo enemigo como Angela: la carta
+  rival para el final es siempre un tirador, un mago o un asesino.
+- He repasado lo que hace cada uno de los 133 héroes con el texto actual
+  del juego y he corregido 16. Por ejemplo, la zona de Estes ya solo
+  ralentiza, así que la app ya no dice que «saca a Ling de encima de tu
+  carry». Las recomendaciones y sus porcentajes no cambian: cambia lo que
+  se explica de ellas.
+- En «Plan y objetos» tienes ahora los cruces y las parejas de tu héroe
+  en ese draft, con sus números. Ves su porcentaje contra cada rival y lo
+  que rendís juntos con cada compañero: en verde la ventaja clara, en rojo
+  la desventaja. Son los mismos datos con los que la app decide.
+
 ## 3.91.0
 
 - La app tiene otra cara. Cada tarjeta lleva detrás un brillo con los

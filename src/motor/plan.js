@@ -42,6 +42,8 @@ export const MAX_EQUIPO = 5;
 export const DIFERENCIA_DE_ESCALADO = 2;
 
 const tiene = (h, tag) => !!h?.tags?.includes(tag);
+/** Apoyo o tanque (rol del catálogo): no farmea ni gana las peleas solo (3.92.0). */
+export const esDeApoyo = (h) => h?.role === 'support' || h?.role === 'tank';
 const habilidades = (h, efecto) => (h?.habilidades ?? []).filter((x) => x.e?.includes(efecto));
 const escala = (h) => tiene(h, 'hypercarry') || tiene(h, 'assassin_late');
 const pct = (v) => Math.round(v * 100);
@@ -153,7 +155,9 @@ export function planDePartida({ yo = null, aliados = [], enemigos = [], meta = {
   const rivalPierdes = rival && valido(cRival) && cRival <= CRUCE_MALO;
   const equipoTarde = equipo.some((f) => f.clave === 'partida.aguantad');
   const equipoPronto = equipo.some((f) => f.clave === 'partida.cerradPronto');
-  if (tuFase && tuFase.pendiente <= -PENDIENTE_DE_HEROE && !rivalPierdes && !equipoTarde) temprano.push({ clave: 'etapa.tuHeroePronto', params: { yo: yo.name, ...ext(tuFase) } });
+  // Un apoyo o un tanque no «juega agresivo» solo (3.92.0, Javi: «me aconsejas cosas que no van con mis
+  // héroes»): rota y lleva a su equipo. La cifra es la misma; cambia lo que se le pide.
+  if (tuFase && tuFase.pendiente <= -PENDIENTE_DE_HEROE && !rivalPierdes && !equipoTarde) temprano.push({ clave: esDeApoyo(yo) ? 'etapa.tuHeroeProntoApoyo' : 'etapa.tuHeroePronto', params: { yo: yo.name, ...ext(tuFase) } });
   else if (tuFase && tuFase.pendiente >= PENDIENTE_DE_HEROE && !rivalGanas && !equipoPronto) temprano.push({ clave: 'etapa.tuHeroeTarde', params: { yo: yo.name, ...ext(tuFase) } });
   if (rivalGanas) temprano.push({ clave: 'etapa.rivalGanas', params: { e: rival.name, pct: pct(cRival) } });
   else if (rivalPierdes) temprano.push({ clave: 'etapa.rivalPierdes', params: { e: rival.name, pct: pct(cRival) } });
@@ -171,11 +175,13 @@ export function planDePartida({ yo = null, aliados = [], enemigos = [], meta = {
   // La suya, entre los que NO aguantan: «matadlo el primero» a un tanque es
   // lo contrario del focus (la primera versión lo decía de Tigreal).
   const enemigoTarde = [...(fases?.ellos?.porHeroe ?? [])]
-    .filter((x) => !tiene(x.heroe, 'tanky') && x.pendiente >= PENDIENTE_DE_HEROE)
+    // Ni un apoyo (3.92.0): «no le dejéis farmear» de Angela o de Floryn no dice nada, no farmean.
+    .filter((x) => !tiene(x.heroe, 'tanky') && !esDeApoyo(x.heroe) && x.pendiente >= PENDIENTE_DE_HEROE)
     .sort((a, b) => b.pendiente - a.pendiente)[0];
   if (enemigoTarde && enemigos.length >= 2) tarde.push({ clave: 'etapa.enemigoTarde', params: { e: enemigoTarde.heroe.name } });
   const aliadoTarde = fases?.nos?.tarde;
-  if (aliadoTarde && aliadoTarde.heroe.name !== yo.name && nos.length >= 2) tarde.push({ clave: 'etapa.aliadoTarde', params: { a: aliadoTarde.heroe.name } });
+  // «Que llegue vivo y con oro» es de quien farmea, no de un apoyo ni de un tanque (3.92.0).
+  if (aliadoTarde && aliadoTarde.heroe.name !== yo.name && !esDeApoyo(aliadoTarde.heroe) && nos.length >= 2) tarde.push({ clave: 'etapa.aliadoTarde', params: { a: aliadoTarde.heroe.name } });
   if (fasesConfiables?.cambio) {
     tarde.push({ clave: fases.cambio.aFavor ? 'etapa.cambiaAFavor' : 'etapa.cambiaEnContra', params: { min: fases.cambio.minuto } });
   }

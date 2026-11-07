@@ -420,6 +420,39 @@ regla `escudoPoke` se probó a quitar por lo mismo y no era la causa: se
 queda, sin efecto medible (0 de 24) y sin decidir nada con dato. Antes de
 cambiar lo que significa una etiqueta, mira qué regla la lee.
 
+**La segunda revisión de kits (3.92.0, 7 de noviembre de 2026)**. Javi:
+«me aconsejas cosas que no van con mis héroes… repasa bien qué hace cada
+personaje». Con el texto de HOY de los 133 (`arena.rone.dev/api/heroes/{id}`,
+el de la ingesta), cuatro revisores con los criterios de `tagLegend`, cita
+literal por cambio, y cada cita comprobada a mano en el texto. Entraron 16
+cambios (descartados los dudosos: Julian, Sora, Kagura, Minsitthar, Marcel,
+Lolita). El que lo destapó: **Estes ya no inmoviliza** (su zona solo
+ralentiza) y seguía con `peel`, así que decía «saca a Ling de encima de tu
+carry» cuando el propio juego dice que sufre contra el burst. Además
+`cc_hard` a Layla, Wanwan y Thamuz; `cc_chain` a Bruno, Guinevere y Lukas;
+`sustain` a Chip; `vision` a Angela, Arlott, Pharsa y Mathilda (el mismo
+revelado breve que ya contaba en Rafaela); `mobile` a Lapu-Lapu; fuera
+`zone` de Ixia e `immobile` de Kimmy, Novaria y Lapu-Lapu. **El ranking es
+idéntico** en 300 drafts (nombres y probabilidades: las etiquetas solo
+deciden sin dato); cambia lo que se DICE en 28 de 300. Prueba en
+`catalogo.test` con tres de las citas.
+
+**El plan según el papel de tu héroe (3.92.0)**: `esDeApoyo` (plan.js, rol
+`support` o `tank`). A un apoyo no se le dice «juega agresivo desde el
+principio» sino «rota pronto y lleva a tu equipo» (`etapa.tuHeroeProntoApoyo`,
+la misma cifra), «su carta para el final… no le dejéis farmear» ya no cae en
+un apoyo (Angela, Floryn) y «que llegue vivo y con oro» no se dice de un
+apoyo o tanque vuestro. En los drafts de Javi con sus siete héroes, «juega
+agresivo» pasó de salir a sus apoyos a 0, y la carta del final es siempre un
+tirador, mago o asesino. `regla.equilibraDano` dice «equilibra el daño: con
+él, tu equipo ya tiene daño mágico» (Estes no «mete» el daño) y
+`regla.peel` «protege a tu carry de X». Y `crucesDelDraft` (draft.js, en
+`planear` como `cruces`) enseña en «Plan y objetos» el cruce de tu héroe con
+CADA enemigo y la pareja con CADA compañero, con su número y los cortes de
+siempre: el dato de las matrices que ya puntúan, sin medir nada nuevo.
+Pruebas en `plan.test`, `draft.test` y `plan.e2e`; siete mutaciones (una
+inofensiva: tu propio héroe no tiene dato de pareja consigo mismo).
+
 `catalogo.test` comprueba la coherencia interna (`immobile` excluye `dash` y
 `mobile`, `cc_chain` y `engage` implican `cc_hard`, todo tag está en la
 leyenda; cuatro mutaciones). Las etiquetas de RELACIÓN (`anti_mobility`,

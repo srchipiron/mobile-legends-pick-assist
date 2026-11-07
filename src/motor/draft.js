@@ -1,7 +1,7 @@
 import { indexarPorNombre, nombreClave, buscar } from './nombres.js';
 import { fundirCatalogo, LINEAS, poolDeLinea, equilibrioEsperado } from './catalogo.js';
 import { indiceDeLineas, frecuenciaDeRoles, lineasOcupadas, detectarRivalDeLinea } from './lineas.js';
-import { cobertura, cruce, sinergia } from './matrices.js';
+import { cobertura, cruce, sinergia, mediaDeSinergia, CRUCE_DESTACABLE, CRUCE_MALO, PAREJA_DESTACABLE } from './matrices.js';
 import { ordenarPicks, empatados, MARGEN_EMPATE } from './ranking.js';
 import { evaluarDraft } from './modelo.js';
 import { sugerirBaneos, proximosBaneos, coocurrenciaDeBaneos } from './baneos.js';
@@ -327,7 +327,33 @@ export function planear(datos, { yo = null, aliados = [], enemigos = [], linea =
   const plan = planDePartida({ yo, aliados, enemigos, meta: datos.meta, fases, rival: enemigos.find((e) => e.name === rival) ?? null });
   // Lo mismo, por minutos, para leerlo en voz alta durante la partida
   // (3.44.0, directo.js), y lo que se dice al acabar según cuándo acabe.
-  return { ...plan, directo: guionEnDirecto(plan), cierres: cierresPorTramo(fases) };
+  return { ...plan, directo: guionEnDirecto(plan), cierres: cierresPorTramo(fases), cruces: crucesDelDraft(datos, { yo, enemigos, aliados: companeros }) };
+}
+
+/**
+ * Los cruces y las parejas de TU héroe con cada uno de ESTE draft (3.92.0,
+ * Javi: «busca más sinergias y counter»). Es el dato de las dos matrices que
+ * ya puntúan (no se mide nada nuevo ni cambia la nota), enseñado entero:
+ * cada enemigo con su winrate en el cruce y cada compañero con lo que rendís
+ * juntos sobre la pareja media, en puntos. `lado` con los cortes de siempre:
+ * p90/p10 de los cruces (`CRUCE_DESTACABLE`, `CRUCE_MALO`) y
+ * `PAREJA_DESTACABLE` (y su simétrico respecto a la media) en las parejas.
+ */
+export function crucesDelDraft(datos, { yo = null, enemigos = [], aliados = [] } = {}) {
+  if (!yo || !datos?.meta) return { contra: [], con: [] };
+  const contra = enemigos
+    .map((e) => ({ nombre: e.name, pct: cruce(datos.meta.counters, yo.name, e.name) }))
+    .filter((x) => Number.isFinite(x.pct))
+    .sort((a, b) => b.pct - a.pct)
+    .map((x) => ({ ...x, lado: x.pct >= CRUCE_DESTACABLE ? 'gana' : x.pct <= CRUCE_MALO ? 'pierde' : 'parejo' }));
+  const centro = mediaDeSinergia(datos.meta.synergies, datos.lineas, datos.meta.stats ?? null);
+  const con = aliados
+    .filter((a) => nombreClave(a.name) !== nombreClave(yo.name))
+    .map((a) => ({ nombre: a.name, s: sinergia(datos.meta.synergies, yo.name, a.name) }))
+    .filter((x) => Number.isFinite(x.s))
+    .sort((a, b) => b.s - a.s)
+    .map((x) => ({ nombre: x.nombre, puntos: Math.round((x.s - centro) * 1000) / 10, lado: x.s >= PAREJA_DESTACABLE ? 'bien' : x.s <= 2 * centro - PAREJA_DESTACABLE ? 'mal' : 'parejo' }));
+  return { contra, con };
 }
 
 /**

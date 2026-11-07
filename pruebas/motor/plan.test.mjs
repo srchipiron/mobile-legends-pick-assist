@@ -166,6 +166,15 @@ test('por etapas (3.43.0): tu héroe por fases, tu rival de línea, quién empuj
   const conTanque = fasesDe({ ellos: { tarde: fanny, otros: [{ heroe: atlas, linea: 'roam', curva: [0.4, 0.42, 0.45, 0.5, 0.55, 0.6], forma: [], pendiente: 3 }] } });
   const pt = planDePartida({ yo: diggie, aliados: [mia], enemigos: [atlas, fanny], meta: m, fases: conTanque });
   eq(pt.etapas.tarde.find((x) => x.clave === 'etapa.enemigoTarde')?.params.e, 'Fanny', `nombra a un tanque como su carta para matar primero: ${JSON.stringify(pt.etapas.tarde)}`);
+  // Un apoyo o un tanque (3.92.0): no se le pide «juega agresivo» (rota y lleva al equipo), ni se dice de
+  // un apoyo suyo «no le dejéis farmear», ni de uno vuestro «que llegue vivo y con oro»: no farmean.
+  const apoyo = (x) => ({ ...x, role: 'support' });
+  const pa = planDePartida({ yo: apoyo(diggie), aliados: [mia, gord], enemigos: [atlas, fanny, lylia], meta: m, fases: f, rival: fanny });
+  ok(claves(pa.etapas.temprano).includes('etapa.tuHeroeProntoApoyo') && !claves(pa.etapas.temprano).includes('etapa.tuHeroePronto'), `a un apoyo se le dice «juega agresivo»: ${JSON.stringify(pa.etapas.temprano)}`);
+  const fApoyos = fasesDe({ tendencia: 'pronto', nos: { pronto: diggie, tarde: apoyo(mia) }, ellos: { tarde: apoyo(fanny) } });
+  const ps = planDePartida({ yo: diggie, aliados: [apoyo(mia), gord], enemigos: [atlas, apoyo(fanny), lylia], meta: m, fases: fApoyos });
+  ok(!claves(ps.etapas.tarde).includes('etapa.enemigoTarde'), `de un apoyo suyo dice «no le dejéis farmear»: ${JSON.stringify(ps.etapas.tarde)}`);
+  ok(!claves(ps.etapas.tarde).includes('etapa.aliadoTarde'), `de un apoyo vuestro dice «que llegue vivo y con oro»: ${JSON.stringify(ps.etapas.tarde)}`);
   // Lo del equipo no se repite en los problemas.
   ok(!p.problemas.some((x) => x.clave.startsWith('partida.') && x.clave !== 'partida.evita'), `los problemas repiten lo del equipo: ${JSON.stringify(p.problemas)}`);
   // Contra Lylia pierdes el cruce: si es tu rival, juega seguro.

@@ -297,4 +297,14 @@ test('las etiquetas del catálogo son coherentes con su propia definición', () 
   ok(!mal.length, mal.join(' · '));
 });
 
+test('la revisión de kits del 7 de noviembre de 2026 (3.92.0): lo que el texto de hoy dice, comprobado con su cita', () => {
+  const tags = (n) => catalogo.heroes.find((h) => h.name === n)?.tags ?? [];
+  // «Enemies will be slowed by 90%… if they touch the edge»: la zona de Estes solo ralentiza; curar no es peel.
+  ok(!tags('Estes').includes('peel'), 'Estes protege a su carry (decía «saca a Ling de encima de tu carry»)');
+  // «stunning them for 0.25s» (Layla) e «immobilized for 0.5s» (Wanwan): control duro activo.
+  ok(tags('Layla').includes('cc_hard') && tags('Wanwan').includes('cc_hard'), 'Layla o Wanwan sin su control duro');
+  // «can pass through terrain/obstacles»: Kimmy y Novaria se reposicionan.
+  ok(!tags('Kimmy').includes('immobile') && !tags('Novaria').includes('immobile'), 'Kimmy o Novaria salen como inmóviles');
+});
+
 await terminar('motor/catalogo');
