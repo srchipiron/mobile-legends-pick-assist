@@ -1,6 +1,48 @@
 {
- "actualizado": "2026-11-07T12:06:03.174Z",
+ "actualizado": "2026-11-07T12:35:01.518Z",
  "partidas": [
+  {
+   "t": 1794054737205,
+   "bans": [
+    "Marcel",
+    "Estes",
+    "Belerick",
+    "Johnson",
+    "Hirara",
+    "Eudora",
+    "Selena",
+    "Gord",
+    "Bruno"
+   ],
+   "gane": true,
+   "pick": "Diggie",
+   "draft": {
+    "enemigos": [
+     "Minotaur",
+     "Sun",
+     "Lesley",
+     "Roger",
+     "Xavier"
+    ],
+    "aliados": [
+     "Irithel",
+     "Kadita",
+     "Lukas",
+     "Badang"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 23.2,
+   "estimacion": 0.591,
+   "recomendados": [
+    "Floryn",
+    "Rafaela",
+    "Angela"
+   ]
+  },
   {
    "t": 1794053071197,
    "pick": "Rafaela",
@@ -27808,6 +27850,12 @@
   },
   {
    "cuando": "2026-11-07T12:06:03.174Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-11-07T12:35:01.518Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
