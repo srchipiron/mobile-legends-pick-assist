@@ -43,12 +43,12 @@ class Partidas : Activity() {
         super.onCreate(guardado)
         val pad = dp(16)
         val cuerpo = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.BLACK) }
-        cuerpo.addView(TextView(this).apply { text = "Mis partidas"; textSize = 26f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.rgb(255, 214, 10)) })
+        cuerpo.addView(TextView(this).apply { text = "Mis partidas"; textSize = 28f; typeface = Typeface.create("sans-serif", Typeface.BOLD); setTextColor(Estilo.TEXTO); letterSpacing = -0.02f })
         cabecera = TextView(this).apply { textSize = 14f; setTextColor(Color.LTGRAY); setPadding(0, dp(4), 0, dp(8)); text = "Cargando…" }
         cuerpo.addView(cabecera)
-        val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        fila.addView(Button(this).apply { text = "Volver"; setOnClickListener { finish() } }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        fila.addView(Button(this).apply { text = "Actualizar"; setOnClickListener { cargar() } }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false }
+        fila.addView(pildora("Volver") { finish() }, repartido())
+        fila.addView(pildora("Actualizar") { cargar() }, repartido())
         cuerpo.addView(fila)
         lista = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         cuerpo.addView(lista)
@@ -100,7 +100,7 @@ class Partidas : Activity() {
         val caja = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), dp(12), dp(14), dp(12))
-            background = GradientDrawable().apply { setColor(Color.rgb(28, 28, 30)); cornerRadius = dp(14).toFloat(); setStroke(dp(1), Color.rgb(255, 214, 10)) }
+            background = fondo(Color.rgb(52, 44, 10), Estilo.TARJETA, radio = 20, arista = Color.argb(150, 255, 214, 10))
         }
         fun linea(t: String, color: Int = Color.WHITE, tam: Float = 15f) = TextView(this).apply { text = t; textSize = tam; setTextColor(color); setPadding(0, dp(3), 0, dp(3)) }
         val pct = { x: Double -> Math.round(x * 100) }
@@ -139,7 +139,7 @@ class Partidas : Activity() {
         val caja = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), dp(12), dp(14), dp(12))
-            background = GradientDrawable().apply { setColor(Color.rgb(28, 28, 30)); cornerRadius = dp(14).toFloat(); setStroke(dp(1), Color.rgb(255, 214, 10)) }
+            background = fondo(Color.rgb(52, 44, 10), Estilo.TARJETA, radio = 20, arista = Color.argb(150, 255, 214, 10))
         }
         fun linea(t: String, color: Int = Color.WHITE, tam: Float = 15f) = TextView(this).apply { text = t; textSize = tam; setTextColor(color); setPadding(0, dp(3), 0, dp(3)) }
         caja.addView(linea("Tus números", Color.rgb(255, 214, 10), 18f).apply { typeface = Typeface.DEFAULT_BOLD })
@@ -165,14 +165,16 @@ class Partidas : Activity() {
     }
 
     private fun tarjeta(p: JSONObject): LinearLayout {
-        val caja = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(12), dp(14), dp(12))
-            background = GradientDrawable().apply { setColor(Color.rgb(28, 28, 30)); cornerRadius = dp(14).toFloat() }
-        }
         val gane = p.optBoolean("gane")
         // Sin resultado (3.81.5): no se reconoció el final y no se contestó a tiempo; se dice aquí.
         val sinResultado = p.optBoolean("sinResultado")
+        // Teñida del color del resultado (3.91.0): verde, rojo o naranja si falta.
+        val tono = if (sinResultado) Color.rgb(255, 159, 10) else if (gane) Estilo.VERDE else Estilo.ROJO
+        val caja = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+            background = fondo(Color.argb(40, Color.red(tono), Color.green(tono), Color.blue(tono)), Estilo.TARJETA, radio = 18, arista = Color.argb(90, Color.red(tono), Color.green(tono), Color.blue(tono)))
+        }
         val pick = p.optString("pick")
         val marcas = listOfNotNull(
             if (p.optBoolean("supuesto")) "pick supuesto" else null,
@@ -183,7 +185,7 @@ class Partidas : Activity() {
         caja.addView(TextView(this).apply {
             text = "${if (sinResultado) "Sin resultado: toca y di cómo acabó" else if (gane) "Ganada" else "Perdida"} · $pick"
             textSize = 17f; typeface = Typeface.DEFAULT_BOLD
-            setTextColor(if (sinResultado) Color.rgb(255, 159, 10) else if (gane) Color.rgb(48, 209, 88) else Color.rgb(255, 69, 58))
+            setTextColor(tono)
         })
         val dur = if (p.has("duracion")) " · ${p.optDouble("duracion").let { Math.round(it) }} min" else ""
         caja.addView(TextView(this).apply { text = fecha.format(Date(p.optLong("t"))) + dur + if (marcas.isNotEmpty()) " · ${marcas.joinToString(", ")}" else ""; textSize = 13f; setTextColor(Color.GRAY) })
@@ -207,15 +209,18 @@ class Partidas : Activity() {
         editor.removeAllViews()
         // Sin resultado (3.81.5) no hay ninguno marcado: guardar sin elegir lo apuntaría como perdida.
         var gane: Boolean? = if (p.optBoolean("sinResultado")) null else p.optBoolean("gane")
-        val resultado = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(8), 0, 0) }
-        val bGane = Button(this).apply { text = "Gané" }
-        val bPerdi = Button(this).apply { text = "Perdí" }
-        fun pintarResultado() { bGane.alpha = if (gane == true) 1f else 0.4f; bPerdi.alpha = if (gane == false) 1f else 0.4f }
+        val resultado = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false; setPadding(0, dp(8), 0, 0) }
+        val bGane = pildora("Gané")
+        val bPerdi = pildora("Perdí")
+        fun pintarResultado() {
+            pintarPildora(bGane, if (gane == true) Estilo.Tipo.PRINCIPAL else Estilo.Tipo.NORMAL)
+            pintarPildora(bPerdi, if (gane == false) Estilo.Tipo.PELIGRO else Estilo.Tipo.NORMAL)
+        }
         bGane.setOnClickListener { gane = true; pintarResultado() }
         bPerdi.setOnClickListener { gane = false; pintarResultado() }
         pintarResultado()
-        resultado.addView(bGane, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        resultado.addView(bPerdi, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        resultado.addView(bGane, repartido())
+        resultado.addView(bPerdi, repartido())
         editor.addView(resultado)
         fun rotulo(t: String, color: Int) = TextView(this).apply { text = t; textSize = 15f; setTextColor(color); setPadding(0, dp(8), 0, 0) }
         editor.addView(rotulo("Tu pick", Color.rgb(255, 214, 10)))
@@ -230,7 +235,7 @@ class Partidas : Activity() {
         val bn = nombres(p.optJSONArray("bans"))
         val bans = List(10) { i -> campo(bn.getOrElse(i) { "" }, "Baneo ${i + 1}").also { editor.addView(it) } }
         val aviso = TextView(this).apply { textSize = 14f; setTextColor(Color.WHITE); setPadding(0, dp(6), 0, 0) }
-        val guardar = Button(this).apply { text = "Guardar y subir" }
+        val guardar = pildora("Guardar y subir", Estilo.Tipo.PRINCIPAL)
         val porNombre = heroes.associateBy { it.lowercase() }
         guardar.setOnClickListener {
             val todos = listOf(pick) + enemigos + aliados + bans

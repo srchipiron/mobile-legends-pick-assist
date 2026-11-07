@@ -483,3 +483,20 @@ app» y «un apartado SOLO para las partidas y las capturas».
   salen en el draft, `TUS_HABITUALES` 6 como la burbuja). En 4 de los 6
   drafts pendientes del 28 de octubre tu pick era supuesto. Pruebas en
   `app/revisar` y `revisar.e2e`, cinco mutaciones.
+
+**El brillo (3.91.0)**. Javi: «mejora toda la UI… quiero que me impresione».
+Solo aspecto, sin tocar ningún alto que decida dónde cae la nº1
+(`primera-pantalla`, `responsive`, `pick`, `fases`, `movimiento` y `rapido`
+pasan igual):
+- **El aura**: cada tarjeta lleva su cara en `--cara` y un `::before`
+  desenfocado y saturado detrás (más fuerte en la nº1). OJO: un `url()`
+  relativo DENTRO de una variable se resuelve contra la hoja de estilos
+  (`assets/`), no contra la página: daba 404 sin ningún error. `aura()`
+  (Tarjeta.jsx) la pone absoluta, y `pick.e2e` pide la imagen.
+- **El podio**: `.rank-1/2/3`, medallas de oro, plata y bronce de 34 px
+  en la columna de 44. La cifra de la nº1, en degradado de oro.
+- Los huecos llevan luz de su bando desde abajo; TU hueco vacío respira
+  (`respira`, dentro del bloque de «reducir movimiento»).
+- **La portada**: «Pick Assist» y un lema la primera vez (sin línea), y
+  cada línea con su icono SVG propio y su color (`--tono`).
+- `pick.e2e` comprueba el aura y las medallas; dos mutaciones.

@@ -8,6 +8,21 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.91.0
+
+- La app tiene otra cara. Cada tarjeta lleva detrás un brillo con los
+  colores de su héroe. El podio va con medallas de oro, plata y bronce, y
+  el porcentaje del nº1 en oro. Los huecos del draft brillan con el color
+  de su equipo, y tu hueco vacío late suavemente hasta que eliges.
+- La primera pantalla presenta Pick Assist y cada línea con su icono y su
+  color.
+- Lector MLBB en la tablet, renovado con el mismo estilo: cabecera con su
+  sello y su versión, y arriba una tarjeta que dice en verde si está
+  leyendo, con el botón grande de empezar o parar (antes estaba al final).
+  Los botones son píldoras: la principal en oro y la elegida con borde
+  dorado. Los pasos llevan un círculo que se pone verde al hacerse, y en
+  «Mis partidas» cada una se tiñe de verde, rojo o naranja según acabó.
+
 ## 3.90.4
 
 - Las capturas del draft que la tablet sube a «Capturas» y de las que

@@ -182,4 +182,14 @@ test('tu héroe con un toque (3.85.0): la burbuja y la app de la tablet ponen tu
   }
 });
 
+test('el aspecto de la APK (3.91.0): las pantallas usan las píldoras de Estilo.kt, y el botón grande de empezar va en la tarjeta de estado', () => {
+  for (const f of ['Principal.kt', 'Partidas.kt', 'Guia.kt']) {
+    const k = readFileSync(join(KOTLIN, f), 'utf8');
+    eq((k.match(/\bButton\(this/g) ?? []).length, 0, `${f} pinta un botón gris de Android en vez de una píldora`);
+  }
+  const principal = readFileSync(join(KOTLIN, 'Principal.kt'), 'utf8');
+  ok(/boton = pildora\("Empezar a leer", Estilo\.Tipo\.PRINCIPAL\) \{ alternar\(\) \}/.test(principal) && /estadoCard\.addView\(boton/.test(principal), 'el botón de empezar a leer no va arriba, en la tarjeta de estado');
+  ok(/estadoTitulo\.text = if \(Lector\.grabando\)/.test(principal), 'la tarjeta de estado no dice si está leyendo');
+});
+
 await terminar('scripts/android');

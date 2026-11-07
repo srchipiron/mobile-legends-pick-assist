@@ -68,13 +68,22 @@ class Principal : Activity() {
 
     /** Un paso de la guía: su marca, su texto y, si hace falta, su botón. */
     private inner class Paso(val texto: String, boton: String? = null, accion: (() -> Unit)? = null) {
-        val fila = LinearLayout(this@Principal).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(6), 0, dp(6)) }
-        val linea = TextView(this@Principal).apply { textSize = 16f; setTextColor(Color.WHITE) }
-        val btn = boton?.let { Button(this@Principal).apply { text = it; setOnClickListener { accion?.invoke() } } }
-        init { fila.addView(linea); btn?.let { fila.addView(it) } }
+        // El número en un círculo que se vuelve verde con ✓ al hacerse (3.91.0).
+        val fila = LinearLayout(this@Principal).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false; setPadding(0, dp(8), 0, dp(8)) }
+        val marca = circulo()
+        val columna = LinearLayout(this@Principal).apply { orientation = LinearLayout.VERTICAL }
+        val linea = TextView(this@Principal).apply { textSize = 15f; setTextColor(Estilo.TEXTO); setLineSpacing(0f, 1.15f) }
+        val btn = boton?.let { pildora(it) { accion?.invoke() } }
+        init {
+            fila.addView(marca, LinearLayout.LayoutParams(dp(30), dp(30)).apply { marginEnd = dp(12); topMargin = dp(1) })
+            columna.addView(linea)
+            btn?.let { columna.addView(it, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(8) }) }
+            fila.addView(columna, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        }
         fun marcar(hecho: Boolean, n: Int) {
-            linea.text = "${if (hecho) "✓" else "$n."}  $texto"
-            linea.setTextColor(if (hecho) Color.rgb(48, 209, 88) else Color.WHITE)
+            marcarCirculo(marca, hecho, n)
+            linea.text = texto
+            linea.setTextColor(if (hecho) Estilo.TENUE else Estilo.TEXTO)
             btn?.visibility = if (hecho) View.GONE else View.VISIBLE
         }
     }
@@ -82,6 +91,10 @@ class Principal : Activity() {
     private fun dp(x: Int) = (x * resources.displayMetrics.density).toInt()
 
     private lateinit var estado: TextView
+    /** La tarjeta de arriba (3.91.0): si lee o no, con el botón grande de empezar. */
+    private lateinit var estadoCard: LinearLayout
+    private lateinit var estadoTitulo: TextView
+    private lateinit var estadoDetalle: TextView
     private lateinit var vinculo: TextView
     private lateinit var qr: ImageView
     private lateinit var boton: Button
@@ -121,31 +134,48 @@ class Principal : Activity() {
         // En una tablet (o un móvil tumbado) hay sitio para dos columnas: la
         // guía a un lado y el QR y los ajustes al otro (3.65.5). En vertical, una.
         val dosColumnas = resources.configuration.screenWidthDp >= 720
-        fun texto(tam: Float, color: Int = Color.WHITE) = TextView(this).apply { textSize = tam; setTextColor(color); setPadding(0, pad / 3, 0, pad / 3); setLineSpacing(0f, 1.15f) }
-        fun titulo(t: String) = texto(18f, Color.rgb(255, 214, 10)).apply { text = t; typeface = Typeface.DEFAULT_BOLD; setPadding(0, 0, 0, pad / 3) }
-        /** Una tarjeta como las de Pick Assist: gris sobre negro, esquinas redondas. */
+        fun texto(tam: Float, color: Int = Estilo.TEXTO) = TextView(this).apply { textSize = tam; setTextColor(color); setPadding(0, pad / 3, 0, pad / 3); setLineSpacing(0f, 1.15f) }
+        fun titulo(t: String) = texto(19f, Estilo.TEXTO).apply { text = t; typeface = Typeface.create("sans-serif", Typeface.BOLD); setPadding(0, 0, 0, pad / 2); letterSpacing = -0.01f }
+        /** Una tarjeta como las de Pick Assist (3.91.0): gris sobre negro, con la arista de luz y un poco de degradado. */
         fun tarjeta() = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(pad, pad, pad, pad)
-            background = GradientDrawable().apply { setColor(Color.rgb(28, 28, 30)); cornerRadius = dp(14).toFloat() }
+            setPadding(pad + dp(2), pad + dp(2), pad + dp(2), pad + dp(2))
+            background = fondo(Estilo.TARJETA_ALTA, Estilo.TARJETA, radio = 20)
         }
         fun separada() = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(12) }
         val izquierda = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val derecha = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
 
-        izquierda.addView(texto(26f, Color.rgb(255, 214, 10)).apply { text = "Lector MLBB"; typeface = Typeface.DEFAULT_BOLD; setPadding(0, 0, 0, 0) })
-        // La versión instalada, a la vista (3.65.5): para saber si está al día sin buscarla en Ajustes de Android.
+        // La cabecera (3.91.0): el sello dorado, el nombre y la versión instalada
+        // (3.65.5: para saber si está al día sin buscarla en Ajustes de Android).
         val instalada = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { null }
-        izquierda.addView(texto(13f, Color.GRAY).apply { text = instalada?.let { "Versión $it" } ?: ""; setPadding(0, 0, 0, pad / 2) })
-        izquierda.addView(texto(14f, Color.LTGRAY).apply {
+        val cabecera = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false; gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(4), 0, pad) }
+        cabecera.addView(TextView(this).apply {
+            text = "L"; textSize = 28f; typeface = Typeface.create("sans-serif-black", Typeface.NORMAL); gravity = Gravity.CENTER; setTextColor(Color.rgb(32, 24, 0))
+            background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(Estilo.ORO_CLARO, Estilo.ORO, Estilo.ORO_OSCURO)).apply { cornerRadius = dp(16).toFloat() }
+        }, LinearLayout.LayoutParams(dp(52), dp(52)).apply { marginEnd = dp(14) })
+        val nombreApp = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        nombreApp.addView(TextView(this).apply { text = "Lector MLBB"; textSize = 28f; typeface = Typeface.create("sans-serif", Typeface.BOLD); setTextColor(Estilo.TEXTO); letterSpacing = -0.02f })
+        nombreApp.addView(TextView(this).apply { text = listOfNotNull(instalada?.let { "Versión $it" }, "Pick Assist en la tablet").joinToString(" · "); textSize = 13f; setTextColor(Estilo.TENUE) })
+        cabecera.addView(nombreApp)
+        izquierda.addView(cabecera)
+        // El estado, lo primero (3.91.0): si está leyendo o no, y el botón grande para empezar o parar.
+        estadoCard = tarjeta()
+        estadoTitulo = TextView(this).apply { textSize = 22f; typeface = Typeface.create("sans-serif", Typeface.BOLD) }
+        estadoDetalle = TextView(this).apply { textSize = 14f; setTextColor(Estilo.TENUE); setPadding(0, dp(4), 0, dp(12)); setLineSpacing(0f, 1.15f) }
+        estadoCard.addView(estadoTitulo)
+        estadoCard.addView(estadoDetalle)
+        boton = pildora("Empezar a leer", Estilo.Tipo.PRINCIPAL) { alternar() }
+        estadoCard.addView(boton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        izquierda.addView(texto(14f, Estilo.TENUE).apply {
             text = "Lee el draft de Mobile Legends de la pantalla de esta tablet, te dice qué héroe coger en la burbuja y apunta tus partidas. Ábrela, acepta grabar y juega: no hace falta el móvil. " +
                 "Solo MIRA la pantalla: no toca el juego ni tu cuenta. Aun así, es una herramienta de terceros: úsala bajo tu responsabilidad."
             setPadding(0, 0, 0, pad)
         })
         // La guía completa y tus partidas (3.75.0), a la vista: «me ha costado encontrar eso de apuntar mis partidas».
-        val atajos = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, 0, 0, pad / 2) }
-        atajos.addView(Button(this).apply { text = "Guía completa"; setOnClickListener { startActivity(Intent(this@Principal, Guia::class.java)) } }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        atajos.addView(Button(this).apply { text = "Mis partidas"; setOnClickListener { startActivity(Intent(this@Principal, Partidas::class.java)) } }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        val atajos = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false; setPadding(0, 0, 0, pad / 2) }
+        atajos.addView(pildora("Guía completa") { startActivity(Intent(this@Principal, Guia::class.java)) }, repartido())
+        atajos.addView(pildora("Mis partidas") { startActivity(Intent(this@Principal, Partidas::class.java)) }, repartido())
         izquierda.addView(atajos)
                 actualizar = texto(14f, Color.rgb(100, 210, 255)).apply { visibility = View.GONE }
         izquierda.addView(actualizar)
@@ -153,23 +183,21 @@ class Principal : Activity() {
         // detalle para copiarlo y pegarlo en el chat (sin ordenador no hay logcat).
         aviso = tarjeta().apply {
             visibility = View.GONE
-            background = GradientDrawable().apply { setColor(Color.rgb(58, 18, 18)); cornerRadius = dp(14).toFloat(); setStroke(dp(2), Color.rgb(255, 69, 58)) }
+            background = fondo(Color.rgb(70, 20, 20), Color.rgb(44, 14, 14), radio = 20, arista = Estilo.ROJO, grosor = 2)
         }
         aviso.addView(titulo("La app se cerró por un fallo").apply { setTextColor(Color.rgb(255, 105, 97)) })
         avisoTexto = texto(13f, Color.WHITE).apply { typeface = Typeface.MONOSPACE }.also { aviso.addView(it) }
         aviso.addView(texto(13f, Color.LTGRAY).apply { text = "No vuelvo a pedir grabar sola hasta que toques «Empezar a leer». Toca «Copiar» y pégalo en el chat para arreglarlo." })
-        val filaAviso = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        filaAviso.addView(Button(this).apply {
-            text = "Copiar"
+        val filaAviso = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false }
+        filaAviso.addView(pildora("Copiar", Estilo.Tipo.PELIGRO).apply {
             setOnClickListener {
                 getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Fallo de Lector MLBB", avisoCompleto))
                 text = "Copiado"
             }
-        }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        filaAviso.addView(Button(this).apply {
-            text = "Ya está"
-            setOnClickListener { getSharedPreferences("lector", MODE_PRIVATE).edit().putLong("fallosVistos", System.currentTimeMillis()).apply(); aviso.visibility = View.GONE }
-        }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        }, repartido())
+        filaAviso.addView(pildora("Ya está") {
+            getSharedPreferences("lector", MODE_PRIVATE).edit().putLong("fallosVistos", System.currentTimeMillis()).apply(); aviso.visibility = View.GONE
+        }, repartido())
         aviso.addView(filaAviso)
         izquierda.addView(aviso, separada())
         // Cómo acabó la partida (3.72.5), lo primero tras un fallo: sin eso la partida no se apunta.
@@ -178,6 +206,7 @@ class Principal : Activity() {
         // Arriba del todo, donde se ve al abrir desde la notificación de la partida (3.71.0).
         corregir = tarjeta().apply { visibility = View.GONE }
         izquierda.addView(corregir, separada())
+        izquierda.addView(estadoCard, separada())
 
         val guia = tarjeta()
         guia.addView(titulo("Paso a paso"))
@@ -204,16 +233,14 @@ class Principal : Activity() {
         val sinMovil = tarjeta()
         sinMovil.addView(titulo("Sin móvil"))
         sinMovil.addView(texto(14f, Color.LTGRAY).apply { text = "Elige tu línea y la tablet decide sola, con los mismos datos que Pick Assist: en baneos, a quién banear; en picks, tu nº1. Si Pick Assist del móvil está leyendo, manda el móvil." })
-        val filaLineas = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        val filaLineas2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val filaLineas = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false }
+        val filaLineas2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false }
         botonesLinea = Solo.LINEAS.mapIndexed { i, (clave, nombre) ->
-            Button(this).apply {
-                tag = clave; text = nombre
-                setOnClickListener { Solo.guardar(this@Principal, clave); refrescar() }
-            }.also { (if (i < 3) filaLineas else filaLineas2).addView(it, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)) }
+            pildora(nombre) { Solo.guardar(this@Principal, clave); refrescar() }.apply { tag = clave }
+                .also { (if (i < 3) filaLineas else filaLineas2).addView(it, repartido()) }
         }
-        apagarSolo = Button(this).apply { text = "Apagado"; setOnClickListener { Solo.guardar(this@Principal, null); refrescar() } }
-        filaLineas2.addView(apagarSolo, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        apagarSolo = pildora("Apagado") { Solo.guardar(this@Principal, null); refrescar() }
+        filaLineas2.addView(apagarSolo, repartido())
         sinMovil.addView(filaLineas)
         sinMovil.addView(filaLineas2)
         cuentaTablet = texto(14f, Color.LTGRAY).also { sinMovil.addView(it) }
@@ -222,36 +249,32 @@ class Principal : Activity() {
         val enlazar = tarjeta()
         enlazar.addView(titulo("Vincular el móvil"))
         vinculo = texto(16f).apply { typeface = Typeface.MONOSPACE }.also { enlazar.addView(it) }
-        qr = ImageView(this).apply { adjustViewBounds = true }
+        qr = ImageView(this).apply { adjustViewBounds = true; setPadding(dp(10), dp(10), dp(10), dp(10)); background = fondo(Color.WHITE, radio = 16, grosor = 0) }
         enlazar.addView(qr, LinearLayout.LayoutParams(dp(240), dp(240)).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = dp(8); bottomMargin = dp(8) })
         // Un código nuevo invalida el viejo: Node lo leyó al arrancar, así que
         // la app se cierra y se vuelve a abrir con el nuevo (Node no se reinicia en el mismo proceso).
-        enlazar.addView(Button(this).apply { text = "Código nuevo (desvincula el móvil)"; setOnClickListener { codigoNuevo() } })
+        enlazar.addView(pildora("Código nuevo (desvincula el móvil)") { codigoNuevo() }, ancho())
         derecha.addView(enlazar, separada())
 
         val ajustes = tarjeta()
         ajustes.addView(titulo("Ajustes y detalles"))
-        boton = Button(this).apply { textSize = 18f; setOnClickListener { alternar() } }
-        ajustes.addView(boton)
-        esquinaBurbuja = Button(this).apply { setOnClickListener { Burbuja.siguienteEsquina(this@Principal); refrescar() } }
-        ajustes.addView(esquinaBurbuja)
+        esquinaBurbuja = pildora("") { Burbuja.siguienteEsquina(this@Principal); refrescar() }
+        ajustes.addView(esquinaBurbuja, ancho())
         // Abrir el juego al empezar a leer (3.70.0), sí por defecto.
         val prefs = getSharedPreferences("lector", MODE_PRIVATE)
         fun textoJuego() = "Abrir Mobile Legends al empezar: ${if (prefs.getBoolean("abrirJuego", true)) "sí" else "no"} (toca para cambiar)"
-        ajustes.addView(Button(this).apply {
-            text = textoJuego()
+        ajustes.addView(pildora(textoJuego()).apply {
             setOnClickListener { prefs.edit().putBoolean("abrirJuego", !prefs.getBoolean("abrirJuego", true)).apply(); text = textoJuego() }
-        })
+        }, ancho())
         // La voz en partida (3.71.0), sí por defecto: también se calla desde la app del móvil.
         fun textoVoz() = "Voz en partida: ${if (Solo.voz(this)) "sí" else "callada"} (toca para cambiar)"
-        ajustes.addView(Button(this).apply {
-            text = textoVoz()
+        ajustes.addView(pildora(textoVoz()).apply {
             setOnClickListener { Solo.ponerVoz(this@Principal, !Solo.voz(this@Principal)); text = textoVoz() }
-        })
+        }, ancho())
         estado = texto(14f).also { ajustes.addView(it) }
         ajustes.addView(texto(13f, Color.LTGRAY).apply { text = "Mientras lee, la tablet graba su pantalla: si abres otra app, el lector también la ve. La grabación no sale de la tablet; al móvil solo van nombres de héroes." })
         ajustes.addView(texto(14f, Color.LTGRAY).apply { text = "Últimas líneas del lector:" })
-        registro = texto(12f, Color.LTGRAY).apply { typeface = Typeface.MONOSPACE }.also { ajustes.addView(it) }
+        registro = texto(11f, Estilo.TENUE).apply { typeface = Typeface.MONOSPACE; setPadding(dp(12), dp(10), dp(12), dp(10)); background = fondo(Color.rgb(12, 12, 13), radio = 12) }.also { ajustes.addView(it) }
         derecha.addView(ajustes, separada())
 
         val cuerpo = LinearLayout(this).apply { orientation = if (dosColumnas) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL; setBackgroundColor(Color.BLACK) }
@@ -394,9 +417,9 @@ class Principal : Activity() {
             textSize = 14f; setTextColor(Color.LTGRAY); setPadding(0, dp(4), 0, dp(8))
         })
         val aviso = TextView(this).apply { textSize = 14f; setTextColor(Color.WHITE); setPadding(0, dp(6), 0, 0) }
-        val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false }
         val botones = listOf("Gané" to true, "Perdí" to false, "No la terminé" to null).map { (texto, gane) ->
-            Button(this).apply { text = texto }.also { fila.addView(it, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)) } to gane
+            pildora(texto, if (gane == true) Estilo.Tipo.PRINCIPAL else if (gane == false) Estilo.Tipo.PELIGRO else Estilo.Tipo.NORMAL).also { fila.addView(it, repartido()) } to gane
         }
         for ((b, gane) in botones) b.setOnClickListener {
             botones.forEach { it.first.isEnabled = false }
@@ -468,13 +491,13 @@ class Principal : Activity() {
         val aliados = List(5) { i -> campo(iniciales[i], if (i == filaTuya) "Tú" else "Compañero ${i + 1}").also { corregir.addView(it) } }
         if (tuyos.isNotEmpty() && aliados[filaTuya].text.isBlank()) {
             filaTuyos.addView(TextView(this).apply { text = "¿Con quién jugaste tú?"; textSize = 15f; setTextColor(Color.rgb(255, 214, 10)) })
-            val botonesTuyos = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-            for (h in tuyos) botonesTuyos.addView(Button(this).apply { text = h; isAllCaps = false; setOnClickListener { aliados[filaTuya].setText(h); aliados[filaTuya].dismissDropDown() } })
+            val botonesTuyos = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false }
+            for (h in tuyos) botonesTuyos.addView(pildora(h) { aliados[filaTuya].setText(h); aliados[filaTuya].dismissDropDown() }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = dp(8) })
             filaTuyos.addView(HorizontalScrollView(this).apply { addView(botonesTuyos) })
         }
         val aviso = TextView(this).apply { textSize = 14f; setTextColor(Color.WHITE); setPadding(0, dp(6), 0, 0) }
-        val ensenar = Button(this).apply { text = "Enseñar" }
-        val ahoraNo = Button(this).apply { text = "Ahora no" }
+        val ensenar = pildora("Enseñar", Estilo.Tipo.PRINCIPAL)
+        val ahoraNo = pildora("Ahora no")
         val porNombre = heroes.associateBy { it.lowercase() }
         ensenar.setOnClickListener {
             val raros = (enemigos + aliados).map { it.text.toString().trim() }.filter { it.isNotEmpty() && porNombre[it.lowercase()] == null }
@@ -511,9 +534,9 @@ class Principal : Activity() {
             corregir.visibility = View.GONE
             thread(isDaemon = true) { mandarCorreccion(JSONObject().put("id", id).put("descartar", true)) }
         }
-        val botones = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        botones.addView(ensenar, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        botones.addView(ahoraNo, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        val botones = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false }
+        botones.addView(ensenar, repartido())
+        botones.addView(ahoraNo, repartido())
         corregir.addView(botones)
         corregir.addView(aviso)
         corregir.visibility = View.VISIBLE
@@ -593,9 +616,10 @@ class Principal : Activity() {
         val hechos = listOf(avisos, bateria, burbuja, Lector.grabando, linea != null, movilLee, false)
         pasos.forEachIndexed { i, p -> p.marcar(hechos[i], i + 1) }
         // La línea elegida, marcada; sin ninguna, «Apagado».
-        for (b in botonesLinea) { val es = b.tag == linea; b.text = (if (es) "✓ " else "") + Solo.nombre(b.tag as String); b.alpha = if (es) 1f else 0.7f }
+        // La elegida, en oro (3.91.0).
+        for (b in botonesLinea) { val es = b.tag == linea; b.text = (if (es) "✓ " else "") + Solo.nombre(b.tag as String); pintarPildora(b, if (es) Estilo.Tipo.ELEGIDO else Estilo.Tipo.NORMAL) }
         apagarSolo.text = if (linea == null) "✓ Apagado" else "Apagado"
-        apagarSolo.alpha = if (linea == null) 1f else 0.7f
+        pintarPildora(apagarSolo, if (linea == null) Estilo.Tipo.ELEGIDO else Estilo.Tipo.NORMAL)
 
         nueva?.let { actualizar.text = if (Lector.grabando) "Hay una versión nueva (${it.version}): se instala sola cuando dejes de leer." else "Actualizando a la ${it.version}…"; actualizar.visibility = View.VISIBLE }
             ?: run { actualizar.visibility = View.GONE }
@@ -604,6 +628,14 @@ class Principal : Activity() {
         val salida = ultimaSalida ?: Salidas.ultima(this).also { ultimaSalida = it }
         estado.text = listOfNotNull(Nodo.fallo, Lector.estado, salida, caida?.let { "La última vez se cerró por:\n$it" }).joinToString("\n\n")
         boton.text = if (Lector.grabando) "Parar de leer" else "Empezar a leer"
+        pintarPildora(boton, if (Lector.grabando) Estilo.Tipo.NORMAL else Estilo.Tipo.PRINCIPAL)
+        // La tarjeta de estado (3.91.0): verde mientras lee.
+        estadoTitulo.text = if (Lector.grabando) "●  Leyendo la pantalla" else "●  Parado"
+        estadoTitulo.setTextColor(if (Lector.grabando) Estilo.VERDE else Estilo.TENUE)
+        estadoDetalle.text = if (Lector.grabando)
+            listOfNotNull(linea?.let { "Sin móvil: ${Solo.nombre(it)}" } ?: "Sin línea: elige una en «Sin móvil»", "Burbuja: ${Burbuja.estado}").joinToString(" · ")
+        else "Toca «Empezar a leer», elige «Pantalla completa» y juega: el draft se lee solo."
+        estadoCard.background = if (Lector.grabando) fondo(Color.rgb(16, 52, 28), Estilo.TARJETA, radio = 20, arista = Color.argb(120, 48, 209, 88)) else fondo(Estilo.TARJETA_ALTA, Estilo.TARJETA, radio = 20)
         esquinaBurbuja.text = "Burbuja con tu nº1: ${Burbuja.esquina(this)} (toca para cambiar) · ahora: ${Burbuja.estado}"
 
         val codigo = Vinculo.codigo(this)

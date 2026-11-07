@@ -81,18 +81,23 @@ class Guia : Activity() {
         getSharedPreferences("lector", MODE_PRIVATE).edit().putBoolean("guiaVista", true).apply()
         val pad = dp(16)
         val cuerpo = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.BLACK) }
-        cuerpo.addView(TextView(this).apply { text = "Guía de Lector MLBB"; textSize = 26f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.rgb(255, 214, 10)) })
-        for ((titulo, parrafos) in SECCIONES) {
+        cuerpo.addView(TextView(this).apply { text = "Guía de Lector MLBB"; textSize = 28f; typeface = Typeface.create("sans-serif", Typeface.BOLD); setTextColor(Estilo.TEXTO); letterSpacing = -0.02f })
+        for ((i, seccion) in SECCIONES.withIndex()) {
+            val (titulo, parrafos) = seccion
             val caja = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(pad, pad, pad, pad)
-                background = GradientDrawable().apply { setColor(Color.rgb(28, 28, 30)); cornerRadius = dp(14).toFloat() }
+                setPadding(pad + dp(2), pad + dp(2), pad + dp(2), pad + dp(2))
+                background = fondo(Estilo.TARJETA_ALTA, Estilo.TARJETA, radio = 20)
             }
-            caja.addView(TextView(this).apply { text = titulo; textSize = 18f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.rgb(255, 214, 10)); setPadding(0, 0, 0, dp(4)) })
-            for (p in parrafos) caja.addView(TextView(this).apply { text = p; textSize = 15f; setTextColor(Color.WHITE); setLineSpacing(0f, 1.15f); setPadding(0, dp(4), 0, dp(4)) })
+            // El número de la sección en su círculo de oro (3.91.0), como los pasos de la pantalla principal.
+            val cabeza = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false; gravity = android.view.Gravity.CENTER_VERTICAL; setPadding(0, 0, 0, dp(6)) }
+            cabeza.addView(circulo().also { marcarCirculo(it, false, i + 1) }, LinearLayout.LayoutParams(dp(30), dp(30)).apply { marginEnd = dp(12) })
+            cabeza.addView(TextView(this).apply { text = titulo; textSize = 18f; typeface = Typeface.create("sans-serif", Typeface.BOLD); setTextColor(Estilo.TEXTO) })
+            caja.addView(cabeza)
+            for (p in parrafos) caja.addView(TextView(this).apply { text = p; textSize = 15f; setTextColor(Color.rgb(220, 220, 226)); setLineSpacing(0f, 1.2f); setPadding(0, dp(4), 0, dp(4)) })
             cuerpo.addView(caja, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(12) })
         }
-        cuerpo.addView(Button(this).apply { text = "Entendido"; setOnClickListener { finish() } }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(12) })
+        cuerpo.addView(pildora("Entendido", Estilo.Tipo.PRINCIPAL) { finish() }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(16) })
         val desplazar = ScrollView(this).apply { addView(cuerpo); setBackgroundColor(Color.BLACK); clipToPadding = false }
         desplazar.setOnApplyWindowInsetsListener { v, insets ->
             val (izq, arriba, der, abajo) = if (Build.VERSION.SDK_INT >= 30) {

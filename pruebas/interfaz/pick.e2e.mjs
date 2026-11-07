@@ -16,6 +16,19 @@ const leer = (pagina, clave) => pagina.evaluate((k) => JSON.parse(localStorage.g
 // El nombre tal cual (el CSS lo pinta en mayúsculas): cada tarjeta lo lleva en `data-heroe`.
 const nombreDe = (tarjeta) => tarjeta.getAttribute('data-heroe');
 
+await prueba('el aura y la medalla (3.91.0): la cara del héroe detrás de cada tarjeta se carga de verdad, y el podio lleva oro, plata y bronce', async () => {
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS } });
+  await pagina.locator('.pick').first().waitFor();
+  const fondos = await pagina.$$eval('.pick', (ts) => ts.slice(0, 3).map((t) => window.getComputedStyle(t, '::before').backgroundImage));
+  ok(fondos.every((f) => /^url\("https?:\/\/[^"]+\/heroes\/\d+\.jpg/.test(f)), `el aura no lleva la cara con una ruta absoluta: ${fondos.join(' | ')}`);
+  // Que la imagen llegue: una ruta relativa dentro de la variable se resolvía contra assets/ y daba 404.
+  const ruta = fondos[0].match(/url\("([^"]+)"\)/)[1];
+  eq((await pagina.request.get(ruta)).status(), 200, `la cara del aura no se carga: ${ruta}`);
+  eq((await pagina.$$eval('.pick .rank', (rs) => rs.slice(0, 4).map((r) => r.className))).join('|'), 'rank rank-1|rank rank-2|rank rank-3|rank', 'el podio no lleva sus medallas');
+  eq(errores.length, 0, errores.join(' | '));
+  await contexto.close();
+});
+
 await prueba('tocar el nombre de la tarjeta nº2 la fija como tu pick, y todo lo demás habla de ella', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS } });
   eq(await pagina.locator('.side.ally .slot.empty.yo').count(), 1, 'tu equipo no tiene el hueco «Tú»');

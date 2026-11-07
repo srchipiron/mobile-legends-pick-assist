@@ -295,6 +295,7 @@ export default {
   'linea.gold.pista': 'Línea de oro, normalmente tirador',
   'linea.exp.pista': 'Línea de experiencia, normalmente luchador',
   'linea.pregunta': '¿Qué línea juegas?',
+  'linea.portadaLema': 'Qué héroe coger en tu línea, con el draft que tienes delante.',
   'linea.cambiarDespues': 'Se puede cambiar cuando quieras desde «Ajustes».',
 
   // --- componentes del score ---

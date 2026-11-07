@@ -294,6 +294,7 @@ export default {
   'linea.gold.pista': 'Gold lane, usually a marksman',
   'linea.exp.pista': 'Exp lane, usually a fighter',
   'linea.pregunta': 'Which lane do you play?',
+  'linea.portadaLema': 'Which hero to pick in your lane, for the draft in front of you.',
   'linea.cambiarDespues': 'You can change it any time from “Settings”.',
 
   'termino.heroes': 'heroes',

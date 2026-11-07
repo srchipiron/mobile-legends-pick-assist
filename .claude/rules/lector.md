@@ -2052,3 +2052,17 @@ repartidas por los ids del draft (hasta 20, 80 s) con la primera y la
 `mejoresRecortes` «la última que lee» tiene que leer al menos la mitad que
 la mejor: un falso suelto ya no la hace pasar. Pruebas en `puente-lector`,
 `recortes` y `en-tablet`; siete mutaciones.
+
+**El aspecto de la APK (3.91.0)**: `Estilo.kt` lleva los colores de Pick
+Assist y las píldoras (`pildora`, `pintarPildora`: PRINCIPAL en oro con
+texto oscuro, NORMAL de cristal, ELEGIDO con borde de oro, PELIGRO en
+rojo), `fondo` (degradado con arista) y el círculo de los pasos
+(`circulo`, `marcarCirculo`). En Principal, una cabecera con el sello y la
+versión, y arriba la TARJETA DE ESTADO (verde «Leyendo la pantalla» o
+«Parado») con el botón grande de empezar, que antes vivía al fondo, en
+«Ajustes y detalles». Las filas de botones no se alinean por la línea
+base (`isBaselineAligned = false`) y miden lo que el más alto. Se miró
+renderizado con Paparazzi en un proyecto aparte, fuera del repositorio:
+los botones grises de Android no se distinguían del fondo. `android.test`
+exige que Principal, Partidas y Guia no pinten un `Button(this` y que el
+botón de empezar vaya en la tarjeta de estado.

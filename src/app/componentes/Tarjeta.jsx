@@ -1,6 +1,6 @@
 import { tic } from '../tacto.js';
 import { idMotivo } from '../../motor/nombres.js';
-import { Cara } from './Imagen.jsx';
+import { Cara, rutaDeImagen } from './Imagen.jsx';
 import { Desglose } from './Desglose.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
 import { fraseDetras } from '../porque.js';
@@ -12,6 +12,16 @@ import { fraseDetras } from '../porque.js';
  * el dedupe dejan de hablar de lo mismo.
  */
 export { idMotivo };
+
+/**
+ * La cara como fondo del aura, con la ruta ABSOLUTA: un `url()` relativo
+ * dentro de una variable se resuelve contra la hoja de estilos
+ * (`assets/…`), no contra la página, y daba 404.
+ */
+export function aura(heroe, base = typeof document === 'undefined' ? null : document.baseURI) {
+  if (heroe?.id == null || !base) return undefined;
+  return { '--cara': `url("${new URL(rutaDeImagen('heroes', heroe.id, '.jpg'), base).href}")` };
+}
 
 /**
  * Tarjeta de recomendación: la probabilidad de ganar el draft con ese pick
@@ -34,8 +44,10 @@ export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLi
     </>
   );
   return (
-    <article className={`pick ${indice === 0 ? 'top' : ''} ${elegido ? 'elegido' : ''}`.trim()} data-heroe={heroe.name}>
-      <div className="rank">{indice + 1}</div>
+    // El aura (3.91.0): la cara del héroe, desenfocada detrás de la tarjeta. Va en
+    // una variable y un pseudo-elemento: no añade un píxel de alto.
+    <article className={`pick ${indice === 0 ? 'top' : ''} ${elegido ? 'elegido' : ''}`.trim()} data-heroe={heroe.name} style={aura(heroe)}>
+      <div className={`rank ${indice < 3 ? `rank-${indice + 1}` : ''}`.trim()}>{indice + 1}</div>
       <div>
         {/* El nombre es el botón de «lo cojo»: sin añadir un píxel de alto a
             la tarjeta (medido: cada bloque nuevo empujaba la nº1 fuera de la
