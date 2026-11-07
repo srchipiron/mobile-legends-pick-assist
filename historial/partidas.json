@@ -1,6 +1,168 @@
 {
- "actualizado": "2026-11-07T11:45:17.652Z",
+ "actualizado": "2026-11-07T12:06:03.174Z",
  "partidas": [
+  {
+   "t": 1794053071197,
+   "pick": "Rafaela",
+   "recomendados": [
+    "Diggie",
+    "Floryn",
+    "Rafaela"
+   ],
+   "gane": true,
+   "rango": "glory",
+   "estimacion": 0.604,
+   "modelo": 4,
+   "origen": "lector",
+   "bans": [
+    "Belerick",
+    "Hirara",
+    "Marcel",
+    "Lukas",
+    "Aulus",
+    "Masha",
+    "Eudora",
+    "Khufra",
+    "Obsidia",
+    "Yi Sun-shin"
+   ],
+   "draft": {
+    "enemigos": [
+     "Paquito",
+     "Beatrix",
+     "Kagura",
+     "Dyrroth",
+     "Tigreal"
+    ],
+    "aliados": [
+     "Esmeralda",
+     "Freya",
+     "Barats",
+     "Kimmy"
+    ],
+    "linea": "roam",
+    "rival": "Tigreal"
+   },
+   "lector": {
+    "baneos": [
+     "Belerick",
+     "Hirara",
+     "Marcel",
+     "Lukas",
+     "Aulus",
+     "Masha",
+     "Eudora",
+     "Khufra",
+     "Obsidia",
+     "Yi Sun-shin"
+    ],
+    "enemigos": [
+     "Paquito",
+     "Beatrix",
+     "Kagura",
+     "Dyrroth",
+     "Tigreal"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Esmeralda",
+     "Freya",
+     "Gusion",
+     "Kimmy"
+    ],
+    "tuyo": "Rafaela",
+    "dudas": [
+     {
+      "hueco": "a2",
+      "candidato": "Bruno",
+      "parecido": 0.76
+     }
+    ],
+    "ms": [
+     1557,
+     1170,
+     1116,
+     1505,
+     1090,
+     1202,
+     729,
+     1219,
+     1137,
+     2155,
+     1249,
+     1112,
+     794,
+     1140,
+     1323,
+     1241,
+     1163,
+     1117,
+     1090,
+     1719
+    ],
+    "msCaptura": [
+     70,
+     71,
+     92,
+     60,
+     69,
+     82,
+     83,
+     88,
+     82,
+     818,
+     85,
+     77,
+     97,
+     76,
+     88,
+     94,
+     92,
+     93,
+     106,
+     664
+    ],
+    "formatos": [
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "crudo",
+     "png"
+    ],
+    "aprendizaje": {
+     "aprendidos": [
+      "Barats"
+     ],
+     "sinEncontrar": [
+      "Tigreal"
+     ]
+    }
+   },
+   "duracion": 14.5,
+   "fases": [
+    0.716,
+    0.635,
+    0.588,
+    0.531,
+    0.519,
+    0.517
+   ]
+  },
   {
    "t": 1794051828234,
    "bans": [
@@ -27640,6 +27802,12 @@
   },
   {
    "cuando": "2026-11-07T11:45:17.652Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-11-07T12:06:03.174Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
