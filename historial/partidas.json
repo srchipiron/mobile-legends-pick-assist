@@ -1,6 +1,88 @@
 {
- "actualizado": "2026-11-07T12:35:01.518Z",
+ "actualizado": "2026-11-07T13:17:17.265Z",
  "partidas": [
+  {
+   "t": 1794057333692,
+   "bans": [
+    "Marcel",
+    "Eudora",
+    "Paquito",
+    "Masha",
+    "Aulus",
+    "Lukas",
+    "Vexana",
+    "Barats",
+    "Hirara"
+   ],
+   "gane": true,
+   "pick": "Estes",
+   "draft": {
+    "enemigos": [
+     "Hanabi",
+     "Fredrinn",
+     "Floryn",
+     "Valentina"
+    ],
+    "aliados": [
+     "Obsidia",
+     "Odette",
+     "Terizla",
+     "Saber"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 12.5,
+   "estimacion": 0.601,
+   "recomendados": [
+    "Rafaela",
+    "Estes",
+    "Angela"
+   ]
+  },
+  {
+   "t": 1794056276051,
+   "bans": [
+    "Johnson",
+    "Estes",
+    "Marcel",
+    "Hirara",
+    "Eudora",
+    "Saber",
+    "Gloo",
+    "Masha",
+    "Brody"
+   ],
+   "gane": true,
+   "pick": "Angela",
+   "draft": {
+    "enemigos": [
+     "Obsidia",
+     "Sun",
+     "Alice",
+     "Rafaela",
+     "Aulus"
+    ],
+    "aliados": [
+     "Kadita",
+     "Lukas",
+     "Yi Sun-shin"
+    ],
+    "linea": "roam"
+   },
+   "rango": "glory",
+   "modelo": 4,
+   "origen": "lector",
+   "duracion": 19.2,
+   "estimacion": 0.52,
+   "recomendados": [
+    "Floryn",
+    "Edith",
+    "Angela"
+   ]
+  },
   {
    "t": 1794054737205,
    "bans": [
@@ -27856,6 +27938,12 @@
   },
   {
    "cuando": "2026-11-07T12:35:01.518Z",
+   "partidas": 200,
+   "heroes": 11,
+   "incidencia": 11
+  },
+  {
+   "cuando": "2026-11-07T13:17:17.265Z",
    "partidas": 200,
    "heroes": 11,
    "incidencia": 11
