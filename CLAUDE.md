@@ -29,12 +29,12 @@ comprobaciones automáticas importan más de lo normal.
 Su cuenta del juego vale dinero. Nada en este repositorio puede ponerla en
 riesgo ni dar acceso a alguien de fuera:
 
-- El lector solo hace `adb connect`, `adb exec-out screencap -p` y
-  `screencap` sin `-p`. Nunca `input`, `tap`, `shell` ni `install`
-  (tocar la pantalla por adb sería un bot), y nunca rutas `/api/user/*`.
-- El servidor del lector escucha solo en `127.0.0.1:47323` y solo contesta
-  al origen de la app. En la tablet (APK, 3.61.0) escucha en la wifi, pero
-  solo con el código de vinculación y una IP privada como `Host`.
+- El lector no lanza programas ni usa adb (desde 3.97.0 no hay Termux: la
+  captura la da la propia tablet). Nunca `input`, `tap`, `shell` ni
+  `install` (tocar la pantalla sería un bot), y nunca rutas `/api/user/*`.
+- El servidor del lector vive en la tablet (APK, 3.61.0): escucha en la
+  wifi, pero solo al origen de la app, con el código de vinculación y una
+  IP privada como `Host`.
 - El token de GitHub de la subida de partidas solo viaja a `api.github.com`.
 - No se borra nada del móvil que no sea una captura del lector.
 - Lo que llega de fuera (la API, las incidencias, las lecturas de la tablet,

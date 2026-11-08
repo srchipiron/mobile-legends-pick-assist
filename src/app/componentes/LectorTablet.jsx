@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { sanearLectorTablet, traerDeTermux, pedirEstadoLector, lineasDelSistema, pedirUltimaApk, queApk, claveDeFallo, buscarTabletUnaVez, sinLlegarALaTablet, DESCARGA_APK } from '../lector.js';
+import { sanearLectorTablet, pedirEstadoLector, lineasDelSistema, pedirUltimaApk, queApk, claveDeFallo, buscarTabletUnaVez, sinLlegarALaTablet, DESCARGA_APK } from '../lector.js';
 import { tPorDefecto } from './tPorDefecto.js';
 
 /**
@@ -10,7 +10,6 @@ import { tPorDefecto } from './tPorDefecto.js';
 export function LectorTablet({ vinculo = null, onVinculo, t = tPorDefecto }) {
   const [direccion, setDireccion] = useState('');
   const [codigo, setCodigo] = useState('');
-  const [traido, setTraido] = useState(null);
   // Qué Lector MLBB tienes (3.65.2): las anteriores a 3.64.0 no se actualizan solas y nadie lo decía.
   const [apk, setApk] = useState(null);
   const [mirar, setMirar] = useState(0);
@@ -35,7 +34,6 @@ export function LectorTablet({ vinculo = null, onVinculo, t = tPorDefecto }) {
     return () => { vivo = false; };
   }, [vinculo, mirar, onVinculo]);
   if (vinculo) {
-    const traer = async () => { setTraido({ cargando: true }); setTraido(await traerDeTermux()); };
     return (
       <div className="lector-tablet">
         <p className="empty-state">{t('lectorTablet.vinculado', { direccion: vinculo.direccion })}</p>
@@ -48,10 +46,6 @@ export function LectorTablet({ vinculo = null, onVinculo, t = tPorDefecto }) {
         )}
         {apk?.estado === 'sinRespuesta' && <button className="reset" onClick={() => setMirar((n) => n + 1)}>{t('lectorTablet.apk.otraVez')}</button>}
         {(apk?.estado === 'antigua' || apk?.estado === 'atrasada') && <a className="reset lector-traer" href={DESCARGA_APK} target="_blank" rel="noopener noreferrer">{t('lectorTablet.apk.descargar')}</a>}
-        {/* Lo aprendido en Termux, a la tablet (3.64.1): sin las plantillas del final no reconoce si ganaste. */}
-        <p className="empty-state">{t('lectorTablet.traerExplicacion')}</p>
-        <button className="reset lector-traer" disabled={traido?.cargando} onClick={traer}>{t('lectorTablet.traer')}</button>
-        {traido && !traido.cargando && <p className="empty-state" role="status">{traido.error ? t(`lectorTablet.traer.${traido.error}`) : t('lectorTablet.traido', { capturas: traido.capturas, gane: traido.gane, perdi: traido.perdi })}</p>}
         <button className="reset" onClick={() => onVinculo(null)}>{t('lectorTablet.desvincular')}</button>
       </div>
     );
@@ -78,7 +72,7 @@ function claseDeApk(estado) {
  * cuando no contestaba, Javi solo veía «Vinculado…» y no sabía por qué.
  */
 function textoDeApk(apk, vinculo, t) {
-  if (apk.estado === 'sinRespuesta') return `${t('lectorTablet.apk.sinRespuesta', { direccion: vinculo.direccion })} ${t(claveDeFallo(apk.tipo, { tablet: true }))}`;
+  if (apk.estado === 'sinRespuesta') return `${t('lectorTablet.apk.sinRespuesta', { direccion: vinculo.direccion })} ${t(claveDeFallo(apk.tipo))}`;
   if (apk.estado === 'nose') return apk.tuya ? t('lectorTablet.apk.solo', { tuya: apk.tuya }) : t('lectorTablet.apk.nose');
   return t(`lectorTablet.apk.${apk.estado}`, { tuya: apk.tuya, ultima: apk.ultima });
 }

@@ -2,16 +2,14 @@ import { nombreClave } from '../motor/nombres.js';
 import { esDuracionPosible } from '../motor/directo.js';
 
 /**
- * El botón «Leer del juego» (3.25.0) habla con el lector de Termux
- * (`scripts/lector/servir.mjs`), que escucha en el propio móvil. El puerto
- * es el mismo que el del lector; hay una prueba que los compara.
- *
- * Una web publicada pidiendo a 127.0.0.1: Chrome 142+ lo permite tras un
- * permiso de «red local» que se da una vez, y lo exime del bloqueo de
- * contenido mixto porque la dirección es local antes de resolver nada.
+ * El botón «Leer del juego» (3.25.0) habla con el lector, que desde 3.61.0
+ * vive en la tablet (la APK «Lector MLBB», `scripts/lector/en-tablet.mjs`).
+ * El puerto es el mismo que el del lector; hay una prueba que los compara.
+ * Hasta 3.96.0 también podía ser el de Termux, en el propio móvil
+ * (127.0.0.1): se quitó en 3.97.0, y sin tablet vinculada la app no pide
+ * nada a ningún lector.
  */
 export const PUERTO_LECTOR = 47323;
-export const URL_LECTOR = `http://127.0.0.1:${PUERTO_LECTOR}`;
 
 /**
  * El lector EN LA TABLET (3.61.0, la APK «Lector MLBB»): escucha en la wifi
@@ -112,14 +110,18 @@ export function lectorTabletDeEnlace(hash) {
   return q.has('lector') ? sanearLectorTablet({ direccion: q.get('lector'), codigo: q.get('codigo') }) : null;
 }
 let enTablet = null;
-/** La app dice aquí dónde está el lector (null: el de Termux, en este móvil). */
+/** La app dice aquí dónde está el lector (null: sin tablet vinculada, no hay lector). */
 export const ponerLectorEnTablet = (x) => { enTablet = sanearLectorTablet(x); };
 export const lectorEnTablet = () => enTablet;
-export const baseLector = () => (enTablet ? `http://${enTablet.direccion}` : URL_LECTOR);
-/** `fetch` al lector: en la tablet, con el código y declarando que el destino es la red local. */
-export const pedirAlLector = (url, opciones = {}) => fetch(url, enTablet
-  ? { ...opciones, headers: { ...(opciones.headers ?? {}), 'X-Lector-Codigo': enTablet.codigo }, targetAddressSpace: 'local' }
-  : opciones);
+export const baseLector = () => (enTablet ? `http://${enTablet.direccion}` : null);
+/**
+ * `fetch` al lector de la tablet, con el código y declarando que el destino
+ * es la red local. Sin tablet vinculada no sale ninguna petición (3.97.0):
+ * falla como un lector que no contesta.
+ */
+export const pedirAlLector = (url, opciones = {}) => (enTablet
+  ? fetch(url, { ...opciones, headers: { ...(opciones.headers ?? {}), 'X-Lector-Codigo': enTablet.codigo }, targetAddressSpace: 'local' })
+  : Promise.reject(new TypeError('sin tablet vinculada')));
 /** Decisión de producto: la captura por wifi más el reconocimiento tardan 2–4 s; 20 s es «no está». */
 export const PLAZO_LECTOR_MS = 20000;
 /**
@@ -127,7 +129,7 @@ export const PLAZO_LECTOR_MS = 20000;
  * por captura en un móvil, de tres a ocho capturas, y detrás de la tanda
  * anterior si la hay. Con los 20 s de una lectura la app cortaba y lo
  * aprendido no llegaba nunca a la partida (el lector sí aprendía). Es una
- * petición a 127.0.0.1 que no bloquea nada: tres minutos, decisión de producto.
+ * petición a la tablet que no bloquea nada: tres minutos, decisión de producto.
  */
 export const PLAZO_CORREGIR_MS = 3 * 60 * 1000;
 /**
@@ -196,11 +198,12 @@ export const FALLOS_DEL_LECTOR = ['sinPuente', 'plazo', 'tablet', 'emparejar', '
 /** El fallo por la respuesta: 401 es el código de vinculación de la tablet, 429 que lo ha bloqueado tras varios malos. */
 const falloDe = (respuesta, cuerpo) => (respuesta.status === 401 ? 'codigo' : respuesta.status === 429 ? 'bloqueado'
   : ['tablet', 'emparejar', 'captura'].includes(cuerpo?.error) ? cuerpo.error : 'error');
-/** La clave del aviso de un fallo: con el lector en la tablet, lo que hay que hacer es otra cosa (abrir su app, no Termux). */
-export const claveDeFallo = (tipo, { auto = false, tablet = !!enTablet } = {}) => {
-  if (tablet && ['sinPuente', 'captura', 'tablet', 'emparejar'].includes(tipo)) return `lector.enTablet.${auto ? 'auto.' : ''}${tipo === 'sinPuente' ? 'sinPuente' : 'captura'}`;
+/** La clave del aviso de un fallo: qué hacer en la tablet (desde 3.97.0 no hay otro lector). */
+export const claveDeFallo = (tipo, { auto = false } = {}) => {
+  if (['sinPuente', 'captura', 'tablet', 'emparejar'].includes(tipo)) return `lector.enTablet.${auto ? 'auto.' : ''}${tipo === 'sinPuente' ? 'sinPuente' : 'captura'}`;
   if (['codigo', 'bloqueado'].includes(tipo)) return `lector.${tipo}`;
-  if (auto) return `lector.auto.${tipo === 'sinPuente' ? 'sinPuente' : ['tablet', 'emparejar', 'captura'].includes(tipo) ? 'tablet' : 'error'}`;
+  if (auto) return 'lector.auto.error';
+  // plazo, error, y los avisos que no son fallos (yaEstaba, nada).
   return `lector.${tipo}`;
 };
 const fallo = (tipo) => Object.assign(new Error(tipo), { tipo });
@@ -328,7 +331,7 @@ export async function corregirLectura({ ids = [], enemigos = [], baneos = [], al
  * jugar, y una captura en una teamfight puede dar un tirón en la tablet)
  * hasta `HASTA_FINAL_MIN`, una captura cada `INTERVALO_FINAL_MS`. Decisiones
  * de producto: una partida dura 10–20 minutos y la tabla de resultado pasa
- * en segundos. Los captura el lector en Termux, que sigue despierto con el
+ * en segundos. Los captura el lector de la tablet, que sigue despierto con el
  * móvil en el bolsillo: la app solo le avisa de cuándo se completó el draft
  * (`avisarVigilancia`) y recoge lo vigilado (`pedirFinal`) cada
  * `INTERVALO_FINAL_MS` mientras está a la vista. Mismos números que
@@ -534,7 +537,7 @@ export async function pedirUltimaApk({ pedir = (...a) => fetch(...a), plazoMs = 
 /**
  * Lo que la tablet enseña (3.62.0): tu nº1 en la burbuja sobre el juego y,
  * al apuntar una partida, su resumen como notificación. Solo con el lector
- * EN LA TABLET (el de Termux no tiene pantalla). Nunca lanza.
+ * EN LA TABLET. Nunca lanza.
  */
 export async function mandarALaTablet(cuerpo, { base = baseLector(), plazoMs = PLAZO_LECTOR_MS, pedir = pedirAlLector } = {}) {
   if (!enTablet) return false;
@@ -548,27 +551,6 @@ export async function mandarALaTablet(cuerpo, { base = baseLector(), plazoMs = P
   } finally {
     clearTimeout(reloj);
   }
-}
-
-/**
- * Pasa a la tablet lo que aprendió el lector de Termux (3.64.1): caras,
- * huecos y plantillas de VICTORIA/DERROTA. Lector MLBB empieza de cero y,
- * sin las plantillas, no reconoce el final. El de Termux tiene que estar
- * abierto (127.0.0.1, sin código); la tablet, vinculada. Nunca lanza.
- */
-export async function traerDeTermux({ pedirTermux = (...a) => fetch(...a), pedir = pedirAlLector, plazoMs = PLAZO_CORREGIR_MS } = {}) {
-  if (!enTablet) return { error: 'sinTablet' };
-  let datos;
-  try {
-    const r = await pedirTermux(`${URL_LECTOR}/aprendido`, { cache: 'no-store', signal: AbortSignal.timeout(PLAZO_LECTOR_MS) });
-    if (!r.ok) return { error: 'sinTermux' };
-    datos = await r.json();
-  } catch { return { error: 'sinTermux' }; }
-  try {
-    const r = await pedir(`${baseLector()}/aprendido`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos), cache: 'no-store', signal: AbortSignal.timeout(plazoMs) });
-    if (!r.ok) return { error: r.status === 401 ? 'codigo' : 'sinTablet' };
-    return await r.json();
-  } catch { return { error: 'sinTablet' }; }
 }
 
 /**

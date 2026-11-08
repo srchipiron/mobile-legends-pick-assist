@@ -1,41 +1,28 @@
 /**
- * El puente entre el lector y la app (3.25.0): en Termux, en el MÓVIL,
+ * El servidor del lector (3.25.0): lo arranca Lector MLBB en la tablet
+ * (`en-tablet.mjs`, 3.61.0) con la captura de la propia tablet, y la app
+ * del móvil le pide lecturas con el botón «Leer del juego» o leyendo sola.
+ * Cada lectura reconoce baneos y picks y devuelve los NOMBRES; la imagen no
+ * sale de la tablet.
  *
- *   lector                                   (scripts/lector/lector.sh, 3.26.0)
- *   node scripts/lector/servir.mjs           (busca la tablet sola)
- *   node scripts/lector/servir.mjs --tablet 192.168.68.112:PUERTO
- *
- * y en la app, el botón «Leer del juego». Cada toque hace UNA captura de la
- * tablet (la misma de `leer.mjs`), reconoce baneos y picks enemigos y
- * devuelve los NOMBRES; la imagen no sale de Termux.
- *
- * - Sin `--tablet` la encuentra sola (`encontrarTablet`: la última que
- *   funcionó, mDNS, puertos abiertos) y la vuelve a buscar si deja de
- *   contestar: el puerto cambia cada vez que se enciende la depuración.
- * - Escucha solo en 127.0.0.1: desde otro aparato no se puede llamar.
  * - Solo responde con datos a la app publicada (y a una copia local para
- *   las pruebas); a cualquier otra web le dice que no.
- * - Chrome pide UNA vez permiso de «acceder a la red local» (Local Network
- *   Access, Chrome 142+): es esto.
+ *   las pruebas), con el código de vinculación y una IP privada como `Host`.
+ * - VIGILA EL FINAL de la partida por su cuenta (`/vigilar`, `/final`,
+ *   3.33.0): la tablet sigue despierta con el móvil en el bolsillo.
  *
- * `--guardar-capturas carpeta` deja cada captura y lo que se leyó de ella,
- * para afinar el lector con las que salgan mal.
+ * Hasta 3.96.0 también corría en Termux, en el móvil, capturando la tablet
+ * por adb; eso se quitó en 3.97.0 (decisión de Javi).
  *
- * Y desde 3.33.0 VIGILA EL FINAL de la partida por su cuenta (`/vigilar`,
- * `/final`): Termux sigue despierto con el móvil en el bolsillo; la app no.
- *
- * SEGURIDAD: como `leer.mjs`, no toca la pantalla de la tablet ni habla con
- * Moonton. Este fichero no lanza programas: la captura es la de `leer.mjs`.
+ * SEGURIDAD: no toca la pantalla ni habla con Moonton, y no lanza programas.
  */
 import { createServer } from 'node:http';
-import { mkdirSync, writeFileSync, readFileSync, readdirSync, statSync, unlinkSync, existsSync, realpathSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, readdirSync, statSync, unlinkSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { timingSafeEqual, pbkdf2 } from 'node:crypto';
 import { join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { Worker } from 'node:worker_threads';
 import { leerPng, leerCrudo, escribirPngRapido } from './png.mjs';
-import { capturarTablet, encontrarTablet, carasGuardadas } from './leer.mjs';
+import { carasGuardadas } from './leer.mjs';
 import { PARTES, leerParte, juntarLectura, leerCaptura } from './lectura.mjs';
 import { resumirAprendizaje, sinHuecosVacios, CAPTURAS_POR_CORRECCION, VERSION_APRENDIDO } from './aprender.mjs';
 
@@ -43,7 +30,7 @@ export { CAPTURAS_POR_CORRECCION };
 import { fotogramaDe } from './miniatura.mjs';
 import { enPartida, recorteMarcador } from './partida.mjs';
 import { nombreClave } from '../../src/motor/nombres.js';
-import { tiraDe, reconocerResultado, aprenderResultado, plantillasIniciales, cargarResultados, guardarResultados, VERSION_RESULTADOS, PLANTILLAS_POR_RESULTADO } from './resultado.mjs';
+import { tiraDe, reconocerResultado, aprenderResultado, plantillasIniciales, cargarResultados, guardarResultados, VERSION_RESULTADOS } from './resultado.mjs';
 
 /**
  * La captura de las LECTURAS del draft, comprimida o no (3.45.0, pedido por
@@ -101,7 +88,6 @@ export const FALLOS_DE_CAPTURA = ['tablet', 'emparejar', 'captura'];
 /** La casa del lector: la de Termux, o la carpeta de la app en la tablet (`LECTOR_CASA`, 3.61.0). */
 const CASA = process.env.LECTOR_CASA || homedir();
 /** Dónde se recuerda la última tablet que funcionó (ip y puerto). */
-export const FICHERO_MEMORIA = join(CASA, '.config', 'lector', 'tablet.json');
 /** Lo aprendido de las correcciones (aprender.mjs): huecos de picks y caras de esta tablet. */
 export const FICHERO_APRENDIDO = join(CASA, '.config', 'lector', 'aprendido.json');
 /** Las plantillas de VICTORIA / DERROTA aprendidas de lo que contesta Javi (resultado.mjs, 3.32.0). */
@@ -278,70 +264,6 @@ export function recortarEnHilo({ capturas, aprendido }) {
   });
 }
 
-export function leerMemoria(fichero = FICHERO_MEMORIA) {
-  try { const m = JSON.parse(readFileSync(fichero, 'utf8')); return m && typeof m === 'object' ? m : {}; } catch { return {}; }
-}
-export function guardarMemoria(m, fichero = FICHERO_MEMORIA) {
-  try { mkdirSync(resolve(fichero, '..'), { recursive: true }); writeFileSync(fichero, JSON.stringify({ ip: m.ip, puerto: m.puerto, nombre: m.nombre ?? null })); } catch { /* sin disco: se busca la próxima vez */ }
-}
-
-/**
- * La captura con la tablet encontrada sola: la primera vez (o tras
- * `preparar()`, al arrancar) la busca; si una captura falla, la olvida y la
- * busca otra vez antes de rendirse, porque el puerto habrá cambiado. Con
- * `fija` (`--tablet IP:PUERTO`) no busca nada. Lo que encuentra se guarda
- * en `memoria` para la próxima vez; también la fijada, en cuanto una captura
- * sale (3.33.1: si no, el siguiente `lector` a secas volvía a buscar en la IP
- * de antes, que es lo que le pasó a Javi en otra wifi).
- */
-/**
- * «device offline»: adb guarda una conexión vieja con la tablet (se apagó la
- * depuración, cambió la wifi) y solo se arregla soltándola. El lector no lo
- * hace (solo conecta y captura), así que lo dice en Termux.
- */
-export function conPista(e, tablet) {
-  if (!/offline/i.test(String(e?.message))) return e;
-  return Object.assign(new Error(`adb tiene la tablet ${tablet} como «offline» (una conexión vieja). Para el lector (Ctrl+C), escribe «adb disconnect» y «adb kill-server», y vuelve a arrancar «lector».`), { tipo: 'captura' });
-}
-
-export function capturaAutomatica({ fija = null, memoria = {}, recordar = () => {}, encontrar = encontrarTablet, capturar = capturarTablet, registrar = () => {} }) {
-  let tablet = fija, buscando = null;
-  const localizar = (descartar = []) => {
-    buscando ??= encontrar({ memoria, registrar, descartar }).then((c) => {
-      tablet = `${c.ip}:${c.puerto}`;
-      Object.assign(memoria, { ip: c.ip, puerto: c.puerto, nombre: c.nombre ?? memoria.nombre ?? null });
-      recordar(memoria);
-      registrar(`Tablet: ${tablet} (${c.via === 'memoria' ? 'la de la última vez' : c.via === 'wifi' ? 'anunciada en la wifi' : 'por sus puertos'}).`);
-      return tablet;
-    }).finally(() => { buscando = null; });
-    return buscando;
-  };
-  let fijaRecordada = false;
-  const ahora = async (opciones = {}, segunda = false) => {
-    if (!tablet) await localizar();
-    try {
-      const png = capturar(tablet, opciones);
-      if (fija && !fijaRecordada) {
-        fijaRecordada = true;
-        const [ip, puerto] = fija.split(':');
-        Object.assign(memoria, { ip, puerto: Number(puerto) });
-        recordar(memoria);
-      }
-      return png;
-    } catch (e) {
-      if (fija || segunda) throw conPista(e, tablet);
-      const fallida = tablet;
-      registrar(`La tablet no contesta en ${fallida}: la busco otra vez.`);
-      tablet = null;
-      // La que acaba de fallar no vale aunque adb diga «already connected».
-      try { await localizar([fallida]); } catch (e2) { throw e2?.tipo === 'tablet' ? conPista(e, fallida) : e2; }
-      return ahora(opciones, true);
-    }
-  };
-  ahora.preparar = () => { if (!tablet) localizar().catch((e) => registrar(e.message)); };
-  return ahora;
-}
-
 /**
  * El `Host` de una petición al lector: 127.0.0.1 o localhost, con o sin
  * puerto. Con `red` (el lector en la tablet, 3.61.0) también una IP privada
@@ -469,24 +391,6 @@ export const deLaApk = (req) => !req.headers.origin && ['127.0.0.1', '::1', '::f
 export function sanearResumen(r) {
   const titulo = textoPlano(r?.titulo, 80), texto = textoPlano(r?.texto, 300);
   return titulo && texto && typeof r?.id === 'string' && /^[\w-]{1,60}$/.test(r.id) ? { id: r.id, titulo, texto } : null;
-}
-
-/**
- * Funde lo aprendido que llega de otro lector (3.64.1) con lo de aquí: las
- * caras y huecos, los de quien haya visto más capturas (es un todo: mezclar
- * dos geometrías no tiene sentido); las plantillas del resultado, juntas sin
- * repetir y con el mismo tope que al aprender. null si no tiene forma.
- */
-export function fundirAprendido({ aprendido, resultados }, llegado) {
-  if (!llegado || typeof llegado !== 'object') return null;
-  const otro = llegado.aprendido && typeof llegado.aprendido === 'object' && llegado.aprendido.version === VERSION_APRENDIDO ? sinHuecosVacios(llegado.aprendido) : null;
-  const suyos = llegado.resultados ? cargarResultados(llegado.resultados) : null;
-  if (!otro && !suyos) return null;
-  const nuevo = otro && (otro.capturas ?? 0) > (aprendido?.capturas ?? 0) ? otro : aprendido;
-  const clave = (p) => Buffer.from(p.v.buffer, p.v.byteOffset, p.v.byteLength).toString('base64');
-  const juntar = (a = [], b = []) => { const vistas = new Set(a.map(clave)); return [...a, ...b.filter((p) => !vistas.has(clave(p)))].slice(-PLANTILLAS_POR_RESULTADO); };
-  const fundidos = suyos ? { ...resultados, gane: juntar(suyos.gane, resultados.gane), perdi: juntar(suyos.perdi, resultados.perdi), tablas: juntar(suyos.tablas, resultados.tablas) } : resultados;
-  return { aprendido: nuevo, resultados: fundidos };
 }
 
 export const origenPermitido = (o) => !!o && (ORIGENES.includes(o) || /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(o));
@@ -992,26 +896,6 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       res.writeHead(200, cabeceras).end(JSON.stringify(estadoFinal()));
       return;
     }
-    // Lo aprendido, para pasarlo de un lector a otro (3.64.1): Lector MLBB
-    // empezaba de cero y no reconocía la palabra del final (0,75 con la
-    // derrota de serie; con las de Termux, de sobra). Solo la app.
-    if (req.method === 'GET' && ruta === '/aprendido') {
-      if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
-      res.writeHead(200, cabeceras).end(JSON.stringify({ aprendido, resultados: guardarResultados(resultados) }));
-      return;
-    }
-    if (req.method === 'POST' && ruta === '/aprendido') {
-      if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
-      const cuerpo = await leerCuerpo(req, 4 * 1024 * 1024);
-      const r = fundirAprendido({ aprendido, resultados }, cuerpo);
-      if (!r) { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'aprendido' })); return; }
-      while (aprendiendo) await aprendiendo.catch(() => {});
-      if (r.aprendido !== aprendido) { aprendido = r.aprendido; guardar(aprendido); }
-      resultados = r.resultados; guardarResultadosDe(resultados);
-      registrar(`Recibido lo aprendido en otro lector: ${aprendido?.capturas ?? 0} capturas, ${resultados.gane.length} victorias y ${resultados.perdi.length} derrotas de plantilla.`);
-      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, capturas: aprendido?.capturas ?? 0, gane: resultados.gane.length, perdi: resultados.perdi.length }));
-      return;
-    }
     if (req.method === 'POST' && ruta === '/consejo') {
       // La app manda tu nº1 y el resumen de la partida (3.62.0). Solo la app.
       if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
@@ -1270,7 +1154,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   return servidor;
 }
 
-/** Lo aprendido y las plantillas del resultado, de disco, diciendo qué hay. Lo usan Termux y la tablet. */
+/** Lo aprendido y las plantillas del resultado, de disco, diciendo qué hay. */
 export function cargarLoAprendido(registrar) {
   const aprendido = leerAprendido();
   if (!aprendido && existsSync(FICHERO_APRENDIDO)) registrar('Lo aprendido con una versión anterior del lector se descarta: se aprendió sin las guardas de 3.30.1 y movía el panel de picks. Se vuelve a aprender solo.');
@@ -1279,37 +1163,3 @@ export function cargarLoAprendido(registrar) {
   registrar(resultados ? `Resultados: ${resultados.gane.length} plantillas de victoria y ${resultados.perdi.length} de derrota aprendidas de tus partidas.` : 'Resultados: solo la derrota de serie; la victoria se aprende de tu primera partida ganada en la que se vea la tabla.');
   return { aprendido, resultados };
 }
-
-async function principal() {
-  const arg = (n) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : null; };
-  const tablet = arg('--tablet');
-  const puerto = Number(arg('--puerto') ?? PUERTO);
-  const carpeta = arg('--guardar-capturas');
-  if (process.argv.includes('--ayuda') || process.argv.includes('--help')) {
-    console.error('Uso: node scripts/lector/servir.mjs [--tablet IP:PUERTO | --tablet IP] [--guardar-capturas carpeta]');
-    process.exit(2);
-  }
-  if (carpeta) mkdirSync(carpeta, { recursive: true });
-  const registrar = (m) => console.log(m);
-  if (carpeta) {
-    const borradas = podarCapturas(carpeta);
-    if (borradas) registrar(`Borradas ${borradas} capturas antiguas de ${carpeta} (se guardan solo unas horas).`);
-  }
-  // `--tablet IP:PUERTO` la fija; `--tablet IP` solo dice dónde buscar.
-  const fija = tablet?.includes(':') ? tablet : null;
-  const memoria = leerMemoria();
-  if (tablet && !fija) memoria.ip = tablet;
-  const capturar = capturaAutomatica({ fija, memoria, recordar: guardarMemoria, registrar });
-  const servidor = crearServidor({ capturar, elector: crearElectorDeCaptura(), carpeta, registrar, ...cargarLoAprendido(registrar) });
-  servidor.on('error', (e) => {
-    console.error(e.code === 'EADDRINUSE' ? `El puerto ${puerto} ya está en uso: hay otro lector abierto. Ciérralo, o arranca con «lector», que lo cierra solo.` : e.message);
-    process.exit(1);
-  });
-  servidor.listen(puerto, '127.0.0.1', () => {
-    console.log(`Lector esperando en http://127.0.0.1:${puerto}${fija ? ` (tablet ${fija})` : ''}.`);
-    console.log('Abre la app y toca «Leer del juego». Ctrl+C para parar, y apaga la depuración inalámbrica al acabar.');
-    if (!fija) capturar.preparar();
-  });
-}
-
-if (process.argv[1] && realpathSync(resolve(process.argv[1])) === realpathSync(fileURLToPath(import.meta.url))) await principal();

@@ -8,6 +8,19 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.97.0
+
+- Fuera el lector de Termux: el draft lo lee solo «Lector MLBB» en la
+  tablet. Ya no hay depuración inalámbrica, ni adb, ni puertos que cambian,
+  ni que escribir «lector» en el móvil.
+- Si la app no está vinculada con la tablet, no enseña «Leer del juego» ni
+  «Leer solo» y no intenta hablar con ningún lector: en Ajustes te dice cómo
+  vincularla (escanea el QR de la tablet). «Usar el de Termux» pasa a ser
+  «Desvincular la tablet».
+- Más seguro: ya no queda en todo el lector ni una línea que lance un
+  programa, y la ruta para pasar lo aprendido de Termux a la tablet ya no
+  existe.
+
 ## 3.96.0
 
 - Fuera la voz: ni el móvil ni la tablet dicen ya consejos en voz alta

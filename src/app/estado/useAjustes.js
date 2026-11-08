@@ -36,7 +36,7 @@ export function useAjustes() {
   // El lector leyendo solo (3.28.0): apagado hasta que se enciende una vez. Sin
   // lector, encendido solo costaría una petición fallida cada pocos segundos.
   const [lectorAuto, setLectorAuto] = useState(() => leer(CLAVES.lectorAuto, false) === true);
-  // El lector en la tablet (3.61.0): null es el de Termux, en este móvil.
+  // El lector en la tablet (3.61.0): null es sin tablet vinculada (no hay lector).
   const [lectorTablet, setLectorTabletCrudo] = useState(() => sanearLectorTablet(leer(CLAVES.lectorTablet, null)));
   // Estable (3.65.4): la búsqueda de la tablet la tiene en sus dependencias.
   const setLectorTablet = useCallback((x) => setLectorTabletCrudo(sanearLectorTablet(x)), []);

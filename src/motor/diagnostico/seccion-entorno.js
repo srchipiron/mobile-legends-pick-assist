@@ -11,7 +11,7 @@
  * @property {string} sw
  * @property {boolean} [sinDatosPersonales]   en el bot no hay móvil: maestría y partidas no se juzgan
  * @property {{ donde: string|null, auto: boolean, estado: object|null, ultimo: object|null, ahora: number }|null} [lector]
- *   el lector de la tablet (3.61.4): dónde está (la IP de la tablet, o null si es el de Termux), si lee solo,
+ *   el lector de la tablet (3.61.4): dónde está (la IP de la tablet), si lee solo,
  *   si contesta ahora y cómo fue la última lectura. NUNCA el código de vinculación.
  */
 
@@ -35,12 +35,12 @@ export function seccionEntorno(inf, entorno = {}) {
   // El lector (3.61.4): desde el móvil no hay otra forma de saber si contesta y qué pasó.
   const lec = entorno.lector;
   if (lec) {
-    inf.linea(`Lector: ${lec.donde ? `en la tablet (${lec.donde})` : 'el de Termux, en este móvil'} · leer solo: ${lec.auto ? 'sí' : 'no'}`);
+    inf.linea(`Lector: ${lec.donde ? `en la tablet (${lec.donde})` : 'sin tablet vinculada'} · leer solo: ${lec.auto ? 'sí' : 'no'}`);
     if (lec.estado) {
       const a = lec.estado.aprendido;
       inf.check(lec.estado.ok,
         `El lector contesta${a ? ` (aprendido de ${a.capturas} capturas: ${a.caras} caras de rivales, ${a.aliados} de tu equipo)` : ''}`,
-        `El lector no contesta (${lec.estado.tipo}): ${lec.donde ? 'abre «Lector MLBB» en la tablet y toca «Empezar a leer»; si cambió de wifi, vuelve a escanear su QR' : 'abre Termux y escribe: lector'}`,
+        `El lector no contesta (${lec.estado.tipo}): abre «Lector MLBB» en la tablet y toca «Empezar a leer»; si cambió de wifi, vuelve a escanear su QR`,
         true);
       // Por qué se cerró la app de la tablet la última vez (3.61.5): «se cierra sola» tiene varias causas.
       if (lec.estado.salida) inf.linea(`Tablet: ${lec.estado.salida.replace(/\n/g, ' · ')}`);

@@ -7,7 +7,7 @@ import { mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync, exist
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { crearServidor, lectorEnHilos, leerCaptura, capturaAutomatica, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS, EN_PARTIDA_PARA_ESCONDER, VISTAZO_MS, sanearAjustes, sanearPregunta, capturasAMirar } from '../../scripts/lector/servir.mjs';
+import { crearServidor, lectorEnHilos, leerCaptura, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS, EN_PARTIDA_PARA_ESCONDER, VISTAZO_MS, sanearAjustes, sanearPregunta, capturasAMirar } from '../../scripts/lector/servir.mjs';
 import { guardarResultados } from '../../scripts/lector/resultado.mjs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { carasGuardadas, vaciosAliadoGuardados } from '../../scripts/lector/leer.mjs';
@@ -122,49 +122,7 @@ test('otra web no recibe nada, la comprobación previa se contesta y un fallo de
   });
 });
 
-test('la captura automática busca la tablet sola, la recuerda y la vuelve a buscar si deja de contestar', async () => {
-  const puertos = [40000, 41111];
-  let busquedas = 0, capturas = [];
-  const encontrar = async () => ({ ip: '10.0.0.5', puerto: puertos[busquedas++], via: 'wifi' });
-  const memoria = {}, recordadas = [];
-  const capturar = (d) => { capturas.push(d); if (d === '10.0.0.5:40000' && capturas.length > 1) throw new Error('device offline'); return png; };
-  const auto = capturaAutomatica({ memoria, recordar: (m) => recordadas.push({ ...m }), encontrar, capturar });
-  ok(Buffer.isBuffer(await auto()), 'la primera captura no sale');
-  eq(`${busquedas} ${capturas.join(' ')}`, '1 10.0.0.5:40000', 'no busca la tablet la primera vez o captura de otra');
-  eq(`${memoria.ip}:${memoria.puerto}`, '10.0.0.5:40000', 'no recuerda la tablet encontrada');
-  eq(recordadas.length, 1, 'no guarda la memoria');
-  // El puerto ha cambiado: la captura falla, se busca otra vez y sale con la nueva.
-  ok(Buffer.isBuffer(await auto()), 'tras cambiar el puerto no vuelve a salir');
-  eq(`${busquedas} ${capturas.slice(1).join(' ')}`, '2 10.0.0.5:40000 10.0.0.5:41111', 'al fallar la captura no busca la tablet otra vez');
-  eq(memoria.puerto, 41111, 'no recuerda el puerto nuevo');
-  // Con la tablet fijada a mano no se busca nada, y un fallo es un fallo.
-  const fija = capturaAutomatica({ fija: '10.0.0.9:1', encontrar: async () => { throw new Error('no debía buscar'); }, capturar: () => { throw new Error('error: closed'); } });
-  const e = await fija().catch((x) => x);
-  eq(e.message, 'error: closed', `con --tablet fija hace otra cosa: ${e.message}`);
-  // 3.60.6: adb contesta «already connected» a una conexión vieja «offline».
-  // La búsqueda de después no puede volver a la que acaba de fallar, y si no
-  // hay otra, Termux dice cómo soltarla (adb disconnect / kill-server).
-  const descartadas = [];
-  const atascada = capturaAutomatica({ memoria: {}, encontrar: async ({ descartar = [] }) => { descartadas.push(descartar.join()); if (descartar.includes('10.0.0.5:39043')) throw Object.assign(new Error('no la veo'), { tipo: 'tablet' }); return { ip: '10.0.0.5', puerto: 39043, via: 'memoria' }; }, capturar: () => { throw new Error('error: device offline'); } });
-  const ea = await atascada().catch((x) => x);
-  eq(descartadas.join('|'), '|10.0.0.5:39043', 'al fallar la captura vuelve a probar la misma tablet');
-  ok(/adb kill-server/.test(ea.message) && ea.tipo === 'captura', `«offline» sin pista: ${ea.message}`);
-  const fijaOffline = await capturaAutomatica({ fija: '10.0.0.9:1', capturar: () => { throw new Error('error: device offline'); } })().catch((x) => x);
-  ok(/adb disconnect/.test(fijaOffline.message), `«offline» con --tablet sin pista: ${fijaOffline.message}`);
-  // Y la fijada que SÍ funciona se recuerda (una vez) para el siguiente arranque sin --tablet (3.33.1).
-  const memoriaFija = { ip: '10.0.0.1', puerto: 5 }, recordadasFija = [];
-  const fijaBuena = capturaAutomatica({ fija: '10.0.0.9:2', memoria: memoriaFija, recordar: (m) => recordadasFija.push({ ...m }), encontrar: async () => { throw new Error('no debía buscar'); }, capturar: () => png });
-  await fijaBuena(); await fijaBuena();
-  eq(`${memoriaFija.ip}:${memoriaFija.puerto} ${recordadasFija.length}`, '10.0.0.9:2 1', 'la tablet fijada que funciona no se recuerda (o se guarda en cada captura)');
-  // `preparar()` la busca al arrancar y el primer toque no espera a nada.
-  let buscadaAntes = 0;
-  const caliente = capturaAutomatica({ encontrar: async () => { buscadaAntes += 1; return { ip: '10.0.0.5', puerto: 1, via: 'memoria' }; }, capturar: () => png });
-  caliente.preparar();
-  await caliente();
-  eq(buscadaAntes, 1, `preparar() y el primer toque buscan ${buscadaAntes} veces (una sola búsqueda compartida)`);
-});
-
-test('un hueco sin reconocer dice en Termux a qué se quedó más cerca', async () => {
+test('un hueco sin reconocer dice en el registro a qué se quedó más cerca', async () => {
   const lineas = [];
   await conServidor({ capturar: () => capturaCompletaPng({ conPicks: false }), registrar: (m) => lineas.push(m) }, async (base) => {
     await fetch(`${base}/leer`, { headers: { Origin: 'https://srchipiron.github.io' } });

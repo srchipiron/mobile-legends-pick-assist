@@ -25,7 +25,7 @@ export const CLAVES = {
   lectorAuto: 'roam-picker:lector-auto',
   // La voz callada (3.53.0–3.95.0): ya no hay voz. Se queda para no reutilizar la clave.
   vozCallada: 'roam-picker:voz-callada',
-  // El lector en la tablet (3.61.0): dirección y código de vinculación. Clave NUEVA: sin ella, el de Termux.
+  // El lector en la tablet (3.61.0): dirección y código de vinculación. Sin ella, no hay lector.
   lectorTablet: 'roam-picker:lector-tablet',
   // Las claves de invitación (3.65.0). Claves NUEVAS: sin ellas no cambia nada.
   clave: 'roam-picker:clave',            // la clave de este usuario

@@ -1,7 +1,9 @@
 /**
  * «Leer del juego» de punta a punta (3.25.0): la app de verdad, el lector de
  * verdad (scripts/lector/servir.mjs) en su puerto y una captura real de la
- * tablet de Javi en vez de adb. Mete los baneos y los picks enemigos, se
+ * tablet de Javi. Desde 3.97.0 (sin Termux) la app solo habla con una tablet
+ * vinculada: las pruebas la vinculan a 192.168.68.116 y esas peticiones se
+ * reenvían al lector de prueba (`reenviarALaTablet`). Mete los baneos y los picks enemigos, se
  * deshace de un toque, viaja con la partida apuntada y, si el lector no
  * está o no llega a la tablet, lo dice. Y el final (3.33.0): con el draft
  * completo el lector vigila por su cuenta y la partida se apunta sola.
@@ -33,11 +35,32 @@ const cerrarPuente = () => new Promise((r) => { puente.closeAllConnections?.(); 
 const leer = (pagina, clave = 'roam-picker:draft') => pagina.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), clave);
 const almacen = { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: [], allies: [], bans: [], enemyRoam: null, fase: 'baneos' } };
 const boton = (pagina) => pagina.getByRole('button', { name: 'Leer del juego' });
+/** La tablet vinculada de las pruebas: lo que la app le pide va al lector de prueba (si está cerrado, como una tablet apagada). */
+const TABLET = { direccion: '192.168.68.116:47323', codigo: 'ABCDEFGH23' };
+/** Lo que contesta el lector de prueba a una petición hecha a la tablet (con las cabeceras CORS de la tablet). */
+const delPuente = async (q) => {
+  const u = new URL(q.url());
+  const r = await fetch(`http://127.0.0.1:${PUERTO}${u.pathname}${u.search}`, { method: q.method(), headers: { Origin: q.headers().origin ?? 'http://127.0.0.1', 'Content-Type': 'application/json' }, body: q.postData() ?? undefined });
+  return { status: r.status, headers: { 'Access-Control-Allow-Origin': q.headers().origin ?? '*', 'Access-Control-Allow-Headers': 'Content-Type, X-Lector-Codigo', 'Content-Type': 'application/json' }, body: await r.text() };
+};
+const reenviarALaTablet = (p) => p.context().route('http://192.168.68.116:47323/**', async (ruta) => {
+  const q = ruta.request();
+  const cab = { 'Access-Control-Allow-Origin': q.headers().origin ?? '*', 'Access-Control-Allow-Headers': 'Content-Type, X-Lector-Codigo', 'Access-Control-Allow-Methods': 'GET, POST' };
+  if (q.method() === 'OPTIONS') return ruta.fulfill({ status: 204, headers: cab });
+  const u = new URL(q.url());
+  try {
+    const r = await fetch(`http://127.0.0.1:${PUERTO}${u.pathname}${u.search}`, { method: q.method(), headers: { Origin: q.headers().origin ?? 'http://127.0.0.1', 'Content-Type': 'application/json' }, body: q.postData() ?? undefined });
+    const cuerpo = await r.text();
+    return ruta.fulfill({ status: r.status, headers: { ...cab, 'Content-Type': 'application/json' }, body: cuerpo });
+  } catch { return ruta.abort('connectionrefused'); }
+});
+/** Una página con la tablet de las pruebas vinculada (salvo que el almacén diga otra cosa). */
+const abrir = (direccion, opciones = {}) => paginaCon(navegador, direccion, { ...opciones, almacen: { 'roam-picker:lector-tablet': TABLET, ...(opciones.almacen ?? {}) }, antes: async (p) => { await reenviarALaTablet(p); await opciones.antes?.(p); } });
 
 await abrirPuente();
 
 await prueba('«Leer del juego» mete los baneos y los picks enemigos de la tablet, y se deshace de un toque', async () => {
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen });
+  const { contexto, pagina, errores } = await abrir(url, { almacen });
   await boton(pagina).click();
   await pagina.locator('.aviso-deshacer').waitFor({ timeout: 15000 });
   const d = await leer(pagina);
@@ -102,16 +125,17 @@ await prueba('el enlace del QR de la tablet vincula la app: lee de la tablet con
   eq(await leer(pagina, 'roam-picker:lector-auto'), true, 'vincular no enciende «Leer solo»');
   for (let i = 0; i < 40 && !(await leer(pagina)).bans.length; i++) await pagina.waitForTimeout(250);
   ok((await leer(pagina)).bans.length > 0, 'lo leído de la tablet no entra en el draft');
-  // Desvincular vuelve al de Termux (127.0.0.1).
+  // Desvincular deja la app sin lector (3.97.0: ya no hay el de Termux): sin «Leer del juego».
   await abrirAjustes(pagina);
-  await pagina.getByRole('button', { name: 'Usar el de Termux' }).click();
+  await pagina.getByRole('button', { name: 'Desvincular la tablet' }).click();
   eq(await leer(pagina, 'roam-picker:lector-tablet'), null, 'desvincular no se guarda');
+  eq(await boton(pagina).count(), 0, 'desvinculada, sigue «Leer del juego»');
   ok(!errores.length, `errores de página: ${errores}`);
   await contexto.close();
 });
 
 await prueba('leer no quita nada ni repite: lo que ya había se queda, y una segunda lectura no añade lo mismo', async () => {
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, {
+  const { contexto, pagina, errores } = await abrir(url, {
     almacen: { ...almacen, 'roam-picker:draft': { enemies: ['Layla'], allies: ['Chou'], bans: ['Saber', 'Fanny'], enemyRoam: null, fase: 'picks' } },
   });
   await boton(pagina).click();
@@ -122,14 +146,14 @@ await prueba('leer no quita nada ni repite: lo que ya había se queda, y una seg
   eq(d.bans.length, 10, `no llena los diez baneos sin pasarse: ${d.bans}`);
   await pagina.locator('.aviso-deshacer .x').click();
   await boton(pagina).click(); await pagina.waitForTimeout(4000);
-  ok(/ya estaba en el draft/.test(await pagina.locator('.lector-aviso').innerText()), 'una segunda lectura igual no dice que ya estaba');
+  ok(/ya estaba en el draft/.test(await pagina.locator('.lector-aviso').innerText()), `una segunda lectura igual no dice que ya estaba: ${await pagina.locator('.lector-aviso, .lector-estado').allInnerTexts()}`);
   eq(JSON.stringify((await leer(pagina)).enemies), JSON.stringify(d.enemies), 'una segunda lectura repite enemigos');
   ok(!errores.length, `errores de página: ${errores}`);
   await contexto.close();
 });
 
 await prueba('el héroe que un jugador solo miraba se cambia por el que coge en ese hueco, y se deshace (3.37.0)', async () => {
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen });
+  const { contexto, pagina, errores } = await abrir(url, { almacen });
   await boton(pagina).click();
   await pagina.locator('.aviso-deshacer').waitFor({ timeout: 15000 });
   eq((await leer(pagina)).enemies.join(), 'Clint,Khufra', 'la primera lectura no mete a Clint y Khufra');
@@ -154,7 +178,7 @@ await prueba('el héroe que un jugador solo miraba se cambia por el que coge en 
 });
 
 await prueba('si cambian a la vez más huecos de los que pueden estar eligiendo (fase de skins), esa lectura no toca los picks (3.54.0)', async () => {
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen });
+  const { contexto, pagina, errores } = await abrir(url, { almacen });
   capturar = () => png2;
   try {
     await boton(pagina).click();
@@ -175,7 +199,7 @@ await prueba('si cambian a la vez más huecos de los que pueden estar eligiendo 
 });
 
 await prueba('lo leído viaja con la partida apuntada, para medir al lector', async () => {
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, {
+  const { contexto, pagina, errores } = await abrir(url, {
     almacen: { ...almacen, 'roam-picker:draft': { enemies: [], allies: ['Chou', 'Miya', 'Eudora', 'Lukas'], bans: [], enemyRoam: null, fase: 'baneos', miPick: 'Rafaela', miPickDesde: Date.now() - 11 * 60 * 1000 } },
   });
   await boton(pagina).click();
@@ -208,13 +232,13 @@ await prueba('«Leer solo»: con el modo encendido la app lee sin tocar nada, lo
   // lectura tarda 3–5 s, así que el aviso (DESHACER_MS, 6 s) caducaba solo
   // antes de acabar la segunda y la prueba no distinguía eso de «se lo llevó».
   let primera = null;
-  const repetir = (p) => p.route(`http://127.0.0.1:${PUERTO}/leer*`, async (ruta) => {
+  const repetir = (p) => p.route('http://192.168.68.116:47323/leer*', async (ruta) => {
+    if (ruta.request().method() === 'OPTIONS') return ruta.fallback();
     if (primera) return ruta.fulfill(primera);
-    const r = await ruta.fetch();
-    primera = { status: r.status(), headers: r.headers(), body: await r.text() };
+    primera = await delPuente(ruta.request());
     return ruta.fulfill(primera);
   });
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:lector-auto': true }, antes: repetir });
+  const { contexto, pagina, errores } = await abrir(url, { almacen: { ...almacen, 'roam-picker:lector-auto': true }, antes: repetir });
   // Sin tocar «Leer del juego»: en unos segundos el draft tiene lo de la tablet.
   let d = null;
   for (let i = 0; i < 60 && !d?.enemies?.length; i++) { await pagina.waitForTimeout(250); d = await leer(pagina); }
@@ -253,7 +277,7 @@ await prueba('con «Leer solo» y el draft completo, el lector vigila el final p
   // Con tu pick fijado FUERA del ranking de tu línea (Khufra jugando exp):
   // se apunta tu pick, no el nº1 de la línea (3.40.0).
   const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], enemyRoam: null, fase: 'picks', completoDesde, miPick: 'Khufra', miPickDesde: completoDesde };
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:linea': 'exp', 'roam-picker:lector-auto': true, 'roam-picker:draft': draft } });
+  const { contexto, pagina, errores } = await abrir(url, { almacen: { ...almacen, 'roam-picker:linea': 'exp', 'roam-picker:lector-auto': true, 'roam-picker:draft': draft } });
   // El lector recibe el aviso con el instante del draft completo y en los INTERVALO_FINAL_MS siguientes la app recoge el resultado.
   let partidas = [];
   for (let i = 0; i < 100 && !partidas.length; i++) { await pagina.waitForTimeout(250); partidas = (await leer(pagina, 'roam-picker:partidas')) ?? []; }
@@ -296,7 +320,7 @@ await prueba('la partida apuntada sola no cierra la hoja que estás usando ni pi
   // Sin pick fijado: lo que se apunta es el nº1, una SUPOSICIÓN. Con ids de lectura, para que haya /corregir.
   const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], enemyRoam: null, fase: 'picks', completoDesde, lectura: { baneos: [], enemigos: ['Layla'], ids: ['lectura-2026-10-20T10-00-00-000Z-1'] } };
   const corregidos = [];
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, {
+  const { contexto, pagina, errores } = await abrir(url, {
     almacen: { ...almacen, 'roam-picker:linea': 'exp', 'roam-picker:lector-auto': true, 'roam-picker:draft': draft },
     antes: (p) => p.route('**/corregir', (ruta) => { corregidos.push(JSON.parse(ruta.request().postData() ?? '{}')); return ruta.fulfill({ status: 200, contentType: 'application/json', body: '{}', headers: { 'Access-Control-Allow-Origin': '*' } }); }),
   });
@@ -322,7 +346,7 @@ await prueba('con el draft completo el lector vigila ese draft (sin guion: 3.96.
   const origen = { headers: { Origin: new URL(url).origin } };
   const completoDesde = Date.now() - 2 * 60 * 1000;
   const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], enemyRoam: null, fase: 'picks', completoDesde };
-  let { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:linea': 'exp', 'roam-picker:lector-auto': true, 'roam-picker:draft': draft } });
+  let { contexto, pagina, errores } = await abrir(url, { almacen: { ...almacen, 'roam-picker:linea': 'exp', 'roam-picker:lector-auto': true, 'roam-picker:draft': draft } });
   let fin = null;
   for (let i = 0; i < 80; i++) { await pagina.waitForTimeout(250); fin = await (await fetch(`http://127.0.0.1:${PUERTO}/final`, origen)).json(); if (fin.desde === completoDesde) break; }
   ok(fin.desde === completoDesde && !('avisos' in fin), `el lector no vigila el draft completo, o sigue con consejos: ${JSON.stringify(fin).slice(0, 200)}`);
@@ -331,7 +355,7 @@ await prueba('con el draft completo el lector vigila ese draft (sin guion: 3.96.
   ok(!errores.length, `errores de página: ${errores}`);
   await contexto.close();
   // Completo hace unos segundos y sin tu pick (eliges el último): se lee tu fila y queda fijado.
-  ({ contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:lector-auto': true, 'roam-picker:draft': { ...draft, completoDesde: Date.now() - 5000 } } }));
+  ({ contexto, pagina, errores } = await abrir(url, { almacen: { ...almacen, 'roam-picker:lector-auto': true, 'roam-picker:draft': { ...draft, completoDesde: Date.now() - 5000 } } }));
   let d = null;
   for (let i = 0; i < 120; i++) { await pagina.waitForTimeout(250); d = await leer(pagina); if (d.miPick) break; }
   eq(d.miPick, VERDAD.tuyo, `con el draft completo antes de tu pick no se lee tu fila: ${d.miPick}`);
@@ -341,7 +365,7 @@ await prueba('con el draft completo el lector vigila ese draft (sin guion: 3.96.
 
 await prueba('tu fila leída no se fija como tu pick si el héroe no es de tu línea (3.46.1)', async () => {
   // La captura es de una partida de roam (tu fila, Estes): jugando jungla, Estes no puede ser tuyo.
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:linea': 'jungle' } });
+  const { contexto, pagina, errores } = await abrir(url, { almacen: { ...almacen, 'roam-picker:linea': 'jungle' } });
   try {
     await boton(pagina).click();
     await pagina.locator('.aviso-deshacer').waitFor({ timeout: 15000 });
@@ -358,15 +382,13 @@ await prueba('la partida empieza con el draft a medias (3.46.0): dos lecturas en
   // compañeros: a medias); las siguientes, la misma, y desde `enJuego` con
   // la tablet en partida (el minimapa, `partida`), sin nadie nuevo.
   let primera = null, enJuego = false, lecturas = 0;
-  const responder = (p) => p.route(`http://127.0.0.1:${PUERTO}/leer*`, async (ruta) => {
+  const responder = (p) => p.route('http://192.168.68.116:47323/leer*', async (ruta) => {
+    if (ruta.request().method() === 'OPTIONS') return ruta.fallback();
     lecturas += 1;
-    if (!primera) {
-      const r = await ruta.fetch();
-      primera = { status: r.status(), headers: r.headers(), body: await r.text() };
-    }
+    if (!primera) primera = await delPuente(ruta.request());
     return ruta.fulfill(enJuego ? { ...primera, body: JSON.stringify({ ...JSON.parse(primera.body), partida: true }) } : primera);
   });
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:lector-auto': true }, antes: responder });
+  const { contexto, pagina, errores } = await abrir(url, { almacen: { ...almacen, 'roam-picker:lector-auto': true }, antes: responder });
   try {
     let d = null;
     for (let i = 0; i < 80 && !d?.enemies?.length; i++) { await pagina.waitForTimeout(250); d = await leer(pagina); }
@@ -500,21 +522,28 @@ await prueba('si la tablet cambia de IP, la app la encuentra sola en la wifi y s
 
 await prueba('si el lector no llega a la tablet, o no está abierto, lo dice con lo que hay que hacer', async () => {
   capturar = () => { throw new Error('device offline'); };
-  let { contexto, pagina } = await paginaCon(navegador, url, { almacen });
+  let { contexto, pagina } = await abrir(url, { almacen });
   try {
     await boton(pagina).click();
     await pagina.locator('.lector-aviso').waitFor({ timeout: 15000 });
-    ok(/depuración inalámbrica/.test(await pagina.locator('.lector-aviso').innerText()), 'un fallo de captura no dice que mire la depuración inalámbrica');
+    ok(/no está grabando/.test(await pagina.locator('.lector-aviso').innerText()), 'un fallo de captura no dice que la tablet no está grabando');
     eq((await leer(pagina)).bans.length, 0, 'un fallo mete algo en el draft');
   } finally {
     await contexto.close();
     capturar = () => png;
     await cerrarPuente();
   }
-  ({ contexto, pagina } = await paginaCon(navegador, url, { almacen }));
+  ({ contexto, pagina } = await abrir(url, { almacen }));
   await boton(pagina).click();
   await pagina.locator('.lector-aviso').waitFor({ timeout: 15000 });
-  ok(/escribe: lector/.test(await pagina.locator('.lector-aviso').innerText()), 'sin lector abierto no dice cómo abrirlo (el mandato «lector»)');
+  ok(/No encuentro la tablet/.test(await pagina.locator('.lector-aviso').innerText()), 'sin la tablet no dice que abra «Lector MLBB»');
+  await contexto.close();
+  // Sin tablet vinculada (3.97.0, sin Termux): ni «Leer del juego» ni ninguna petición a un lector; Ajustes enseña cómo vincularla.
+  const pedidas = [];
+  ({ contexto, pagina } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:lector-auto': true }, antes: (p) => p.context().route(/^http:\/\/(127\.0\.0\.1|localhost|192\.168\.)/, (ruta) => { if (!ruta.request().url().startsWith(url)) pedidas.push(ruta.request().url()); return ruta.fallback(); }) }));
+  await pagina.waitForTimeout(1500);
+  eq(await boton(pagina).count(), 0, 'sin tablet vinculada sale «Leer del juego»');
+  eq(pedidas.filter((u) => /:47323\//.test(u)).length, 0, `sin tablet vinculada la app pide al lector: ${pedidas}`);
   await contexto.close();
 });
 

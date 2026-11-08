@@ -438,7 +438,7 @@ export default function App() {
   const lanzarDiagnostico = async () => {
     try {
       // El lector solo se pregunta si se usa: sin él, Chrome sacaría el aviso de red local a cualquiera.
-      const [{ publicada, historial }, estadoLector] = await Promise.all([pedirPublicada(), lectorAuto || lectorTablet ? pedirEstadoLector() : null]);
+      const [{ publicada, historial }, estadoLector] = await Promise.all([pedirPublicada(), lectorTablet ? pedirEstadoLector() : null]);
       setInforme(diagnosticar({
         datos, linea,
         maestria: personal.maestriaUsada, maestriaManual: personal.maestria, partidas: personal.partidas,
@@ -450,7 +450,7 @@ export default function App() {
         historial, pro,
         entorno: leerEntorno({
           version: __APP_VERSION__, buildTime: __BUILD_TIME__, rango: datos.rango, publicada,
-          lector: lectorAuto || lectorTablet ? { donde: lectorTablet?.direccion ?? null, auto: lectorAuto, estado: estadoLector, ultimo: lector.ultimo, ahora: Date.now() } : null,
+          lector: lectorTablet ? { donde: lectorTablet?.direccion ?? null, auto: lectorAuto, estado: estadoLector, ultimo: lector.ultimo, ahora: Date.now() } : null,
         }),
       }));
     } catch (err) {
@@ -460,7 +460,7 @@ export default function App() {
   };
 
   /**
-   * Pide al lector de Termux lo que hay en la tablet y lo mete en el draft
+   * Pide al lector de la tablet lo que hay en su pantalla y lo mete en el draft
    * (con Deshacer). Leyendo solo (`silencioso`), un fallo o una lectura
    * vacía no sacan aviso: se repite en unos segundos; queda en `ultimo`.
    */
@@ -695,7 +695,7 @@ export default function App() {
           onBanear={(h) => draft.anadir('baneos', h)}
           onQuitar={(h) => draft.quitar('baneos', h)}
           onAPicks={() => draft.setFase('picks')}
-          lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
+          lector={lector} onLeer={lectorTablet ? leerDelJuego : null} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
           pie={pie} barra={barra}
         />
         {/* El aviso y el selector en el MISMO sitio que en picks (segundo y
@@ -718,7 +718,7 @@ export default function App() {
         meta={meta} datos={datos} metaListo={metaListo} sinWinrates={sinWinrates} edadHoras={edadHoras} pro={pro}
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
         onResultado={apuntarAMano}
-        lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
+        lector={lector} onLeer={lectorTablet ? leerDelJuego : null} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
         lectorTablet={lectorTablet} onLectorTablet={setLectorTablet} onAdministracion={verAdmin ? () => abrir('admin') : null}
         pie={pie} barra={barra}
       />

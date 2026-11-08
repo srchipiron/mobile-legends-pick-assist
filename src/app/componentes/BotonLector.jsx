@@ -3,7 +3,7 @@ import { tPorDefecto } from './tPorDefecto.js';
 import { claveDeFallo } from '../lector.js';
 
 /**
- * «Leer del juego» (3.25.0): pide al lector de Termux lo que hay en la
+ * «Leer del juego» (3.25.0): pide al lector de la tablet lo que hay en la
  * pantalla del draft de la tablet y lo mete en el draft. Lo que sale bien
  * se dice en el aviso con «Deshacer»; lo que sale mal, aquí debajo, con lo
  * que hay que hacer. Y «Solo» (3.28.0): la app lee sola cada pocos segundos

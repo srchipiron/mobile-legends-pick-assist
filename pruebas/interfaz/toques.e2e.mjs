@@ -10,14 +10,15 @@ import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from 
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
-const PUERTO = 47323;
+// La tablet vinculada (desde 3.97.0 la app solo habla con un lector en la tablet).
+const TABLET = { direccion: '192.168.68.116:47323', codigo: 'ABCDEFGH23' };
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Private-Network': 'true', 'Access-Control-Allow-Headers': '*', 'Content-Type': 'application/json' };
 const leer = (p, k = 'roam-picker:draft') => p.evaluate((clave) => JSON.parse(localStorage.getItem(clave) ?? 'null'), k);
 const fila = (n) => (n ? { nombre: n } : null);
 
 /** Un lector falso: `respuesta()` da la lectura; con `puerta`, la respuesta espera a que se abra. */
 const lectorFalso = (estado) => async (p) => {
-  await p.route(`http://127.0.0.1:${PUERTO}/**`, async (ruta) => {
+  await p.route('http://192.168.68.116:47323/**', async (ruta) => {
     const req = ruta.request();
     if (req.method() === 'OPTIONS') return ruta.fulfill({ status: 204, headers: CORS });
     const camino = new URL(req.url()).pathname;
@@ -36,7 +37,7 @@ const lectorFalso = (estado) => async (p) => {
     return ruta.fulfill({ status: 200, headers: CORS, body: '{}' });
   });
 };
-const conLector = (draft, estado, extra = {}) => paginaCon(navegador, url, { almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': draft, 'roam-picker:lector-auto': true }, antes: lectorFalso(estado), ...extra });
+const conLector = (draft, estado, extra = {}) => paginaCon(navegador, url, { almacen: { 'roam-picker:lector-tablet': TABLET, 'roam-picker:linea': 'roam', 'roam-picker:draft': draft, 'roam-picker:lector-auto': true }, antes: lectorFalso(estado), ...extra });
 
 await prueba('lo que quitas con la × no vuelve con la siguiente lectura (el lector sigue viéndolo en la tablet)', async () => {
   const e = { respuesta: () => ({ enemigos: [fila('Layla'), fila('Fanny')], tuyos: [], suyos: [], aliados: [] }) };
@@ -186,7 +187,7 @@ await prueba('lo que el lector aprendió llega a SU draft, no al siguiente si en
   // Sin «Leer solo»: aquí solo importa la corrección. Con `load` y no
   // `networkidle`: la corrección retenida no deja la red quieta y la carga
   // esperaría a que caducara (20 s), con lo que no habría nada que probar.
-  const sinAuto = (estado) => paginaCon(navegador, url, { almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': completo }, antes: lectorFalso(estado), esperar: 'load' });
+  const sinAuto = (estado) => paginaCon(navegador, url, { almacen: { 'roam-picker:lector-tablet': TABLET, 'roam-picker:linea': 'roam', 'roam-picker:draft': completo }, antes: lectorFalso(estado), esperar: 'load' });
   // Con el draft quieto, lo aprendido se queda en él.
   const quieto = { corregir: { aprendido: true, aprendidos: ['Fanny'], sinEncontrar: [] } };
   const a = await sinAuto(quieto);
@@ -213,7 +214,7 @@ await prueba('las pantallas del final que no suben por falta de red esperan y su
   const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], fase: 'picks', completoDesde };
   const e = { respuesta: () => ({}), final: { desde: completoDesde, resultado: null, fotogramas: [
     { id: 'fotograma-1', minuto: 9, miniatura: 'QUJD', tira: 'QUJD' }, { id: 'fotograma-2', minuto: 12, miniatura: 'QUJD', tira: 'QUJD' }] } };
-  const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': draft, 'roam-picker:lector-auto': true, 'roam-picker:envio': { token: 'github_pat_prueba' } }, antes: lectorFalso(e) });
+  const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { 'roam-picker:lector-tablet': TABLET, 'roam-picker:linea': 'roam', 'roam-picker:draft': draft, 'roam-picker:lector-auto': true, 'roam-picker:envio': { token: 'github_pat_prueba' } }, antes: lectorFalso(e) });
   let red = false;
   const pantallas = [];
   await contexto.route('https://api.github.com/**', async (ruta) => {
@@ -255,7 +256,7 @@ async function conFinal({ resultado = null } = {}) {
   const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], fase: 'picks', completoDesde };
   const e = { respuesta: () => ({}), final: { desde: completoDesde, resultado, resultadoEn: resultado ? Date.now() - 60000 : null, fotogramas: [
     { id: 'fotograma-1', minuto: 9, miniatura: 'QUJD', tira: 'QUJD' }, { id: 'fotograma-2', minuto: 12, miniatura: 'QUJD', tira: 'QUJD', ...(resultado ? { tabla: true } : {}) }] } };
-  const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': draft, 'roam-picker:lector-auto': true, 'roam-picker:envio': { token: 'github_pat_prueba' } }, antes: lectorFalso(e) });
+  const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { 'roam-picker:lector-tablet': TABLET, 'roam-picker:linea': 'roam', 'roam-picker:draft': draft, 'roam-picker:lector-auto': true, 'roam-picker:envio': { token: 'github_pat_prueba' } }, antes: lectorFalso(e) });
   const pantallas = [];
   await contexto.route('https://api.github.com/**', async (ruta) => {
     const cuerpo = ruta.request().postData() ?? '';

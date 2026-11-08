@@ -3,7 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { buscarTabletEnLaRed, pruebaDelReto, parteDeLaTablet, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, URL_LECTOR, pedirClaveDeLaTablet, lineasDelSistema } from '../../src/app/lector.js';
+import { buscarTabletEnLaRed, pruebaDelReto, parteDeLaTablet, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, pedirClaveDeLaTablet, lineasDelSistema } from '../../src/app/lector.js';
 import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, recorteValido, faltoAlguien, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
@@ -315,12 +315,16 @@ test('el lector en la tablet (3.61.0): solo IP privada y código decente; el enl
     eq(vistas[0].op.targetAddressSpace, 'local', 'no declara que va a la red local');
     eq(claveDeFallo('sinPuente'), 'lector.enTablet.sinPuente');
     eq(claveDeFallo('captura', { auto: true }), 'lector.enTablet.auto.captura');
+    // Sin tablet vinculada (3.97.0, sin Termux): ninguna petición sale, y falla como un lector que no está.
     ponerLectorEnTablet(null);
-    eq(baseLector(), URL_LECTOR);
-    await pedirAlLector(`${URL_LECTOR}/estado`, { cache: 'no-store' });
-    eq(JSON.stringify(vistas[1].op), JSON.stringify({ cache: 'no-store' }), 'con el de Termux manda el código o la red local');
-    eq(claveDeFallo('sinPuente'), 'lector.sinPuente');
-    eq(claveDeFallo('emparejar', { auto: true }), 'lector.auto.tablet');
+    eq(baseLector(), null);
+    const sinTablet = await pedirAlLector('http://127.0.0.1:47323/estado', { cache: 'no-store' }).then(() => null, (e) => e);
+    ok(sinTablet instanceof TypeError, 'sin tablet vinculada la petición no falla');
+    eq(vistas.length, 1, 'sin tablet vinculada sale una petición (al lector de Termux de antes)');
+    eq((await pedirLectura().catch((e) => e)).tipo, 'sinPuente', 'sin tablet vinculada la lectura no dice «no encuentro»');
+    eq(claveDeFallo('emparejar', { auto: true }), 'lector.enTablet.auto.captura');
+    eq(claveDeFallo('plazo'), 'lector.plazo');
+    eq(claveDeFallo('yaEstaba'), 'lector.yaEstaba', 'el aviso de «ya estaba» se convierte en un fallo');
   } finally { globalThis.fetch = fetchDeVerdad; ponerLectorEnTablet(null); }
   // 401 es el código y 429 el bloqueo, con su aviso.
   for (const [estado, tipo] of [[401, 'codigo'], [429, 'bloqueado']]) {

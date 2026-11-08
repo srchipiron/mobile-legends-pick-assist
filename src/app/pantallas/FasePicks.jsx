@@ -164,7 +164,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
               {t(lectorAuto ? 'lector.autoSi' : 'lector.autoNo')}
             </button>
           )}
-          {onLeer && onLectorTablet && <LectorTablet vinculo={lectorTablet} onVinculo={onLectorTablet} t={t} />}
+          {onLectorTablet && <LectorTablet vinculo={lectorTablet} onVinculo={onLectorTablet} t={t} />}
           <button className="reset" style={{ marginTop: '14px' }} onClick={onDiagnostico}>{t('app.diagnostico')}</button>
           {onAdministracion && <button className="reset" style={{ marginTop: '14px' }} onClick={onAdministracion}>{t('admin.titulo')}</button>}
         </details>

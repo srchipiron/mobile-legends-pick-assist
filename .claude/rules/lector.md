@@ -15,7 +15,9 @@ paths:
 
 # El lector de la tablet
 
-Se carga al tocar el lector o lo que aplica sus lecturas al draft. La voz (consejos en directo) se quitó en 3.96.0: lo de abajo que habla de ella es historia. La SEGURIDAD de la cuenta de Javi manda sobre todo lo demás.
+Se carga al tocar el lector o lo que aplica sus lecturas al draft. La voz (consejos en directo) se quitó en 3.96.0: lo de abajo que habla de ella es historia.
+
+**Sin Termux desde 3.97.0** (decisión de Javi, valoración del 8 de noviembre de 2026): el lector solo vive en la tablet (Lector MLBB). Se fueron la captura por adb (`conectarTablet`, `capturarTablet`, `encontrarTablet` de leer.mjs), `tablet.mjs` (mDNS y escaneo de puertos), `lector.sh`, `capturaAutomatica` y el arranque de servir.mjs desde la línea de mandatos, las rutas `/aprendido` (pasar lo aprendido de Termux a la tablet) y, en la app, el modo 127.0.0.1: sin tablet vinculada `baseLector()` es null, `pedirAlLector` falla sin hacer ninguna petición y no se enseñan «Leer del juego» ni «Leer solo» (solo el panel para vincular). `claveDeFallo` siempre da el aviso de la tablet. La prueba de seguridad de `lector.test` exige hoy que NINGÚN fichero del lector lance programas ni nombre adb, sin guiones de shell. `leer.mjs --archivo` sigue para medir capturas. Todo lo de Termux de abajo es historia. La SEGURIDAD de la cuenta de Javi manda sobre todo lo demás.
 
 ## Leer la pantalla del juego (3.19.0, picks en 3.21.0)
 
@@ -156,7 +158,7 @@ por orden, y lo que se cambió por cada cosa:
   hiciera. Un servidor que se queda atrás con un dato caducado es peor
   que ninguno.
 - Por eso 3.26.0: **el lector encuentra la tablet solo** (`encontrarTablet`
-  en leer.mjs, `scripts/lector/tablet.mjs`): primero la última que
+  en leer.mjs, `tablet.mjs`, quitado en 3.97.0): primero la última que
   funcionó (`~/.config/lector/tablet.json`, ip y puerto), luego las que
   anuncia la wifi por mDNS (`_adb-tls-connect._tcp`, con el bit QU para
   que la respuesta llegue unicast aunque el wifi filtre multicast: es lo
