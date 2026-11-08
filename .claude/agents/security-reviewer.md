@@ -32,11 +32,13 @@ se negocia:
 4. **El token de GitHub** (`useEnvio`, `src/app/github.js`) solo viaja a
    `api.github.com` en la cabecera, no entra en el código de perfil, en el
    diagnóstico, en los registros ni en una incidencia.
-5. **Lo que borra** el lector o `lector.sh` son SOLO capturas suyas
-   (`podarCapturas`, Descargas): nada con un nombre corriente, nada fuera.
+5. **Lo que borra** el lector son SOLO capturas suyas (`podarCapturas`):
+   nada con un nombre corriente, nada fuera. Desde 3.97.0 no hay Termux ni
+   adb: ningún fichero del lector lanza programas.
 6. **Workflows**: el cuerpo de una incidencia entra por variable de entorno a
-   un fichero, nunca dentro de un mandato; `partidas.yml` solo atiende al
-   dueño; permisos declarados y mínimos.
+   un fichero, nunca dentro de un mandato; permisos declarados y mínimos.
+   Desde 3.98.0 la app no abre incidencias (el token de GitHub es solo de
+   administración).
 
 Y lo habitual de una web: secretos en el repositorio, `innerHTML` o
 `dangerouslySetInnerHTML` con datos de fuera, enlaces a dominios de terceros

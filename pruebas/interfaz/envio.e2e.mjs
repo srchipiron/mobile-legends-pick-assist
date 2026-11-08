@@ -1,10 +1,8 @@
 /**
- * La subida automática de partidas (3.10.0), en un Chrome de verdad sobre
- * la app compilada y con la API de GitHub SIMULADA: con token, apuntar una
- * partida la sube sola a la misma incidencia; el botón de enviar sube por
- * la API en vez de abrir el navegador; un token rechazado se dice y no se
- * machaca la API; y el token no aparece ni en el código de perfil ni en el
- * diagnóstico.
+ * El token de GitHub en un Chrome de verdad sobre la app compilada y con la
+ * API SIMULADA. Hasta 3.97.0 subía tus partidas a una incidencia; desde
+ * 3.98.0 es solo de administración: nada va a incidencias, y el token no
+ * aparece ni en el código de perfil ni en el diagnóstico.
  */
 import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes } from './navegador.mjs';
 
@@ -18,7 +16,6 @@ const PARTIDAS = [
   { t: 1700003600000, pick: 'Atlas', gane: false, rango: 'glory', recomendados: ['Tigreal', 'Atlas', 'Khufra'] },
 ];
 const leer = (pagina, clave) => pagina.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), clave);
-const esperar = async (cond, ms = 9000) => { const fin = Date.now() + ms; while (Date.now() < fin) { if (await cond()) return true; await new Promise((r) => setTimeout(r, 200)); } return cond(); };
 
 /** La API de GitHub de mentira: apunta cada petición y responde lo que se le diga. */
 async function simularApi(contexto, { estado = 201, numero = 7 } = {}) {
@@ -36,91 +33,16 @@ const abrirPartidas = async (pagina) => {
   await pagina.getByRole('button', { name: 'Partidas', exact: true }).click(); await pagina.waitForTimeout(400);
 };
 
-await prueba('con token, lo que hay sin subir se sube solo a los pocos segundos, y apuntar otra partida edita la misma incidencia', async () => {
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, {
-    almacen: { ...LINEA, 'roam-picker:partidas': PARTIDAS, 'roam-picker:envio': { token: TOKEN } },
-  });
+await prueba('con token y partidas, nada va a una incidencia (3.98.0); el token se presenta como de administración y quitarlo lo borra del almacén', async () => {
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:partidas': PARTIDAS, 'roam-picker:envio': { token: TOKEN, incidencia: 7, huella: 'x' } } });
   const peticiones = await simularApi(contexto);
-  ok(await esperar(() => peticiones.length >= 1), 'con token y partidas sin subir, no sube nada');
-  const p1 = peticiones[0];
-  eq(p1.metodo, 'POST', 'la primera subida no abre la incidencia');
-  ok(/^https:\/\/api\.github\.com\/repos\/[^/]+\/[^/]+\/issues$/.test(p1.url), `la primera subida no va a /repos/…/issues: ${p1.url}`);
-  eq(p1.cabeceras.authorization, `Bearer ${TOKEN}`, 'el token no va en la cabecera Authorization');
-  const cuerpo1 = JSON.parse(p1.cuerpo);
-  ok(/MLPA1\.[A-Za-z0-9_-]+\.[a-z0-9]+/.test(cuerpo1.body), 'el cuerpo no lleva el código de perfil');
-  ok(!p1.cuerpo.includes(TOKEN) && !p1.url.includes(TOKEN), 'el token viaja fuera de la cabecera');
-  eq(cuerpo1.labels?.[0], 'partidas', 'la incidencia no lleva la etiqueta del bot');
-  ok(await esperar(async () => (await leer(pagina, 'roam-picker:envio'))?.incidencia === 7), 'no se guarda la incidencia abierta');
-  const guardado = await leer(pagina, 'roam-picker:envio');
-  ok(typeof guardado.huella === 'string' && guardado.huella.startsWith('2.') && guardado.error == null, `lo guardado tras subir no cuadra: ${JSON.stringify(guardado)}`);
-  // Sin cambios, no vuelve a subir.
-  await pagina.waitForTimeout(4000);
-  eq(peticiones.length, 1, 'vuelve a subir sin que cambie nada');
-  // Una partida más (del historial del juego, desde la hoja) → PATCH a la misma incidencia.
   await abrirPartidas(pagina);
-  ok((await pagina.locator('.envio-auto').innerText()).includes('Última subida'), 'la hoja no dice cuándo fue la última subida');
-  await pagina.getByRole('button', { name: 'Añadir partidas de tu historial del juego' }).click(); await pagina.waitForTimeout(200);
-  await pagina.locator('.hero-grid.corto button').first().click();
-  await pagina.getByRole('button', { name: 'Gané', exact: true }).click(); await pagina.waitForTimeout(200);
-  ok(await esperar(() => peticiones.length >= 2), 'apuntar una partida no la sube');
-  eq(peticiones[1].metodo, 'PATCH', 'la segunda subida no edita la incidencia');
-  ok(peticiones[1].url.endsWith('/issues/7'), `la segunda subida no va a la incidencia guardada: ${peticiones[1].url}`);
-  ok(!('labels' in JSON.parse(peticiones[1].cuerpo)), 'al editar se reenvían las etiquetas');
-  ok(await esperar(async () => (await leer(pagina, 'roam-picker:envio'))?.huella?.startsWith('3.')), 'la huella no avanza con la partida nueva');
-  // El botón de enviar, con token, sube por la API (no abre el navegador).
-  await pagina.evaluate(() => { window.__abiertas = 0; window.open = () => { window.__abiertas += 1; return null; }; });
-  await pagina.getByRole('button', { name: 'Enviar mis partidas al proyecto' }).click();
-  ok(await esperar(() => peticiones.length >= 3), 'el botón no sube por la API');
-  eq(await pagina.evaluate(() => window.__abiertas), 0, 'con token, el botón sigue abriendo el navegador');
-  ok(await esperar(async () => /incidencia #7/.test(await pagina.locator('.sheet-body').innerText())), 'el botón no dice a qué incidencia ha subido');
-  // Quitar una partida (apuntada por error) deja marca, y la marca sube en el código:
-  // sin ella, la base de datos del proyecto se quedaba con la partida para siempre.
-  // Desde 3.60.2 la × deja «Deshacer» unos segundos y solo después borra
-  // (antes de la subida automática, que en el proyecto ya no se deshace).
-  await pagina.getByRole('button', { name: 'Quitar esta partida · Tigreal' }).click(); await pagina.waitForTimeout(200);
-  ok(/Tigreal: quitada/.test(await pagina.locator('.partida-quitada').innerText()), 'la × no deja la fila con «Deshacer»');
-  ok(!(await leer(pagina, 'roam-picker:olvidadas'))?.length, 'la × borra en el acto, sin dar tiempo a deshacer');
-  await pagina.locator('.partida-quitada button', { hasText: 'Deshacer' }).click(); await pagina.waitForTimeout(6500);
-  ok(!(await leer(pagina, 'roam-picker:olvidadas'))?.length && await pagina.getByRole('button', { name: 'Quitar esta partida · Tigreal' }).count() === 1, '«Deshacer» no devuelve la partida');
-  const antesDeQuitar = peticiones.length;
-  await pagina.getByRole('button', { name: 'Quitar esta partida · Tigreal' }).click(); await pagina.waitForTimeout(6500);
-  eq((await leer(pagina, 'roam-picker:olvidadas'))?.join(), String(PARTIDAS[0].t), 'quitar no guarda la marca de borrado pasado el plazo');
-  ok(await esperar(() => peticiones.length > antesDeQuitar), 'quitar una partida no sube');
-  const olvidadas = await pagina.evaluate(async (cuerpo) => {
-    const c = JSON.parse(cuerpo).body.match(/MLPA1\.[A-Za-z0-9_-]+\.[a-z0-9]+/)[0].split('.')[1];
-    const bin = Uint8Array.from(globalThis.atob(c.slice(1).replace(/-/g, '+').replace(/_/g, '/')), (ch) => ch.charCodeAt(0));
-    const texto = c[0] === 'z' ? await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text() : new TextDecoder().decode(bin);
-    return JSON.parse(texto).olvidadas ?? null;
-  }, peticiones[peticiones.length - 1].cuerpo);
-  eq(olvidadas?.join(), String(PARTIDAS[0].t), 'el código subido no lleva la marca de la partida quitada');
-  // Quitar y cerrar la hoja antes del plazo: se quita igual (no se pierde el toque).
-  await pagina.getByRole('button', { name: 'Quitar esta partida · Atlas' }).click(); await pagina.waitForTimeout(200);
-  await pagina.keyboard.press('Escape'); await pagina.waitForTimeout(400);
-  ok((await leer(pagina, 'roam-picker:olvidadas'))?.map(String).includes(String(PARTIDAS[1].t)), 'cerrar la hoja antes del plazo deja la partida sin quitar');
-  ok(!errores.length, `errores de página: ${errores}`);
-  await contexto.close();
-});
-
-await prueba('un token rechazado se dice en la hoja, no se reintenta en bucle, y desactivar la subida lo quita del almacén', async () => {
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, {
-    almacen: { ...LINEA, 'roam-picker:partidas': PARTIDAS, 'roam-picker:envio': { token: TOKEN, incidencia: 7 } },
-  });
-  const peticiones = await simularApi(contexto, { estado: 401 });
-  ok(await esperar(() => peticiones.length >= 1), 'no lo intenta');
-  await pagina.waitForTimeout(4500);
-  eq(peticiones.length, 1, 'machaca la API tras un 401');
-  ok(await esperar(async () => (await leer(pagina, 'roam-picker:envio'))?.error === 'token'), 'el fallo no queda guardado');
-  await abrirPartidas(pagina);
-  ok((await pagina.locator('.envio-auto').innerText()).includes('no acepta el token'), 'la hoja no dice que el token no vale');
-  await pagina.getByRole('button', { name: 'Desactivar la subida automática' }).click(); await pagina.waitForTimeout(300);
-  const tras = await leer(pagina, 'roam-picker:envio');
-  eq(tras.token, null, 'el token sigue guardado tras desactivar');
-  eq(tras.incidencia, 7, 'desactivar pierde la incidencia (al reactivar abriría otra)');
-  ok(await pagina.locator('.envio-auto input[type="password"]').count() === 1, 'sin token no sale el campo para pegar uno');
-  // Activar con uno nuevo: el campo acepta y el estado vuelve a «activo».
-  await pagina.locator('.envio-auto input[type="password"]').fill('github_pat_OTRO_0123456789abcdefghij');
-  await pagina.getByRole('button', { name: 'Activar la subida automática' }).click(); await pagina.waitForTimeout(300);
-  eq((await leer(pagina, 'roam-picker:envio')).token, 'github_pat_OTRO_0123456789abcdefghij', 'activar no guarda el token');
+  await pagina.waitForTimeout(5000);
+  eq(peticiones.filter((p) => /\/issues/.test(p.url)).length, 0, `la app sube a incidencias: ${peticiones.map((p) => `${p.metodo} ${p.url}`)}`);
+  eq(await pagina.getByRole('button', { name: 'Enviar mis partidas al proyecto' }).count(), 0, 'sigue «Enviar mis partidas al proyecto»');
+  ok(/administración/.test(await pagina.locator('.envio-auto').innerText()), 'el token no se presenta como de administración');
+  await pagina.getByRole('button', { name: 'Quitar el token' }).click(); await pagina.waitForTimeout(300);
+  eq((await leer(pagina, 'roam-picker:envio'))?.token ?? null, null, 'quitar el token no lo borra del almacén');
   ok(!errores.length, `errores de página: ${errores}`);
   await contexto.close();
 });

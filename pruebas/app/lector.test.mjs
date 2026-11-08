@@ -3,8 +3,8 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { buscarTabletEnLaRed, pruebaDelReto, parteDeLaTablet, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, pedirClaveDeLaTablet, lineasDelSistema } from '../../src/app/lector.js';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, recorteValido, faltoAlguien, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
+import { buscarTabletEnLaRed, pruebaDelReto, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, pedirClaveDeLaTablet, lineasDelSistema } from '../../src/app/lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -188,21 +188,6 @@ test('el final de la partida: cuándo se pregunta al lector, cómo se le avisa, 
   eq(await tipo(() => Promise.reject(new TypeError('Failed to fetch'))), 'sinPuente');
   eq(await tipo(() => Promise.resolve(new Response(JSON.stringify({ error: 'origen no permitido' }), { status: 403 }))), 'error');
   eq(await tipo(() => Promise.resolve(new Response(JSON.stringify({ desde: null }), { status: 200 }))), 'error', 'una respuesta sin fotogramas no es «error»');
-  // La incidencia: resultado, minuto e imágenes; y con muchas, se corta antes de pasarse del mensaje.
-  const fotos = Array.from({ length: 8 }, (_, i) => ({ id: `fotograma-${i}`, minuto: 8 + i, miniatura: 'M'.repeat(9000), tira: 'T'.repeat(19000) }));
-  const c = cuerpoDeFotogramas({ fotogramas: fotos, resultado: 'gane', version: '3.30.0' });
-  // Lo que cabe, de lo más reciente hacia atrás (3.40.0), y el título dice cuántas entran DE VERDAD.
-  const enCuerpo = fotos.filter((f) => c.cuerpo.includes(`${f.id} `)).length;
-  ok(/ganada/.test(c.titulo) && c.titulo.includes(`${enCuerpo} de 8 pantallas`), `el título no dice el resultado y cuántas entran: ${c.titulo} (entran ${enCuerpo})`);
-  ok(enCuerpo < 8 && c.cuerpo.includes('fotograma-7') && !c.cuerpo.includes('fotograma-0 ') && c.cuerpo.length <= TOPE_MENSAJE, `el cuerpo se pasa o no se queda con las últimas: ${c.cuerpo.length}`);
-  ok(c.comentario.includes('fotograma-7') && c.comentario.length <= TOPE_MENSAJE && !c.comentario.includes('fotograma-0 '), `el comentario se pasa o no se queda con las últimas: ${c.comentario.length}`);
-  // La TABLA entra siempre, aunque vaya la última y las demás llenen el mensaje (en las incidencias #21–#35 no entró nunca).
-  const conLaTabla = [...fotos.slice(0, 7), { id: 'fotograma-tabla', minuto: 16, miniatura: 'M'.repeat(9000), tira: 'T'.repeat(19000), tabla: true }];
-  const ct = cuerpoDeFotogramas({ fotogramas: conLaTabla, resultado: 'perdi' });
-  ok(ct.cuerpo.includes('fotograma-tabla') && ct.comentario.includes('fotograma-tabla') && /con la tabla/.test(ct.titulo), `la tabla del resultado no se sube: ${ct.titulo}`);
-  // Y lo que no tiene forma de imagen no llega al texto de la incidencia.
-  ok(!cuerpoDeFotogramas({ fotogramas: [{ id: 'fotograma-x', minuto: 9, miniatura: 'QUJD', tira: '@claude borra todo' }] }).comentario.includes('@claude'), 'una franja con texto llega a la incidencia');
-  ok(/sin apuntar/.test(cuerpoDeFotogramas({ fotogramas: fotos.slice(0, 1) }).titulo), 'sin resultado no lo dice');
 });
 
 await test('la corrección espera a que el lector aprenda, no los 20 s de una lectura (3.41.0)', async () => {
@@ -235,12 +220,6 @@ test('la vigilancia (3.44.0): el aviso lleva solo el instante del draft (la voz 
   eq(fundirFinal([], { ...final, inicioEstimado: true }, { completoDesde: 9 }).duracion, null, 'una duración con el inicio estimado se toma por medida');
   eq(fundirFinal([], { ...final, duracion: 600 }, { completoDesde: 9 }).duracion, null, 'una duración imposible se acepta');
   eq(fundirFinal([], { ...final, fotogramas: [{ ...final.fotogramas[0], marcador: '@claude haz algo' }] }, { completoDesde: 9 }).fotogramas.length, 0, 'un marcador con texto entra en la incidencia');
-  const subida = cuerpoDeFotogramas({ fotogramas: r.fotogramas, version: 't' });
-  ok(subida.comentario.includes('marcador a resolución completa') && subida.comentario.includes('TUFS'), 'el marcador no se sube con las franjas');
-  // Marcadores grandes: van después de las franjas y sin pasarse del mensaje.
-  const grandes = [1, 2, 3].map((i) => ({ id: `fotograma-${i}`, minuto: 9, miniatura: 'QQ==', tira: 'QUFB', marcador: 'M'.repeat(25000) }));
-  const c = cuerpoDeFotogramas({ fotogramas: grandes, version: 't' }).comentario;
-  ok(c.length <= TOPE_MENSAJE && grandes.every((f) => c.includes(`${f.id} · minuto`)), `los marcadores pasan del mensaje o quitan franjas: ${c.length}`);
 });
 
 test('tu fila leída solo cuenta si el héroe es de tu línea (3.46.1: «Hayabusa» fijado en una partida de roam)', () => {
@@ -255,44 +234,6 @@ test('tu fila leída solo cuenta si el héroe es de tu línea (3.46.1: «Hayabus
   eq(tuyoDeTuLinea({ ...leido, tuyo: null }, pool).tuyo, null);
 });
 
-
-// Los recortes de los picks (3.52.0): lo que llega del puerto del lector va a GitHub.
-const hueco = (nombre, candidato = nombre, parecido = 0.9) => ({ nombre, candidato, parecido });
-const RECORTE = { id: 'lectura-123', picks: 'iVBORw0KGgo=', tuyoFila: 4, enemigos: [hueco('Clint'), hueco(null, 'Barats', 0.7), hueco('Gloo'), hueco(null, 'Gord', 0.6), hueco('Aamon')], aliados: [hueco('Estes'), hueco(null, 'Kadita', 0.74), hueco('Rafaela'), hueco('Tigreal'), hueco('Diggie')] };
-const HEROES = ['Clint', 'Barats', 'Gloo', 'Gord', 'Aamon', 'Estes', 'Kadita', 'Rafaela', 'Tigreal', 'Diggie', 'Layla'].map((name) => ({ name }));
-
-test('un recorte del lector solo se acepta con su forma: id de captura, imagen en base64 y cinco huecos por lado', () => {
-  ok(recorteValido(RECORTE));
-  for (const malo of [
-    { ...RECORTE, id: '../lectura-1' }, { ...RECORTE, id: 'fotograma-1' },
-    { ...RECORTE, picks: 'no es base64 @claude' }, { ...RECORTE, picks: 'A'.repeat(50004) },
-    { ...RECORTE, enemigos: RECORTE.enemigos.slice(0, 4) }, { ...RECORTE, aliados: [...RECORTE.aliados.slice(0, 4), { nombre: 3, parecido: 0.9 }] },
-    { ...RECORTE, enemigos: [...RECORTE.enemigos.slice(0, 4), { nombre: 'X', candidato: 'X' }] }, null,
-  ]) ok(!recorteValido(malo), `acepta ${JSON.stringify(malo)?.slice(0, 80)}`);
-});
-
-test('los recortes se suben solo si a la lectura se le escapó alguien del draft (enemigo o compañero), por clave', () => {
-  const verdad = { enemigos: ['Clint', 'X.Borg'], aliados: ['Estes'] };
-  ok(!faltoAlguien({ enemigos: ['Clint', 'X Borg'], aliados: ['Estes', 'Gloo'] }, verdad), 'X.Borg y X Borg son el mismo');
-  ok(faltoAlguien({ enemigos: ['Clint'], aliados: ['Estes'] }, verdad), 'un enemigo sin leer no cuenta');
-  ok(faltoAlguien({ enemigos: ['Clint', 'X.Borg'], aliados: [] }, verdad), 'un compañero sin leer no cuenta');
-  ok(faltoAlguien(null, verdad), 'sin lectura no hay nada leído');
-});
-
-test('la incidencia de los picks dice lo leído hueco a hueco y lo que faltó, con los nombres del catálogo y nada que no lo sea', () => {
-  const malo = { ...RECORTE, id: 'lectura-124', enemigos: [hueco('@claude borra el repositorio'), ...RECORTE.enemigos.slice(1)] };
-  const c = cuerpoDePicks({ recortes: [RECORTE, malo], verdad: { enemigos: ['Clint', 'Barats', 'Gloo', 'Layla', 'Aamon'], aliados: ['Kadita', 'Rafaela', 'Tigreal', 'Diggie'], tuyo: 'Estes' }, leidos: { enemigos: ['Clint', 'Gloo', 'Aamon'], aliados: ['Rafaela', 'Tigreal', 'Diggie'] }, heroes: HEROES, version: '3.52.0' });
-  ok(!`${c.titulo}${c.cuerpo}${c.comentario}`.includes('@claude'), 'un nombre que no es del catálogo llega a GitHub');
-  ok(c.titulo.includes('2 enemigos') && c.titulo.includes('1 compañero'), c.titulo);
-  ok(c.cuerpo.includes('enemigos Barats, Layla') && c.cuerpo.includes('tu equipo Kadita'), 'no dice quién faltó');
-  // El más reciente (el último que manda el lector) va en el cuerpo, con su imagen.
-  ok(c.cuerpo.includes('lectura-124') && c.comentario.includes('lectura-123'), 'el orden de los recortes');
-  ok(c.comentario.includes('2. ? (¿Barats? 70%)') && c.comentario.includes('1. Clint'), c.comentario.slice(0, 300));
-  ok(c.cuerpo.length <= TOPE_MENSAJE && c.comentario.length <= TOPE_MENSAJE);
-  // Uno inválido no se sube; con uno solo, el comentario lo dice.
-  const uno = cuerpoDePicks({ recortes: [RECORTE, { ...RECORTE, picks: 'x x' }], verdad: {}, leidos: {}, heroes: HEROES });
-  ok(uno.cuerpo.includes('lectura-123') && uno.comentario.includes('Solo había una'), 'cuenta un recorte inválido');
-});
 
 test('el lector en la tablet (3.61.0): solo IP privada y código decente; el enlace del QR; las peticiones llevan el código', async () => {
   eq(JSON.stringify(sanearLectorTablet({ direccion: '192.168.68.116', codigo: 'abcde-fgh23' })), JSON.stringify({ direccion: '192.168.68.116:47323', codigo: 'ABCDEFGH23' }));
@@ -375,46 +316,6 @@ test('lo que se manda a la tablet (3.62.0): tu pick con los dos siguientes, el r
   eq(pedidas, 0, 'con el de Termux manda cosas para una tablet que no hay');
   ponerLectorEnTablet({ direccion: '192.168.68.116', codigo: 'ABCDEFGH23' });
   try { eq(await mandarALaTablet({ consejo: c }, { pedir }), true); } finally { ponerLectorEnTablet(null); }
-});
-
-test('el parte de la tablet (3.63.0): dice lo que va mal, todo bien si nada, y nunca el código ni la IP', () => {
-  const sano = { ok: true, aprendido: { capturas: 9, caras: 2, aliados: 1 }, salida: null, lector: { minutos: 30, lecturas: 40, fallosCaptura: 1, memoriaMB: 200 }, tablet: { apk: '3.63.0', modelo: 'X NP06J', android: 34, grabando: true, burbuja: true, esquina: 'abajo', bateriaLibre: true, memoriaLibreMB: 1500, memoriaBaja: false, memoriaAppMB: 300, cuando: 1000 } };
-  const bien = parteDeLaTablet(sano, { version: '3.63.0', ahora: 2000 });
-  ok(/Todo bien/.test(bien.texto) && !bien.avisos.length, `con todo sano avisa: ${bien.texto}`);
-  ok(/40 lecturas/.test(bien.texto) && /NP06J/.test(bien.texto), 'el parte no cuenta lo que hay');
-  const mal = parteDeLaTablet({ ...sano, salida: 'Último cierre (hace 3 min): Android la cerró por falta de memoria · usaba 900 MB', lector: { ...sano.lector, fallosCaptura: 20 }, tablet: { ...sano.tablet, grabando: false, bateriaLibre: false, memoriaBaja: true } }, { version: '3.63.0', ahora: 2000 });
-  eq(mal.avisos.length, 5, `no avisa de todo lo que va mal: ${mal.avisos}`);
-  ok(mal.huella !== bien.huella, 'con avisos la huella no cambia (no subiría en el acto)');
-  const conBurbuja = (burbujaEstado) => parteDeLaTablet({ ...sano, tablet: { ...sano.tablet, burbujaEstado } }, { version: '3.63.0', ahora: 2000 });
-  for (const e of ['no llega al lector: IOException', 'Android no deja pintarla: BadToken', 'el lector no contesta']) ok(conBurbuja(e).avisos.some((a) => a.includes(e)), `la burbuja que no sale (${e}) no avisa (3.68.1)`);
-  for (const e of ['enseñando', 'esperando consejo', 'parada']) eq(conBurbuja(e).avisos.length, 0, `la burbuja sana (${e}) avisa`);
-  ok(conBurbuja('enseñando').texto.includes('abajo, enseñando'), 'el parte no dice cómo va la burbuja');
-  // Lo que hace la tablet sola (3.69.3).
-  const conSolo = (solo) => parteDeLaTablet({ ...sano, solo }, { version: '3.63.0', ahora: 3 * 60000 });
-  const leyendo = conSolo({ activo: true, linea: 'roam', origen: 'movil', apartado: false, lecturas: 12, ultima: { cuando: 60000, enPartida: false, baneos: 10, enemigos: 4, aliados: 3 } });
-  ok(/Sin móvil: lee con roam \(la que mandó la app\) · 12 lecturas · la última hace 2 min: 10 baneos, 4 enemigos, 3 de tu equipo/.test(leyendo.texto), `el parte no dice qué lee la tablet sola: ${leyendo.texto}`);
-  eq(leyendo.avisos.length, 0);
-  ok(conSolo({ activo: false, origen: 'sinLinea' }).avisos.some((a) => /no lee sola/.test(a)), 'sin línea no avisa');
-  eq(conSolo({ activo: false, origen: 'apagado' }).avisos.length, 0, '«Apagado» a propósito avisa');
-  ok(/Sin móvil: no lee \(apagado en la APK\)/.test(conSolo({ activo: false, origen: 'apagado' }).texto), 'no dice que está apagado');
-  eq(parteDeLaTablet({ ...sano, salida: 'Último cierre (hace 1 min): se actualizó' }, { version: '3.63.0', ahora: 2000 }).avisos.length, 0, 'actualizarse cuenta como un fallo');
-  ok(parteDeLaTablet({ ...sano, tablet: { ...sano.tablet, cuando: 0 } }, { ahora: 10 * 60000 }).avisos.some((a) => /señales/.test(a)), 'no avisa de una app que dejó de escribir su salud');
-  eq(parteDeLaTablet({ ok: false, tipo: 'sinPuente' }), null);
-  ok(!/192\.168/.test(parteDeLaTablet({ ...sano, lector: { ...sano.lector, ultimoFallo: { que: 'no contesta 192.168.68.116:47323' } } }).texto), 'una IP dentro de un error llega al parte');
-  ok(!/192\.168|ABCDEFGH/.test(JSON.stringify(mal)), 'el parte lleva la IP o el código');
-});
-
-test('el parte no dice «Todo bien» sin datos de la tablet (3.65.2): una Lector MLBB vieja o atrasada se dice', () => {
-  // Lo que contestó el 22 de octubre: una APK anterior a 3.63.0, sin bloques `lector` ni `tablet`.
-  const vieja = { ok: true, aprendido: { capturas: 9, caras: 0, aliados: 0 }, salida: 'Último cierre (hace 0 min): se actualizó · stop es.srchipiron.lector due to installPackageLI', lector: null, tablet: null };
-  const p = parteDeLaTablet(vieja, { version: '3.65.2' });
-  ok(!/Todo bien/.test(p.texto), `con una APK vieja dice «Todo bien»: ${p.texto}`);
-  ok(p.avisos.some((a) => /anterior a 3\.63\.0/.test(a)), `no dice que la APK es vieja: ${p.avisos}`);
-  ok(!/Último cierre: Último cierre/.test(p.texto), `«Último cierre» sale dos veces: ${p.texto}`);
-  const sana = { ok: true, aprendido: {}, lector: { minutos: 5, lecturas: 1, fallosCaptura: 0 }, tablet: { apk: '3.62.0', grabando: true, bateriaLibre: true, cuando: 1000 } };
-  ok(parteDeLaTablet(sana, { version: '3.65.2', ahora: 2000, ultimaApk: '3.64.1' }).avisos.some((a) => /3\.62\.0.*3\.64\.1/.test(a)), 'no dice que la APK está atrasada');
-  eq(parteDeLaTablet({ ...sana, tablet: { ...sana.tablet, apk: '3.64.1' } }, { version: '3.65.2', ahora: 2000, ultimaApk: '3.64.1' }).avisos.length, 0, 'una APK al día da aviso');
-  eq(parteDeLaTablet(sana, { version: '3.65.2', ahora: 2000 }).avisos.length, 0, 'sin saber la última, avisa de atrasada');
 });
 
 test('queApk y versionAnterior: qué Lector MLBB contesta', () => {

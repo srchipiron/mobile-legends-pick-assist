@@ -99,33 +99,3 @@ export async function escribirFichero({ ruta, contenido, mensaje }, token, { loc
   const r = await pedir('PUT', base, token, { message: mensaje, content: b64, branch: 'main', ...(actual.sha ? { sha: actual.sha } : {}) }, fetch);
   return r.error ? { error: r.error, estado: r.estado } : { ok: true, contenido: texto };
 }
-
-/** Un comentario en una incidencia existente. Devuelve { url } o { error }. */
-export async function comentarIncidencia({ numero, cuerpo }, token, { location = globalThis.location, fetch = globalThis.fetch } = {}) {
-  const { duenno, repo } = repositorioDe(location);
-  const r = await pedir('POST', `/repos/${duenno}/${repo}/issues/${numero}/comments`, token, { body: cuerpo }, fetch);
-  if (r.error) return { error: r.error, estado: r.estado };
-  return { url: r.datos?.html_url ?? null };
-}
-
-/**
- * Sube el código a una incidencia: edita la de siempre (`numero`) y, si ya
- * no existe o todavía no hay ninguna, abre una nueva con sus etiquetas. El
- * bot (partidas.yml) escucha las dos cosas, abrir y editar, así que todas
- * las subidas van a la MISMA incidencia y sus respuestas quedan en hilo.
- * Devuelve { numero, url, editada } o { error: 'token'|'permiso'|'red'|'otro' }.
- */
-export async function subirIncidencia({ numero = null, titulo, cuerpo, etiquetas = [] }, token, { location = globalThis.location, fetch = globalThis.fetch } = {}) {
-  const { duenno, repo } = repositorioDe(location);
-  const base = `/repos/${duenno}/${repo}/issues`;
-  if (numero) {
-    const r = await pedir('PATCH', `${base}/${numero}`, token, { title: titulo, body: cuerpo }, fetch);
-    if (!r.error) return { numero: r.datos?.number ?? numero, url: r.datos?.html_url ?? null, editada: true };
-    if (r.error !== 'noExiste') return { error: r.error, estado: r.estado };
-    // La incidencia guardada ya no está (borrada, o de otro repositorio): se abre otra.
-  }
-  const r = await pedir('POST', base, token, { title: titulo, body: cuerpo, ...(etiquetas.length ? { labels: etiquetas } : {}) }, fetch);
-  // Un 404 al CREAR es el token sin acceso a este repositorio (GitHub esconde el repositorio), no una incidencia perdida.
-  if (r.error) return { error: r.error === 'noExiste' ? 'permiso' : r.error, estado: r.estado };
-  return { numero: r.datos?.number ?? null, url: r.datos?.html_url ?? null, editada: false };
-}

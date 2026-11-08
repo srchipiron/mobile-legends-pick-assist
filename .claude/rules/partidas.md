@@ -18,12 +18,13 @@ paths:
   - "src/motor/comunidad.js"
   - "scripts/medir-comunidad.mjs"
   - "scripts/montar-supabase.mjs"
-  - ".github/workflows/partidas.yml"
 ---
 
 # Tus partidas y la maestría
 
 Se carga al tocar el registro de partidas, la maestría, el perfil o su subida al proyecto.
+
+**Sin incidencias desde 3.98.0** (decisión de Javi, valoración del 8 de noviembre de 2026): la app ya no sube nada a GitHub. Se fueron la subida automática de tus partidas a una incidencia («Enviar al proyecto», `enviar` de useEnvio, `partidas.yml`), las pantallas del final y las caras de los picks (`subirAparte`, `cuerpoDeFotogramas`, `cuerpoDePicks`: la tablet sube sus recortes a la base de datos desde 3.81.0) y el parte de salud de la tablet (`subirParte`, `parteDeLaTablet`: la tablet sube sus partes desde 3.74.0). Tus partidas viven en la base de datos (useComunidad, la tablet con tu clave). `historial/partidas.json` se queda como está (lo leen `medir-mias` y `proponer-modelo`, que además baja la base de datos) y `importar-partidas.mjs` sigue a mano. El token de GitHub queda solo para administrar (licencias, `comunidad.json`; `escribirFichero`/`leerFichero`) y `roam-picker:envio` guarda solo `{ token }`. El botón de Diagnóstico que abre una incidencia rellena en el navegador (`urlDeIncidencia`) sigue: es a mano. Prueba en `app/envio` (ningún fichero de `src/app` sube a incidencias) y `scripts/partidas` (no vuelve `partidas.yml`).
 
 ## La base de datos de tus partidas (3.8.0)
 

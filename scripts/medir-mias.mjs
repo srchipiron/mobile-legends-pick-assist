@@ -4,7 +4,7 @@
  * hace ganar, si la probabilidad que enseñó se parece a lo que pasó, y cómo
  * puntúa el modelo DE HOY los drafts que tuviste delante. Es el gemelo de
  * `medir-pro.mjs` para tu cola, y sale en Markdown para pegarlo en la
- * incidencia que trajo las partidas (partidas.yml).
+ * incidencia que trajo las partidas (partidas.yml, hasta 3.97.0).
  *
  *   node scripts/medir-mias.mjs [--fichero historial/partidas.json] [--json salida.json]
  *

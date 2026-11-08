@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.98.0
+
+- La app ya no sube nada a GitHub: tus partidas, las pantallas del final,
+  las caras de los picks y el parte de la tablet van solo a la base de datos
+  (como ya hacía la tablet). Desaparece «Enviar mis partidas al proyecto» y
+  la «Subida automática» deja de subir partidas.
+- El token de GitHub queda solo para administrar (licencias y la
+  configuración de la base de datos), y en «Tus partidas» se llama así:
+  «Token de GitHub (administración)».
+
 ## 3.97.0
 
 - Fuera el lector de Termux: el draft lo lee solo «Lector MLBB» en la

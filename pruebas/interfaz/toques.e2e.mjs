@@ -23,6 +23,7 @@ const lectorFalso = (estado) => async (p) => {
     if (req.method() === 'OPTIONS') return ruta.fulfill({ status: 204, headers: CORS });
     const camino = new URL(req.url()).pathname;
     (estado.pedidos ??= []).push(camino);
+    (estado.cuerpos ??= []).push({ camino, cuerpo: req.postData() ?? '' });
     if (camino === '/leer') {
       estado.lecturas = (estado.lecturas ?? 0) + 1;
       if (estado.puerta) await estado.puerta;
@@ -208,36 +209,6 @@ await prueba('lo que el lector aprendió llega a SU draft, no al siguiente si en
   await b.contexto.close();
 });
 
-await prueba('las pantallas del final que no suben por falta de red esperan y suben al volver la red (3.41.0)', async () => {
-  // Draft completo hace 11 minutos: el lector ya tiene dos pantallas del final y la app pregunta cómo fue.
-  const completoDesde = Date.now() - 11 * 60 * 1000;
-  const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], fase: 'picks', completoDesde };
-  const e = { respuesta: () => ({}), final: { desde: completoDesde, resultado: null, fotogramas: [
-    { id: 'fotograma-1', minuto: 9, miniatura: 'QUJD', tira: 'QUJD' }, { id: 'fotograma-2', minuto: 12, miniatura: 'QUJD', tira: 'QUJD' }] } };
-  const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { 'roam-picker:lector-tablet': TABLET, 'roam-picker:linea': 'roam', 'roam-picker:draft': draft, 'roam-picker:lector-auto': true, 'roam-picker:envio': { token: 'github_pat_prueba' } }, antes: lectorFalso(e) });
-  let red = false;
-  const pantallas = [];
-  await contexto.route('https://api.github.com/**', async (ruta) => {
-    const cuerpo = ruta.request().postData() ?? '';
-    if (!red) return ruta.abort('internetdisconnected');
-    if (/"pantalla"/.test(cuerpo)) pantallas.push(JSON.parse(cuerpo));
-    return ruta.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ number: 9, html_url: 'https://github.com/x/y/issues/9' }) });
-  });
-  // La app recoge lo vigilado (cada 10 s) y después se contesta «Gané» sin red.
-  await pagina.waitForTimeout(11000);
-  // Cerrar el aviso de «Deshacer» (3.60.7) es aceptar: sube sin esperar su plazo.
-  await pagina.locator('.recordatorio button.gane').click();
-  await pagina.locator('.aviso-deshacer .x').click();
-  await pagina.waitForTimeout(1500);
-  eq(pantallas.length, 0, 'sube sin red (la prueba no prueba nada)');
-  red = true;
-  await pagina.evaluate(() => window.dispatchEvent(new Event('online')));
-  for (let i = 0; i < 40 && !pantallas.length; i++) await pagina.waitForTimeout(250);
-  eq(pantallas.length, 1, 'las pantallas del final se pierden si no hay red al apuntar');
-  ok(/2 de 2 pantallas/.test(pantallas[0]?.title ?? ''), `no suben las dos pantallas: ${pantallas[0]?.title}`);
-  await contexto.close();
-});
-
 await prueba('cada cara se pide con la huella de su contenido, para que una rehecha no se quede en la caché (3.41.0)', async () => {
   const { createHash } = await import('node:crypto');
   const { readFileSync } = await import('node:fs');
@@ -259,34 +230,33 @@ async function conFinal({ resultado = null } = {}) {
   const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { 'roam-picker:lector-tablet': TABLET, 'roam-picker:linea': 'roam', 'roam-picker:draft': draft, 'roam-picker:lector-auto': true, 'roam-picker:envio': { token: 'github_pat_prueba' } }, antes: lectorFalso(e) });
   const pantallas = [];
   await contexto.route('https://api.github.com/**', async (ruta) => {
-    const cuerpo = ruta.request().postData() ?? '';
-    if (/"pantalla"/.test(cuerpo)) pantallas.push(JSON.parse(cuerpo));
+    // Desde 3.98.0 nada va a incidencias: cualquier petición a /issues cuenta como una subida.
+    if (/\/issues/.test(ruta.request().url())) pantallas.push({ url: ruta.request().url(), cuerpo: ruta.request().postData() ?? '' });
     return ruta.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ number: 9, html_url: 'https://github.com/x/y/issues/9' }) });
   });
   return { e, contexto, pagina, pantallas };
 }
 
-await prueba('«Nuevo draft» y «Deshacer»: las pantallas del final no se suben sin resultado y siguen con su partida (3.42.0)', async () => {
+await prueba('«Nuevo draft» y «Deshacer»: las pantallas del final siguen con su partida y el lector aprende de ellas al apuntarla; a GitHub no va nada (3.98.0)', async () => {
   const { e, contexto, pagina, pantallas } = await conFinal();
   // La app recoge lo vigilado (cada 10 s).
   for (let i = 0; i < 60 && !(e.pedidos ?? []).includes('/final'); i++) await pagina.waitForTimeout(250);
   await pagina.waitForTimeout(800);
   await pagina.getByRole('button', { name: 'Nuevo draft' }).click();
   await pagina.locator('.aviso-deshacer').getByRole('button', { name: 'Deshacer' }).click();
-  // Pasa de sobra el plazo del «Deshacer»: no se ha subido nada.
+  // Pasa de sobra el plazo del «Deshacer»: siguen con su partida. Al contestar «Gané» el lector aprende de las dos.
   await pagina.waitForTimeout(8000);
-  eq(pantallas.length, 0, 'las pantallas se suben sin resultado aunque el draft volvió con «Deshacer»');
-  // Y siguen con su partida: al contestar «Gané» suben con el resultado.
   await pagina.locator('.recordatorio button.gane').click();
   await pagina.locator('.aviso-deshacer .x').click();
-  for (let i = 0; i < 40 && !pantallas.length; i++) await pagina.waitForTimeout(250);
-  eq(pantallas.length, 1, 'las pantallas no suben al apuntar la partida');
-  ok(/ganada/.test(pantallas[0]?.title ?? '') && /2 de 2/.test(pantallas[0]?.title ?? ''), `no suben las dos, con el resultado: ${pantallas[0]?.title}`);
-  // Sin «Deshacer», «Nuevo draft» sí las acaba subiendo (sin resultado) pasado el plazo: lo cubre la prueba de abajo por el otro camino.
+  const resultado = () => (e.cuerpos ?? []).find((c) => c.camino === '/resultado');
+  for (let i = 0; i < 40 && !resultado(); i++) await pagina.waitForTimeout(250);
+  const ids = JSON.parse(resultado()?.cuerpo ?? '{}').ids ?? [];
+  ok(ids.includes('fotograma-1') && ids.includes('fotograma-2'), `las pantallas no siguen con su partida tras «Deshacer»: ${ids}`);
+  eq(pantallas.length, 0, 'las pantallas se suben a GitHub');
   await contexto.close();
 });
 
-await prueba('deshacer una partida apuntada sola: el lector no aprende su resultado y las pantallas no se suben (3.42.0)', async () => {
+await prueba('deshacer una partida apuntada sola: el lector no aprende su resultado (3.42.0)', async () => {
   const { e, contexto, pagina, pantallas } = await conFinal({ resultado: 'gane' });
   let partidas = [];
   for (let i = 0; i < 80 && !partidas.length; i++) { await pagina.waitForTimeout(250); partidas = (await leer(pagina, 'roam-picker:partidas')) ?? []; }
@@ -301,15 +271,16 @@ await prueba('deshacer una partida apuntada sola: el lector no aprende su result
   await contexto.close();
 });
 
-await prueba('sin deshacerla, la partida apuntada sola enseña su resultado al lector y sube sus pantallas al acabar el plazo (3.42.0)', async () => {
+await prueba('sin deshacerla, la partida apuntada sola enseña su resultado al lector al acabar el plazo, y nada va a GitHub (3.42.0, 3.98.0)', async () => {
   const { e, contexto, pagina, pantallas } = await conFinal({ resultado: 'gane' });
   let partidas = [];
   for (let i = 0; i < 80 && !partidas.length; i++) { await pagina.waitForTimeout(250); partidas = (await leer(pagina, 'roam-picker:partidas')) ?? []; }
   eq(partidas.length, 1, 'la partida no se apunta sola (la prueba no prueba nada)');
   eq((e.pedidos ?? []).filter((c) => c === '/resultado').length, 0, 'el resultado sale antes de acabar el plazo del «Deshacer»');
-  for (let i = 0; i < 120 && !pantallas.length; i++) await pagina.waitForTimeout(250);
+  for (let i = 0; i < 120 && !(e.pedidos ?? []).includes('/resultado'); i++) await pagina.waitForTimeout(250);
   eq((e.pedidos ?? []).filter((c) => c === '/resultado').length, 1, 'acabado el plazo, el lector no recibe el resultado');
-  ok(pantallas.length === 1 && /ganada/.test(pantallas[0].title), `acabado el plazo, las pantallas no suben con su resultado: ${pantallas[0]?.title}`);
+  await pagina.waitForTimeout(1000);
+  eq(pantallas.length, 0, 'las pantallas del final se suben a GitHub');
   await contexto.close();
 });
 

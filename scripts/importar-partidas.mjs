@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
  * Mete en `historial/partidas.json` (la base de datos de TUS partidas) lo
- * que trae un código de perfil de la app. El código viaja en el cuerpo de
- * una incidencia de GitHub que abre el propio móvil («Tus partidas» →
- * «Enviar al proyecto»), y `partidas.yml` llama a esto.
+ * que trae un código de perfil de la app («Tu perfil» → copiar el código).
+ * Hasta 3.97.0 lo llamaba `partidas.yml` con el código de una incidencia;
+ * desde 3.98.0 las partidas van a la base de datos y esto queda a mano.
  *
  *   node scripts/importar-partidas.mjs <fichero con el código dentro> [--out historial/partidas.json] [--incidencia N]
  *   node scripts/importar-partidas.mjs --codigo MLPA1.xxx.yyy

@@ -1,11 +1,12 @@
 /**
- * La subida automática de partidas (3.10.0), la parte pura: qué se sube,
- * cuándo toca y que lo guardado no pueda reventar la app.
+ * Lo que queda de la subida a GitHub (3.98.0): la huella que usa la base de
+ * datos, el token (solo administración) guardado sin poder reventar la app,
+ * y que la app ya no abra ni comente incidencias.
  */
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { tocaParte, conLoDeOtraPestana, yaSubido, MAX_SUBIDAS, PARTE_CADA_MS, PARTE_MINIMO_MS, huellaDe, sanearEnvio, tocaSubir, encolarAparte, vaciarCola, paraSubir, PARTIDAS_POR_ENVIO, MAX_APARTE, ESPERA_MS, REINTENTO_MS } from '../../src/app/envio.js';
-import { recogerPerfil, exportarPerfil, leerPerfil, fundirPerfil } from '../../src/motor/perfil.js';
-import { readFileSync } from 'node:fs';
+import { huellaDe, sanearEnvio } from '../../src/app/envio.js';
+import { recogerPerfil } from '../../src/motor/perfil.js';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const partidas = [{ t: 2, pick: 'Atlas', gane: true, recomendados: ['Atlas'] }, { t: 1, pick: 'Tigreal', gane: false, recomendados: [] }];
@@ -24,119 +25,19 @@ test('la huella cambia con cualquier partida, resultado o maestría, y no con el
   eq(huellaDe(p1), huellaDe(p2), 'cambiar de rango o de idioma dispararía una subida');
 });
 
-test('sanearEnvio garantiza la forma con cualquier basura', () => {
-  const vacio = sanearEnvio(null);
-  eq(vacio.token, null); eq(vacio.incidencia, null); eq(vacio.huella, null);
-  const raro = sanearEnvio({ token: '  tok  ', incidencia: '12', huella: 7, cuando: -1, error: '', intento: 'ayer', url: 'https://x' });
-  eq(raro.token, 'tok'); eq(raro.incidencia, null, 'un número como texto pasa como incidencia'); eq(raro.huella, null); eq(raro.cuando, null); eq(raro.error, null); eq(raro.intento, null); eq(raro.url, 'https://x');
-  eq(sanearEnvio({ incidencia: 12, cuando: 5 }).incidencia, 12);
-  eq(sanearEnvio([1, 2]).token, null);
+test('sanearEnvio: solo el token, con cualquier basura y con lo guardado por una versión anterior', () => {
+  eq(JSON.stringify(sanearEnvio(null)), '{"token":null}');
+  eq(JSON.stringify(sanearEnvio([1, 2])), '{"token":null}');
+  eq(JSON.stringify(sanearEnvio({ token: '  tok  ', incidencia: 12, tablet: 3, subidas: ['picks:1'], huella: '2.a' })), '{"token":"tok"}', 'se queda lo de la subida a incidencias');
 });
 
-test('tocaSubir: con token, con partidas, con red, con datos nuevos, y sin machacar la API tras un fallo', () => {
-  const ahora = 1_000_000_000;
-  const estado = sanearEnvio({ token: 'github_pat_x', huella: '2.aaaa' });
-  ok(tocaSubir(estado, '3.bbbb', { ahora, partidas: 3 }), 'con datos nuevos no sube');
-  ok(!tocaSubir(estado, '2.aaaa', { ahora, partidas: 2 }), 'sube lo que ya está subido');
-  ok(!tocaSubir(sanearEnvio({ huella: null }), '3.bbbb', { ahora, partidas: 3 }), 'sube sin token');
-  ok(!tocaSubir(estado, '3.bbbb', { ahora, partidas: 0 }), 'sube sin partidas');
-  ok(!tocaSubir(estado, '3.bbbb', { ahora, partidas: 3, enLinea: false }), 'sube sin red');
-  const fallido = sanearEnvio({ ...estado, error: 'red', intento: ahora - 1000, huellaIntentada: '3.bbbb' });
-  ok(!tocaSubir(fallido, '3.bbbb', { ahora, partidas: 3 }), 'reintenta al momento con los mismos datos que acaban de fallar');
-  ok(tocaSubir(fallido, '3.bbbb', { ahora: ahora + REINTENTO_MS, partidas: 3 }), 'no reintenta pasado el plazo');
-  ok(tocaSubir(fallido, '4.cccc', { ahora, partidas: 4 }), 'no reintenta al momento con datos nuevos');
-  ok(ESPERA_MS >= 1000 && ESPERA_MS <= 10000, `una espera de ${ESPERA_MS} ms no es «unos segundos»`);
-});
-
-await test('las pantallas del final que no se pudieron subir esperan en cola y se suben al volver la red (3.41.0)', async () => {
-  const subidas = [], comentarios = [];
-  let red = false;
-  const api = {
-    subir: async (e) => { if (!red) return { error: 'red' }; subidas.push(e.titulo); return { numero: 100 + subidas.length }; },
-    comentar: async (c) => { if (!red) return { error: 'red' }; comentarios.push(c); return { url: 'x' }; },
-  };
-  let cola = encolarAparte([], { titulo: 'A', cuerpo: 'a', comentario: 'ca' });
-  cola = encolarAparte(cola, { titulo: 'B', cuerpo: 'b' });
-  cola = await vaciarCola(cola, api);
-  eq(cola.map((e) => e.titulo).join(), 'A,B', 'sin red se pierde lo que no se subió');
-  red = true;
-  cola = await vaciarCola(cola, api);
-  eq(cola.length, 0, 'con red no se sube lo que esperaba');
-  eq(subidas.join(), 'A,B', 'no se suben en orden, o se repiten');
-  eq(JSON.stringify(comentarios), JSON.stringify([{ numero: 101, cuerpo: 'ca' }]), 'el comentario no va a su incidencia');
-  // La incidencia se crea y el comentario falla: queda SOLO el comentario, con su número.
-  let falla = true;
-  const aMedias = await vaciarCola([{ titulo: 'C', cuerpo: 'c', comentario: 'cc' }], {
-    subir: async () => ({ numero: 7 }),
-    comentar: async () => (falla ? { error: 'red' } : { url: 'x' }),
-  });
-  ok(aMedias.length === 1 && aMedias[0].numero === 7, `una incidencia creada se volvería a crear: ${JSON.stringify(aMedias)}`);
-  let creadas = 0;
-  falla = false;
-  eq((await vaciarCola(aMedias, { subir: async () => { creadas += 1; return { numero: 8 }; }, comentar: async () => ({ url: 'x' }) })).length, 0, 'el comentario pendiente no se sube');
-  eq(creadas, 0, 'la incidencia se crea dos veces');
-  // Con tope: se tiran las más viejas.
-  let llena = [];
-  for (let i = 0; i < MAX_APARTE + 2; i++) llena = encolarAparte(llena, { titulo: `T${i}` });
-  eq(llena.map((e) => e.titulo).join(), Array.from({ length: MAX_APARTE }, (_, i) => `T${i + 2}`).join(), 'la cola no tiene tope o tira las nuevas');
-});
-
-test('lo que se sube cabe en una incidencia aunque haya muchas partidas, y no se pierde ninguna (3.60.2)', async () => {
-  // Con las partidas REALES repetidas hasta 600 (los 500 del móvil y más):
-  // mandarlas todas pasaba de los 65.536 caracteres del cuerpo hacia las 350–400.
-  const reales = JSON.parse(readFileSync(join(RAIZ, 'historial/partidas.json'), 'utf8')).partidas;
-  ok(reales.length > 100, 'pocas partidas reales con que probar');
-  const muchas = Array.from({ length: 600 }, (_, i) => ({ ...reales[i % reales.length], t: 1.7e12 + i * 6e5 }));
-  const todas = await exportarPerfil(recogerPerfil({ partidas: muchas, mastery: {} }));
-  ok(todas.length > 65536, `con todas no se pasa del límite: la prueba no mide nada (${todas.length})`);
-  const codigo = await exportarPerfil(recogerPerfil(paraSubir({ partidas: muchas, mastery: {} })));
-  ok(codigo.length < 60000, `el código de 600 partidas mide ${codigo.length} caracteres`);
-  const enviado = (await leerPerfil(codigo)).perfil.partidas;
-  eq(enviado.length, PARTIDAS_POR_ENVIO);
-  eq(Math.min(...enviado.map((p) => p.t)), 1.7e12 + (600 - PARTIDAS_POR_ENVIO) * 6e5, 'no van las más recientes');
-  // El bot funde con lo que ya tenía: siguen las 600.
-  eq(fundirPerfil({ partidas: enviado, mastery: {} }, { partidas: muchas, mastery: {} }).partidas.length, 600, 'al fundir se pierden partidas');
-});
-
-test('el parte de la tablet (3.63.0): uno al día si todo sigue igual, en el acto si cambian los avisos, nunca dos seguidos', () => {
-  const base = { token: 't', tabletCuando: 1_000_000, tabletHuella: 'v|a|' };
-  const parte = (huella) => ({ huella, texto: 'x' });
-  ok(!tocaParte({ ...base, token: null }, parte('otra'), { ahora: 9e12 }), 'sin token sube');
-  ok(tocaParte({ token: 't' }, parte('v|a|'), { ahora: 5 }), 'el primero no sube');
-  ok(!tocaParte(base, parte('v|a|'), { ahora: base.tabletCuando + PARTE_CADA_MS - 1 }), 'sube antes del día sin que cambie nada');
-  ok(tocaParte(base, parte('v|a|'), { ahora: base.tabletCuando + PARTE_CADA_MS }), 'no sube al día');
-  ok(tocaParte(base, parte('v|a|memoria baja'), { ahora: base.tabletCuando + PARTE_MINIMO_MS }), 'con un aviso nuevo no sube en el acto');
-  ok(!tocaParte(base, parte('v|a|memoria baja'), { ahora: base.tabletCuando + PARTE_MINIMO_MS - 1 }), 'un aviso que va y viene sube sin pausa');
-  eq(sanearEnvio({ tablet: 7, tabletHuella: 'h', tabletCuando: 3 }).tablet, 7, 'la incidencia del parte no se guarda');
-});
-
-test('el parte que ya subió otra pestaña no se vuelve a subir (3.65.2: dos comentarios en un segundo)', () => {
-  const parte = { huella: 'h1' };
-  const aqui = sanearEnvio({ token: 'github_pat_PRUEBA_0123456789abcdefghij' });
-  const otra = sanearEnvio({ ...aqui, tablet: 148, tabletCuando: 1_000_000, tabletHuella: 'h1' });
-  const ahora = 1_000_000 + 1000;
-  ok(tocaParte(aqui, parte, { ahora }), 'la prueba no prueba nada: sin lo de la otra pestaña ya no tocaba');
-  const junto = conLoDeOtraPestana(aqui, otra);
-  ok(!tocaParte(junto, parte, { ahora }), 'sube otra vez lo que acaba de subir la otra pestaña');
-  eq(junto.tablet, 148, 'abriría otra incidencia en vez de comentar en la de la otra pestaña');
-  // Lo de aquí, más reciente, manda.
-  const mio = sanearEnvio({ ...aqui, tablet: 150, tabletCuando: 2_000_000, tabletHuella: 'h2' });
-  const j2 = conLoDeOtraPestana(mio, otra);
-  eq(j2.tabletCuando, 2_000_000); eq(j2.tabletHuella, 'h2'); eq(j2.tablet, 150);
-  eq(conLoDeOtraPestana(aqui, null).tabletCuando, null);
-});
-
-test('una lectura se sube aparte UNA vez (3.65.3: #142, #143 y #145 eran la misma)', () => {
-  const id = 'picks:1700000000000';
-  const vacio = sanearEnvio({});
-  eq(JSON.stringify(vacio.subidas), '[]');
-  ok(!yaSubido(vacio, null, id), 'sin subir nada, cuenta como subida');
-  ok(yaSubido(sanearEnvio({ subidas: [id] }), null, id), 'lo subido aquí se vuelve a subir');
-  ok(yaSubido(vacio, sanearEnvio({ subidas: [id] }), id), 'lo subido por otra pestaña se vuelve a subir');
-  ok(!yaSubido(vacio, sanearEnvio({ subidas: [id] }), null), 'sin id no se puede saber: no se descarta');
-  const muchas = sanearEnvio({ subidas: [...Array.from({ length: MAX_SUBIDAS + 10 }, (_, i) => `picks:${i}`), 3, 'x'.repeat(200)] });
-  eq(muchas.subidas.length, MAX_SUBIDAS, 'las subidas recordadas no tienen tope');
-  ok(muchas.subidas.every((v) => typeof v === 'string' && v.length <= 80), 'guarda basura');
+test('la app ya no abre ni comenta incidencias por la API (3.98.0): ni github.js, ni ningún fichero de src/app', () => {
+  const carpeta = join(RAIZ, 'src/app');
+  const ficheros = readdirSync(carpeta, { recursive: true }).map(String).filter((f) => /\.(js|jsx)$/.test(f));
+  for (const f of ficheros) {
+    const texto = readFileSync(join(carpeta, f), 'utf8');
+    ok(!/subirIncidencia|comentarIncidencia|subirAparte|\/issues\/\$\{|\/comments\b/.test(texto), `${f} vuelve a subir a incidencias de GitHub`);
+  }
 });
 
 terminar('app/envio');

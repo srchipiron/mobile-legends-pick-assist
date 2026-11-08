@@ -26,7 +26,7 @@ import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
 import { ConfirmarVinculo } from './componentes/LectorTablet.jsx';
-import { pedirLectura, pedirEstadoLector, pedirClaveDeLaTablet, pedirUltimaApk, buscarTabletUnaVez, sinLlegarALaTablet, parteDeLaTablet, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
+import { pedirLectura, pedirEstadoLector, pedirClaveDeLaTablet, buscarTabletUnaVez, sinLlegarALaTablet, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
 import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
@@ -179,7 +179,7 @@ export default function App() {
     [personal.maestria, personal.partidas, personal.olvidadas, datos.rango, linea, idioma],
   );
   // La subida automática de partidas (3.10.0): con token, cada cambio se sube solo.
-  const envio = useEnvio({ perfil: datosPerfil, t });
+  const envio = useEnvio();
   // Las claves de invitación (3.65.0). La administración solo se ve con el
   // token de la subida (el móvil de Javi) o ya con la clave de administrador.
   const licencia = useLicencia({ escribir: envio.activo ? envio.escribir : null, leerRepositorio: envio.activo ? envio.leerDelRepositorio : null });
@@ -211,20 +211,13 @@ export default function App() {
   // mientras se juega en la tablet) del minuto 8 al 25, quedándose con las
   // pantallas que cambian (juego → resultado → vestíbulo) y leyendo la tabla
   // de resultado. Aquí se recogen cuando la app vuelve a estar a la vista,
-  // se apunta la partida si vio el resultado (3.32.0) y los fotogramas se
-  // suben solos al proyecto al apuntar o al empezar otro draft, para medir.
+  // se apunta la partida si vio el resultado (3.32.0) y con sus fotogramas el
+  // lector aprende la tabla. Desde 3.98.0 no se suben a ninguna incidencia.
   const fotogramas = useRef([]);
   const vigilando = useRef(false);
   // Cuánto duró la partida según el lector (3.44.0).
   const duracionFinal = useRef({ desde: null, duracion: null });
   const ahora = useAhora();
-  /** Sube unas pantallas (si hay). Sin token no sube: se descartan. */
-  const envioActual = useRef(envio);
-  envioActual.current = envio;
-  const subirFotogramas = (lista, resultado = null) => {
-    if (!lista.length || !envioActual.current.activo) return;
-    envioActual.current.subirAparte({ ...cuerpoDeFotogramas({ fotogramas: lista, resultado, version: __APP_VERSION__ }), etiquetas: ['pantalla'] });
-  };
   /** Las pantallas vigiladas, fuera de la lista (las de este draft ya no se vuelven a subir). */
   const sacarFotogramas = () => { const lista = fotogramas.current; fotogramas.current = []; return lista; };
   // Lo que un «Deshacer» aún puede echar atrás espera a su plazo (3.42.0, diferido.js).
@@ -236,15 +229,14 @@ export default function App() {
     window.addEventListener('pagehide', salir);
     return () => window.removeEventListener('pagehide', salir);
   }, []);
-  // Al dejar de estar completo el draft (nuevo draft, vaciar) se suben sin
-  // resultado, pero pasado el plazo del «Deshacer»: si vuelve el MISMO draft,
-  // vuelven sus pantallas y no se ha subido nada (3.42.0).
+  // Al dejar de estar completo el draft (nuevo draft, vaciar) sus pantallas se
+  // guardan el plazo del «Deshacer»: si vuelve el MISMO draft, vuelven (3.42.0).
   const completoAntes = useRef(draft.completoDesde);
   useEffect(() => {
     const antes = completoAntes.current;
     if (antes && !draft.completoDesde) {
       const lista = sacarFotogramas();
-      if (lista.length) diferido.current.programar(antes, { lista }, DESHACER_MS + 1000, ({ lista: l }) => subirFotogramas(l, null));
+      if (lista.length) diferido.current.programar(antes, { lista }, DESHACER_MS + 1000, () => {});
     } else if (draft.completoDesde) {
       const vuelve = diferido.current.cancelar(draft.completoDesde);
       if (vuelve) fotogramas.current = [...vuelve.lista, ...fotogramas.current];
@@ -286,17 +278,14 @@ export default function App() {
     // pick es el nº1 SUPUESTO, y el lector aprendía tu cara con ese nombre.
     corregirLectura({ ids: draft.lectura?.ids ?? [], enemigos: draft.enemigos, baneos: draft.baneos, aliados: draft.aliados, tuyo: supuesto ? null : pick });
     // Y el resultado con sus fotogramas, para que aprenda la palabra de la
-    // tabla (3.32.0), y los fotogramas al proyecto con el resultado (3.30.0).
+    // tabla (3.32.0).
     // Si la partida se apuntó sola, después del plazo de su «Deshacer»
     // (3.42.0): deshecha, el lector no aprende nada de ella.
     const lista = sacarFotogramas();
-    const ensenarYSubir = ({ lista: l, gane: g, desde: d }) => {
-      // Con `desde`, el lector deja de vigilar y de hablar de esa partida (3.44.1).
-      ensenarResultado({ ids: l.map((f) => f.id), gane: g, desde: d });
-      subirFotogramas(l, g ? 'gane' : 'perdi');
-    };
-    if (deshacible && draft.completoDesde) diferido.current.programar(draft.completoDesde, { lista, gane, desde: draft.completoDesde }, DESHACER_APUNTADA_MS + 1000, ensenarYSubir);
-    else ensenarYSubir({ lista, gane, desde: draft.completoDesde });
+    // Con `desde`, el lector deja de vigilar esa partida (3.44.1).
+    const ensenar = ({ lista: l, gane: g, desde: d }) => ensenarResultado({ ids: l.map((f) => f.id), gane: g, desde: d });
+    if (deshacible && draft.completoDesde) diferido.current.programar(draft.completoDesde, { lista, gane, desde: draft.completoDesde }, DESHACER_APUNTADA_MS + 1000, ensenar);
+    else ensenar({ lista, gane, desde: draft.completoDesde });
     // Este draft ya está apuntado (a mano o sola): un tic de la vigilancia
     // que estuviera esperando al lector no lo vuelve a apuntar (3.37.0).
     if (draft.completoDesde) apuntadaSola.current = draft.completoDesde;
@@ -401,18 +390,9 @@ export default function App() {
     if (!draft.completoDesde || corregido.current === draft.completoDesde || !draft.lectura?.ids?.length || !datos.heroes.length) return;
     corregido.current = draft.completoDesde;
     const desde = draft.completoDesde;
-    // Lo de ESTE draft, ahora: la respuesta tarda (el lector aprende) y el draft puede haber cambiado.
-    const verdad = { enemigos: draft.enemigos, aliados: draft.aliados, tuyo: draft.miPick };
-    const leidos = { enemigos: draft.lectura.enemigos, aliados: draft.lectura.aliados };
     corregirLectura({ ids: draft.lectura.ids, enemigos: draft.enemigos, baneos: draft.baneos, aliados: draft.aliados, tuyo: draft.miPick })
       .then((r) => {
         if (r?.aprendido) draft.anotarAprendizaje({ aprendidos: r.aprendidos, sinEncontrar: r.sinEncontrar }, desde);
-        // Si a la lectura se le escapó alguien, las caras de los picks al
-        // proyecto para medir por qué (3.52.0). Sin token no sube nada.
-        const recortes = (r?.recortes ?? []).filter(recorteValido);
-        if (recortes.length && faltoAlguien(leidos, verdad) && envioActual.current.activo) {
-          envioActual.current.subirAparte({ ...cuerpoDePicks({ recortes, verdad, leidos, heroes: datos.heroes, version: __APP_VERSION__ }), etiquetas: ['pantalla'], id: `picks:${desde}` });
-        }
       });
   }, [draft.completoDesde, draft.lectura, draft.enemigos, draft.baneos, datos.heroes]);
 
@@ -545,22 +525,6 @@ export default function App() {
     const reloj = setInterval(tic, 5 * 60 * 1000);
     return () => clearInterval(reloj);
   }, [lectorTablet, setLectorTablet]);
-
-  // El parte de salud de la tablet (3.63.0): cada 10 min, con el lector en la
-  // tablet y la subida activada, se le pregunta cómo está y, si toca
-  // (uno al día, o en el acto si algo va mal), se sube a su incidencia.
-  const subirParte = envio.subirParte;
-  useEffect(() => {
-    if (!lectorTablet || !envio.activo) return undefined;
-    const tic = async () => {
-      const estado = await pedirEstadoLector();
-      const parte = parteDeLaTablet(estado, { version: __APP_VERSION__, ultimaApk: estado.ok ? await pedirUltimaApk() : null });
-      if (parte) subirParte(parte);
-    };
-    tic();
-    const reloj = setInterval(tic, 10 * 60 * 1000);
-    return () => clearInterval(reloj);
-  }, [lectorTablet, envio.activo, subirParte]);
 
   // Leyendo solo (3.28.0): mientras el draft no esté completo, la app a la
   // vista y sin hoja abierta, se pide una lectura cada pocos segundos. Con

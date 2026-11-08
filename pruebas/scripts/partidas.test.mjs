@@ -12,7 +12,6 @@ import { fileURLToPath } from 'node:url';
 import { exportarPerfil, recogerPerfil } from '../../src/motor/perfil.js';
 import { importar, PATRON_CODIGO } from '../../scripts/importar-partidas.mjs';
 import { medir, informe, auc } from '../../scripts/medir-mias.mjs';
-import { leerWorkflow, mandatos } from '../fixtures/yaml-workflows.mjs';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const dir = mkdtempSync(join(tmpdir(), 'partidas-'));
@@ -120,23 +119,10 @@ test('medir-mias: veredicto, calibración y el modelo de hoy sobre los drafts gu
   ok(/## Tus partidas/.test(cli.stdout) && existsSync(join(dir, 'mias.json')), 'no escribe el informe o el JSON');
 });
 
-test('partidas.yml: solo el dueño, solo con un código dentro, cuerpo por variable, con tope y rebase antes del push', () => {
-  const w = leerWorkflow('partidas.yml');
-  const job = w.jobs[0];
-  const condicion = job.claves.if ?? '';
-  ok(/repository_owner/.test(condicion), 'el workflow no exige que la incidencia sea del dueño: cualquiera podría meter partidas en tu base de datos');
-  ok(/MLPA1\./.test(condicion), 'el workflow no exige que el cuerpo lleve un código');
-  ok(/^\d+$/.test(job.claves['timeout-minutes'] ?? ''), 'sin timeout-minutes');
-  const lee = w.pasos.find((p) => mandatos(p.run).some((c) => /importar-partidas\.mjs/.test(c)));
-  ok(lee, 'no llama a importar-partidas.mjs');
-  ok(!/github\.event\.issue\.body/.test(lee.run ?? ''), 'el cuerpo de la incidencia va DENTRO del mandato (inyección)');
-  ok(/CUERPO/.test(lee['env.CUERPO'] ?? '') || lee['env.CUERPO'] !== undefined, 'el cuerpo no llega por variable de entorno');
-  const push = w.pasos.find((p) => mandatos(p.run).some((c) => /^git push\b/.test(c)));
-  ok(push, 'no hace push');
-  const orden = mandatos(push.run);
-  ok(orden.findIndex((c) => /^git pull --rebase\b/.test(c)) < orden.findIndex((c) => /^git push\b/.test(c)), 'push sin rebase antes');
-  ok(w.pasos.some((p) => /issues\.createComment/.test(p['with.script'] ?? '')), 'no responde en la incidencia');
-  ok(w.claves?.['permissions.issues'] === 'write' || /issues:\s*write/.test(readFileSync(join(RAIZ, '.github/workflows/partidas.yml'), 'utf8')), 'sin permiso para responder');
+test('sin subida por incidencias (3.98.0): no hay partidas.yml ni nadie que abra o comente incidencias desde la app', () => {
+  ok(!existsSync(join(RAIZ, '.github/workflows/partidas.yml')), 'vuelve partidas.yml: las partidas entran por incidencias');
+  const github = readFileSync(join(RAIZ, 'src/app/github.js'), 'utf8');
+  ok(!/\/issues/.test(github.replace(/\/issues\/new/g, '')), 'github.js vuelve a abrir o comentar incidencias por la API');
 });
 
 test('medir-mias: la AUC va con su margen, y con pocas partidas dice que no se distingue de una moneda', async () => {
