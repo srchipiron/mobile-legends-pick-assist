@@ -8,13 +8,11 @@ import { test, ok, eq, terminar, leerJson } from '../arnes.mjs';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, guionSolo, correccionDelDraft, tusHabituales, HABITUALES, faseDe, LECTURAS_PARA_FUERA, MINUTOS_ENTRE_PARTIDAS, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MINUTOS_ENTRE_TABLAS, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS } from '../../scripts/lector/solo.mjs';
+import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, correccionDelDraft, tusHabituales, HABITUALES, faseDe, LECTURAS_PARA_FUERA, MINUTOS_ENTRE_PARTIDAS, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MINUTOS_ENTRE_TABLAS, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS } from '../../scripts/lector/solo.mjs';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
 import { buildsDe, buildParaElDraft, objetosDe } from '../../src/motor/builds.js';
 import { crearServidor, RETENCION_CAPTURAS_MS } from '../../scripts/lector/servir.mjs';
 import { RAIZ } from '../arnes.mjs';
-import { crearT } from '../../src/app/i18n/index.js';
-import { guionTraducido } from '../../src/app/lector.js';
 
 const catalogo = leerJson('public/data/heroes.json');
 const meta = leerJson('public/data/roam-meta.json');
@@ -330,48 +328,23 @@ test('la lectura rápida: en partida solo el minimapa, sin reconocer caras; fuer
   } finally { servidor.close(); }
 });
 
-test('la voz sin el móvil (3.71.0): al empezar la partida, la tablet manda los MISMOS consejos en directo que mandaría la app, en tu idioma y callada si lo pediste', async () => {
-  const pasos = async (ajustes) => {
-    let t = 7_000_000;
-    let respuesta = lectura({ tuyos: [N('Hirara')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 });
-    const vigiladas = [];
-    const interno = { leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: () => {}, vigilar: (desde, cuerpo) => vigiladas.push(cuerpo), final: () => null, ponerResumen: () => {} };
-    const solo = crearSolo({ interno, ajustes: () => ajustes, datosPara: () => datos, ahora: () => t, apuntar: () => {} });
-    await solo.tic();
-    respuesta = { partida: true, rapida: true };
-    t += 5000; await solo.tic(); t += 5000; await solo.tic();
-    return { cuerpo: vigiladas[0], draft: solo.estado() };
-  };
-  const es = await pasos({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' });
-  ok(es.cuerpo?.guion?.length > 0 && es.cuerpo.cierres?.length > 0, `sin consejos en directo: ${JSON.stringify(es.cuerpo).slice(0, 200)}`);
-  eq(es.cuerpo.callar, false, 'la voz va callada sin pedirlo');
-  // Lo mismo que calcula la app con ese draft: el plan de tu pick, traducido con sus textos.
-  const decision = decidirSolo({ datos, draft: es.draft, linea: 'roam' });
-  const app = guionTraducido(decision.rec.partida, crearT('es'), 'es');
-  eq(JSON.stringify(es.cuerpo.guion), JSON.stringify(app.guion), 'el guion de la tablet no es el de la app');
-  eq(JSON.stringify(es.cuerpo.cierres), JSON.stringify(app.cierres));
-  ok(es.cuerpo.guion.every((a) => !/^[a-z]+\.[a-zA-Z.]+$/.test(a.texto)), 'sale una clave sin traducir');
-  const en = await pasos({ activo: true, linea: 'roam', rango: 'glory', idioma: 'en', callar: true });
-  ok(en.cuerpo.idioma === 'en' && en.cuerpo.guion[0].texto !== es.cuerpo.guion[0].texto, 'en inglés dice lo mismo que en español');
-  eq(en.cuerpo.callar, true, 'con la voz callada, la tablet habla');
-  // Tu pick leído que el motor no tiene como «yo»: sin guion, como la app.
-  eq(guionSolo({ rec: { eleccion: { heroe: { name: 'Otro' } }, partida: decision.rec.partida }, tuyo: { name: 'Rafaela' } }).guion.length, 0, 'habla con el plan de otro héroe');
-  ok(guionSolo({ rec: { eleccion: { heroe: { name: 'Rafaela' } }, partida: decision.rec.partida }, tuyo: { name: 'Rafaela' } }).guion.length > 0, 'con tu pick, sin guion');
-  eq(guionSolo(null).guion.length, 0);
-});
-
-test('callar la voz: en la APK o en la app del móvil (3.71.0)', () => {
+test('sin voz (3.96.0): al empezar la partida, la tablet solo pide vigilar el final, sin guion ni «callar»', async () => {
+  let t = 7_000_000;
+  let respuesta = lectura({ tuyos: [N('Hirara')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 });
+  const vigiladas = [];
+  const interno = { leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: () => {}, vigilar: (...args) => vigiladas.push(args), final: () => null, ponerResumen: () => {} };
+  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: () => {} });
+  await solo.tic();
+  respuesta = { partida: true, rapida: true };
+  t += 5000; await solo.tic(); t += 5000; await solo.tic();
+  eq(vigiladas.length, 1, 'no pide vigilar al empezar la partida');
+  eq(vigiladas[0].length, 1, `manda algo más que el instante: ${JSON.stringify(vigiladas[0]).slice(0, 200)}`);
+  // Un solo.json viejo con «voz: false» se lee igual y no deja rastro de voz.
   const casa = mkdtempSync(join(tmpdir(), 'solo-voz-'));
   const f = join(casa, 'solo.json');
-  writeFileSync(f, JSON.stringify({ linea: 'roam' }));
-  eq(leerAjustesSolo(f).voz, true, 'sin el campo, callada');
   writeFileSync(f, JSON.stringify({ linea: 'roam', voz: false }));
-  eq(leerAjustesSolo(f).voz, false);
-  eq(ajustesEfectivos(leerAjustesSolo(f), null).callar, true, 'callada en la APK, habla');
-  writeFileSync(f, JSON.stringify({ linea: 'roam' }));
-  eq(ajustesEfectivos(leerAjustesSolo(f), { linea: 'mid', vozCallada: true }).callar, true, 'callada en el móvil, habla');
-  eq(ajustesEfectivos(leerAjustesSolo(f), { linea: 'mid' }).callar, false);
-  eq(ajustesEfectivos(null, { linea: 'mid', vozCallada: true }).callar, true, 'con la línea del móvil, no respeta su voz callada');
+  const a = ajustesEfectivos(leerAjustesSolo(f), { linea: 'mid', vozCallada: true });
+  ok(a.activo && a.linea === 'roam' && !('voz' in a) && !('callar' in a), `quedan ajustes de voz: ${JSON.stringify(a)}`);
 });
 
 test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se guarda con las capturas del draft y sabe de qué partida es; la notificación no lo pide (3.89.0)', async () => {

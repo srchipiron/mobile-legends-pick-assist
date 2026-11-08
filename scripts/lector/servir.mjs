@@ -42,9 +42,7 @@ import { resumirAprendizaje, sinHuecosVacios, CAPTURAS_POR_CORRECCION, VERSION_A
 export { CAPTURAS_POR_CORRECCION };
 import { fotogramaDe } from './miniatura.mjs';
 import { enPartida, recorteMarcador } from './partida.mjs';
-import { hablarConTermux, limpiarTexto, IDIOMAS_VOZ } from './voz.mjs';
 import { nombreClave } from '../../src/motor/nombres.js';
-import { tramoDeMinutos } from '../../src/motor/directo.js';
 import { tiraDe, reconocerResultado, aprenderResultado, plantillasIniciales, cargarResultados, guardarResultados, VERSION_RESULTADOS, PLANTILLAS_POR_RESULTADO } from './resultado.mjs';
 
 /**
@@ -220,27 +218,17 @@ export function tocaCapturarFinal({ ultimaFinal = 0, rafagaHasta = 0 } = {}, t, 
 }
 
 /**
- * Los consejos EN DIRECTO (3.44.0): con el draft completo la app manda el
- * guion (src/motor/directo.js, ya traducido: `{ min, texto }`, el minuto
- * contado desde que empieza la PARTIDA) y una frase de cierre por tramo de
- * duración. El lector busca el inicio de la partida desde el minuto
- * `inicioDesdeMin` tras el draft, una captura cada `intervaloInicioMs`
- * (cada 20 s, decisión de Javi; desde el 8 sigue la vigilancia del final
- * como antes), lo reconoce por el minimapa (partida.mjs,
- * dos capturas seguidas) y desde ahí dice cada aviso en su minuto. Un aviso
- * que se queda atrás más de `RETRASO_MAXIMO_MIN` (el inicio se vio tarde)
- * no se dice: un consejo del minuto 5 en el 9 confunde. Sin inicio visto al
- * llegar al minuto 8, se estima en el minuto `inicioEstimadoMin` del draft
- * y se marca.
+ * El INICIO de la partida (3.44.0): el lector lo busca desde el minuto
+ * `inicioDesdeMin` tras el draft, una captura cada `intervaloInicioMs`, y lo
+ * reconoce por el minimapa (partida.mjs, dos capturas seguidas). Sin inicio
+ * visto al llegar al minuto 8 se estima en el `inicioEstimadoMin` del draft
+ * y se marca. Sirve para la DURACIÓN de la partida. Los consejos en voz alta
+ * que colgaban de aquí se quitaron en 3.96.0 (decisión de Javi).
  *
  * Se mira desde el minuto 0 y no desde el 1 (3.45.1): la partida empieza
- * antes. El 6 de octubre de 2026 el marcador de una partida decía 15:35 a
- * las 20:41:11 (empezó a las 20:25:37) y el draft se completó entre las
- * 20:24:42 y las 20:25:22: de 15 a 55 s antes. Mirando desde el minuto 1 la
- * primera captura ya era de juego, el inicio salía estimado y ninguna de
- * las cuatro partidas de esa tarde guardó su duración ni dijo su cierre.
+ * antes. El 6 de octubre de 2026 el draft se completó de 15 a 55 s antes de
+ * empezar la partida: mirando desde el minuto 1 el inicio salía estimado.
  */
-export const RETRASO_MAXIMO_MIN = 2;
 /**
  * El inicio visto por las LECTURAS del draft (3.46.0): cada `/leer` dice si
  * la tablet ya está en partida (minimapa, como la vigilancia). Si el draft
@@ -258,12 +246,6 @@ export const RETRASO_MAXIMO_MIN = 2;
 export const LECTURAS_EN_PARTIDA = 2;
 export const HUECO_MAXIMO_LECTURAS_MS = 60000;
 export const MINUTOS_DEL_INICIO_LEIDO = 10;
-/** El primer aviso (el inicio) se dice aunque el inicio se viera tarde, hasta este minuto. */
-const RETRASO_DEL_INICIO_MIN = 4;
-/** Lo que se acepta de la app: avisos, frases de cierre. */
-const MAX_AVISOS = 20, MAX_CIERRES = 6;
-/** Como mucho tantos avisos dichos en cualquier ventana de este largo, en todo el lector (decisión de seguridad). */
-export const VOZ_POR_VENTANA = 4, VENTANA_VOZ_MS = 3 * 60000;
 
 /** Lo aprendido, si es de la versión actual: lo de 3.27.0–3.30.0 (versión 1) se aprendió sin guardas y se descarta. */
 export function leerAprendido(fichero = FICHERO_APRENDIDO) {
@@ -408,6 +390,12 @@ export function crearPortero(codigo, { ahora = () => Date.now() } = {}) {
  * se acaba de apuntar, que la APK enseña como notificación. Solo texto
  * plano, sin caracteres de control y con tope: la APK lo pinta tal cual.
  */
+/** El texto sin caracteres de control y con los espacios juntos. */
+export function limpiarTexto(texto, tope = 400) {
+  // Los caracteres de control fuera, por su código (la regla de ESLint no deja escribirlos en una expresión).
+  const sinControl = [...String(texto ?? '')].map((c) => { const n = c.codePointAt(0); return n < 32 || (n >= 127 && n < 160) ? ' ' : c; }).join('');
+  return sinControl.replace(/\s+/g, ' ').trim().slice(0, tope);
+}
 const textoPlano = (x, tope) => (typeof x === 'string' && limpiarTexto(x) ? limpiarTexto(x).slice(0, tope) : null);
 export function sanearConsejo(c) {
   const titulo = textoPlano(c?.titulo, 80);
@@ -438,8 +426,7 @@ export function sanearAjustes(a) {
   }
   // Tu clave de la base de datos de partidas (3.70.0), si la tienes puesta: la tablet sube con ella lo que apunta.
   const clave = typeof a?.clave === 'string' && /^[A-Za-z0-9_-]{32,64}$/.test(a.clave) ? a.clave : null;
-  // La voz callada en la app (3.71.0): la tablet sola tampoco habla.
-  return { linea, rango: palabra(a?.rango) ?? 'glory', idioma: a?.idioma === 'en' ? 'en' : 'es', ...(Object.keys(maestria).length ? { maestria } : {}), ...(clave ? { clave } : {}), ...(a?.vozCallada === true ? { vozCallada: true } : {}) };
+  return { linea, rango: palabra(a?.rango) ?? 'glory', idioma: a?.idioma === 'en' ? 'en' : 'es', ...(Object.keys(maestria).length ? { maestria } : {}), ...(clave ? { clave } : {}) };
 }
 /** Héroes de la maestría que se aceptan del móvil: los de todas las líneas. */
 export const MAESTRIA_MAX = 200;
@@ -592,7 +579,7 @@ export const VISTAZO_MS = 10000;
 /** Lo que vale la fase que dice el modo solo (3.84.0): unas vueltas de draft (1,5 s) o de fuera (12 s). */
 export const FASE_VALE_MS = 30000;
 
-export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, recortar = recortarEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, hablar = hablarConTermux, codigo = null, estadoExtra = null, alCorregir = null, historial = null, claveDeLaTablet = null }) {
+export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, recortar = recortarEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, codigo = null, estadoExtra = null, alCorregir = null, historial = null, claveDeLaTablet = null }) {
   // En la tablet (3.61.0) escucha en la wifi: con código, y aceptando su IP como `Host`.
   const portero = codigo ? crearPortero(codigo, { ahora }) : null;
   // Los retos de cada aparato en el último minuto (3.70.0).
@@ -659,69 +646,9 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   const hora = (t) => new Date(t).toISOString().slice(11, 19);
   const pararVigilancia = () => { if (relojFinal) clearInterval(relojFinal); relojFinal = null; if (final) final.activa = false; };
   const estadoFinal = () => (final
-    ? { desde: final.desde, activa: final.activa, acabada: !!final.acabada, resultado: final.resultado, resultadoId: final.resultadoId, resultadoEn: final.resultadoEn, fotogramas: final.fotogramas, inicio: final.inicio, inicioEstimado: final.inicioEstimado, duracion: final.duracion, voz: final.voz, callada, avisos: final.guion.length, dichos: final.dichosVoz, saltados: final.saltados }
-    : { desde: null, activa: false, acabada: false, resultado: null, resultadoId: null, resultadoEn: null, fotogramas: [], inicio: null, inicioEstimado: false, duracion: null, voz: null, callada, avisos: 0, dichos: 0, saltados: 0 });
+    ? { desde: final.desde, activa: final.activa, acabada: !!final.acabada, resultado: final.resultado, resultadoId: final.resultadoId, resultadoEn: final.resultadoEn, fotogramas: final.fotogramas, inicio: final.inicio, inicioEstimado: final.inicioEstimado, duracion: final.duracion }
+    : { desde: null, activa: false, acabada: false, resultado: null, resultadoId: null, resultadoEn: null, fotogramas: [], inicio: null, inicioEstimado: false, duracion: null });
 
-  // ── La voz (3.44.0): un aviso detrás de otro, nunca dos a la vez. ──────
-  let colaVoz = Promise.resolve();
-  // Voz callada desde la app (3.53.0, botón «Voz»): no se encola nada más y
-  // lo que estaba en cola no se dice. Lo que ya está sonando acaba su frase.
-  let callada = false;
-  // Topes (revisión de seguridad de 3.44.0): sin ellos, repetir `/vigilar`
-  // (cualquier programa del móvil puede poner el `Origin` de la app) dejaba
-  // cientos de avisos en la cola y el móvil hablando horas. Por draft, como
-  // mucho su guion y su cierre; en todo el lector, como mucho
-  // `VOZ_POR_VENTANA` avisos cada `VENTANA_VOZ_MS` (un guion de verdad dice
-  // 3 en los 3 minutos más apretados); y lo encolado de un draft que ya no
-  // es el vigilado no se dice.
-  const dichosRecientes = [];
-  /** Lo que la cola no llegó a decir porque la voz se calló mientras esperaba (`hablar` da null también al acabar bien). */
-  const CALLADO_EN_COLA = Symbol('callado');
-  /**
-   * Encola `texto`; devuelve false si un tope no lo deja (y entonces no se
-   * dice). Con `cuenta`, un aviso del guion: si se calla la voz mientras
-   * espera en la cola, deja de contar como dicho y pasa a saltado (3.56.0;
-   * antes `/final` y el registro lo daban por dicho).
-   */
-  const decir = (f, texto, cuenta = false) => {
-    const t = ahora();
-    while (dichosRecientes.length && t - dichosRecientes[0] > VENTANA_VOZ_MS) dichosRecientes.shift();
-    if (callada || f !== final || (f.hablados ?? 0) >= MAX_AVISOS + 1 || dichosRecientes.length >= VOZ_POR_VENTANA) return false;
-    f.hablados = (f.hablados ?? 0) + 1;
-    dichosRecientes.push(t);
-    colaVoz = colaVoz.then(() => (f !== final ? null : callada ? CALLADO_EN_COLA : hablar(texto, f.idioma))).then((r) => {
-      if (r === CALLADO_EN_COLA) {
-        if (cuenta) { f.dichosVoz -= 1; f.saltados += 1; registrar(`Sin decir (voz callada mientras esperaba): «${texto}»`); }
-        return;
-      }
-      if (r === null && callada) return;
-      const antes = f.voz;
-      f.voz = r ?? 'ok';
-      if (r === 'falta' && antes !== 'falta') registrar('Para oír los consejos instala Termux:API (F-Droid) y ejecuta: pkg install termux-api');
-    }).catch(() => { f.voz = 'otro'; });
-    return true;
-  };
-  /**
-   * Los avisos que tocan ya: en su minuto de PARTIDA, y no si se quedaron
-   * muy atrás. `dichos` son los ya pasados (dichos o no); `dichosVoz`, los
-   * que de verdad se encolaron, y `saltados`, los que no, con su línea en
-   * el registro: hasta 3.44.0 un aviso atrasado o cortado por un tope
-   * contaba como dicho y no dejaba rastro.
-   */
-  const hablarPendientes = (f, t) => {
-    // Con la partida acabada (tabla vista, o apuntada en la app) no se dice nada más (3.44.1).
-    if (!f.inicio || f.acabada) return;
-    const m = (t - f.inicio) / 60000;
-    f.guion.forEach((a, i) => {
-      if (f.dichos.has(i) || a.min > m) return;
-      f.dichos.add(i);
-      const tope = i === 0 && a.min < 1 ? RETRASO_DEL_INICIO_MIN : RETRASO_MAXIMO_MIN;
-      const porque = m - a.min > tope ? `atrasado ${(m - a.min).toFixed(1)} min` : !decir(f, a.texto, true) ? (callada ? 'voz callada' : 'tope de voz') : null;
-      if (porque) { f.saltados += 1; registrar(`Minuto ${m.toFixed(1)} de partida, sin decir (${porque}): «${a.texto}»`); return; }
-      f.dichosVoz += 1;
-      registrar(`Minuto ${m.toFixed(1)} de partida: «${a.texto}»`);
-    });
-  };
   /**
    * Dos capturas seguidas con el minimapa: empezó la partida (hacia la mitad
    * entre la anterior y la primera). Solo es un inicio MEDIDO si antes se
@@ -740,7 +667,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       f.inicioEstimado = !f.vistoFuera;
       // Visto empezar: se vigila hasta `partidaHastaMin` de partida aunque pase del minuto del draft.
       if (!f.inicioEstimado) f.hasta = Math.max(f.hasta, f.inicio + vigilancia.partidaHastaMin * 60000);
-      registrar(`La partida ha empezado hacia las ${hora(f.inicio)}${f.inicioEstimado ? ' o antes (ya estaba en partida al empezar a mirar: inicio estimado)' : ''}: ${f.guion.length} consejos en directo${f.guion.length ? '' : ' (la app no ha mandado ninguno)'}.`);
+      registrar(`La partida ha empezado hacia las ${hora(f.inicio)}${f.inicioEstimado ? ' o antes (ya estaba en partida al empezar a mirar: inicio estimado)' : ''}.`);
     }
   };
   const vigilarTic = async () => {
@@ -761,7 +688,6 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       final.inicioEstimado = true;
       registrar(`No he visto empezar la partida: la doy por empezada hacia las ${hora(final.inicio)} (estimado).`);
     }
-    hablarPendientes(final, t);
     if (t < finDelInicio) {
       // Buscando el inicio: una captura cada `intervaloInicioMs`, solo para mirar el minimapa (no se guarda).
       if (final.inicio || t < final.desde + vigilancia.inicioDesdeMin * 60000 || t - final.ultimaInicio < vigilancia.intervaloInicioMs) return;
@@ -773,7 +699,6 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
         const imgInicio = leerPng(png);
         anotarPartida(enPartida(imgInicio));
         detectarInicio(final, imgInicio, t, vigilancia.intervaloInicioMs);
-        hablarPendientes(final, ahora());
       } catch (e) {
         if (final === yo && !final.fallosInicio++) registrar(`Buscando el inicio de la partida no consigo la captura (${String(e.message).split('\n')[0]}): sigo intentándolo.`);
       } finally { capturandoFinal = false; }
@@ -843,10 +768,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       if (leido.tabla && final.duracion == null && final.inicio) {
         final.duracion = Math.round(((t - final.inicio) / 60000) * 10) / 10;
         final.hasta = Math.min(final.hasta, Math.max(final.desde + vigilancia.hastaMin * 60000, t + 2 * 60000));
-        registrar(`Partida de unos ${final.duracion} minutos${final.inicioEstimado ? ' (inicio estimado: no se apunta ni se dice el cierre)' : ''}.`);
-        // Con el inicio estimado el tramo puede ser otro: el cierre lo afirmaría como hecho.
-        const cierre = final.inicioEstimado ? null : final.cierres[tramoDeMinutos(final.duracion)];
-        if (cierre && !decir(final, cierre)) registrar(`El cierre no se dice: ${callada ? 'voz callada' : 'tope de voz'}.`);
+        registrar(`Partida de unos ${final.duracion} minutos${final.inicioEstimado ? ' (inicio estimado: no se apunta)' : ''}.`);
       }
       if (leido.resultado && !final.resultado) Object.assign(final, { resultado: leido.resultado, resultadoId: id, resultadoEn: t });
       podar();
@@ -862,33 +784,11 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       registrar(`Un fotograma del final no se pudo leer: ${e.message}`);
     } finally { capturandoFinal = false; }
   };
-  /**
-   * El guion que manda la app (3.44.0), como dato: cada aviso con su minuto
-   * (0–40) y su texto limpio; las frases de cierre, una por tramo.
-   */
-  const guionDe = (cuerpo) => ({
-    guion: (Array.isArray(cuerpo?.guion) ? cuerpo.guion : []).slice(0, MAX_AVISOS)
-      .map((a) => ({ min: Number(a?.min), texto: typeof a?.texto === 'string' ? limpiarTexto(a.texto) : '' }))
-      .filter((a) => Number.isFinite(a.min) && a.min >= 0 && a.min <= 40 && a.texto)
-      .sort((a, b) => a.min - b.min),
-    cierres: (Array.isArray(cuerpo?.cierres) ? cuerpo.cierres : []).slice(0, MAX_CIERRES).map((c) => (typeof c === 'string' ? limpiarTexto(c) : '')),
-    idioma: IDIOMAS_VOZ.includes(cuerpo?.idioma) ? cuerpo.idioma : 'es',
-  });
   /** Empieza (o sigue, si es el mismo draft) a vigilar el final del draft completado en `desde`. */
   /** Los drafts viejos que alguien pidió vigilar y no se vigilan (para decirlo una vez). */
   const ignoradas = new Set();
-  const vigilar = (desde, cuerpo = {}) => {
-    // La app dice en cada aviso si la voz va callada: así sobrevive a un reinicio del lector.
-    if (typeof cuerpo?.callar === 'boolean') callada = cuerpo.callar;
-    const nuevo = guionDe(cuerpo);
-    if (final?.desde === desde) {
-      // El mismo draft con otro guion (fijaste otro pick): el nuevo, sin repetir lo ya pasado.
-      if (Array.isArray(cuerpo?.guion)) {
-        const m = final.inicio ? (ahora() - final.inicio) / 60000 : -1;
-        Object.assign(final, nuevo, { dichos: new Set(nuevo.guion.map((a, i) => (a.min <= m ? i : -1)).filter((i) => i >= 0)) });
-      }
-      return final;
-    }
+  const vigilar = (desde) => {
+    if (final?.desde === desde) return final;
     // Nunca hacia atrás (3.86.3): el 28 de octubre de 2026 el móvil, con su draft viejo abierto, volvía
     // a mandar vigilar cada vez que `/final` no era el suyo, y la tablet y él se quitaban la partida.
     if (final && Number.isFinite(final.desde) && desde < final.desde) {
@@ -896,11 +796,11 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       return final;
     }
     pararVigilancia();
-    final = { desde, hasta: desde + vigilancia.hastaMin * 60000, activa: true, fotogramas: [], resultado: null, resultadoId: null, resultadoEn: null, anterior: null, fallos: 0, ...nuevo, dichos: new Set(), dichosVoz: 0, saltados: 0, vistoFuera: false, acabada: false, inicio: null, inicioEstimado: false, seguidas: 0, primera: null, ultimaInicio: 0, fallosInicio: 0, duracion: null, voz: null, ultimaFinal: 0, enJuego: false, rafagaHasta: 0 };
+    final = { desde, hasta: desde + vigilancia.hastaMin * 60000, activa: true, fotogramas: [], resultado: null, resultadoId: null, resultadoEn: null, anterior: null, fallos: 0, vistoFuera: false, acabada: false, inicio: null, inicioEstimado: false, seguidas: 0, primera: null, ultimaInicio: 0, fallosInicio: 0, duracion: null, ultimaFinal: 0, enJuego: false, rafagaHasta: 0 };
     if (ahora() > final.hasta) { final.activa = false; return final; }
     relojFinal = setInterval(vigilarTic, latido);
     relojFinal.unref?.();
-    registrar(`Draft completo a las ${hora(desde)}: busco el inicio de la partida desde el minuto ${vigilancia.inicioDesdeMin} (${final.guion.length} consejos en directo) y vigilo el final del minuto ${vigilancia.desdeMin} al ${vigilancia.hastaMin}.`);
+    registrar(`Draft completo a las ${hora(desde)}: busco el inicio de la partida desde el minuto ${vigilancia.inicioDesdeMin} y vigilo el final del minuto ${vigilancia.desdeMin} al ${vigilancia.hastaMin}.`);
     // La partida ya empezó y las lecturas la vieron empezar (3.46.0).
     const { fuera, dentro, seguidas } = leidas;
     if (seguidas >= LECTURAS_EN_PARTIDA && fuera != null && dentro > fuera && dentro - fuera <= HUECO_MAXIMO_LECTURAS_MS
@@ -908,7 +808,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       final.inicio = (fuera + dentro) / 2;
       final.vistoFuera = true;
       final.hasta = Math.max(final.hasta, final.inicio + vigilancia.partidaHastaMin * 60000);
-      registrar(`La partida empezó hacia las ${hora(final.inicio)} (lo vieron las lecturas del draft): ${final.guion.length} consejos en directo.`);
+      registrar(`La partida empezó hacia las ${hora(final.inicio)} (lo vieron las lecturas del draft).`);
     }
     return final;
   };
@@ -1088,18 +988,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       const desde = Number(cuerpo?.desde), t = ahora();
       // Un instante del reloj del móvil, reciente: ni futuro ni de hace más de un día.
       if (!Number.isFinite(desde) || desde > t + 60000 || desde < t - 24 * 3600000) { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'desde' })); return; }
-      vigilar(desde, cuerpo);
+      vigilar(desde);
       res.writeHead(200, cabeceras).end(JSON.stringify(estadoFinal()));
-      return;
-    }
-    if (req.method === 'POST' && ruta === '/voz') {
-      // Callar o volver a oír los consejos en directo (3.53.0). Solo a la app.
-      if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
-      const cuerpo = await leerCuerpo(req);
-      if (typeof cuerpo?.callar !== 'boolean') { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'callar' })); return; }
-      if (callada !== cuerpo.callar) registrar(cuerpo.callar ? 'Voz callada desde la app: no digo nada más hasta que la vuelvas a activar.' : 'Voz activada desde la app.');
-      callada = cuerpo.callar;
-      res.writeHead(200, cabeceras).end(JSON.stringify({ callada }));
       return;
     }
     // Lo aprendido, para pasarlo de un lector a otro (3.64.1): Lector MLBB
@@ -1173,11 +1063,11 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
       const cuerpo = await leerCuerpo(req);
       // Apuntada en la app (3.44.1): esa partida ha acabado aunque no se viera
-      // la tabla; seguir con sus consejos era hablar en el menú del juego.
+      // la tabla; seguir mirando era gastar batería.
       if (cuerpo && typeof cuerpo.gane === 'boolean' && final && Number.isFinite(cuerpo.desde) && cuerpo.desde === final.desde && !final.acabada) {
         final.acabada = true;
         pararVigilancia();
-        registrar('Partida apuntada en la app: dejo de vigilarla y de dar consejos.');
+        registrar('Partida apuntada en la app: dejo de vigilarla.');
       }
       if (!cuerpo || typeof cuerpo.gane !== 'boolean' || !carpeta) { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'falta gane o carpeta' })); return; }
       const { aprendidos, contradichas, ids } = aprenderDelFinal(cuerpo.ids, cuerpo.gane);
@@ -1262,7 +1152,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       respuesta = { id: p.id, desde: p.desde, gane: cuerpo.gane, cuando: ahora() };
       let aprendidos = 0;
       if (typeof cuerpo.gane === 'boolean' && final?.desde === p.desde) {
-        // Esa partida ha acabado: se deja de vigilar y de hablar.
+        // Esa partida ha acabado: se deja de vigilar.
         final.acabada = true;
         pararVigilancia();
         aprendidos = aprenderDelFinal(final.fotogramas.filter((f) => f.tabla).map((f) => f.id), cuerpo.gane).aprendidos;
@@ -1293,7 +1183,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     ponerConsejo: (c) => { consejoActual = sanearConsejo(c); },
     ajustesDelMovil: () => ajustesDelMovil,
     // Lo que usa el modo solo para apuntar la partida él (3.70.0).
-    vigilar: (desde, cuerpo) => vigilar(desde, cuerpo),
+    vigilar: (desde) => vigilar(desde),
     final: () => estadoFinal(),
     ponerResumen: (r) => { resumenActual = sanearResumen(r) ?? resumenActual; },
     // Lo que no reconoció (3.71.0), para preguntarlo en la APK.

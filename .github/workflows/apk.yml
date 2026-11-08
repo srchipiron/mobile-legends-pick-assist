@@ -18,7 +18,7 @@ on:
     # Todo lo que `copiarLector` mete en la APK menos los datos (3.81.2: con
     # solo `src/motor`, un cambio en basedatos.js o en los textos no llegaba
     # a la tablet). Los datos no: la APK los baja sola (`bajarDatos`).
-    paths: ['android/**', 'scripts/lector/**', 'src/motor/**', 'src/app/basedatos.js', 'src/app/i18n/**', 'public/comunidad.json', '.github/workflows/apk.yml']
+    paths: ['android/**', 'scripts/lector/**', 'src/motor/**', 'src/app/basedatos.js', 'public/comunidad.json', '.github/workflows/apk.yml']
   workflow_dispatch:
 
 # Publicar la release, y la primera vez subir la clave de firma cifrada.

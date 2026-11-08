@@ -359,13 +359,12 @@ export const tocaVigilarFinal = ({ auto, visible = true, completoDesde }) => !!a
  * el mismo que el suyo): desde entonces vigila el final por su cuenta.
  * Devuelve lo vigilado hasta ahora, o null si no hay lector. Nunca lanza.
  */
-export async function avisarVigilancia({ desde, directo = null, callar = null, base = baseLector(), plazoMs = PLAZO_LECTOR_MS, pedir = pedirAlLector } = {}) {
+export async function avisarVigilancia({ desde, base = baseLector(), plazoMs = PLAZO_LECTOR_MS, pedir = pedirAlLector } = {}) {
   if (!Number.isFinite(desde)) return null;
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(), plazoMs);
   try {
-    // Con el guion de los consejos en directo (3.44.0), ya traducido: el lector lo dice en voz alta.
-    const r = await pedir(`${base}/vigilar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ desde, ...(directo ? { guion: directo.guion, cierres: directo.cierres, idioma: directo.idioma } : {}), ...(typeof callar === 'boolean' ? { callar } : {}) }), cache: 'no-store', signal: corte.signal });
+    const r = await pedir(`${base}/vigilar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ desde }), cache: 'no-store', signal: corte.signal });
     const cuerpo = r.ok ? await r.json().catch(() => null) : null;
     return cuerpo && Array.isArray(cuerpo.fotogramas) ? cuerpo : null;
   } catch {
@@ -408,7 +407,7 @@ export const fotogramaValido = (f) => !!f && typeof f.id === 'string' && /^fotog
   && (f.marcador == null || (typeof f.marcador === 'string' && BASE64.test(f.marcador)));
 
 export function fundirFinal(actuales, final, { completoDesde, maximo = MAX_FOTOGRAMAS }) {
-  if (!final || !Number.isFinite(completoDesde) || final.desde !== completoDesde) return { suyo: false, fotogramas: actuales, resultado: null, resultadoEn: null, duracion: null, voz: null };
+  if (!final || !Number.isFinite(completoDesde) || final.desde !== completoDesde) return { suyo: false, fotogramas: actuales, resultado: null, resultadoEn: null, duracion: null };
   const ids = new Set(actuales.map((f) => f.id));
   const fotogramas = [...actuales];
   for (const f of Array.isArray(final.fotogramas) ? final.fotogramas : []) {
@@ -431,33 +430,9 @@ export function fundirFinal(actuales, final, { completoDesde, maximo = MAX_FOTOG
     ids.add(f.id);
   }
   const resultado = final.resultado === 'gane' || final.resultado === 'perdi' ? final.resultado : null;
-  // Cuánto duró la partida (3.44.0, del inicio que vio el lector a la tabla)
-  // y si la voz funciona: lo de la voz se enseña, la duración se apunta.
+  // Cuánto duró la partida (3.44.0, del inicio que vio el lector a la tabla): se apunta.
   const duracion = esDuracionPosible(final.duracion) && !final.inicioEstimado ? final.duracion : null;
-  const voz = ['ok', 'falta', 'otro'].includes(final.voz) ? final.voz : null;
-  return { suyo: true, fotogramas, resultado, resultadoEn: resultado && Number.isFinite(final.resultadoEn) ? final.resultadoEn : null, duracion, voz };
-}
-
-// El guion traducido vive en i18n/guion.js desde 3.71.0 (lo usa también la tablet sin móvil).
-export { guionTraducido } from './i18n/guion.js';
-
-/**
- * Callar (o volver a oír) los consejos en directo (3.53.0, botón «Voz»).
- * Nunca lanza: sin lector no pasa nada, y el siguiente aviso de vigilancia
- * lleva el mismo `callar`, así que un lector que no contestó se entera luego.
- */
-export async function callarVoz({ callar, base = baseLector(), plazoMs = PLAZO_LECTOR_MS, pedir = pedirAlLector } = {}) {
-  if (typeof callar !== 'boolean') return null;
-  const corte = new AbortController();
-  const reloj = setTimeout(() => corte.abort(), plazoMs);
-  try {
-    const r = await pedir(`${base}/voz`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ callar }), cache: 'no-store', signal: corte.signal });
-    return r.ok ? await r.json().catch(() => null) : null;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(reloj);
-  }
+  return { suyo: true, fotogramas, resultado, resultadoEn: resultado && Number.isFinite(final.resultadoEn) ? final.resultadoEn : null, duracion };
 }
 
 /**

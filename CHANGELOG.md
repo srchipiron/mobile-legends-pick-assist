@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.96.0
+
+- Fuera la voz: ni el móvil ni la tablet dicen ya consejos en voz alta
+  durante la partida, y desaparecen el botón «Voz» de la app y «Voz en
+  partida» de Lector MLBB. Lo demás sigue igual: la tablet ve cuándo empieza
+  y acaba la partida, mide cuánto duró, lee la tabla del resultado y la
+  apunta sola.
+- Más seguro: el lector ya no lanza ningún programa aparte de la captura, y
+  la ruta que hacía hablar al móvil ya no existe.
+
 ## 3.95.0
 
 - Botón «Domino» opcional junto a «Sinergia»: deja ver solo los héroes con

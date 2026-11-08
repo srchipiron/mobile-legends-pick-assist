@@ -9,7 +9,7 @@
  * - Escucha en la wifi (la app está en el MÓVIL), pero solo contesta con el
  *   código de vinculación (`X-Lector-Codigo`, `crearPortero`), a la app
  *   publicada (`origenPermitido`) y con una IP privada como `Host`.
- * - La captura y la voz las da la APK en 127.0.0.1 (`LECTOR_INTERNO`); este
+ * - La captura la da la APK en 127.0.0.1 (`LECTOR_INTERNO`); este
  *   fichero no lanza programas. Fuera de la casa solo pide los datos de
  *   Pick Assist a su web pública (3.66.0, modo solo: `DATOS_DE_LA_WEB`).
  * - Nada toca la pantalla ni el juego: solo se LEE lo que se ve.
@@ -22,7 +22,7 @@ import { join, dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas, sanearAjustes, PUERTO, VISTAZO_MS, ARREGLOS_POR_TANDA } from './servir.mjs';
-import { limpiarTexto } from './voz.mjs';
+import { limpiarTexto } from './servir.mjs';
 import { leerCrudo, escribirPngRapido } from './png.mjs';
 import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo } from './solo.mjs';
 import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte, subirRecorte, traerMisPartidas, bajarMisRecortes } from '../../src/app/basedatos.js';
@@ -48,19 +48,6 @@ export function capturaDeLaApk(base, secreto, { pedir = fetch } = {}) {
     if (!r.ok) throw Object.assign(new Error(r.status === 409 ? 'La tablet no está grabando la pantalla: abre la app del lector y toca «Empezar».' : `captura ${r.status}`), { tipo: 'captura' });
     const buf = Buffer.from(await r.arrayBuffer());
     return crudo ? buf : escribirPngRapido(leerCrudo(buf));
-  };
-}
-
-/** La voz de la APK (TextToSpeech de Android): null si sonó, «falta» si no hay voz. */
-export function vozDeLaApk(base, secreto, { pedir = fetch } = {}) {
-  if (!esInterno(base)) throw new Error('la voz solo puede ir a 127.0.0.1');
-  return async (texto, idioma = 'es') => {
-    const limpio = limpiarTexto(texto);
-    if (!limpio) return null;
-    try {
-      const r = await pedir(`${base}/voz`, { method: 'POST', headers: { 'X-Secreto': secreto, 'Content-Type': 'application/json' }, body: JSON.stringify({ texto: limpio, idioma: idioma === 'en' ? 'en' : 'es' }), signal: AbortSignal.timeout(60000) });
-      return r.ok ? null : r.status === 404 ? 'falta' : 'otro';
-    } catch { return 'otro'; }
   };
 }
 
@@ -383,7 +370,7 @@ export const ERRORES_DEL_PARTE = 10;
 export function lineasLimpias(texto, { secretos = [], max = LINEAS_DEL_PARTE, solo = null } = {}) {
   const tapar = secretos.filter((x) => typeof x === 'string' && x.length >= 8);
   return String(texto ?? '').split('\n').filter((l) => l.trim() && (!solo || solo.test(l))).slice(-max).map((l) => {
-    // Sin caracteres de control (limpiarTexto, el de la voz) y sin IP.
+    // Sin caracteres de control (limpiarTexto) y sin IP.
     let x = limpiarTexto(l).replace(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g, '[ip]');
     for (const sec of tapar) x = x.split(sec).join('[oculto]');
     return x.slice(0, 300);
@@ -617,7 +604,7 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     alCorregir: (c) => alCorregirRef?.(c),
     historial: { listar: () => historialRef?.listar() ?? { partidas: [] }, editar: (c) => historialRef?.editar(c) ?? { ok: false, estado: 503 } },
     claveDeLaTablet: () => claveRef?.() ?? null,
-    capturar: capturaDeLaApk(base, secreto), hablar: vozDeLaApk(base, secreto), codigo,
+    capturar: capturaDeLaApk(base, secreto), codigo,
     // Por qué se cerró la app la última vez (3.61.5, lo dice Android): el Diagnóstico del móvil lo enseña.
     // Y lo que la APK sabe de la tablet (3.63.0: versión, si graba, permisos, memoria), que escribe cada pocos segundos.
     estadoExtra: () => ({ salida: String(env.LECTOR_ULTIMA_SALIDA ?? '').slice(0, 500) || null, tablet: leerSaludDeLaApk(join(env.LECTOR_CASA || '.', 'salud.json')), ...(soloRef ? { solo: soloRef.resumen() } : {}), ...estadoTablet() }),

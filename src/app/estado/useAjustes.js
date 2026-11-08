@@ -47,8 +47,6 @@ export function useAjustes() {
   };
   // Antes de que nada pida al lector (efectos incluidos): es un valor del módulo.
   ponerLectorEnTablet(lectorTablet);
-  // La voz de los consejos en directo, callada (3.53.0). Clave nueva: sin ella, habla.
-  const [vozCallada, setVozCallada] = useState(() => leer(CLAVES.vozCallada, false) === true);
   const t = useMemo(() => crearT(idioma), [idioma]);
 
   useEffect(() => { if (rango) guardar(CLAVES.rango, rango); }, [rango]);
@@ -57,8 +55,7 @@ export function useAjustes() {
   useEffect(() => { document.documentElement.lang = idioma; }, [idioma]);
   useEffect(() => { activarTacto(tacto); guardar(CLAVES.tacto, tacto); }, [tacto]);
   useEffect(() => { guardar(CLAVES.lectorAuto, lectorAuto); }, [lectorAuto]);
-  useEffect(() => { guardar(CLAVES.vozCallada, vozCallada); }, [vozCallada]);
   useEffect(() => { guardar(CLAVES.lectorTablet, lectorTablet); }, [lectorTablet]);
 
-  return { rango, setRango, linea, setLinea, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto, vozCallada, setVozCallada, lectorTablet, setLectorTablet, vinculoPendiente, confirmarVinculo, t };
+  return { rango, setRango, linea, setLinea, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto, lectorTablet, setLectorTablet, vinculoPendiente, confirmarVinculo, t };
 }

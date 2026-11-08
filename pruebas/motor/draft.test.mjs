@@ -387,6 +387,9 @@ test('los cruces y parejas del draft (3.92.0): cada enemigo con su cruce y cada 
   eq(crucesDelDraft(datos, { yo: null, enemigos }).contra.length, 0, 'sin héroe salen cruces');
   // Va en el plan.
   eq(planear(datos, { yo, enemigos, aliados, linea: 'roam' }).cruces.contra.length, 5, 'el plan no lleva los cruces del draft');
+  // Y ya no lleva el guion de la voz (3.96.0).
+  const conTodo = planear(datos, { yo, enemigos, aliados, linea: 'roam' });
+  ok(!('directo' in conTodo) && !('cierres' in conTodo), 'el plan sigue trayendo el guion de la voz');
 });
 
 test('tus resultados no deciden nada (3.93.0, Javi): con una maestría exagerada, el ranking, las probabilidades, la simulación y el plan salen idénticos', () => {

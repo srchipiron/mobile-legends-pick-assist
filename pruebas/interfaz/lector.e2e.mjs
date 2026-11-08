@@ -94,14 +94,9 @@ await prueba('el enlace del QR de la tablet vincula la app: lee de la tablet con
   // Con tu línea (3.69.3): con ella la tablet sigue leyendo sola cuando el móvil se calla.
   const conAjustes = vistas.find((v) => v.camino === '/consejo' && v.cuerpo.includes('"ajustes"'));
   ok(conAjustes && /^[a-z]+$/.test(JSON.parse(conAjustes.cuerpo).ajustes?.linea ?? ''), `el consejo no lleva tu línea: ${conAjustes?.cuerpo ?? 'sin ajustes'}`);
-  // Y si la voz va callada (3.71.0): la tablet habla sola en partida y lo tiene que saber.
-  eq(JSON.parse(conAjustes.cuerpo).ajustes?.vozCallada, false, 'el consejo no dice si la voz va callada');
-  if (await pagina.locator('.lector-callar').count()) {
-    await pagina.locator('.lector-callar').first().click();
-    for (let i = 0; i < 40 && !vistas.some((v) => v.camino === '/consejo' && v.cuerpo.includes('"vozCallada":true')); i++) await pagina.waitForTimeout(250);
-    ok(vistas.some((v) => v.camino === '/consejo' && v.cuerpo.includes('"vozCallada":true')), 'callar la voz en la app no se le dice a la tablet');
-    await pagina.locator('.lector-callar').first().click();
-  }
+  // Sin voz desde 3.96.0: ni el ajuste viaja ni hay botón para callarla.
+  ok(!('vozCallada' in (JSON.parse(conAjustes.cuerpo).ajustes ?? {})), 'el consejo sigue diciendo si la voz va callada');
+  eq(await pagina.locator('.lector-callar').count(), 0, 'sigue el botón «Voz»');
   eq(await pagina.evaluate(() => window.location.hash), '', 'el enlace con el código se queda en la barra de direcciones');
   eq(JSON.stringify(await leer(pagina, 'roam-picker:lector-tablet')), JSON.stringify({ direccion: '192.168.68.116:47323', codigo: 'ABCDEFGH23' }), 'la vinculación no se guarda');
   eq(await leer(pagina, 'roam-picker:lector-auto'), true, 'vincular no enciende «Leer solo»');
@@ -263,11 +258,9 @@ await prueba('con «Leer solo» y el draft completo, el lector vigila el final p
   let partidas = [];
   for (let i = 0; i < 100 && !partidas.length; i++) { await pagina.waitForTimeout(250); partidas = (await leer(pagina, 'roam-picker:partidas')) ?? []; }
   eq(partidas.length, 1, 'la partida no se apunta sola con la tabla a la vista');
-  // Con tu pick FUERA del ranking de tu línea el plan sería el del nº1: el
-  // lector recibe la vigilancia, pero sin consejos de otro héroe (3.44.1; el
-  // guion de un draft normal lo mira la prueba de abajo).
+  // El lector recibe la vigilancia de ESTE draft.
   const fin = await (await fetch(`http://127.0.0.1:${PUERTO}/final`, { headers: { Origin: new URL(url).origin } })).json();
-  ok(fin.desde === completoDesde && fin.avisos === 0, `el lector recibe consejos del nº1 con tu pick fijado fuera de la línea: ${JSON.stringify({ desde: fin.desde, avisos: fin.avisos })}`);
+  eq(fin.desde, completoDesde, 'el lector no vigila este draft');
   const [p] = partidas;
   eq(p.pick, 'Khufra', 'la partida apuntada sola es la del nº1 de la línea, no tu pick fijado');
   ok(p.origen === 'lector' && p.gane === false && p.draft?.enemigos?.length === 5 && p.pick, `la partida apuntada sola no es la del draft, perdida y del lector: ${JSON.stringify({ origen: p.origen, gane: p.gane, pick: p.pick, enemigos: p.draft?.enemigos })}`);
@@ -325,15 +318,14 @@ await prueba('la partida apuntada sola no cierra la hoja que estás usando ni pi
   } finally { capturar = () => png; await contexto.close(); }
 });
 
-await prueba('el guion de los consejos en directo llega al lector con el draft completo; y si eliges el último, se sigue leyendo tu fila un rato (3.44.1)', async () => {
+await prueba('con el draft completo el lector vigila ese draft (sin guion: 3.96.0); y si eliges el último, se sigue leyendo tu fila un rato (3.44.1)', async () => {
   const origen = { headers: { Origin: new URL(url).origin } };
-  // Sin pick fijado: el guion del nº1 de la línea, con sus avisos.
   const completoDesde = Date.now() - 2 * 60 * 1000;
   const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], enemyRoam: null, fase: 'picks', completoDesde };
   let { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:linea': 'exp', 'roam-picker:lector-auto': true, 'roam-picker:draft': draft } });
   let fin = null;
-  for (let i = 0; i < 80; i++) { await pagina.waitForTimeout(250); fin = await (await fetch(`http://127.0.0.1:${PUERTO}/final`, origen)).json(); if (fin.desde === completoDesde && fin.avisos >= 2) break; }
-  ok(fin.desde === completoDesde && fin.avisos >= 2, `el lector no recibe el guion de los consejos en directo: ${JSON.stringify({ desde: fin.desde, avisos: fin.avisos })}`);
+  for (let i = 0; i < 80; i++) { await pagina.waitForTimeout(250); fin = await (await fetch(`http://127.0.0.1:${PUERTO}/final`, origen)).json(); if (fin.desde === completoDesde) break; }
+  ok(fin.desde === completoDesde && !('avisos' in fin), `el lector no vigila el draft completo, o sigue con consejos: ${JSON.stringify(fin).slice(0, 200)}`);
   // Pasado el plazo de leer tu fila, con el draft completo no se lee nada.
   eq((await leer(pagina)).miPick ?? null, null, 'con el draft completo hace minutos sigue leyendo la tablet');
   ok(!errores.length, `errores de página: ${errores}`);
@@ -384,7 +376,7 @@ await prueba('la partida empieza con el draft a medias (3.46.0): dos lecturas en
     for (let i = 0; i < 120 && !d?.cerrado; i++) { await pagina.waitForTimeout(250); d = await leer(pagina); }
     eq(d.cerrado, true, 'dos lecturas con la tablet en partida no cierran el draft');
     ok(Number.isFinite(d.completoDesde), 'el draft cerrado no tiene instante');
-    // La app avisa al lector de ESTE draft (vigilancia, voz, resultado).
+    // La app avisa al lector de ESTE draft (vigilancia, resultado).
     const final = async () => (await fetch(`http://127.0.0.1:${PUERTO}/final`, { headers: { Origin: 'https://srchipiron.github.io' } })).json();
     let f = null;
     for (let i = 0; i < 80 && f?.desde !== d.completoDesde; i++) { await pagina.waitForTimeout(250); f = await final(); }
@@ -397,44 +389,6 @@ await prueba('la partida empieza con el draft a medias (3.46.0): dos lecturas en
     await pagina.reload(); await pagina.waitForTimeout(1500);
     const tras = await leer(pagina);
     ok(tras.cerrado === true && tras.completoDesde === d.completoDesde, `recargar abre otra vez el draft: ${JSON.stringify({ cerrado: tras.cerrado, completoDesde: tras.completoDesde })}`);
-    ok(!errores.length, `errores de página: ${errores}`);
-  } finally { await contexto.close(); }
-});
-
-await prueba('«Voz»: con el draft completo, un toque calla al lector, se recuerda al recargar y otro toque la devuelve; antes, en la fila no está (3.53.0)', async () => {
-  const origen = { headers: { Origin: new URL(url).origin } };
-  const estadoVoz = async () => (await (await fetch(`http://127.0.0.1:${PUERTO}/final`, origen)).json()).callada;
-  // A medias: en la fila no está (no baja la nº1), pero sí en Ajustes.
-  let { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:lector-auto': true, 'roam-picker:draft': { enemies: ['Layla'], allies: [], bans: [], enemyRoam: null, fase: 'picks' } } });
-  try {
-    await pagina.waitForTimeout(500);
-    eq(await pagina.locator('.tools .lector-callar').count(), 0, 'con el draft a medias, «Voz» está en la fila de botones');
-    eq(await pagina.locator('.lector-callar').count(), 1, 'con el draft a medias, «Voz» no está en Ajustes');
-    ok(!errores.length, `errores de página: ${errores}`);
-  } finally { await contexto.close(); }
-  const draft = { enemies: ['Layla', 'Miya', 'Eudora', 'Nana', 'Zilong'], allies: ['Chou', 'Tigreal', 'Franco', 'Akai'], bans: [], enemyRoam: null, fase: 'picks', completoDesde: Date.now() - 2 * 60 * 1000 };
-  ({ contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...almacen, 'roam-picker:linea': 'exp', 'roam-picker:lector-auto': true, 'roam-picker:draft': draft } }));
-  try {
-    const voz = pagina.locator('.tools .lector-callar');
-    await voz.waitFor({ timeout: 5000 });
-    eq(await voz.getAttribute('aria-pressed'), 'false');
-    ok(/Voz: sí/.test(await voz.innerText()), await voz.innerText());
-    await voz.click();
-    let callada = null;
-    for (let i = 0; i < 40 && callada !== true; i++) { await pagina.waitForTimeout(100); callada = await estadoVoz(); }
-    eq(callada, true, 'el toque no calla al lector');
-    eq(await voz.getAttribute('aria-pressed'), 'true');
-    eq(await pagina.evaluate(() => localStorage.getItem('roam-picker:voz-callada')), 'true', 'callarla no se guarda');
-    // Un lector que se ha perdido el toque (reiniciado) se entera con el siguiente aviso de vigilancia.
-    await fetch(`http://127.0.0.1:${PUERTO}/voz`, { method: 'POST', headers: { ...origen.headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ callar: false }) });
-    await pagina.reload({ waitUntil: 'networkidle' });
-    eq(await pagina.locator('.tools .lector-callar').getAttribute('aria-pressed'), 'true', 'callada no se recuerda al recargar');
-    callada = null;
-    for (let i = 0; i < 80 && callada !== true; i++) { await pagina.waitForTimeout(250); callada = await estadoVoz(); }
-    eq(callada, true, 'un lector que no se enteró no recibe la voz callada con la vigilancia');
-    await pagina.locator('.tools .lector-callar').click();
-    for (let i = 0; i < 40 && callada !== false; i++) { await pagina.waitForTimeout(100); callada = await estadoVoz(); }
-    eq(callada, false, 'otro toque no devuelve la voz');
     ok(!errores.length, `errores de página: ${errores}`);
   } finally { await contexto.close(); }
 });

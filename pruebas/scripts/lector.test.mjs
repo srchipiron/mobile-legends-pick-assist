@@ -291,8 +291,6 @@ test('SEGURIDAD: todo lo que el lector ejecuta (su carpeta y lo que importa de f
     'scripts/lector/lectura-tarea.mjs': ['node:worker_threads'],
     'scripts/lector/aprender-tarea.mjs': ['node:worker_threads', 'node:fs'],
     'scripts/lector/recortes-tarea.mjs': ['node:worker_threads', 'node:fs'],
-    // La voz de los consejos en directo (3.44.0): lanza `termux-tts-speak` y nada más (prueba de abajo).
-    'scripts/lector/voz.mjs': ['node:child_process'],
     'scripts/lector/partida.mjs': ['node:fs'],
     // El arranque vigilado de la APK (3.72.3): escribir fallo-nodo.txt en la casa de la app.
     'scripts/lector/arranque-apk.mjs': ['node:fs', 'node:path'],
@@ -337,23 +335,12 @@ test('SEGURIDAD: el lector solo conecta y hace capturas con adb; nunca toca, ins
   for (const f of ficheros) {
     const texto = sinComentarios(readFileSync(join(carpeta, f), 'utf8'));
     ok(!PROHIBIDOS.test(texto), `${f} lleva un mandato de adb que actúa sobre la tablet: ${texto.match(PROHIBIDOS)?.[0]}`);
-    if (f === 'leer.mjs' || f === 'voz.mjs') continue;
-    ok(!/child_process|\bexecFile|\bspawn|\bexecSync|\bprocess\.binding/.test(texto), `${f} puede lanzar programas: solo leer.mjs (adb) y voz.mjs (la voz) lo tienen permitido`);
+    if (f === 'leer.mjs') continue;
+    ok(!/child_process|\bexecFile|\bspawn|\bexecSync|\bprocess\.binding/.test(texto), `${f} puede lanzar programas: solo leer.mjs (adb) lo tiene permitido`);
   }
-  // La voz (3.44.0): exactamente `termux-tts-speak` con el idioma; el texto
-  // por la entrada estándar, nunca como argumento, y sin adb.
-  const voz = sinComentarios(readFileSync(join(carpeta, 'voz.mjs'), 'utf8'));
-  eq([...voz.matchAll(/child_process/g)].length, 1, 'voz.mjs menciona child_process más de una vez');
-  ok(/^import \{ execFile \} from 'node:child_process';$/m.test(voz), 'voz.mjs no importa exactamente { execFile } de node:child_process');
-  ok(!/\bimport\s*\(|\brequire\s*\(|\bspawn|\bexecSync|\bexecFileSync|\bexec\s*\(|\bfork\s*\(|\badb\b|shell\s*:/.test(voz), 'voz.mjs lanza programas por otra vía o toca adb');
-  eq([...voz.matchAll(/\bexecFile\b/g)].length, 2, 'execFile aparece en voz.mjs más veces que el import y una llamada');
-  // La LÍNEA entera (con solo el principio, un tercer argumento o unas
-  // opciones con `shell` pasaban: revisión de seguridad de 3.44.0, que la
-  // esquivó con `['sh' + 'ell']: true` y ejecutó un mandato).
-  ok(/^\s*hijo = execFile\('termux-tts-speak', \['-l', lengua\], \{ timeout: PLAZO_VOZ_MS \}, \(err\) => \{$/m.test(voz), 'voz.mjs no llama a termux-tts-speak exactamente con el idioma y el plazo');
-  ok(/^\s*const lengua = idioma === 'en' \? 'en' : 'es';$/m.test(voz), 'el idioma de la voz no es «en» o «es» sin más');
-  eq([...voz.matchAll(/\blengua\b/g)].length, 2, 'en voz.mjs `lengua` se declara o se usa más de una vez (¿sombreada?)');
-  ok(!/\]\s*:/.test(voz), 'voz.mjs usa una clave calculada (`[…]: …`), con la que se cuelan opciones');
+  // Sin voz desde 3.96.0: voz.mjs (el segundo fichero que lanzaba un programa) no puede volver.
+  ok(!ficheros.includes('voz.mjs'), 'vuelve a haber voz.mjs: otro fichero del lector que lanza programas');
+  for (const f of todos.filter((g) => /\.sh$/.test(g))) ok(!/termux-tts/.test(readFileSync(join(carpeta, f), 'utf8')), `${f} vuelve a usar la voz de Termux`);
   // Los guiones de shell (lector.sh, 3.26.0) no llaman a adb: ni una vez.
   for (const f of todos.filter((g) => /\.sh$/.test(g))) {
     const texto = readFileSync(join(carpeta, f), 'utf8').replace(/^\s*#.*$/gm, '');

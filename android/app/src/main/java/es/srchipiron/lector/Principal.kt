@@ -224,7 +224,7 @@ class Principal : Activity() {
             Paso("Empieza a leer. Android pregunta qué grabar: elige «Pantalla completa».", "Empezar a leer") { alternar() },
             Paso("«Sin móvil»: la tablet lee el draft y decide ella sola con tu línea (la de la app del móvil, o la que elijas aquí), y tu nº1 sale en la burbuja."),
             Paso("Tus partidas se guardan solas en la base de datos: míralas y arréglalas en «Mis partidas». (Opcional) Con Pick Assist en el MÓVIL: escanea el QR de «Vincular el móvil» y toca «Vincular» (misma wifi) para que la tablet use tu maestría."),
-            Paso("Juega. En baneos la burbuja dice a quién banear; en picks, tu nº1 y los dos siguientes. En partida, la voz te da los consejos de tu pick, y al acabar la tablet apunta la partida."),
+            Paso("Juega. En baneos la burbuja dice a quién banear; en picks, tu nº1 y los dos siguientes. Al acabar, la tablet apunta la partida."),
         )
         for (p in pasos) guia.addView(p.fila)
         izquierda.addView(guia, separada())
@@ -265,11 +265,6 @@ class Principal : Activity() {
         fun textoJuego() = "Abrir Mobile Legends al empezar: ${if (prefs.getBoolean("abrirJuego", true)) "sí" else "no"} (toca para cambiar)"
         ajustes.addView(pildora(textoJuego()).apply {
             setOnClickListener { prefs.edit().putBoolean("abrirJuego", !prefs.getBoolean("abrirJuego", true)).apply(); text = textoJuego() }
-        }, ancho())
-        // La voz en partida (3.71.0), sí por defecto: también se calla desde la app del móvil.
-        fun textoVoz() = "Voz en partida: ${if (Solo.voz(this)) "sí" else "callada"} (toca para cambiar)"
-        ajustes.addView(pildora(textoVoz()).apply {
-            setOnClickListener { Solo.ponerVoz(this@Principal, !Solo.voz(this@Principal)); text = textoVoz() }
         }, ancho())
         estado = texto(14f).also { ajustes.addView(it) }
         ajustes.addView(texto(13f, Color.LTGRAY).apply { text = "Mientras lee, la tablet graba su pantalla: si abres otra app, el lector también la ve. La grabación no sale de la tablet; al móvil solo van nombres de héroes." })
@@ -673,7 +668,6 @@ object Solo {
         val l = j.optString("linea", "")
         if (j.optBoolean("activo", true) && LINEAS.any { it.first == l }) l else null
     } catch (e: Exception) { null }
-    private fun leer(c: android.content.Context) = try { JSONObject(fichero(c).readText()) } catch (e: Exception) { JSONObject() }
     private fun escribir(c: android.content.Context, j: JSONObject) {
         val tmp = java.io.File(c.filesDir, "solo.json.tmp")
         tmp.writeText(j.toString())
@@ -681,11 +675,6 @@ object Solo {
     }
     fun guardar(c: android.content.Context, linea: String?) {
         val j = if (linea == null) JSONObject().put("activo", false) else JSONObject().put("linea", linea).put("idioma", "es")
-        // La voz (3.71.0) se conserva al cambiar de línea.
-        if (!voz(c)) j.put("voz", false)
         escribir(c, j)
     }
-    /** «Voz en partida» (3.71.0): sin el campo, habla. */
-    fun voz(c: android.content.Context) = leer(c).optBoolean("voz", true)
-    fun ponerVoz(c: android.content.Context, si: Boolean) = escribir(c, leer(c).apply { if (si) remove("voz") else put("voz", false) })
 }

@@ -26,7 +26,7 @@ import { Diagnostico } from './componentes/Diagnostico.jsx';
 import { Builds } from './componentes/Builds.jsx';
 import { AvisoDeshacer } from './componentes/AvisoDeshacer.jsx';
 import { ConfirmarVinculo } from './componentes/LectorTablet.jsx';
-import { pedirLectura, pedirEstadoLector, pedirClaveDeLaTablet, pedirUltimaApk, buscarTabletUnaVez, sinLlegarALaTablet, parteDeLaTablet, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
+import { pedirLectura, pedirEstadoLector, pedirClaveDeLaTablet, pedirUltimaApk, buscarTabletUnaVez, sinLlegarALaTablet, parteDeLaTablet, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, recorteValido, faltoAlguien, nombresDeLectura, corregirLectura, dudasDeLectura, tocaLeerSolo, tocaVigilarFinal, lecturasEnPartida, tuyoDeTuLinea, LECTURAS_EN_PARTIDA, FALLOS_DEL_LECTOR, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESHACER_APUNTADA_MS } from './lector.js';
 import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
 import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
@@ -52,7 +52,7 @@ import { Administracion, PuertaDeLicencia } from './componentes/Administracion.j
 const PAGINAS_SUELTAS = { '#capturas': 'revisar', '#analisis': 'analisis' };
 
 export default function App() {
-  const { t, linea, setLinea, rango, setRango, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto, vozCallada, setVozCallada, lectorTablet, setLectorTablet, vinculoPendiente, confirmarVinculo } = useAjustes();
+  const { t, linea, setLinea, rango, setRango, idioma, setIdioma, tacto, setTacto, lectorAuto, setLectorAuto, lectorTablet, setLectorTablet, vinculoPendiente, confirmarVinculo } = useAjustes();
   // `t` es también el instante de una partida dentro de guardarPartida: allí se traduce con este.
   const traducir = t;
   const carga = useDatos(rango);
@@ -215,18 +215,8 @@ export default function App() {
   // suben solos al proyecto al apuntar o al empezar otro draft, para medir.
   const fotogramas = useRef([]);
   const vigilando = useRef(false);
-  // Los consejos en directo (3.44.0): lo último que se le mandó al lector
-  // (draft y huella del guion), cuánto duró la partida según él y si su voz
-  // funciona (sin Termux:API no suena y se dice debajo del botón).
-  const guionEnviado = useRef(null);
-  // La voz callada (3.53.0): el tic de la vigilancia la lee por referencia (no reinicia el efecto).
-  const vozCalladaActual = useRef(vozCallada);
-  vozCalladaActual.current = vozCallada;
-  /** «Voz: sí / callada»: se guarda y se le dice al lector en el acto; si no contesta, se lo dice el siguiente aviso. */
-  const cambiarVoz = (callar) => { setVozCallada(callar); vozCalladaActual.current = callar; callarVoz({ callar }); };
+  // Cuánto duró la partida según el lector (3.44.0).
   const duracionFinal = useRef({ desde: null, duracion: null });
-  const [vozLector, setVozLector] = useState(null);
-  const lectorConVoz = useMemo(() => ({ ...lector, voz: vozLector }), [lector, vozLector]);
   const ahora = useAhora();
   /** Sube unas pantallas (si hay). Sin token no sube: se descartan. */
   const envioActual = useRef(envio);
@@ -351,15 +341,6 @@ export default function App() {
   completoActual.current = draft.completoDesde;
   const draftActual = useRef(draft);
   draftActual.current = draft;
-  // El guion de AHORA (el héroe fijado puede cambiar con el draft completo).
-  // Con tu pick fijado fuera del ranking de tu línea (el lector fija tu fila,
-  // sea de la línea que sea), el plan es el del nº1: la voz hablaría de otro
-  // héroe, y mejor callar (3.44.1). Y sin los datos del día todavía (recién
-  // abierta la app), el guion está vacío y no vale como guion: `listo`.
-  const planDelPick = draft.miPick && rec.yo?.name !== draft.miPick ? null : rec.partida;
-  const directo = useMemo(() => ({ ...guionTraducido(planDelPick, t, idioma), listo: metaListo }), [planDelPick, t, idioma, metaListo]);
-  const directoActual = useRef(directo);
-  directoActual.current = directo;
   useEffect(() => {
     if (!apuntada) return undefined;
     const reloj = setTimeout(() => setApuntada((a) => (a === apuntada ? null : a)), DESHACER_APUNTADA_MS);
@@ -386,31 +367,20 @@ export default function App() {
       if (vigilando.current || document.visibilityState !== 'visible') return;
       vigilando.current = true;
       try {
-        // Sin `/final` (el lector tarda o acaba de arrancar) se le avisa igual:
-        // si no, el guion no llegaba y con el móvil ya en el bolsillo no
-        // había otro tic (3.44.1).
+        // Sin `/final` (el lector tarda o acaba de arrancar) se le avisa igual (3.44.1).
         let f = await pedirFinal().catch(() => ({ desde: null, fotogramas: [] }));
         if (!sigue()) return;
-        // El lector no sabe de este draft (acaba de completarse, o se reinició)
-        // o su guion de consejos ya no es el de ahora (3.44.0): se le avisa,
-        // con el guion, y contesta con lo que tenga.
-        // Sin los datos del día no se manda guion (el lector conserva el que
-        // tenga): tras recargar, el primer aviso iba con el guion VACÍO y el
-        // lector daba por pasados los avisos del minuto en que llegaba el bueno.
-        const d = directoActual.current;
-        const callar = vozCalladaActual.current;
-        const huella = `${yo}|${d.listo ? d.huella : 'sin datos'}|${callar}`;
-        if (f.desde !== yo || guionEnviado.current !== huella || f.callada !== callar) {
-          const r = await avisarVigilancia({ desde: yo, directo: d.listo ? d : null, callar });
-          if (r) { f = r; guionEnviado.current = huella; }
+        // El lector no sabe de este draft (acaba de completarse, o se
+        // reinició): se le avisa y contesta con lo que tenga.
+        if (f.desde !== yo) {
+          const r = await avisarVigilancia({ desde: yo });
+          if (r) f = r;
         }
         if (!sigue()) return;
-        const { suyo, fotogramas: lista, resultado, resultadoEn, duracion, voz } = fundirFinal(fotogramas.current, f, { completoDesde: yo });
+        const { suyo, fotogramas: lista, resultado, resultadoEn, duracion } = fundirFinal(fotogramas.current, f, { completoDesde: yo });
         if (!suyo) return;
         fotogramas.current = lista;
         if (duracion) duracionFinal.current = { desde: yo, duracion };
-        // La voz que falta se dice hasta que vuelva a sonar (un draft nuevo aún no ha hablado).
-        if (voz) setVozLector(voz);
         // La tabla de resultado con una palabra conocida (3.32.0): la partida se apunta SOLA, con «Deshacer», fechada cuando el lector vio la tabla.
         // Nunca dos veces por draft, ni la que deshiciste (marca guardada en el draft).
         if (resultado && apuntadaSola.current !== yo && draftActual.current.apuntadaSola !== yo && apuntarSolaAhora.current(resultado === 'gane', resultadoEn ?? Date.now())) apuntadaSola.current = yo;
@@ -508,7 +478,7 @@ export default function App() {
       // De otro draft: ni cuenta para cerrar este por partida ni dice nada.
       if (n.otroDraft) { setLector((l) => ({ ...l, estado: 'libre' })); return; }
       // La tablet ya está en partida (3.46.0): el draft se cierra aunque falte
-      // alguien, y con eso arrancan la voz, la vigilancia y el resultado.
+      // alguien, y con eso arrancan la vigilancia y el resultado.
       enPartidaSeguidas.current = lecturasEnPartida(enPartidaSeguidas.current, lectura);
       if (enPartidaSeguidas.current >= LECTURAS_EN_PARTIDA) draft.cerrarPorPartida();
       const algo = nombres.baneos.length + nombres.enemigos.length + nombres.aliados.length + (nombres.tuyo ? 1 : 0);
@@ -541,10 +511,9 @@ export default function App() {
     // ellos cuando el móvil se calla, aunque en la APK no se haya elegido línea.
     // Y tu maestría y tu clave de la base de datos (3.70.0): la tablet decide
     // con ellas y sube lo que apunte sola, sin el móvil delante.
-    // Y si callaste la voz (3.71.0): la tablet habla sola en partida y lo respeta.
-    mandarALaTablet({ consejo: consejoTablet, ajustes: { linea, rango: datos.rango, idioma, maestria: maestriaParaLaTablet, vozCallada, ...(comunidad.activo && comunidad.clave ? { clave: comunidad.clave } : {}) } });
+    mandarALaTablet({ consejo: consejoTablet, ajustes: { linea, rango: datos.rango, idioma, maestria: maestriaParaLaTablet, ...(comunidad.activo && comunidad.clave ? { clave: comunidad.clave } : {}) } });
     // consejoTablet cambia de objeto en cada render: lo que decide es su huella.
-  }, [huellaConsejo, lectorTablet, linea, datos.rango, idioma, maestriaParaLaTablet, vozCallada, comunidad.activo, comunidad.clave]);
+  }, [huellaConsejo, lectorTablet, linea, datos.rango, idioma, maestriaParaLaTablet, comunidad.activo, comunidad.clave]);
   // Móvil y tablet con UNA clave (3.76.0): vinculado y sin clave propia, el
   // móvil usa la de la tablet y ve y arregla lo mismo que «Mis partidas» de
   // la APK. Con una clave tuya, manda la tuya (va a la tablet con el consejo).
@@ -726,7 +695,7 @@ export default function App() {
           onBanear={(h) => draft.anadir('baneos', h)}
           onQuitar={(h) => draft.quitar('baneos', h)}
           onAPicks={() => draft.setFase('picks')}
-          lector={lectorConVoz} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} vozCallada={vozCallada} onVoz={cambiarVoz}
+          lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
           pie={pie} barra={barra}
         />
         {/* El aviso y el selector en el MISMO sitio que en picks (segundo y
@@ -749,7 +718,7 @@ export default function App() {
         meta={meta} datos={datos} metaListo={metaListo} sinWinrates={sinWinrates} edadHoras={edadHoras} pro={pro}
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
         onResultado={apuntarAMano}
-        lector={lectorConVoz} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} vozCallada={vozCallada} onVoz={cambiarVoz}
+        lector={lector} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
         lectorTablet={lectorTablet} onLectorTablet={setLectorTablet} onAdministracion={verAdmin ? () => abrir('admin') : null}
         pie={pie} barra={barra}
       />

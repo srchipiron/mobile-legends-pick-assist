@@ -13,9 +13,9 @@ paths:
   - "pruebas/interfaz/lector.e2e.mjs"
 ---
 
-# El lector de la tablet y la voz
+# El lector de la tablet
 
-Se carga al tocar el lector, la voz o lo que aplica sus lecturas al draft. La SEGURIDAD de la cuenta de Javi manda sobre todo lo demás.
+Se carga al tocar el lector o lo que aplica sus lecturas al draft. La voz (consejos en directo) se quitó en 3.96.0: lo de abajo que habla de ella es historia. La SEGURIDAD de la cuenta de Javi manda sobre todo lo demás.
 
 ## Leer la pantalla del juego (3.19.0, picks en 3.21.0)
 
@@ -878,7 +878,11 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   `/api/user/*` tras el inicio de sesión, que no se tocan) y automatizar
   toques por adb (sería un bot).
 
-## Los consejos en directo (3.44.0)
+## Los consejos en directo (3.44.0; la voz, quitada en 3.96.0)
+
+**Desde 3.96.0 no hay voz** (decisión de Javi, 8 de noviembre de 2026, tras la valoración del sistema: una voz que dice probabilidades del 48–55% en mitad de una partida distrae más de lo que ayuda, y era otro programa lanzado y otra ruta abierta). Se fueron `voz.mjs`, `/voz`, el guion (`guionEnDirecto`, `cierresPorTramo`, `guionTraducido`, `guionSolo`), el botón «Voz», `vozDeLaApk` y el TextToSpeech de la APK. Se queda todo lo de la PARTIDA: el inicio por el minimapa, la duración, la tabla, la ráfaga y el apuntado solo. `/vigilar` lleva solo `desde` (lo que mande de más una app vieja se ignora). Solo `leer.mjs` puede lanzar programas (`lector.test`). La clave `roam-picker:voz-callada` sigue en `CLAVES` sin usarse: las claves no se renombran ni se reutilizan.
+
+Lo de abajo es como era:
 
 Pedido por Javi: «que los consejos vayan en tiempo real según como vaya la
 partida y los minutos… y analizar el resultado». Él eligió (preguntado) la
@@ -910,7 +914,7 @@ VOZ en el móvil (Termux:API) y que el lector mire la tablet desde el minuto
   suya); si se pareciera al minimapa, el inicio saldría unos segundos antes. `pruebas/fixtures/juego/
   pantallas/` lleva 18 de esas pantallas (9 de juego no usadas en la
   plantilla y las 9 de fuera).
-- **La voz** (`scripts/lector/voz.mjs`): `termux-tts-speak -l es|en`, el
+- **La voz** (`voz.mjs`, quitado en 3.96.0): `termux-tts-speak -l es|en`, el
   texto por la ENTRADA ESTÁNDAR (como argumento, uno que empezara por «-»
   sería una opción), sin caracteres de control, tope 400. Es el SEGUNDO y
   último fichero del lector que lanza un programa; la prueba de seguridad lo
@@ -1281,7 +1285,7 @@ correcciones, que pasaban los dos por la app del móvil.
   guion de `guionSolo` en vez de `{ guion: [] }`. Es el MISMO plan
   (`rec.partida` de `recomendar`) traducido con los MISMOS textos:
   `crearT` y `guionTraducido`, que se mudó de lector.js a
-  `src/app/i18n/guion.js` (lector.js lo reexporta) para que la APK lo
+  `i18n/guion.js` (quitado en 3.96.0; lector.js lo reexportaba) para que la APK lo
   lleve sin React. `copiarLector` copia `src/app/i18n/{index,es,en,guion}.js`.
   El plan es el de `eleccion` (tu pick si es de tu línea; si no, no hay
   guion, como en la app). OJO: `recomendar` no devuelve `yo` (eso es de

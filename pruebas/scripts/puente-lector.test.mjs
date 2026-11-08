@@ -619,9 +619,8 @@ test('el vistazo al minimapa (3.69.3): sin nadie leyendo, la burbuja se quita ig
   eq(m.clave, 'k'.repeat(43));
   eq(sanearAjustes({ linea: 'roam', clave: 'corta' }).clave, undefined, 'entra una clave sin forma');
   eq(sanearAjustes({ linea: 'Roam!' }), null);
-  // La voz callada en la app (3.71.0): solo un «sí» de verdad la calla en la tablet.
-  eq(sanearAjustes({ linea: 'roam', vozCallada: true }).vozCallada, true, 'la voz callada del móvil no llega a la tablet');
-  eq(sanearAjustes({ linea: 'roam', vozCallada: 'si' }).vozCallada, undefined, 'entra una voz callada sin forma');
+  // Sin voz (3.96.0): una app vieja que mande «vozCallada» no deja rastro.
+  eq(sanearAjustes({ linea: 'roam', vozCallada: true }).vozCallada, undefined, 'sigue entrando la voz callada');
 });
 
 test('¿Cómo acabó? (3.72.5): con la tabla sin palabra conocida, la APK lo pregunta; con la respuesta se deja de vigilar, se aprende la tabla y el modo solo la recoge una vez', async () => {

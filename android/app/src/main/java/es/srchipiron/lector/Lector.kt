@@ -20,8 +20,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import android.view.WindowManager
 import org.json.JSONObject
 import java.io.BufferedInputStream
@@ -32,9 +30,6 @@ import java.net.Socket
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.security.SecureRandom
-import java.util.Locale
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 /**
@@ -66,18 +61,14 @@ class Lector : Service() {
     private val cerrojo = Any()
     private var ultima: Image? = null
     private var hiloImagenes: HandlerThread? = null
-    private var voz: TextToSpeech? = null
     private var burbuja: Burbuja? = null
-    @Volatile private var vozLista = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
-        voz = TextToSpeech(this) { s -> vozLista = s == TextToSpeech.SUCCESS }
         // La salud de la tablet (3.63.0): cada 15 s, para que el lector la cuente y la app del móvil la suba.
         thread(isDaemon = true, name = "salud") { while (true) { try { escribirSalud() } catch (e: Throwable) {}; Thread.sleep(15000) } }
-        Interno.decir = ::decir
         val puerto = Interno.arrancar()
         if (Nodo.fallo != null) { estado = Nodo.fallo!!; return }
         Nodo.arrancar(this, mapOf(
@@ -126,8 +117,6 @@ class Lector : Service() {
 
     override fun onDestroy() {
         parar()
-        Interno.decir = null
-        voz?.shutdown()
         super.onDestroy()
     }
 
@@ -209,22 +198,6 @@ class Lector : Service() {
         salida
     }
 
-    private fun decir(texto: String, idioma: String): Boolean {
-        val tts = voz ?: return false
-        if (!vozLista) return false
-        tts.language = if (idioma == "en") Locale.ENGLISH else Locale("es", "ES")
-        val fin = CountDownLatch(1)
-        val id = "aviso-${System.nanoTime()}"
-        tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(u: String?) {}
-            override fun onDone(u: String?) { if (u == id) fin.countDown() }
-            @Deprecated("") override fun onError(u: String?) { if (u == id) fin.countDown() }
-        })
-        tts.speak(texto, TextToSpeech.QUEUE_ADD, null, id)
-        fin.await(45, TimeUnit.SECONDS)
-        return true
-    }
-
     private fun notificacion(): Notification {
         val gestor = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= 26) gestor.createNotificationChannel(NotificationChannel(CANAL, "Lector", NotificationManager.IMPORTANCE_LOW))
@@ -243,7 +216,7 @@ class Lector : Service() {
 
 
 /**
- * El puerto por el que Node pide la captura y la voz: UNO por proceso, como
+ * El puerto por el que Node pide la captura: UNO por proceso, como
  * Node (que se arranca una vez y se queda con esta dirección y este secreto).
  * Solo 127.0.0.1 y solo con el secreto. El servicio enchufa la captura al
  * empezar a grabar y la quita al parar: sin ella, 409 («no está grabando»).
@@ -251,13 +224,12 @@ class Lector : Service() {
 object Interno {
     val secreto: String = ByteArray(24).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it) }
     @Volatile var captura: (() -> ByteArray?)? = null
-    @Volatile var decir: ((String, String) -> Boolean)? = null
     private var servidor: ServerSocket? = null
     // Pocas conexiones a la vez y con plazo: este puerto solo lo usa Node, y
     // otra app de la tablet no puede ahogarlo abriendo sockets sin fin.
     private val plazas = java.util.concurrent.Semaphore(8)
 
-    /** El puerto por el que Node pide la captura y la voz: solo 127.0.0.1, solo con el secreto. */
+    /** El puerto por el que Node pide la captura: solo 127.0.0.1, solo con el secreto. */
     @Synchronized
     fun arrancar(): Int {
         servidor?.let { return it.localPort }
@@ -295,15 +267,6 @@ object Interno {
                 metodo == "GET" && ruta == "/captura" -> {
                     val img = captura?.invoke()
                     if (img == null) responder(salida, 409, ByteArray(0)) else responder(salida, 200, img)
-                }
-                metodo == "POST" && ruta == "/voz" -> {
-                    val largo = (cabeceras["content-length"]?.toIntOrNull() ?: 0).coerceIn(0, 4096)
-                    val cuerpo = ByteArray(largo)
-                    var leidos = 0
-                    while (leidos < largo) { val n = entrada.read(cuerpo, leidos, largo - leidos); if (n < 0) break; leidos += n }
-                    val j = JSONObject(String(cuerpo, Charsets.UTF_8))
-                    val dicho = decir?.invoke(j.optString("texto").take(400), j.optString("idioma")) ?: false
-                    responder(salida, if (dicho) 200 else 404, "{}".toByteArray())
                 }
                 else -> responder(salida, 404, ByteArray(0))
             }

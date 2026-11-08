@@ -22,8 +22,6 @@ import { nombreClave } from '../../src/motor/nombres.js';
 import { prepararDatos, recomendar, poolDe } from '../../src/motor/draft.js';
 import { VERSION_MODELO } from '../../src/motor/modelo.js';
 import { buildEnUnaLinea } from '../../src/motor/builds.js';
-import { crearT } from '../../src/app/i18n/index.js';
-import { guionTraducido } from '../../src/app/i18n/guion.js';
 
 /** Las líneas que se pueden elegir en la APK (las de `LINEAS` del motor). */
 export const LINEAS_SOLO = ['roam', 'jungle', 'mid', 'gold', 'exp'];
@@ -263,21 +261,6 @@ export function partidaSolo({ decision, linea, rango = 'glory', gane, t, duracio
 }
 
 /**
- * Los consejos en directo de la partida, sin el móvil (3.71.0): el MISMO plan
- * del motor que la app (`rec.partida`) traducido con los MISMOS textos
- * (`crearT`, `guionTraducido`). Como en la app, el plan es el de tu pick:
- * si el motor no lo tiene (tu pick leído no es el suyo), no hay guion.
- */
-export function guionSolo(decision, idioma = 'es') {
-  const rec = decision?.rec;
-  if (!rec) return { guion: [], cierres: [], idioma };
-  // `recomendar` planea para `eleccion` (tu pick si está en tu línea; si no, el nº1).
-  const plan = decision.tuyo && rec.eleccion?.heroe?.name !== decision.tuyo.name ? null : rec.partida;
-  const { guion, cierres } = guionTraducido(plan, crearT(idioma), idioma);
-  return { guion, cierres, idioma };
-}
-
-/**
  * Lo que quedó sin leer al cerrarse el draft (3.71.0): enemigos, compañeros
  * y tu propio pick. Con eso y las capturas del draft, la APK te pregunta
  * quién era y el lector aprende de tu respuesta como de una corrección del
@@ -377,9 +360,8 @@ export function leerAjustesSolo(fichero) {
   try {
     const j = JSON.parse(readFileSync(fichero, 'utf8'));
     const linea = LINEAS_SOLO.includes(j?.linea) ? j.linea : null;
-    // `voz: false` (3.71.0): el interruptor «Voz en partida» de la APK.
-    return { activo: !!linea && j.activo !== false, apagado: j?.activo === false, linea, rango: typeof j.rango === 'string' && /^[a-z]{2,12}$/.test(j.rango) ? j.rango : 'glory', idioma: j.idioma === 'en' ? 'en' : 'es', voz: j?.voz !== false };
-  } catch { return { activo: false, apagado: false, linea: null, rango: 'glory', idioma: 'es', voz: true }; }
+    return { activo: !!linea && j.activo !== false, apagado: j?.activo === false, linea, rango: typeof j.rango === 'string' && /^[a-z]{2,12}$/.test(j.rango) ? j.rango : 'glory', idioma: j.idioma === 'en' ? 'en' : 'es' };
+  } catch { return { activo: false, apagado: false, linea: null, rango: 'glory', idioma: 'es' }; }
 }
 
 /**
@@ -389,14 +371,12 @@ export function leerAjustesSolo(fichero) {
  * sin «Apagado», la última que mandó la app del móvil.
  */
 export function ajustesEfectivos(apk, movil) {
-  // La voz (3.71.0): callada si la quitaste en la APK O en la app del móvil.
-  const callar = apk?.voz === false || movil?.vozCallada === true;
-  if (apk?.activo) return { ...apk, callar, origen: 'apk' };
-  if (apk?.apagado) return { ...apk, callar, activo: false, origen: 'apagado' };
+  if (apk?.activo) return { ...apk, origen: 'apk' };
+  if (apk?.apagado) return { ...apk, activo: false, origen: 'apagado' };
   if (movil && LINEAS_SOLO.includes(movil.linea)) {
-    return { activo: true, apagado: false, linea: movil.linea, rango: typeof movil.rango === 'string' && /^[a-z]{2,12}$/.test(movil.rango) ? movil.rango : 'glory', idioma: movil.idioma === 'en' ? 'en' : 'es', callar, origen: 'movil' };
+    return { activo: true, apagado: false, linea: movil.linea, rango: typeof movil.rango === 'string' && /^[a-z]{2,12}$/.test(movil.rango) ? movil.rango : 'glory', idioma: movil.idioma === 'en' ? 'en' : 'es', origen: 'movil' };
   }
-  return { ...(apk ?? { linea: null, rango: 'glory', idioma: 'es' }), callar, activo: false, origen: 'sinLinea' };
+  return { ...(apk ?? { linea: null, rango: 'glory', idioma: 'es' }), activo: false, origen: 'sinLinea' };
 }
 
 /**
@@ -582,10 +562,8 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
       const decision = apuntar ? decidirSolo({ datos, draft, linea: a.linea, maestria: maestriaDe() }) : null;
       if (decision) {
         vigilada = { desde: draft.cerradoEn, decision, linea: a.linea, rango: a.rango, idioma: a.idioma, apuntada: false };
-        // Con los consejos en directo de tu pick (3.71.0): la voz habla sin el móvil.
-        const directo = guionSolo(decision, a.idioma);
-        interno.vigilar?.(vigilada.desde, { ...directo, callar: !!a.callar });
-        registrar(`Sin móvil: empieza la partida; vigilo el final para apuntarla (${decision.tuyo?.name ?? `nº1 ${decision.rec.eleccion?.heroe?.name ?? '?'}`}) con ${directo.guion.length} consejos en directo${a.callar ? ' (voz callada)' : ''}.`);
+        interno.vigilar?.(vigilada.desde);
+        registrar(`Sin móvil: empieza la partida; vigilo el final para apuntarla (${decision.tuyo?.name ?? `nº1 ${decision.rec.eleccion?.heroe?.name ?? '?'}`}).`);
       }
     }
     // Con el resultado de la tabla, la partida se apunta sola (una vez).

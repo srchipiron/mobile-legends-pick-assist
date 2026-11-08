@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, vozDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, TOPE_SIN_RESULTADO, finalParaSubir, partidaSinResultado, draftsArreglados } from '../../scripts/lector/en-tablet.mjs';
+import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, TOPE_SIN_RESULTADO, finalParaSubir, partidaSinResultado, draftsArreglados } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { claveDeJugadorValida } from '../../src/app/basedatos.js';
 import { pruebaDelReto } from '../../src/app/lector.js';
@@ -35,13 +35,13 @@ const crudo = (() => {
 const SECRETO = 'secreto-de-la-apk';
 const CODIGO = 'AB12CD34EF';
 
-/** La APK de pega: da la captura y la voz en 127.0.0.1, solo con el secreto. */
+/** La APK de pega: da la captura en 127.0.0.1, solo con el secreto (y ya no tiene /voz: 3.96.0). */
 async function apkDePega() {
   const dichas = [];
   const s = createServer((req, res) => {
     if (req.headers['x-secreto'] !== SECRETO) { res.writeHead(403).end(); return; }
     if (req.url === '/captura') { res.writeHead(200, { 'Content-Type': 'application/octet-stream' }).end(crudo); return; }
-    if (req.url === '/voz') { let b = ''; req.on('data', (t) => { b += t; }); req.on('end', () => { dichas.push(JSON.parse(b)); res.writeHead(200).end('{}'); }); return; }
+    if (req.url === '/voz') dichas.push(req.url);
     res.writeHead(404).end();
   });
   await new Promise((r) => s.listen(0, '127.0.0.1', r));
@@ -56,7 +56,7 @@ const pedir = (puerto, camino, { host = `192.168.68.116:${puerto}`, codigo = COD
   q.on('error', x); q.end();
 });
 
-test('la captura y la voz solo vienen de 127.0.0.1, y el código tiene que ser decente', () => {
+test('la captura solo viene de 127.0.0.1, y el código tiene que ser decente', () => {
   for (const u of ['http://127.0.0.1:5000']) ok(esInterno(u), `${u} no vale`);
   for (const u of ['http://192.168.1.2:5000', 'http://127.0.0.1.atacante.example:80', 'https://127.0.0.1:5000', 'http://localhost:5000', 'http://127.0.0.1:5000/x']) ok(!esInterno(u), `${u} vale`);
   let lanzo = false;
@@ -115,16 +115,9 @@ test('el lector en la tablet: lee con la captura de la APK y solo con el código
   } finally { servidor.close(); apk.cerrar(); }
 });
 
-test('la voz va a la APK, limpia y en es|en; sin voz en la APK dice «falta»', async () => {
+test('sin el secreto la APK no da la captura', async () => {
   const apk = await apkDePega();
   try {
-    const hablar = vozDeLaApk(apk.base, SECRETO);
-    eq(await hablar('Hola\u0007 mundo', 'fr'), null);
-    eq(JSON.stringify(apk.dichas), JSON.stringify([{ texto: 'Hola mundo', idioma: 'es' }]), 'la voz no llega limpia');
-    const sinVoz = vozDeLaApk(apk.base, SECRETO, { pedir: async () => ({ ok: false, status: 404 }) });
-    eq(await sinVoz('hola'), 'falta');
-    const caida = vozDeLaApk(apk.base, SECRETO, { pedir: async () => { throw new Error('x'); } });
-    eq(await caida('hola'), 'otro');
     const captura = capturaDeLaApk(apk.base, 'otro-secreto');
     let fallo = null;
     try { await captura(); } catch (e) { fallo = e; }

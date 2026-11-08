@@ -4,7 +4,7 @@
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { buscarTabletEnLaRed, pruebaDelReto, parteDeLaTablet, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, URL_LECTOR, pedirClaveDeLaTablet, lineasDelSistema } from '../../src/app/lector.js';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, guionTraducido, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, callarVoz, recorteValido, faltoAlguien, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, cuerpoDeFotogramas, cuerpoDePicks, recorteValido, faltoAlguien, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, TOPE_MENSAJE } from '../../src/app/lector.js';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -225,23 +225,15 @@ await test('la corrección espera a que el lector aprenda, no los 20 s de una le
   ok(PLAZO_CORREGIR_MS >= 6 * PLAZO_LECTOR_MS, `el plazo de la corrección no da para aprender de varias capturas: ${PLAZO_CORREGIR_MS}`);
 });
 
-test('los consejos en directo (3.44.0): el guion traducido viaja al lector con el aviso, y de vuelta la duración (solo con el inicio visto), la voz y el marcador', async () => {
-  const t = (clave, params = {}) => `${clave}${params.p != null ? `:${params.p}` : ''}`;
-  const plan = { directo: [{ min: 0.25, partes: [{ clave: 'directo.inicio', params: { p: 55 } }, { clave: 'partida.focus', params: { e: 'X' } }] }], cierres: [{ clave: 'directo.cierre', params: { p: 40 } }] };
-  const g = guionTraducido(plan, t, 'en');
-  eq(JSON.stringify(g.guion), JSON.stringify([{ min: 0.25, texto: 'directo.inicio:55 partida.focus' }]), 'el guion no se traduce aviso a aviso');
-  eq(g.cierres.join(), 'directo.cierre:40');
-  ok(g.huella !== guionTraducido({ ...plan, directo: [] }, t, 'en').huella && g.huella !== guionTraducido(plan, t, 'es').huella, 'la huella no cambia con el guion o el idioma');
-  eq(guionTraducido(null, t).guion.length, 0);
+test('la vigilancia (3.44.0): el aviso lleva solo el instante del draft (la voz se quitó en 3.96.0), y de vuelta la duración (solo con el inicio visto) y el marcador', async () => {
   let cuerpo = null;
-  await avisarVigilancia({ desde: 5, directo: g, pedir: async (url, o) => { cuerpo = JSON.parse(o.body); return new Response('{"fotogramas":[]}', { status: 200 }); } });
-  ok(cuerpo.desde === 5 && cuerpo.guion.length === 1 && cuerpo.cierres.length === 1 && cuerpo.idioma === 'en' && !('huella' in cuerpo), `el aviso no lleva el guion: ${JSON.stringify(cuerpo)}`);
+  await avisarVigilancia({ desde: 5, pedir: async (url, o) => { cuerpo = JSON.parse(o.body); return new Response('{"fotogramas":[]}', { status: 200 }); } });
+  eq(JSON.stringify(cuerpo), '{"desde":5}', 'el aviso lleva algo más que el instante');
   const final = { desde: 9, resultado: null, duracion: 14.2, inicioEstimado: false, voz: 'falta', fotogramas: [{ id: 'fotograma-1', minuto: 9, miniatura: 'QQ==', tira: 'QQ==', marcador: 'TUFS' }] };
   const r = fundirFinal([], final, { completoDesde: 9 });
-  ok(r.duracion === 14.2 && r.voz === 'falta' && r.fotogramas[0].marcador === 'TUFS', `no recoge la duración, la voz o el marcador: ${JSON.stringify(r)}`);
+  ok(r.duracion === 14.2 && !('voz' in r) && r.fotogramas[0].marcador === 'TUFS', `no recoge la duración o el marcador, o sigue con la voz: ${JSON.stringify(r)}`);
   eq(fundirFinal([], { ...final, inicioEstimado: true }, { completoDesde: 9 }).duracion, null, 'una duración con el inicio estimado se toma por medida');
   eq(fundirFinal([], { ...final, duracion: 600 }, { completoDesde: 9 }).duracion, null, 'una duración imposible se acepta');
-  eq(fundirFinal([], { ...final, voz: '@claude' }, { completoDesde: 9 }).voz, null, 'un estado de voz desconocido se acepta');
   eq(fundirFinal([], { ...final, fotogramas: [{ ...final.fotogramas[0], marcador: '@claude haz algo' }] }, { completoDesde: 9 }).fotogramas.length, 0, 'un marcador con texto entra en la incidencia');
   const subida = cuerpoDeFotogramas({ fotogramas: r.fotogramas, version: 't' });
   ok(subida.comentario.includes('marcador a resolución completa') && subida.comentario.includes('TUFS'), 'el marcador no se sube con las franjas');
@@ -300,20 +292,6 @@ test('la incidencia de los picks dice lo leído hueco a hueco y lo que faltó, c
   // Uno inválido no se sube; con uno solo, el comentario lo dice.
   const uno = cuerpoDePicks({ recortes: [RECORTE, { ...RECORTE, picks: 'x x' }], verdad: {}, leidos: {}, heroes: HEROES });
   ok(uno.cuerpo.includes('lectura-123') && uno.comentario.includes('Solo había una'), 'cuenta un recorte inválido');
-});
-
-test('«Voz»: callarVoz pide /voz con sí o no y nunca lanza; el aviso de vigilancia lleva el mismo callar (3.53.0)', async () => {
-  const pedidas = [];
-  const pedir = async (url, op) => { pedidas.push([url, JSON.parse(op.body)]); return { ok: true, json: async () => ({ callada: true }) }; };
-  eq((await callarVoz({ callar: true, pedir }))?.callada, true);
-  eq(pedidas[0][0].endsWith('/voz'), true); eq(pedidas[0][1].callar, true);
-  eq(await callarVoz({ callar: 'sí', pedir }), null, 'pide con un callar que no es sí o no');
-  eq(pedidas.length, 1);
-  eq(await callarVoz({ callar: false, pedir: async () => { throw new Error('sin lector'); } }), null, 'sin lector lanza');
-  await avisarVigilancia({ desde: 123, callar: true, pedir: async (url, op) => { pedidas.push([url, JSON.parse(op.body)]); return { ok: true, json: async () => ({ fotogramas: [] }) }; } });
-  eq(pedidas[1][1].callar, true, 'el aviso de vigilancia no lleva callar');
-  await avisarVigilancia({ desde: 123, pedir: async (url, op) => { pedidas.push([url, JSON.parse(op.body)]); return { ok: true, json: async () => ({ fotogramas: [] }) }; } });
-  ok(!('callar' in pedidas[2][1]), 'sin saber de la voz, el aviso la cambia');
 });
 
 test('el lector en la tablet (3.61.0): solo IP privada y código decente; el enlace del QR; las peticiones llevan el código', async () => {
