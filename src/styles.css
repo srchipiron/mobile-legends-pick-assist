@@ -1270,7 +1270,7 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
 }
 .filtro + .filtro { margin-left: 6px; }
 /* Los dos filtros de la cabecera no encogen (a 360 px partían su texto en dos líneas). */
-.filtro-mios, .filtro-sinergia { flex: 0 0 auto; }
+.filtro-domino, .filtro-sinergia { flex: 0 0 auto; }
 /* «Sinergia» pulsado va en el color de las parejas del desglose (3.60.0). */
 .filtro-sinergia[aria-pressed='true'] { border-color: var(--c-synergy); color: var(--c-synergy); background: color-mix(in srgb, var(--c-synergy) 12%, transparent); }
 .filtro[aria-pressed='true'] { border-color: var(--gold); color: var(--gold); background: rgba(255, 214, 10, 0.10); }

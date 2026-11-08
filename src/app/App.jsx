@@ -750,7 +750,7 @@ export default function App() {
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
         onResultado={apuntarAMano}
         lector={lectorConVoz} onLeer={leerDelJuego} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto} vozCallada={vozCallada} onVoz={cambiarVoz}
-        lectorTablet={lectorTablet} onLectorTablet={setLectorTablet} onAdministracion={verAdmin ? () => abrir('admin') : null} ajuste={personal.ajuste}
+        lectorTablet={lectorTablet} onLectorTablet={setLectorTablet} onAdministracion={verAdmin ? () => abrir('admin') : null}
         pie={pie} barra={barra}
       />
       {deshacer}

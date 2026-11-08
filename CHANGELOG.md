@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.95.0
+
+- Botón «Domino» opcional junto a «Sinergia»: deja ver solo los héroes con
+  los que has jugado alguna vez, con los mismos porcentajes, y te dice cuál
+  sería el mejor de todos. Sin tocarlo, la lista sigue siendo el mejor roam
+  de todos. Sirve para cuando prefieras ir a lo seguro con un héroe que
+  dominas.
+- Quitado «Para ti», el número que salía al lado de la probabilidad: estaba
+  ajustado con tus victorias y derrotas, y pediste que no afectaran en nada.
+
 ## 3.94.0
 
 - La app te aconseja el mejor roam de todos, lo juegues o no. Ya no sale

@@ -7,7 +7,7 @@
  * «✓», «Leer solo» en la fila de botones y la nota de la estimación en dos
  * líneas) y bajó a 555–590.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, terminar } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
@@ -39,22 +39,17 @@ for (const [ancho, alto] of [[360, 640], [390, 844], [430, 932]]) {
   });
 }
 
-// «Para ti» (3.68.0): con 30 partidas o más con estimación sale tu número al
-// lado del del modelo, en la MISMA línea: la nº1 tiene que seguir asomando.
-await prueba('con tu historial sale «Para ti» y la nº1 sigue asomando en 360×640', async () => {
+// «Para ti» (3.68.0) era el número ajustado con tus victorias y derrotas: desde
+// 3.95.0 no sale, aunque haya historial (Javi: que tus resultados no afecten en nada).
+await prueba('con tu historial NO sale «Para ti» (3.95.0): tus resultados no cambian ningún número', async () => {
   const partidas = Array.from({ length: 40 }, (_, i) => ({ t: 1_700_000_000_000 + i * 3_600_000, pick: 'Tigreal', gane: i % 3 !== 0, estimacion: 0.5 + (i % 5) * 0.02, rango: 'glory' }));
-  for (const f of FASES) {
-    const { contexto, pagina } = await paginaCon(navegador, url, {
-      viewport: { width: 360, height: 640 },
-      almacen: { 'roam-picker:linea': 'roam', 'roam-picker:partidas': partidas, 'roam-picker:draft': { enemies: f.e, allies: f.a, bans: ['Hirara'], enemyRoam: null, fase: 'picks' } },
-    });
-    await pagina.waitForTimeout(300);
-    const tuya = await pagina.locator('.estimacion-tuya').innerText().catch(() => '');
-    ok(/Para ti: \d+%/.test(tuya), `con ${partidas.length} partidas no sale «Para ti»: «${tuya}»`);
-    const r = await pagina.locator('.pick').first().evaluate((e) => Math.round(e.getBoundingClientRect().top));
-    ok(r < 640, `con «Para ti» la nº1 ya no asoma en 360×640 (${f.e.length}v${f.a.length}, top ${r})`);
-    await contexto.close();
-  }
+  const { contexto, pagina } = await paginaCon(navegador, url, {
+    viewport: { width: 360, height: 640 },
+    almacen: { 'roam-picker:linea': 'roam', 'roam-picker:partidas': partidas, 'roam-picker:draft': { enemies: FASES[1].e, allies: FASES[1].a, bans: ['Hirara'], enemyRoam: null, fase: 'picks' } },
+  });
+  await pagina.locator('.pick').first().waitFor();
+  eq(await pagina.locator('.estimacion-tuya').count(), 0, 'sale «Para ti», ajustado con tus resultados');
+  await contexto.close();
 });
 
 await terminar('interfaz/primera-pantalla');

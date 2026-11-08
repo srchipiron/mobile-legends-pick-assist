@@ -15,7 +15,6 @@ import { Tarjeta } from '../componentes/Tarjeta.jsx';
 import { useDeslizar } from '../componentes/useDeslizar.js';
 import { BotonLector, BotonVoz } from '../componentes/BotonLector.jsx';
 import { LectorTablet } from '../componentes/LectorTablet.jsx';
-import { conTuHistorial } from '../../motor/registro.js';
 import { ConsejoEquipo } from '../componentes/ConsejoEquipo.jsx';
 import { Leyenda } from '../componentes/Desglose.jsx';
 import { AvisoLegal } from '../componentes/AvisoLegal.jsx';
@@ -36,7 +35,7 @@ import { HORAS_DATOS_VIEJOS } from '../componentes/Pie.jsx';
  * @param d.abrir       abre una hoja: 'enemigos' | 'aliados' | 'yo' | 'maestria' | 'historial' | 'perfil' | 'meta' | 'linea' | 'apuntar' | { build }
  * @param d.onResultado (gane) apunta la partida con tu pick fijado, desde el recordatorio
  */
-export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, vozCallada = false, onVoz = null, lectorTablet = null, onLectorTablet = null, onAdministracion = null, ajuste = null, pie, barra = null }) {
+export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, vozCallada = false, onVoz = null, lectorTablet = null, onLectorTablet = null, onAdministracion = null, pie, barra = null }) {
   const { enemigos, aliados, baneos } = equipo;
   const { ranking, rival, cov, pool, analisis, composicion, consejos, yo } = rec;
   const rivalAuto = rival.marcado ? null : rival.nombre;
@@ -50,7 +49,16 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
     return new Set([...(draft.lectura?.enemigos ?? []), ...(draft.lectura?.aliados ?? [])].filter((n) => !aMano.has(n)).concat(draft.lectura?.tuyo ? [draft.lectura.tuyo] : []));
   }, [draft.lectura, draft.aMano]);
   const anadirAliado = (h) => draft.anadir('aliados', h);
-  // Sin «Mis héroes» desde 3.94.0: el consejo es el mejor de TODOS, los juegues o no (Javi).
+  // «Domino» (3.95.0): una VISTA opcional con solo los héroes que has jugado
+  // (alguna partida). El ranking normal sigue siendo el mejor de TODOS (3.94.0)
+  // y los porcentajes son los mismos: tus victorias y derrotas no cuentan
+  // (3.93.0). Javi lo eligió tras la valoración del 8 de noviembre de 2026:
+  // en Gloria, jugar un héroe que no dominas cuesta más que el punto que
+  // separa al nº1 del nº2. No se recuerda: es cosa de este draft.
+  const [soloDomino, setSoloDomino] = useState(false);
+  const domina = (h) => (buscar(maestria, h.name)?.games ?? 0) > 0;
+  const dominados = useMemo(() => ranking.filter((c) => (buscar(maestria, c.heroe.name)?.games ?? 0) > 0), [ranking, maestria]);
+  const hayDominados = dominados.length > 0;
   // Por sinergia (3.60.0, pedido por Javi): las tarjetas ordenadas por cómo
   // encajan con tu equipo (el término de parejas). Solo cambia el ORDEN que
   // se ve: la nota y el número de cada tarjeta son los de siempre. No se
@@ -60,7 +68,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
   // Sin compañeros el botón no se ve: tampoco se queda puesto a escondidas
   // para volver solo con el primer compañero (3.60.1).
   useEffect(() => { if (!conEquipo) setPorSinergia(false); }, [conEquipo]);
-  const filtrada = ranking;
+  const filtrada = soloDomino && hayDominados ? dominados : ranking;
   const lista = porSinergia && conEquipo ? [...filtrada].sort((a, b) => (b.terminos?.parejas ?? 0) - (a.terminos?.parejas ?? 0) || b.p - a.p) : filtrada;
   // Tu pick fijado va el primero: con ocho tarjetas a la vista, el nº22 no
   // se veía, y el consejo a los compañeros (que va tras la primera) es «si
@@ -79,6 +87,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
   // otro rango o el meta recién llegado es otro ranking y no se anima.
   const resultados = useRef(null);
   useDeslizar(resultados, `${linea}|${rango}|${metaListo}`);
+  const fueraDeDominados = soloDomino && hayDominados && ranking[0] && !domina(ranking[0].heroe) ? ranking[0] : null;
   // ¿Cómo fue? Diez minutos después de fijar el pick (una partida dura más),
   // al volver a la app: Gané / Perdí / Más tarde.
   const ahora = useAhora();
@@ -185,6 +194,9 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
           {conEquipo && (
             <button className="filtro filtro-sinergia" aria-pressed={porSinergia} onClick={() => { tic(); setPorSinergia((v) => !v); }}>{t('filtro.sinergia')}</button>
           )}
+          {hayDominados && (
+            <button className="filtro filtro-domino" aria-pressed={soloDomino} onClick={() => { tic(); setSoloDomino((v) => !v); }}>{t('filtro.domino', { n: dominados.length })}</button>
+          )}
         </div>
         {preguntar && (
           <section className="recordatorio" role="status">
@@ -220,11 +232,11 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
         {yo && (aliados.length || enemigos.length) ? (
           <p className="estimacion-nota">
             {t('estimacion.resumen', { yo: yo.name, n: aliados.length + enemigos.length + 1 })}
-            {/* Con tu historial (3.68.0): el número del modelo, ajustado a lo que de verdad te pasa. */}
-            {ajuste?.activo && rec.eleccion?.p != null && <span className="estimacion-tuya" title={t('estimacion.tuyaPorque', { n: ajuste.n })}>{t('estimacion.tuya', { pct: Math.round(conTuHistorial(rec.eleccion.p, ajuste) * 100) })}</span>}
+            {/* «Con tu historial» (3.68.0) se fue en 3.95.0: era el número ajustado con tus victorias y derrotas, y Javi pidió que no afecten en nada (3.93.0). */}
           </p>
         ) : null}
 
+        {fueraDeDominados && <p className="fuera-de-mios">{t('filtro.fueraDeDominados', { nombre: fueraDeDominados.heroe.name, pct: Math.round(fueraDeDominados.p * 100) })}</p>}
         {enPantalla.map((c, i) => (
           <Fragment key={c.heroe.name}>
             <Tarjeta

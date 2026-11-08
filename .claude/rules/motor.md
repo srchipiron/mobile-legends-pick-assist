@@ -166,6 +166,14 @@ se repite en cada corrida de `pro.yml` al log. NO vuelvas a suponer:
   en «Capturas» y en la APK (rellenar tu hueco, no aconsejar). Pruebas en
   `draft.test`, `solo.test` y `pick.e2e` (con maestría guardada, las mismas
   tarjetas y porcentajes que sin ella); una mutación.
+- **«Domino», solo como vista (3.95.0)**, elegido por Javi tras la valoración
+  del 8 de noviembre de 2026 (en Gloria, jugar un héroe que no dominas cuesta
+  más que el punto que suele separar al nº1 del nº2): el botón
+  `.filtro-domino` de FasePicks deja ver solo los héroes con alguna partida,
+  con los MISMOS porcentajes; el ranking normal sigue siendo el de todos. Y
+  fuera «Para ti» (`estimacion-tuya`, el número ajustado con tu historial,
+  3.68.0): eran tus victorias y derrotas. Pruebas en `pick.e2e` (los
+  resultados al revés dan la misma vista) y `primera-pantalla.e2e`.
 - **Las reglas por etiqueta** solo entran sin dato (cruce o pareja nula) y a
   la equivalencia de 1.x: la regla más fuerte vale un cruce del 56%
   (`CRUCE_POR_REGLA_MAXIMA`); las de peligro en los baneos, igual.

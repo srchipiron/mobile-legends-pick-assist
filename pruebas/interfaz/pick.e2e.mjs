@@ -92,7 +92,7 @@ await prueba('diez minutos después de fijar el pick, al volver, la app pregunta
   await contexto.close();
 });
 
-await prueba('lo que juegas y lo que ganas no deciden nada (3.93.0 y 3.94.0): con maestría guardada, las mismas tarjetas, los mismos porcentajes y sin «Mis héroes» ni «de los tuyos»', async () => {
+await prueba('lo que juegas y lo que ganas no deciden nada (3.93.0 y 3.94.0): con maestría guardada, las mismas tarjetas y porcentajes, sin «de los tuyos», y «Domino» solo como vista (3.95.0)', async () => {
   const tarjetas = async (pagina) => Promise.all((await pagina.locator('.pick').all()).map(async (c) => `${await nombreDe(c)} ${(await c.locator('.pick-score').innerText()).trim()}`));
   const con = await paginaCon(navegador, url, {
     almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:mastery': { Franco: { games: 200, winRate: 0.95 }, Minotaur: { games: 100, winRate: 0.05 } } },
@@ -101,7 +101,22 @@ await prueba('lo que juegas y lo que ganas no deciden nada (3.93.0 y 3.94.0): co
   const a = await tarjetas(con.pagina), b = await tarjetas(sin.pagina);
   ok(a.length >= 5, `el ranking trae ${a.length} tarjetas`);
   eq(a.join(' | '), b.join(' | '), 'tu maestría cambia las tarjetas o sus porcentajes');
-  eq(await con.pagina.locator('.filtro-mios').count(), 0, 'sigue el filtro «Mis héroes»');
+  // «Domino» (3.95.0): una VISTA opcional con los que has jugado, con los MISMOS porcentajes; el ranking normal no cambia.
+  const domino = con.pagina.locator('.filtro-domino');
+  eq(await domino.count(), 1, 'con maestría guardada no sale «Domino»');
+  ok(/2/.test(await domino.innerText()), 'el botón no cuenta los dos héroes que has jugado');
+  await domino.click(); await con.pagina.waitForTimeout(300);
+  const vista = await tarjetas(con.pagina);
+  eq(JSON.stringify(vista.map((x) => x.split(' ')[0]).sort()), JSON.stringify(['Franco', 'Minotaur']), `«Domino» no deja solo los que has jugado: ${vista}`);
+  // Con los resultados al revés, la vista es la misma: el porcentaje no lleva tus victorias.
+  const otra = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:mastery': { Franco: { games: 200, winRate: 0.05 }, Minotaur: { games: 100, winRate: 0.95 } } } });
+  await otra.pagina.locator('.filtro-domino').click(); await otra.pagina.waitForTimeout(300);
+  eq((await tarjetas(otra.pagina)).join(' | '), vista.join(' | '), 'en «Domino» los porcentajes dependen de tus victorias');
+  await otra.contexto.close();
+  if (!['Franco', 'Minotaur'].includes(b[0].split(' ')[0])) ok((await con.pagina.locator('.fuera-de-mios').innerText()).includes(b[0].split(' ')[0]), 'no dice cuál sería el mejor de todos');
+  await domino.click(); await con.pagina.waitForTimeout(300);
+  eq((await tarjetas(con.pagina)).join(' | '), b.join(' | '), 'quitar «Domino» no devuelve el ranking de todos');
+  eq(await sin.pagina.locator('.filtro-domino').count(), 0, 'sale «Domino» sin héroes jugados');
   eq(await con.pagina.locator('.de-los-tuyos').count(), 0, 'sigue «el mejor de los tuyos»');
   ok(!con.errores.length && !sin.errores.length, `errores de página: ${con.errores} ${sin.errores}`);
   await con.contexto.close(); await sin.contexto.close();
