@@ -363,14 +363,11 @@ test('los baneos sugeridos no proponen banear tu pick fijado, y lo cuentan de tu
   ok(!recomendar(datos, { linea: 'roam', enemigos, aliados: [], baneos: [], miPick: yo, conSimulacion: false }).baneosSugeridos.some((b) => b.heroe.name === yo.name), 'recomendar sugiere banear tu pick fijado');
 });
 
-test('«De los tuyos» (3.72.0): el primero del ranking con partidas tuyas, solo si el nº1 no lo es', () => {
+test('«De los tuyos» ya no sale (3.94.0, Javi: «aconseja el mejor pick de TODOS»): ni aunque juegues a otro del ranking', () => {
   const H = (name, p) => ({ heroe: { name }, p });
   const ranking = [H('Atlas', 0.55), H('Khufra', 0.54), H('Rafaela', 0.53), H('Franco', 0.52)];
-  eq(deLosTuyos(ranking, { Rafaela: { games: 30, winRate: 0.6 }, Franco: { games: 300, winRate: 0.7 } })?.heroe.name, 'Rafaela', 'no es el primero de los tuyos en el ranking');
-  eq(deLosTuyos(ranking, { Atlas: { games: 3, winRate: 0.5 }, Rafaela: { games: 30, winRate: 0.6 } }), null, 'lo dice con el nº1 ya tuyo');
-  eq(deLosTuyos(ranking, { Rafaela: { games: 0, winRate: 0.6 } }), null, 'cuenta un héroe sin partidas');
+  eq(deLosTuyos(ranking, { Rafaela: { games: 30, winRate: 0.6 }, Franco: { games: 300, winRate: 0.7 } }), null, 'sigue proponiendo uno de los que juegas');
   eq(deLosTuyos(ranking, {}), null);
-  eq(deLosTuyos([], { Rafaela: { games: 3, winRate: 0.5 } }), null);
 });
 
 test('los cruces y parejas del draft (3.92.0): cada enemigo con su cruce y cada compañero con su pareja, de las matrices que puntúan, ordenados y con su lado', () => {

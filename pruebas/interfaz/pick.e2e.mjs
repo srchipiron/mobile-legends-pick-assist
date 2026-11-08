@@ -92,47 +92,19 @@ await prueba('diez minutos después de fijar el pick, al volver, la app pregunta
   await contexto.close();
 });
 
-await prueba('«Mis héroes» filtra el ranking a los que llevas y dice quién sería el nº1 fuera', async () => {
-  // Dos roamers con maestría, elegidos para que el nº1 real no sea uno de ellos.
-  const { contexto, pagina, errores } = await paginaCon(navegador, url, {
-    almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:mastery': { Franco: { games: 200, winRate: 0.5 }, Minotaur: { games: 100, winRate: 0.5 } } },
+await prueba('lo que juegas y lo que ganas no deciden nada (3.93.0 y 3.94.0): con maestría guardada, las mismas tarjetas, los mismos porcentajes y sin «Mis héroes» ni «de los tuyos»', async () => {
+  const tarjetas = async (pagina) => Promise.all((await pagina.locator('.pick').all()).map(async (c) => `${await nombreDe(c)} ${(await c.locator('.pick-score').innerText()).trim()}`));
+  const con = await paginaCon(navegador, url, {
+    almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:mastery': { Franco: { games: 200, winRate: 0.95 }, Minotaur: { games: 100, winRate: 0.05 } } },
   });
-  const nombres = async () => Promise.all((await pagina.locator('.pick').all()).map(nombreDe));
-  const todos = await nombres();
-  ok(todos.length >= 5, `el ranking sin filtro trae ${todos.length} tarjetas`);
-  const filtro = pagina.locator('.filtro-mios');
-  eq(await filtro.count(), 1, 'no hay filtro «mis héroes» con maestría guardada');
-  // «De los tuyos» (3.72.0): tras la nº1, el primero de tus héroes en el ranking (sin el filtro puesto).
-  const lineaTuyos = ['Franco', 'Minotaur'].includes(todos[0]) ? null : await pagina.locator('.de-los-tuyos').innerText();
-  if (lineaTuyos !== null) {
-    ok(await pagina.locator('.pick').first().evaluate((el, linea) => !!(el.compareDocumentPosition(linea) & 4 /* DOCUMENT_POSITION_FOLLOWING */), await pagina.locator('.de-los-tuyos').elementHandle()), '«De los tuyos» no va tras la nº1');
-  } else eq(await pagina.locator('.de-los-tuyos').count(), 0, 'lo dice con la nº1 ya tuya');
-  ok(/2/.test(await filtro.innerText()), 'el filtro no cuenta los dos héroes');
-  await filtro.click(); await pagina.waitForTimeout(300);
-  const mios = await nombres();
-  eq(JSON.stringify([...mios].sort()), JSON.stringify(['Franco', 'Minotaur']), `con el filtro no salen solo los tuyos: ${mios}`);
-  eq(await pagina.locator('.de-los-tuyos').count(), 0, 'con «Mis héroes» puesto repite el mejor de los tuyos');
-  // Con el filtro, el primero es el mejor de los tuyos: el que decía la línea.
-  if (lineaTuyos !== null) ok(lineaTuyos.includes(mios[0]), `«De los tuyos» dice otro que el primero de tus héroes (${mios[0]}): ${lineaTuyos}`);
-  if (!['Franco', 'Minotaur'].includes(todos[0])) ok((await pagina.locator('.fuera-de-mios').innerText()).includes(todos[0]), 'no dice quién sería el nº1 fuera de tus héroes');
-  await filtro.click(); await pagina.waitForTimeout(300);
-  eq((await nombres()).length, todos.length, 'quitar el filtro no devuelve el ranking entero');
-  await contexto.close();
-  // 3.60.7: tu pick fijado sin partidas sigue arriba con el filtro puesto
-  // (desaparecía, y el hueco «Tú» seguía hablando de él).
-  const fijo = await paginaCon(navegador, url, {
-    almacen: { ...LINEA, 'roam-picker:draft': { ...PICKS, miPick: 'Khufra', miPickDesde: Date.now() }, 'roam-picker:mastery': { Franco: { games: 200, winRate: 0.5 }, Minotaur: { games: 100, winRate: 0.5 } } },
-  });
-  await fijo.pagina.locator('.filtro-mios').click(); await fijo.pagina.waitForTimeout(300);
-  const conFijo = await Promise.all((await fijo.pagina.locator('.pick').all()).map(nombreDe));
-  eq(conFijo.join(), 'Khufra,' + conFijo.filter((n) => n !== 'Khufra').join(), `con «Mis héroes» tu pick fijado no va el primero: ${conFijo}`);
-  ok(!fijo.errores.length, `errores de página: ${fijo.errores}`);
-  await fijo.contexto.close();
-  // Sin maestría no hay filtro.
   const sin = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS } });
-  eq(await sin.pagina.locator('.filtro-mios').count(), 0, 'hay filtro sin maestría');
-  ok(!errores.length && !sin.errores.length, `errores de página: ${errores} ${sin.errores}`);
-  await sin.contexto.close();
+  const a = await tarjetas(con.pagina), b = await tarjetas(sin.pagina);
+  ok(a.length >= 5, `el ranking trae ${a.length} tarjetas`);
+  eq(a.join(' | '), b.join(' | '), 'tu maestría cambia las tarjetas o sus porcentajes');
+  eq(await con.pagina.locator('.filtro-mios').count(), 0, 'sigue el filtro «Mis héroes»');
+  eq(await con.pagina.locator('.de-los-tuyos').count(), 0, 'sigue «el mejor de los tuyos»');
+  ok(!con.errores.length && !sin.errores.length, `errores de página: ${con.errores} ${sin.errores}`);
+  await con.contexto.close(); await sin.contexto.close();
 });
 
 await prueba('la fase de baneos enseña tu plan A · B · C con su tasa de ban, y apuntar preselecciona tu pick', async () => {

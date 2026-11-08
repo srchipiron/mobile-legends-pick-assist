@@ -31,7 +31,7 @@ import { HORAS_DATOS_VIEJOS } from '../componentes/Pie.jsx';
  * @param d.draft       el hook useDraft (nombres, anadir, quitar, marcarRival, setFase, vaciarConDeshacer, quitarConDeshacer, fijarPick, posponerRecordatorio)
  * @param d.equipo      { enemigos, aliados, baneos } ya resueltos a héroes
  * @param d.miPick      tu pick fijado (héroe) o null
- * @param d.maestria    la maestría que ve el motor, para el filtro «mis héroes»
+ * @param d.maestria    la maestría (ya no decide nada: 3.93.0 y 3.94.0)
  * @param d.rec         lo que devuelve useRecomendacion
  * @param d.abrir       abre una hoja: 'enemigos' | 'aliados' | 'yo' | 'maestria' | 'historial' | 'perfil' | 'meta' | 'linea' | 'apuntar' | { build }
  * @param d.onResultado (gane) apunta la partida con tu pick fijado, desde el recordatorio
@@ -50,13 +50,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
     return new Set([...(draft.lectura?.enemigos ?? []), ...(draft.lectura?.aliados ?? [])].filter((n) => !aMano.has(n)).concat(draft.lectura?.tuyo ? [draft.lectura.tuyo] : []));
   }, [draft.lectura, draft.aMano]);
   const anadirAliado = (h) => draft.anadir('aliados', h);
-  // «Mis héroes»: solo los que llevas (maestría o partidas). Un héroe que
-  // nunca has jugado entra en el ranking «como tu media», que es optimista;
-  // el filtro es la versión honesta. No se recuerda: es cosa de este draft.
-  const [soloMios, setSoloMios] = useState(false);
-  const esMio = (h) => (buscar(maestria, h.name)?.games ?? 0) > 0;
-  const mios = useMemo(() => ranking.filter((c) => (buscar(maestria, c.heroe.name)?.games ?? 0) > 0), [ranking, maestria]);
-  const hayMios = mios.length > 0;
+  // Sin «Mis héroes» desde 3.94.0: el consejo es el mejor de TODOS, los juegues o no (Javi).
   // Por sinergia (3.60.0, pedido por Javi): las tarjetas ordenadas por cómo
   // encajan con tu equipo (el término de parejas). Solo cambia el ORDEN que
   // se ve: la nota y el número de cada tarjeta son los de siempre. No se
@@ -66,7 +60,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
   // Sin compañeros el botón no se ve: tampoco se queda puesto a escondidas
   // para volver solo con el primer compañero (3.60.1).
   useEffect(() => { if (!conEquipo) setPorSinergia(false); }, [conEquipo]);
-  const filtrada = soloMios && hayMios ? mios : ranking;
+  const filtrada = ranking;
   const lista = porSinergia && conEquipo ? [...filtrada].sort((a, b) => (b.terminos?.parejas ?? 0) - (a.terminos?.parejas ?? 0) || b.p - a.p) : filtrada;
   // Tu pick fijado va el primero: con ocho tarjetas a la vista, el nº22 no
   // se veía, y el consejo a los compañeros (que va tras la primera) es «si
@@ -85,7 +79,6 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
   // otro rango o el meta recién llegado es otro ranking y no se anima.
   const resultados = useRef(null);
   useDeslizar(resultados, `${linea}|${rango}|${metaListo}`);
-  const fueraDeMios = soloMios && hayMios && ranking[0] && !esMio(ranking[0].heroe) ? ranking[0] : null;
   // ¿Cómo fue? Diez minutos después de fijar el pick (una partida dura más),
   // al volver a la app: Gané / Perdí / Más tarde.
   const ahora = useAhora();
@@ -192,9 +185,6 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
           {conEquipo && (
             <button className="filtro filtro-sinergia" aria-pressed={porSinergia} onClick={() => { tic(); setPorSinergia((v) => !v); }}>{t('filtro.sinergia')}</button>
           )}
-          {hayMios && (
-            <button className="filtro filtro-mios" aria-pressed={soloMios} onClick={() => setSoloMios((v) => !v)}>{t('filtro.mios', { n: mios.length })}</button>
-          )}
         </div>
         {preguntar && (
           <section className="recordatorio" role="status">
@@ -234,7 +224,6 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
             {ajuste?.activo && rec.eleccion?.p != null && <span className="estimacion-tuya" title={t('estimacion.tuyaPorque', { n: ajuste.n })}>{t('estimacion.tuya', { pct: Math.round(conTuHistorial(rec.eleccion.p, ajuste) * 100) })}</span>}
           </p>
         ) : null}
-        {fueraDeMios && <p className="fuera-de-mios">{t('filtro.fueraDeMios', { nombre: fueraDeMios.heroe.name, pct: Math.round(fueraDeMios.p * 100) })}</p>}
 
         {enPantalla.map((c, i) => (
           <Fragment key={c.heroe.name}>
@@ -254,7 +243,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
               primero={ranking[0]?.heroe.name}
             />
             {/* El mejor de los tuyos (3.72.0): el nº1 ya no lleva el plus de «ya lo juegas», así que se dice aparte cuál de tus héroes va primero. */}
-            {i === 0 && !soloMios && rec.deLosTuyos && <p className="de-los-tuyos">{t('tuyos.mejor', { nombre: rec.deLosTuyos.heroe.name, pct: Math.round(rec.deLosTuyos.p * 100), puesto: ranking.indexOf(rec.deLosTuyos) + 1 })}</p>}
+            {i === 0 && rec.deLosTuyos && <p className="de-los-tuyos">{t('tuyos.mejor', { nombre: rec.deLosTuyos.heroe.name, pct: Math.round(rec.deLosTuyos.p * 100), puesto: ranking.indexOf(rec.deLosTuyos) + 1 })}</p>}
             {i === trasDe && <ConsejoEquipo consejos={consejos.lista} yo={consejos.yo} onElegir={anadirAliado} t={t} />}
           </Fragment>
         ))}

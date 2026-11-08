@@ -157,6 +157,15 @@ se repite en cada corrida de `pro.yml` al log. NO vuelvas a suponer:
   sigue contando (`deLosTuyos`, «Mis héroes», tus habituales): no es
   ganado/perdido. Prueba en `draft.test` (una maestría exagerada no mueve
   nada); cuatro mutaciones. NO se vuelve a meter sin que Javi lo pida.
+- **NI QUÉ HÉROES JUEGAS (3.94.0, decidido por Javi)**: «a partir de ahora no
+  tengas en cuenta tampoco qué héroes juego o no, aconseja el mejor pick de
+  TODOS los roam». `TUS_HEROES_EN_EL_CONSEJO = false` (draft.js):
+  `deLosTuyos` da null (fuera «el mejor de los tuyos» bajo la nº1 y en la
+  burbuja de la app y de la tablet) y FasePicks ya no tiene «Mis héroes».
+  Lo único que mira cuánto juegas son tus habituales para CORREGIR un draft
+  en «Capturas» y en la APK (rellenar tu hueco, no aconsejar). Pruebas en
+  `draft.test`, `solo.test` y `pick.e2e` (con maestría guardada, las mismas
+  tarjetas y porcentajes que sin ella); una mutación.
 - **Las reglas por etiqueta** solo entran sin dato (cruce o pareja nula) y a
   la equivalencia de 1.x: la regla más fuerte vale un cruce del 56%
   (`CRUCE_POR_REGLA_MAXIMA`); las de peligro en los baneos, igual.

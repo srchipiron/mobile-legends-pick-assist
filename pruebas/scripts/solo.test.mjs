@@ -519,13 +519,13 @@ test('tu héroe con un toque (3.85.0): si no se leyó tu fila, la corrección tr
   eq(correcciones[0]?.tuyos?.[0], 'Minotaur', `la corrección del modo solo no trae tus habituales: ${JSON.stringify(correcciones[0]?.tuyos)}`);
 });
 
-test('la burbuja de la tablet sola dice el mejor de los tuyos si el nº1 no lo es (3.72.0)', () => {
+test('la burbuja de la tablet sola ya no dice «de los tuyos» (3.94.0): el mejor de TODOS, juegues o no', () => {
   const draft = acumularDraft(null, lectura({ tuyos: [N('Hirara')], enemigos: [N('Clint'), N('Khufra'), V, V, V] }), 1);
   const sin = decidirSolo({ datos, draft, linea: 'roam' });
   const ultimo = sin.rec.ranking.at(-1).heroe.name;
-  const c = consejoSolo({ datos, draft, linea: 'roam', maestria: { [ultimo]: { games: 3, winRate: 0.5 } } });
-  ok(c?.detalle?.includes(`De los tuyos: ${ultimo}`), `no lo dice: ${c?.detalle}`);
-  ok(!consejoSolo({ datos, draft, linea: 'roam' })?.detalle?.includes('De los tuyos'), 'lo dice sin maestría');
+  const c = consejoSolo({ datos, draft, linea: 'roam', maestria: { [ultimo]: { games: 300, winRate: 0.5 } } });
+  ok(c?.titulo && !c.detalle?.includes('De los tuyos'), `la burbuja sigue proponiendo uno de los que juegas: ${c?.detalle}`);
+  eq(c.titulo, consejoSolo({ datos, draft, linea: 'roam' }).titulo, 'lo que juegas cambia el nº1 de la burbuja');
 });
 
 test('el draft siguiente se ve por sus baneos, no solo por el reloj (3.72.5): tras la partida, en cuanto hay baneos nuevos; y si alguien abandona el draft, en cuanto cambian los huecos de baneo', () => {

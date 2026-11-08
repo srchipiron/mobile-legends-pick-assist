@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.94.0
+
+- La app te aconseja el mejor roam de todos, lo juegues o no. Ya no sale
+  «el mejor de los tuyos» bajo la nº1 ni en la burbuja de la tablet, y
+  desaparece el filtro «Mis héroes». Con esto y la 3.93.0, ni lo que juegas
+  ni lo que ganas cambian una sola tarjeta. Tus héroes habituales solo
+  salen para corregir tu hueco en «Capturas», que no es un consejo.
+
 ## 3.93.0
 
 - Tus victorias y derrotas ya no influyen en qué héroe te recomienda la

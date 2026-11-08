@@ -166,6 +166,15 @@ export function rivalDeLinea(datos, { linea, enemigos = [], marcado = null } = {
  */
 export const RESULTADOS_EN_LA_NOTA = false;
 const paraLaNota = (maestria) => (RESULTADOS_EN_LA_NOTA ? maestria : null);
+/**
+ * Ni qué héroes juegas (3.94.0). Javi, el 8 de noviembre de 2026: «a partir
+ * de ahora no tengas en cuenta tampoco qué héroes juego o no, aconseja el
+ * mejor pick de TODOS los roam». Fuera «el mejor de los tuyos» bajo la nº1
+ * y en la burbuja (`deLosTuyos`), y el filtro «Mis héroes». Lo único que
+ * sigue mirando cuánto juegas son tus habituales para CORREGIR un draft en
+ * «Capturas» (rellenar un hueco, no aconsejar).
+ */
+export const TUS_HEROES_EN_EL_CONSEJO = false;
 
 /** Lo que recibe `ordenarPicks` para este draft. Los candidatos son los héroes que el enemigo aún podría elegir. */
 export function contextoDe(datos, { enemigos = [], aliados = [], baneos = [], maestria = null, lineasAbiertas = null } = {}) {
@@ -288,6 +297,8 @@ export function siguientesBaneos(datos, { baneos = [], enemigos = [], aliados = 
  * maestría. null si el nº1 ya es tuyo o si no juegas ninguno de la línea.
  */
 export function deLosTuyos(ranking, maestria) {
+  // Desde 3.94.0, nada (Javi: «no tengas en cuenta qué héroes juego o no, aconseja el mejor pick de TODOS»).
+  if (!TUS_HEROES_EN_EL_CONSEJO) return null;
   const tuyo = (c) => (buscar(maestria, c.heroe.name)?.games ?? 0) > 0;
   if (!ranking?.length || !maestria || tuyo(ranking[0])) return null;
   return ranking.find(tuyo) ?? null;
