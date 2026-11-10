@@ -3,6 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
+import { TABLA_SEGUIDAS } from '../../scripts/lector/en-tablet.mjs';
 import { buscarTabletEnLaRed, pruebaDelReto, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, pedirClaveDeLaTablet, lineasDelSistema } from '../../src/app/lector.js';
 import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS } from '../../src/app/lector.js';
 
@@ -398,6 +399,11 @@ test('el sistema de un vistazo (3.77.0): lo que dice la tablet, y en rojo lo que
   eq(JSON.stringify(mal.filter((l) => l.mal).map((l) => l.clave)), JSON.stringify(['sistema.sinGrabar', 'sistema.soloApagado', 'sistema.lecturas', 'sistema.partidasSinSubir', 'sistema.sinResultado', 'sistema.datos']));
   eq(mal.find((l) => l.clave === 'sistema.sinResultado').params.n, 2);
   eq(lineasDelSistema({ ok: false }).length, 0);
+  // 3.99.0: las diez últimas leídas en la tabla, todas iguales, en rojo (el umbral es el de la tablet, TABLA_SEGUIDAS).
+  const iguales = (n, gane) => lineasDelSistema({ ok: true, partidas: { apuntadas: 20, sinSubir: 0, porTabla: 20, porPregunta: 0, ultimasTabla: { n, gane } } }, { ahora }).filter((l) => l.mal).map((l) => l.clave);
+  eq(JSON.stringify(iguales(TABLA_SEGUIDAS, TABLA_SEGUIDAS)), JSON.stringify(['sistema.todasVictoria']), 'diez victorias seguidas leídas en la tabla no salen en rojo');
+  eq(JSON.stringify(iguales(TABLA_SEGUIDAS, 0)), JSON.stringify(['sistema.todasDerrota']), 'diez derrotas seguidas leídas en la tabla no salen en rojo');
+  eq(iguales(TABLA_SEGUIDAS, 7).length + iguales(TABLA_SEGUIDAS - 1, TABLA_SEGUIDAS - 1).length, 0, 'sale en rojo con resultados mezclados o con pocas');
   eq(lineasDelSistema({ ok: true }).length, 0, 'inventa líneas de una APK que no las dice');
   // 3.83.2: partidas jugadas y apuntadas desde que arrancó; tres sin apuntar ninguna, en rojo.
   const jugadas = (partidas, apuntadas) => lineasDelSistema({ ok: true, solo: { activo: true, linea: 'roam', partidas, apuntadas } }).find((l) => l.clave === 'sistema.jugadas');

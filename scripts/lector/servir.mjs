@@ -30,7 +30,7 @@ export { CAPTURAS_POR_CORRECCION };
 import { fotogramaDe } from './miniatura.mjs';
 import { enPartida, recorteMarcador } from './partida.mjs';
 import { nombreClave } from '../../src/motor/nombres.js';
-import { tiraDe, reconocerResultado, aprenderResultado, plantillasIniciales, cargarResultados, guardarResultados, VERSION_RESULTADOS } from './resultado.mjs';
+import { tiraDe, reconocerResultado, plantillasIniciales } from './resultado.mjs';
 
 /**
  * La captura de las LECTURAS del draft, comprimida o no (3.45.0, pedido por
@@ -87,24 +87,20 @@ export const VERSION_PUENTE = 1;
 export const FALLOS_DE_CAPTURA = ['tablet', 'emparejar', 'captura'];
 /** La casa del lector: la de Termux, o la carpeta de la app en la tablet (`LECTOR_CASA`, 3.61.0). */
 const CASA = process.env.LECTOR_CASA || homedir();
-/** Dónde se recuerda la última tablet que funcionó (ip y puerto). */
 /** Lo aprendido de las correcciones (aprender.mjs): huecos de picks y caras de esta tablet. */
 export const FICHERO_APRENDIDO = join(CASA, '.config', 'lector', 'aprendido.json');
-/** Las plantillas de VICTORIA / DERROTA aprendidas de lo que contesta Javi (resultado.mjs, 3.32.0). */
-export const FICHERO_RESULTADOS = join(CASA, '.config', 'lector', 'resultados.json');
-/** Las de serie: la tabla de una derrota (incidencia #15, nombres tapados). */
-export const plantillasDeSerie = () => plantillasIniciales(leerPng(readFileSync(new URL('tabla-derrota.png', import.meta.url))));
-export function leerResultados(fichero = FICHERO_RESULTADOS) {
-  try {
-    const r = JSON.parse(readFileSync(fichero, 'utf8'));
-    if (!r || r.version !== VERSION_RESULTADOS) return null;
-    const c = cargarResultados(r);
-    return c.tablas.length ? c : null;
-  } catch { return null; }
-}
-export function guardarResultadosEn(r, fichero = FICHERO_RESULTADOS) {
-  try { mkdirSync(resolve(fichero, '..'), { recursive: true }); writeFileSync(fichero, JSON.stringify(guardarResultados(r))); } catch { /* sin disco: se aprende otra vez */ }
-}
+/**
+ * Las plantillas de VICTORIA / DERROTA (resultado.mjs): FIJAS desde 3.99.0,
+ * cuatro tablas de serie con los nombres tapados. Ya no se aprenden de lo que
+ * se contesta ni de lo que se apunta solo: una tabla tapada aprendida como
+ * victoria hizo que la tablet apuntara 142 victorias y 3 derrotas en dos
+ * semanas. El `resultados.json` que dejó una versión anterior no se lee.
+ */
+const tablaDeSerie = (f) => leerPng(readFileSync(new URL(f, import.meta.url)));
+export const plantillasDeSerie = () => plantillasIniciales({
+  victorias: ['tabla-victoria-1.png', 'tabla-victoria-2.png'].map(tablaDeSerie),
+  derrotas: ['tabla-derrota-1.png', 'tabla-derrota-2.png'].map(tablaDeSerie),
+});
 
 /** Cuántas de las últimas capturas de una corrección se miran para elegir las `CAPTURAS_POR_CORRECCION` que sean la pantalla del draft. */
 export const CAPTURAS_A_MIRAR = 8;
@@ -483,7 +479,7 @@ export const VISTAZO_MS = 10000;
 /** Lo que vale la fase que dice el modo solo (3.84.0): unas vueltas de draft (1,5 s) o de fuera (12 s). */
 export const FASE_VALE_MS = 30000;
 
-export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, recortar = recortarEnHilo, guardar = guardarAprendido, resultados = null, guardarResultadosDe = guardarResultadosEn, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, codigo = null, estadoExtra = null, alCorregir = null, historial = null, claveDeLaTablet = null }) {
+export function crearServidor({ capturar, elector = null, caras = carasGuardadas(), carpeta = null, registrar = () => {}, aprendido = null, aprender = aprenderEnHilo, recortar = recortarEnHilo, guardar = guardarAprendido, resultados = null, vigilancia: vigilanciaPedida = VIGILANCIA, ahora = () => Date.now(), maximos = MAX_CAPTURAS, enHilos = true, codigo = null, estadoExtra = null, alCorregir = null, historial = null, claveDeLaTablet = null }) {
   // En la tablet (3.61.0) escucha en la wifi: con código, y aceptando su IP como `Host`.
   const portero = codigo ? crearPortero(codigo, { ahora }) : null;
   // Los retos de cada aparato en el último minuto (3.70.0).
@@ -716,23 +712,6 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     }
     return final;
   };
-  /**
-   * Aprende la palabra de la tabla de esos fotogramas con lo que se contestó
-   * (3.32.0; desde 3.72.5 también desde la pregunta de la APK). Solo ids con
-   * forma que existan en la carpeta, los ocho últimos.
-   */
-  const aprenderDelFinal = (idsPedidos, gane) => {
-    const ids = (Array.isArray(idsPedidos) ? idsPedidos : []).filter((id) => typeof id === 'string' && /^fotograma-[\w-]+$/.test(id) && carpeta && existsSync(join(carpeta, `${id}.png`))).slice(-8);
-    let aprendidos = 0, contradichas = 0;
-    for (const id of ids) {
-      try {
-        const r = aprenderResultado(tiraDe(leerPng(readFileSync(join(carpeta, `${id}.png`)))), gane, resultados, { id });
-        if (r.aprendido) { aprendidos += 1; contradichas += r.contradichas; resultados = r.resultados; }
-      } catch (e) { registrar(`No se pudo aprender el resultado de ${id}: ${e.message}`); }
-    }
-    if (aprendidos) guardarResultadosDe(resultados);
-    return { aprendidos, contradichas, ids };
-  };
   /** Cómo va el lector (`/estado`; desde 3.74.0 también el parte de salud que sube la tablet). */
   const estado = () => ({ ok: true, version: VERSION_PUENTE, aprendido: { capturas: aprendido?.capturas ?? 0, caras: Object.keys(aprendido?.caras ?? {}).length, aliados: Object.keys(aprendido?.aliados ?? {}).length, picks: !!aprendido?.picks }, resultados: { gane: resultados.gane.length, perdi: resultados.perdi.length, tablas: resultados.tablas.length }, lector: { minutos: Math.round((ahora() - arranque) / 60000), ...salud, memoriaMB: Math.round(process.memoryUsage().rss / 1e6) }, pendiente: { correccion: !!correccionVigente(), pregunta: !!preguntaVigente(), vigilando: !!final?.activa }, ...(typeof estadoExtra === 'function' ? estadoExtra() : estadoExtra ?? {}) });
   const leerCuerpo = (req, maximo = 65536) => new Promise((resolver) => {
@@ -928,8 +907,11 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       // Lo pendiente (3.84.0): solo si hay, para que la burbuja lo ofrezca fuera del draft y de la partida.
       // Desde 3.89.0 solo la pregunta del resultado: «quién era» no se ofrece entre partida y partida
       // (no da tiempo); queda en la tarjeta de la APK y se revisa de golpe en «Capturas».
-      const pendiente = { pregunta: !!preguntaVigente(), correccion: false };
-      res.writeHead(200, cabeceras).end(JSON.stringify({ consejo: escondida ? null : consejoActual, resumen: resumenActual, enPartida: escondida, fase: escondida ? 'partida' : faseVigente(), pendiente }));
+      // Y mientras se vigila el final de una partida ya empezada (3.99.0), ni burbuja ni botón: la
+      // grabación de la pantalla los coge, y el botón «¿Cómo acabó?» caía encima de la tabla del final.
+      const alFinal = !!final?.activa && final.inicio != null;
+      const pendiente = { pregunta: !!preguntaVigente() && !alFinal, correccion: false };
+      res.writeHead(200, cabeceras).end(JSON.stringify({ consejo: escondida || alFinal ? null : consejoActual, resumen: resumenActual, enPartida: escondida, fase: escondida ? 'partida' : faseVigente(), pendiente }));
       return;
     }
     if (req.method === 'GET' && ruta === '/final') {
@@ -943,7 +925,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     // imagen de la tablet a cualquier programa del móvil que pusiera la
     // cabecera `Origin` (fuera de un navegador se pone la que se quiera).
     if (req.method === 'POST' && ruta === '/resultado') {
-      // Lo que contestó Javi (Gané / Perdí) con los fotogramas de esa partida (3.32.0): se aprende la palabra de la tabla.
+      // Lo que contestó Javi (Gané / Perdí), o lo que apuntó la app sola. Desde 3.99.0 ya no
+      // se aprende la palabra de la tabla (las plantillas son fijas): solo deja de vigilar esa partida.
       if (!origen) { res.writeHead(403, cabeceras).end(JSON.stringify({ error: 'origen no permitido' })); return; }
       const cuerpo = await leerCuerpo(req);
       // Apuntada en la app (3.44.1): esa partida ha acabado aunque no se viera
@@ -953,10 +936,8 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
         pararVigilancia();
         registrar('Partida apuntada en la app: dejo de vigilarla.');
       }
-      if (!cuerpo || typeof cuerpo.gane !== 'boolean' || !carpeta) { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'falta gane o carpeta' })); return; }
-      const { aprendidos, contradichas, ids } = aprenderDelFinal(cuerpo.ids, cuerpo.gane);
-      registrar(`Resultado contestado (${cuerpo.gane ? 'ganada' : 'perdida'}): ${aprendidos} tabla(s) aprendida(s) de ${ids.length} fotogramas${contradichas ? `, ${contradichas} plantilla(s) contraria(s) quitada(s)` : ''}. Plantillas: ${resultados.gane.length} de victoria, ${resultados.perdi.length} de derrota.`);
-      res.writeHead(200, cabeceras).end(JSON.stringify({ aprendidos, contradichas, gane: resultados.gane.length, perdi: resultados.perdi.length, tablas: resultados.tablas.length }));
+      if (!cuerpo || typeof cuerpo.gane !== 'boolean') { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'falta gane' })); return; }
+      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, aprendidos: 0 }));
       return;
     }
     if (req.method === 'POST' && ruta === '/corregir') {
@@ -1034,15 +1015,13 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       if (!(cuerpo.gane === true || cuerpo.gane === false || cuerpo.gane === null)) { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'gane' })); return; }
       pregunta = null;
       respuesta = { id: p.id, desde: p.desde, gane: cuerpo.gane, cuando: ahora() };
-      let aprendidos = 0;
       if (typeof cuerpo.gane === 'boolean' && final?.desde === p.desde) {
         // Esa partida ha acabado: se deja de vigilar.
         final.acabada = true;
         pararVigilancia();
-        aprendidos = aprenderDelFinal(final.fotogramas.filter((f) => f.tabla).map((f) => f.id), cuerpo.gane).aprendidos;
       }
-      registrar(`Contestado en la tablet: ${cuerpo.gane === null ? 'la partida no contó' : cuerpo.gane ? 'ganada' : 'perdida'}${aprendidos ? ` (aprendida la tabla de ${cuerpo.gane ? 'victoria' : 'derrota'})` : ''}.`);
-      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, aprendidos }));
+      registrar(`Contestado en la tablet: ${cuerpo.gane === null ? 'la partida no contó' : cuerpo.gane ? 'ganada' : 'perdida'}.`);
+      res.writeHead(200, cabeceras).end(JSON.stringify({ ok: true, aprendidos: 0 }));
       return;
     }
     if (req.method === 'GET' && ruta === '/leer') {
@@ -1135,13 +1114,6 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     respuesta: () => { const r = respuesta; respuesta = null; return r; },
     estado: () => estado(),
     /**
-     * Arreglaste el resultado de una partida (3.75.0): si sus pantallas del
-     * final siguen aquí, se aprende la tabla con el bueno (y se olvida la que
-     * lo confundió), como con «¿Cómo acabó?». Cuántas se aprendieron.
-     */
-    aprenderResultadoDe: (desde, gane) => (Number.isFinite(desde) && typeof gane === 'boolean' && final?.desde === desde
-      ? aprenderDelFinal(final.fotogramas.filter((f) => f.tabla).map((f) => f.id), gane).aprendidos : 0),
-    /**
      * Un vistazo al minimapa si la burbuja tiene algo que enseñar y nadie ha
      * capturado en VISTAZO_MS (3.69.3). null si no tocaba.
      */
@@ -1154,12 +1126,11 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
   return servidor;
 }
 
-/** Lo aprendido y las plantillas del resultado, de disco, diciendo qué hay. */
+/** Lo aprendido de las correcciones, de disco, diciendo qué hay. Las plantillas del resultado son de serie (3.99.0). */
 export function cargarLoAprendido(registrar) {
   const aprendido = leerAprendido();
   if (!aprendido && existsSync(FICHERO_APRENDIDO)) registrar('Lo aprendido con una versión anterior del lector se descarta: se aprendió sin las guardas de 3.30.1 y movía el panel de picks. Se vuelve a aprender solo.');
   if (aprendido) registrar(`Con lo aprendido de ${aprendido.capturas} capturas: ${Object.keys(aprendido.caras ?? {}).length} caras de esta tablet${aprendido.picks ? ' y los huecos de picks medidos aquí' : ''}.`);
-  const resultados = leerResultados();
-  registrar(resultados ? `Resultados: ${resultados.gane.length} plantillas de victoria y ${resultados.perdi.length} de derrota aprendidas de tus partidas.` : 'Resultados: solo la derrota de serie; la victoria se aprende de tu primera partida ganada en la que se vea la tabla.');
-  return { aprendido, resultados };
+  registrar('Resultado de la partida: se lee de la tabla del final con las plantillas de serie (victoria y derrota).');
+  return { aprendido };
 }

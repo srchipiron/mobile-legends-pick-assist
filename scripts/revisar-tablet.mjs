@@ -19,7 +19,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sanearConfig, bajarPartes } from '../src/app/basedatos.js';
-import { LINEA_DE_ERROR } from './lector/en-tablet.mjs';
+import { LINEA_DE_ERROR, TABLA_SEGUIDAS } from './lector/en-tablet.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -94,6 +94,9 @@ export function revisarParte(parte, { ahora = Date.now() } = {}) {
   // Cuánto reconoce sola el resultado (3.75.0): el resto lo contestaste tú.
   const conResultado = (e.partidas?.porTabla ?? 0) + (e.partidas?.porPregunta ?? 0);
   if (conResultado >= RESULTADOS_PARA_MEDIR && e.partidas.porPregunta / conResultado > PREGUNTADAS_MAX) avisos.push(`la tablet solo reconoce sola el resultado de ${e.partidas.porTabla} de ${conResultado} partidas: el resto lo preguntó`);
+  // Todas iguales (3.99.0): diez seguidas leídas en la tabla con el mismo resultado es que puede estar leyendo mal.
+  const ut = e.partidas?.ultimasTabla;
+  if (ut?.n >= TABLA_SEGUIDAS && (ut.gane === 0 || ut.gane === ut.n)) avisos.push(`las últimas ${ut.n} partidas que la tablet leyó en la tabla salieron todas ${ut.gane ? 'victoria' : 'derrota'}: mira en el historial del juego si es verdad`);
   // ¿Ve la tablet el final de lo que juegas? (3.83.2): partidas desde que arrancó y cuántas apuntó sola.
   const jugadas = Number(e.solo?.partidas) || 0, apuntadas = Number(e.solo?.apuntadas) || 0;
   if (jugadas >= PARTIDAS_SIN_APUNTAR && apuntadas === 0) fallos.push(`desde que arrancó jugaste ${jugadas} partidas y la tablet no apuntó ninguna: no ve el final`);

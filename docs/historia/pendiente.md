@@ -279,3 +279,10 @@
   `mis_recortes` no cuente las del final en sus 50 (un arreglo de hace días
   puede quedarse fuera). Se pegan en el SQL Editor cuando Javi quiera.
 
+- **Las victorias apuntadas del 26 de octubre al 9 de noviembre de 2026**
+  (decisión de Javi, 3.99.0): la tablet apuntó 142 victorias y 3 derrotas
+  leyendo mal la tabla, así que esas partidas `origen: 'lector'` NO son
+  fiables y pesan en el Veredicto, la calibración y `proponer-modelo`.
+  Opciones: que Javi las compruebe en el historial del juego y las arregle
+  en «Mis partidas», o marcarlas como dudosas (sin resultado) para que no
+  cuenten hasta que las conteste. No se toca la base de datos sin él.

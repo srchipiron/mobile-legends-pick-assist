@@ -1278,3 +1278,19 @@ instante anterior lo sustituya; el tiempo solo va hacia delante.
   estaban. Hoy las de la ráfaga no salen por las de después. Lección: lo que
   se guarda para diagnosticar un fallo se elige por lo que explica el fallo,
   no por ser lo último.
+- **La tablet apuntaba casi todo como victoria (26 de octubre → 9 de
+  noviembre de 2026, 3.99.0)** — 142 victorias y 3 derrotas en dos semanas
+  (11 de 12 el 9 de noviembre), y el 5 de noviembre se miró y se concluyó
+  que las derrotas «se perdían». Tres causas juntas: la zona de la palabra
+  se midió con cuatro fotogramas y caía sobre el cartel, igual en victoria
+  y en derrota (la contraria se parecía hasta 0,74); lo aprendido en marcha
+  se llenó de fotogramas tapados (la cola «Esperando», la píldora de la
+  propia APK, que la captura de pantalla también graba) y de respuestas
+  equivocadas, y cada respuesta BORRABA plantillas del otro resultado; y la
+  app devolvía a la tablet como verdad lo que la tablet acababa de leer.
+  Hoy, zona medida con 31 tablas, cuatro plantillas fijas, nada aprendido
+  en marcha, la burbuja y la píldora escondidas mientras se vigila el
+  final, y aviso con diez seguidas iguales. Lecciones: un lector que
+  aprende de sí mismo no puede ir sin una medida fija que lo vigile; un
+  parecido alto dice que está seguro, no que acierte; y una racha
+  imposible (142 de 145) es un fallo hasta que se demuestre lo contrario.

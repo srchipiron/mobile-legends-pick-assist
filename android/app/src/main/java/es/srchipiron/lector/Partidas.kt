@@ -27,9 +27,8 @@ import kotlin.concurrent.thread
  * «Mis partidas» (3.75.0): las partidas tal como están en la base de datos
  * (con lo que la tablet aún no subió por encima), con fecha, pick,
  * resultado y quién iba en cada equipo. Tocar una la abre para arreglarla
- * (resultado, tu pick, enemigos, compañeros, baneos): se vuelve a subir, y
- * si cambias el resultado y quedan sus pantallas del final, el lector
- * aprende a reconocer esa tabla. Solo habla con el lector de la propia
+ * (resultado, tu pick, enemigos, compañeros, baneos): se vuelve a subir.
+ * Solo habla con el lector de la propia
  * tablet (127.0.0.1, con el código).
  */
 class Partidas : Activity() {
@@ -254,7 +253,7 @@ class Partidas : Activity() {
                 runOnUiThread {
                     guardar.isEnabled = true
                     aviso.text = when (estado) {
-                        200 -> if ((r?.optInt("aprendidos") ?: 0) > 0) "Guardada. Y he aprendido a reconocer la pantalla del final con el resultado bueno." else "Guardada: se sube a la base de datos en unos segundos."
+                        200 -> "Guardada: se sube a la base de datos en unos segundos."
                         400 -> when (r?.optString("error")) { "repetidos" -> "Hay un héroe repetido."; "nada" -> "No has cambiado nada."; else -> "Revisa los nombres." }
                         404 -> "Esa partida ya no está en la tablet."
                         else -> "El lector no contestó. Prueba otra vez."

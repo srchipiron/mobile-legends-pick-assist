@@ -395,9 +395,9 @@ class Principal : Activity() {
     } catch (e: Throwable) { 0 }
 
     /**
-     * «¿Cómo acabó?» (3.72.5): la tablet no reconoció el final (la victoria se
-     * aprende, o no salió la tabla). Con tu respuesta apunta la partida y
-     * aprende la pantalla de la tabla, así la próxima la reconoce sola.
+     * «¿Cómo acabó?» (3.72.5): la tablet no reconoció el final (la tabla salió
+     * tapada o no salió). Con tu respuesta apunta la partida. Desde 3.99.0 no
+     * aprende nada de ella: la tabla se lee con plantillas fijas.
      */
     private fun pintarPregunta(p: JSONObject?) {
         if (p == null) { if (preguntaId != null) { preguntaId = null; preguntaCard.visibility = View.GONE }; return }
@@ -408,7 +408,7 @@ class Principal : Activity() {
         val pick = p.optString("pick", "").takeIf { it.isNotEmpty() && it != "null" }
         preguntaCard.addView(TextView(this).apply { text = "¿Cómo acabó tu partida${pick?.let { " con $it" } ?: ""}?"; textSize = 18f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.rgb(255, 214, 10)) })
         preguntaCard.addView(TextView(this).apply {
-            text = "No vi el resultado. Dímelo y la apunto; si salió la tabla del final, aprendo a reconocerla para la próxima."
+            text = "No vi el resultado. Dímelo y la apunto."
             textSize = 14f; setTextColor(Color.LTGRAY); setPadding(0, dp(4), 0, dp(8))
         })
         val aviso = TextView(this).apply { textSize = 14f; setTextColor(Color.WHITE); setPadding(0, dp(6), 0, 0) }

@@ -7,8 +7,7 @@ import { mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync, exist
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, ok, eq, terminar } from '../arnes.mjs';
-import { crearServidor, lectorEnHilos, leerCaptura, origenPermitido, leerAprendido, leerResultados, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS, EN_PARTIDA_PARA_ESCONDER, VISTAZO_MS, sanearAjustes, sanearPregunta, capturasAMirar } from '../../scripts/lector/servir.mjs';
-import { guardarResultados } from '../../scripts/lector/resultado.mjs';
+import { crearServidor, lectorEnHilos, leerCaptura, origenPermitido, leerAprendido, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS, EN_PARTIDA_PARA_ESCONDER, VISTAZO_MS, sanearAjustes, sanearPregunta, capturasAMirar } from '../../scripts/lector/servir.mjs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { carasGuardadas, vaciosAliadoGuardados } from '../../scripts/lector/leer.mjs';
 import { PUERTO_LECTOR, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS } from '../../src/app/lector.js';
@@ -469,11 +468,10 @@ test('una captura que llega tarde no entra en el final de OTRO draft (3.37.0)', 
   });
 });
 
-test('el final de partida: la tabla con «DEFEAT» viene con el resultado, lo contestado se aprende, y sin origen nada (3.32.0)', async () => {
+test('el final de partida: la tabla con «DEFEAT» viene con el resultado; lo contestado ya NO cambia lo que se lee (3.99.0), y sin origen nada', async () => {
   const carpeta = mkdtempSync(join(tmpdir(), 'lector-resultado-'));
-  const guardados = [];
   let cual = png;
-  await conServidor({ capturar: () => cual, carpeta, guardarResultadosDe: (r) => guardados.push(r), vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 15 } }, async (base) => {
+  await conServidor({ capturar: () => cual, carpeta, vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 15 } }, async (base) => {
     const leerFinal = async () => (await fetch(`${base}/final`, { headers: cab })).json();
     await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde: Date.now() }) });
     // Una pantalla que no es la tabla (la del draft): entra, pero ni tabla ni resultado.
@@ -490,23 +488,53 @@ test('el final de partida: la tabla con «DEFEAT» viene con el resultado, lo co
     await new Promise((r) => setTimeout(r, 400));
     const fin = await leerFinal();
     ok(!fin.activa && fin.fotogramas.length === 2 && fin.resultado === 'perdi', `con el resultado leído sigue capturando: ${JSON.stringify({ activa: fin.activa, n: fin.fotogramas.length })}`);
-    // Lo contestado se aprende de los fotogramas de la partida (solo de la tabla) y se guarda; sin origen, 403.
+    // Sin origen, 403. Con origen, contestar (aunque sea lo contrario, como hacía una derrota apuntada
+    // como victoria) no toca las plantillas: la misma tabla se sigue leyendo como derrota (3.99.0).
     const sin = await fetch(`${base}/resultado`, { method: 'POST', body: JSON.stringify({ ids: [f1.id], gane: false }) });
     eq(sin.status, 403, 'un resultado sin origen se acepta');
-    const r = await (await fetch(`${base}/resultado`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [f1.id, f2.id, '../x', 'fotograma-no-existe'], gane: false }) })).json();
-    ok(r.aprendidos === 1 && r.perdi === 2 && r.tablas === 2 && guardados.length === 1, `no aprende de la tabla (y solo de ella): ${JSON.stringify(r)} guardados ${guardados.length}`);
-    const estado = await (await fetch(`${base}/estado`)).json();
-    ok(estado.resultados?.perdi === 2 && estado.resultados?.gane === 0, `/estado no dice las plantillas de resultado: ${JSON.stringify(estado.resultados)}`);
-    // Contestar lo contrario sobre la misma tabla quita las plantillas de derrota que se le parecen y enseña la victoria.
     const c = await (await fetch(`${base}/resultado`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [f1.id], gane: true }) })).json();
-    ok(c.aprendidos === 1 && c.contradichas === 2 && c.perdi === 0 && c.gane === 1, `una contestación contraria no corrige: ${JSON.stringify(c)}`);
+    ok(c.ok && c.aprendidos === 0, `contestar aprende: ${JSON.stringify(c)}`);
+    const estado = await (await fetch(`${base}/estado`)).json();
+    ok(estado.resultados?.perdi === 2 && estado.resultados?.gane === 2, `/estado no dice las plantillas de serie: ${JSON.stringify(estado.resultados)}`);
+    await fetch(`${base}/vigilar`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ desde: Date.now() + 1 }) });
+    cual = pngTabla;
+    ok(await hasta(async () => (await leerFinal()).fotogramas.some((f) => f.tabla)), 'no llega la tabla de la partida siguiente');
+    eq((await leerFinal()).resultado, 'perdi', 'tras contestar «Gané» sobre una derrota, la derrota siguiente se lee como victoria');
   });
-  // Lo aprendido se lee del disco con la versión actual y se descarta si está roto.
-  const fichero = join(carpeta, 'resultados.json');
-  writeFileSync(fichero, JSON.stringify({ version: 999 }));
-  eq(leerResultados(fichero), null, 'unos resultados de otra versión se usan');
-  writeFileSync(fichero, JSON.stringify(guardarResultados(plantillasDeSerie())));
-  eq(leerResultados(fichero)?.perdi.length, 1, 'los resultados guardados no se leen');
+});
+
+test('mientras se vigila el final de una partida empezada, ni burbuja ni botón «¿Cómo acabó?» (3.99.0): la grabación los cogía encima de la tabla', async () => {
+  const peq = leerPng(readFileSync(new URL('../fixtures/juego/pantallas/juego-17.png', import.meta.url)));
+  const k = 5, ancho = peq.ancho * k, alto = peq.alto * k, rgba = new Uint8Array(ancho * alto * 4);
+  for (let y = 0; y < alto; y++) for (let x = 0; x < ancho; x++) { const o = (Math.floor(y / k) * peq.ancho + Math.floor(x / k)) * 4; rgba.set(peq.rgba.subarray(o, o + 4), (y * ancho + x) * 4); }
+  const juego = escribirPng({ ancho, alto, rgba });
+  let pantalla = png;
+  const servidor = crearServidor({ caras, capturar: async () => pantalla, enHilos: false, vigilancia: { ...VIGILANCIA, desdeMin: 0.02, intervaloMs: 15, intervaloInicioMs: 15, rapidoMs: 15 } });
+  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${servidor.address().port}`;
+  const consejo = async () => (await fetch(`${base}/consejo`)).json();
+  try {
+    await fetch(`${base}/consejo`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: JSON.stringify({ consejo: { titulo: 'Rafaela 55%', detalle: 'x' } }) });
+    const desde = Date.now();
+    servidor.interno.ponerPregunta({ id: `pregunta-${desde - 1}`, desde: desde - 1, cuando: Date.now(), pick: 'Rafaela' });
+    servidor.interno.vigilar(desde);
+    // Antes de ver empezar la partida (la pantalla de carga): burbuja y botón, como siempre.
+    const antes = await consejo();
+    ok(antes.consejo?.titulo === 'Rafaela 55%' && antes.pendiente?.pregunta === true, `antes de empezar la partida se esconden: ${JSON.stringify(antes)}`);
+    pantalla = juego;
+    ok(await hasta(async () => servidor.interno.final().inicio != null), 'no ve empezar la partida');
+    // Acaba (una pantalla sin minimapa que no es la tabla): se sigue vigilando el final, y nada encima.
+    pantalla = png;
+    await new Promise((r) => setTimeout(r, Math.max(150, desde + 1300 - Date.now())));
+    const alFinal = await consejo();
+    ok(servidor.interno.final().activa, 'la prueba necesita la vigilancia en marcha');
+    ok(alFinal.consejo === null && alFinal.pendiente?.pregunta === false, `vigilando el final, la burbuja o el botón salen en la captura: ${JSON.stringify({ consejo: alFinal.consejo, pendiente: alFinal.pendiente })}`);
+    // Con el resultado visto, la vigilancia para y vuelven.
+    pantalla = pngTabla;
+    ok(await hasta(async () => !servidor.interno.final().activa), 'con la tabla no deja de vigilar');
+    const despues = await consejo();
+    ok(despues.consejo?.titulo === 'Rafaela 55%' && despues.pendiente?.pregunta === true, `acabada la vigilancia no vuelven: ${JSON.stringify(despues)}`);
+  } finally { servidor.close(); }
 });
 
 test('en partida la burbuja se quita: sin consejo tras dos capturas con el minimapa, y vuelve con la primera que no lo tiene (3.69.3)', async () => {
@@ -581,9 +609,9 @@ test('el vistazo al minimapa (3.69.3): sin nadie leyendo, la burbuja se quita ig
   eq(sanearAjustes({ linea: 'roam', vozCallada: true }).vozCallada, undefined, 'sigue entrando la voz callada');
 });
 
-test('¿Cómo acabó? (3.72.5): con la tabla sin palabra conocida, la APK lo pregunta; con la respuesta se deja de vigilar, se aprende la tabla y el modo solo la recoge una vez', async () => {
+test('¿Cómo acabó? (3.72.5): con la tabla sin palabra conocida, la APK lo pregunta; con la respuesta se deja de vigilar (sin aprender nada desde 3.99.0) y el modo solo la recoge una vez', async () => {
   const carpeta = mkdtempSync(join(tmpdir(), 'lector-pregunta-'));
-  const servidor = crearServidor({ caras, capturar: () => pngTabla, carpeta, guardarResultadosDe: () => {}, resultados: { ...plantillasDeSerie(), perdi: [] }, vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 15 } });
+  const servidor = crearServidor({ caras, capturar: () => pngTabla, carpeta, resultados: { ...plantillasDeSerie(), perdi: [] }, vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 15 } });
   await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
   const base = `http://127.0.0.1:${servidor.address().port}`;
   const apk = async (camino, cuerpo, { origen = null } = {}) => {
@@ -598,25 +626,25 @@ test('¿Cómo acabó? (3.72.5): con la tabla sin palabra conocida, la APK lo pre
     eq((await apk('/pregunta')).cuerpo.pregunta, null);
     servidor.interno.ponerPregunta({ id: `pregunta-${desde}`, desde, cuando: Date.now(), pick: 'Rafaela' });
     eq(JSON.stringify((await apk('/pregunta')).cuerpo.pregunta), JSON.stringify({ id: `pregunta-${desde}`, pick: 'Rafaela' }), 'la APK no ve la pregunta');
-    eq((await apk('/consejo')).cuerpo.pendiente?.pregunta, true, 'la burbuja no sabe que hay una pregunta (3.84.0)');
+    // Vigilando aún el final (la tabla sin palabra), el botón no sale: caería en la captura (3.99.0; el caso de fuera, en la prueba de abajo).
+    eq((await apk('/consejo')).cuerpo.pendiente?.pregunta, false, 'vigilando el final, la burbuja ofrece la pregunta encima de la tabla');
     eq((await apk('/pregunta', null, { origen: 'https://srchipiron.github.io' })).estado, 403, 'un navegador lee la pregunta');
     eq((await apk('/pregunta', { id: `pregunta-${desde}`, gane: true }, { origen: 'https://srchipiron.github.io' })).estado, 403, 'un navegador contesta la pregunta');
     eq((await apk('/pregunta', { id: 'pregunta-1', gane: true })).estado, 409, 'contesta otra pregunta');
     eq((await apk('/pregunta', { id: `pregunta-${desde}`, gane: 'si' })).estado, 400, 'acepta un resultado sin forma');
     eq(servidor.interno.respuesta(), null, 'una respuesta rechazada llega al modo solo');
-    const r = await apk('/pregunta', { id: `pregunta-${desde}`, gane: true });
+    // Perdí (la tabla es una derrota y aquí no hay plantillas de derrota): antes de 3.99.0 esto borraba las de victoria que se le parecían.
+    const r = await apk('/pregunta', { id: `pregunta-${desde}`, gane: false });
     eq(r.estado, 200, JSON.stringify(r.cuerpo));
-    ok(r.cuerpo.aprendidos >= 1, `no aprende la tabla de victoria: ${JSON.stringify(r.cuerpo)}`);
+    eq(r.cuerpo.aprendidos, 0, `contestar aprende la tabla: ${JSON.stringify(r.cuerpo)}`);
     ok(!servidor.interno.final().activa, 'contestada, sigue vigilando');
     const respuesta = servidor.interno.respuesta();
-    ok(respuesta?.desde === desde && respuesta.gane === true, `el modo solo no recibe la respuesta: ${JSON.stringify(respuesta)}`);
+    ok(respuesta?.desde === desde && respuesta.gane === false, `el modo solo no recibe la respuesta: ${JSON.stringify(respuesta)}`);
     eq(servidor.interno.respuesta(), null, 'la respuesta se recoge dos veces');
     eq((await apk('/pregunta')).cuerpo.pregunta, null, 'contestada, se sigue preguntando');
     eq((await apk('/consejo')).cuerpo.pendiente?.pregunta, false, 'contestada, la burbuja la sigue ofreciendo');
-    ok((await (await fetch(`${base}/estado`)).json()).resultados.gane >= 1, 'la tabla de victoria no queda aprendida');
-    // Arreglar el resultado desde «Mis partidas» (3.75.0): solo aprende con las pantallas de ESE draft.
-    eq(servidor.interno.aprenderResultadoDe(desde + 5, false), 0, 'aprende de las pantallas de otra partida');
-    ok(servidor.interno.aprenderResultadoDe(desde, false) >= 1, 'arreglar el resultado no aprende la tabla');
+    const plantillas = (await (await fetch(`${base}/estado`)).json()).resultados;
+    ok(plantillas.gane === 2 && plantillas.perdi === 0, `contestar cambia las plantillas: ${JSON.stringify(plantillas)}`);
     // «No la terminé»: no se aprende nada y el modo solo lo sabe.
     servidor.interno.ponerPregunta({ id: `pregunta-${desde + 1}`, desde: desde + 1, cuando: Date.now(), pick: null });
     eq((await apk('/pregunta', { id: `pregunta-${desde + 1}`, gane: null })).cuerpo.aprendidos, 0);

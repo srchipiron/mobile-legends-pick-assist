@@ -316,7 +316,9 @@ voy corrigiendo a mano y aprenda»). Cómo va:
   palabras en inglés aunque el juego vaya en español; la de estrellas de
   rango; la de estadísticas «Primera Fase de Bloqueo»), y a 30 s se cazaba
   una cualquiera: `INTERVALO_FINAL_MS` baja a 10 s. `scripts/lector/
-  resultado.mjs` (puro): la PALABRA va en x 33–67%, y 3–12% de la pantalla
+  resultado.mjs` (puro; **la zona y las plantillas de aquí son las de
+  3.32.0, rehechas en 3.99.0: ver «El resultado, con plantillas fijas»**):
+  la PALABRA iba en x 33–67%, y 3–12% de la pantalla
   (`ZONA_PALABRA`, en fracciones de la franja); entre pantallas distintas
   esa zona correlaciona 0,36–0,64, la misma franja desplazada 1 px 0,87 y
   2 px 0,78 → búsqueda ±`DESPLAZAMIENTO` 2 px y `RESULTADO_MINIMO` 0,85
@@ -1382,8 +1384,8 @@ se queda esperando al ganado o perdido». Dos causas:
   sin resultado. `interno.ponerPregunta` (servir.mjs, `sanearPregunta`) y la
   notificación (`resumenPregunta`); la APK enseña «¿Cómo acabó tu partida?»
   (Gané / Perdí / No la terminé, `GET`/`POST /pregunta`, solo `deLaApk`). Con
-  la respuesta el lector deja de vigilar, aprende la tabla de esos
-  fotogramas (`aprenderDelFinal`, lo mismo que `/resultado`) y el modo solo
+  la respuesta el lector deja de vigilar (hasta 3.98.0 además aprendía la
+  tabla de esos fotogramas; desde 3.99.0 no aprende nada) y el modo solo
   la recoge UNA vez (`interno.respuesta`) y apunta (`apuntarVigilada`).
   Caduca con las capturas (`RETENCION_CAPTURAS_MS`).
 - **El draft siguiente esperaba al reloj**: `acumularDraft` solo abría otro
@@ -1512,10 +1514,9 @@ paso por paso».
   entre pick, enemigos y compañeros, ≤5/4/10. `partidas.editar` cambia la
   partida (si solo estaba en la base de datos, la trae), quita la
   estimación si cambia el pick, marca `editada` y la vuelve a subir.
-- Si cambia el RESULTADO, `interno.aprenderResultadoDe(desde, gane)`
-  aprende la tabla de ESE draft (`final.desde === desde`, con sus
-  fotogramas aún sin podar, 3 h) con `aprenderDelFinal`, que además quita
-  las plantillas del otro resultado que se le parezcan. Por eso la partida
+- Si cambia el RESULTADO, hasta 3.98.0 `interno.aprenderResultadoDe`
+  aprendía la tabla de ESE draft; desde 3.99.0 no se aprende nada (ver
+  «El resultado, con plantillas fijas»). La partida
   apuntada sola guarda en la tablet `desde` y `resultadoDe` ('tabla' |
   'pregunta'); la base de datos no los guarda (`paraLaComunidad`).
   `/estado.partidas` cuenta `porTabla` y `porPregunta`, y la revisión
@@ -1687,8 +1688,8 @@ se tiraba. Hoy `crearSolo` la guarda sin `gane` (`sinResultado`,
 `TOPE_SIN_RESULTADO` 50, no se sube ni cuenta en `tusNumeros`), `/partidas`
 la lista con `sinResultado` y la APK la pinta en naranja sin resultado
 marcado (no deja guardar sin elegir: con `optBoolean` se habría apuntado
-como perdida). `editar` con `gane` la pasa a partida, la sube y, si quedan
-los fotogramas (3 h), aprende la tabla. Y al preguntar, `alFinalSinLeer`
+como perdida). `editar` con `gane` la pasa a partida y la sube (hasta
+3.98.0 además aprendía la tabla). Y al preguntar, `alFinalSinLeer`
 sube (`finalParaSubir`, `subirFinalDe`) las dos primeras pantallas sin
 marcador tras la última con él, miniatura y franja, a la tabla `recortes`
 con `tipo: 'final'` y la clave del lector: con ellas se mide por qué no se
@@ -2072,3 +2073,48 @@ renderizado con Paparazzi en un proyecto aparte, fuera del repositorio:
 los botones grises de Android no se distinguían del fondo. `android.test`
 exige que Principal, Partidas y Guia no pinten un `Button(this` y que el
 botón de empezar vaya en la tarjeta de estado.
+
+**El resultado, con plantillas fijas medidas (3.99.0)**. Del 26 de octubre
+al 9 de noviembre de 2026 la tablet apuntó 142 victorias y 3 derrotas (el 9
+de noviembre, 11 de 12), y nada avisó. Medido con 31 franjas reales de las
+incidencias #85–#154 y de `recortes`, etiquetadas a ojo: la `ZONA_PALABRA`
+de 3.32.0 ([0,33, 0,67, 0,11, 0,43], filas 6–24 de la franja de 56) caía
+ENCIMA de la palabra (filas ~19–32) y cogía sobre todo el cartel, que es
+igual en victoria y derrota: la misma palabra se parecía ≥ 0,941 y la
+contraria hasta 0,742. Y lo aprendido estaba envenenado: fotogramas tapados
+por la cola «Esperando» del juego, por la píldora «¿Cómo acabó tu partida?
+Toca aquí» de la propia APK (MediaProjection graba también lo que la APK
+pinta encima: la píldora y la burbuja) y por lecturas equivocadas; al
+aprender se BORRABAN las plantillas del otro resultado que se parecieran, y
+la app mandaba a `/resultado` el resultado que la tablet acababa de leer
+sola (un bucle que daba por buena su propia lectura). Hoy:
+- `ZONA_PALABRA` [0,36, 0,64, 0,34, 0,58] (la palabra entera, sin el
+  cartel): la misma ≥ 0,975, la contraria ≤ 0,311. `esTabla` sigue con la
+  cabecera ([0, 1, 0,11, 0,43]) a `TABLA_MINIMA` 0,70; las otras pantallas
+  del final dan ≤ 0,48.
+- De serie, `plantillasDeSerie()` (servir.mjs, `plantillasIniciales`):
+  `scripts/lector/tabla-victoria-1.png` (#144), `-2` (#105),
+  `tabla-derrota-1.png` (#135), `-2` (#113), con todo lo de debajo de la
+  fila 34 en negro (nombres de otros jugadores). Con las 31: 28 bien, 0 mal,
+  3 sin decidir (las tapadas: se pregunta, fallo seguro).
+- NO se aprende nada en marcha: ni `/resultado` (contesta `aprendidos: 0`,
+  solo deja de vigilar ese `desde`), ni `/pregunta`, ni arreglar una partida
+  en la APK. Lo aprendido solo no puede mandar sobre lo medido: si sale
+  otra tabla que no se lea, se añade una plantilla medida con su prueba.
+- Mientras se vigila el final (`final.activa` con `inicio`), `/consejo`
+  manda `consejo: null` y `pendiente.pregunta: false`: la burbuja y la
+  píldora no tapan la tabla que hay que leer. Vuelven al acabar.
+- El aviso que habría cazado esto en dos días: `/estado.partidas.
+  ultimasTabla` (`ultimasDeTabla`, en-tablet.mjs) son las `TABLA_SEGUIDAS`
+  (10) últimas leídas en la tabla; todas iguales es AVISO en
+  `revisar-tablet` y línea roja en «El sistema» (`sistema.todasVictoria` /
+  `todasDerrota`, el 10 de `lineasDelSistema` lo ata la prueba a
+  `TABLA_SEGUIDAS`). Con un 50–60 % de victorias, diez iguales salen por
+  azar menos de una vez de cada cien.
+Pruebas: `resultado.test` (fixtures en `pruebas/fixtures/juego/finales/`:
+otra victoria, otra derrota, la de #154 que se apuntó como victoria, la de
+la píldora encima, la tapada por «Esperando» y las otras tres pantallas),
+`puente-lector` (contestar al revés no cambia la lectura siguiente; la
+burbuja y la píldora escondidas al vigilar), `en-tablet` y
+`revisar-tablet`. Lo de antes de 3.99.0 en la base de datos sigue con la
+victoria que apuntó: no es fiable.

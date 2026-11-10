@@ -294,6 +294,19 @@ export function partidasDeLaTablet(casa) {
 }
 
 /** Las partidas sin resultado que se guardan para contestarlas después (3.81.5): las de unos días de juego. */
+/**
+ * Las últimas partidas cuyo resultado se leyó en la tabla (3.99.0), para ver
+ * si salen todas iguales: del 26 de octubre al 9 de noviembre de 2026 la
+ * tablet apuntó 142 victorias y 3 derrotas leyendo la zona equivocada, y nada
+ * avisó en dos semanas. Con un 50–60 % de victorias, diez iguales seguidas
+ * salen por azar menos de una vez de cada cien. Decisión de producto.
+ */
+export const TABLA_SEGUIDAS = 10;
+export function ultimasDeTabla(todas) {
+  const leidas = (Array.isArray(todas) ? todas : []).filter((p) => p?.resultadoDe === 'tabla' && typeof p.gane === 'boolean' && Number.isFinite(p.t)).sort((a, b) => b.t - a.t).slice(0, TABLA_SEGUIDAS);
+  return { n: leidas.length, gane: leidas.filter((p) => p.gane).length };
+}
+
 export const TOPE_SIN_RESULTADO = 50;
 /** Las partidas que enseña «Mis partidas» de la APK (3.75.0): las más nuevas. */
 export const PARTIDAS_EN_LA_APK = 200;
@@ -650,7 +663,7 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     const d = leerDatos();
     return {
       datos: { fecha: d.meta?.generatedAt ?? null, de: d.de === 0 ? 'web' : d.de == null ? null : 'apk' },
-      partidas: { apuntadas: partidas.todas().length, sinSubir: partidas.pendientes().length, porTabla: partidas.todas().filter((p) => p.resultadoDe === 'tabla').length, porPregunta: partidas.todas().filter((p) => p.resultadoDe === 'pregunta').length, sinResultado: partidas.sinResultado().length, clave: claveDeJugadorValida(claveConLaQueSube()), deQuien: claveDeJugadorValida(ajustes.delMovil()?.clave) ? 'tuya' : 'lector', error: ultimaSubida.error },
+      partidas: { apuntadas: partidas.todas().length, sinSubir: partidas.pendientes().length, porTabla: partidas.todas().filter((p) => p.resultadoDe === 'tabla').length, porPregunta: partidas.todas().filter((p) => p.resultadoDe === 'pregunta').length, sinResultado: partidas.sinResultado().length, ultimasTabla: ultimasDeTabla(partidas.todas()), clave: claveDeJugadorValida(claveConLaQueSube()), deQuien: claveDeJugadorValida(ajustes.delMovil()?.clave) ? 'tuya' : 'lector', error: ultimaSubida.error },
     };
   };
   const solo = crearSolo({
@@ -788,11 +801,10 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     if (e.error) return { ok: false, estado: 400, error: e.error };
     const hecho = partidas.editar(e.t, e.cambios, deLaBase.get(e.t) ?? null);
     if (!hecho) return { ok: false, estado: 404, error: 'no existe' };
-    // Si arreglaste el resultado y quedan las pantallas del final, se aprende la tabla buena.
-    const aprendidos = typeof e.cambios.gane === 'boolean' && e.cambios.gane !== hecho.antes.gane ? servidor.interno.aprenderResultadoDe(hecho.antes.desde, e.cambios.gane) : 0;
-    registrar(`Partida arreglada en la tablet (${Object.keys(e.cambios).join(', ')})${aprendidos ? '; aprendida la tabla del final' : ''}.`);
+    // Desde 3.99.0 arreglar el resultado ya no enseña la tabla: las plantillas son fijas (resultado.mjs).
+    registrar(`Partida arreglada en la tablet (${Object.keys(e.cambios).join(', ')}).`);
     subir();
-    return { ok: true, aprendidos };
+    return { ok: true, aprendidos: 0 };
   };
   historialRef = { listar: listarPartidas, editar: editarPartida };
   claveRef = () => { const c = claveConLaQueSube(); return claveDeJugadorValida(c) ? c : null; };

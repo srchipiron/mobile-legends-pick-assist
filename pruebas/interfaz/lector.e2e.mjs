@@ -28,7 +28,7 @@ let capturar = () => png;
 const correcciones = [];
 const aprender = async ({ pares }) => { correcciones.push(pares); return { aprendido: { version: 1, picks: null, caras: {}, capturas: pares.length }, informe: [] }; };
 // La vigilancia del final con los plazos encogidos (desde el minuto 0, una captura cada 200 ms): lo demás, como en producción.
-const puente = crearServidor({ capturar: () => capturar(), carpeta: mkdtempSync(join(tmpdir(), 'lector-e2e-')), aprender, guardar: () => {}, guardarResultadosDe: () => {}, vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 200 } });
+const puente = crearServidor({ capturar: () => capturar(), carpeta: mkdtempSync(join(tmpdir(), 'lector-e2e-')), aprender, guardar: () => {}, vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 200 } });
 const abrirPuente = () => new Promise((r) => puente.listen(PUERTO, '127.0.0.1', r));
 const cerrarPuente = () => new Promise((r) => { puente.closeAllConnections?.(); puente.close(r); });
 
@@ -292,12 +292,13 @@ await prueba('con «Leer solo» y el draft completo, el lector vigila el final p
   const aviso = pagina.locator('.aviso-deshacer');
   ok(/apuntada sola/.test(await aviso.innerText()) && /[Pp]erdida/.test(await aviso.innerText()), `el aviso no dice que se apuntó sola y cómo: ${await aviso.innerText()}`);
   eq((await leer(pagina)).enemies.length, 0, 'el draft no se reinicia al apuntar');
-  // Lo apuntado solo vuelve al lector como enseñanza, pero DESPUÉS del plazo
-  // de su «Deshacer» (3.42.0; lo de después del plazo lo mira toques.e2e):
-  // mientras se puede deshacer, el lector sigue con la tabla de serie.
+  // Lo apuntado solo NO vuelve al lector como enseñanza (3.99.0: lo aprendido
+  // de sus propias lecturas es lo que le hizo apuntar casi todo como victoria):
+  // sigue con las plantillas de serie, dos y dos. El aviso a /resultado, tras
+  // el plazo del «Deshacer», solo le dice que deje de vigilar (toques.e2e).
   await pagina.waitForTimeout(2000);
   const estado = await (await fetch(`http://127.0.0.1:${PUERTO}/estado`)).json();
-  eq(estado?.resultados?.perdi, 1, `el lector aprende de la partida apuntada sola antes de poder deshacerla: ${JSON.stringify(estado?.resultados)}`);
+  eq(JSON.stringify(estado?.resultados), JSON.stringify({ gane: 2, perdi: 2, tablas: 4 }), `el lector aprende de la partida apuntada sola: ${JSON.stringify(estado?.resultados)}`);
   // «Deshacer» olvida la partida y devuelve el draft, y no se vuelve a apuntar sola.
   await aviso.getByRole('button', { name: 'Deshacer' }).click(); await pagina.waitForTimeout(500);
   eq(((await leer(pagina, 'roam-picker:partidas')) ?? []).length, 0, 'deshacer no olvida la partida');

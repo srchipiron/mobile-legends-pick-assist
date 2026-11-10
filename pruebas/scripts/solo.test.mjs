@@ -318,7 +318,7 @@ test('los datos se preparan una vez por fichero y rango', () => {
 
 test('la lectura rápida: en partida solo el minimapa, sin reconocer caras; fuera de partida, la lectura entera', async () => {
   const juego = readFileSync(join(RAIZ, 'pruebas/fixtures/juego/pantallas/juego-17.png'));
-  const servidor = crearServidor({ capturar: async () => juego, enHilos: false, guardar: () => {}, guardarResultadosDe: () => {} });
+  const servidor = crearServidor({ capturar: async () => juego, enHilos: false, guardar: () => {} });
   try {
     const r = await servidor.interno.leer({ rapida: true });
     ok(r.ok && r.lectura.partida === true && r.lectura.rapida === true, `en partida no sale la lectura rápida: ${JSON.stringify(r).slice(0, 200)}`);

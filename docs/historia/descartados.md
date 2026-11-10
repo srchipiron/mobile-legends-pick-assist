@@ -692,3 +692,17 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
   derrotas se pierden, no que se lean al revés. Desde 3.90.0 salen en
   «Capturas» para contestarlas. Se vuelve a mirar con las pantallas de la
   ráfaga (3.90.3) delante.
+  **Estaba mal (3.99.0)**: con 31 tablas reales delante, SÍ se leían al
+  revés. Las «VICTORIA a 0,93–1,00» eran el parecido a plantillas
+  aprendidas de derrotas mal apuntadas, en una zona que cogía el cartel y
+  no la palabra. El 0,93–1,00 decía que la tablet estaba segura, no que
+  acertara. Ver `errores.md`.
+- **Aprender las tablas que no se leen en vez de añadirlas a mano (9 de
+  noviembre de 2026, 3.99.0)** — se quitó el aprender en marcha: con 4
+  plantillas medidas se leen las 28 tablas destapadas de 31, y lo
+  aprendido solo es justo lo que envenenó la lectura (fotogramas tapados,
+  respuestas equivocadas que borraban las plantillas buenas). Si aparece
+  una tabla que no se lee, se añade una plantilla medida con su prueba.
+- **Borrar o marcar las victorias del 26 de octubre al 9 de noviembre** —
+  no se toca la base de datos sin Javi: es su historial y el de la
+  comunidad. Pendiente de su decisión (`pendiente.md`).

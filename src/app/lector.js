@@ -270,6 +270,9 @@ export function lineasDelSistema(estado, { ahora = Date.now() } = {}) {
     L.push({ clave: partidas.sinSubir ? 'sistema.partidasSinSubir' : 'sistema.partidas', params: { n: num(partidas.apuntadas), sinSubir: num(partidas.sinSubir) }, mal: num(partidas.sinSubir) > 0 && !!partidas.error });
     const total = num(partidas.porTabla) + num(partidas.porPregunta);
     if (total) L.push({ clave: 'sistema.resultados', params: { tabla: num(partidas.porTabla), total }, mal: false });
+    // Las últimas diez leídas en la tabla, todas iguales (3.99.0): del 26 de octubre al 9 de noviembre apuntó 142 victorias y 3 derrotas sin que nada avisara.
+    const ut = partidas.ultimasTabla;
+    if (num(ut?.n) >= 10 && (num(ut.gane) === 0 || num(ut.gane) === num(ut.n))) L.push({ clave: ut.gane ? 'sistema.todasVictoria' : 'sistema.todasDerrota', params: { n: num(ut.n) }, mal: true });
     // Las que la tablet no supo cómo acabaron (3.82.1): sin resultado no cuentan para nada hasta que las contestes.
     if (num(partidas.sinResultado) > 0) L.push({ clave: 'sistema.sinResultado', params: { n: num(partidas.sinResultado) }, mal: true });
   }
@@ -540,8 +543,9 @@ export function resumenParaLaTablet({ t: instante, pick, gane, recomendados = []
 
 /**
  * Lo que contestó Javi (o lo que se apuntó solo) con los fotogramas de esa
- * partida, para que el lector aprenda la palabra de la tabla (3.32.0).
- * Nunca lanza; sin fotogramas no pide nada.
+ * partida (3.32.0). Desde 3.99.0 el lector ya no aprende de esto (las
+ * plantillas de la tabla son fijas y medidas): solo deja de vigilar esa
+ * partida. Nunca lanza; sin fotogramas ni `desde` no pide nada.
  */
 export async function ensenarResultado({ ids = [], gane, desde = null, base = baseLector(), plazoMs = PLAZO_LECTOR_MS, pedir = pedirAlLector } = {}) {
   // Con `desde` (3.44.1) el lector deja también de vigilar y de hablar de esa partida, aunque no haya fotogramas.

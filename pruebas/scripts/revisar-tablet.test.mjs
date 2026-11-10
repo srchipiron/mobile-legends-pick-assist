@@ -9,7 +9,7 @@ import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
 import { PARTIDAS_SIN_APUNTAR, PARTIDAS_PARA_MEDIR, revisarParte, revisarPartes, informe, PARTE_CALLADO_MIN, DATOS_VIEJOS_H, CIERRE_POR_FALLO, SALUD_CALLADA_MIN, FALLO_ANTERIOR_H } from '../../scripts/revisar-tablet.mjs';
 import { subirParte, bajarPartes } from '../../src/app/basedatos.js';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
-import { parteDeSalud } from '../../scripts/lector/en-tablet.mjs';
+import { parteDeSalud, TABLA_SEGUIDAS, ultimasDeTabla } from '../../scripts/lector/en-tablet.mjs';
 
 const AHORA = Date.parse('2026-10-25T12:00:00Z');
 const hace = (min) => new Date(AHORA - min * 60000).toISOString();
@@ -133,6 +133,21 @@ test('cuánto reconoce sola el resultado (3.75.0): aviso si pregunta más de la 
   ok(con(1, 4).some((a) => /1 de 5/.test(a)), 'no avisa con 4 de 5 preguntadas');
   eq(con(3, 2).length, 0, 'avisa con la mayoría reconocidas');
   eq(con(0, 4).length, 0, 'avisa con muy pocas partidas');
+});
+
+test('todas iguales (3.99.0): diez seguidas leídas en la tabla con el mismo resultado es aviso, como las 142 victorias y 3 derrotas del 26 de octubre al 9 de noviembre', () => {
+  const con = (ultimasTabla) => revisarParte({ j: 1, recibido: hace(1), d: sano({ partidas: { apuntadas: 20, sinSubir: 0, clave: true, porTabla: 20, porPregunta: 0, ultimasTabla } }) }, { ahora: AHORA }).avisos;
+  ok(con({ n: TABLA_SEGUIDAS, gane: TABLA_SEGUIDAS }).some((a) => /todas victoria/.test(a)), 'no avisa con diez victorias seguidas leídas en la tabla');
+  ok(con({ n: TABLA_SEGUIDAS, gane: 0 }).some((a) => /todas derrota/.test(a)), 'no avisa con diez derrotas seguidas leídas en la tabla');
+  eq(con({ n: TABLA_SEGUIDAS, gane: TABLA_SEGUIDAS - 1 }).length, 0, 'avisa con una derrota entre las diez');
+  eq(con({ n: TABLA_SEGUIDAS - 1, gane: TABLA_SEGUIDAS - 1 }).length, 0, 'avisa con menos de diez');
+  eq(con(undefined).length, 0, 'una APK que no lo cuenta da aviso');
+  // Lo cuenta la tablet: las últimas por fecha, solo las leídas en la tabla con resultado.
+  const p = (t, gane, resultadoDe = 'tabla') => ({ t, gane, resultadoDe });
+  const nueve = Array.from({ length: 9 }, (_, i) => p(100 + i, true));
+  eq(JSON.stringify(ultimasDeTabla([...nueve, p(1, false), p(200, true, 'pregunta'), p(201, null)])), JSON.stringify({ n: 10, gane: 9 }), 'cuenta las preguntadas o las sin resultado como leídas en la tabla');
+  eq(JSON.stringify(ultimasDeTabla([p(1, false), ...nueve, p(99, true), p(300, true)])), JSON.stringify({ n: 10, gane: 10 }), 'no se queda con las diez más recientes');
+  eq(JSON.stringify(ultimasDeTabla(null)), JSON.stringify({ n: 0, gane: 0 }));
 });
 
 await test('partidas jugadas sin apuntar (3.83.2): como el 27 de octubre, 5 h leyendo y ninguna apuntada, es FALLO', () => {

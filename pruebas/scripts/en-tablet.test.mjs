@@ -370,7 +370,7 @@ test('enseñar al lector desde la tablet (3.71.0): solo la APK lo lee y lo conte
 test('la corrección protege sus capturas de la limpieza mientras se puede contestar (3.71.0)', async () => {
   const carpeta = mkdtempSync(join(tmpdir(), 'en-tablet-poda-'));
   for (const id of ['lectura-2026-10-24T20-00-00-000Z-1', 'lectura-2026-10-24T20-00-05-000Z-2', 'lectura-2026-10-24T20-00-10-000Z-3']) writeFileSync(join(carpeta, `${id}.png`), 'x');
-  const servidor = crearServidor({ capturar: async () => png, enHilos: false, carpeta, maximos: { lectura: 1, fotograma: 1, resultado: 1 }, guardar: () => {}, guardarResultadosDe: () => {} });
+  const servidor = crearServidor({ capturar: async () => png, enHilos: false, carpeta, maximos: { lectura: 1, fotograma: 1, resultado: 1 }, guardar: () => {} });
   try {
     servidor.interno.ponerCorreccion({ id: `correccion-${Date.now()}`, cuando: Date.now(), ids: ['lectura-2026-10-24T20-00-00-000Z-1', 'lectura-2026-10-24T20-00-05-000Z-2'], heroes: ['Atlas'], leidos: {} });
     const r = await servidor.interno.leer({});
@@ -486,7 +486,7 @@ test('las capturas del draft que lee el modo solo no se podan mientras está abi
   const carpeta = mkdtempSync(join(tmpdir(), 'en-tablet-poda-draft-'));
   const ids = ['lectura-2026-10-27T22-20-00-000Z-1', 'lectura-2026-10-27T22-20-04-000Z-2', 'lectura-2026-10-27T22-20-08-000Z-3'];
   for (const id of ids) writeFileSync(join(carpeta, `${id}.png`), 'x');
-  const servidor = crearServidor({ capturar: async () => png, enHilos: false, carpeta, maximos: { lectura: 1, fotograma: 1, resultado: 1 }, guardar: () => {}, guardarResultadosDe: () => {} });
+  const servidor = crearServidor({ capturar: async () => png, enHilos: false, carpeta, maximos: { lectura: 1, fotograma: 1, resultado: 1 }, guardar: () => {} });
   try {
     servidor.interno.protegerLecturas([ids[0], ids[1], '../fuera']);
     const r = await servidor.interno.leer({});
@@ -580,7 +580,7 @@ test('/estado dice de cuándo son los datos y si tus partidas suben (3.73.1): si
     // Sin nada bajado (LECTOR_SIN_SOLO no baja), decide con los que trae la APK, y lo dice.
     ok(typeof e.datos?.fecha === 'string' && e.datos.de === 'apk', `/estado no dice de cuándo son los datos ni de dónde: ${JSON.stringify(e.datos)}`);
     // Sin tu clave sube con la del lector (3.74.6) y lo dice.
-    eq(JSON.stringify(e.partidas), JSON.stringify({ apuntadas: 1, sinSubir: 1, porTabla: 0, porPregunta: 0, sinResultado: 1, clave: true, deQuien: 'lector', error: null }), 'no dice con qué clave sube');
+    eq(JSON.stringify(e.partidas), JSON.stringify({ apuntadas: 1, sinSubir: 1, porTabla: 0, porPregunta: 0, sinResultado: 1, ultimasTabla: { n: 0, gane: 0 }, clave: true, deQuien: 'lector', error: null }), 'no dice con qué clave sube');
   } finally { servidor.close(); apk.cerrar(); }
 });
 
@@ -716,7 +716,7 @@ test('lo que se puede arreglar de una partida (3.75.0): solo héroes del catálo
   eq(sanearEdicion({ t: 5, pick: '' }, nombres).error, 'pick');
 });
 
-test('«Mis partidas» de la APK (3.75.0): lo que dice la base de datos con lo que falta por subir encima, solo para la APK, y arreglar una la vuelve a subir y aprende la tabla', async () => {
+test('«Mis partidas» de la APK (3.75.0): lo que dice la base de datos con lo que falta por subir encima, solo para la APK, y arreglar una la vuelve a subir (sin enseñar la tabla desde 3.99.0)', async () => {
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-historial-'));
   const s = supabaseFalso();
   const { mkdirSync } = await import('node:fs');
@@ -753,13 +753,12 @@ test('«Mis partidas» de la APK (3.75.0): lo que dice la base de datos con lo q
     const subida = JSON.parse((await pedir(puerto, '/partidas', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
     ok(subida.partidas.find((p) => p.t === 1787000000000)?.supuesto, `ya subida, la partida supuesta pierde la marca: ${JSON.stringify(subida.partidas.find((p) => p.t === 1787000000000))}`);
     sinSubir = true;
-    // Arreglar la de la tablet: el resultado y un enemigo; se sube y aprende de la tabla.
-    const aprendidas = [];
-    servidor.interno.aprenderResultadoDe = (desde, gane) => { aprendidas.push([desde, gane]); return 1; };
+    // Arreglar la de la tablet: el resultado y un enemigo; se sube (y no enseña la tabla: plantillas fijas, 3.99.0).
     eq((await mandarPost(puerto, '/partida', { t: 1788000060000, gane: true }, { origen: 'https://srchipiron.github.io' })).estado, 403, 'el navegador arregla partidas');
     const r = await mandarPost(puerto, '/partida', { t: 1788000060000, gane: true, enemigos: ['Khufra', 'Clint'] });
     eq(r.estado, 200, r.cuerpo);
-    eq(JSON.stringify(aprendidas), JSON.stringify([[1787999000000, true]]), 'cambiar el resultado no enseña la tabla buena');
+    eq(JSON.parse(r.cuerpo).aprendidos, 0, 'cambiar el resultado enseña la tabla');
+    eq(servidor.interno.aprenderResultadoDe, undefined, 'vuelve a haber una forma de enseñar la tabla al arreglar');
     const arreglada = JSON.parse((await pedir(puerto, '/partidas', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo).partidas.find((p) => p.t === 1788000060000);
     ok(arreglada?.gane === true && arreglada.sinSubir && arreglada.editada, `la lista enseña lo de la base de datos en vez de lo arreglado: ${JSON.stringify(arreglada)}`);
     eq(servidor.partidas.pendientes().length, 1, 'lo arreglado no se vuelve a subir');
@@ -771,7 +770,6 @@ test('«Mis partidas» de la APK (3.75.0): lo que dice la base de datos con lo q
     eq((await mandarPost(puerto, '/partida', { t: 1788000000000, pick: 'Rafaela' })).estado, 200);
     await servidor.subirPartidas();
     eq(s.jugadores.get(clave).partidas.get(1788000000000)?.pick, 'Rafaela', 'no arregla la que solo estaba en la base de datos');
-    eq(aprendidas.length, 1, 'aprende la tabla sin cambiar el resultado');
     // Lo que no vale.
     eq((await mandarPost(puerto, '/partida', { t: 1788000060000, enemigos: ['Nadie'] })).estado, 400);
     eq((await mandarPost(puerto, '/partida', { t: 1, gane: true })).estado, 404);

@@ -8,6 +8,24 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.99.0
+
+- La tablet ya distingue VICTORIA de DERROTA: desde el 26 de octubre
+  apuntaba casi todas las partidas como ganadas (142 de 145). Miraba una
+  franja de la pantalla del final que es igual en las dos y había aprendido
+  pantallas tapadas. Ahora lee la palabra de verdad con cuatro tablas
+  medidas (dos victorias y dos derrotas): de 31 tablas reales, 28 bien,
+  ninguna mal, y las 3 tapadas te las pregunta.
+- Ya no aprende el resultado de lo que contestas ni de lo que arreglas: lo
+  que aprendía sola es lo que la estropeó.
+- Mientras espera la pantalla del final, la burbuja y el botón «¿Cómo
+  acabó?» se esconden para no tapar la tabla. Vuelven al acabar.
+- Si las últimas 10 partidas que leyó en la tabla salen todas iguales
+  (todas victoria o todas derrota), «El sistema» lo pone en rojo para que
+  lo compruebes en el historial del juego. Con las de estas dos semanas
+  saldrá en rojo hasta que juegues unas cuantas: revísalas en «Mis
+  partidas» de la tablet si quieres que las estadísticas sean de verdad.
+
 ## 3.98.0
 
 - La app ya no sube nada a GitHub: tus partidas, las pantallas del final,
