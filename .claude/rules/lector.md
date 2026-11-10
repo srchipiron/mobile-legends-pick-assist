@@ -2117,4 +2117,9 @@ la píldora encima, la tapada por «Esperando» y las otras tres pantallas),
 `puente-lector` (contestar al revés no cambia la lectura siguiente; la
 burbuja y la píldora escondidas al vigilar), `en-tablet` y
 `revisar-tablet`. Lo de antes de 3.99.0 en la base de datos sigue con la
-victoria que apuntó: no es fiable.
+victoria que apuntó: no es fiable. La prueba de la burbuja se subió con
+`desdeMin` 0,02 y reloj real: en el runner (el doble de lento) pasaba ese
+minuto encogido antes de la primera comprobación, se estimaba el inicio y
+el despliegue se paró. Hoy lleva `ahora` con un salto que mueve la prueba:
+una prueba de la vigilancia que dependa de que «aún no ha pasado» un plazo
+encogido lleva su reloj, no el real.

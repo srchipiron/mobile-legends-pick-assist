@@ -509,7 +509,10 @@ test('mientras se vigila el final de una partida empezada, ni burbuja ni botón 
   for (let y = 0; y < alto; y++) for (let x = 0; x < ancho; x++) { const o = (Math.floor(y / k) * peq.ancho + Math.floor(x / k)) * 4; rgba.set(peq.rgba.subarray(o, o + 4), (y * ancho + x) * 4); }
   const juego = escribirPng({ ancho, alto, rgba });
   let pantalla = png;
-  const servidor = crearServidor({ caras, capturar: async () => pantalla, enHilos: false, vigilancia: { ...VIGILANCIA, desdeMin: 0.02, intervaloMs: 15, intervaloInicioMs: 15, rapidoMs: 15 } });
+  // El reloj lo mueve la prueba: con el real, en un runner cargado pasaba el minuto
+  // de buscar el inicio antes de la primera comprobación y lo daba por estimado.
+  let salto = 0;
+  const servidor = crearServidor({ caras, capturar: async () => pantalla, enHilos: false, ahora: () => Date.now() + salto, vigilancia: { ...VIGILANCIA, desdeMin: 1, intervaloMs: 15, intervaloInicioMs: 15, rapidoMs: 15 } });
   await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
   const base = `http://127.0.0.1:${servidor.address().port}`;
   const consejo = async () => (await fetch(`${base}/consejo`)).json();
@@ -523,9 +526,11 @@ test('mientras se vigila el final de una partida empezada, ni burbuja ni botón 
     ok(antes.consejo?.titulo === 'Rafaela 55%' && antes.pendiente?.pregunta === true, `antes de empezar la partida se esconden: ${JSON.stringify(antes)}`);
     pantalla = juego;
     ok(await hasta(async () => servidor.interno.final().inicio != null), 'no ve empezar la partida');
-    // Acaba (una pantalla sin minimapa que no es la tabla): se sigue vigilando el final, y nada encima.
+    // Acaba (una pantalla sin minimapa que no es la tabla), pasado el minuto de buscar el inicio:
+    // se vigila el final, y nada encima.
     pantalla = png;
-    await new Promise((r) => setTimeout(r, Math.max(150, desde + 1300 - Date.now())));
+    salto = 61000;
+    await new Promise((r) => setTimeout(r, 150));
     const alFinal = await consejo();
     ok(servidor.interno.final().activa, 'la prueba necesita la vigilancia en marcha');
     ok(alFinal.consejo === null && alFinal.pendiente?.pregunta === false, `vigilando el final, la burbuja o el botón salen en la captura: ${JSON.stringify({ consejo: alFinal.consejo, pendiente: alFinal.pendiente })}`);
