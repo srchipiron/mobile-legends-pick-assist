@@ -234,7 +234,12 @@ export const carasGuardadas = () => cargarCaras(JSON.parse(readFileSync(new URL(
  * nuevo, o uno rehecho al que la API le da otra cara), lo dice: sin avisar,
  * ese héroe saldría siempre como «?» sin que nadie supiera por qué.
  */
-export const carasDesfasadas = (fuentes = {}, heroes = []) => heroes.filter((h) => h?.cara && fuentes[h.name] !== h.cara).map((h) => h.name);
+// Por el FICHERO de la imagen (su nombre es su huella), no por la URL entera:
+// con cada compilación del juego la carpeta cambia (`…_1232_1/` → `…_1235_1/`,
+// parche del 11 de noviembre de 2026) y la URL entera daba por desfasadas 132
+// caras cuando solo habían cambiado Popol and Kupa y Cyclops.
+const ficheroDe = (u) => String(u ?? '').replace(/[?#].*$/, '').split('/').pop();
+export const carasDesfasadas = (fuentes = {}, heroes = []) => heroes.filter((h) => h?.cara && ficheroDe(fuentes[h.name]) !== ficheroDe(h.cara)).map((h) => h.name);
 
 export function avisoDeCaras() {
   try {

@@ -2220,3 +2220,14 @@ actualización del juego; sin una captura no se puede medir la fila nueva.
   solo los huecos, que `fundirHuecos` ya vacía).
 - Pendiente: una captura de la pantalla del draft de la tablet (baneos y
   picks) para medir dónde va hoy la fila de baneos.
+
+**Las caras del parche del 11 de noviembre (3.101.2)**. Con la compilación
+nueva del juego la API sirve TODAS las caras desde otra carpeta del CDN
+(`homepage_2_2_16_1232_1/` → `…_1235_1/`), con el mismo nombre de fichero
+(su huella) en 131 de 133: solo cambiaron de imagen Popol and Kupa (rehecho;
+0,37 de parecido con la cara vieja) y Cyclops (0,24). `sacar-caras.mjs` las
+rehízo; ninguna se parece a otro héroe por encima de 0,53 (Cyclops–Gord),
+lejos de `PARECIDO_MINIMO`. `carasDesfasadas` compara desde hoy el FICHERO
+de la imagen, no la URL entera (daba 132 «desfasadas»). Sigue sin haber
+aviso automático de una cara cambiada fuera de `leer.mjs --archivo`, y NO
+va en `npm test`: tiraría el despliegue de los datos del bot.

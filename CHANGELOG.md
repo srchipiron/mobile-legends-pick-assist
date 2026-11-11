@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.101.2
+
+- El lector reconoce a Popol and Kupa y a Cyclops con su cara nueva: el
+  parche del 11 de noviembre les cambió el dibujo y con el de antes la
+  tablet no los habría leído en el draft.
+- Revisado el parche: 32 héroes cambian. En roam, Atlas y Gloo bajan
+  (Frigid Breath dura 4 s en vez de 5; Gloo inmoviliza 0,6 s en vez de 0,8
+  y hace menos daño), Kalea y Kaja suben, y Diggie, según el texto nuevo,
+  revive donde está el huevo. Popol and Kupa está rehecho. Ningún consejo cambia de golpe: los
+  porcentajes de la app se ponen al día solos en unos 3 días (los cruces,
+  en una semana).
+
 ## 3.101.1
 
 - La burbuja vuelve a salir en el draft. Desde la tarde del 11 de noviembre

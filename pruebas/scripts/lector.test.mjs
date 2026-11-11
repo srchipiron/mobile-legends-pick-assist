@@ -243,6 +243,10 @@ test('las caras de referencia tienen su tamaño y su fuente, y el lector avisa d
   }
   const heroes = [{ name: 'A', cara: 'u1' }, { name: 'B', cara: 'u2' }, { name: 'C', cara: 'u3' }, { name: 'D' }];
   eq(carasDesfasadas({ A: 'u1', B: 'viejo' }, heroes).join(','), 'B,C', 'no avisa de una cara rehecha (B) o de un héroe nuevo (C)');
+  // Otra compilación del juego cambia la carpeta y no la imagen (11 de noviembre de 2026): eso no es una cara nueva.
+  const cdn = (carpeta, f) => `https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_${carpeta}_1/100_${f}.png`;
+  const tras = [{ name: 'Miya', cara: cdn(1235, 'aaa') }, { name: 'Popol and Kupa', cara: cdn(1235, 'nuevo') }];
+  eq(carasDesfasadas({ Miya: cdn(1232, 'aaa'), 'Popol and Kupa': cdn(1232, 'viejo') }, tras).join(','), 'Popol and Kupa', 'confunde otra carpeta con otra cara');
 });
 
 test('SEGURIDAD: todo lo que el lector ejecuta (su carpeta y lo que importa de fuera) solo importa lo permitido y no puede cargar código por otra vía (3.40.0)', () => {

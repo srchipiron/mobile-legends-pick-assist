@@ -261,7 +261,7 @@
         "heal"
       ],
       "roam": true,
-      "kit": "fisico|Control,Regen|8fc5004b"
+      "kit": "fisico|Control,Regen|c1eb025b"
     },
     {
       "name": "Khufra",
@@ -397,7 +397,7 @@
         "sustain"
       ],
       "roam": true,
-      "kit": "magico|Guard,Poke|a50c78d9"
+      "kit": "magico|Guard,Poke|746b1076"
     },
     {
       "name": "Estes",
@@ -409,7 +409,7 @@
         "zone"
       ],
       "roam": true,
-      "kit": "magico|Guard,Regen|19cfe2be"
+      "kit": "magico|Guard,Regen|2393600d"
     },
     {
       "name": "Faramis",
@@ -478,7 +478,7 @@
         "heal"
       ],
       "roam": true,
-      "kit": "magico|Charge,Initiator|e5415925"
+      "kit": "magico|Charge,Initiator|bc6ab3a6"
     },
     {
       "name": "Chou",
@@ -568,7 +568,7 @@
         "cc_chain",
         "engage"
       ],
-      "kit": "fisico|Burst,Charge|504f53b3"
+      "kit": "fisico|Burst,Charge|5d2eeefb"
     },
     {
       "name": "Arlott",
@@ -595,7 +595,7 @@
         "dash",
         "cc_hard"
       ],
-      "kit": "fisico|Charge,Damage|65e8f361"
+      "kit": "fisico|Charge,Damage|6ca69ea3"
     },
     {
       "name": "Aurora",
@@ -732,7 +732,7 @@
         "burst",
         "cc_hard"
       ],
-      "kit": "fisico|Burst,Finisher|dae2a8a8"
+      "kit": "fisico|Burst,Finisher|1d1e9a71"
     },
     {
       "name": "Cyclops",
@@ -777,7 +777,7 @@
         "cc_hard",
         "immobile"
       ],
-      "kit": "magico|Burst,Control|d756dded"
+      "kit": "magico|Burst,Control|351e94c5"
     },
     {
       "name": "Fanny",
@@ -789,7 +789,7 @@
         "assassin_late",
         "dash"
       ],
-      "kit": "fisico|Chase,Finisher|ff5bcd6b"
+      "kit": "fisico|Chase,Finisher|31352174"
     },
     {
       "name": "Freya",
@@ -803,7 +803,7 @@
         "engage",
         "shield"
       ],
-      "kit": "fisico|Chase,Damage|f5c0b503"
+      "kit": "fisico|Chase,Damage|be444ef3"
     },
     {
       "name": "Gord",
@@ -815,7 +815,7 @@
         "cc_hard",
         "burst"
       ],
-      "kit": "magico|Burst,Poke|90505205"
+      "kit": "magico|Burst,Poke|f07249a4"
     },
     {
       "name": "Granger",
@@ -933,7 +933,7 @@
         "hypercarry",
         "mobile"
       ],
-      "kit": "fisico|Burst,Finisher|2969ec4e"
+      "kit": "fisico|Burst,Finisher|a4512272"
     },
     {
       "name": "Ixia",
@@ -1007,7 +1007,7 @@
         "dash",
         "shield"
       ],
-      "kit": "magico|Finisher,Poke|5344e405"
+      "kit": "magico|Finisher,Poke|d2df21ca"
     },
     {
       "name": "Karina",
@@ -1027,7 +1027,7 @@
         "hypercarry",
         "mobile"
       ],
-      "kit": "fisico|Damage,Finisher|03ae8e09"
+      "kit": "fisico|Damage,Finisher|ec4611b2"
     },
     {
       "name": "Khaleed",
@@ -1063,7 +1063,7 @@
         "burst",
         "dash"
       ],
-      "kit": "fisico|Burst,Chase|ec8d12ef"
+      "kit": "fisico|Burst,Chase|bc85030d"
     },
     {
       "name": "Lapu-Lapu",
@@ -1074,7 +1074,7 @@
         "shield",
         "mobile"
       ],
-      "kit": "fisico|Burst,Chase|6aa8e881"
+      "kit": "fisico|Burst,Chase|a54f7f3b"
     },
     {
       "name": "Layla",
@@ -1085,7 +1085,7 @@
         "poke",
         "cc_hard"
       ],
-      "kit": "fisico|Damage,Finisher|f93cc59f"
+      "kit": "fisico|Damage,Finisher|70e1aeff"
     },
     {
       "name": "Leomord",
@@ -1145,7 +1145,7 @@
         "heal",
         "hypercarry"
       ],
-      "kit": "magico|Burst,Damage|fabcc68f"
+      "kit": "magico|Burst,Damage|f4507e08"
     },
     {
       "name": "Luo Yi",
@@ -1193,7 +1193,7 @@
         "dash",
         "heal"
       ],
-      "kit": "fisico|Damage,Push|ed3a84e6"
+      "kit": "fisico|Damage,Push|faebd051"
     },
     {
       "name": "Melissa",
@@ -1205,7 +1205,7 @@
         "peel",
         "zone"
       ],
-      "kit": "mixto|Damage,Finisher|79e7986c"
+      "kit": "mixto|Damage,Finisher|9d2e5c8a"
     },
     {
       "name": "Miya",
@@ -1226,7 +1226,7 @@
         "cc_hard",
         "mobile"
       ],
-      "kit": "fisico|Chase,Finisher|bf7adb0e"
+      "kit": "fisico|Chase,Finisher|04ec42c8"
     },
     {
       "name": "Nana",
@@ -1249,7 +1249,7 @@
         "burst",
         "dash"
       ],
-      "kit": "fisico|Chase,Finisher|b3421dae"
+      "kit": "fisico|Chase,Finisher|e55fea7d"
     },
     {
       "name": "Natan",
@@ -1291,7 +1291,7 @@
         "immobile",
         "cc_hard"
       ],
-      "kit": "magico|Burst,Poke|d8114048"
+      "kit": "magico|Burst,Poke|a2eebf7f"
     },
     {
       "name": "Paquito",
@@ -1341,7 +1341,7 @@
         "shield",
         "immobile"
       ],
-      "kit": "fisico|Burst,Push|8538094c"
+      "kit": "fisico|Burst,Control|16a75051"
     },
     {
       "name": "Roger",
@@ -1352,7 +1352,7 @@
         "mobile",
         "dash"
       ],
-      "kit": "fisico|Burst,Finisher|eced90e5"
+      "kit": "fisico|Burst,Finisher|497868cb"
     },
     {
       "name": "Saber",
@@ -1403,7 +1403,7 @@
         "hypercarry",
         "heal"
       ],
-      "kit": "fisico|Damage,Push|c1e84fb9"
+      "kit": "fisico|Damage,Push|fb4f8130"
     },
     {
       "name": "Suyou",
@@ -1500,7 +1500,7 @@
         "cc_hard",
         "immobile"
       ],
-      "kit": "magico|Burst,Damage|0d51465e"
+      "kit": "magico|Burst,Damage|8a03b576"
     },
     {
       "name": "Yi Sun-shin",

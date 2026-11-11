@@ -465,6 +465,30 @@ idéntico** en 300 drafts (nombres y probabilidades: las etiquetas solo
 deciden sin dato); cambia lo que se DICE en 28 de 300. Prueba en
 `catalogo.test` con tres de las citas.
 
+**El parche del 11 de noviembre de 2026 (3.101.2)**. La ingesta de las
+12:52 UTC marcó 27 kits cambiados (`heroesCambiados`; las del 10, ninguno).
+Comparados palabra a palabra con los textos del 7 de noviembre (los de la
+revisión de 3.92.0, guardados en el scratch de la sesión, `kits/`), con los
+133 de hoy: cambian 32. OJO: `huellaDeKit` quita las CIFRAS a propósito
+(las etiquetas van por mecánicas, no por números), así que un buff o nerf
+solo de números no sale en `heroesCambiados`: Atlas (Frigid Breath 5 → 4 s),
+Gloo (inmoviliza 0,8 → 0,6 s, menos daño), Hirara, Lukas y Aldous. De los 27,
+la mayoría es texto reescrito (Estes, Natalia, Clint, Fanny…); de verdad,
+Kalea y Kaja (suben), Eudora (baja), Aulus, Argus (aturde 0,3 s con la 2),
+Masha (la ralentización pasa de la 1 a la 2), Freya (cura al gastar orbes) y
+Popol and Kupa REHECHO (montar a Kupa: +250 de velocidad 1,5 s; la lanza
+pasa de 5,5 a 10 s; trampa que inmoviliza 1 s; en forma de lobo levanta
+0,5 s). Diggie: «revives at his current location» donde decía «after a
+period of time». Ninguna etiqueta cambia con los criterios de `tagLegend`:
+Popol sigue `immobile` (montar es velocidad, no desplazamiento: dudoso, y
+los dudosos se dejan como en 3.92.0), `cc_chain` (trampa y lobo), `shield`
+y `zone`. Los 27 `kit` de heroes.json van con la huella de hoy (el campo
+solo sirve para detectar cambios: el motor no lo lee). La fuerza de cada
+héroe va con la ventana de 3 días (coherencia 0,999 ese día): en unos tres
+días está entera después del parche; cruces y parejas, a 7. Vigilar: si
+los tocados se separan mucho, la coherencia 3/7 puede caer de 0,9 y la
+guarda volvería a 7 días unos días (lo dice el diagnóstico).
+
 **El plan según el papel de tu héroe (3.92.0)**: `esDeApoyo` (plan.js, rol
 `support` o `tank`). A un apoyo no se le dice «juega agresivo desde el
 principio» sino «rota pronto y lleva a tu equipo» (`etapa.tuHeroeProntoApoyo`,
