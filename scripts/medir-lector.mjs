@@ -34,12 +34,14 @@ const k = (n) => nombreClave(n ?? '');
  */
 export function medirRecortes({ recortes = [], partidas = [], caras = carasGuardadas(), aprender = aprenderDe } = {}) {
   const porT = new Map((partidas ?? []).filter((p) => Number.isFinite(p?.t) && p.draft).map((p) => [p.t, p]));
-  const salida = { recortes: 0, finales: 0, sinPartida: 0, drafts: [], rivales: { leidos: 0, de: 0, falsos: 0 }, aliados: { leidos: 0, de: 0, falsos: 0 }, tuFila: { leidos: 0, de: 0 }, faltan: {}, candidatas: [] };
+  const salida = { recortes: 0, finales: 0, comprobantes: 0, sinPartida: 0, drafts: [], rivales: { leidos: 0, de: 0, falsos: 0 }, aliados: { leidos: 0, de: 0, falsos: 0 }, tuFila: { leidos: 0, de: 0 }, faltan: {}, candidatas: [] };
   const porDraft = [];
   for (const fila of recortes ?? []) {
     const d = fila?.d ?? fila;
     if (!d || typeof d !== 'object') continue;
     if (d.tipo === 'final') { salida.finales += 1; continue; }
+    // Los comprobantes de las partidas apuntadas por la tabla (3.101.0): no son del draft.
+    if (d.tipo === 'resultado') { salida.comprobantes += 1; continue; }
     salida.recortes += 1;
     const p = porT.get(d.partida);
     if (!p) { salida.sinPartida += 1; continue; }
@@ -87,7 +89,7 @@ const pct = (a, b) => (b ? `${Math.round((100 * a) / b)}%` : '—');
 export function informeLector(m) {
   const faltan = Object.entries(m.faltan).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([n, c]) => `${n} ${c}`).join(', ');
   return [
-    `Recortes: ${m.recortes} (${m.drafts.length} con su partida, ${m.sinPartida} sin ella) y ${m.finales} pantallas del final.`,
+    `Recortes: ${m.recortes} (${m.drafts.length} con su partida, ${m.sinPartida} sin ella) y ${m.finales} pantallas del final (${m.comprobantes} comprobantes de partidas apuntadas).`,
     `Rivales leídos: ${m.rivales.leidos} de ${m.rivales.de} (${pct(m.rivales.leidos, m.rivales.de)}), ${m.rivales.falsos} de más.`,
     `Compañeros leídos: ${m.aliados.leidos} de ${m.aliados.de} (${pct(m.aliados.leidos, m.aliados.de)}), ${m.aliados.falsos} de más.`,
     `Tu fila: ${m.tuFila.leidos} de ${m.tuFila.de}.`,

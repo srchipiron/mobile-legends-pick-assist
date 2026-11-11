@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { bajarMisRecortes, claveDeJugadorValida } from '../basedatos.js';
+import { comprobantes as comprobantesDe } from '../revisar.js';
+import { ComprobarTablet } from './ComprobarTablet.jsx';
 import { esPrevia, esSupuesta, esDudosa, siguioConsejo } from '../../motor/registro.js';
 import { tokenPlausible } from '../github.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
@@ -8,6 +11,9 @@ import { TusNumeros } from './TusNumeros.jsx';
 import { TuSemana } from './TuSemana.jsx';
 import { RevisionDraft } from './RevisionDraft.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
+
+/** Cuántas horas atrás se buscan los comprobantes: un mes (`mis_recortes` da como mucho los 50 últimos). */
+const HORAS_DE_COMPROBANTES = 720;
 
 /**
  * Tus partidas: verlas, corregirlas y añadir las de antes. Dos cosas
@@ -19,7 +25,7 @@ import { tPorDefecto } from './tPorDefecto.js';
 /** Lo que dura el «Deshacer» de una partida quitada, como el del draft (`DESHACER_MS`, decisión de producto). */
 export const QUITAR_MS = 6000;
 
-export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null, maestriaUsada = null, perfil = null, envio = null, comunidad = null, onImportar = null, onOlvidar, onCorregir, onCambiarHeroe, onCambiarDraft = null, onRevisar = null, onAnalisis = null, onAnadir, onCerrar, t = tPorDefecto }) {
+export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null, maestriaUsada = null, perfil = null, envio = null, comunidad = null, comprobadas = [], onComprobar = null, onImportar = null, onOlvidar, onCorregir, onCambiarHeroe, onCambiarDraft = null, onRevisar = null, onAnalisis = null, onAnadir, onCerrar, t = tPorDefecto }) {
   const [anadiendo, setAnadiendo] = useState(false);
   const [heroe, setHeroe] = useState(null);
   const [aviso, setAviso] = useState(null);
@@ -53,6 +59,18 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null,
   // Al cerrar la hoja, lo que estaba quitándose se quita.
   useEffect(() => () => confirmarQuitada(), []);
   const conApp = partidas.filter((p) => !esPrevia(p)).length;
+  // Los comprobantes de la tablet (3.101.0): la pantalla del final de cada partida que apuntó sola, con TU clave.
+  const [deLaTablet, setDeLaTablet] = useState(() => new Map());
+  // Por sus valores y no por el objeto: la configuración se rehace al releer comunidad.json o al guardar, y cada vez se volvería a pedir.
+  const url = comunidad?.config?.url ?? null;
+  const publica = comunidad?.config?.clave ?? null;
+  const clave = comunidad?.clave ?? null;
+  useEffect(() => {
+    if (!url || !publica || !claveDeJugadorValida(clave)) return undefined;
+    let vivo = true;
+    bajarMisRecortes({ url, clave: publica }, { clave, horas: HORAS_DE_COMPROBANTES }).then((r) => { if (vivo && !r.error) setDeLaTablet(comprobantesDe(r.recortes)); });
+    return () => { vivo = false; };
+  }, [url, publica, clave]);
 
   const [tokenNuevo, setTokenNuevo] = useState('');
 
@@ -75,6 +93,7 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null,
         {/* Con las capturas del lector (3.86.0): lo que no vio, cara a cara. También desde el PC. */}
         {onAnalisis && partidas.length > 0 && <button className="reset revisar-abrir ana-abrir" onClick={onAnalisis}>{t('ana.abrir')}</button>}
         {onRevisar && comunidad?.config && <button className="reset revisar-abrir" onClick={onRevisar}>{t('revisar.abrir')}</button>}
+        {onComprobar && <ComprobarTablet partidas={partidas} comprobadas={comprobadas} comprobantes={deLaTablet} pool={pool} onComprobar={onComprobar} onCorregir={onCorregir} onCambiarHeroe={onCambiarHeroe} t={t} />}
         <Veredicto partidas={partidas} maestria={maestria} t={t} />
         <TuSemana partidas={partidas} t={t} />
         <TusNumeros partidas={partidas} t={t} />
@@ -137,6 +156,8 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null,
             <button className="x" title={t('hist.cambiar')} aria-label={`${t('hist.cambiar')} · ${p.pick}`} onClick={() => onCorregir(p.t, !p.gane)}>⇄</button>
             <button className="x" title={t('hist.quitar')} aria-label={`${t('hist.quitar')} · ${p.pick}`} onClick={() => quitar(p.t)}>×</button>
           </div>
+          {/* La pantalla del final que leyó la tablet (3.101.0): para comprobar el resultado de un vistazo. */}
+          {deLaTablet.get(p.t) && <img className="partida-comprobante" src={`data:image/png;base64,${deLaTablet.get(p.t).tira}`} alt={t('comprobar.pantalla')} />}
           {cambiando === p.t && (
             <div className="partida-cambiar">
               <strong>{t('hist.cambiarHeroePregunta')}</strong>

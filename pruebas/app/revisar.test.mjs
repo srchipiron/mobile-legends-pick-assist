@@ -5,7 +5,7 @@
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { readFileSync } from 'node:fs';
-import { revisiones, cambiosDeRevision, porRevisar, imagenValida, encuadre, tusMasJugados, companerosHabituales, carasParaHueco, sinResultado, CARAS_POR_HUECO, TOPE_IMAGEN } from '../../src/app/revisar.js';
+import { comprobantes, revisiones, cambiosDeRevision, porRevisar, imagenValida, encuadre, tusMasJugados, companerosHabituales, carasParaHueco, sinResultado, CARAS_POR_HUECO, TOPE_IMAGEN } from '../../src/app/revisar.js';
 import { prepararDatos, probablesDelBando } from '../../src/motor/draft.js';
 import { RAIZ } from '../arnes.mjs';
 
@@ -132,6 +132,22 @@ test('las partidas sin resultado (3.89.4, 3.90.2): las tuyas (mis_recortes con t
   // Con el instante de una partida tuya, nunca (3.90.2): «No la jugué» la borraría.
   const pisa = fin(T, { partida: { ...fin(T).d.partida, pick: 'Gord' } });
   eq(sinResultado([pisa], [partida()], HEROES).length, 0, 'sale una con el instante de una partida tuya: «No la jugué» la borraría');
+});
+
+test('los comprobantes de la tablet (3.101.0): solo los del tipo nuevo, con instante, resultado y un PNG con forma', () => {
+  const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  const fila = (d) => ({ recibido: '2026-11-11T20:00:00Z', d });
+  const m = comprobantes([
+    fila({ tipo: 'resultado', t: 10, gane: false, parecido: 0.98, capturas: [{ id: 'fotograma-a', tira: png }] }),
+    fila({ tipo: 'resultado', t: 10, gane: true, capturas: [{ id: 'fotograma-b', tira: png }] }), // repetida: manda la primera (la más nueva)
+    fila({ tipo: 'final', t: 11, gane: true, capturas: [{ tira: png }] }),
+    fila({ tipo: 'resultado', t: 12, gane: 'si', capturas: [{ tira: png }] }),
+    fila({ tipo: 'resultado', t: 13, gane: true, capturas: [{ tira: 'PHN2ZyBvbmxvYWQ9YWxlcnQoMSk+' }] }),
+    fila({ tipo: 'resultado', t: 14, gane: true, partida: 14, capturas: [] }),
+    null, 'x',
+  ]);
+  eq(JSON.stringify([...m.entries()]), JSON.stringify([[10, { tira: png, gane: false, parecido: 0.98 }]]), 'entra un comprobante sin forma o de otro tipo');
+  eq(comprobantes(null).size, 0);
 });
 
 await terminar('app/revisar');

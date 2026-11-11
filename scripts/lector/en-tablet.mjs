@@ -477,7 +477,7 @@ export function draftsArreglados({ recortes = [], partidas = [], nombres = [], h
   const salida = [];
   for (const fila of Array.isArray(recortes) ? recortes : []) {
     const d = fila?.d ?? fila;
-    if (!d || typeof d !== 'object' || d.tipo === 'final' || !Array.isArray(d.capturas)) continue;
+    if (!d || typeof d !== 'object' || d.tipo === 'final' || d.tipo === 'resultado' || !Array.isArray(d.capturas)) continue;
     const p = porT.get(d.partida);
     if (!p) continue;
     const enemigos = bien(p.draft.enemigos), aliados = bien(p.draft.aliados);
@@ -539,6 +539,23 @@ export function franjaSinNombres(b64) {
     for (let i = desde * img.ancho * 4; i < rgba.length; i += 4) { rgba[i] = 0; rgba[i + 1] = 0; rgba[i + 2] = 0; rgba[i + 3] = 255; }
     return Buffer.from(escribirPng({ ancho: img.ancho, alto: img.alto, rgba })).toString('base64');
   } catch { return null; }
+}
+
+/**
+ * El comprobante de una partida apuntada por la tabla (3.101.0): la franja de
+ * ESA tabla, sin nombres, con el instante de la partida (`t`) y lo leído.
+ * Va con tu clave, como las pantallas del final, y el móvil lo enseña en «Tus
+ * partidas» para comprobarla sin abrir el juego. Sin `partida`: «Capturas» y
+ * el aprendizaje de la tablet cruzan por `partida` los recortes del draft.
+ * null sin franja que se pueda tapar.
+ */
+export function comprobanteParaSubir({ t, gane, fotograma, version = null }) {
+  if (!Number.isFinite(t) || typeof gane !== 'boolean' || typeof fotograma?.id !== 'string' || !/^fotograma-[\w-]+$/.test(fotograma.id)) return null;
+  if (typeof fotograma.tira !== 'string' || !/^[A-Za-z0-9+/=]+$/.test(fotograma.tira)) return null;
+  const tira = franjaSinNombres(fotograma.tira);
+  if (!tira) return null;
+  const recorte = { v: 1, tipo: 'resultado', version: typeof version === 'string' ? version : null, t, gane, parecido: Number.isFinite(fotograma.resultadoParecido) ? fotograma.resultadoParecido : null, capturas: [{ id: fotograma.id, tira }] };
+  return Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES ? null : recorte;
 }
 
 export function finalParaSubir({ desde, motivo = '', fotogramas = [], version = null, partida = null }) {
@@ -699,6 +716,7 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     numerosDe: () => tusNumeros(partidas.todas()),
     guardarSinResultado: (p) => partidas.guardarSinResultado(p),
     alFinalSinLeer: (f) => { subirFinalDe(f).catch((e) => registrar(`Subir las pantallas del final: no se pudo (${e.message}).`)); },
+    alApuntarTabla: (c) => { subirComprobanteDe(c).catch((e) => registrar(`Subir el comprobante: no se pudo (${e.message}).`)); },
     alSinLeer: (c) => { subirRecortesDe(c).catch((e) => registrar(`Subir los recortes del draft: no se pudo (${e.message}).`)); },
     maestriaDe: () => { const m = ajustes.delMovil(); return maestriaEfectiva(m?.maestria ?? {}, partidas.todas().filter((p) => p.t > (m?.cuando ?? 0))); },
   });
@@ -736,6 +754,18 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     return decir(r.error ? `Subir las pantallas del final: no se pudo (${r.error}).` : `Pantallas del final subidas para ver por qué no se reconoció (${recorte.capturas.length}).`);
   };
   servidor.subirFinalDe = subirFinalDe;
+  // El comprobante de cada partida apuntada por la tabla (3.101.0), con tu clave: el móvil lo lee con `mis_recortes`.
+  const subirComprobanteDe = async (c) => {
+    const decir = (m) => { registrar(m); return m; };
+    const clave = claveConLaQueSube();
+    const config = leerComunidad([bajados, join(aqui, '..', '..', 'datos')]);
+    if (!claveDeJugadorValida(clave) || !config) return decir(`Subir el comprobante: no se pudo (${config ? 'sin clave' : 'sin comunidad.json'}).`);
+    const recorte = comprobanteParaSubir({ ...c, version: versionDeLaApk() });
+    if (!recorte) return decir('Subir el comprobante: no se pudo (la tabla no tiene franja).');
+    const r = await subirRecorte({ config, clave, recorte }, { fetch: pedirBaseDeDatos });
+    return decir(r.error ? `Subir el comprobante: no se pudo (${r.error}).` : `Comprobante de la partida subido (${recorte.gane ? 'ganada' : 'perdida'}).`);
+  };
+  servidor.subirComprobanteDe = subirComprobanteDe;
   // Aprender de lo que arreglas en el historial (3.83.0): los recortes de los
   // drafts que no leyó enteros, con la verdad que pusiste (en el móvil o en la
   // tablet). Lo ya aprendido queda en `arreglos.json` y no se repite.

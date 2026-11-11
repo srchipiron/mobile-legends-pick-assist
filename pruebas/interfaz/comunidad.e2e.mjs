@@ -74,9 +74,14 @@ await prueba('con la casilla, tus partidas suben solas con tu clave, sin el lect
   eq(await pagina.locator('.comunidad-clave').inputValue(), guardado.clave, 'no enseña tu clave');
   const antes = s.llamadas.length;
   await pagina.getByRole('button', { name: 'Quitar esta partida · Tigreal' }).click();
-  ok(await esperar(() => s.llamadas.length > antes, 12000), 'quitar una partida no sube nada');
-  const ultima = s.llamadas.at(-1);
+  // La última SUBIDA: «Tus partidas» también lee (los comprobantes de la tablet, 3.101.0).
+  const subidasDesde = () => s.llamadas.slice(antes).filter((l) => l.funcion === 'subir_partidas');
+  ok(await esperar(() => subidasDesde().length > 0, 12000), 'quitar una partida no sube nada');
+  const ultima = subidasDesde().at(-1);
   ok(ultima.args.quitar.includes(PARTIDAS[0].t), `no manda borrar la quitada: ${JSON.stringify(ultima.args.quitar)}`);
+  // Los comprobantes de la tablet se piden UNA vez: subir rehace la configuración (otro objeto, los mismos valores).
+  await pagina.waitForTimeout(500);
+  eq(s.llamadas.filter((l) => l.funcion === 'mis_recortes').length, 1, 'pide los comprobantes otra vez sin que cambie nada');
   eq(s.jugadores.get(guardado.clave).partidas.size, 1, 'la quitada sigue en la base de datos');
   // Recargar no vuelve a subir lo mismo (al abrir sí LEE, para traer lo de la tablet: 3.70.0).
   const subidas = () => s.llamadas.filter((l) => l.funcion === 'subir_partidas').length;

@@ -286,7 +286,8 @@ test('todo desde la tablet (3.70.0): al empezar la partida vigila el final y, co
   };
   const maestria = { Rafaela: { games: 400, winRate: 0.62 } };
   let recortesPedidos = 0;
-  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: (p) => apuntadas.push(p), maestriaDe: () => { maestrias.push(1); return maestria; }, alSinLeer: () => { recortesPedidos += 1; } });
+  const comprobantes = [];
+  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: (p) => apuntadas.push(p), maestriaDe: () => { maestrias.push(1); return maestria; }, alSinLeer: () => { recortesPedidos += 1; }, alApuntarTabla: (c) => comprobantes.push(c) });
   await solo.tic();
   ok(maestrias.length > 0, 'el consejo no usa tu maestría');
   eq(vigiladas.length, 0, 'vigila el final en pleno draft');
@@ -297,11 +298,15 @@ test('todo desde la tablet (3.70.0): al empezar la partida vigila el final y, co
   eq(vigiladas[0].desde, solo.estado().cerradoEn, 'vigila otro instante que el del cierre');
   t += 20000; await solo.tic();
   eq(apuntadas.length, 0, 'apunta sin resultado');
-  final = { ...final, resultado: 'gane', resultadoEn: t, duracion: 14.2, inicioEstimado: false };
+  const tabla = { id: 'fotograma-tabla', tira: 'AAAA', resultadoParecido: 0.98 };
+  final = { ...final, resultado: 'gane', resultadoEn: t, resultadoId: tabla.id, fotogramas: [{ id: 'fotograma-antes', tira: 'BBBB' }, tabla], duracion: 14.2, inicioEstimado: false };
   t += 20000; await solo.tic();
   t += 20000; await solo.tic();
   eq(apuntadas.length, 1, 'no apunta, o apunta dos veces');
   const p = apuntadas[0];
+  // El comprobante (3.101.0): una vez, con el instante de la partida apuntada y la pantalla de ESA tabla.
+  eq(comprobantes.length, 1, 'no pide el comprobante, o lo pide dos veces');
+  ok(comprobantes[0].t === p.t && comprobantes[0].gane === true && comprobantes[0].fotograma === tabla, `el comprobante no es el de la partida: ${JSON.stringify(comprobantes[0])}`);
   ok(p.pick === 'Rafaela' && p.gane === true && p.origen === 'lector' && p.fuente === 'tablet' && p.duracion === 14.2 && !p.supuesto, `la partida apuntada no cuadra: ${JSON.stringify(p)}`);
   ok(p.draft.enemigos.includes('Clint') && p.draft.aliados.includes('Gord') && !p.draft.aliados.includes('Rafaela') && p.bans.includes('Eudora'), `el draft de la partida no es el leído: ${JSON.stringify(p.draft)}`);
   ok(p.recomendados.length === 3 && typeof p.estimacion === 'number' && Number.isInteger(p.modelo), 'sin recomendados, estimación o modelo');

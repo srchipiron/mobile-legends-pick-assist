@@ -8,6 +8,20 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.101.0
+
+- Cada semana la app te pide comprobar 3 partidas que apuntó la tablet sola,
+  elegidas al azar: «Todo bien», «El resultado no» (le da la vuelta) o «Mi
+  héroe no» (eliges el bueno). Un minuto a la semana. Debajo dice cuánto
+  acierta la tablet en lo que has comprobado, en rojo si ha fallado alguna:
+  así un fallo como el de octubre (132 victorias de 135 sin que nadie lo
+  viera) sale en días y no en semanas. Está en «Tus partidas», y en Ajustes
+  sale un numerito con las que faltan.
+- Debajo de cada partida que la tablet apuntó al leer la pantalla del final
+  sale esa pantalla (solo la cabecera, sin los nombres de nadie), para ver de
+  un vistazo si leyó bien. Solo en las partidas nuevas, cuando la tablet se
+  actualice, y con «Guardar mis partidas» puesto.
+
 ## 3.100.0
 
 - Las partidas que la tablet apuntó entre el 26 de octubre y el 10 de

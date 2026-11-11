@@ -424,7 +424,7 @@ export function faseDe(draft, lectura, vacias) {
   return abierto || vacias < LECTURAS_PARA_FUERA ? 'draft' : 'fuera';
 }
 
-export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout, apuntar = null, maestriaDe = () => null, alCorregir = null, numerosDe = () => null, alSinLeer = null, guardarSinResultado = null, alFinalSinLeer = null }) {
+export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout, apuntar = null, maestriaDe = () => null, alCorregir = null, numerosDe = () => null, alSinLeer = null, guardarSinResultado = null, alFinalSinLeer = null, alApuntarTabla = null }) {
   // La partida que se vigila para apuntarla sola (3.70.0): el draft de cuando
   // se cerró y su decisión, hasta que la tabla del final dé el resultado.
   let vigilada = null;
@@ -445,10 +445,10 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
   const resumen = { activo: false, linea: null, origen: null, apartado: false, lecturas: 0, partidas: 0, apuntadas: 0, ultima: null };
   /** Apunta UNA vez la partida vigilada, con el resultado leído o el que contestaste. */
   const apuntarVigilada = (v, { gane, t, duracion = null, contestada = false }) => {
-    if (!v || v.apuntada) return;
+    if (!v || v.apuntada) return null;
     v.apuntada = true;
     const sola = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane, t, duracion, versionModelo: VERSION_MODELO });
-    if (!sola) return;
+    if (!sola) return null;
     // De qué draft es y cómo se supo el resultado (3.75.0), solo en la tablet (la base de datos no los guarda):
     // para medir cuánto reconoce sola y para el aviso de «todas iguales» (3.99.0).
     const partida = { ...sola, desde: v.desde, resultadoDe: contestada ? 'pregunta' : 'tabla' };
@@ -470,6 +470,7 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     resumen.apuntadas = (resumen.apuntadas ?? 0) + 1;
     if (sinLeer) { try { alSinLeer?.({ ids: sinLeer.ids, leidos: sinLeer.leidos, faltan: sinLeer.faltan, cuando: sinLeer.cuando, partida: partida.t }); } catch (e) { registrar(`No se pudieron preparar los recortes del draft: ${e.message}`); } }
     registrar(`Sin móvil: partida apuntada${contestada ? ' con lo que contestaste' : ''}, ${partida.gane ? 'ganada' : 'perdida'} con ${partida.pick}.`);
+    return partida;
   };
   /**
    * La tablet no sabe cómo acabó (3.72.5): la victoria no viene de serie (se
@@ -596,7 +597,9 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
         registrar(`Sin móvil: la tabla del final llega ${Math.round((f.resultadoEn - ultimaTabla) / 60000 * 10) / 10} min después de la anterior; es la misma partida y no la apunto otra vez.`);
       } else if (f?.desde === vigilada.desde && (f.resultado === 'gane' || f.resultado === 'perdi')) {
         if (Number.isFinite(f.resultadoEn)) ultimaTabla = f.resultadoEn;
-        apuntarVigilada(vigilada, { gane: f.resultado === 'gane', t: Number.isFinite(f.resultadoEn) ? f.resultadoEn : ahora(), duracion: f.inicioEstimado ? null : f.duracion });
+        const apuntada = apuntarVigilada(vigilada, { gane: f.resultado === 'gane', t: Number.isFinite(f.resultadoEn) ? f.resultadoEn : ahora(), duracion: f.inicioEstimado ? null : f.duracion });
+        // El comprobante (3.101.0): la pantalla de la tabla que se leyó, para comprobarla en el móvil de un vistazo.
+        if (apuntada) { try { alApuntarTabla?.({ t: apuntada.t, gane: apuntada.gane, fotograma: (f.fotogramas ?? []).find((x) => x.id === f.resultadoId) ?? null }); } catch (e) { registrar(`No se pudo preparar el comprobante: ${e.message}`); } }
       } else if (f?.desde === vigilada.desde && f.acabada) {
         // Se vio la tabla del final, pero sin palabra conocida (la victoria se aprende).
         preguntar(vigilada, 'vi la tabla del final pero no la reconozco');

@@ -35,7 +35,7 @@ import { HORAS_DATOS_VIEJOS } from '../componentes/Pie.jsx';
  * @param d.abrir       abre una hoja: 'enemigos' | 'aliados' | 'yo' | 'maestria' | 'historial' | 'perfil' | 'meta' | 'linea' | 'apuntar' | { build }
  * @param d.onResultado (gane) apunta la partida con tu pick fijado, desde el recordatorio
  */
-export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, lectorTablet = null, onLectorTablet = null, onAdministracion = null, pie, barra = null }) {
+export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, onRango, meta, datos, metaListo, sinWinrates, edadHoras, pro, draft, equipo, miPick = null, maestria = {}, rec, abrir, onDiagnostico, onResultado, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, lectorTablet = null, onLectorTablet = null, onAdministracion = null, porComprobar = 0, pie, barra = null }) {
   const { enemigos, aliados, baneos } = equipo;
   const { ranking, rival, cov, pool, analisis, composicion, consejos, yo } = rec;
   const rivalAuto = rival.marcado ? null : rival.nombre;
@@ -137,7 +137,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
         <Composicion comp={composicion} t={t} />
 
         <details className="more">
-          <summary>{t('app.ajustes')}</summary>
+          <summary>{t('app.ajustes')}{porComprobar > 0 && <span className="por-comprobar" aria-label={t('comprobar.porComprobar', { n: porComprobar })}>{porComprobar}</span>}</summary>
           <div className="side">
             <div className="side-label"><span>{t('app.tuLinea')}</span></div>
             <button className="reset" onClick={() => abrir('linea')}>{t(`linea.${linea}`)} · {t('app.cambiar')}</button>
@@ -149,7 +149,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
           {/* Lo que se toca UNA VEZ vive aquí dentro; fuera quedan los dos botones que se usan con una partida delante. */}
           <div className="tools">
             <button className="reset" onClick={() => abrir('maestria')}>{t('app.maestria')}</button>
-            <button className="reset" onClick={() => abrir('historial')}>{t('hist.boton')}</button>
+            <button className="reset" onClick={() => abrir('historial')}>{t('hist.boton')}{porComprobar > 0 && <span className="por-comprobar" aria-label={t('comprobar.porComprobar', { n: porComprobar })}>{porComprobar}</span>}</button>
             <button className="reset" onClick={() => abrir('perfil')}>{t('perfil.boton')}</button>
             <button className="reset" onClick={() => abrir('analisis')}>{t('ana.boton')}</button>
             {/* Al final a propósito: las pruebas de navegador abren maestría e historial por posición. */}

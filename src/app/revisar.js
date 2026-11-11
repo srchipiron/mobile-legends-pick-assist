@@ -219,3 +219,20 @@ export function sinResultado(propios = [], partidas = [], heroes = [], olvidadas
   }
   return [...vistas.values()].sort((a, b) => b.t - a.t);
 }
+
+/**
+ * Los comprobantes de las partidas que apuntó la tablet (3.101.0): la franja
+ * del final de cada una, sin los nombres de los otros jugadores, subida con
+ * TU clave (`mis_recortes`, `tipo: 'resultado'`). Por instante de partida;
+ * solo PNG en base64 con forma (`imagenValida`), lo demás no sale.
+ */
+export function comprobantes(recortes = []) {
+  const mapa = new Map();
+  for (const fila of Array.isArray(recortes) ? recortes : []) {
+    const d = fila?.d ?? fila;
+    const tira = d?.capturas?.[0]?.tira;
+    if (d?.tipo !== 'resultado' || !Number.isFinite(d.t) || typeof d.gane !== 'boolean' || !imagenValida(tira) || mapa.has(d.t)) continue;
+    mapa.set(d.t, { tira, gane: d.gane, parecido: Number.isFinite(d.parecido) ? d.parecido : null });
+  }
+  return mapa;
+}

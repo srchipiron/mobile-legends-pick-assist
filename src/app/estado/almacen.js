@@ -36,6 +36,8 @@ export const CLAVES = {
   versionVista: 'roam-picker:version-vista',
   // La base de datos de partidas de todos (3.69.0): si guardas las tuyas, tu clave de jugador y la última subida. Clave NUEVA: sin ella, no se sube nada.
   comunidad: 'roam-picker:comunidad',
+  // Las partidas de la tablet que comprobaste a mano (3.101.0): si acertó. Clave NUEVA: sin ella, ninguna.
+  comprobadas: 'roam-picker:comprobadas',
 };
 
 /** Lee un valor guardado; con cualquier fallo (JSON roto, sin almacén) devuelve `porDefecto`. */

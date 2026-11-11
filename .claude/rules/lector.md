@@ -2157,3 +2157,34 @@ repaso completo del 11 de noviembre de 2026:
 - En la app, desvincular apaga «Leer solo» (`setLectorTablet` en
   useAjustes) y otra tablet borra el aviso de la anterior (App.jsx). Prueba
   en `interfaz/vincular.e2e`, dos mutaciones.
+
+**El comprobante de cada partida (3.101.0)**, la propuesta de fondo de
+3.100.0, aprobada por Javi («haz la propuesta de fondo»): que lo que la
+tablet apunta sola se pueda mirar de un vistazo.
+- Cuando `crearSolo` apunta una partida por la TABLA (no por la pregunta),
+  llama a `alApuntarTabla({ t, gane, fotograma })` con el `t` de la partida
+  apuntada (`apuntarVigilada` devuelve la partida, o null si no apuntó) y el
+  fotograma de `final.resultadoId`, el que dio el resultado. Un fallo ahí
+  se registra y no para nada.
+- `comprobanteParaSubir` (en-tablet.mjs) arma el recorte
+  `{ v: 1, tipo: 'resultado', version, t, gane, parecido, capturas: [{ id, tira }] }`
+  con la tira pasada por `franjaSinNombres` (cabecera entera, el resto en
+  negro: unos 3–4 KB). SIN `partida`: no es un draft, y
+  `draftsArreglados` además salta `tipo: 'resultado'`. Id con forma
+  `fotograma-…`, tope `TOPE_RECORTE_BYTES`; si no, null.
+- `subirComprobanteDe` lo sube con `claveConLaQueSube()` (la tuya si el
+  móvil la mandó: es la que lee `mis_recortes` desde el móvil), por
+  `leerComunidad`, como las pantallas del final. Su línea en el registro
+  («Comprobante de la partida subido…» o «Subir el comprobante: no se
+  pudo…», que casa con `LINEA_DE_ERROR`).
+- `subir_recorte` deja uno por minuto y clave (dos partidas de la tabla
+  nunca van a menos de `MINUTOS_ENTRE_TABLAS`) y guarda los 300 últimos;
+  `mis_recortes` da los 50 más nuevos (con unas 9 partidas al día, unos 5
+  días de tiras en el móvil). `medir-lector` los cuenta aparte
+  (`comprobantes`).
+- En el móvil, `comprobantes` (revisar.js) solo acepta `tipo: 'resultado'`
+  con `t`, `gane` booleano e `imagenValida`; el primero de cada `t` gana.
+- Pruebas en `solo` (el comprobante sale una vez, con el `t` apuntado y la
+  pantalla de la tabla), `en-tablet` (sin nombres, sin `partida`, rechazos,
+  de punta a punta con el Supabase de pega y leído con `comprobantes`, la
+  línea de error, el cableado) y `app/revisar`. Once mutaciones.

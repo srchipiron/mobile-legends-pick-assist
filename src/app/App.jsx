@@ -30,6 +30,7 @@ import { pedirLectura, pedirEstadoLector, pedirClaveDeLaTablet, buscarTabletUnaV
 import { draftCompleto, DESHACER_MS } from './estado/useDraft.js';
 import { crearDiferido } from './diferido.js';
 import { useAhora } from './estado/useAhora.js';
+import { paraComprobar } from '../motor/comprobacion.js';
 import { ApuntarPartida } from './componentes/ApuntarPartida.jsx';
 import { HistorialPartidas } from './componentes/HistorialPartidas.jsx';
 import { RevisarCapturas } from './componentes/RevisarCapturas.jsx';
@@ -219,6 +220,8 @@ export default function App() {
   // Cuánto duró la partida según el lector (3.44.0).
   const duracionFinal = useRef({ desde: null, duracion: null });
   const ahora = useAhora();
+  // Las partidas de la tablet que toca comprobar esta semana (3.101.0): un numerito en Ajustes y en «Tus partidas».
+  const porComprobar = useMemo(() => paraComprobar(personal.partidas, personal.comprobadas, { ahora }).length, [personal.partidas, personal.comprobadas, ahora]);
   /** Las pantallas vigiladas, fuera de la lista (las de este draft ya no se vuelven a subir). */
   const sacarFotogramas = () => { const lista = fotogramas.current; fotogramas.current = []; return lista; };
   // Lo que un «Deshacer» aún puede echar atrás espera a su plazo (3.42.0, diferido.js).
@@ -622,6 +625,7 @@ export default function App() {
       {hoja === 'historial' && (
         <HistorialPartidas
           partidas={personal.partidas} maestria={personal.maestria} maestriaUsada={personal.maestriaUsada} datos={datos} pool={rec.pool} perfil={datosPerfil} envio={envio} comunidad={comunidad} onImportar={traerPerfil}
+          comprobadas={personal.comprobadas} onComprobar={personal.comprobarPartida}
           onOlvidar={personal.olvidarPartida} onCorregir={personal.corregirPartida} onCambiarHeroe={personal.cambiarHeroePartida} onCambiarDraft={personal.cambiarDraftPartida}
           onAnadir={(heroe, gane) => personal.apuntarPartida({ pick: heroe, gane, previa: true, rango: datos.rango })}
           onRevisar={() => deHojaAHoja('revisar')}
@@ -683,7 +687,7 @@ export default function App() {
         draft={draft} equipo={{ enemigos, aliados, baneos }} miPick={miPick} maestria={personal.maestriaUsada} rec={rec} abrir={abrir} onDiagnostico={lanzarDiagnostico}
         onResultado={apuntarAMano}
         lector={lector} onLeer={lectorTablet ? leerDelJuego : null} lectorAuto={lectorAuto} onLectorAuto={setLectorAuto}
-        lectorTablet={lectorTablet} onLectorTablet={setLectorTablet} onAdministracion={verAdmin ? () => abrir('admin') : null}
+        lectorTablet={lectorTablet} onLectorTablet={setLectorTablet} onAdministracion={verAdmin ? () => abrir('admin') : null} porComprobar={porComprobar}
         pie={pie} barra={barra}
       />
       {deshacer}

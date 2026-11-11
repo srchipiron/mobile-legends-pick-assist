@@ -4,6 +4,7 @@ import { sanear, sanearOlvidadas } from '../../motor/perfil.js';
 import { apuntar, olvidar, corregir, cambiarHeroe, cambiarDraft, marcarEditada, esFantasma } from '../../motor/registro.js';
 import { maestriaEfectiva, fecharMaestria } from '../../motor/maestria.js';
 import { ajustePersonal } from '../../motor/registro.js';
+import { sanearComprobadas } from '../../motor/comprobacion.js';
 
 /**
  * Lo tuyo: la maestría escrita a mano y las partidas apuntadas. Lo guardado
@@ -19,6 +20,9 @@ export function usePersonal() {
   const [maestria, setMaestria] = useState(() => sanear({ mastery: leer(CLAVES.maestria, {}) }).mastery);
   const [partidas, setPartidas] = useState(() => sanear({ partidas: leer(CLAVES.partidas, []) }).partidas);
   const [olvidadas, setOlvidadas] = useState(() => sanearOlvidadas(leer(CLAVES.olvidadas, [])));
+  // Lo que comprobaste de la tablet (3.101.0), en este móvil: { t, bien, que, cuando }.
+  const [comprobadas, setComprobadas] = useState(() => sanearComprobadas(leer(CLAVES.comprobadas, [])));
+  const ultimasComprobadas = useRef(comprobadas);
   const ultimasOlvidadas = useRef(olvidadas);
   const maestriaUsada = useMemo(() => maestriaEfectiva(maestria, partidas), [maestria, partidas]);
   // Lo que la app aprende de tus partidas sobre su número (3.68.0).
@@ -74,6 +78,14 @@ export function usePersonal() {
   // Con las capturas del lector (3.86.0): tu pick y los dos equipos de una vez, con una sola hora de arreglo.
   const revisarPartida = useCallback((t, { pick, enemigos, aliados }) => guardarPartidas(marcarEditada(cambiarDraft(cambiarHeroe(ultimas.current, t, pick), t, { enemigos, aliados }), t)), [guardarPartidas]);
 
+  // Apunta si la tablet acertó en una partida (3.101.0); lo que haya que arreglar lo arreglan los de arriba.
+  const comprobarPartida = useCallback((t, bien, que = null) => {
+    const nuevas = sanearComprobadas([{ t, bien, que, cuando: Date.now() }, ...ultimasComprobadas.current]);
+    ultimasComprobadas.current = nuevas;
+    guardar(CLAVES.comprobadas, nuevas);
+    setComprobadas(nuevas);
+  }, []);
+
   /**
    * Trae los datos de otro dispositivo. Vienen ya FUNDIDOS con los de aquí
    * (`fundirPerfil`), así que esto solo guarda: no puede borrar nada.
@@ -84,5 +96,5 @@ export function usePersonal() {
     guardarOlvidadas(sanearOlvidadas(fundido.olvidadas));
   }, [guardarMaestria, guardarPartidas, guardarOlvidadas]);
 
-  return { maestria, maestriaUsada, ajuste, partidas, olvidadas, guardarMaestria, guardarPartidas, apuntarPartida, olvidarPartida, corregirPartida, cambiarHeroePartida, cambiarDraftPartida, revisarPartida, importarPerfil };
+  return { comprobadas, comprobarPartida, maestria, maestriaUsada, ajuste, partidas, olvidadas, guardarMaestria, guardarPartidas, apuntarPartida, olvidarPartida, corregirPartida, cambiarHeroePartida, cambiarDraftPartida, revisarPartida, importarPerfil };
 }

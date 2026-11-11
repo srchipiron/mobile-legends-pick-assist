@@ -389,3 +389,37 @@ de noviembre (la tablet arrancó con 3.99.0 a las 18:11 UTC del 10).
   las fechas son las del dato), `proponer-modelo` y `persistencia.e2e`; 16
   mutaciones. Si añades una medida que mire `gane`, va por `conResultado` y
   en `motor/dudosas`.
+
+**Comprobar la tablet cada semana (3.101.0)**. El fallo de octubre (132
+victorias de 135) tardó dos semanas en verse porque nadie miraba lo que la
+tablet apuntaba sola. `src/motor/comprobacion.js` (puro):
+- `paraComprobar(partidas, comprobadas, { ahora })`: hasta `POR_SEMANA` (3,
+  decisión de producto: un minuto a la semana) menos las comprobadas esta
+  semana (semanas de lunes a lunes UTC, `semanaDe`), de las partidas con
+  `origen: 'lector'`, `conResultado`, pick, sin `editada` (lo arreglado ya
+  es la verdad, no lo que apuntó ella), de los últimos siete días y no
+  comprobadas antes. AL AZAR con una semilla por semana (FNV-1a de
+  `semana:t`): la misma lista al volver a abrir y otra la semana siguiente.
+  Al azar y no «las que parecen raras», para que el acierto sea una muestra
+  sin sesgo.
+- `precisionDeLaTablet`: aciertos con su Wilson y los fallos por tipo
+  (`resultado`, `heroe`).
+- Se guarda en `roam-picker:comprobadas` (clave NUEVA, sin migración;
+  `{ t, bien, que, cuando }`, `sanearComprobadas`: sin repetir partida, manda
+  la última, tope `TOPE_COMPROBADAS` 500). Es del móvil: no va en el perfil
+  ni en la base de datos.
+- En la pantalla (`ComprobarTablet`, arriba en «Tus partidas»): cada
+  partida con su comprobante si llegó; «Todo bien», «El resultado no»
+  (`corregirPartida` al revés, que pone `editada`) y «Mi héroe no» (rejilla
+  del pool, `cambiarHeroe`). La frase del acierto en rojo con algún fallo.
+  En Ajustes, `.por-comprobar` con las que faltan (`porComprobar` en App).
+- Pruebas en `motor/comprobacion` (cada partida que no toca, sola; el azar
+  cambia el lunes con las MISMAS partidas; los fallos por tipo asimétricos)
+  y `interfaz/comprobar.e2e` (numerito, tres partidas con su pantalla, cada
+  botón y lo que guarda). Dieciocho mutaciones; seis sobrevivían al principio
+  (las que no tocan iban mezcladas con doce buenas y el azar no las cogía).
+- Los comprobantes los pide `HistorialPartidas` con un efecto atado a la url,
+  la clave pública y tu clave, NO al objeto `comunidad.config`: subir
+  partidas rehace ese objeto con los mismos valores, y la primera versión
+  volvía a pedir `mis_recortes` tras cada subida (lo cazó `comunidad.e2e`,
+  que hoy exige una sola petición).

@@ -10,9 +10,10 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { TABLA_SEGUIDAS, ultimasDeTabla, principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, TOPE_SIN_RESULTADO, finalParaSubir, partidaSinResultado, draftsArreglados, franjaSinNombres, FRACCION_CABECERA } from '../../scripts/lector/en-tablet.mjs';
+import { TABLA_SEGUIDAS, ultimasDeTabla, principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, TOPE_SIN_RESULTADO, finalParaSubir, partidaSinResultado, draftsArreglados, franjaSinNombres, FRACCION_CABECERA, comprobanteParaSubir } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
-import { claveDeJugadorValida } from '../../src/app/basedatos.js';
+import { claveDeJugadorValida, bajarMisRecortes } from '../../src/app/basedatos.js';
+import { comprobantes } from '../../src/app/revisar.js';
 import { pruebaDelReto } from '../../src/app/lector.js';
 import { writeFileSync } from 'node:fs';
 import { RETOS_EN_TOTAL, RETOS_POR_MINUTO, permitirReto, plantillasDeSerie, crearPortero, hostPermitido, crearServidor, sanearCorreccion, deLaApk, FALLOS_CODIGO, VENTANA_CODIGO_MS, RETENCION_CAPTURAS_MS, CAPTURAS_A_MIRAR } from '../../scripts/lector/servir.mjs';
@@ -527,6 +528,43 @@ test('las pantallas del final sin reconocer (3.81.5): las dos primeras fuera de 
   } finally { servidor2.close(); apk2.cerrar(); }
 });
 
+test('el comprobante de cada partida apuntada por la tabla (3.101.0): su franja sin nombres, con tu clave, y el móvil lo lee', async () => {
+  const blanca = { ancho: 320, alto: 56, rgba: new Uint8Array(320 * 56 * 4).fill(255) };
+  const foto = { id: 'fotograma-2026-11-11T20-00-00-000Z', tira: Buffer.from(escribirPng(blanca)).toString('base64'), resultadoParecido: 0.98 };
+  const T = 1794353146988;
+  const r = comprobanteParaSubir({ t: T, gane: false, fotograma: foto, version: '3.101.0' });
+  ok(r?.tipo === 'resultado' && r.t === T && r.gane === false && r.parecido === 0.98 && r.version === '3.101.0' && r.capturas.length === 1 && r.capturas[0].id === foto.id, JSON.stringify(r).slice(0, 200));
+  ok(!('partida' in r), 'lleva `partida`: «Capturas» y el aprendizaje lo tomarían por un recorte del draft');
+  const vista = leerPng(Buffer.from(r.capturas[0].tira, 'base64'));
+  ok([...vista.rgba.subarray(40 * 320 * 4, 41 * 320 * 4)].every((v, i) => (i % 4 === 3 ? v === 255 : v === 0)), 'el comprobante lleva los nombres de los otros jugadores');
+  eq(comprobanteParaSubir({ t: T, gane: true, fotograma: { ...foto, id: '../x' } }), null, 'sube una pantalla con un id sin forma');
+  eq(comprobanteParaSubir({ t: T, gane: true, fotograma: { ...foto, tira: 'no <es> png' } }), null, 'sube una franja que no es un PNG');
+  eq(comprobanteParaSubir({ t: T, gane: true, fotograma: null }), null, 'sin la pantalla de la tabla sube algo');
+  eq(comprobanteParaSubir({ t: 'x', gane: true, fotograma: foto }), null, 'sin el instante de la partida sube algo');
+  // De punta a punta: con TU clave (la del móvil), y el móvil lo lee con `mis_recortes`.
+  const s = supabaseFalso();
+  const tuya = 'Q'.repeat(43);
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-comprobante-'));
+  const { mkdirSync } = await import('node:fs');
+  mkdirSync(join(casa, 'datos'), { recursive: true });
+  writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
+  writeFileSync(join(casa, 'solo-movil.json'), JSON.stringify({ linea: 'roam', clave: tuya }));
+  const apk = await apkDePega();
+  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  try {
+    const dicho = await servidor.subirComprobanteDe({ t: T, gane: false, fotograma: foto });
+    ok(/Comprobante de la partida subido/.test(dicho ?? ''), dicho);
+    eq(s.recortes.at(-1)?.clave, tuya, 'el comprobante no sube con tu clave (el móvil no lo vería)');
+    const config = { url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica };
+    const enElMovil = comprobantes((await bajarMisRecortes(config, { clave: tuya, horas: 720, fetch: s.fetch })).recortes);
+    ok(enElMovil.get(T)?.gane === false && enElMovil.get(T)?.tira === r.capturas[0].tira, `el móvil no lee el comprobante: ${[...enElMovil.keys()]}`);
+    ok(LINEA_DE_ERROR.test(await servidor.subirComprobanteDe({ t: T + 60000, gane: true, fotograma: null })), 'sin pantalla no lo dice como error del parte');
+  } finally { servidor.close(); apk.cerrar(); }
+  // Y el cableado: crearSolo lo pide al apuntar por la tabla.
+  const fuente = leerFichero(join(RAIZ, 'scripts/lector/en-tablet.mjs'), 'utf8');
+  ok(/alApuntarTabla: \(c\) => \{ subirComprobanteDe\(c\)/.test(fuente), 'crearSolo no recibe alApuntarTabla: los comprobantes no se suben');
+});
+
 test('las capturas del draft que lee el modo solo no se podan mientras está abierto (3.81.4)', async () => {
   const carpeta = mkdtempSync(join(tmpdir(), 'en-tablet-poda-draft-'));
   const ids = ['lectura-2026-10-27T22-20-00-000Z-1', 'lectura-2026-10-27T22-20-04-000Z-2', 'lectura-2026-10-27T22-20-08-000Z-3'];
@@ -936,6 +974,8 @@ test('lo que arreglas en el historial (3.83.0): solo drafts que completó una pe
     { d: { partida: T + 3, capturas: [cap] } },
     { d: { partida: 99, capturas: [cap] } },
     { d: { partida: T + 4, capturas: [deOtroDia] } },
+    // Un comprobante del final (3.101.0) no es un draft, aunque traiga capturas con forma.
+    { d: { tipo: 'resultado', partida: T + 5, t: T + 5, gane: true, capturas: [{ id: 'lectura-2026-10-27T22-25-00-000Z-1', picks: 'iVBORw0KGgo=' }] } },
   ];
   const partidas = [
     { t: T, pick: 'Estes', gane: true, draft },
@@ -944,6 +984,7 @@ test('lo que arreglas en el historial (3.83.0): solo drafts que completó una pe
     { t: T + 2, pick: 'Estes', gane: false, supuesto: true, draft },
     { t: T + 3, pick: 'Estes', gane: false, draft: { ...draft, aliados: ['Clint', 'Guinevere', 'Novaria', 'Inventado'] } },
     { t: T + 4, pick: 'Estes', gane: false, draft },
+    { t: T + 5, pick: 'Estes', gane: true, draft },
   ];
   const d = draftsArreglados({ recortes, partidas, nombres });
   eq(d.map((x) => x.partida - T).join(), '0,2', 'aprende de un draft a medias, de un nombre fuera del catálogo, de una pantalla del final, sin su partida o con capturas de otro día');

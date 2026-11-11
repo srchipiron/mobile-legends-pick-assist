@@ -1124,6 +1124,12 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
 .pie-version:hover { color: var(--gold); }
 /* «nuevo» tras actualizarse sola (3.65.5), hasta abrir las novedades. */
 .pie-nuevo { margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: var(--gold); color: #000; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-block; }
+/* Comprobar la tablet (3.101.0): tres partidas suyas a la semana, con la pantalla del final que leyó. */
+.por-comprobar { margin-left: 6px; padding: 0 6px; border-radius: 999px; background: var(--gold); color: #000; font-size: 11px; font-weight: 700; display: inline-block; line-height: 16px; }
+.comprobar { display: flex; flex-direction: column; gap: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: var(--r); }
+.comprobar-partida { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.comprobar-que { margin: 0; font-size: 13px; }
+.partida-comprobante { display: block; width: 100%; max-width: 320px; height: auto; border-radius: var(--r-sm); image-rendering: pixelated; margin: 4px 0 8px; }
 /* El pie va alineado a la derecha y la hoja lo hereda: se deshace aquí. */
 .pie .sheet { text-align: left; font-size: 14px; color: var(--text); cursor: auto; font-family: var(--font-body); }
 .changelog { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
