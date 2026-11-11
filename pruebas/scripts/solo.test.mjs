@@ -8,7 +8,7 @@ import { test, ok, eq, terminar, leerJson } from '../arnes.mjs';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, correccionDelDraft, tusHabituales, HABITUALES, faseDe, LECTURAS_PARA_FUERA, MINUTOS_ENTRE_PARTIDAS, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MINUTOS_ENTRE_TABLAS, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS } from '../../scripts/lector/solo.mjs';
+import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, correccionDelDraft, tusHabituales, HABITUALES, faseDe, LECTURAS_PARA_FUERA, MINUTOS_ENTRE_PARTIDAS, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MINUTOS_ENTRE_TABLAS, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS, PICKS_SIN_BANEOS } from '../../scripts/lector/solo.mjs';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
 import { buildsDe, buildParaElDraft, objetosDe } from '../../src/motor/builds.js';
 import { crearServidor, RETENCION_CAPTURAS_MS } from '../../scripts/lector/servir.mjs';
@@ -238,6 +238,47 @@ test('el mismo héroe en dos huecos de baneo no abre un draft (3.89.1): la victo
   // Y los dos equipos baneando al mismo héroe sigue valiendo dentro de un draft ya abierto.
   const abierto = acumularDraft(draftVacio(), lectura({ tuyos: [N('Hirara'), N('Atlas')], suyos: [N('Hirara'), V] }), 5);
   eq(abierto.baneos.join(), 'Hirara,Atlas');
+});
+
+test('sin la fila de baneos, el draft se abre por los picks (3.101.1): la burbuja del 11 de noviembre en «esperando consejo»', async () => {
+  // Desde las 16:00 UTC del 11 de noviembre de 2026 los diez baneos salían «?» (Gord 0,74–0,78) y los picks se leían en su sitio.
+  const sinBaneos = [V, V, V, V, V];
+  const sinFila = (enemigos, aliados = [V, V, V, V, V], tuyoFila = -1) => lectura({ tuyos: sinBaneos, suyos: sinBaneos, enemigos, aliados, tuyoFila });
+  // La lectura 743 de ese día: tres rivales y tus compañeros, ningún baneo.
+  const l743 = sinFila([V, N('Dyrroth'), N('Badang'), N('Lukas'), V], [N('Diggie'), N('Paquito'), N('Natalia'), V, V], 0);
+  eq(PICKS_SIN_BANEOS, 4);
+  let d = acumularDraft(draftVacio(), l743, 1000);
+  ok(d.enemigos.includes('Dyrroth') && d.aliados.includes('Paquito') && d.porPicks, `cuatro héroes en los picks sin baneos no abren el draft: ${JSON.stringify(d)}`);
+  // Abierto así, sigue sumando lo que se lea aunque sea poco (el último pick llega y se sigue viendo a Dyrroth): solo no abriría nada.
+  const poco = sinFila([N('Fredrinn'), N('Dyrroth'), V, V, V]);
+  const abre = (l) => acumularDraft(acumularDraft(draftVacio(), l, 5), poco, 10).enemigos.some(Boolean);
+  eq(abre(poco), false, 'dos héroes sin baneos abren un draft');
+  // Tres no: el 8 de noviembre, fuera de un draft, 8 de 854 lecturas leían tres (Carmilla, Zetian, Clint).
+  eq(abre(sinFila([N('Carmilla'), N('Zetian'), V, V, N('Clint')])), false, 'tres héroes sin baneos abren un draft');
+  // Ni el mismo héroe en los dos paneles (la pantalla oscura: «Gord» en todas partes) cuenta más de una vez.
+  eq(abre(sinFila([N('Gord'), N('Gord'), V, V, V], [N('Gord'), N('Gord'), V, V, V])), false, 'Gord en cuatro huecos abre un draft');
+  d = acumularDraft(d, poco, 2000);
+  eq(d.enemigos[0], 'Fredrinn', 'el draft abierto por los picks deja de sumar');
+  // Y lo recuerda en las lecturas siguientes, no solo en la de después.
+  d = acumularDraft(d, sinFila([N('Fredrinn'), N('Dyrroth'), V, V, N('Yin')]), 3000);
+  eq(d.enemigos[4], 'Yin', 'el draft abierto por los picks se olvida de que lo está');
+  ok(d.ids.length === 0, 'guarda capturas para aprender sin saber si es la pantalla del draft');
+  // Y en el bucle: hay consejo, la partida lo cierra y se cuenta como sin baneos.
+  let t = 9_000_000;
+  let respuesta = { ...l743, id: 'lectura-2026-11-11T21-40-00-000Z-743' };
+  const consejos = [], registro = [];
+  const interno = {
+    leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: (c) => consejos.push(c),
+    vigilar: () => {}, final: () => null, ponerResumen: () => {},
+  };
+  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, registrar: (l) => registro.push(l) });
+  await solo.tic();
+  ok(consejos.length === 1 && /Fase de picks/.test(consejos[0].detalle ?? ''), `sin baneos no hay consejo en la burbuja: ${JSON.stringify(consejos)}`);
+  respuesta = { partida: true, rapida: true };
+  t += 5000; await solo.tic(); t += 5000; await solo.tic();
+  const r = solo.resumen();
+  ok(r.partidas === 1 && r.sinBaneos === 1, `la partida sin baneos no se cuenta: ${JSON.stringify(r)}`);
+  ok(registro.some((l) => /sin leer los baneos/.test(l)), 'no lo dice en el registro');
 });
 
 test('la misma tabla del final no se apunta dos veces (3.89.1): otra a menos de MINUTOS_ENTRE_TABLAS es la misma partida', async () => {

@@ -88,6 +88,19 @@ export const IDS_POR_DRAFT = 20;
  * del draft y las 8 últimas, a la fase de picks.
  */
 export const BANEOS_EN_EL_DRAFT = 2;
+/**
+ * El draft por los picks cuando no se leen los baneos (3.101.1). Desde las
+ * 16:00 UTC del 11 de noviembre de 2026 la fila de baneos sale «?» en las
+ * diez casillas en todos los drafts (Gord 0,74–0,78: una zona oscura), con
+ * los picks leídos en su sitio: sin dos baneos no se abría ningún draft, la
+ * burbuja se quedó en «esperando consejo» y no se apuntó ninguna partida
+ * (770 lecturas, 0 partidas). Medido en las 1.789 lecturas del 8 al 10 de
+ * noviembre (con los baneos leyéndose): fuera de un draft, 0 de 854 leen 4
+ * héroes distintos en los paneles de picks (8 leen 3); dentro, 560 de 935.
+ * Un draft abierto así sigue sumando aunque no vea baneos (`porPicks`), y no
+ * guarda capturas para aprender: sin baneos no se sabe si es la pantalla.
+ */
+export const PICKS_SIN_BANEOS = 4;
 export const SEPARACION_IDS_MS = 4000;
 /** Añade la captura a las del draft: la última siempre, y entre las de antes al menos `SEPARACION_IDS_MS`. */
 export function conCaptura(ids = [], id) {
@@ -167,7 +180,9 @@ export function acumularDraft(estado, lectura, ahora) {
   // Héroes DISTINTOS (3.89.1): el 2 de noviembre de 2026 un «Gord» leído en dos huecos de baneo de una
   // pantalla que no era el draft abrió uno, la partida lo cerró y se apuntó una victoria fantasma.
   const banDistintos = new Set(baneos).size;
-  const deDraft = banDistintos >= BANEOS_EN_EL_DRAFT || (!e.cerrado && e.baneos.length >= BANEOS_EN_EL_DRAFT);
+  // O por los picks, si la fila de baneos no se lee (3.101.1, ver `PICKS_SIN_BANEOS`).
+  const porPicks = new Set([...enemigos, ...filas].filter(Boolean)).size >= PICKS_SIN_BANEOS;
+  const deDraft = banDistintos >= BANEOS_EN_EL_DRAFT || porPicks || (!e.cerrado && (e.baneos.length >= BANEOS_EN_EL_DRAFT || e.porPicks));
   const algo = deDraft && (baneos.length || enemigos.some(Boolean) || filas.some(Boolean));
   if (!deDraft) return e.enPartida ? { ...e, enPartida: 0 } : e;
   // ¿Otro draft? (3.72.5) Por lo que se ve, no solo por el reloj: un hueco
@@ -193,7 +208,7 @@ export function acumularDraft(estado, lectura, ahora) {
   // La captura de esta lectura (3.71.0): si luego dices quién era el «?», el lector aprende de ella.
   const ids = typeof lectura.id === 'string' && /^lectura-[\w-]+$/.test(lectura.id) && banDistintos >= BANEOS_EN_EL_DRAFT ? conCaptura(e.ids ?? [], lectura.id) : e.ids ?? [];
   const nuevosHuecos = (e.banHuecos ?? Array(10).fill(null)).map((n, i) => n ?? huecosBan[i]);
-  return { ...e, baneos: nuevosBaneos, banHuecos: nuevosHuecos, enemigos: enem.huecos, aliados: ali.huecos, tuyoFila, votosFila, enPartida: 0, actividad: cambio ? ahora : e.actividad ?? (algo ? ahora : null), ids };
+  return { ...e, baneos: nuevosBaneos, banHuecos: nuevosHuecos, enemigos: enem.huecos, aliados: ali.huecos, tuyoFila, votosFila, enPartida: 0, actividad: cambio ? ahora : e.actividad ?? (algo ? ahora : null), ids, porPicks: !!(e.porPicks || porPicks) };
 }
 
 const TEXTOS = {
@@ -442,7 +457,8 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
   // Lo que se cuenta en /estado (3.69.3): sin esto no se sabía si la tablet leía sola.
   // `partidas` (3.83.2): los drafts que acabaron en partida desde que arrancó. Con `apuntadas`
   // dice si la tablet ve el final: el 27 de octubre de 2026 leyó 5 h (2.811 lecturas) sin apuntar ninguna.
-  const resumen = { activo: false, linea: null, origen: null, apartado: false, lecturas: 0, partidas: 0, apuntadas: 0, ultima: null };
+  // `sinBaneos` (3.101.1): de esas, las que se cerraron sin leer dos baneos (el draft se abrió por los picks).
+  const resumen = { activo: false, linea: null, origen: null, apartado: false, lecturas: 0, partidas: 0, apuntadas: 0, sinBaneos: 0, ultima: null };
   /** Apunta UNA vez la partida vigilada, con el resultado leído o el que contestaste. */
   const apuntarVigilada = (v, { gane, t, duracion = null, contestada = false }) => {
     if (!v || v.apuntada) return null;
@@ -574,6 +590,10 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     if (dePasada) registrar(`Sin móvil: esta partida ya se vigila desde hace ${Math.round((draft.cerradoEn - yaVigilada.desde) / 1000)} s (el móvil llevaba el draft); no la apunto yo.`);
     if (draft.cerrado && !antes.cerrado && !dePasada) {
       resumen.partidas += 1;
+      if (new Set(draft.baneos).size < BANEOS_EN_EL_DRAFT) {
+        resumen.sinBaneos += 1;
+        registrar('Sin móvil: este draft se cerró sin leer los baneos (se abrió por los picks); si pasa en todas, el juego ha cambiado su pantalla.');
+      }
       const datos = datosPara(a.rango);
       pendiente = correccionDelDraft(draft, datos, { tuyos: tusHabituales(datos, a.linea, maestriaDe(), [...draft.enemigos, ...draft.aliados, ...draft.baneos]) });
       if (pendiente) {

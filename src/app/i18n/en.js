@@ -486,6 +486,7 @@ export default {
   'sistema.solo': 'Decides on its own with your lane ({linea}).',
   'sistema.soloApagado': '«Sin móvil» is off: pick your lane in Lector MLBB.',
   'sistema.jugadas': 'Since it started: {n} {n|game|games}, {apuntadas} logged on its own.',
+  'sistema.sinBaneos': 'It can’t read the bans: {n} drafts without them. The game may have changed the draft screen.',
   'sistema.lecturas': '{n} reads in {minutos} min ({fallos} failed captures).',
   'sistema.partidas': '{n} games logged, all saved.',
   'sistema.partidasSinSubir': '{n} games logged; {sinSubir} to upload.',

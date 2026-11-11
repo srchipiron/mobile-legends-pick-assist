@@ -3,6 +3,7 @@
  * nombres mete y cómo dice cada fallo.
  */
 import { test, ok, eq, terminar } from '../arnes.mjs';
+import { SIN_BANEOS_AVISO } from '../../scripts/revisar-tablet.mjs';
 import { TABLA_SEGUIDAS } from '../../scripts/lector/en-tablet.mjs';
 import { buscarTabletEnLaRed, pruebaDelReto, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, pedirClaveDeLaTablet, lineasDelSistema } from '../../src/app/lector.js';
 import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS } from '../../src/app/lector.js';
@@ -410,6 +411,10 @@ test('el sistema de un vistazo (3.77.0): lo que dice la tablet, y en rojo lo que
   ok(jugadas(3, 0)?.mal && jugadas(3, 0).params.n === 3, 'tres partidas sin apuntar no salen en rojo');
   ok(jugadas(2, 0) && !jugadas(2, 0).mal && !jugadas(5, 4).mal, 'en rojo sin motivo');
   eq(jugadas(0, 0), undefined, 'dice partidas antes de jugar ninguna');
+  // 3.101.1: drafts cerrados sin leer los baneos, en rojo desde los mismos que avisa la revisión de la tablet.
+  const sinBaneos = (n) => lineasDelSistema({ ok: true, solo: { activo: true, linea: 'roam', partidas: 4, apuntadas: 4, sinBaneos: n } }).find((l) => l.clave === 'sistema.sinBaneos');
+  ok(sinBaneos(SIN_BANEOS_AVISO)?.mal && sinBaneos(SIN_BANEOS_AVISO).params.n === SIN_BANEOS_AVISO, 'los drafts sin baneos no salen en rojo');
+  eq(sinBaneos(SIN_BANEOS_AVISO - 1), undefined, 'sale con un baneo tapado por casualidad');
 });
 
 await terminar('app/lector');

@@ -8,6 +8,18 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.101.1
+
+- La burbuja vuelve a salir en el draft. Desde la tarde del 11 de noviembre
+  la tablet no leía ningún baneo (parece que el juego ha cambiado esa parte
+  de la pantalla del draft), y como solo abría el draft al ver dos baneos, no
+  daba consejo ni apuntaba partidas. Ahora también lo abre al reconocer
+  cuatro héroes en los picks. Mientras no lea los baneos, la burbuja sale ya
+  en la fase de picks (no en la de baneos) y el consejo no sabe quién está
+  baneado.
+- Si vuelve a pasar, lo verás en «El sistema» en rojo («No lee los
+  baneos»), en vez de quedarse callado.
+
 ## 3.101.0
 
 - Cada semana la app te pide comprobar 3 partidas que apuntó la tablet sola,

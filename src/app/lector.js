@@ -264,6 +264,8 @@ export function lineasDelSistema(estado, { ahora = Date.now() } = {}) {
   if (solo) L.push(solo.activo ? { clave: 'sistema.solo', params: { linea: solo.linea ?? '?' }, mal: false } : { clave: 'sistema.soloApagado', params: {}, mal: true });
   // Partidas desde que arrancó y cuántas apuntó sola (3.83.2): con tres sin apuntar ninguna, no ve el final.
   if (solo && num(solo.partidas) > 0) L.push({ clave: 'sistema.jugadas', params: { n: num(solo.partidas), apuntadas: num(solo.apuntadas) }, mal: num(solo.partidas) >= 3 && num(solo.apuntadas) === 0 });
+  // Drafts cerrados sin leer los baneos (3.101.1): el 2 es `SIN_BANEOS_AVISO` de revisar-tablet (hay prueba).
+  if (solo && num(solo.sinBaneos) >= 2) L.push({ clave: 'sistema.sinBaneos', params: { n: num(solo.sinBaneos) }, mal: true });
   const lecturas = num(lector.lecturas) + num(lector.lecturasSolo);
   if (lector && Object.keys(lector).length) L.push({ clave: 'sistema.lecturas', params: { n: lecturas, fallos: num(lector.fallosCaptura), minutos: num(lector.minutos) }, mal: lecturas > 10 && num(lector.fallosCaptura) / lecturas > 0.2 });
   if (partidas) {

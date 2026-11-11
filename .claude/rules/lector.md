@@ -2188,3 +2188,35 @@ tablet apunta sola se pueda mirar de un vistazo.
   pantalla de la tabla), `en-tablet` (sin nombres, sin `partida`, rechazos,
   de punta a punta con el Supabase de pega y leído con `comprobantes`, la
   línea de error, el cableado) y `app/revisar`. Once mutaciones.
+
+**El draft por los picks si no se leen los baneos (3.101.1)**. Desde las
+16:00 UTC del 11 de noviembre de 2026 la fila de baneos sale «?» en las
+diez casillas (Gord 0,74–0,78, una zona oscura: no está donde se midió),
+con los picks leídos en su sitio y el minimapa bien. Lo más probable, una
+actualización del juego; sin una captura no se puede medir la fila nueva.
+- `acumularDraft` abre el draft también con `PICKS_SIN_BANEOS` (4) héroes
+  DISTINTOS en los dos paneles de picks (un mismo héroe en los dos cuenta
+  uno). Medido en los partes del 8 al 10 de noviembre (1.789 lecturas, con
+  los baneos leyéndose): fuera de un draft 0 de 854 llegan a 4 (8 leen 3,
+  rivales de verdad con la fila tapada); dentro, 560 de 935. El registro
+  corta cada línea en 300 caracteres y tu equipo queda a medias: la cifra
+  de 4 es por lo bajo.
+- El draft abierto así lleva `porPicks` y sigue sumando aunque una lectura
+  lea poco (como el abierto por baneos). NO guarda capturas para aprender:
+  sin baneos no se sabe si es la pantalla del draft (`esPantallaDeDraft`
+  las tiraría igual).
+- Lo que no hace en este modo: consejo en la fase de baneos (no hay draft
+  hasta que salen picks), saber quién está baneado, y abrir otro draft tras
+  un abandono a mitad (los huecos cambian de golpe y se descarta como fase
+  de skins hasta `MINUTOS_DRAFT_ABANDONADO`).
+- `resumen.sinBaneos` cuenta las partidas cuyo draft se cerró sin dos
+  baneos. `revisar-tablet` avisa desde `SIN_BANEOS_AVISO` (2) y «El
+  sistema» del móvil lo pone en rojo (`sistema.sinBaneos`, mismo umbral con
+  prueba).
+- Pruebas en `solo` (la lectura 743 de ese día abre y da consejo; tres
+  rivales, dos, o Gord en cuatro huecos no; sigue sumando y lo recuerda; la
+  partida cuenta sin baneos), `revisar-tablet` y `app/lector`. Once
+  mutaciones; tres sobrevivían al principio (la del Gord repetido miraba
+  solo los huecos, que `fundirHuecos` ya vacía).
+- Pendiente: una captura de la pantalla del draft de la tablet (baneos y
+  picks) para medir dónde va hoy la fila de baneos.

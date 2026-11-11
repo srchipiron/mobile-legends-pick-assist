@@ -44,6 +44,14 @@ export const RESULTADOS_PARA_MEDIR = 5, PREGUNTADAS_MAX = 0.5;
  * Decisiones de producto (tres partidas seguidas sin ver el final no es mala suerte).
  */
 export const PARTIDAS_SIN_APUNTAR = 3, PARTIDAS_PARA_MEDIR = 5, APUNTADAS_MIN = 0.5;
+/**
+ * Partidas cuyo draft se cerró sin leer los baneos (3.101.1). Hasta 3.101.1
+ * un draft solo se abría con dos baneos leídos; desde entonces también por
+ * los picks, y uno que se cierra sin baneos es que la fila no se lee (el 11
+ * de noviembre de 2026, en todos los drafts desde las 16:00 UTC). Dos ya no
+ * son un baneo tapado por casualidad. Decisión de producto.
+ */
+export const SIN_BANEOS_AVISO = 2;
 
 /** Lo que se registra como «No se pudo» pero es el uso, no un fallo: la tablet sin grabar (el modo solo lo intenta igual). */
 export const NO_ES_FALLO = /no está grabando la pantalla/;
@@ -101,6 +109,8 @@ export function revisarParte(parte, { ahora = Date.now() } = {}) {
   const jugadas = Number(e.solo?.partidas) || 0, apuntadas = Number(e.solo?.apuntadas) || 0;
   if (jugadas >= PARTIDAS_SIN_APUNTAR && apuntadas === 0) fallos.push(`desde que arrancó jugaste ${jugadas} partidas y la tablet no apuntó ninguna: no ve el final`);
   else if (jugadas >= PARTIDAS_PARA_MEDIR && apuntadas / jugadas < APUNTADAS_MIN) avisos.push(`la tablet solo apuntó ${apuntadas} de las ${jugadas} partidas que jugaste desde que arrancó`);
+  const sinBaneos = Number(e.solo?.sinBaneos) || 0;
+  if (sinBaneos >= SIN_BANEOS_AVISO) avisos.push(`${sinBaneos} de las ${jugadas} partidas desde que arrancó sin leer los baneos: el juego ha podido cambiar la pantalla del draft (hace falta una captura para medirla)`);
   if (e.pendiente?.pregunta) avisos.push('hay una partida esperando a que digas cómo acabó');
   const salud = Number.isFinite(t.cuando) && Number.isFinite(d.cuando) ? (d.cuando - t.cuando) / 60000 : null; // los dos con el reloj de la tablet
   if (t.grabando && salud != null && salud > SALUD_CALLADA_MIN) avisos.push(`la APK no escribe su estado desde hace ${Math.round(salud)} min con la tablet grabando: lo de la tablet puede ser viejo o estar colgada`);

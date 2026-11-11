@@ -6,7 +6,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { PARTIDAS_SIN_APUNTAR, PARTIDAS_PARA_MEDIR, revisarParte, revisarPartes, informe, PARTE_CALLADO_MIN, DATOS_VIEJOS_H, CIERRE_POR_FALLO, SALUD_CALLADA_MIN, FALLO_ANTERIOR_H } from '../../scripts/revisar-tablet.mjs';
+import { PARTIDAS_SIN_APUNTAR, PARTIDAS_PARA_MEDIR, revisarParte, revisarPartes, informe, PARTE_CALLADO_MIN, DATOS_VIEJOS_H, CIERRE_POR_FALLO, SALUD_CALLADA_MIN, FALLO_ANTERIOR_H, SIN_BANEOS_AVISO } from '../../scripts/revisar-tablet.mjs';
 import { subirParte, bajarPartes } from '../../src/app/basedatos.js';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { parteDeSalud, TABLA_SEGUIDAS, ultimasDeTabla } from '../../scripts/lector/en-tablet.mjs';
@@ -133,6 +133,14 @@ test('cuánto reconoce sola el resultado (3.75.0): aviso si pregunta más de la 
   ok(con(1, 4).some((a) => /1 de 5/.test(a)), 'no avisa con 4 de 5 preguntadas');
   eq(con(3, 2).length, 0, 'avisa con la mayoría reconocidas');
   eq(con(0, 4).length, 0, 'avisa con muy pocas partidas');
+});
+
+test('sin leer los baneos (3.101.1): dos drafts cerrados sin ellos es aviso, como todos desde las 16:00 del 11 de noviembre', () => {
+  const con = (sinBaneos) => revisarParte({ j: 1, recibido: hace(1), d: sano({ solo: { activo: true, linea: 'roam', partidas: 4, apuntadas: 4, sinBaneos } }) }, { ahora: AHORA }).avisos;
+  eq(SIN_BANEOS_AVISO, 2);
+  ok(con(2).some((a) => /sin leer los baneos/.test(a)), 'no avisa con dos drafts sin baneos');
+  eq(con(1).length, 0, 'avisa con un baneo tapado por casualidad');
+  eq(con(undefined).length, 0, 'una APK que no lo cuenta da aviso');
 });
 
 test('todas iguales (3.99.0): diez seguidas leídas en la tabla con el mismo resultado es aviso, como las 142 victorias y 3 derrotas del 26 de octubre al 9 de noviembre', () => {

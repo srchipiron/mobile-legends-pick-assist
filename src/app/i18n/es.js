@@ -503,6 +503,7 @@ export default {
   'sistema.solo': 'Decide sola con tu línea ({linea}).',
   'sistema.soloApagado': '«Sin móvil» está apagado: elige tu línea en Lector MLBB.',
   'sistema.jugadas': 'Desde que arrancó: {n} {n|partida|partidas}, {apuntadas} apuntadas solas.',
+  'sistema.sinBaneos': 'No lee los baneos: {n} drafts sin ellos. Puede que el juego haya cambiado la pantalla del draft.',
   'sistema.lecturas': '{n} lecturas en {minutos} min ({fallos} capturas fallidas).',
   'sistema.partidas': '{n} partidas apuntadas, todas guardadas.',
   'sistema.partidasSinSubir': '{n} partidas apuntadas; {sinSubir} por subir.',

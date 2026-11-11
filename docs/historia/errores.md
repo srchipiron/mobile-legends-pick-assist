@@ -1309,3 +1309,15 @@ instante anterior lo sustituya; el tiempo solo va hacia delante.
   votada por las lecturas del draft. Lección: lo que se acumula de muchas
   lecturas se decide por mayoría, nunca por la última.
 
+- **La fila de baneos dejó de leerse y la tablet se quedó muda sin avisar
+  (11 de noviembre de 2026, 3.101.1)** — desde las 16:00 UTC los diez baneos
+  salían «?» en todos los drafts (Gord 0,74–0,78: una zona oscura; los picks
+  se leían en su sitio), con la APK 3.99.0 que la tarde anterior leía 10 de
+  10. Como desde 3.83.0 un draft solo se abría con dos baneos leídos, no se
+  abrió ninguno: la burbuja en «esperando consejo», 770 lecturas y 0
+  partidas, y ni el parte ni «El sistema» lo dijeron (contaban partidas
+  jugadas, y sin draft no había ninguna). Javi lo vio jugando. Hoy el draft
+  se abre también con cuatro héroes en los picks (0 de 854 lecturas fuera
+  de un draft lo hacen) y dos drafts cerrados sin baneos son aviso. Lección:
+  una puerta que depende de UNA zona de la pantalla del juego necesita otra
+  entrada y un aviso propio; el juego se actualiza sin preguntar.
