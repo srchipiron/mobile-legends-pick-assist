@@ -29,6 +29,7 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.security.MessageDigest
 import java.security.SecureRandom
 import kotlin.concurrent.thread
 
@@ -260,7 +261,8 @@ object Interno {
                 if (i > 0) cabeceras[l.substring(0, i).trim().lowercase()] = l.substring(i + 1).trim()
             }
             val salida = c.getOutputStream()
-            if (cabeceras["x-secreto"] != secreto) return responder(salida, 403, ByteArray(0))
+            // En tiempo constante (3.100.0, revisión de seguridad): con `!=` se puede medir cuánto acierta.
+            if (!MessageDigest.isEqual((cabeceras["x-secreto"] ?: "").toByteArray(), secreto.toByteArray())) return responder(salida, 403, ByteArray(0))
             val partes = primera.split(" ")
             val metodo = partes.getOrNull(0); val ruta = partes.getOrNull(1)
             when {

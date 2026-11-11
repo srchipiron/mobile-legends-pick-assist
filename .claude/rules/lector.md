@@ -2123,3 +2123,37 @@ minuto encogido antes de la primera comprobación, se estimaba el inicio y
 el despliegue se paró. Hoy lleva `ahora` con un salto que mueve la prueba:
 una prueba de la vigilancia que dependa de que «aún no ha pasado» un plazo
 encogido lleva su reloj, no el real.
+
+**Tu fila por votos, lo leído y la franja sin nombres (3.100.0)**, del
+repaso completo del 11 de noviembre de 2026:
+- **Tu fila la votan las lecturas del draft** (`filaVotada`, `votosFila` en
+  el draft de solo.mjs). Antes mandaba la ÚLTIMA lectura con fila, aunque
+  fuera de la fase de skins, donde el juego reordena el panel: el 10 de
+  noviembre doce lecturas decían «tú Diggie» (fila 2) y se apuntó «Ling»
+  (fila 3); lo mismo con «Wanwan». De las 222 partidas de la tablet, ~25
+  llevan un pick que no es de roam (Gord, Kadita, Claude…, los de sus
+  compañeros) frente a 0 de las 187 apuntadas a mano. Hoy una lectura que
+  `fundirHuecos` descarta (`descartada`: más de `CAMBIOS_A_LA_VEZ` huecos ya
+  leídos cambiados) no vota, y manda la fila más votada (a igualdad, la que
+  estaba). Prueba en `solo.test` con las lecturas de ese draft; tres
+  mutaciones. Las ya apuntadas no se tocan: se arreglan tocando el héroe.
+- **Lo LEÍDO se guarda al arreglar** (`leidaAntes`, en-tablet.mjs): al
+  cambiar el resultado de una partida `resultadoDe: 'tabla'` (en la APK o
+  desde el móvil, `alDiaCon`), `leida` guarda el resultado que leyó la
+  tablet (la primera vez; no se pisa) y `ultimasDeTabla` cuenta eso. Sin
+  esto, corregir las victorias falsas apagaba el aviso de «todas iguales»
+  con la tablet aún leyendo mal. `leida` no sube a la base de datos.
+- **La franja del final sube sin nombres** (`franjaSinNombres`,
+  `FRACCION_CABECERA` 34/56): lo de debajo de la cabecera va en negro antes
+  de subir el recorte `tipo: 'final'`, porque `recortes_recientes` lo lee
+  cualquiera con la clave pública y ahí van los nombres de los otros nueve
+  jugadores. La cabecera (marcador y palabra) queda entera y se sigue
+  leyendo (prueba con la franja de victoria de las pruebas).
+- **Retos con tope total** (`permitirReto`, `RETOS_EN_TOTAL` 30 por minuto,
+  servir.mjs): el mapa de retos no se podaba y con IPv6 cada petición podía
+  traer otra dirección, cada una con sus `RETOS_POR_MINUTO` de PBKDF2 de
+  100.000 vueltas en la tablet. Y `Lector.kt` compara el secreto del puerto
+  interno en tiempo constante (`MessageDigest.isEqual`).
+- En la app, desvincular apaga «Leer solo» (`setLectorTablet` en
+  useAjustes) y otra tablet borra el aviso de la anterior (App.jsx). Prueba
+  en `interfaz/vincular.e2e`, dos mutaciones.

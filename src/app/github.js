@@ -31,9 +31,13 @@ export function urlDeIncidencia({ titulo, cuerpo, etiquetas = [] }, location = g
  * incidencias de este repositorio, la app la crea o la edita directamente.
  *
  * Es el ÚNICO destino al que viaja el token: en la cabecera Authorization,
- * nunca en la dirección ni en el cuerpo. Un token de grano fino con solo
- * «Issues: read and write» sobre este repositorio no puede tocar nada más,
- * y no tiene nada que ver con la cuenta del juego.
+ * nunca en la dirección ni en el cuerpo. Desde 3.98.0 es solo de
+ * administración y necesita «Contents: read and write» sobre este
+ * repositorio (licencias.json y comunidad.json): GitHub no deja limitarlo a
+ * una carpeta, así que con él se puede escribir cualquier fichero y, por
+ * `apk.yml`, acabar en la APK de la tablet (revisión de seguridad de
+ * 3.100.0). No tiene nada que ver con la cuenta del juego, pero se guarda
+ * como una llave de la casa.
  */
 export const API_GITHUB = 'https://api.github.com';
 

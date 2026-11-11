@@ -8,6 +8,29 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.100.0
+
+- Las partidas que la tablet apuntó entre el 26 de octubre y el 10 de
+  noviembre ya no cuentan en tus estadísticas: leía mal la pantalla del
+  final y casi todas salían victoria (132 de 135). No se borran: en «Tus
+  partidas» salen como «resultado dudoso». Míralas en el historial del juego
+  y confírmalas con ✓ o cámbialas con ⇄, y vuelven a contar. Sin ellas, el
+  Veredicto baja de +17 a +9 puntos sobre tu winrate de siempre.
+- La tablet ya no apunta como tuyo el héroe de un compañero: en la fase de
+  skins podía mover tu fila a la de al lado y apuntaba «Ling» o «Wanwan»
+  cuando jugabas Diggie (unas 25 partidas desde octubre, todas con un héroe
+  que no es de roam). Ahora tu fila es la que más veces lee durante el
+  draft. Las ya apuntadas así se arreglan tocando el héroe en «Tus partidas».
+- Si corriges el resultado de las partidas de la tablet, el aviso de «diez
+  seguidas iguales» sigue contando lo que leyó ella, no tu corrección: así
+  no se apaga mientras siga leyendo mal.
+- Desvincular la tablet apaga también «Leer solo», y al vincular otra ya no
+  queda el aviso de la anterior.
+- Más privacidad: las pantallas del final que sube la tablet van sin los
+  nombres de los otros jugadores.
+- Más seguro en la wifi: la tablet limita cuántas pruebas de vinculación
+  atiende por minuto en total, no solo por aparato.
+
 ## 3.99.0
 
 - La tablet ya distingue VICTORIA de DERROTA: desde el 26 de octubre

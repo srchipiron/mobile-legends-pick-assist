@@ -6,6 +6,7 @@
 import { test, ok, eq, terminar } from '../arnes.mjs';
 import { partidaDeGloria, juntarGloria, medirMuestra, decidirPropuesta, informe, MINIMO_PROPUESTA, MEJORA_MINIMA } from '../../scripts/proponer-modelo.mjs';
 import { ESCALA } from '../../src/motor/modelo.js';
+import { DUDOSAS_DESDE, DUDOSAS_HASTA } from '../../src/motor/registro.js';
 
 /** Partidas sintéticas: términos al azar y el resultado sacado con la escala `k` (determinista). */
 function sinteticas(n, k, semilla = 1) {
@@ -59,6 +60,11 @@ test('las partidas de Gloria: solo con el draft completo, sin repetir y del cat�
   eq(partidaDeGloria({ ...p, previa: true }, indice), null, 'puntúa una partida previa (sin draft de verdad)');
   const juntas = juntarGloria({ mias: [p, { ...p, t: 1 }], comunidad: [{ j: 1, t: 10, d: p }, { j: 2, t: 11, d: { ...p, t: 11 } }], desde: 5 });
   eq(JSON.stringify(juntas.map((x) => x.t)), '[10,11]', 'repite la misma partida o entra una de antes de la ventana');
+  // Las del resultado dudoso (3.100.0: el lector apuntó 132 victorias de 135 del 26 de octubre al 10 de noviembre) no entran; arregladas después, sí.
+  const enLaVentana = { ...p, t: DUDOSAS_DESDE + 86400000, origen: 'lector' };
+  eq(juntarGloria({ mias: [enLaVentana], desde: 0 }).length, 0, 'mide la escala con victorias falsas del lector');
+  eq(juntarGloria({ comunidad: [{ j: 3, t: enLaVentana.t, d: enLaVentana }], desde: 0 }).length, 0, 'las de la comunidad del lector dudoso entran');
+  eq(juntarGloria({ mias: [{ ...enLaVentana, editada: DUDOSAS_HASTA + 1 }], desde: 0 }).length, 1, 'una arreglada después no entra');
 });
 
 await terminar('scripts/proponer-modelo');

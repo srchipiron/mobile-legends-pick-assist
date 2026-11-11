@@ -1294,3 +1294,18 @@ instante anterior lo sustituya; el tiempo solo va hacia delante.
   aprende de sí mismo no puede ir sin una medida fija que lo vigile; un
   parecido alto dice que está seguro, no que acierte; y una racha
   imposible (142 de 145) es un fallo hasta que se demuestre lo contrario.
+- **Las victorias falsas seguían midiendo tras arreglar el lector (10–11 de
+  noviembre de 2026, 3.100.0)** — 3.99.0 arregló la lectura hacia delante,
+  pero las 100 victorias falsas ya apuntadas seguían en el Veredicto («+17
+  puntos, se distingue del azar»), la calibración y el bot del modelo. Hoy
+  `esDudosa` las saca de todo hasta que se confirman. Lección: arreglar un
+  lector no arregla lo que ya escribió; cada dato malo apuntado sigue
+  midiendo hasta que algo lo marque.
+- **La tablet apuntaba como tuyo el héroe de un compañero (octubre–10 de
+  noviembre de 2026, 3.100.0)** — unas 25 de 222 partidas de la tablet con
+  un pick que no es de roam (Gord, Kadita, Claude, «Ling» con Diggie en la
+  fila de al lado), y ni una de las 187 a mano: en la fase de skins el juego
+  reordena el panel y la última lectura movía tu fila. Hoy tu fila es la más
+  votada por las lecturas del draft. Lección: lo que se acumula de muchas
+  lecturas se decide por mayoría, nunca por la última.
+

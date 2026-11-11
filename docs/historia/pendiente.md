@@ -279,10 +279,12 @@
   `mis_recortes` no cuente las del final en sus 50 (un arreglo de hace días
   puede quedarse fuera). Se pegan en el SQL Editor cuando Javi quiera.
 
-- **Las victorias apuntadas del 26 de octubre al 9 de noviembre de 2026**
-  (decisión de Javi, 3.99.0): la tablet apuntó 142 victorias y 3 derrotas
-  leyendo mal la tabla, así que esas partidas `origen: 'lector'` NO son
-  fiables y pesan en el Veredicto, la calibración y `proponer-modelo`.
-  Opciones: que Javi las compruebe en el historial del juego y las arregle
-  en «Mis partidas», o marcarlas como dudosas (sin resultado) para que no
-  cuenten hasta que las conteste. No se toca la base de datos sin él.
+- **Las victorias apuntadas del 26 de octubre al 10 de noviembre de 2026**:
+  desde 3.100.0 no cuentan (`esDudosa`) y salen como «resultado dudoso» en
+  «Tus partidas». Falta que Javi las confirme (✓) o las cambie (⇄) mirando
+  el historial del juego. No se borró nada de la base de datos.
+- **Cuatro decisiones de seguridad (revisión del 11 de noviembre de 2026)**,
+  en `descartados.md`: proteger `main` con pull request o confirmar las
+  actualizaciones de la APK; el código de vinculación en claro por la wifi;
+  topes globales y permisos de `anon` en Supabase; la longitud de la
+  contraseña de la firma.

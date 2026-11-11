@@ -9,6 +9,7 @@
  * el idioma sobrevivan a una recarga.
  */
 import { VERSION_MODELO } from '../../src/motor/modelo.js';
+import { DUDOSAS_DESDE, DUDOSAS_HASTA } from '../../src/motor/registro.js';
 import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes, anchoDePagina } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
@@ -240,6 +241,25 @@ await prueba('la revisión del draft dice la última partida y, con el botón, t
     ok(/hacen falta 10 partidas/.test(texto), `con 3 drafts no debe comparar: ${texto}`);
     ok(!/revision\.|\{/.test(texto), `claves o llaves crudas: ${texto}`);
     ok(await anchoDePagina(pagina) <= 320, 'la página se sale a 320 px');
+    ok(!errores.length, `errores de página: ${errores}`);
+  } finally { await contexto.close(); }
+});
+
+await prueba('las del resultado dudoso (3.100.0): se dicen, no cuentan, y ✓ las confirma tal cual', async () => {
+  const dudosa = { t: DUDOSAS_DESDE + 86400000, pick: 'Diggie', gane: true, origen: 'lector', recomendados: ['Diggie'], rango: 'glory', draft: { linea: 'roam', enemigos: ['Layla'], aliados: [] } };
+  const buena = { ...dudosa, t: DUDOSAS_HASTA + 86400000, pick: 'Estes', gane: false };
+  const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:partidas': [buena, dudosa] } });
+  try {
+    await abrirHoja(pagina, 1);
+    ok(/1 partidas que apuntó la tablet/.test(await pagina.locator('.veredicto').first().innerText()), 'el Veredicto no dice cuántas no cuentan');
+    const fila = pagina.locator('.partida', { has: pagina.locator('.partida-hero', { hasText: 'Diggie' }) });
+    eq((await fila.locator('.partida-tipo').innerText()).trim(), 'resultado dudoso');
+    eq(await pagina.locator('.partida', { has: pagina.locator('.partida-hero', { hasText: 'Estes' }) }).getByRole('button', { name: /El resultado es correcto/ }).count(), 0, 'una partida fiable lleva ✓');
+    await fila.getByRole('button', { name: 'El resultado es correcto · Diggie' }).click(); await pagina.waitForTimeout(300);
+    const guardada = (await leer(pagina, 'roam-picker:partidas')).find((p) => p.pick === 'Diggie');
+    ok(guardada.gane === true && guardada.editada >= DUDOSAS_HASTA, `✓ no la confirma tal cual: ${JSON.stringify(guardada)}`);
+    ok((await fila.locator('.partida-tipo').innerText()).trim() !== 'resultado dudoso', 'confirmada, sigue saliendo como dudosa');
+    eq(/apuntó la tablet/.test(await pagina.locator('.veredicto').first().innerText()), false, 'confirmada, el Veredicto sigue diciendo que no cuenta');
     ok(!errores.length, `errores de página: ${errores}`);
   } finally { await contexto.close(); }
 });

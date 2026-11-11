@@ -1,4 +1,4 @@
-import { esPrevia, esSupuesta, compararProporciones, sanearDuracion } from './registro.js';
+import { esPrevia, esSupuesta, compararProporciones, sanearDuracion, conResultado } from './registro.js';
 import { nombreClave } from './nombres.js';
 
 /**
@@ -56,7 +56,7 @@ const horaLocal = (t) => new Date(t).getHours();
 
 export function tusNumeros(partidas = [], { ahora = Date.now(), hora = horaLocal } = {}) {
   const lista = (partidas ?? [])
-    .filter((p) => p && !esPrevia(p) && Number.isFinite(p.t) && typeof p.gane === 'boolean')
+    .filter((p) => p && !esPrevia(p) && Number.isFinite(p.t) && conResultado(p))
     .sort((a, b) => a.t - b.t);
   const n = lista.length;
   const ganadas = ganadasDe(lista);
@@ -137,7 +137,7 @@ export const HEROES_DE_LA_SEMANA = 2;
  * (el lector no vio tu fila y puso el nº1) no cuentan para el nº1.
  */
 export function tuSemana(partidas = [], { ahora = Date.now() } = {}) {
-  const validas = (partidas ?? []).filter((p) => p && !esPrevia(p) && Number.isFinite(p.t) && typeof p.gane === 'boolean' && p.t <= ahora);
+  const validas = (partidas ?? []).filter((p) => p && !esPrevia(p) && Number.isFinite(p.t) && conResultado(p) && p.t <= ahora);
   const semana = validas.filter((p) => ahora - p.t < SEMANA_MS);
   const anterior = validas.filter((p) => ahora - p.t >= SEMANA_MS && ahora - p.t < 2 * SEMANA_MS);
   const n = semana.length;

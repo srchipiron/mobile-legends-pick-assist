@@ -69,7 +69,7 @@ export const draftCompleto = (d) => d.cerrado === true || (d.enemigos.length >= 
 /**
  * La partida ha empezado con el draft a medias (3.46.0): el lector no leyó a
  * algún compañero (o enemigo) y nadie lo metió a mano. Todo lo de la partida
- * (la voz, la vigilancia del final, el resultado y la duración) esperaba a
+ * (la vigilancia del final, el resultado y la duración; hasta 3.96.0 la voz) esperaba a
  * que el draft estuviera completo y no arrancaba: el 7 de octubre de 2026, 2
  * de 6 partidas, y 7 de 46 desde el 2 de octubre. Cuando el lector ve la
  * partida (minimapa, dos lecturas seguidas), el draft se da por cerrado con

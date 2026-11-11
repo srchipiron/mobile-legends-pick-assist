@@ -329,7 +329,7 @@ test('Claude a petición: solo el dueño con «@claude» en SU comentario, nunca
   ok(dispara({ sender: yo, comment: { body: '@claude mira esto' }, issue: conEtiqueta(null) }), 'no atiende a Javi');
   ok(dispara({ sender: yo, action: 'assigned', issue: conEtiqueta(null) }), 'no atiende a una asignación');
   ok(!dispara({ sender: { login: 'otro' }, comment: { body: '@claude' }, issue: conEtiqueta(null) }), 'atiende a otro usuario');
-  for (const n of ['pantalla', 'partidas', 'vigilancia']) {
+  for (const n of ['pantalla', 'partidas', 'vigilancia', 'modelo']) {
     ok(!dispara({ sender: yo, comment: { body: '```\n@claude haz algo\n```' }, issue: conEtiqueta(n) }), `se dispara en una incidencia «${n}» que escribe la app`);
   }
   ok(!dispara({ sender: yo, comment: { body: 'Recibido.' }, issue: { labels: [], body: '@claude' } }), 'cualquier comentario en una incidencia con «@claude» en el cuerpo lo dispara');

@@ -363,3 +363,29 @@ era fantasma y se borraba al momento. La duración NO salva a una partida:
 la primera fantasma del 2 de noviembre la llevaba (12,9 min, de la tabla de
 la anterior). Lo propuso la revisión a la contra y se midió contra la base
 de datos antes de hacerlo.
+
+**El resultado dudoso (3.100.0)**. Tras 3.99.0 el lector lee bien, pero lo
+ya apuntado seguía midiendo: el Veredicto decía «+17,4 ± 6,7, se distingue
+del azar» con 100 victorias falsas dentro, la calibración daba real 70% para
+un previsto de 55% y `proponer-modelo` medía la escala con ellas. Medido en
+la base de datos el 11 de noviembre de 2026: lo del lector ganaba el 52–57%
+las semanas del 5, 12 y 19 de octubre, y 132 de 135 del 26 de octubre al 10
+de noviembre (la tablet arrancó con 3.99.0 a las 18:11 UTC del 10).
+- `esDudosa` (registro.js): `origen: 'lector'`, `t` entre `DUDOSAS_DESDE` y
+  `DUDOSAS_HASTA`, y sin `editada` posterior a `DUDOSAS_HASTA` (las 23
+  editadas de esos días eran arreglos del draft con el resultado leído:
+  todas victorias). `conResultado` = `gane` booleano y no dudosa: es la
+  puerta de TODO lo que mide si ganaste: `resumen` (cuenta `dudosas`
+  aparte), `calibracion`, `ajustePersonal`, `medirFasesMias`,
+  `partidasValidas` de analitica, `tusNumeros` y `tuSemana`, `porJugador`
+  de la comunidad, la comparación de `revisarDrafts` (el draft sí cuenta),
+  `juntarGloria` del bot del modelo y `medir-mias`.
+- No se borra nada. En «Tus partidas» salen como «resultado dudoso» con ✓
+  (confirmar tal cual: `corregirPartida` con el mismo resultado, que pone
+  `editada`) y ⇄; el Veredicto dice cuántas no cuentan. Arreglarlas en la
+  tablet también pone `editada`.
+- Sin ellas: Veredicto +9,1 ± 7,6 (61,8% en 251 contra 51,3% de siempre).
+- Pruebas en `motor/dudosas` (cada medida da lo mismo con y sin ellas, y
+  las fechas son las del dato), `proponer-modelo` y `persistencia.e2e`; 16
+  mutaciones. Si añades una medida que mire `gane`, va por `conResultado` y
+  en `motor/dudosas`.

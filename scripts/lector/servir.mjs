@@ -140,7 +140,7 @@ export function podarCapturas(carpeta, { ahora = Date.now(), retencionMs = RETEN
     const ficheros = nombres.filter((n) => FICHERO_DE_CAPTURA.test(n) && n.startsWith(`${tipo}-`));
     // Los ids llevan la hora en el nombre: ordenados, los primeros son los más viejos.
     // Lo que la vigilancia del final aún enseña (la tabla, sobre todo) no se
-    // poda (3.37.0): sin su PNG, `/resultado` no aprende nada de ella.
+    // poda (3.37.0): es lo que `/final` enseña y lo que se sube al preguntar.
     const ids = [...new Set(ficheros.map(idDeCaptura))].filter((id) => !proteger.has(id)).sort();
     const sobran = new Set(ids.slice(0, Math.max(0, ids.length - maximos[tipo])));
     for (const n of ficheros) {
@@ -465,6 +465,22 @@ export const EN_PARTIDA_PARA_ESCONDER = 2;
 export const RETO_VUELTAS = 100000;
 export const RETOS_POR_MINUTO = 6;
 /**
+ * Y en total, de todos los aparatos a la vez (3.100.0, revisión de seguridad):
+ * con IPv6 cada petición puede venir de otra dirección, y cada reto son
+ * `RETO_VUELTAS` de PBKDF2 en la tablet. El móvil de Javi pide como mucho
+ * `RETOS_POR_MINUTO` al buscarla. Decisión de producto.
+ */
+export const RETOS_EN_TOTAL = 30;
+/** ¿Se atiende este reto? Poda los aparatos que llevan un minuto sin pedir (el mapa crecía sin tope) y apunta este. */
+export function permitirReto(retos, quien, t, { porAparato = RETOS_POR_MINUTO, enTotal = RETOS_EN_TOTAL } = {}) {
+  for (const [k, v] of retos) { const vivos = v.filter((x) => t - x < 60000); if (vivos.length) retos.set(k, vivos); else retos.delete(k); }
+  const suyos = retos.get(quien) ?? [];
+  const total = [...retos.values()].reduce((n, v) => n + v.length, 0);
+  if (suyos.length >= porAparato || total >= enTotal) return false;
+  retos.set(quien, [...suyos, t]);
+  return true;
+}
+/**
  * Cada cuánto, como mucho, se echa un vistazo al minimapa con la burbuja
  * puesta y nadie capturando (3.69.3): sin la app leyendo ni el modo solo, la
  * burbuja se quedaba en mitad de la partida. Decisión de producto: dos
@@ -661,7 +677,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       }
       final.fotogramas.push(foto);
       // La primera tabla: la partida ha acabado, gane o pierda, y aunque la
-      // palabra no tenga plantilla (la de victoria se aprende): cuánto duró
+      // palabra no se reconozca (tapada: se pregunta): cuánto duró
       // (3.44.0) y lo que el modelo daba para ESE final. Y se deja de mirar a
       // los dos minutos (las pantallas de después), sin pasar del límite.
       if (leido.tabla) final.acabada = true;
@@ -844,11 +860,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
     if (portero && req.method === 'GET' && new URL(req.url, 'http://127.0.0.1').pathname === '/reto') {
       const n = new URL(req.url, 'http://127.0.0.1').searchParams.get('n') ?? '';
       if (!/^[0-9a-f]{32}$/.test(n)) { res.writeHead(400, cabeceras).end(JSON.stringify({ error: 'reto' })); return; }
-      const quien = req.socket.remoteAddress ?? '';
-      const t = ahora();
-      const suyos = (retos.get(quien) ?? []).filter((x) => t - x < 60000);
-      if (suyos.length >= RETOS_POR_MINUTO) { res.writeHead(429, cabeceras).end(JSON.stringify({ error: 'bloqueado' })); return; }
-      retos.set(quien, [...suyos, t]);
+      if (!permitirReto(retos, req.socket.remoteAddress ?? '', ahora())) { res.writeHead(429, cabeceras).end(JSON.stringify({ error: 'bloqueado' })); return; }
       pbkdf2(codigo, `lector-reto:${n}`, RETO_VUELTAS, 32, 'sha256', (e, clave) => {
         if (e) { res.writeHead(500, cabeceras).end(JSON.stringify({ error: 'reto' })); return; }
         res.writeHead(200, cabeceras).end(JSON.stringify({ prueba: clave.toString('hex') }));
@@ -995,7 +1007,7 @@ export function crearServidor({ capturar, elector = null, caras = carasGuardadas
       return;
     }
     // ¿Cómo acabó la partida? (3.72.5) La APK lo pregunta si la tablet sola no
-    // lo reconoció, y con la respuesta se apunta y se aprende la tabla. Solo la APK.
+    // lo reconoció, y con la respuesta se apunta (desde 3.99.0 sin aprender nada). Solo la APK.
     // Tus partidas (3.75.0): la APK las enseña como están en la base de datos y
     // te deja arreglarlas (resultado, tu pick, quién iba en cada equipo). Solo la APK.
     if ((ruta === '/partidas' && req.method === 'GET') || (ruta === '/partida' && req.method === 'POST')) {

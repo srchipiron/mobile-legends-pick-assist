@@ -43,11 +43,14 @@ jobs:
     # no de Javi: un «@claude» colado ahí ponía a trabajar a Claude con
     # permiso de escritura. Tampoco cuenta el «@claude» del CUERPO de la
     # incidencia: con él, cualquier comentario posterior en ella lo disparaba.
+    # Ni en las del bot del modelo (3.100.0): su cuerpo lleva datos de la
+    # comunidad y de Liquipedia, que escribe cualquiera.
     if: |
       github.event.sender.login == github.repository_owner &&
       !contains(join(github.event.issue.labels.*.name, ','), 'pantalla') &&
       !contains(join(github.event.issue.labels.*.name, ','), 'partidas') &&
       !contains(join(github.event.issue.labels.*.name, ','), 'vigilancia') &&
+      !contains(join(github.event.issue.labels.*.name, ','), 'modelo') &&
       (contains(github.event.comment.body, '@claude') ||
        github.event.action == 'assigned')
     runs-on: ubuntu-latest

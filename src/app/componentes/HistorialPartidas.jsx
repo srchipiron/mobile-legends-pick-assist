@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { esPrevia, esSupuesta, siguioConsejo } from '../../motor/registro.js';
+import { esPrevia, esSupuesta, esDudosa, siguioConsejo } from '../../motor/registro.js';
 import { tokenPlausible } from '../github.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Veredicto } from './Veredicto.jsx';
@@ -28,8 +28,8 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null,
   // La × no borra en el acto (3.60.2): un toque en el borde de ⇄ caía en ella
   // y la partida se perdía sin vuelta atrás. Durante QUITAR_MS la fila dice
   // «Quitada · Deshacer»; después (o al cerrar la hoja) se borra de verdad.
-  // No antes: la subida automática manda la marca de borrado a los 3 s, y en
-  // el proyecto esa marca ya no se deshace.
+  // No antes: la base de datos recibe la marca de borrado a los pocos segundos
+  // (useComunidad), y allí esa marca ya no se deshace.
   const [quitando, setQuitando] = useState(null);
   const pendiente = useRef(null);
   const confirmarQuitada = () => {
@@ -131,7 +131,9 @@ export function HistorialPartidas({ partidas, pool, maestria = {}, datos = null,
             {/* Tocar el héroe lo cambia (3.47.0): el lector puede apuntar uno que no jugaste. */}
             <button className="partida-hero" aria-expanded={cambiando === p.t} aria-label={`${t('hist.cambiarHeroe')} · ${p.pick}`} onClick={() => setCambiando((c) => (c === p.t ? null : p.t))}>{p.pick}</button>
             <span className={p.gane ? 'partida-bien' : 'partida-mal'}>{p.gane ? t('hist.gane') : t('hist.perdi')}</span>
-            <span className="partida-tipo">{esPrevia(p) ? t('hist.previa') : esSupuesta(p) ? t('hist.supuesta') : (siguioConsejo(p) ? t('hist.seguida') : t('hist.libre'))}</span>
+            <span className="partida-tipo">{esDudosa(p) ? t('hist.dudosa') : esPrevia(p) ? t('hist.previa') : esSupuesta(p) ? t('hist.supuesta') : (siguioConsejo(p) ? t('hist.seguida') : t('hist.libre'))}</span>
+            {/* Confirmar el resultado tal cual (3.100.0): la marca `editada` la saca de las dudosas. */}
+            {esDudosa(p) && <button className="x" title={t('hist.confirmar')} aria-label={`${t('hist.confirmar')} · ${p.pick}`} onClick={() => onCorregir(p.t, p.gane)}>✓</button>}
             <button className="x" title={t('hist.cambiar')} aria-label={`${t('hist.cambiar')} · ${p.pick}`} onClick={() => onCorregir(p.t, !p.gane)}>⇄</button>
             <button className="x" title={t('hist.quitar')} aria-label={`${t('hist.quitar')} · ${p.pick}`} onClick={() => quitar(p.t)}>×</button>
           </div>

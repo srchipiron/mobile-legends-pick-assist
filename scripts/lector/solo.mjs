@@ -65,7 +65,7 @@ export const MINUTOS_DRAFT_ABANDONADO = 15;
 /** Como `CAMBIOS_A_LA_VEZ` de la app: más huecos ya leídos cambiando a la vez es la fase de skins (imanes). */
 export const CAMBIOS_A_LA_VEZ = 2;
 
-export const draftVacio = () => ({ baneos: [], banHuecos: [null, null, null, null, null, null, null, null, null, null], enemigos: [null, null, null, null, null], aliados: [null, null, null, null, null], tuyoFila: -1, cerrado: false, cerradoEn: null, enPartida: 0, actividad: null, ids: [] });
+export const draftVacio = () => ({ baneos: [], banHuecos: [null, null, null, null, null, null, null, null, null, null], enemigos: [null, null, null, null, null], aliados: [null, null, null, null, null], tuyoFila: -1, votosFila: [0, 0, 0, 0, 0], cerrado: false, cerradoEn: null, enPartida: 0, actividad: null, ids: [] });
 /**
  * Cuántos baneos que NO cuadran con el draft de antes dicen que es otro
  * draft (3.72.5): un hueco de baneo con otro héroe (los baneos no cambian
@@ -102,7 +102,7 @@ const nombres = (lista) => (Array.isArray(lista) ? lista : []).map((x) => (typeo
 /** Mete en los huecos lo leído; si cambian más de `CAMBIOS_A_LA_VEZ` huecos ya leídos, esa lectura no toca ese equipo. */
 function fundirHuecos(antes, leidos, saltar = -1) {
   const cambios = antes.filter((n, i) => i !== saltar && n && leidos[i] !== undefined && leidos[i] !== n).length;
-  if (cambios > CAMBIOS_A_LA_VEZ) return { huecos: antes, cambio: false };
+  if (cambios > CAMBIOS_A_LA_VEZ) return { huecos: antes, cambio: false, descartada: true };
   let cambio = false;
   const huecos = antes.map((n, i) => {
     const nuevo = leidos[i];
@@ -120,7 +120,23 @@ function fundirHuecos(antes, leidos, saltar = -1) {
     if (!n || n === antes[i]) return;
     huecos.forEach((m, j) => { if (j !== i && m === n) huecos[j] = null; });
   });
-  return { huecos, cambio };
+  return { huecos, cambio, descartada: false };
+}
+
+/**
+ * Tu fila, por votos (3.100.0). Cada lectura del draft que no se descarta
+ * (fase de skins: cambian más de `CAMBIOS_A_LA_VEZ` huecos a la vez) vota la
+ * fila del nombre amarillo, y manda la más votada; a igualdad, la que ya
+ * estaba. Antes mandaba la ÚLTIMA lectura, aunque fuera de la fase de skins:
+ * el 10 de noviembre de 2026 doce lecturas del draft decían «tú Diggie» (fila
+ * 2) y la fase de skins movió tu fila a la 3, así que se apuntó «Ling». De las
+ * 222 partidas de la tablet, ~25 llevan un pick que no es de roam (Gord,
+ * Kadita, Claude…, los de tus compañeros) frente a 0 de las 187 a mano.
+ */
+export function filaVotada(votos, actual) {
+  const max = Math.max(...votos);
+  if (!(max > 0)) return actual;
+  return actual >= 0 && votos[actual] === max ? actual : votos.indexOf(max);
 }
 
 /**
@@ -165,15 +181,19 @@ export function acumularDraft(estado, lectura, ahora) {
     || (!e.cerrado && (huecosDistintos >= BANEOS_DE_OTRO_DRAFT || (e.actividad != null && ahora - e.actividad >= MINUTOS_DRAFT_ABANDONADO * 60000))));
   if (otro) e = draftVacio();
   if (e.cerrado) return { ...e, enPartida: 0 };
-  const tuyoFila = Number.isInteger(lectura.tuyoFila) && lectura.tuyoFila >= 0 && lectura.tuyoFila < 5 ? lectura.tuyoFila : e.tuyoFila;
+  const leida = Number.isInteger(lectura.tuyoFila) && lectura.tuyoFila >= 0 && lectura.tuyoFila < 5 ? lectura.tuyoFila : -1;
   const nuevosBaneos = [...new Set([...e.baneos, ...baneos])].slice(0, 10);
   const enem = fundirHuecos(e.enemigos, enemigos);
-  const ali = fundirHuecos(e.aliados, filas, tuyoFila);
+  const ali = fundirHuecos(e.aliados, filas, e.tuyoFila >= 0 ? e.tuyoFila : leida);
+  // Tu fila la votan las lecturas que no se descartan (3.100.0).
+  const votosFila = [...(e.votosFila ?? [0, 0, 0, 0, 0])];
+  if (leida >= 0 && !ali.descartada) votosFila[leida] += 1;
+  const tuyoFila = filaVotada(votosFila, e.tuyoFila);
   const cambio = nuevosBaneos.length !== e.baneos.length || enem.cambio || ali.cambio || tuyoFila !== e.tuyoFila;
   // La captura de esta lectura (3.71.0): si luego dices quién era el «?», el lector aprende de ella.
   const ids = typeof lectura.id === 'string' && /^lectura-[\w-]+$/.test(lectura.id) && banDistintos >= BANEOS_EN_EL_DRAFT ? conCaptura(e.ids ?? [], lectura.id) : e.ids ?? [];
   const nuevosHuecos = (e.banHuecos ?? Array(10).fill(null)).map((n, i) => n ?? huecosBan[i]);
-  return { ...e, baneos: nuevosBaneos, banHuecos: nuevosHuecos, enemigos: enem.huecos, aliados: ali.huecos, tuyoFila, enPartida: 0, actividad: cambio ? ahora : e.actividad ?? (algo ? ahora : null), ids };
+  return { ...e, baneos: nuevosBaneos, banHuecos: nuevosHuecos, enemigos: enem.huecos, aliados: ali.huecos, tuyoFila, votosFila, enPartida: 0, actividad: cambio ? ahora : e.actividad ?? (algo ? ahora : null), ids };
 }
 
 const TEXTOS = {
@@ -430,7 +450,7 @@ export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(
     const sola = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane, t, duracion, versionModelo: VERSION_MODELO });
     if (!sola) return;
     // De qué draft es y cómo se supo el resultado (3.75.0), solo en la tablet (la base de datos no los guarda):
-    // para medir cuánto reconoce sola y para aprender la tabla si arreglas el resultado.
+    // para medir cuánto reconoce sola y para el aviso de «todas iguales» (3.99.0).
     const partida = { ...sola, desde: v.desde, resultadoDe: contestada ? 'pregunta' : 'tabla' };
     // Si en este draft quedó alguien sin leer (3.81.0), sus recortes, para medir el lector.
     const sinLeer = pendiente?.cuando === v.desde ? pendiente : null;

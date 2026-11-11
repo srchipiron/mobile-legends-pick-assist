@@ -1,4 +1,4 @@
-import { siguioConsejo, esPrevia, esSupuesta, calibracion } from './registro.js';
+import { siguioConsejo, esPrevia, esSupuesta, calibracion, conResultado } from './registro.js';
 
 /**
  * ¿Ayuda la app? Con las partidas de TODOS los jugadores de la base de datos
@@ -39,7 +39,7 @@ export function porJugador(filas = []) {
   const mapa = new Map();
   for (const f of filas) {
     const d = f?.d;
-    if (!d || typeof d !== 'object' || typeof d.pick !== 'string' || typeof d.gane !== 'boolean' || esPrevia(d) || esSupuesta(d)) continue;
+    if (!d || typeof d !== 'object' || typeof d.pick !== 'string' || !conResultado(d) || esPrevia(d) || esSupuesta(d)) continue;
     const j = String(f.j);
     if (!mapa.has(j)) mapa.set(j, []);
     mapa.get(j).push(d);
@@ -95,12 +95,13 @@ export function medirComunidad(filas = [], referencias = {}) {
   const mapa = porJugador(Array.isArray(filas) ? filas : []);
   const todas = [...mapa.values()].flat();
   const con = todas.filter(siguioConsejo);
+  const libres = todas.filter((p) => !siguioConsejo(p));
   const wr = (lista) => (lista.length ? lista.filter((p) => p.gane).length / lista.length : null);
   return {
     jugadores: mapa.size,
     partidas: todas.length,
     siguiendo: { n: con.length, winrate: wr(con) },
-    libre: { n: todas.length - con.length, winrate: wr(todas.filter((p) => !siguioConsejo(p))) },
+    libre: { n: libres.length, winrate: wr(libres) },
     entreRamas: entreRamasPorJugador(mapa),
     contraReferencia: contraReferencias(mapa, referencias),
     soloLector: contraReferencias(mapa, referencias, { filtro: (p) => p.origen === 'lector' }),

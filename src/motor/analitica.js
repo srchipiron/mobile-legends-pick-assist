@@ -1,4 +1,4 @@
-import { esPrevia, esSupuesta, compararProporciones } from './registro.js';
+import { esPrevia, esSupuesta, compararProporciones, conResultado } from './registro.js';
 import { wilson } from './habitos.js';
 import { nombreClave } from './nombres.js';
 
@@ -28,7 +28,7 @@ export const MINIMO_POR_GRUPO = 10;
 
 /** Las partidas que cuentan: apuntadas con la app (las previas no tienen hora ni draft), con resultado. */
 export const partidasValidas = (partidas = []) => (partidas ?? [])
-  .filter((p) => p && !esPrevia(p) && Number.isFinite(p.t) && typeof p.gane === 'boolean')
+  .filter((p) => p && !esPrevia(p) && Number.isFinite(p.t) && conResultado(p))
   .sort((a, b) => a.t - b.t);
 
 const ganadas = (lista) => lista.filter((p) => p.gane).length;

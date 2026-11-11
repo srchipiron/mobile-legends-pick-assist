@@ -23,6 +23,8 @@ export function Veredicto({ partidas, maestria, t = tPorDefecto }) {
   return (
     <section className="veredicto">
       <p className="build-nucleo">{t('veredicto.titulo')}</p>
+      {/* Las del resultado dudoso (3.100.0) no cuentan: se dice cuántas y cómo devolverlas. */}
+      {r.dudosas > 0 && <p className="frase ojo">{t('veredicto.dudosas', { n: r.dudosas })}</p>}
       {r.wrSiguiendo == null || r.siguiendo < 5 ? (
         <p className="frase duda">{t('veredicto.pocas', { n: r.siguiendo })}</p>
       ) : !r.referencia ? (

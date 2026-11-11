@@ -34,6 +34,26 @@ test('el draft junta lo leído: baneos de los dos lados sin repetir, huecos por 
   eq(d.aliados[0], 'Gord', 'un «?» borra lo leído');
 });
 
+test('tu fila la votan las lecturas del draft: la fase de skins no la mueve (3.100.0, el «Ling» del 10 de noviembre de 2026)', () => {
+  // Doce lecturas del draft decían «tú Diggie» (fila 2); la fase de skins, casi todo «?», leyó el nombre amarillo en la 3.
+  const equipo = [N('Carmilla'), N('Kagura'), N('Diggie'), N('Ling'), V];
+  const enemigos = [N('Angela'), V, N('Chou'), N('Fredrinn'), V];
+  let d = null;
+  for (let i = 0; i < 6; i++) d = acumularDraft(d, lectura({ enemigos, aliados: equipo, tuyoFila: 2 }), 1000 + i);
+  eq(d.tuyoFila, 2);
+  for (let i = 0; i < 8; i++) d = acumularDraft(d, lectura({ enemigos, aliados: [V, V, N('Diggie'), V, V], tuyoFila: 3 }), 2000 + i);
+  eq(d.tuyoFila, 2, 'una lectura descartada por la fase de skins mueve tu fila');
+  // Las que sí pasan (como mucho dos huecos cambiados) votan, pero manda la mayoría.
+  for (let i = 0; i < 3; i++) d = acumularDraft(d, lectura({ enemigos, aliados: [N('Carmilla'), N('Kagura'), N('Diggie'), V, V], tuyoFila: 3 }), 3000 + i);
+  eq(d.tuyoFila, 2, 'tres lecturas sueltas pesan más que seis del draft');
+  const dec = decidirSolo({ datos, draft: d, linea: 'roam' });
+  eq(dec.tuyo?.name, 'Diggie', 'se apunta otro héroe como tu pick');
+  ok(dec.aliados.some((h) => h.name === 'Ling') && !dec.aliados.some((h) => h.name === 'Diggie'), `tu héroe va como compañero: ${dec.aliados.map((h) => h.name)}`);
+  // Con más votos de otra fila, manda esa (no se queda en la primera que se leyó).
+  for (let i = 0; i < 7; i++) d = acumularDraft(d, lectura({ enemigos, aliados: equipo, tuyoFila: 3 }), 4000 + i);
+  eq(d.tuyoFila, 3, 'la fila más votada no manda');
+});
+
 test('un héroe no se queda en dos huecos de su equipo: el recién leído gana', () => {
   let d = acumularDraft(null, lectura({ aliados: [N('Gord'), V, V, V, V], enemigos: [N('Clint'), V, V, V, V] }), 1);
   d = acumularDraft(d, lectura({ aliados: [V, N('Gord'), V, V, V], enemigos: [V, N('Clint'), V, V, V] }), 2);

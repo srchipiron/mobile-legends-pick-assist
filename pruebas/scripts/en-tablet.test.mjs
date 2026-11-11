@@ -10,19 +10,20 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
-import { principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, TOPE_SIN_RESULTADO, finalParaSubir, partidaSinResultado, draftsArreglados } from '../../scripts/lector/en-tablet.mjs';
+import { TABLA_SEGUIDAS, ultimasDeTabla, principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, TOPE_SIN_RESULTADO, finalParaSubir, partidaSinResultado, draftsArreglados, franjaSinNombres, FRACCION_CABECERA } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { claveDeJugadorValida } from '../../src/app/basedatos.js';
 import { pruebaDelReto } from '../../src/app/lector.js';
 import { writeFileSync } from 'node:fs';
-import { crearPortero, hostPermitido, crearServidor, sanearCorreccion, deLaApk, FALLOS_CODIGO, VENTANA_CODIGO_MS, RETENCION_CAPTURAS_MS, CAPTURAS_A_MIRAR } from '../../scripts/lector/servir.mjs';
+import { RETOS_EN_TOTAL, RETOS_POR_MINUTO, permitirReto, plantillasDeSerie, crearPortero, hostPermitido, crearServidor, sanearCorreccion, deLaApk, FALLOS_CODIGO, VENTANA_CODIGO_MS, RETENCION_CAPTURAS_MS, CAPTURAS_A_MIRAR } from '../../scripts/lector/servir.mjs';
 import { existsSync } from 'node:fs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { readFileSync as leerFichero } from 'node:fs';
 import { capturaCompletaPng, capturaCompleta, VERDAD } from '../fixtures/juego/captura.mjs';
 import { recorteDePicks } from '../../scripts/lector/recortes.mjs';
 import { ARREGLOS_POR_TANDA, FASE_VALE_MS } from '../../scripts/lector/servir.mjs';
-import { leerPng } from '../../scripts/lector/png.mjs';
+import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
+import { reconocerResultado } from '../../scripts/lector/resultado.mjs';
 
 const png = capturaCompletaPng();
 /** Lo que da la APK: la cabecera de 16 bytes de `screencap` (ancho, alto, RGBA_8888, espacio de color) y los píxeles. */
@@ -173,6 +174,30 @@ test('la línea que manda la app vale para leer sola, también tras reiniciar si
   eq(ajustesDeLaTablet(casa, interno)().activo, false, 'una línea guardada sin forma vale');
 });
 
+test('arreglar el resultado no apaga el aviso de «todas iguales» (3.100.0): cuenta lo que LEYÓ la tablet, en la tablet y desde el móvil', async () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-leida-'));
+  const partidas = partidasDeLaTablet(casa);
+  const T0 = 1789000000000;
+  for (let i = 0; i < TABLA_SEGUIDAS; i++) partidas.apuntar({ t: T0 + i * 60000, pick: 'Diggie', gane: true, recomendados: ['Diggie'], origen: 'lector', resultadoDe: 'tabla' });
+  eq(JSON.stringify(ultimasDeTabla(partidas.todas())), JSON.stringify({ n: TABLA_SEGUIDAS, gane: TABLA_SEGUIDAS }));
+  // En la tablet: tres pasan a derrota (y una vuelve y se va otra vez: lo leído no se pisa).
+  for (let i = 0; i < 3; i++) partidas.editar(T0 + i * 60000, { gane: false });
+  partidas.editar(T0, { gane: true });
+  eq(partidas.todas().find((p) => p.t === T0).leida, true, 'volver a cambiarla pisa lo que leyó');
+  partidas.editar(T0, { gane: false });
+  // Desde el móvil (`alDiaCon`): otras tres, ya subidas, arregladas allí después.
+  const s = supabaseFalso();
+  await subirLoDeLaTablet({ partidas, clave: 'L'.repeat(43), config: { url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }, fetch: s.fetch });
+  const deLaBase = new Map(partidas.todas().filter((p) => p.t >= T0 + 3 * 60000 && p.t < T0 + 6 * 60000).map((p) => [p.t, { ...p, gane: false, editada: Date.now() }]));
+  eq(partidas.alDiaCon(deLaBase), 3);
+  eq(partidas.todas().filter((p) => !p.gane).length, 6, 'la prueba necesita seis arregladas');
+  eq(JSON.stringify(ultimasDeTabla(partidas.todas())), JSON.stringify({ n: TABLA_SEGUIDAS, gane: TABLA_SEGUIDAS }), 'arreglarlas apaga el aviso: cuenta lo arreglado y no lo leído');
+  // Una que no se leyó en la tabla (preguntada) no lleva `leida`.
+  partidas.apuntar({ t: T0 - 60000, pick: 'Diggie', gane: true, recomendados: ['Diggie'], origen: 'lector', resultadoDe: 'pregunta' });
+  partidas.editar(T0 - 60000, { gane: false });
+  eq(partidas.todas().find((p) => p.t === T0 - 60000).leida, undefined, 'una contestada guarda «lo leído»');
+});
+
 test('las partidas de la tablet (3.70.0): se guardan sin repetir y con tope, y se suben una vez con tu clave', async () => {
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-partidas-'));
   const partidas = partidasDeLaTablet(casa);
@@ -222,6 +247,15 @@ test('el reto de la búsqueda (3.70.0): la tablet demuestra que conoce el códig
     eq(ultimo.estado, 429, 'sin tope de retos por aparato (se podría ahogar a la tablet)');
     eq((await pedir(puerto, '/estado', { codigo: null, origen: null })).estado, 401, 'el reto abre la puerta sin código');
   } finally { servidor.close(); }
+  // Con direcciones que rotan (IPv6, 3.100.0): tope total por minuto y el mapa se poda.
+  const retos = new Map();
+  let atendidos = 0;
+  for (let i = 0; i < 200; i += 1) if (permitirReto(retos, `fe80::${i}`, 1000)) atendidos += 1;
+  eq(atendidos, RETOS_EN_TOTAL, 'con una dirección nueva en cada reto no hay tope (cada uno son 100.000 vueltas de PBKDF2 en la tablet)');
+  ok(retos.size <= RETOS_EN_TOTAL, `se guardan los aparatos que no pasaron: ${retos.size}`);
+  ok(permitirReto(retos, 'fe80::nuevo', 1000 + 60000) && retos.size === 1, `pasado un minuto, el mapa no se poda: ${retos.size}`);
+  for (let i = 0; i < RETOS_POR_MINUTO - 1; i += 1) permitirReto(retos, 'fe80::nuevo', 61000 + i);
+  ok(!permitirReto(retos, 'fe80::nuevo', 61100), 'se quita el tope por aparato');
 });
 
 test('la salud de la tablet (3.63.0): /estado cuenta lecturas y fallos, y lo que la APK escribe, solo con campos conocidos', async () => {
@@ -444,6 +478,17 @@ test('las pantallas del final sin reconocer (3.81.5): las dos primeras fuera de 
   eq(finalParaSubir({ desde: 5, fotogramas: [foto('30-02', { rafaga: true }), foto('50-00')] }).capturas.length, 1, 'con una sola de la ráfaga la sube dos veces o sube el vestíbulo');
   eq(finalParaSubir({ desde: 5, fotogramas: [{ ...foto('31-00'), id: '../x' }, foto('31-10', { miniatura: 'no <es> base64' })] }), null, 'sube una pantalla sin forma');
   eq(finalParaSubir({ desde: null, fotogramas: fotos }), null, 'sin la partida no se puede cruzar');
+  // La franja sube sin los nombres de los otros jugadores (3.100.0): cabecera intacta, lo de debajo en negro.
+  const blanca = { ancho: 320, alto: 56, rgba: new Uint8Array(320 * 56 * 4).fill(255) };
+  const conNombres = Buffer.from(escribirPng(blanca)).toString('base64');
+  const subida = finalParaSubir({ desde: 5, fotogramas: [foto('31-00', { tira: conNombres })] }).capturas[0].tira;
+  const vista = leerPng(Buffer.from(subida, 'base64'));
+  const fila = (y) => [...vista.rgba.subarray(y * 320 * 4, (y + 1) * 320 * 4)];
+  ok(fila(33).every((v) => v === 255), 'la cabecera de la tabla (donde se lee el resultado) no sube entera');
+  ok(fila(34).every((v, i) => (i % 4 === 3 ? v === 255 : v === 0)) && fila(55).every((v, i) => (i % 4 === 3 ? v === 255 : v === 0)), 'la franja sube con los nombres de los otros jugadores');
+  eq(Math.ceil(56 * FRACCION_CABECERA), 34);
+  const real = leerFichero(join(RAIZ, 'pruebas/fixtures/juego/finales/tabla-victoria.png'));
+  eq(reconocerResultado(leerPng(Buffer.from(franjaSinNombres(real.toString('base64')), 'base64')), plantillasDeSerie()).resultado, 'gane', 'tapada, la franja ya no se lee');
   // La partida sin resultado viaja con forma fija (3.89.4): sin `gane`, sin campos de más y con nombres con tope.
   const sin = { t: 7, pick: 'Estes', supuesto: true, rango: 'glory', recomendados: ['Estes', 'Floryn', 'Rafaela', 'Diggie'], estimacion: 0.55, modelo: 4, bans: ['Hirara', 42], draft: { linea: 'roam', enemigos: ['Clint', 'x'.repeat(50)], aliados: ['Gord'] }, duracion: 14, gane: true, lector: { ids: ['lectura-1'] }, clave: 'secreta' };
   const conPartida = finalParaSubir({ desde: 5, fotogramas: fotos, partida: sin });

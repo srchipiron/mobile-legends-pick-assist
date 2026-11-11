@@ -12,7 +12,7 @@
  * fallo de verdad (fichero ilegible) sí sale con código 1.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { resumen, calibracion, esPrevia, esSupuesta, siguioConsejo, aciertosDelLector, medirFasesMias } from '../src/motor/registro.js';
+import { resumen, calibracion, esPrevia, esSupuesta, esDudosa, conResultado, siguioConsejo, aciertosDelLector, medirFasesMias } from '../src/motor/registro.js';
 import { prepararDatos, estimarCon, resolverNombres } from '../src/motor/draft.js';
 import { logit } from '../src/motor/modelo.js';
 import { logistica } from './medir-rival.mjs';
@@ -48,7 +48,7 @@ export function errorDeAuc(a, n1, n0) {
 export function repuntuar(partidas, datos) {
   const filas = [];
   for (const p of partidas) {
-    if (esPrevia(p) || esSupuesta(p) || !p.draft) continue;
+    if (esPrevia(p) || esSupuesta(p) || !conResultado(p) || !p.draft) continue;
     const [yo] = resolverNombres(datos, [p.pick]);
     if (!yo) continue;
     const aliados = resolverNombres(datos, p.draft.aliados ?? []);
@@ -64,9 +64,10 @@ export function repuntuar(partidas, datos) {
 export function medir(registro, datos) {
   const partidas = registro.partidas ?? [];
   const maestria = registro.maestria ?? {};
-  const conApp = partidas.filter((p) => !esPrevia(p));
+  // Sin las del resultado dudoso (3.100.0): se cuentan aparte.
+  const conApp = partidas.filter((p) => !esPrevia(p) && conResultado(p));
   const ganadas = conApp.filter((p) => p.gane).length;
-  const salida = { n: partidas.length, conApp: conApp.length, previas: partidas.length - conApp.length, ganadas, wr: conApp.length ? ganadas / conApp.length : null };
+  const salida = { n: partidas.length, conApp: conApp.length, previas: partidas.filter(esPrevia).length, dudosas: partidas.filter(esDudosa).length, ganadas, wr: conApp.length ? ganadas / conApp.length : null };
   salida.veredicto = resumen(partidas, maestria);
   salida.calibracion = calibracion(partidas);
   // Solo las que apuntó el lector solo (3.60.2), como promete registro.js:
@@ -109,7 +110,7 @@ export function medir(registro, datos) {
 
 export function informe(m, { generado = null, errorDatos = null } = {}) {
   const L = [];
-  L.push(`## Tus partidas: ${m.n} apuntadas · ${m.conApp} con la app · ${m.previas} de tu historial`);
+  L.push(`## Tus partidas: ${m.n} apuntadas · ${m.conApp} con la app · ${m.previas} de tu historial${m.dudosas ? ` · ${m.dudosas} con el resultado dudoso (la tablet leía mal la tabla del 26 de octubre al 10 de noviembre): no cuentan hasta arreglarlas` : ''}`);
   if (!m.conApp) { L.push('', 'Todavía no hay partidas apuntadas con la app. Con cada partida que apuntes (Gané/Perdí al volver a la app) esto empieza a decir algo.'); return L.join('\n'); }
   L.push('', `Con la app: ${m.ganadas} ganadas de ${m.conApp} (${pct(m.wr)}).`);
   const v = m.veredicto;

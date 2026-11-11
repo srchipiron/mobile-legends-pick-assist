@@ -706,3 +706,28 @@ iteración no lo repita. Si aparece evidencia nueva, se reabre.
 - **Borrar o marcar las victorias del 26 de octubre al 9 de noviembre** —
   no se toca la base de datos sin Javi: es su historial y el de la
   comunidad. Pendiente de su decisión (`pendiente.md`).
+- **Marcar sin recomendados las partidas con un pick de otra línea (11 de
+  noviembre de 2026)** — se escribió y se quitó: la causa no era jugar otra
+  línea (Javi juega roam: 0 de 187 a mano fuera de roam) sino la fila mal
+  leída, arreglada en 3.100.0. Un filtro más para un caso que no existe.
+- **Que el pool de roam no pierda héroes de un día para otro** — el 11 de
+  noviembre la API quitó roam a Edith, Minsitthar y Selena (37 → 34; el
+  diagnóstico lo avisa). Es el dato (`lanes` de la API) y no se inventa una
+  histéresis; si vuelven, vuelven solos.
+- **De la revisión de seguridad del 11 de noviembre, sin hacer (propuesto a
+  Javi)**: (1) el token de administración escribe cualquier fichero y
+  `apk.yml` lo llevaría a la APK, que se instala sola: pedir pull request en
+  `main` o confirmar las actualizaciones de la APK cambia cómo trabaja todo;
+  (2) el código de vinculación viaja en claro por la wifi y con él `/clave`
+  da tu clave de la base de datos: arreglarlo es un protocolo nuevo (HMAC
+  por petición) en la app y la APK; (3) topes globales de `recortes` y
+  `partes` en Supabase y (4) quitar a `anon` `partes_recientes` y
+  `recortes_recientes`: cambian el esquema y aquí no hay Postgres para su
+  prueba (la privacidad de los recortes del final se arregló en origen,
+  tapando los nombres); (5) exigir 32 caracteres a `LECTOR_FIRMA_CLAVE`
+  podría dejar sin publicar la APK si la de Javi es más corta.
+- **El panel de vincular la tablet en la fase de baneos (revisión de
+  botones)** — no se ve hasta «Ir a los picks». Vincular es una vez (el QR
+  lo hace desde cualquier fase) y en baneos no hay sitio que no empuje la
+  nº1; se queda.
+

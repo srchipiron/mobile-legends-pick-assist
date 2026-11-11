@@ -9,7 +9,7 @@ import { simularFinales } from './robustez.js';
 import { aconsejarEquipo } from './equipo.js';
 import { analizarComposicion } from './composicion.js';
 import { analizarDraft, BRECHA_CLARA } from './analisis.js';
-import { esPrevia, esSupuesta, compararProporciones } from './registro.js';
+import { esPrevia, esSupuesta, compararProporciones, conResultado } from './registro.js';
 import { planDePartida } from './plan.js';
 import { elegirVentana, elegirRango, mediaDeWinrate, RANGO_DE_RESPALDO, tiersVigentes } from './ventana.js';
 import { movimientos } from './tendencia.js';
@@ -446,12 +446,13 @@ export function revisarPartida(datos, partida, { maestria = null } = {}) {
  * agrupado, como el Veredicto: nada se afirma dentro del margen).
  */
 export function revisarDrafts(datos, partidas = [], { maestria = null } = {}) {
-  const filas = partidas.filter((p) => !esPrevia(p) && !esSupuesta(p)).map((p) => revisarPartida(datos, p, { maestria })).filter(Boolean);
+  const filas = partidas.filter((p) => !esPrevia(p) && !esSupuesta(p)).map((p) => { const f = revisarPartida(datos, p, { maestria }); return f && { ...f, fiable: conResultado(p) }; }).filter(Boolean);
   const n = filas.length;
   if (!n) return { n: 0, filas };
   const bien = filas.filter((f) => f.veredicto === 'bien');
-  const claro = filas.filter((f) => f.veredicto === 'mejor');
-  const resto = filas.filter((f) => f.veredicto !== 'mejor');
+  // Si se perdió más: solo con un resultado del que fiarse (3.100.0: sin las dudosas). El draft sí cuenta entero.
+  const claro = filas.filter((f) => f.veredicto === 'mejor' && f.fiable);
+  const resto = filas.filter((f) => f.veredicto !== 'mejor' && f.fiable);
   const wr = (l) => l.filter((f) => f.gane).length / l.length;
   const MINIMO = 10;
   const comparacion = claro.length >= MINIMO && resto.length >= MINIMO

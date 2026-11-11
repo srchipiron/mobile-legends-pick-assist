@@ -178,7 +178,7 @@ export default function App() {
     () => ({ mastery: personal.maestria, partidas: personal.partidas, olvidadas: personal.olvidadas, rango: datos.rango, linea, idioma }),
     [personal.maestria, personal.partidas, personal.olvidadas, datos.rango, linea, idioma],
   );
-  // La subida automática de partidas (3.10.0): con token, cada cambio se sube solo.
+  // El token de GitHub (3.10.0), desde 3.98.0 solo para administrar (licencias, comunidad.json).
   const envio = useEnvio();
   // Las claves de invitación (3.65.0). La administración solo se ve con el
   // token de la subida (el móvil de Javi) o ya con la clave de administrador.
@@ -202,7 +202,8 @@ export default function App() {
   const leyendoAhora = useRef(false);
   // La tablet no acepta el código (3.61.0): no se lee solo hasta volver a vincular.
   const codigoMalo = useRef(false);
-  useEffect(() => { codigoMalo.current = false; }, [lectorTablet]);
+  // Otra tablet (o ninguna): el aviso de la de antes ya no vale (3.100.0: «no acepta el código» seguía tras revincular).
+  useEffect(() => { codigoMalo.current = false; setLector((l) => (l.aviso || l.ultimo ? { ...l, aviso: null, ultimo: null } : l)); }, [lectorTablet]);
   const ultimaLectura = useRef(0);
   // Lecturas seguidas con la tablet ya en partida (3.46.0).
   const enPartidaSeguidas = useRef(0);
@@ -277,10 +278,9 @@ export default function App() {
     // `tuyo` solo si es un hecho (3.60.4): apuntada sola sin pick fijado, el
     // pick es el nº1 SUPUESTO, y el lector aprendía tu cara con ese nombre.
     corregirLectura({ ids: draft.lectura?.ids ?? [], enemigos: draft.enemigos, baneos: draft.baneos, aliados: draft.aliados, tuyo: supuesto ? null : pick });
-    // Y el resultado con sus fotogramas, para que aprenda la palabra de la
-    // tabla (3.32.0).
-    // Si la partida se apuntó sola, después del plazo de su «Deshacer»
-    // (3.42.0): deshecha, el lector no aprende nada de ella.
+    // Y el resultado al lector: desde 3.99.0 ya no aprende de él (las plantillas
+    // de la tabla son fijas), solo deja de vigilar esa partida (`desde`).
+    // Apuntada sola, después del plazo de su «Deshacer» (3.42.0).
     const lista = sacarFotogramas();
     // Con `desde`, el lector deja de vigilar esa partida (3.44.1).
     const ensenar = ({ lista: l, gane: g, desde: d }) => ensenarResultado({ ids: l.map((f) => f.id), gane: g, desde: d });

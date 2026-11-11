@@ -118,6 +118,12 @@ export const ALIAS = {
   // baneo de MLBB Continental Championships S8 (19-9-2026). No es prefijo de
   // ningún otro nombre.
   matilda: 'Mathilda',
+  // Vistos el 11-11-2026 (lo avisó el diagnóstico, una vez cada uno): «wu zetian»
+  // es Zetian (Wu Zetian, el nombre del catálogo es «Zetian»; no es prefijo de
+  // nadie) y «teri» solo es prefijo de Terizla en el catálogo de 133.
+  'wu zetian': 'Zetian',
+  wuzetian: 'Zetian',
+  teri: 'Terizla',
 };
 
 /**
@@ -127,7 +133,8 @@ export const ALIAS = {
  * un baneo de MCT 2026 East Asia (26-4-2026, `historial/pro-partidas.jsonl`):
  * el baneo que no se hizo a tiempo; no es ningún héroe.
  */
-export const SIN_PICK = new Set(['none', 'default', '']);
+// «unknown» (11-11-2026, el diagnóstico): el hueco que Liquipedia no sabe rellenar, como «none».
+export const SIN_PICK = new Set(['none', 'default', 'unknown', '']);
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 

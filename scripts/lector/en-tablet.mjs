@@ -23,7 +23,7 @@ import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas, sanearAjustes, PUERTO, VISTAZO_MS, ARREGLOS_POR_TANDA } from './servir.mjs';
 import { limpiarTexto } from './servir.mjs';
-import { leerCrudo, escribirPngRapido } from './png.mjs';
+import { leerCrudo, escribirPngRapido, leerPng, escribirPng } from './png.mjs';
 import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo } from './solo.mjs';
 import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte, subirRecorte, traerMisPartidas, bajarMisRecortes } from '../../src/app/basedatos.js';
 import { maestriaEfectiva } from '../../src/motor/maestria.js';
@@ -244,7 +244,7 @@ export function partidasDeLaTablet(casa) {
         const b = deLaBase.get(p.t);
         if (!b || !subidas.has(p.t) || editadaDe(b) <= editadaDe(p) || typeof b.pick !== 'string' || typeof b.gane !== 'boolean') return p;
         cambiadas += 1;
-        return { ...b, ...(p.desde != null ? { desde: p.desde } : {}), ...(p.resultadoDe ? { resultadoDe: p.resultadoDe } : {}) };
+        return { ...b, ...(p.desde != null ? { desde: p.desde } : {}), ...(p.resultadoDe ? { resultadoDe: p.resultadoDe } : {}), ...leidaAntes(p, b.gane) };
       });
       if (cambiadas) escribir();
       return cambiadas;
@@ -280,7 +280,7 @@ export function partidasDeLaTablet(casa) {
         ...resto,
         ...(cambios.pick ? { pick: cambios.pick } : supuesto ? { supuesto } : {}),
         ...(otro ? {} : { ...(estimacion != null ? { estimacion } : {}), ...(modelo != null ? { modelo } : {}) }),
-        ...(typeof cambios.gane === 'boolean' ? { gane: cambios.gane } : {}),
+        ...(typeof cambios.gane === 'boolean' ? { gane: cambios.gane, ...leidaAntes(antes, cambios.gane) } : {}),
         ...(cambios.bans ? { bans: cambios.bans } : {}),
         draft: { ...(antes.draft ?? {}), ...(cambios.enemigos ? { enemigos: cambios.enemigos } : {}), ...(cambios.aliados ? { aliados: cambios.aliados } : {}) },
         editada: Date.now(),
@@ -302,9 +302,17 @@ export function partidasDeLaTablet(casa) {
  * salen por azar menos de una vez de cada cien. Decisión de producto.
  */
 export const TABLA_SEGUIDAS = 10;
+/**
+ * Lo que LEYÓ la tablet, aunque luego lo arreglaras (3.100.0): sin esto, al
+ * corregir las victorias falsas el aviso de «todas iguales» se apagaba y la
+ * tablet seguía leyendo mal. `leida` se queda solo en la tablet (la base de
+ * datos no la guarda, como `resultadoDe`).
+ */
+export const leidaAntes = (p, gane) => (p?.resultadoDe === 'tabla' && typeof p.leida !== 'boolean' && typeof p.gane === 'boolean' && p.gane !== gane ? { leida: p.gane }
+  : typeof p?.leida === 'boolean' ? { leida: p.leida } : {});
 export function ultimasDeTabla(todas) {
   const leidas = (Array.isArray(todas) ? todas : []).filter((p) => p?.resultadoDe === 'tabla' && typeof p.gane === 'boolean' && Number.isFinite(p.t)).sort((a, b) => b.t - a.t).slice(0, TABLA_SEGUIDAS);
-  return { n: leidas.length, gane: leidas.filter((p) => p.gane).length };
+  return { n: leidas.length, gane: leidas.filter((p) => (typeof p.leida === 'boolean' ? p.leida : p.gane)).length };
 }
 
 export const TOPE_SIN_RESULTADO = 50;
@@ -515,6 +523,24 @@ export function partidaSinResultado(p) {
   };
 }
 
+/**
+ * Lo que se queda de la franja del final al subirla (3.100.0): la cabecera de
+ * la tabla (marcador y VICTORY/DEFEAT, filas 0–33 de las 56, donde mira
+ * resultado.mjs) y lo de debajo en negro, que son los nombres de los otros
+ * nueve jugadores. `recortes_recientes` lo lee cualquiera con la clave
+ * pública. Medido en las 31 franjas de 3.99.0 (las de las pruebas van igual).
+ */
+export const FRACCION_CABECERA = 34 / 56;
+export function franjaSinNombres(b64) {
+  try {
+    const img = leerPng(Buffer.from(b64, 'base64'));
+    const desde = Math.ceil(img.alto * FRACCION_CABECERA);
+    const rgba = Uint8Array.from(img.rgba);
+    for (let i = desde * img.ancho * 4; i < rgba.length; i += 4) { rgba[i] = 0; rgba[i + 1] = 0; rgba[i + 2] = 0; rgba[i + 3] = 255; }
+    return Buffer.from(escribirPng({ ancho: img.ancho, alto: img.alto, rgba })).toString('base64');
+  } catch { return null; }
+}
+
 export function finalParaSubir({ desde, motivo = '', fotogramas = [], version = null, partida = null }) {
   const b64 = (x) => typeof x === 'string' && x.length > 0 && /^[A-Za-z0-9+/=]+$/.test(x);
   const validas = (Array.isArray(fotogramas) ? fotogramas : []).filter((f) => typeof f?.id === 'string' && /^fotograma-[\w-]+$/.test(f.id) && b64(f.miniatura));
@@ -528,7 +554,7 @@ export function finalParaSubir({ desde, motivo = '', fotogramas = [], version = 
   const recorte = {
     v: 1, tipo: 'final', version: typeof version === 'string' ? version : null, desde, motivo: String(motivo).slice(0, 80),
     ...(partidaSinResultado(partida) ? { partida: partidaSinResultado(partida) } : {}),
-    capturas: elegidas.map((f) => ({ id: f.id, minuto: Number.isFinite(f.minuto) ? f.minuto : null, miniatura: f.miniatura, ...(b64(f.tira) ? { tira: f.tira } : {}), tabla: !!f.tabla, ...(f.rafaga === true ? { rafaga: true } : {}), parecido: Number.isFinite(f.resultadoParecido) ? f.resultadoParecido : null })),
+    capturas: elegidas.map((f) => ({ id: f.id, minuto: Number.isFinite(f.minuto) ? f.minuto : null, miniatura: f.miniatura, ...(b64(f.tira) && franjaSinNombres(f.tira) ? { tira: franjaSinNombres(f.tira) } : {}), tabla: !!f.tabla, ...(f.rafaga === true ? { rafaga: true } : {}), parecido: Number.isFinite(f.resultadoParecido) ? f.resultadoParecido : null })),
   };
   while (Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES && recorte.capturas.length > 1) recorte.capturas.pop();
   return Buffer.byteLength(JSON.stringify(recorte)) > TOPE_RECORTE_BYTES ? null : recorte;

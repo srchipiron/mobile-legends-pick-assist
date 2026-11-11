@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { nombreClave } from '../src/motor/nombres.js';
 import { fundirCatalogo } from '../src/motor/catalogo.js';
 import { ESCALA, PESO_EQUILIBRIO_DANO } from '../src/motor/modelo.js';
+import { esDudosa } from '../src/motor/registro.js';
 import { cargar, terminosDe, validar } from './ajustar-modelo.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -63,7 +64,8 @@ export function juntarGloria({ mias = [], comunidad = [], desde = 0 }) {
   const todas = [];
   for (const p of [...mias, ...comunidad.map((f) => f?.d)]) {
     // Sin el pick supuesto (3.81.2): tu héroe va en el draft, y ese no se sabe.
-    if (!p || !Number.isFinite(p.t) || p.t < desde || p.supuesto === true) continue;
+    // Ni el resultado dudoso (3.100.0): 132 de 135 victorias del lector entre el 26 de octubre y el 10 de noviembre.
+    if (!p || !Number.isFinite(p.t) || p.t < desde || p.supuesto === true || esDudosa(p)) continue;
     const k = `${p.t}|${p.pick}`;
     if (vistas.has(k)) continue;
     vistas.add(k);

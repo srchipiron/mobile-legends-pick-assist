@@ -39,7 +39,9 @@ export function useAjustes() {
   // El lector en la tablet (3.61.0): null es sin tablet vinculada (no hay lector).
   const [lectorTablet, setLectorTabletCrudo] = useState(() => sanearLectorTablet(leer(CLAVES.lectorTablet, null)));
   // Estable (3.65.4): la búsqueda de la tablet la tiene en sus dependencias.
-  const setLectorTablet = useCallback((x) => setLectorTabletCrudo(sanearLectorTablet(x)), []);
+  // Desvincular apaga también «Leer solo» (3.100.0): seguía encendido sin tablet (el bucle
+  // de lectura giraba en vacío) y, al volver a vincular a mano, salía encendido sin elegirlo.
+  const setLectorTablet = useCallback((x) => { const tablet = sanearLectorTablet(x); setLectorTabletCrudo(tablet); if (!tablet) setLectorAuto(false); }, []);
   const [vinculoPendiente, setVinculoPendiente] = useState(vinculoDelEnlace);
   const confirmarVinculo = (si) => {
     if (si && vinculoPendiente) { setLectorTablet(vinculoPendiente); setLectorAuto(true); }

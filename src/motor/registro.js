@@ -152,7 +152,7 @@ export const sanearFases = (f) => (Array.isArray(f) && f.length === TRAMOS.lengt
  * tuyas. Hasta tener unas decenas, el ± manda.
  */
 export function medirFasesMias(partidas = []) {
-  const filas = (partidas ?? []).filter((p) => !esPrevia(p) && !esSupuesta(p) && sanearDuracion(p.duracion) && sanearFases(p.fases))
+  const filas = (partidas ?? []).filter((p) => !esPrevia(p) && !esSupuesta(p) && conResultado(p) && sanearDuracion(p.duracion) && sanearFases(p.fases))
     .map((p) => {
       const pf = p.fases[tramoDeMinutos(p.duracion)];
       const pb = typeof p.estimacion === 'number' ? p.estimacion : null;
@@ -320,6 +320,26 @@ export const esPrevia = (p) => !!p?.previa;
  */
 export const esSupuesta = (p) => p?.supuesto === true;
 
+/**
+ * ¿El resultado es DUDOSO (3.100.0)? Del 26 de octubre a las 18:00 UTC del 10
+ * de noviembre de 2026 la tablet leía la tabla del final con una zona que no
+ * distinguía victoria de derrota (ver 3.99.0): de lo que apuntó sola esos días,
+ * 132 de 135 salieron victoria, frente al 52–57 % de las tres semanas de antes
+ * (medido en la base de datos el 11 de noviembre). Esas partidas del lector no
+ * cuentan en nada que mire si ganaste hasta que alguien las arregla DESPUÉS
+ * del arreglo (`editada` posterior a `DUDOSAS_HASTA`): confirmar el resultado
+ * o cambiarlo, en el móvil o en la tablet. Las arregladas antes tampoco: el
+ * arreglo era del draft y el resultado seguía siendo el leído (las 23 editadas
+ * de esos días, todas victorias). Las fechas son las del dato, no una decisión.
+ */
+export const DUDOSAS_DESDE = Date.UTC(2026, 9, 26);
+export const DUDOSAS_HASTA = Date.UTC(2026, 10, 10, 18);
+export const esDudosa = (p) => !!p && p.origen === 'lector' && Number.isFinite(p.t) && p.t >= DUDOSAS_DESDE && p.t < DUDOSAS_HASTA
+  && !(Number.isFinite(p.editada) && p.editada >= DUDOSAS_HASTA);
+
+/** Con un resultado del que fiarse: `gane` sabido y no dudoso. Lo que mide si ganaste pasa por aquí. */
+export const conResultado = (p) => !!p && typeof p.gane === 'boolean' && !esDudosa(p);
+
 /** ¿El pick estaba entre lo recomendado? Por clave, no crudo: la API cambia grafías. */
 export function siguioConsejo(partida) {
   const pick = nombreClave(partida?.pick);
@@ -334,7 +354,7 @@ export function siguioConsejo(partida) {
  * «peor que una moneda» un tercio de las veces con 20 partidas.
  */
 export function calibracion(partidas = [], { porModelo = true } = {}) {
-  const con = partidas.filter((p) => !esPrevia(p) && !esSupuesta(p) && typeof p.estimacion === 'number');
+  const con = partidas.filter((p) => !esPrevia(p) && !esSupuesta(p) && conResultado(p) && typeof p.estimacion === 'number');
   const n = con.length;
   if (!n) return { n: 0, concluyente: false, faltan: MINIMO_PARA_CALIBRAR };
   const media = (lista, f) => lista.reduce((acc, p) => acc + f(p), 0) / lista.length;
@@ -406,7 +426,9 @@ export function compararProporciones(a, na, b, nb) {
  */
 export function resumen(partidas = [], maestria = {}) {
   const conApp = partidas.filter((p) => !esPrevia(p));
-  const medibles = conApp.filter((p) => !esSupuesta(p));
+  // Las del resultado dudoso (3.100.0) no cuentan en nada.
+  const fiables = conApp.filter((p) => conResultado(p));
+  const medibles = fiables.filter((p) => !esSupuesta(p));
   const con = medibles.filter(siguioConsejo);
   const sin = medibles.filter((p) => !siguioConsejo(p));
   const wr = (lista) => (lista.length ? lista.filter((p) => p.gane).length / lista.length : null);
@@ -442,7 +464,8 @@ export function resumen(partidas = [], maestria = {}) {
   return {
     total: partidas.length,
     previas: partidas.length - conApp.length,
-    supuestas: conApp.length - medibles.length,
+    dudosas: conApp.length - fiables.length,
+    supuestas: fiables.length - medibles.length,
     siguiendo: con.length,
     porLibre: sin.length,
     wrSiguiendo,
@@ -473,7 +496,7 @@ export function resumen(partidas = [], maestria = {}) {
 export const MINIMO_AJUSTE = 30;
 export const SIGMA_AJUSTE = 0.5;
 export function ajustePersonal(partidas = [], { minimo = MINIMO_AJUSTE, sigma = SIGMA_AJUSTE } = {}) {
-  const con = partidas.filter((p) => !esPrevia(p) && !esSupuesta(p) && typeof p.gane === 'boolean' && typeof p.estimacion === 'number' && p.estimacion > 0 && p.estimacion < 1);
+  const con = partidas.filter((p) => !esPrevia(p) && !esSupuesta(p) && conResultado(p) && typeof p.estimacion === 'number' && p.estimacion > 0 && p.estimacion < 1);
   if (con.length < minimo) return { n: con.length, activo: false, faltan: minimo - con.length };
   const lg = (q) => Math.log(q / (1 - q));
   const s2 = sigma * sigma;
