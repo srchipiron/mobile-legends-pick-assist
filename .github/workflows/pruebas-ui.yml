@@ -1,7 +1,6 @@
 # Las pruebas de interfaz en un Chrome de verdad (pruebas/interfaz/*.e2e.mjs)
 # sobre la app compilada. No las espera el despliegue: publicar no depende
-# de tener un navegador, y la vigilancia mira lo publicado. Corren en cada
-# push a main y en cada pull request, y se pueden lanzar a mano.
+# de tener un navegador, y la vigilancia mira lo publicado.
 name: Pruebas de interfaz
 
 on:
@@ -10,8 +9,7 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Solo leer: compila y abre un navegador, no escribe nada. Sin este bloque
-# el token recibía los permisos por defecto del repositorio.
+# Solo leer: compila y abre un navegador, no escribe nada.
 permissions:
   contents: read
 
@@ -24,28 +22,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      # Sin el token en .git/config mientras corre código del repositorio: aquí no se hace push.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        # Sin el token en .git/config mientras corre código del repositorio (3.60.4): aquí no se hace push.
         with:
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 22
-      - name: node_modules (caché por lockfile)
-        id: cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: node_modules
-          key: modulos-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}
-      - if: steps.cache.outputs.cache-hit != 'true'
-        run: npm ci
+      - uses: ./.github/actions/instalar
       - name: Compilar
         run: npm run build
-      # El runner de GitHub trae Google Chrome; playwright-core lo usa por
-      # `channel: 'chrome'` sin descargar nada.
+      # El runner trae Google Chrome; playwright-core lo usa por `channel: 'chrome'` sin descargar nada.
       - name: Pruebas de interfaz
         run: node pruebas/correr.mjs --e2e
-      # La base de datos de partidas (3.69.0): supabase/esquema.sql contra un
-      # Postgres de verdad (el runner trae uno, parado; la prueba arranca el suyo).
+      # supabase/esquema.sql contra un Postgres de verdad (el runner trae uno, parado; la prueba arranca el suyo).
       - name: Base de datos (Postgres)
         run: npm run test:sql

@@ -1,9 +1,8 @@
 name: Vigilar la app publicada
 
-# Comprueba lo que la app SIRVE DE VERDAD, no lo que hay en el repositorio.
-# Un despliegue puede publicar datos degradados con el repo impecable: pasó dos
-# veces el 30/8/2026. Si algo falla, abre una incidencia con el diagnóstico
-# entero dentro, para no tener que pedirlo desde el móvil.
+# Lo que la app SIRVE DE VERDAD, no lo que hay en el repositorio (dos veces el
+# repo estaba impecable y lo publicado roto). Si algo falla, abre una
+# incidencia con el diagnóstico dentro; cuando vuelve a pasar, la cierra.
 on:
   schedule:
     - cron: '40 6,18 * * *'    # una hora después de cada actualización de datos
@@ -18,80 +17,44 @@ on:
         default: false
 
 permissions:
-  contents: write   # para poder commitear el historial de salud
+  contents: write   # para commitear el historial de salud
   issues: write
 
-# Una vigilancia cada vez: si se solapan, una puede cerrar la incidencia que la
-# otra acaba de abrir.
+# Una cada vez: si se solapan, una puede cerrar la incidencia que la otra acaba de abrir.
 concurrency:
   group: vigilancia
   cancel-in-progress: false
 
 jobs:
   vigilar:
-    # Solo tras un despliegue que ha PUBLICADO: con uno cancelado o fallido
-    # (cancel-in-progress en deploy.yml) miraba la versión anterior, que está
-    # sana, y cerraba la incidencia abierta. Y eran ~20 corridas los días de
-    # muchos pushes, que llenaban la ventana de 40 filas del historial.
+    # Solo tras un despliegue que PUBLICÓ: con uno cancelado miraba la versión anterior y cerraba la incidencia.
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
-    # Tope del JOB entero: los pasos con red ya lo tenían, pero las pruebas,
-    # la compilación o Pages podían colgar el runner seis horas.
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '22'
-      # node_modules ENTERO, por hash del lockfile. La cache de npm de
-      # setup-node solo guarda las descargas: medido, npm ci seguia en 3,7-4,7
-      # minutos con ella (despliegue 99, vigilancia 77). Con node_modules
-      # guardado, el paso se salta. npm ci BORRA node_modules antes de
-      # instalar, asi que solo corre si la cache no ha traido nada.
-      - id: modulos
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: node_modules
-          key: modulos-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}
-      - if: steps.modulos.outputs.cache-hit != 'true'
-        run: npm ci
+      - uses: ./.github/actions/instalar
 
-      # 1) El motor sigue siendo correcto.
       - name: Pruebas
         id: pruebas
-        # shell: bash trae -o pipefail: sin eso el paso devolvia el codigo de
-        # `tee` y un npm test en rojo nunca abria incidencia.
+        # bash trae pipefail: sin él el paso devolvía el código de `tee`.
         shell: bash
         run: npm test 2>&1 | tee /tmp/pruebas.txt
 
-      # 2) Y lo publicado está sano. Se reintenta: justo después de un
-      #    despliegue, Pages puede tardar en servir lo nuevo.
       - name: Diagnóstico de lo publicado
         id: diag
-        # También con las pruebas en rojo: sin esto el paso se saltaba, no se
-        # miraba lo publicado y no quedaba fila en el historial justo en las
-        # corridas malas (del 23 al 25 de septiembre de 2026, incidencia #9,
-        # cuatro corridas sin fila). `!cancelled()` y no `always()`: una
-        # corrida cancelada no tiene nada que decir.
+        # También con las pruebas en rojo (las corridas malas son las que necesitan fila); no si se canceló.
+        # Hasta tres intentos (Pages tarda tras un despliegue); el que decide deja SU fila, también la mala.
         if: ${{ !cancelled() }}
         shell: bash
         run: |
-          # Un vigilante que nunca se ha visto saltar no es un vigilante. Con
-          # esta entrada se puede provocar el fallo y comprobar que abre la
-          # incidencia de verdad, sin esperar a que la app se rompa sola.
           if [ "${{ inputs.probar_alarma }}" = "true" ]; then
             echo "PRUEBA DE ALARMA: fallo provocado a proposito, la app esta bien" | tee /tmp/diagnostico.txt
             exit 1
           fi
-          # Cada intento escribe SU fila a un temporal y solo el que decide la
-          # pasa al historial: antes el intento bueno volvia a ejecutar el
-          # diagnostico entero solo para anotar la fila, y si esa segunda
-          # pasada fallaba (Pages parpadea) el paso salia en rojo DESPUES de
-          # haber dicho estado=bien.
           for intento in 1 2 3; do
             rm -f /tmp/fila.jsonl
             if node scripts/diagnostico.mjs --historial /tmp/fila.jsonl > /tmp/diagnostico.txt 2>&1; then
-              echo "estado=bien" >> "$GITHUB_OUTPUT"
               cat /tmp/fila.jsonl >> historial/salud.jsonl
               cat /tmp/diagnostico.txt
               exit 0
@@ -99,27 +62,14 @@ jobs:
             echo "intento $intento sin éxito; espero"
             [ "$intento" != "3" ] && sleep 45
           done
-          echo "estado=mal" >> "$GITHUB_OUTPUT"
           [ -f /tmp/fila.jsonl ] && cat /tmp/fila.jsonl >> historial/salud.jsonl
           cat /tmp/diagnostico.txt
           exit 1
 
-      # Cada corrida deja una fila con las cifras. Un informe suelto dice si hoy
-      # esta bien; cien informes dicen QUE SE ESTA MOVIENDO -la cobertura que
-      # baja poco a poco, el ruido que sube, los datos que envejecen porque la
-      # actualizacion lleva dias fallando-. Eso es lo que se puede mirar antes
-      # de decidir que va en la version siguiente.
-      #
-      # Se commitea SIEMPRE, tanto si el diagnostico ha pasado como si no: las
-      # corridas malas son justo las que hay que poder mirar despues.
       - name: Guardar la fila en el historial
         id: guardar
+        # Siempre; un push perdido no es «la app falla», pero los avisos miran `steps.guardar.outcome`.
         if: always()
-        # continue-on-error para que un push perdido no se lea como «la app
-        # falla»; pero una fila perdida en silencio es lo que el bucle de
-        # abajo viene a evitar, así que los dos pasos de la incidencia miran
-        # `steps.guardar.outcome` (con continue-on-error, `failure()` no se
-        # entera).
         continue-on-error: true
         run: |
           if [ -s historial/salud.jsonl ] && ! git diff --quiet -- historial/salud.jsonl; then
@@ -127,33 +77,17 @@ jobs:
             git config user.email "vigilancia-bot@users.noreply.github.com"
             git add historial/salud.jsonl
             git commit -m "salud: $(date -u +%Y-%m-%dT%H:%MZ)"
-            # Otra corrida puede haber commiteado mientras: se rebasa y se
-            # reintenta en vez de perder la fila.
-            # Si fallan los tres intentos el paso sale EN ROJO: antes el ultimo
-            # mandato del bucle era `sleep` y el estado era 0, o sea la corrida
-            # perdida en silencio que este bucle venia a evitar.
-            subido=0
-            for i in 1 2 3; do
-              git pull --rebase --autostash origin main && git push origin HEAD:main && { subido=1; break; }
-              sleep 5
-            done
-            [ "$subido" = 1 ] || { echo "::error::push rechazado tres veces"; exit 1; }
+            bash scripts/bots/subir.sh origin HEAD:main
           fi
 
-      # 3) Los datos no llevan días sin actualizarse (3.81.2). Un aviso del
-      #    diagnóstico no abre incidencia, y la API caída del 10 al 19 de
-      #    octubre de 2026 dejó 353 filas sin un solo fallo. Va DESPUÉS de
-      #    guardar la fila: lee la de esta corrida.
+      # Tras guardar (lee la fila de esta corrida): datos de más de 72 h abren la incidencia de siempre.
       - name: Datos sin actualizar
         id: rancios
         if: ${{ !cancelled() }}
         shell: bash
         run: node scripts/datos-rancios.mjs historial/salud.jsonl 2>&1 | tee /tmp/rancios.txt
 
-      # 4) Las caras del lector, al día con las del juego (3.102.0). Un parche
-      #    puede cambiar el dibujo de un héroe (Popol and Kupa y Cyclops el 11
-      #    de noviembre de 2026) y la tablet deja de reconocerlo sin que nada
-      #    lo diga. No va en npm test: tiraría el despliegue de los datos.
+      # Las caras del lector, al día con las del juego (no va en npm test: tiraría el despliegue).
       - name: Caras nuevas en el juego
         id: caras
         if: ${{ !cancelled() }}
@@ -163,57 +97,20 @@ jobs:
       - name: Abrir incidencia si algo falla
         if: ${{ failure() || steps.guardar.outcome == 'failure' }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          FILA_PERDIDA: ${{ steps.guardar.outcome == 'failure' }}
+          RANCIOS: ${{ steps.rancios.outcome == 'failure' }}
+          CARAS: ${{ steps.caras.outcome == 'failure' }}
         with:
           script: |
-            // github-script v9 es ESM: aquí ya no existe require().
-            const fs = await import('node:fs');
-            const leer = (f) => { try { return fs.readFileSync(f, 'utf8').slice(-5000); } catch { return '(sin salida)'; } };
-            const filaPerdida = '${{ steps.guardar.outcome }}' === 'failure';
-            const cuerpo = [
-              ...(filaPerdida ? ['**La fila de esta corrida NO se ha guardado en `historial/salud.jsonl`** (push rechazado tres veces). Si el diagnóstico de abajo dice que todo está bien, es solo eso.', ''] : []),
-              ...('${{ steps.rancios.outcome }}' === 'failure' ? [`**${leer('/tmp/rancios.txt').trim()}**`, ''] : []),
-              ...('${{ steps.caras.outcome }}' === 'failure' ? [`**${leer('/tmp/caras.txt').trim()}**`, ''] : []),
-              'La vigilancia automática ha encontrado algo. Esto NO lo ha pulsado nadie:',
-              'lo ha detectado la comprobación programada contra la app publicada.',
-              '',
-              '## Diagnóstico de lo publicado', '```', leer('/tmp/diagnostico.txt'), '```',
-              '## Pruebas', '```', leer('/tmp/pruebas.txt'), '```',
-              '',
-              `[Ver la ejecución](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
-            ].join('\n');
-
-            const titulo = 'Vigilancia: la app publicada falla';
-            const abiertas = await github.rest.issues.listForRepo({
-              ...context.repo, state: 'open', labels: 'vigilancia',
-            });
-
-            // Se reutiliza la incidencia abierta en vez de crear una por
-            // ejecución: doce avisos al día del mismo problema no son doce
-            // problemas, y enterrarían el que sí importa.
-            if (abiertas.data.length) {
-              await github.rest.issues.createComment({
-                ...context.repo, issue_number: abiertas.data[0].number, body: cuerpo,
-              });
-            } else {
-              await github.rest.issues.create({
-                ...context.repo, title: titulo, body: cuerpo, labels: ['vigilancia'],
-              });
-            }
+            const { vigilancia } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/bots/incidencia.mjs`);
+            const si = (v) => process.env[v] === 'true';
+            await vigilancia({ github, context, mal: true, filaPerdida: si('FILA_PERDIDA'), rancios: si('RANCIOS'), caras: si('CARAS') });
 
       - name: Cerrar la incidencia si ya está sano
         if: ${{ success() && steps.guardar.outcome != 'failure' }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
-            const abiertas = await github.rest.issues.listForRepo({
-              ...context.repo, state: 'open', labels: 'vigilancia',
-            });
-            for (const inc of abiertas.data) {
-              await github.rest.issues.createComment({
-                ...context.repo, issue_number: inc.number,
-                body: 'Resuelto: la vigilancia vuelve a pasar sin fallos.',
-              });
-              await github.rest.issues.update({
-                ...context.repo, issue_number: inc.number, state: 'closed', state_reason: 'completed',
-              });
-            }
+            const { vigilancia } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/bots/incidencia.mjs`);
+            await vigilancia({ github, context, mal: false });

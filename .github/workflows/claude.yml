@@ -1,11 +1,8 @@
 name: Claude a petición
 
-# Claude trabaja sobre una incidencia o un pull request cuando alguien lo llama
-# con @claude. NO se dispara solo: hace falta que Javi lo pida, porque cada
-# ejecución cuesta dinero de su clave de API.
-#
-# Está apagado mientras no exista el secreto ANTHROPIC_API_KEY. Si no está, el
-# workflow avisa en el registro y no hace nada más: ni falla ni gasta.
+# Claude trabaja sobre una incidencia o un pull request cuando Javi lo llama
+# con @claude (cada ejecución cuesta dinero de su clave). Apagado mientras no
+# exista el secreto ANTHROPIC_API_KEY: avisa en el registro y no gasta nada.
 on:
   issue_comment:
     types: [created]
@@ -14,14 +11,8 @@ on:
   issues:
     types: [assigned]
 
-# contents: write hace falta para crear la RAMA de trabajo. Que trabaje en una
-# rama y proponga sale de base_branch/branch_prefix más la instrucción del
-# prompt, y de que las pruebas corran en cada propuesta (pruebas-pr.yml).
-#
-# El candado DURO sería proteger la rama main en Settings -> Branches, exigiendo
-# pull request para cualquiera. Hoy NO está puesto, y no lo pongo yo porque
-# también obligaría a Javi (y a mí en sus sesiones) a pasar por PR para cada
-# cambio, y eso es una decisión suya sobre cómo quiere trabajar, no mía.
+# contents: write para crear la RAMA de trabajo; propone, nunca escribe en
+# main. Proteger `main` en Settings es decisión de Javi (obligaría a todo PR).
 permissions:
   contents: write
   pull-requests: write
@@ -33,18 +24,10 @@ concurrency:
 
 jobs:
   claude:
-    # Tope del job: 40 turnos de agente no pueden ocupar el runner seis horas.
     timeout-minutes: 60
-    # Solo el dueño del repositorio. Sin esto, en un repositorio público
-    # cualquiera podría escribir "@claude" y gastar la clave de Javi.
-    # Y nunca en las incidencias que escribe la APP con el token de Javi
-    # (3.40.0): las de pantallas, partidas y vigilancia. Para GitHub esos
-    # comentarios son «del dueño», y su texto viene del lector o del móvil,
-    # no de Javi: un «@claude» colado ahí ponía a trabajar a Claude con
-    # permiso de escritura. Tampoco cuenta el «@claude» del CUERPO de la
-    # incidencia: con él, cualquier comentario posterior en ella lo disparaba.
-    # Ni en las del bot del modelo (3.100.0): su cuerpo lleva datos de la
-    # comunidad y de Liquipedia, que escribe cualquiera.
+    # Solo el dueño, con «@claude» en SU comentario (no en el cuerpo) o asignándolo; nunca en las
+    # incidencias que escribe la app con su token (pantalla, partidas, vigilancia) ni en las del
+    # bot del modelo: su texto viene de fuera y para GitHub son «del dueño».
     if: |
       github.event.sender.login == github.repository_owner &&
       !contains(join(github.event.issue.labels.*.name, ','), 'pantalla') &&
@@ -70,22 +53,7 @@ jobs:
           fetch-depth: 0
 
       - if: env.TIENE_CLAVE == 'true'
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '22'
-      # node_modules ENTERO, por hash del lockfile. La cache de npm de
-      # setup-node solo guarda las descargas: medido, npm ci seguia en 3,7-4,7
-      # minutos con ella (despliegue 99, vigilancia 77). Con node_modules
-      # guardado, el paso se salta. npm ci BORRA node_modules antes de
-      # instalar, asi que solo corre si la cache no ha traido nada.
-      - id: modulos
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: node_modules
-          key: modulos-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}
-
-      - if: env.TIENE_CLAVE == 'true' && steps.modulos.outputs.cache-hit != 'true'
-        run: npm ci
+        uses: ./.github/actions/instalar
 
       - if: env.TIENE_CLAVE == 'true'
         uses: anthropics/claude-code-action@cab360f6565aa35a51d6ce9e43f1f4287c0a32ea # v1.0.241

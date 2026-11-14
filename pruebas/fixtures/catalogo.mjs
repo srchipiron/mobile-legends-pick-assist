@@ -3,7 +3,7 @@
  * (solo tags y roles escritos a mano), y un acceso por nombre que falla si el
  * héroe no existe, para que una prueba no pase en silencio con `undefined`.
  */
-import { leerJson } from '../arnes.mjs';
+import { leerJson } from '../ayuda.mjs';
 import { fundirCatalogo } from '../../src/motor/catalogo.js';
 
 export const catalogo = leerJson('public/data/heroes.json');

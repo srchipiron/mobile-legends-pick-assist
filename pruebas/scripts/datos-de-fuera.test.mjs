@@ -5,11 +5,11 @@
  * ejecutaba en el bot de mantenimiento, con permiso de escritura), y un id
  * de imagen «../x» que escribía fuera de su carpeta.
  */
-import { mkdtempSync, existsSync, readdirSync, readFileSync } from 'node:fs';
+import { mkdtempSync, existsSync, readdirSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test, ok, eq, RAIZ } from '../ayuda.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { pintarTabla } from '../../scripts/derivar-tags.mjs';
 import { ES_SPECIALITY } from '../../scripts/ingesta/extraccion.mjs';
 import { bajarImagenes, esUrlDeImagen } from '../../scripts/ingesta/imagenes.mjs';
@@ -25,8 +25,7 @@ test('una speciality con forma de código no llega a reglas.js', async () => {
   delete globalThis.PWNED;
   await import(`data:text/javascript,${encodeURIComponent(`export const T = {\n${tabla}\n};`)}`);
   eq(globalThis.PWNED, undefined, 'la tabla ejecuta código');
-  // El bot sustituye el bloque con una función: con una cadena, `$&` del texto nuevo se interpretaba.
-  ok(readFileSync(join(RAIZ, '.github/workflows/mantenimiento.yml'), 'utf8').includes('salida.replace(viejo, () => nuevo)'), 'mantenimiento.yml sustituye el bloque con una cadena');
+  // Y el bot la mete en reglas.js tal cual (pruebas/scripts/bots.test.mjs: un `$&` no se interpreta).
 });
 
 test('una imagen con id «../x» o una dirección que no es https no se baja', async () => {
@@ -39,7 +38,7 @@ test('una imagen con id «../x» o una dirección que no es https no se baja', a
     const base = mkdtempSync(join(tmpdir(), 'imagenes-'));
     const dir = join(base, 'objetos');
     const u = `http://127.0.0.1:${srv.address().port}/i.png`;
-    const r = await bajarImagenes({ '../escapado': u, 'a/b': u, 7: u }, dir, '.png', 'objetos');
+    const r = await bajarImagenes({ '../escapado': u, 'a/b': u, 7: u }, dir, '.png', { sleep: async () => {} });
     ok(!existsSync(join(base, 'escapado.png')), 'un id «../escapado» escribe fuera de la carpeta');
     eq(readdirSync(dir).filter((f) => f.endsWith('.png')).join(), '7.png', `se bajan imágenes con id que no es un número: ${readdirSync(dir)}`);
     eq(r.bajados, 1);

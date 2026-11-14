@@ -1,28 +1,34 @@
 /**
- * Los workflows y los scripts que publican, leídos POR FORMA y, donde se
- * puede, EJECUTADOS. Aquí viven tres guardarraíles con historia: la ingesta
- * escribiendo directa sobre `public/data` (una corrida degradada commiteada),
- * el bucle de rebase+push que salía en verde con los tres intentos
- * rechazados, y el diagnóstico de la vigilancia que reventaba tres líneas
- * después de imprimir «[OK]».
- *
- * Nada de buscar cadenas sueltas en el YAML: `run: echo "antes: node
- * scripts/comparar-ingesta.mjs"` pasaba el guardarraíl y `h > 7200` pasaba el
- * tope de antigüedad. Los `run` se leen como pasos y se trocean en mandatos
- * (ver pruebas/fixtures/yaml-workflows.mjs), y los dos guardarraíles del
- * despliegue -frescura y datos publicables- se ejecutan de verdad contra un
- * `roam-meta.json` fabricado.
+ * Los workflows y lo que publican, leídos POR FORMA y, donde se puede,
+ * EJECUTADOS: la ingesta siempre a un temporal y con el comparador como
+ * MANDATO, las puertas del despliegue con datos fabricados, el bucle de push
+ * con un `git` de mentira que lo rechaza, pipefail en toda tubería, topes de
+ * tiempo, permisos, concurrencia en los jobs y acciones fijadas por SHA.
+ * Buscar cadenas sueltas no vale: `echo "…comparar-ingesta…"` y `h > 7200`
+ * pasaban las guardas por texto.
  */
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, cpSync, chmodSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { after } from 'node:test';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test, ok, eq, RAIZ, leerTexto, leerJson } from '../ayuda.mjs';
-import { WORKFLOWS, leerWorkflow, mandatos, ejecuta } from '../fixtures/yaml-workflows.mjs';
+import { ACCIONES_LOCALES, WORKFLOWS, ejecuta, leerAccion, leerWorkflow, mandatos } from '../fixtures/yaml-workflows.mjs';
 import { medir, FIJAS } from '../../scripts/comparar-ingesta.mjs';
 
 const tmp = mkdtempSync(join(tmpdir(), 'workflows-'));
+after(() => rmSync(tmp, { recursive: true, force: true }));
 const corre = (script, args, opts = {}) => spawnSync(process.execPath, [resolve(RAIZ, script), ...args], { encoding: 'utf8', cwd: RAIZ, ...opts });
+const todos = WORKFLOWS.map(leerWorkflow);
+const wf = (f) => todos.find((w) => w.fichero === f);
+const deploy = wf('deploy.yml');
+const LOS_TRES = ['deploy.yml', 'update-data.yml', 'mantenimiento.yml'];
+const INGESTA = /^node scripts\/ingest\.mjs\b/;
+const SUBIR = /^bash scripts\/bots\/subir\.sh\b/;
+/** ¿El paso hace push? Directo o con el bucle de scripts/bots/subir.sh. */
+const empuja = (p) => mandatos(p.run).some((c) => /^git push\b/.test(c) || SUBIR.test(c));
+/** ¿El paso instala? `npm ci` directo o la acción local `instalar`. */
+const instala = (p) => mandatos(p.run).some((c) => /^npm ci\b/.test(c)) || p.uses === './.github/actions/instalar';
 
 /** Un `roam-meta.json` de mentira con la edad que se le pida. */
 function datosDe({ horas = 1, cruces = 1200, heroCount = 133 } = {}) {
@@ -36,470 +42,86 @@ function datosDe({ horas = 1, cruces = 1200, heroCount = 133 } = {}) {
   return { generatedAt: new Date(Date.now() - horas * 3.6e6).toISOString(), heroCount, counters: filas };
 }
 
-/** Ejecuta el `run` de un paso en un directorio de mentira, como haría el runner. */
+/** Ejecuta el `run` de un paso en un directorio de mentira, como haría el runner (sin las expresiones `${{ }}`). */
 function ejecutarPaso(run, { cwd, env = {}, path = [] } = {}) {
-  const guion = run.replace(/\$\{\{[^}]*\}\}/g, '');
-  return spawnSync('bash', ['-e', '-o', 'pipefail', '-c', guion], {
+  return spawnSync('bash', ['-e', '-o', 'pipefail', '-c', run.replace(/\$\{\{[^}]*\}\}/g, '')], {
     cwd, encoding: 'utf8', timeout: 120000,
     env: { ...process.env, ...env, PATH: [...path, process.env.PATH].join(':') },
   });
 }
 
-const deploy = leerWorkflow('deploy.yml');
+/** Un `git` de mentira que rechaza todo push (y lo apunta en $GITLOG) y un `sleep` que no espera. */
+function gitQueRechaza(dir) {
+  const bin = join(dir, 'bin'); mkdirSync(bin, { recursive: true });
+  writeFileSync(join(bin, 'git'), '#!/bin/sh\ncase "$1" in\n  push) echo "$*" >> "$GITLOG"; exit 1 ;;\n  diff) case "$*" in *--staged*) exit 0 ;; *) exit 1 ;; esac ;;\n  *) exit 0 ;;\nesac\n', { mode: 0o755 });
+  writeFileSync(join(bin, 'sleep'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+  return bin;
+}
 
-test('los workflows que publican datos pasan por el guardarrail', () => {
-  // Si alguien vuelve a poner la ingesta escribiendo directa sobre
-  // public/data, el guardarrail deja de mirar y volvemos al fallo de arriba.
-  // Los TRES que ejecutan la ingesta. mantenimiento.yml se quedo fuera de esta
-  // lista y escribia directa sobre public/data sin comparar: no lo commiteaba,
-  // pero derivaba las tablas y pasaba npm test sobre lo que saliera.
-  const LOS_TRES = ['deploy.yml', 'update-data.yml', 'mantenimiento.yml'];
+test('la ingesta escribe a un temporal y pasa por el comparador en los tres workflows que la ejecutan, y en ninguno más', () => {
   for (const f of LOS_TRES) {
-    const w = leerWorkflow(f);
-    const ingesta = w.pasos.flatMap((p) => mandatos(p.run).filter((c) => /^node scripts\/ingest\.mjs\b/.test(c)));
+    const w = wf(f);
+    const ingesta = w.pasos.flatMap((p) => mandatos(p.run).filter((c) => INGESTA.test(c)));
     ok(ingesta.length > 0, `${f}: ya no ejecuta la ingesta`);
-    for (const c of ingesta) {
-      ok(/\s--out\s+\S/.test(c), `${f}: la ingesta escribe directa sobre los datos buenos`);
-    }
-    // Que la comparación sea un COMANDO, no una mención: `run: echo "antes:
-    // node scripts/comparar-ingesta.mjs"` pasaba (probado por mutación).
-    ok(w.pasos.some((p) => ejecuta(p.run, /^node scripts\/comparar-ingesta\.mjs\b/)),
-      `${f}: no ejecuta la comparación de la corrida con la guardada`);
+    for (const c of ingesta) ok(/\s--out\s+\S/.test(c), `${f}: la ingesta escribe directa sobre los datos buenos`);
+    ok(w.pasos.some((p) => ejecuta(p.run, /^node scripts\/comparar-ingesta\.mjs \/tmp\/nueva\.json public\/data\/roam-meta\.json\b/)), `${f}: no compara la corrida con public/data/roam-meta.json`);
+    // Fallar lo cubre continue-on-error o el comparador; colgarse, el tope (~570 peticiones con 15 s: 140 min a medias).
+    const paso = w.pasos.find((p) => ejecuta(p.run, INGESTA));
+    const t = Number(paso['timeout-minutes']);
+    ok(t >= 15 && t <= 40, `${f}: la ingesta con un tope de ${paso['timeout-minutes']} min (lo normal son 9-10)`);
   }
-  // Y el cuarto: si alguien añade un workflow que llame a la ingesta, o entra
-  // en la lista de arriba o no está protegido. La lista a mano fue justo el
-  // fallo de mantenimiento.yml.
-  for (const f of WORKFLOWS) {
-    if (LOS_TRES.includes(f)) continue;
-    const w = leerWorkflow(f);
-    ok(!w.pasos.some((p) => ejecuta(p.run, /^node scripts\/ingest\.mjs\b/)),
-      `${f} ejecuta la ingesta y no está en la lista de workflows protegidos de esta prueba`);
+  // Un workflow nuevo que llame a la ingesta entra en la lista o no está protegido.
+  for (const w of todos) {
+    if (!LOS_TRES.includes(w.fichero)) ok(!w.pasos.some((p) => ejecuta(p.run, INGESTA)), `${w.fichero} ejecuta la ingesta y no está en la lista protegida`);
   }
+});
 
-  // El despliegue puede seguir adelante con los datos del repositorio si la API
-  // esta caida -si no, un UPSTREAM_REQUEST_FAILED impide publicar cualquier
-  // cambio de codigo-, pero NO puede publicar datos rancios sin decirlo
-  // (desde 3.57.4 los publica con un aviso: la app ya sirve esos datos).
-  // El guardarrail no se lee: se EJECUTA con datos fabricados. Buscar `h > 72`
-  // en el texto lo pasaba un `h > 7200` (y un comentario).
+test('el despliegue: frescura de 24 h por debajo del rancio, aviso a las 72 h, para sin estadísticas o sin matriz, y distingue omitida de fallida', () => {
   const puerta = deploy.pasos.filter((p) => /roam-meta\.json/.test(p.run ?? '') && /process\.exit\(1\)/.test(p.run ?? ''));
   eq(puerta.length, 1, 'deploy.yml ya no comprueba si los datos valen para publicar');
   const caja = join(tmp, 'deploy'); mkdirSync(join(caja, 'public/data'), { recursive: true });
-  const conDatos = (d) => { writeFileSync(join(caja, 'public/data/roam-meta.json'), JSON.stringify(d)); };
+  const conDatos = (d) => writeFileSync(join(caja, 'public/data/roam-meta.json'), JSON.stringify(d));
   const paso = (d) => { conDatos(d); return ejecutarPaso(puerta[0].run, { cwd: caja }); };
-  const publicable = (d) => paso(d).status;
-  eq(publicable(datosDe({ horas: 1 })), 0, 'deploy.yml no publica con datos recién descargados');
-  ok(!/::warning::/.test(paso(datosDe({ horas: 1 })).stdout ?? ''), 'deploy.yml avisa de datos viejos con datos recién descargados');
+  const reciente = paso(datosDe({ horas: 1 }));
+  ok(reciente.status === 0 && !/::warning::/.test(reciente.stdout), 'no publica, o avisa, con datos recién descargados');
   const viejos = paso(datosDe({ horas: 73 }));
-  eq(viejos.status, 0, 'deploy.yml no publica código con datos de más de tres días (la app ya los sirve: solo impide arreglar)');
-  ok(/::warning::.*72 horas/.test(viejos.stdout ?? ''), `deploy.yml publica datos de mas de tres dias sin avisar: ${viejos.stdout}`);
-  ok(publicable(datosDe({ horas: 1, cruces: 0 })) !== 0, 'deploy.yml ya no comprueba que haya matriz de counters');
-  ok(publicable(datosDe({ horas: 1, heroCount: 0 })) !== 0, 'deploy.yml publica sin estadisticas');
+  ok(viejos.status === 0 && /::warning::.*72 horas/.test(viejos.stdout), `con más de tres días no publica, o no avisa: ${viejos.stdout}`);
+  ok(paso(datosDe({ cruces: 0 })).status !== 0, 'publica sin matriz de counters');
+  ok(paso(datosDe({ heroCount: 0 })).status !== 0, 'publica sin estadísticas');
 
-  // El despliegue NO vuelve a descargar si el repositorio tiene datos
-  // recientes: el bot ya lo hace dos veces al dia. Sin esto cada push de
-  // codigo costaba diez minutos y, con cancel-in-progress, cada push
-  // reiniciaba la descarga del anterior: cinco commits seguidos dejaron la app
-  // 25 minutos por detras. Y el umbral de "reciente" tiene que quedar por
-  // debajo del de "rancio" (72 h), o se publicaria sin descargar algo que
-  // luego el propio despliegue rechaza.
-  const pasoIngesta = deploy.pasos.find((p) => ejecuta(p.run, /^node scripts\/ingest\.mjs\b/));
+  const pasoIngesta = deploy.pasos.find((p) => ejecuta(p.run, INGESTA));
   const condicion = (pasoIngesta.if ?? '').match(/steps\.([\w-]+)\.outputs\.(\w+)\s*!=\s*'true'/);
   ok(condicion, 'deploy.yml descarga datos en cada push aunque el repositorio los tenga recientes');
-  const pasoFrescura = deploy.pasos.find((p) => p.id === condicion[1]);
-  ok(pasoFrescura, `deploy.yml mira steps.${condicion[1]} y ese paso no existe`);
+  const frescura = deploy.pasos.find((p) => p.id === condicion[1]);
+  ok(frescura, `deploy.yml mira steps.${condicion[1]} y ese paso no existe`);
   const salida = join(caja, 'salida.txt');
   const fresca = (horas) => {
     conDatos(datosDe({ horas }));
     writeFileSync(salida, '');
-    const r = ejecutarPaso(pasoFrescura.run, { cwd: caja, env: { GITHUB_OUTPUT: salida } });
+    const r = ejecutarPaso(frescura.run, { cwd: caja, env: { GITHUB_OUTPUT: salida } });
     eq(r.status, 0, `el paso de frescura falla: ${r.stderr}`);
     const m = readFileSync(salida, 'utf8').match(new RegExp(`${condicion[2]}=(\\w+)`));
-    ok(m, `el paso de frescura no escribe ${condicion[2]} en GITHUB_OUTPUT`);
+    ok(m, `el paso de frescura no escribe ${condicion[2]}`);
     return m[1] === 'true';
   };
-  ok(fresca(1), 'deploy.yml descarga aunque los datos del repositorio sean de hace una hora');
-  ok(!fresca(73), 'deploy.yml tiene por frescos unos datos de hace tres dias');
-  // El umbral de "reciente" por debajo del de "rancio": ninguna edad puede
-  // dar "fresca" y a la vez no valer para publicar.
-  for (const horas of [1, 12, 23, 25, 47, 71, 73]) {
-    if (fresca(horas)) eq(publicable(datosDe({ horas })), 0, `con ${horas} h se publica sin descargar y luego el propio despliegue lo rechaza`);
-  }
+  ok(fresca(1) && !fresca(73), 'la frescura no separa una hora de tres días');
+  for (const horas of [1, 12, 23, 25, 47, 71, 73]) if (fresca(horas)) eq(paso(datosDe({ horas })).status, 0, `con ${horas} h no descarga y luego no publica`);
   const elegir = deploy.pasos.find((p) => ejecuta(p.run, /^node scripts\/comparar-ingesta\.mjs\b/));
-  ok(mandatos(elegir.run).some((c) => /outcome\s*\}\}"? = "skipped"/.test(c) || /outcome[^\n]*=\s*"?skipped/.test(c)),
-    'el paso de elegir datos no distingue "ingesta omitida" de "ingesta fallida": avisaria de un fallo que no existe');
-
-  // Los bots que commitean hacen rebase antes del push: la vigilancia mueve
-  // main varias veces al dia y un push rechazado pierde la corrida entera.
-  for (const f of ['update-data.yml', 'pro.yml']) {
-    const w = leerWorkflow(f);
-    const paso = w.pasos.find((p) => mandatos(p.run).some((c) => /^git push\b/.test(c)));
-    ok(paso, `${f}: ya no hace push`);
-    const orden = mandatos(paso.run);
-    const push = orden.findIndex((c) => /^git push\b/.test(c));
-    const rebase = orden.findIndex((c) => /^git pull --rebase\b/.test(c));
-    ok(push >= 0 && rebase >= 0 && rebase < push, `${f}: hace git push sin git pull --rebase antes`);
-  }
-  // La vigilancia solo abre incidencia si el paso de pruebas falla, y con un
-  // `| tee` sin pipefail el paso devolvia siempre el codigo de tee.
-  const vig = leerWorkflow('vigilancia.yml');
-  const pruebas = vig.pasos.filter((p) => mandatos(p.run).some((c) => /^npm test\b/.test(c)));
-  ok(pruebas.length, 'vigilancia.yml ya no ejecuta npm test');
-  for (const p of pruebas) {
-    if (!/\|/.test(p.run)) continue;
-    eq(p.shell, 'bash', 'vigilancia.yml: el paso de pruebas no tiene shell: bash (sin pipefail, npm test en rojo no abre incidencia)');
-  }
-  // Y en TODOS los workflows, no solo en ese paso: la misma tubería sin
-  // pipefail vivía en partidas.yml (3.14.0), y un código roto se respondía
-  // con «Recibido» y se cerraba sin guardar nada. Una lista fija de pasos
-  // es la trampa que este proyecto ya ha pagado tres veces.
-  for (const f of WORKFLOWS) {
-    for (const p of leerWorkflow(f).pasos) {
-      if (!p.run) continue;
-      const conTuberia = p.run.split('\n').map((l) => l.replace(/(^|\s)#.*$/, '')).some((l) => /(^|[^|])\|([^|]|$)/.test(l));
-      if (conTuberia) eq(p.shell, 'bash', `${f}: el paso «${p.name ?? p._linea}» usa una tubería sin shell: bash (el código de salida sería el del último mandato)`);
-    }
-  }
-  // El diagnóstico de lo publicado corre también con las pruebas en rojo:
-  // sin eso no quedaba fila en el historial justo en las corridas malas.
-  const diag = vig.pasos.find((p) => ejecuta(p.run, /^node scripts\/diagnostico\.mjs\b/));
-  ok(diag, 'vigilancia.yml ya no ejecuta el diagnóstico de lo publicado');
-  ok(/!\s*cancelled\(\)|always\(\)/.test(diag.if ?? ''), 'vigilancia.yml: el diagnóstico de lo publicado se salta cuando fallan las pruebas (sin fila en el historial)');
-  // Un paso que hace push con continue-on-error no puede fallar en silencio:
-  // algún paso posterior mira su `outcome` (failure() no se entera).
-  for (const f of WORKFLOWS) {
-    const w = leerWorkflow(f);
-    w.pasos.forEach((p, i) => {
-      if (String(p['continue-on-error']) !== 'true' || !mandatos(p.run).some((c) => /^git push\b/.test(c))) return;
-      ok(p.id, `${f}: el paso «${p.name}» hace push con continue-on-error y sin id: nadie puede mirar si falló`);
-      const mira = new RegExp(`steps\\.${p.id}\\.outcome\\s*==\\s*'failure'`);
-      ok(w.pasos.slice(i + 1).some((q) => mira.test(q.if ?? '')), `${f}: si el push de «${p.name}» falla no se entera nadie (continue-on-error y ningún paso mira steps.${p.id}.outcome)`);
-    });
-  }
-  // Cualquier paso que llame a la API lleva tope de tiempo, no solo la ingesta.
-  const mant = leerWorkflow('mantenimiento.yml');
-  const regenerar = mant.pasos.find((p) => ejecuta(p.run, /^node scripts\/derivar-tags\.mjs\b/));
-  ok(regenerar, 'mantenimiento.yml ya no regenera las tablas de deducción');
-  ok(/^\d+$/.test(regenerar['timeout-minutes'] ?? ''), 'mantenimiento.yml: regenerar tablas llama a la API sin timeout-minutes');
-  // Un despliegue por workflow_run solo si el bot acabo bien.
-  ok(Object.values(deploy.jobs).some((j) => /workflow_run\.conclusion == 'success'/.test(j.claves.if ?? '')),
-    'deploy.yml despliega tambien cuando el bot descarto su corrida');
-  // El guardarrail cuenta rangos: con glory caido, epic se colaba bajo su etiqueta.
-  const m = medir({ rank: 'glory', stats: { A: {} }, statsByRank: { epic: { A: {} } } });
-  eq(m.rangoPedido, 0, 'comparar-ingesta no nota que falta el rango pedido');
-  eq(medir({ rank: 'glory', stats: {}, statsByRank: { epic: {}, glory: {} } }).rangos, 2, 'comparar-ingesta no cuenta los rangos');
-
-  // Y con tope de tiempo en la ingesta. "Fallar" lo cubre continue-on-error,
-  // "colgarse" no: ~570 peticiones con 15 s de timeout son 140 minutos con la
-  // API a medias, y el despliegue se quedaba ahi sabiendo publicar con los
-  // datos del repositorio. Se vio en directo: una ingesta llevaba 20 minutos
-  // en un paso que normalmente tarda 9.
-  for (const f of LOS_TRES) {
-    const paso = leerWorkflow(f).pasos.find((p) => ejecuta(p.run, /^node scripts\/ingest\.mjs\b/));
-    const t = Number(paso['timeout-minutes']);
-    ok(Number.isFinite(t), `${f}: la ingesta no tiene timeout-minutes y puede colgar el workflow dos horas`);
-    ok(t >= 15 && t <= 40, `${f}: timeout de ${t} min; lo normal son 9-10 y hace falta margen sin dejar que se cuelgue`);
-  }
-
-  // Cada JOB lleva tope de tiempo: los pasos con red ya lo tenian, pero npm
-  // test (levanta un servidor), la compilacion o Pages podian colgar el runner
-  // seis horas; en la vigilancia, con concurrencia sin cancelar, eso encolaba
-  // todas las siguientes y el cron se perdia en silencio.
-  for (const f of WORKFLOWS) {
-    const w = leerWorkflow(f);
-    ok(w.jobs.length, `${f}: no encuentro ningun job`);
-    for (const j of w.jobs) {
-      ok(/^\d+$/.test(j.claves['timeout-minutes'] ?? ''), `${f}: el job ${j.nombre} no tiene timeout-minutes (puede ocupar el runner seis horas)`);
-    }
-  }
-
-  // Y «las pruebas» son UNA definicion: la de package.json. Quitar una de las
-  // cuatro comprobaciones de `npm test` pasaba (probado por mutacion) y el
-  // despliegue las llamaba a mano, asi que habia dos listas. Desde 3.0 son los
-  // guardarrailes de scripts/comprobar, ESLint y el runner de pruebas/.
-  const pkg = leerJson('package.json');
-  const expandir = (guion, visto = new Set()) => guion.split(/&&|\|\||;/).map((c) => c.trim()).flatMap((c) => {
-    const m = c.match(/^npm run (\S+)/);
-    if (!m || visto.has(m[1])) return [c];
-    visto.add(m[1]);
-    return expandir(pkg.scripts?.[m[1]] ?? '', visto);
-  });
-  const deNpmTest = expandir(pkg.scripts?.test ?? '');
-  for (const script of ['scripts/comprobar/css.mjs', 'scripts/comprobar/version.mjs']) {
-    ok(deNpmTest.some((c) => c.includes(script)), `npm test ya no ejecuta ${script}`);
-  }
-  ok(deNpmTest.some((c) => /^node --test\b/.test(c) && c.includes('pruebas/')), 'npm test ya no corre las pruebas con node --test');
-  ok(deNpmTest.some((c) => /^eslint\b/.test(c)), 'npm test ya no pasa el lint (un identificador que no existe volvería a llegar a producción)');
-  ok(deploy.pasos.some((p) => mandatos(p.run).some((c) => c === 'npm test')), 'deploy.yml no ejecuta npm test: tiene su propia lista de pruebas');
-
-  // node_modules va en cache por hash del lockfile en TODOS los workflows
-  // que instalan: medido, npm ci costaba 3,7-4,7 minutos por corrida con la
-  // cache de npm de setup-node (que solo guarda descargas). Y npm ci BORRA
-  // node_modules antes de instalar: sin la condicion, la cache no sirve.
-  const conNpmCi = WORKFLOWS.map(leerWorkflow).filter((w) => w.pasos.some((p) => mandatos(p.run).some((c) => /^npm ci\b/.test(c))));
-  ok(conNpmCi.length >= 5, `solo ${conNpmCi.length} workflows instalan: la lista de esta prueba se ha quedado corta`);
-  for (const w of conNpmCi) {
-    const cache = w.pasos.find((p) => /^actions\/cache@/.test(p.uses ?? '') && p['with.path'] === 'node_modules');
-    ok(cache, `${w.fichero}: instala sin cache de node_modules`);
-    if (!cache) continue;
-    ok(/hashFiles\('package-lock\.json'\)/.test(cache['with.key'] ?? ''), `${w.fichero}: la clave de la cache no depende del lockfile: serviria node_modules viejos con dependencias nuevas`);
-    const nodo = w.pasos.map((p) => p['with.node-version']).find(Boolean)?.replace(/'/g, '');
-    ok(nodo && (cache['with.key'] ?? '').includes(`node${nodo}`), `${w.fichero}: la clave de la cache no lleva la version de node (${nodo})`);
-    const instala = w.pasos.find((p) => mandatos(p.run).some((c) => /^npm ci\b/.test(c)));
-    ok((instala.if ?? '').includes(`steps.${cache.id}.outputs.cache-hit != 'true'`),
-      `${w.fichero}: npm ci corre aunque la cache haya traido node_modules (y lo borra)`);
-  }
+  ok(mandatos(elegir.run).some((c) => /outcome[^\n]*=\s*"?skipped/.test(c)), 'el paso de elegir datos no distingue «ingesta omitida» de «fallida»');
+  ok(deploy.jobs.some((j) => /workflow_run\.conclusion == 'success'/.test(j.claves.if ?? '')), 'despliega también cuando el bot descartó su corrida');
+  ok(deploy.pasos.some((p) => mandatos(p.run).includes('npm test')), 'deploy.yml no ejecuta npm test');
 });
 
-test('cada workflow declara sus permisos, los bots que commitean no se solapan y el despliegue escucha a los que cambian lo servido', () => {
-  // Las claves de primer nivel, leídas al principio de línea (un comentario
-  // o un `echo` no empiezan en la columna 0 con la clave).
-  const nombreDe = (texto) => (texto.match(/^name:\s*(.+?)\s*$/m)?.[1] ?? '').replace(/^['"]|['"]$/g, '');
-  const leidos = WORKFLOWS.map((f) => ({ f, w: leerWorkflow(f) }));
-  for (const { f, w } of leidos) {
-    // Sin `permissions:` el token recibe los permisos por defecto del
-    // repositorio (pasó con pruebas-ui.yml hasta 3.15.0).
-    ok(/^permissions:/m.test(w.texto), `${f}: sin bloque permissions (el token tiene los permisos por defecto)`);
-    // Un bot que hace push a main con dos corridas a la vez choca en el
-    // rebase y pierde una (pro.yml y mantenimiento.yml hasta 3.15.0).
-    const empuja = w.pasos.some((p) => mandatos(p.run).some((c) => /^git push\b/.test(c)));
-    if (empuja) ok(/^concurrency:/m.test(w.texto), `${f}: hace push sin grupo de concurrencia`);
-  }
-  // Un push con GITHUB_TOKEN no dispara `on: push`: el bot que cambia lo que
-  // la app SIRVE (public/) tiene que estar en el workflow_run de deploy.yml
-  // o lo suyo no se publica (pasó con pro.json: 304 partidas y cero en la
-  // app). Y cada nombre de la lista tiene que existir: renombrar un `name:`
-  // la rompía sin que nada fallara.
-  const deploy = leidos.find((x) => x.f === 'deploy.yml').w.texto;
-  const escucha = [...(deploy.match(/workflow_run:[\s\S]*?workflows:\s*\[([^\]]*)\]/)?.[1] ?? '').matchAll(/"([^"]+)"|'([^']+)'/g)].map((m) => m[1] ?? m[2]);
-  ok(escucha.length >= 2, `deploy.yml no escucha a ningún bot: ${escucha}`);
-  const nombres = new Set(leidos.map(({ w }) => nombreDe(w.texto)));
-  for (const n of escucha) ok(nombres.has(n), `deploy.yml escucha a «${n}», que no es el nombre de ningún workflow`);
-  for (const { f, w } of leidos) {
-    const tocaServido = w.pasos.some((p) => mandatos(p.run).some((c) => /^git add\b.*\bpublic\//.test(c)));
-    if (tocaServido) ok(escucha.includes(nombreDe(w.texto)), `${f} commitea bajo public/ y deploy.yml no lo escucha: lo suyo no se publica`);
-  }
-});
-
-test('cada acción de terceros va fijada a un commit, con su versión al lado (3.42.1)', () => {
-  // Una etiqueta (`@v4`) la puede mover quien controle el repositorio de la
-  // acción, y estos workflows corren con permiso de escribir en main y de
-  // abrir incidencias. Fijada a un commit, lo que corre es lo que se leyó.
-  // Se lee cada línea `uses:` del texto (no solo los pasos): un `uses` a
-  // nivel de job (workflow reutilizable) también ejecuta código de fuera.
-  const fijada = /^[\w.-]+\/[\w./-]+@[0-9a-f]{40} # v\d+\.\d+\.\d+$/;
-  const commitDe = new Map();
-  let vistas = 0;
-  for (const f of WORKFLOWS) {
-    const lineas = leerTexto(`.github/workflows/${f}`).split('\n');
-    lineas.forEach((l, i) => {
-      const m = l.match(/^\s*(?:- )?uses:\s*(.+?)\s*$/);
-      if (!m) return;
-      vistas++;
-      const uso = m[1].replace(/^['"]|['"]$/g, '');
-      ok(fijada.test(uso), `${f}:${i + 1}: «${uso}» no va fijada a un commit con su versión (owner/repo@<40 hex> # vX.Y.Z)`);
-      // La misma acción, el mismo commit en todos: dos versiones de checkout
-      // en dos workflows es una que nadie actualizó.
-      const [accion, resto] = uso.split('@');
-      const previo = commitDe.get(accion);
-      if (previo) eq(resto, previo.resto, `${f}:${i + 1}: ${accion} va a otro commit que en ${previo.donde}`);
-      else commitDe.set(accion, { resto, donde: `${f}:${i + 1}` });
-    });
-  }
-  ok(vistas >= 30, `solo ${vistas} líneas uses: la lectura se ha quedado corta`);
-});
-
-test('Claude a petición: solo el dueño con «@claude» en SU comentario, nunca en las incidencias que escribe la app (3.40.0)', () => {
-  // La condición del job, EVALUADA contra eventos de mentira (no buscando
-  // cadenas): las incidencias de pantallas y partidas las escribe la app con
-  // el token de Javi, así que para GitHub son «del dueño».
-  const texto = leerTexto('.github/workflows/claude.yml');
-  const m = texto.match(/\n {4}if: \|\n((?: {6}.*\n)+)/);
-  ok(m, 'no encuentro la condición del job');
-  const js = m[1].trim()
-    .replace(/github\.event\.issue\.labels\.\*\.name/g, '(ev.issue?.labels ?? []).map((l) => l.name)')
-    .replace(/github\.repository_owner/g, "'srchipiron'")
-    .replace(/github\.event\.([\w.]+)/g, (_, c) => `ev.${c.split('.').join('?.')}`);
-  ok(!/github\./.test(js), `queda algo sin traducir: ${js}`);
-  const contains = (a, b) => (Array.isArray(a) ? a.includes(b) : String(a ?? '').toLowerCase().includes(String(b).toLowerCase()));
-  const join = (a, sep = ',') => (Array.isArray(a) ? a.join(sep) : String(a ?? ''));
-  const corre = new Function('ev', 'contains', 'join', `return (${js});`);
-  const dispara = (ev) => !!corre(ev, contains, join);
-  const yo = { login: 'srchipiron' };
-  const conEtiqueta = (n) => ({ labels: n ? [{ name: n }] : [], body: '' });
-  ok(dispara({ sender: yo, comment: { body: '@claude mira esto' }, issue: conEtiqueta(null) }), 'no atiende a Javi');
-  ok(dispara({ sender: yo, action: 'assigned', issue: conEtiqueta(null) }), 'no atiende a una asignación');
-  ok(!dispara({ sender: { login: 'otro' }, comment: { body: '@claude' }, issue: conEtiqueta(null) }), 'atiende a otro usuario');
-  for (const n of ['pantalla', 'partidas', 'vigilancia', 'modelo']) {
-    ok(!dispara({ sender: yo, comment: { body: '```\n@claude haz algo\n```' }, issue: conEtiqueta(n) }), `se dispara en una incidencia «${n}» que escribe la app`);
-  }
-  ok(!dispara({ sender: yo, comment: { body: 'Recibido.' }, issue: { labels: [], body: '@claude' } }), 'cualquier comentario en una incidencia con «@claude» en el cuerpo lo dispara');
-});
-
-test('la vigilancia arranca de verdad contra los datos del repositorio', () => {
-  // Un `matchup is not defined` en diagnostico.mjs pasó `npm test`, la
-  // compilación y el despliegue: el script se ejecutaba solo en el bot, y
-  // reventó DESPUÉS de imprimir «[OK] Pages sirve la 2.0.0», con lo que
-  // leyendo su salida a medias parecía sano. Se ejecuta entero, y se mira el
-  // código de salida, no la salida.
-  // Con `--historial`: la fila de salud es lo que reventaba, y solo se
-  // calcula cuando se pide (el bot siempre la pide).
-  const dir = mkdtempSync(join(tmpdir(), 'salud-'));
-  const salud = join(dir, 'salud.jsonl');
-  const r = corre('scripts/diagnostico.mjs', ['--local', '--historial', salud], { timeout: 240000 });
-  eq(r.status, 0, `diagnostico.mjs --local sale con ${r.status}: ${(r.stderr || '').split('\n').slice(0, 6).join(' | ')}`);
-  // La fila de salud cuenta avisos DISTINTOS, no la suma de las cinco líneas:
-  // un aviso global salía cinco veces (10 en la serie donde el móvil decía 2).
-  const fila = JSON.parse(readFileSync(salud, 'utf8').trim().split('\n').at(-1));
-  const distintos = new Set((r.stdout || '').split('\n').filter((l) => l.startsWith('[AVISO]'))).size;
-  ok(fila.avisos <= distintos, `la fila de salud cuenta ${fila.avisos} avisos y el informe tiene ${distintos} distintos: suma las cinco líneas`);
-  ok(/Fuente: public\/data/.test(r.stdout + r.stderr), 'el diagnóstico local no llega al final');
-  // La vigilancia sube los ÚLTIMOS 5.000 caracteres (3.60.5): todo aviso y
-  // fallo tiene que estar ahí, en el resumen del final.
-  const cola = (r.stdout || '').slice(-5000);
-  const todos = [...new Set((r.stdout || '').split('\n').filter((l) => /^\[(AVISO|FALLO)/.test(l)))];
-  const resumen = cola.split('=== RESUMEN ===')[1] ?? '';
-  ok(resumen && todos.every((l) => resumen.includes(l)), `el resumen del final no lleva todos los avisos: faltan ${todos.filter((l) => !resumen.includes(l)).length}`);
-  ok(existsSync(salud) && /"cruces":\d+/.test(readFileSync(salud, 'utf8')), 'no deja la fila de salud con sus cifras');
-  // Cada recuento de FIJAS que el comparador mira contra el historial tiene
-  // que estar en la fila, o su máximo es siempre 0 y el trinquete no existe.
-  // Hasta 3.43.1 solo se miraba `winrateLinea`, y `conRol` y `conSpeciality`
-  // estaban en FIJAS sin columna: el trinquete no existía para ellas.
-  const enDatos = medir(leerJson('public/data/roam-meta.json'));
-  for (const k of FIJAS) eq(fila[k], enDatos[k], `la fila de salud no cuenta «${k}» como el comparador (${fila[k]} frente a ${enDatos[k]})`);
-});
-
-test('revisión línea a línea de scripts y workflows: guardas que no vigilaban, bucles verdes en rojo, fechas, tiempos', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'guardas-'));
-
-  // 1. check-css: la regla «nada esencial oculto» llevaba muerta desde que se
-  //    escribió (la regex no casaba con nada). Con un CSS roto tiene que fallar.
-  //    (Desde 3.0 es scripts/comprobar/css.mjs; pruebas/scripts/comprobar.test.mjs
-  //    lo rompe de más maneras, aquí se conserva el caso que lo originó.)
-  const cssRoto = join(dir, 'roto.css');
-  writeFileSync(cssRoto, leerTexto('src/styles.css').replace('.slot .x {', '.slot .x { display: none; '));
-  const rCss = corre('scripts/comprobar/css.mjs', [cssRoto]);
-  ok(rCss.status !== 0 && /se oculta/.test(rCss.stdout + rCss.stderr), `check-css no ve la × oculta: ${(rCss.stdout + rCss.stderr).slice(0, 200)}`);
-  eq(corre('scripts/comprobar/css.mjs', []).status, 0, 'check-css falla con el CSS real');
-
-  // 2. check-order: desde 4.0 es la regla `no-use-before-define` de ESLint (scripts/comprobar).
-
-  // 3. Los bucles de rebase+push salen en rojo si fallan los tres intentos.
-  //    No se busca la guarda en el texto: se EJECUTA el paso con un `git` de
-  //    mentira que rechaza el push, y tiene que salir en rojo despues de los
-  //    tres intentos. Antes el ultimo mandato del bucle era `sleep` y el
-  //    estado era 0: la corrida perdida en silencio que el bucle venia a
-  //    evitar, y encima el despliegue disparado «con exito» sobre datos viejos.
-  const bin = join(dir, 'bin'); mkdirSync(bin, { recursive: true });
-  writeFileSync(join(bin, 'git'), '#!/bin/sh\ncase "$1" in\n  push) echo push >> "$GITLOG"; exit 1 ;;\n  diff) case "$*" in *--staged*) exit 0 ;; *) exit 1 ;; esac ;;\n  *) exit 0 ;;\nesac\n', { mode: 0o755 });
-  writeFileSync(join(bin, 'sleep'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
-  for (const f of ['update-data.yml', 'pro.yml', 'vigilancia.yml']) {
-    const paso = leerWorkflow(f).pasos.find((p) => mandatos(p.run).some((c) => /^git push\b/.test(c)));
-    ok(paso, `${f}: ya no hace push`);
-    const caja = join(dir, `push-${f}`); mkdirSync(join(caja, 'historial'), { recursive: true });
-    writeFileSync(join(caja, 'historial/salud.jsonl'), '{"cruces":17556}\n');
-    const registro = join(caja, 'git.log'); writeFileSync(registro, '');
-    const r = ejecutarPaso(paso.run, { cwd: caja, env: { GITLOG: registro }, path: [bin] });
-    ok(r.status !== 0, `${f}: el bucle de push acaba en verde aunque fallen los tres intentos`);
-    eq(readFileSync(registro, 'utf8').split('\n').filter(Boolean).length, 3, `${f}: el push no se reintenta tres veces`);
-    ok(/::error::/.test(r.stdout + r.stderr), `${f}: los tres intentos fallidos no dejan ni un aviso`);
-  }
-
-  // 4. comparar-ingesta: una guardada ILEGIBLE no se acepta (solo la que no existe).
-  const nueva = resolve(RAIZ, 'public/data/roam-meta.json');
-  const ilegible = join(dir, 'guardada.json');
-  writeFileSync(ilegible, '{esto no es json');
-  ok(corre('scripts/comparar-ingesta.mjs', [nueva, ilegible]).status !== 0, 'comparar-ingesta acepta la corrida con la guardada ilegible');
-  eq(corre('scripts/comparar-ingesta.mjs', [nueva, join(dir, 'no-existe.json')]).status, 0, 'comparar-ingesta rechaza la primera corrida (sin guardada)');
-  for (const f of ['update-data.yml', 'deploy.yml']) {
-    const w = leerWorkflow(f);
-    ok(w.pasos.some((p) => ejecuta(p.run, /^node scripts\/comparar-ingesta\.mjs \/tmp\/nueva\.json public\/data\/roam-meta\.json\b/)),
-      `${f}: la comparación no apunta a public/data/roam-meta.json`);
-  }
-
-  // 5. fechaISO en UTC: desde un móvil en otra zona horaria salía un día menos.
-  const tz = spawnSync(process.execPath, ['--input-type=module', '-e', "import('./scripts/ingesta-pro.mjs').then((m) => console.log(m.fechaISO('August 22, 2025 - 15:15{{abbr/ICT}}')))"], { cwd: RAIZ, encoding: 'utf8', env: { ...process.env, TZ: 'Pacific/Kiritimati' } });
-  eq(tz.stdout.trim(), '2025-08-22', `fechaISO depende de la zona horaria: ${tz.stdout.trim()} ${tz.stderr.slice(0, 100)}`);
-
-  // 6. {{Map}} con una plantilla anidada antes de los picks no se pierde.
-  const { parsearPartidas, wikitextDe } = await import('../../scripts/ingesta-pro.mjs');
-  const wt = '{{Match|date=August 22, 2025 - 15:15{{abbr/ICT}}|opponent1={{TeamOpponent|A}}|opponent2={{TeamOpponent|B}}}}{{Map|vod={{x}}|t1h1=a|t1h2=b|t1h3=c|t1h4=d|t1h5=e|t2h1=f|t2h2=g|t2h3=h|t2h4=i|t2h5=j|winner=1}}';
-  eq(parsearPartidas(wt, 'T').length, 1, 'una plantilla anidada antes de los picks descarta la partida');
-
-  // 7. wikitextDe avisa si la API trunca el lote (continue).
-  const errores = [];
-  const cliente = { consultar: async () => ({ continue: { rvcontinue: '1' }, query: { pages: { 1: { title: 'X', revisions: [{ slots: { main: { '*': 'texto' } } }] } } } }) };
-  await wikitextDe(cliente, ['X'], errores);
-  ok(errores.some((e) => /continue/.test(e)), 'un lote truncado por la API no deja rastro');
-
-  // 8. Toda descarga lleva tope de tiempo. Desde 3.0 la ingesta vive en
-  //    scripts/ingesta/*.mjs: mirar solo scripts/ingest.mjs (39 líneas de
-  //    reexportación) haría pasar esta comprobación EN VACÍO.
-  const ingesta = ['scripts/ingest.mjs', ...readdirSync(resolve(RAIZ, 'scripts/ingesta')).filter((n) => n.endsWith('.mjs')).map((n) => `scripts/ingesta/${n}`)];
-  const llamadasDe = (src) => {
-    const fuera = [];
-    for (const m of src.matchAll(/\b(fetch|fetchImpl)\s*\(/g)) {
-      let i = m.index + m[0].length; let nivel = 1;
-      while (i < src.length && nivel > 0) { if (src[i] === '(') nivel++; else if (src[i] === ')') nivel--; i++; }
-      fuera.push(src.slice(m.index, i));
-    }
-    return fuera;
-  };
-  for (const grupo of [ingesta, ['scripts/ingesta-pro.mjs']]) {
-    let total = 0;
-    for (const f of grupo) {
-      for (const l of llamadasDe(leerTexto(f))) {
-        total++;
-        ok(/signal\s*:/.test(l), `${f}: fetch sin tope de tiempo: ${l.slice(0, 80)}`);
-      }
-    }
-    ok(total >= 1, `${grupo[0]}: no encuentro llamadas a fetch`);
-  }
-
-  // 9. parseArgs no se traga el siguiente flag como valor.
-  const { parseArgs } = await import('../../scripts/ingesta/contexto.mjs');
-  const a = parseArgs(['--out', '--iconos', '/tmp/x', '--days', '7']);
-  ok(a.out === true && a.iconos === '/tmp/x' && a.days === '7', `parseArgs: ${JSON.stringify(a)}`);
-
-  // 10. El diagnóstico no lleva la URL vieja del repositorio escrita a mano:
-  //     el repositorio se renombró y la URL escrita aquí daba 404 en la
-  //     primera línea. Se mira el código SIN comentarios (la guarda anterior
-  //     buscaba la palabra NOMBRE_PAQUETE y un comentario la pasaba) y además
-  //     se EJECUTA el script para ver que arranca de verdad.
-  const diag = leerTexto('scripts/diagnostico.mjs')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
-  ok(!/['"`][^'"`\n]*mlbb-roam-picker/.test(diag), 'diagnostico.mjs vuelve a llevar el nombre del repositorio escrito a mano');
-  ok(/GITHUB_REPOSITORY/.test(diag) && /\$\{NOMBRE_PAQUETE\}/.test(diag),
-    'la URL de Pages ya no se deduce del entorno ni del nombre del paquete: un renombrado volvería a dar 404');
-  const local = spawnSync(process.execPath, [resolve(RAIZ, 'scripts/diagnostico.mjs'), '--local'], {
-    cwd: RAIZ, encoding: 'utf8', env: { ...process.env, GITHUB_REPOSITORY: 'unduenno/un-repo-renombrado' },
-  });
-  eq(local.status, 0, `el diagnóstico local no arranca: ${(local.stderr || local.stdout || '').slice(-400)}`);
-  ok(/public\/data \(local\)/.test(local.stdout), 'con --local el diagnóstico no dice que la fuente es local');
-
-  // 11. El rival de línea NO pesa doble desde 2.0 (medido: −0.56 ± 0.62 frente
-  //     a 0.78 ± 0.32 los otros). Esa comprobación se porta con el motor:
-  //     pruebas/motor/modelo.test.mjs, «el rival marcado sigue pesando distinto».
-});
-
-test('sin datos nuevos, el despliegue publica los que ya sirve la app si son más nuevos que los del repositorio (3.57.6)', () => {
-  // El 14 de octubre de 2026 un push de código cambió en la app los datos de
-  // las 09:42 por los del 12 por la noche: el despliegue anterior los había
-  // publicado sin commitearlos y este, sin API, volvió a los del repositorio.
-  const deploy = leerWorkflow('deploy.yml');
+test('sin datos nuevos, el despliegue publica los que ya sirve Pages si son más nuevos y el comparador los acepta', () => {
   const paso = deploy.pasos.find((p) => /comparar-ingesta\.mjs \/tmp\/nueva\.json/.test(p.run ?? ''));
   ok(paso, 'deploy.yml ya no tiene el paso que elige con qué datos se publica');
   const caja = join(tmp, 'publicados'); mkdirSync(join(caja, 'public/data'), { recursive: true });
-  // Copias y no enlaces: por un enlace `comparar-ingesta.mjs` no se ve como
-  // programa principal, no compara nada y sale con 0 (lo cazó esta prueba).
+  // Copias, no enlaces: por un enlace el comparador no se ve como programa principal y sale con 0.
   for (const d of ['scripts', 'src']) cpSync(join(RAIZ, d), join(caja, d), { recursive: true });
   const bin = join(caja, 'bin'); mkdirSync(bin);
-  // Un curl de pega: copia PUBLICADA donde diga -o (o falla si no hay).
-  // Apunta a qué dirección se le pide: una URL mal escrita volvía en silencio a los del repositorio.
   writeFileSync(join(bin, 'curl'), '#!/bin/bash\necho "$@" >> "$CURL_LOG"\n[ -n "$PUBLICADA" ] || exit 22\nwhile [ $# -gt 0 ]; do [ "$1" = -o ] && cp "$PUBLICADA" "$2"; shift; done\n');
-  const curlLog = join(caja, 'curl.log');
   chmodSync(join(bin, 'curl'), 0o755);
+  const curlLog = join(caja, 'curl.log');
   const real = leerJson('public/data/roam-meta.json');
   const conFecha = (horas) => ({ ...real, generatedAt: new Date(Date.parse(real.generatedAt) + horas * 3.6e6).toISOString() });
   const publicar = (repo, publicada) => {
@@ -508,37 +130,245 @@ test('sin datos nuevos, el despliegue publica los que ya sirve la app si son má
     if (publicada) writeFileSync(fichero, JSON.stringify(publicada));
     const r = ejecutarPaso(paso.run, { cwd: caja, env: { PUBLICADA: publicada ? fichero : '', CURL_LOG: curlLog }, path: [bin] });
     eq(r.status, 0, `el paso falla: ${r.stderr}`);
-    return JSON.parse(readFileSync(join(caja, 'public/data/roam-meta.json'), 'utf8')).generatedAt;
+    return leerJson(join(caja, 'public/data/roam-meta.json')).generatedAt;
   };
   eq(publicar(real, conFecha(10)), conFecha(10).generatedAt, 'con datos publicados más nuevos se vuelve a los del repositorio');
   const pedida = readFileSync(curlLog, 'utf8').split(/\s+/).find((x) => /^https:/.test(x)) ?? '';
   ok(/\.github\.io\/[^ ]*\/data\/roam-meta\.json$/.test(pedida), `no se piden los datos que sirve Pages: ${pedida}`);
   eq(publicar(real, conFecha(-10)), real.generatedAt, 'se publican datos más VIEJOS que los del repositorio');
   eq(publicar(real, null), real.generatedAt, 'sin poder leer lo publicado no se queda con los del repositorio');
-  // Más nuevos pero peores (sin la mitad de los cruces): el comparador manda.
   const peores = { ...conFecha(10), counters: Object.fromEntries(Object.entries(real.counters).slice(0, 60)) };
-  eq(publicar(real, peores), real.generatedAt, 'se publican datos publicados que el comparador rechaza');
+  eq(publicar(real, peores), real.generatedAt, 'se publican datos que el comparador rechaza');
 });
 
-test('el despliegue: la concurrencia va en los jobs, no en el workflow (3.65.4)', () => {
-  // A nivel de workflow, la corrida de un bot fallido cancelaba un despliegue
-  // en marcha aunque luego la suya se saltara por el `if` del job.
-  const texto = leerTexto('.github/workflows/deploy.yml');
-  ok(!/^concurrency:/m.test(texto), 'deploy.yml: la concurrencia a nivel de workflow cancela un despliegue por una corrida que se va a saltar');
-  const jobs = texto.split(/^jobs:\s*$/m)[1] ?? '';
-  const build = jobs.split(/^ {2}deploy:/m)[0];
-  const deploy = jobs.split(/^ {2}deploy:/m)[1] ?? '';
-  ok(/^ {4}if: .*workflow_run\.conclusion == 'success'/m.test(build), 'deploy.yml: el build ya no se salta con un bot fallido');
-  for (const [nombre, trozo] of [['build', build], ['deploy', deploy]]) {
-    ok(/^ {4}concurrency:\n {6}group: pages\n {6}cancel-in-progress: true$/m.test(trozo), `deploy.yml: el job ${nombre} sin su grupo de concurrencia (dos despliegues a la vez)`);
+test('los bots que commitean suben con el bucle de rebase+push, que reintenta tres veces y acaba en ROJO', () => {
+  const orden = mandatos(leerTexto('scripts/bots/subir.sh'));
+  const rebase = orden.findIndex((c) => /^git pull --rebase\b/.test(c));
+  const push = orden.findIndex((c) => /^git push\b/.test(c));
+  ok(rebase >= 0 && rebase < push, 'subir.sh hace git push sin git pull --rebase antes');
+  for (const f of ['update-data.yml', 'pro.yml', 'vigilancia.yml']) {
+    const paso = wf(f).pasos.find(empuja);
+    ok(paso && ejecuta(paso.run, SUBIR), `${f}: ya no sube con scripts/bots/subir.sh`);
+  }
+  // Se EJECUTA con un git que rechaza el push: el último mandato de un bucle verde era `sleep`.
+  const caja = join(tmp, 'subir'); mkdirSync(caja, { recursive: true });
+  const bin = gitQueRechaza(caja);
+  for (const args of [[], ['origin', 'HEAD:main']]) {
+    const registro = join(caja, `git-${args.length}.log`); writeFileSync(registro, '');
+    const r = spawnSync('bash', [resolve(RAIZ, 'scripts/bots/subir.sh'), ...args], { cwd: caja, encoding: 'utf8', env: { ...process.env, GITLOG: registro, PATH: `${bin}:${process.env.PATH}` } });
+    ok(r.status !== 0, 'el bucle de push acaba en verde aunque fallen los tres intentos');
+    const pushes = readFileSync(registro, 'utf8').split('\n').filter(Boolean);
+    eq(pushes.length, 3, 'el push no se reintenta tres veces');
+    ok(pushes.every((l) => l === ['push', ...args].join(' ')), `los argumentos no llegan a git push: ${pushes[0]}`);
+    ok(/::error::/.test(r.stdout + r.stderr), 'los tres intentos fallidos no dejan ni un aviso');
+  }
+  // Y el paso de cada bot, entero, sale en rojo con ese git.
+  for (const f of ['update-data.yml', 'pro.yml', 'vigilancia.yml']) {
+    const sitio = join(caja, f); mkdirSync(join(sitio, 'historial'), { recursive: true });
+    cpSync(join(RAIZ, 'scripts/bots'), join(sitio, 'scripts/bots'), { recursive: true });
+    writeFileSync(join(sitio, 'historial/salud.jsonl'), '{"cruces":17556}\n');
+    const registro = join(sitio, 'git.log'); writeFileSync(registro, '');
+    const r = ejecutarPaso(wf(f).pasos.find(empuja).run, { cwd: sitio, env: { GITLOG: registro }, path: [bin] });
+    ok(r.status !== 0 && readFileSync(registro, 'utf8').split('\n').filter(Boolean).length === 3, `${f}: el paso de subir no sale en rojo tras tres intentos`);
   }
 });
 
-test('el bot del modelo (3.72.0) solo PROPONE: no puede escribir en el repositorio y abre la incidencia solo si la medida lo dice', () => {
-  const w = leerWorkflow('modelo.yml');
+test('toda tubería lleva pipefail, la vigilancia mira lo publicado también con las pruebas en rojo y un push perdido no pasa en silencio', () => {
+  const conTuberia = (run) => run.split('\n').map((l) => l.replace(/(^|\s)#.*$/, '')).some((l) => /(^|[^|])\|([^|]|$)/.test(l));
+  const conPasos = [...todos.map((w) => ({ donde: w.fichero, pasos: w.pasos })), ...ACCIONES_LOCALES.map((a) => ({ donde: `acción ${a}`, pasos: leerAccion(a).pasos }))];
+  let vistas = 0;
+  for (const { donde, pasos } of conPasos) {
+    for (const p of pasos) {
+      if (!p.run || !conTuberia(p.run)) continue;
+      vistas++;
+      eq(p.shell, 'bash', `${donde}: el paso «${p.name ?? p._linea}» usa una tubería sin shell: bash (saldría con el código del último mandato)`);
+    }
+  }
+  ok(vistas >= 4, `solo ${vistas} pasos con tubería: la lectura se ha quedado corta`);
+  const vig = wf('vigilancia.yml');
+  ok(vig.pasos.some((p) => ejecuta(p.run, /^npm test\b/) && ejecuta(p.run, /^tee \/tmp\/pruebas\.txt$/)), 'vigilancia.yml ya no guarda la salida de npm test');
+  const diag = vig.pasos.find((p) => ejecuta(p.run, /^node scripts\/diagnostico\.mjs\b/));
+  ok(diag && /!\s*cancelled\(\)|always\(\)/.test(diag.if ?? ''), 'el diagnóstico de lo publicado se salta con las pruebas en rojo (sin fila en el historial)');
+  for (const id of ['rancios', 'caras']) {
+    const p = vig.pasos.find((x) => x.id === id);
+    ok(p && /!\s*cancelled\(\)/.test(p.if ?? '') && ejecuta(p.run, new RegExp(`^tee /tmp/${id}\\.txt$`)), `vigilancia.yml: el paso ${id} no corre siempre o no deja su salida para la incidencia`);
+  }
+  // Un paso que sube con continue-on-error lo mira alguien después (failure() no se entera).
+  for (const w of todos) {
+    w.pasos.forEach((p, i) => {
+      if (String(p['continue-on-error']) !== 'true' || !empuja(p)) return;
+      ok(p.id, `${w.fichero}: «${p.name}» sube con continue-on-error y sin id`);
+      const mira = new RegExp(`steps\\.${p.id}\\.outcome\\s*==\\s*'failure'`);
+      ok(w.pasos.slice(i + 1).some((q) => mira.test(q.if ?? '')), `${w.fichero}: si falla el push de «${p.name}» no se entera nadie`);
+    });
+  }
+  const regenerar = wf('mantenimiento.yml').pasos.find((p) => ejecuta(p.run, /^node scripts\/derivar-tags\.mjs\b/));
+  ok(regenerar && /^\d+$/.test(regenerar['timeout-minutes'] ?? ''), 'mantenimiento.yml: regenerar tablas llama a la API sin tope');
+  ok(ejecuta(regenerar.run, /^node scripts\/bots\/sustituir-tablas\.mjs \/tmp\/tablas\.txt src\/motor\/reglas\.js$/), 'mantenimiento.yml ya no sustituye las tablas con su script');
+  for (const w of todos) {
+    ok(w.jobs.length, `${w.fichero}: no encuentro ningún job`);
+    for (const j of w.jobs) ok(/^\d+$/.test(j.claves['timeout-minutes'] ?? ''), `${w.fichero}: el job ${j.nombre} sin timeout-minutes (seis horas de runner)`);
+  }
+});
+
+test('«las pruebas» son una definición (package.json) y node_modules va en caché por lockfile y versión de node', () => {
+  const pkg = leerJson('package.json');
+  const expandir = (guion, visto = new Set()) => guion.split(/&&|\|\||;/).map((c) => c.trim()).flatMap((c) => {
+    const m = c.match(/^npm run (\S+)/);
+    if (!m || visto.has(m[1])) return [c];
+    visto.add(m[1]);
+    return expandir(pkg.scripts?.[m[1]] ?? '', visto);
+  });
+  const deNpmTest = expandir(pkg.scripts?.test ?? '');
+  for (const script of ['scripts/comprobar/css.mjs', 'scripts/comprobar/version.mjs']) ok(deNpmTest.some((c) => c.includes(script)), `npm test ya no ejecuta ${script}`);
+  ok(deNpmTest.some((c) => /^node --test\b/.test(c) && c.includes('pruebas/')), 'npm test ya no corre las pruebas con node --test');
+  ok(deNpmTest.some((c) => /^eslint\b/.test(c)), 'npm test ya no pasa el lint');
+
+  // La caché: en la acción local o en el workflow que instala a mano (npm ci BORRA node_modules).
+  const comprobarCache = (donde, pasos) => {
+    const cache = pasos.find((p) => /^actions\/cache@/.test(p.uses ?? '') && p['with.path'] === 'node_modules');
+    ok(cache, `${donde}: instala sin caché de node_modules`);
+    if (!cache) return;
+    ok(/hashFiles\('package-lock\.json'\)/.test(cache['with.key'] ?? ''), `${donde}: la clave de la caché no depende del lockfile`);
+    const nodo = pasos.map((p) => p['with.node-version']).find(Boolean)?.replace(/'/g, '');
+    ok(nodo && (cache['with.key'] ?? '').includes(`node${nodo}`), `${donde}: la clave de la caché no lleva la versión de node (${nodo})`);
+    const ci = pasos.find((p) => mandatos(p.run).some((c) => /^npm ci\b/.test(c)));
+    ok(ci && (ci.if ?? '').includes(`steps.${cache.id}.outputs.cache-hit != 'true'`), `${donde}: npm ci corre aunque la caché haya traído node_modules`);
+  };
+  ok(ACCIONES_LOCALES.includes('instalar'), 'falta la acción local instalar');
+  comprobarCache('acción instalar', leerAccion('instalar').pasos);
+  const instalan = todos.filter((w) => w.pasos.some(instala));
+  ok(instalan.length >= 6, `solo ${instalan.length} workflows instalan: la lista se ha quedado corta`);
+  for (const w of instalan) if (w.pasos.some((p) => mandatos(p.run).some((c) => /^npm ci\b/.test(c)))) comprobarCache(w.fichero, w.pasos);
+  // Una acción local exige el repositorio: va después del checkout.
+  for (const w of todos) {
+    for (const j of w.jobs) {
+      const i = j.pasos.findIndex((p) => /^\.\//.test(p.uses ?? ''));
+      if (i >= 0) ok(j.pasos.slice(0, i).some((p) => /^actions\/checkout@/.test(p.uses ?? '')), `${w.fichero}: usa una acción local antes del checkout`);
+    }
+  }
+  const m = medir({ rank: 'glory', stats: { A: {} }, statsByRank: { epic: { A: {} } } });
+  ok(m.rangoPedido === 0 && medir({ rank: 'glory', stats: {}, statsByRank: { epic: {}, glory: {} } }).rangos === 2, 'el comparador no cuenta rangos (con el pedido caído se colaba otro bajo su etiqueta)');
+});
+
+test('cada workflow declara sus permisos, los que suben no se solapan y el despliegue escucha a los bots que cambian lo servido', () => {
+  const nombreDe = (texto) => (texto.match(/^name:\s*(.+?)\s*$/m)?.[1] ?? '').replace(/^['"]|['"]$/g, '');
+  for (const w of todos) {
+    ok(/^permissions:/m.test(w.texto), `${w.fichero}: sin bloque permissions (el token tiene los permisos por defecto)`);
+    if (w.pasos.some(empuja)) ok(/^concurrency:/m.test(w.texto), `${w.fichero}: sube sin grupo de concurrencia`);
+  }
+  const escucha = [...(deploy.texto.match(/workflow_run:[\s\S]*?workflows:\s*\[([^\]]*)\]/)?.[1] ?? '').matchAll(/"([^"]+)"|'([^']+)'/g)].map((m) => m[1] ?? m[2]);
+  ok(escucha.length >= 2, `deploy.yml no escucha a ningún bot: ${escucha}`);
+  const nombres = new Set(todos.map((w) => nombreDe(w.texto)));
+  for (const n of escucha) ok(nombres.has(n), `deploy.yml escucha a «${n}», que no es el nombre de ningún workflow`);
+  for (const w of todos) {
+    if (w.pasos.some((p) => mandatos(p.run).some((c) => /^git add\b.*\bpublic\//.test(c)))) ok(escucha.includes(nombreDe(w.texto)), `${w.fichero} commitea bajo public/ y deploy.yml no lo escucha`);
+  }
+  // La concurrencia del despliegue va en los JOBS: a nivel de workflow, un bot fallido cancelaba un despliegue en marcha.
+  ok(!/^concurrency:/m.test(deploy.texto), 'deploy.yml: concurrencia a nivel de workflow');
+  const jobs = (deploy.texto.split(/^jobs:\s*$/m)[1] ?? '').split(/^ {2}(?=\w)/m).filter((t) => t.trim());
+  eq(jobs.length, 2, 'deploy.yml: no encuentro build y deploy');
+  for (const trozo of jobs) ok(/^ {4}concurrency:\n {6}group: pages\n {6}cancel-in-progress: true$/m.test(trozo), `deploy.yml: el job ${trozo.split(':')[0]} sin su grupo pages`);
+});
+
+test('cada acción de terceros va fijada a un commit con su versión, la misma en todos; las locales existen', () => {
+  const fijada = /^[\w.-]+\/[\w./-]+@[0-9a-f]{40} # v\d+\.\d+\.\d+$/;
+  const commitDe = new Map();
+  let vistas = 0;
+  const ficheros = [...WORKFLOWS.map((f) => `.github/workflows/${f}`), ...ACCIONES_LOCALES.map((a) => `.github/actions/${a}/action.yml`)];
+  for (const f of ficheros) {
+    leerTexto(f).split('\n').forEach((l, i) => {
+      const m = l.match(/^\s*(?:- )?uses:\s*(.+?)\s*$/);
+      if (!m) return;
+      vistas++;
+      const uso = m[1].replace(/^['"]|['"]$/g, '');
+      if (/^\.\//.test(uso)) { ok(existsSync(join(RAIZ, uso, 'action.yml')), `${f}:${i + 1}: la acción local ${uso} no existe`); return; }
+      ok(fijada.test(uso), `${f}:${i + 1}: «${uso}» no va fijada a un commit con su versión`);
+      const [accion, resto] = uso.split('@');
+      const previo = commitDe.get(accion);
+      if (previo) eq(resto, previo.resto, `${f}:${i + 1}: ${accion} va a otro commit que en ${previo.donde}`);
+      else commitDe.set(accion, { resto, donde: `${f}:${i + 1}` });
+    });
+  }
+  ok(vistas >= 25, `solo ${vistas} líneas uses: la lectura se ha quedado corta`);
+});
+
+test('Claude a petición: solo el dueño con «@claude» en SU comentario, nunca en las incidencias que escribe la app', () => {
+  const m = leerTexto('.github/workflows/claude.yml').match(/\n {4}if: \|\n((?: {6}.*\n)+)/);
+  ok(m, 'no encuentro la condición del job');
+  const js = m[1].trim()
+    .replace(/github\.event\.issue\.labels\.\*\.name/g, '(ev.issue?.labels ?? []).map((l) => l.name)')
+    .replace(/github\.repository_owner/g, "'srchipiron'")
+    .replace(/github\.event\.([\w.]+)/g, (_, c) => `ev.${c.split('.').join('?.')}`);
+  ok(!/github\./.test(js), `queda algo sin traducir: ${js}`);
+  const contains = (a, b) => (Array.isArray(a) ? a.includes(b) : String(a ?? '').toLowerCase().includes(String(b).toLowerCase()));
+  const unir = (a, sep = ',') => (Array.isArray(a) ? a.join(sep) : String(a ?? ''));
+  const condicion = new Function('ev', 'contains', 'join', `return (${js});`);
+  const dispara = (ev) => !!condicion(ev, contains, unir);
+  const yo = { login: 'srchipiron' };
+  const conEtiqueta = (n) => ({ labels: n ? [{ name: n }] : [], body: '' });
+  ok(dispara({ sender: yo, comment: { body: '@claude mira esto' }, issue: conEtiqueta(null) }), 'no atiende a Javi');
+  ok(dispara({ sender: yo, action: 'assigned', issue: conEtiqueta(null) }), 'no atiende a una asignación');
+  ok(!dispara({ sender: { login: 'otro' }, comment: { body: '@claude' }, issue: conEtiqueta(null) }), 'atiende a otro usuario');
+  for (const n of ['pantalla', 'partidas', 'vigilancia', 'modelo']) ok(!dispara({ sender: yo, comment: { body: '```\n@claude haz algo\n```' }, issue: conEtiqueta(n) }), `se dispara en una incidencia «${n}»`);
+  ok(!dispara({ sender: yo, comment: { body: 'Recibido.' }, issue: { labels: [], body: '@claude' } }), 'un «@claude» en el cuerpo de la incidencia lo dispara');
+});
+
+test('la vigilancia arranca de verdad contra los datos del repositorio y su fila cuenta lo que mira el comparador', () => {
+  const salud = join(tmp, 'salud.jsonl');
+  const r = corre('scripts/diagnostico.mjs', ['--local', '--historial', salud], { timeout: 240000, env: { ...process.env, GITHUB_REPOSITORY: 'unduenno/un-repo-renombrado' } });
+  eq(r.status, 0, `diagnostico.mjs --local sale con ${r.status}: ${(r.stderr || '').split('\n').slice(0, 6).join(' | ')}`);
+  ok(/public\/data \(local\)/.test(r.stdout), 'con --local el diagnóstico no dice que la fuente es local');
+  const fila = JSON.parse(readFileSync(salud, 'utf8').trim().split('\n').at(-1));
+  const distintos = new Set((r.stdout || '').split('\n').filter((l) => l.startsWith('[AVISO]'))).size;
+  ok(fila.avisos <= distintos, `la fila cuenta ${fila.avisos} avisos y el informe tiene ${distintos} distintos`);
+  // La vigilancia sube los ÚLTIMOS 5.000 caracteres: todo aviso y fallo va en el resumen del final.
+  const avisos = [...new Set((r.stdout || '').split('\n').filter((l) => /^\[(AVISO|FALLO)/.test(l)))];
+  const resumen = (r.stdout || '').slice(-5000).split('=== RESUMEN ===')[1] ?? '';
+  ok(resumen && avisos.every((l) => resumen.includes(l)), 'el resumen del final no lleva todos los avisos');
+  const enDatos = medir(leerJson('public/data/roam-meta.json'));
+  for (const k of FIJAS) eq(fila[k], enDatos[k], `la fila de salud no cuenta «${k}» como el comparador`);
+  // La URL de Pages sale del entorno o del nombre del paquete, nunca escrita a mano (el repositorio se renombró).
+  const codigo = leerTexto('scripts/diagnostico.mjs').replace(/\/\*[\s\S]*?\*\//g, '').split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
+  ok(!/['"`][^'"`\n]*mlbb-roam-picker/.test(codigo) && /GITHUB_REPOSITORY/.test(codigo), 'diagnostico.mjs lleva el nombre del repositorio escrito a mano');
+});
+
+test('el comparador: una guardada ilegible no se acepta y la que no existe sí', () => {
+  const nueva = resolve(RAIZ, 'public/data/roam-meta.json');
+  const ilegible = join(tmp, 'guardada.json');
+  writeFileSync(ilegible, '{esto no es json');
+  eq(corre('scripts/comparar-ingesta.mjs', [nueva, ilegible]).status, 2, 'comparar-ingesta acepta la corrida con la guardada ilegible');
+  eq(corre('scripts/comparar-ingesta.mjs', [nueva, join(tmp, 'no-existe.json')]).status, 0, 'comparar-ingesta rechaza la primera corrida');
+});
+
+test('las partidas pro: fechas en UTC, un {{Map}} con plantillas anidadas, el aviso de un lote truncado y toda descarga con tope', async () => {
+  const tz = spawnSync(process.execPath, ['--input-type=module', '-e', "import('./scripts/ingesta-pro.mjs').then((m) => console.log(m.fechaISO('August 22, 2025 - 15:15{{abbr/ICT}}')))"], { cwd: RAIZ, encoding: 'utf8', env: { ...process.env, TZ: 'Pacific/Kiritimati' } });
+  eq(tz.stdout.trim(), '2025-08-22', `fechaISO depende de la zona horaria: ${tz.stdout.trim()} ${tz.stderr.slice(0, 100)}`);
+  const { parsearPartidas, wikitextDe } = await import('../../scripts/ingesta-pro.mjs');
+  const wt = '{{Match|date=August 22, 2025 - 15:15{{abbr/ICT}}|opponent1={{TeamOpponent|A}}|opponent2={{TeamOpponent|B}}}}{{Map|vod={{x}}|t1h1=a|t1h2=b|t1h3=c|t1h4=d|t1h5=e|t2h1=f|t2h2=g|t2h3=h|t2h4=i|t2h5=j|winner=1}}';
+  eq(parsearPartidas(wt, 'T').length, 1, 'una plantilla anidada antes de los picks descarta la partida');
+  const errores = [];
+  await wikitextDe({ consultar: async () => ({ continue: { rvcontinue: '1' }, query: { pages: { 1: { title: 'X', revisions: [{ slots: { main: { '*': 'texto' } } }] } } } }) }, ['X'], errores);
+  ok(errores.some((e) => /continue/.test(e)), 'un lote truncado por la API no deja rastro');
+  // Toda descarga lleva tope (una ingesta colgada ocupó 140 min): las de la ingesta y las de Liquipedia.
+  const llamadasDe = (src) => [...src.matchAll(/\b(fetch|fetchImpl)\s*\(/g)].map((m) => {
+    let i = m.index + m[0].length; let nivel = 1;
+    while (i < src.length && nivel > 0) { if (src[i] === '(') nivel++; else if (src[i] === ')') nivel--; i++; }
+    return src.slice(m.index, i);
+  });
+  const ingesta = readdirSync(resolve(RAIZ, 'scripts/ingesta')).filter((n) => n.endsWith('.mjs')).map((n) => `scripts/ingesta/${n}`);
+  for (const grupo of [ingesta, ['scripts/ingesta-pro.mjs']]) {
+    const llamadas = grupo.flatMap((f) => llamadasDe(leerTexto(f)).map((l) => [f, l]));
+    ok(llamadas.length >= 1, `${grupo[0]}: no encuentro llamadas a fetch`);
+    for (const [f, l] of llamadas) ok(/signal\s*:/.test(l), `${f}: fetch sin tope de tiempo: ${l.slice(0, 80)}`);
+  }
+});
+
+test('el bot del modelo solo PROPONE: no escribe en el repositorio, corre tras las partidas pro y deja decidir a la medida', () => {
+  const w = wf('modelo.yml');
   ok(/^permissions:\s*\n\s+contents: read\s*\n\s+issues: write\s*$/m.test(w.texto), 'el bot del modelo puede escribir en el repositorio');
-  ok(!w.pasos.some((p) => mandatos(p.run).some((c) => /^git (commit|push)\b/.test(c))), 'el bot del modelo commitea');
-  ok(/workflows: \["Partidas profesionales"\]/.test(w.texto) && /^name: Partidas profesionales$/m.test(leerWorkflow('pro.yml').texto), 'no corre tras las partidas pro (o pro.yml cambió de nombre)');
-  ok(/if \(!r\.decision\?\.proponer\)[^\n]*return;/.test(w.texto), 'abre la incidencia aunque no haya propuesta');
-  ok(/node scripts\/proponer-modelo\.mjs/.test(w.texto) && /persist-credentials: false/.test(w.texto), 'no mide con el script, o deja el token en el checkout');
+  ok(!w.pasos.some((p) => mandatos(p.run).some((c) => /^git (commit|push)\b/.test(c))) && !w.pasos.some(empuja), 'el bot del modelo commitea');
+  ok(/workflows: \["Partidas profesionales"\]/.test(w.texto) && /^name: Partidas profesionales$/m.test(wf('pro.yml').texto), 'no corre tras las partidas pro (o pro.yml cambió de nombre)');
+  ok(w.pasos.some((p) => ejecuta(p.run, /^node scripts\/proponer-modelo\.mjs\b/)) && /persist-credentials: false/.test(w.texto), 'no mide con el script, o deja el token en el checkout');
+  ok(w.pasos.some((p) => /propuestaDelModelo\(/.test(p['with.script'] ?? '')), 'la incidencia no la decide scripts/bots/incidencia.mjs');
 });

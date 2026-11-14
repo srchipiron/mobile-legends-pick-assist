@@ -1,8 +1,6 @@
 name: Pruebas en cada propuesta
 
-# Hasta ahora NADA corria sobre un pull request: las pruebas solo se ejecutaban
-# al empujar a main, o sea DESPUES de fusionar. Cualquier propuesta -mia, tuya o
-# de un agente- podia entrar sin que nadie la comprobara.
+# Las pruebas sobre cada pull request ANTES de fusionar (mías, tuyas o de un agente).
 on:
   pull_request:
     branches: [main]
@@ -16,30 +14,14 @@ concurrency:
 
 jobs:
   probar:
-    # Tope del JOB entero: los pasos con red ya lo tenían, pero las pruebas,
-    # la compilación o Pages podían colgar el runner seis horas.
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
+      # Sin el token en .git/config mientras corre código del repositorio: aquí no se hace push.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        # Sin el token en .git/config mientras corre código del repositorio (3.60.4): aquí no se hace push.
         with:
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '22'
-      # node_modules ENTERO, por hash del lockfile. La cache de npm de
-      # setup-node solo guarda las descargas: medido, npm ci seguia en 3,7-4,7
-      # minutos con ella (despliegue 99, vigilancia 77). Con node_modules
-      # guardado, el paso se salta. npm ci BORRA node_modules antes de
-      # instalar, asi que solo corre si la cache no ha traido nada.
-      - id: modulos
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: node_modules
-          key: modulos-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}
-      - if: steps.modulos.outputs.cache-hit != 'true'
-        run: npm ci
+      - uses: ./.github/actions/instalar
       - run: npm test
       - name: Compilar
         run: npm run build

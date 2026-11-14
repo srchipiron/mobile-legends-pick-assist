@@ -2,22 +2,19 @@ name: Actualizar datos meta
 
 on:
   schedule:
-    - cron: '17 5,17 * * *'   # dos veces al día (UTC)
+    - cron: '17 5,17 * * *'   # dos veces al día (UTC); GitHub lo arranca 3-5 h tarde
   workflow_dispatch:           # y a mano cuando cae un parche
 
 permissions:
   contents: write
 
-# Una ingesta cada vez: un workflow_dispatch solapado con el cron acababa en
-# dos commits de roam-meta.json y un rebase con conflicto (corrida perdida).
+# Una ingesta cada vez: dos solapadas acababan en un rebase con conflicto.
 concurrency:
   group: datos
   cancel-in-progress: false
 
 jobs:
   ingest:
-    # Tope del JOB entero: los pasos con red ya lo tenían, pero un git que
-    # espera o un script colgado podían ocupar el runner seis horas.
     timeout-minutes: 40
     runs-on: ubuntu-latest
     steps:
@@ -27,16 +24,12 @@ jobs:
           node-version: '22'
 
       - name: Ingesta
-        # A un temporal, no encima de los datos buenos: si esta corrida sale
-        # peor, los de antes tienen que seguir intactos para poder compararlos.
-        # Con tope de tiempo: con la API a medias puede tardar 140 minutos.
+        # A un temporal, nunca encima de los datos buenos; con tope (a medias, 140 min).
         timeout-minutes: 20
         run: node scripts/ingest.mjs --rank glory --days 7 --out /tmp/nueva.json
 
       - name: Descartar la corrida si resuelve menos que la guardada
-        # La ingesta se degrada en silencio y por diseño. Sin esto, el bot
-        # commiteaba la corrida mala igual: paso de 133 heroes con linea y rol
-        # a 0, y de 133 counters a 34, sin que nada avisara.
+        # La ingesta se degrada en silencio y por diseño: esto es lo que lo para.
         run: node scripts/comparar-ingesta.mjs /tmp/nueva.json public/data/roam-meta.json
 
       - name: Guardar la corrida buena
@@ -50,24 +43,10 @@ jobs:
           fi
 
       - name: Commit si hay cambios
+        # Las imágenes con los datos y tras comparar: una corrida descartada no deja nada.
         run: |
           git config user.name  "meta-bot"
           git config user.email "meta-bot@users.noreply.github.com"
-          # Los iconos van con los datos: un objeto nuevo entra en las builds y
-          # su imagen tiene que entrar en el mismo commit, o la app pide un
-          # fichero que no existe. Se anaden AQUI, despues de la comparacion,
-          # para que una corrida descartada no deje basura.
           git add public/data/roam-meta.json public/objetos public/heroes
           git diff --staged --quiet || git commit -m "datos: meta $(date -u +%Y-%m-%d)"
-          # La vigilancia commitea su fila de salud varias veces al dia y la
-          # ingesta tarda diez minutos: sin rebase, el push se rechaza y la
-          # corrida se pierde en silencio.
-          # Si fallan los tres intentos el paso sale EN ROJO: antes el ultimo
-          # mandato del bucle era `sleep` y el estado era 0, o sea la corrida
-          # perdida en silencio que este bucle venia a evitar.
-          subido=0
-          for i in 1 2 3; do
-            git pull --rebase --autostash origin main && git push && { subido=1; break; }
-            sleep 5
-          done
-          [ "$subido" = 1 ] || { echo "::error::push rechazado tres veces"; exit 1; }
+          bash scripts/bots/subir.sh

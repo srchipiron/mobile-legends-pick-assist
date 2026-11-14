@@ -8,16 +8,13 @@ on:
 permissions:
   contents: write
 
-# Una corrida cada vez: una a mano solapada con la del lunes commitearían
-# las dos `pro.json` y el rebase de la segunda chocaría.
+# Una cada vez: dos solapadas commitearían las dos pro.json y el rebase chocaría.
 concurrency:
   group: pro
   cancel-in-progress: false
 
 jobs:
   pro:
-    # Tope del JOB entero: los pasos con red ya lo tenían, pero un git que
-    # espera o un script colgado podían ocupar el runner seis horas.
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
@@ -27,10 +24,7 @@ jobs:
           node-version: '22'
 
       - name: Ingesta de Liquipedia
-        # A temporales, nunca encima de lo guardado: si Liquipedia corta a
-        # mitad, lo de antes tiene que seguir intacto para poder compararlo.
-        # Con tope de tiempo: cada 429 se espera minutos, y son ~40
-        # peticiones a una cada 5 s.
+        # A temporales: si Liquipedia corta a mitad, lo de antes sigue intacto. Cada 429 espera minutos.
         timeout-minutes: 45
         run: node scripts/ingesta-pro.mjs --out /tmp/pro.json --out-partidas /tmp/pro-partidas.jsonl --max-peticiones 120 --max-torneos 25
 
@@ -48,13 +42,11 @@ jobs:
           cp /tmp/pro.json public/data/pro.json
 
       - name: Medir el motor contra las partidas
-        # La medida va DENTRO de pro.json: así el diagnóstico del móvil la
-        # enseña. Si hay menos de 30 partidas no escribe nada y no pasa nada.
+        # La medida va DENTRO de pro.json (el diagnóstico del móvil la enseña); con menos de 30 partidas no escribe.
+        # medir-rival y ajustar-modelo, solo al log: la tendencia del rival de línea y de cada término.
         run: |
           node scripts/medir-pro.mjs --json /tmp/medicion.json || true
-          # Solo al log: la tendencia del peso del rival de linea (ver CLAUDE.md).
           node scripts/medir-rival.mjs || true
-          # Solo al log: que coeficiente sale hoy para cada termino (modelo.js).
           node scripts/ajustar-modelo.mjs || true
           if [ -f /tmp/medicion.json ]; then
             node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('public/data/pro.json'));p.medicion=JSON.parse(fs.readFileSync('/tmp/medicion.json'));fs.writeFileSync('public/data/pro.json',JSON.stringify(p))"
@@ -66,14 +58,4 @@ jobs:
           git config user.email "meta-bot@users.noreply.github.com"
           git add historial/pro-partidas.jsonl public/data/pro.json
           git diff --staged --quiet || git commit -m "datos: partidas profesionales $(date -u +%Y-%m-%d)"
-          # Otro bot (o un push de código) puede haber movido main mientras
-          # se leía Liquipedia: la primera corrida se perdió por eso.
-          # Si fallan los tres intentos el paso sale EN ROJO: antes el ultimo
-          # mandato del bucle era `sleep` y el estado era 0, o sea la corrida
-          # perdida en silencio que este bucle venia a evitar.
-          subido=0
-          for i in 1 2 3; do
-            git pull --rebase --autostash origin main && git push && { subido=1; break; }
-            sleep 5
-          done
-          [ "$subido" = 1 ] || { echo "::error::push rechazado tres veces"; exit 1; }
+          bash scripts/bots/subir.sh
