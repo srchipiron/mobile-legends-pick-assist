@@ -271,7 +271,7 @@ test('9. Mítico caído en su pasada: se pide otra vez y Gloria se comprueba; Gl
   ok(gc.d.relaciones?.rango === 'glory' && gc.d.relaciones?.coherencia?.counters > 0.99 && !gc.d.diagnostics.conservado, `relaciones: ${JSON.stringify(gc.d.relaciones)}`);
 });
 
-test('10. academy con 500 al medir: con dos, la primera fila corta vuelve a medir y sigue por academy; con uno, la medida reintenta', async () => {
+test('10. academy con 500 al medir: con dos, la primera fila corta vuelve a medir y sigue por academy; con uno, la medida reintenta; un error no pierde contra una vacía', async () => {
   api.f.academyFallaAlMedir = 2;
   const dos = await corrida('ruta-corta', { previo: out1 });
   ok(dos.d.counters.Atlas?.Layla != null && dos.d.diagnostics.relations?.rutaCambiada?.some((x) => /academy/.test(x)), `ruta cambiada: ${JSON.stringify(dos.d.diagnostics.relations?.rutaCambiada)}`);
@@ -279,6 +279,12 @@ test('10. academy con 500 al medir: con dos, la primera fila corta vuelve a medi
   const uno = await corrida('ruta-un-fallo', { previo: out1 });
   api.f.academyFallaAlMedir = 0;
   ok(/academy/.test(uno.d.diagnostics.rutasMedidas?.counter ?? '') && !uno.d.diagnostics.relations?.rutaCambiada?.length, `medida: ${JSON.stringify(uno.d.diagnostics.rutasMedidas)}`);
+  // La del esquema falla las DOS medidas y academy responde vacía: un error no es un cero (0 > −1 cambiaba a la vacía).
+  Object.assign(api.f, { fallosCountersPendientes: 2, academyVacia: true });
+  const vacia = await corrida('ruta-vacia', { previo: out1 });
+  Object.assign(api.f, { fallosCountersPendientes: 0, academyVacia: false });
+  ok(!/academy/.test(vacia.d.diagnostics.rutasMedidas?.counter ?? '') && !vacia.d.diagnostics.relations?.rutaCambiada?.length, `cambia a una ruta vacía: ${vacia.d.diagnostics.rutasMedidas?.counter}`);
+  ok(vacia.d.counters.Atlas?.Khufra === 0.5123 && vacia.d.diagnostics.frescosRecursos?.relaciones > 100, 'la matriz no se descargó por la ruta que sí responde');
 });
 
 test('con la base inalcanzable arranca, escribe, no toca public/ y conserva la fecha: el comparador no ve nada fresco', async () => {
