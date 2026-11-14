@@ -4,7 +4,7 @@ paths:
   - "src/app/lector.js"
   - "src/app/estado/useDraft.js"
   - "src/app/componentes/BotonLector.jsx"
-  - "src/motor/directo.js"
+  - "src/motor/registro.js"
   - "pruebas/scripts/*lector*.mjs"
   - "pruebas/scripts/aprender.test.mjs"
   - "pruebas/scripts/recortes.test.mjs"
@@ -893,7 +893,7 @@ partida y los minutos… y analizar el resultado». Él eligió (preguntado) la
 VOZ en el móvil (Termux:API) y que el lector mire la tablet desde el minuto
 1, cada 20 s. Cómo va, por piezas:
 
-- **El guion** (`src/motor/directo.js`, `guionEnDirecto`, lo añade `planear`
+- **El guion** (`src/motor/registro.js`, `guionEnDirecto`, lo añade `planear`
   como `plan.directo`, y `cierresPorTramo` como `plan.cierres`): el plan y las
   fases convertidos en avisos por minuto de PARTIDA (inicio 0,25; peleas 5;
   de early «vuestro momento» 9 y «cada minuto en contra» 15; de late

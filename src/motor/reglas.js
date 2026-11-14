@@ -1,17 +1,11 @@
 /**
- * Reglas escritas a mano. Son DATOS (tablas), y por eso conservan sus nombres
- * y campos en inglés como el resto del esquema (`tags`, `role`...).
- *
- * Desde 1.5.0 la matriz de cruces está completa y desde 2.0 los huecos de
- * composición no puntúan: estas tablas solo deciden algo con un héroe tan
- * nuevo que la API no publica ni un cruce suyo, y se enseñan como lo que son.
- * `why` es una CLAVE de i18n, no un texto: la interfaz traduce. Si añades una
- * regla, añade su clave a los dos idiomas o la prueba de traducción lo dirá.
- *
- * Medido (`scripts/medir/medir-reglas.mjs`, t de Welch por héroe): siete de
- * las once reglas medibles encuentran más héroes de los que daría el azar,
- * pero el TAG los captura mal y las once miden UN solo eje (ventaja contra
- * `dash` y contra `dive` correlacionan a r=0,93). Cada regla nueva es deuda.
+ * Reglas escritas a mano: son DATOS (tablas) y por eso llevan los nombres de campo
+ * en inglés, como el resto del esquema. Con la matriz de cruces completa solo
+ * deciden algo con un héroe tan nuevo que la API no publica ni un cruce suyo, y se
+ * dicen como lo que son. `why` es una CLAVE de i18n (los dos idiomas o la prueba
+ * de traducción falla). [M] `medir-reglas.mjs`: siete de las once miden más héroes
+ * de los que daría el azar, pero todas miden UN solo eje (dash y dive a r = 0,93).
+ * Cada regla nueva es deuda.
  */
 
 /** «Si el enemigo tiene X, quien tiene Y gana valor». Peso en −1..1. */
@@ -37,17 +31,14 @@ export const COUNTER_RULES = [
   { enemyTag: 'zone', roamTag: 'mobile', weight: 0.4, why: 'regla.esquivaZonas' },
 ];
 
-/**
- * Necesidades de composición. Se DICEN (composicion.js, analisis.js), no
- * puntúan: medido en 902 partidas pro valen 0,00 ± 0,07 por hueco.
- */
+/** Necesidades de composición: se DICEN, no puntúan ([M] 0,00 ± 0,07 por hueco en 902 pro). El peso lo usa ajustar-modelo. */
 export const TEAM_NEEDS = [
-  { tag: 'engage', weight: 1.0, why: 'necesidad.engage' },
-  { tag: 'cc_hard', weight: 0.9, why: 'necesidad.cc_hard' },
-  { tag: 'peel', weight: 0.8, why: 'necesidad.peel' },
-  { tag: 'tanky', weight: 0.9, why: 'necesidad.tanky' },
-  { tag: 'sustain', weight: 0.4, why: 'necesidad.sustain' },
-  { tag: 'vision', weight: 0.3, why: 'necesidad.vision' },
+  { tag: 'engage', weight: 1.0 },
+  { tag: 'cc_hard', weight: 0.9 },
+  { tag: 'peel', weight: 0.8 },
+  { tag: 'tanky', weight: 0.9 },
+  { tag: 'sustain', weight: 0.4 },
+  { tag: 'vision', weight: 0.3 },
 ];
 
 /** Etiquetas que cubren la misma necesidad: encadenar control vale como control duro. */

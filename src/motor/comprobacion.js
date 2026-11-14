@@ -1,5 +1,8 @@
 import { conResultado } from './registro.js';
 import { wilson } from './habitos.js';
+import { fnv1a, SEMANA_MS } from './estadistica.js';
+
+export { SEMANA_MS };
 
 /**
  * Comprobar la tablet cada semana (3.101.0). Del 26 de octubre al 10 de
@@ -11,19 +14,14 @@ import { wilson } from './habitos.js';
  * `POR_SEMANA` es decisión de producto (un minuto a la semana).
  */
 export const POR_SEMANA = 3;
-export const SEMANA_MS = 7 * 86400000;
 /** Un lunes (5 de enero de 2026, 00:00 UTC): las semanas empiezan en lunes. */
 const LUNES = Date.UTC(2026, 0, 5);
 export const semanaDe = (t) => Math.floor((t - LUNES) / SEMANA_MS);
 /** Cuántas comprobadas se guardan: unas tres años de semanas. */
 export const TOPE_COMPROBADAS = 500;
 
-/** FNV-1a de 32 bits: el azar fijo de cada semana. */
-function huella(texto) {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < texto.length; i++) { h ^= texto.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
-  return h;
-}
+/** El azar fijo de cada semana. */
+const huella = fnv1a;
 
 /** Lo guardado, con forma: `{ t, bien, que, cuando }`, sin repetir partida, las más nuevas. */
 export function sanearComprobadas(lista) {

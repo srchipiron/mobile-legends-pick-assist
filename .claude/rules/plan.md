@@ -3,7 +3,7 @@ paths:
   - "src/motor/plan.js"
   - "src/motor/fases.js"
   - "src/motor/builds.js"
-  - "src/motor/directo.js"
+  - "src/motor/registro.js"
   - "src/app/componentes/Builds.jsx"
   - "src/app/componentes/Plan*.jsx"
   - "scripts/medir-fases.mjs"

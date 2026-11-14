@@ -4,62 +4,38 @@ import { perfilDeDano, tapaElHueco } from './catalogo.js';
 import { esPickCiego } from './ranking.js';
 import { CUOTA_ROBUSTA } from './robustez.js';
 import { HUECOS_QUE_SE_DICEN } from './composicion.js';
-import { TEAM_NEEDS, SATISFIES } from './reglas.js';
 
 /**
- * Hasta tres frases sobre el draft que tienes delante: lo que NO se ve en
- * las tarjetas. Si ganas o pierdes tu cruce de línea, quién te va a hacer
- * daño, si eliges a ciegas, si al equipo le falta algo que tú no aportas y
- * cuánto le saca el nº1 al nº2. Cuando no hay dato, se calla: una frase
- * inventada en 30 segundos de draft es peor que ninguna.
- *
+ * Hasta tres frases sobre el draft: lo que NO se ve en las tarjetas. Sin dato se
+ * calla: una frase inventada en 30 segundos de draft es peor que ninguna.
  * @typedef {{ tono: 'bien'|'ojo'|'duda', clave: string, params?: object }} Frase
  */
 
-/**
- * Desde cuánto un cruce deja de ser ruido y merece decirse: la misma cola
- * (p90/p10) con la que el motor dice «ganas el cruce». Estuvo en 0.03 (el
- * percentil 1,6%), y con eso un draft completo producía UNA frase. No tiene
- * umbral propio: sale de `CRUCE_MALO`, y hay una prueba de que sigue así.
- */
+/** [M] Un cruce se dice desde la misma cola con la que el motor dice «ganas el cruce» (p90/p10); sin «por poco», desde el p95/p05. */
 const CRUCE_CLARO = 0.5 - CRUCE_MALO;
-// Desde dónde se dice sin «por poco» (p95/p05, matrices.js).
 const CRUCE_FIRME = 0.5 - CRUCE_FUERTE_EN_CONTRA;
-
-/**
- * Desde cuántos puntos de probabilidad el nº1 «le saca» al nº2 y se dice
- * «pick claro». Decisión de frecuencia, como el margen de empate: 2 puntos
- * es el p85 de la distancia nº1–nº2 en 300 drafts de roam con el modelo de
- * 2.0 (1,94), así que se dice en uno de cada siete drafts.
- */
+/** [M] Dos puntos de winrate entre tú y tu rival: lo supera el 63 % de los pares, con σ ≈ 3 entre héroes. */
+const WINRATE_DISTINTO = 0.02;
+/** [M] «Tu equipo pega todo físico» con tres aliados, no dos (con dos salía en el 35 % de los drafts; con tres, 11,6 %). */
+const ALIADOS_PARA_AFIRMAR = 3;
+/** [M/P] Puntos que el nº1 le saca al nº2 para decir «pick claro»: p85 en 300 drafts de roam (1,94). */
 export const BRECHA_CLARA = 2;
+const FRASES = 3;
 
-/**
- * ¿La simulación se hizo con ESTE draft? En la app va diferida y el ranking
- * no: durante un render la cuota es la del draft anterior y el nº1 el de
- * este, y un héroe que la simulación no vio salía «frágil 0%». Una
- * simulación sin marca se acepta.
- */
+/** ¿La simulación es de ESTE draft? (va diferida; sin marca se acepta). Los baneos también cambian los finales. */
 function esDeEsteDraft(robustez, enemigos, aliados, baneos) {
   const mismo = (marca, equipo) => {
     if (!Array.isArray(marca)) return true;
     const ahora = equipo.map((h) => nombreClave(h.name)).sort();
     return marca.length === ahora.length && marca.every((n, i) => n === ahora[i]);
   };
-  // Los baneos también cambian los finales (un baneado no sale por ninguna
-  // línea): una simulación hecha con otros baneos no es de este draft.
   return mismo(robustez.enemigos, enemigos) && mismo(robustez.aliados, aliados) && mismo(robustez.baneos, baneos);
 }
 
 /**
- * @param {object} d
- * @param d.eleccion      el candidato del que se habla (por defecto, el nº1): tu pick fijado, si lo hay
- * @param d.baneos        los baneados, para saber si la simulación es de este draft
- * @param d.ranking       lo que devuelve ordenarPicks
- * @param d.rivalDeLinea  nombre del rival de tu línea, o null
- * @param d.empate        lo que devuelve empatados
- * @param d.robustez      lo que devuelve simularFinales, o null
- * @param d.composicion   lo que devuelve analizarComposicion, o null
+ * `eleccion`: de quién se habla (tu pick fijado o el nº1); `ranking`, `empate`,
+ * `robustez` y `composicion`: lo que dan ordenarPicks, empatados, simularFinales
+ * y analizarComposicion.
  * @returns {Frase[]} como mucho tres
  */
 export function analizarDraft({
@@ -68,29 +44,19 @@ export function analizarDraft({
 } = {}) {
   const salida = [];
   const top = eleccion ?? ranking[0];
-  // ¿Se habla del nº1 o de un pick fijado que no lo es? La simulación cuenta
-  // votos de nº1, así que «sigue siendo el nº1 en el 0%» de un pick fijado
-  // que iba segundo no dice nada: esa frase es para decidir, no para el que
-  // ya decidió.
+  // La simulación cuenta votos de nº1: de un pick fijado que no lo es no dice nada.
   const esElNumeroUno = !ranking[0] || !top || top.heroe === ranking[0].heroe || top.heroe?.name === ranking[0].heroe?.name;
 
-  // 0. ¿Aguanta el nº1 lo que falta por salir? Solo a medias y con simulación
-  //    hecha para este draft. Va primera: es la única frase que habla del
-  //    futuro del draft y no de lo que ya se ve.
+  // 0. ¿Aguanta lo que falta por salir? La única frase sobre el futuro del draft.
   if (top && esElNumeroUno && robustez?.lineasAbiertas?.length && robustez.cuota && esDeEsteDraft(robustez, enemigos, aliados, baneos)) {
     const cuota = robustez.cuota[top.heroe.name] ?? 0;
-    const pct = Math.round(cuota * 100);
-    const params = { yo: top.heroe.name, pct, faltan: robustez.lineasAbiertas.length };
-    salida.push(cuota >= CUOTA_ROBUSTA
-      ? { tono: 'bien', clave: 'analisis.pickRobusto', params }
-      : { tono: 'duda', clave: 'analisis.pickFragil', params });
+    const params = { yo: top.heroe.name, pct: Math.round(cuota * 100), faltan: robustez.lineasAbiertas.length };
+    salida.push(cuota >= CUOTA_ROBUSTA ? { tono: 'bien', clave: 'analisis.pickRobusto', params } : { tono: 'duda', clave: 'analisis.pickFragil', params });
   }
   if (!top) return salida;
   const heroe = top.heroe ?? top;
 
-  // 1. Tu línea. Primero el cruce de la pareja, que es el dato bueno; si está
-  //    igualado (o el rival es nuevo, sin dato) se comparan los winrates
-  //    sueltos, que es peor información y por eso se dice con otras palabras.
+  // 1. Tu línea: el cruce con tu rival y, si está igualado o sin dato, los winrates sueltos.
   if (rivalDeLinea) {
     const par = cruce(meta.counters, heroe.name, rivalDeLinea);
     if (par != null && Math.abs(par - 0.5) >= CRUCE_CLARO) {
@@ -102,9 +68,7 @@ export function analizarDraft({
     } else {
       const mio = buscar(meta.stats, heroe.name)?.winRate;
       const suyo = buscar(meta.stats, rivalDeLinea)?.winRate;
-      // 2 puntos: lo supera el 63% de los pares y la σ entre héroes es ≈3
-      // puntos, así que es una diferencia real y no ruido.
-      if (mio != null && suyo != null && Math.abs(mio - suyo) >= 0.02) {
+      if (mio != null && suyo != null && Math.abs(mio - suyo) >= WINRATE_DISTINTO) {
         const dif = Math.round(Math.abs(mio - suyo) * 100);
         salida.push(mio > suyo
           ? { tono: 'bien', clave: 'analisis.tuWinrateMejor', params: { dif, rival: rivalDeLinea } }
@@ -113,7 +77,7 @@ export function analizarDraft({
     }
   }
 
-  // 2. Quién te va a hacer daño: el peor cruce entre los YA elegidos.
+  // 2. Quién te va a hacer daño entre los ya elegidos (que no sea tu rival, ya dicho).
   if (enemigos.length) {
     const peor = enemigos
       .map((e) => ({ e, v: cruce(meta.counters, heroe.name, e.name) }))
@@ -125,54 +89,38 @@ export function analizarDraft({
     }
   }
 
-  // 3. ¿Estás eligiendo a ciegas? El riesgo ya lo calcula el motor.
-  if (esPickCiego(top.riesgo, enemigos.length)) {
-    salida.push({ tono: 'duda', clave: 'analisis.pickCiego', params: { n: 5 - enemigos.length, yo: heroe.name } });
-  }
+  // 3. ¿Eliges a ciegas?
+  if (esPickCiego(top.riesgo, enemigos.length)) salida.push({ tono: 'duda', clave: 'analisis.pickCiego', params: { n: 5 - enemigos.length, yo: heroe.name } });
 
-  // 4. De qué pega vuestro equipo. Tres aliados, no dos: «tu equipo pega todo
-  //    físico» es una AFIRMACIÓN y dos héroes de cinco no la sostienen
-  //    (medido: con dos salía en el 35% de los drafts, con tres en el 11,6%).
-  //    Dos frases distintas: si el pick TAPA el hueco es una razón para
-  //    cogerlo, y si no lo tapa es un aviso.
-  if (aliados.length >= 3) {
+  // 4. De qué pega vuestro equipo: si tú tapas el hueco es una razón; si no, un aviso.
+  if (aliados.length >= ALIADOS_PARA_AFIRMAR) {
     const { falta } = perfilDeDano(aliados);
     if (falta) {
-      const tapa = tapaElHueco(heroe, falta);
-      salida.push(tapa
+      salida.push(tapaElHueco(heroe, falta)
         ? { tono: 'bien', clave: falta === 'magico' ? 'analisis.todoFisico' : 'analisis.todoMagico', params: { yo: heroe.name } }
         : { tono: 'ojo', clave: falta === 'magico' ? 'analisis.faltaMagico' : 'analisis.faltaFisico', params: { yo: heroe.name } });
     }
   }
 
-  // 5. Lo que le falta al equipo aparte del daño (primera línea, control,
-  //    inicio), y el rol doble, que sí está medido en las parejas.
-  if (composicion && aliados.length >= 3) {
+  // 5. Lo que le falta aparte del daño, el rol doble (medido) y lo que les falta a ellos.
+  if (composicion && aliados.length >= ALIADOS_PARA_AFIRMAR) {
     const dichos = (tags) => tags.filter((tg) => HUECOS_QUE_SE_DICEN.includes(tg)).map((tg) => `comp.${tg}`);
     const tapa = dichos(composicion.tapa);
     const faltan = dichos(composicion.mio.huecos);
     if (tapa.length) salida.push({ tono: 'bien', clave: 'analisis.yoTapo', params: { yo: heroe.name, lista: tapa } });
     else if (faltan.length) salida.push({ tono: 'ojo', clave: 'analisis.equipoLeFalta', params: { yo: heroe.name, lista: faltan } });
     const doble = composicion.mio.dobles.find((d) => d.rol === heroe.role);
-    if (doble) {
-      salida.push({ tono: 'ojo', clave: 'analisis.rolDoble', params: { yo: heroe.name, n: doble.n, rol: [`rolPlural.${doble.rol}`], pp: Math.abs(doble.pp).toFixed(1) } });
-    }
+    if (doble) salida.push({ tono: 'ojo', clave: 'analisis.rolDoble', params: { yo: heroe.name, n: doble.n, rol: [`rolPlural.${doble.rol}`], pp: Math.abs(doble.pp).toFixed(1) } });
   }
   if (composicion && enemigos.length >= 4) {
     const sin = composicion.suyo.huecos.filter((tg) => ['tanky', 'cc_hard'].includes(tg)).map((tg) => `comp.${tg}`);
     if (sin.length) salida.push({ tono: 'bien', clave: 'analisis.ellosSin', params: { lista: sin } });
   }
 
-  // 6. Cuánto le saca al siguiente. Esto SIEMPRE se puede decir, y es lo que
-  //    decide si merece la pena pensárselo o coger y tirar.
+  // 6. Cuánto le saca al siguiente, comparado SIN redondear (se redondea al decirlo).
   const segundo = ranking.find((r) => r.heroe.name !== heroe.name);
   if (segundo && top.p != null && segundo.p != null) {
-    // Se compara SIN redondear (3.60.7): redondeando antes, 1,5 puntos ya
-    // eran «pick claro» y la frase salía en un draft de cada cuatro, no en
-    // el p85 medido; `revisarPartida` compara igual. Se redondea al decirlo.
     const brecha = (top.p - segundo.p) * 100;
-    // Con un pick fijado que NO es el nº1, «el siguiente» es el nº1: se dice
-    // cuánto le falta, con el mismo umbral, para que se sepa lo que cuesta.
     if (!esElNumeroUno && -brecha >= BRECHA_CLARA) {
       salida.push({ tono: 'duda', clave: 'analisis.tuPickPorDebajo', params: { yo: heroe.name, puntos: Math.round(-brecha), mejor: segundo.heroe.name } });
     } else if (brecha >= BRECHA_CLARA) {
@@ -182,16 +130,5 @@ export function analizarDraft({
       if (otros.length) salida.push({ tono: 'duda', clave: 'analisis.empatadoCon', params: { otros: otros.slice(0, 2).join(' / ') } });
     }
   }
-
-  // 7. Un hueco caro que tú NO tapas, solo SIN composición (con ella, el
-  //    bloque 5 ya lo dice sobre los mismos huecos y salían las dos juntas en
-  //    el 15% de los drafts). Filtro apretado: sin él salía en el 98%.
-  if (aliados.length >= 3 && !composicion) {
-    const cubierto = new Set([...aliados, heroe].flatMap((h) => h.tags ?? []));
-    const caros = [...TEAM_NEEDS].sort((a, b) => b.weight - a.weight).slice(0, 3);
-    const falta = caros.find((n) => !(SATISFIES[n.tag] ?? [n.tag]).some((tg) => cubierto.has(tg)));
-    if (falta) salida.push({ tono: 'duda', clave: 'analisis.huecoSinTapar', params: { yo: heroe.name, lista: [`comp.${falta.tag}`] } });
-  }
-
-  return salida.slice(0, 3);
+  return salida.slice(0, FRASES);
 }

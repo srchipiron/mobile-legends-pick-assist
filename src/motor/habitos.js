@@ -122,7 +122,9 @@ export function tusNumeros(partidas = [], { ahora = Date.now(), hora = horaLocal
 }
 
 // «Tu semana» (3.79.0): decisión de producto, los últimos 7 días contra los 7 de antes.
-export const SEMANA_MS = 7 * 24 * 60 * 60 * 1000;
+import { SEMANA_MS } from './estadistica.js';
+
+export { SEMANA_MS };
 // Decisión de producto: un héroe entra en tu semana desde 3 partidas en ella.
 export const MINIMO_SEMANA_HEROE = 3;
 // Decisión de producto: dos que te funcionan y dos que te cuestan, no una lista.

@@ -1,6 +1,7 @@
 import { esPrevia, esSupuesta, compararProporciones, conResultado } from './registro.js';
 import { wilson } from './habitos.js';
 import { nombreClave } from './nombres.js';
+import { SEMANA_MS } from './estadistica.js';
 
 /**
  * La analítica de tus partidas (3.88.0). Javi: «haz que la app sirva como
@@ -17,7 +18,6 @@ import { nombreClave } from './nombres.js';
 
 // Decisión de producto: doce semanas son un trimestre, lo que cabe en el ancho de un móvil.
 export const SEMANAS_EN_LA_EVOLUCION = 12;
-const SEMANA_MS = 7 * 24 * 60 * 60 * 1000;
 // Decisión de producto: un compañero o un rival sale desde 8 partidas con él
 // (con 8, el intervalo de Wilson ya es ±30 puntos: menos es una anécdota).
 export const MINIMO_CON_UNO = 8;

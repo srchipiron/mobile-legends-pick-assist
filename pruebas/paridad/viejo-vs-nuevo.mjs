@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 /**
- * Paridad entre el motor de 2.0.2 y el de 3.0.
+ * Paridad del motor entre dos árboles que DEBEN dar lo mismo (una reescritura).
  *
- * Solo tiene sentido en la migración: carga el motor viejo desde un árbol de
- * trabajo de git (PARIDAD_VIEJO, o `git worktree add <dir> v2.0.2`) y el nuevo
- * desde `src/motor`, genera miles de drafts deterministas en las cinco líneas
- * y compara TODO lo que la app enseña: ranking entero, probabilidad, términos,
- * motivos, empate, rival de línea, simulación, composición, consejos,
- * análisis, baneos sugeridos, siguiente baneo y la estimación con un héroe
- * cualquiera. Cualquier diferencia se lista y el proceso sale con 1.
+ * Carga el motor viejo de `PARIDAD_VIEJO` (un worktree del commit anterior a la
+ * reescritura, con `node_modules` enlazado) y el nuevo de `src/motor`, con los
+ * MISMOS datos (los del árbol viejo), genera drafts deterministas en las cinco
+ * líneas y compara todo lo que consumen la app, la tablet y los scripts. Sale
+ * con 1 y lista las diferencias si hay alguna.
  *
- *   PARIDAD_VIEJO=/ruta/al/2.0.2 node pruebas/paridad/viejo-vs-nuevo.mjs [drafts]
+ *   git worktree add /tmp/viejo <commit> && ln -s "$PWD/node_modules" /tmp/viejo/node_modules
+ *   PARIDAD_VIEJO=/tmp/viejo node pruebas/paridad/viejo-vs-nuevo.mjs 2000
+ *
+ * En 4.0.0 (contra 3.102.0, 0c6d784) se quitó A PROPÓSITO lo dormido: el término
+ * `tu` (siempre 0) y `deLosTuyos` (siempre null). `normalizar` los borra de la
+ * salida vieja; cualquier otra diferencia es un fallo.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -18,176 +21,229 @@ import { pathToFileURL } from 'node:url';
 
 const RAIZ = resolve(new URL('../..', import.meta.url).pathname);
 const VIEJO = process.env.PARIDAD_VIEJO;
-if (!VIEJO) { console.error('Falta PARIDAD_VIEJO=/ruta/al/arbol/2.0.2'); process.exit(2); }
+if (!VIEJO) { console.error('Falta PARIDAD_VIEJO=/ruta/al/arbol/viejo'); process.exit(2); }
 const N = Number(process.argv[2] ?? 400);
+const AHORA = Date.UTC(2026, 10, 14, 12);
 
-const v = async (m) => import(pathToFileURL(resolve(VIEJO, 'src/engine', m)).href);
-const n = async (m) => import(pathToFileURL(resolve(RAIZ, 'src/motor', m)).href);
+const cargar = (raiz) => async (m) => import(pathToFileURL(resolve(raiz, 'src/motor', m)).href);
+const MODULOS = ['draft.js', 'ranking.js', 'builds.js', 'alias.js', 'registro.js', 'habitos.js', 'analitica.js', 'comunidad.js',
+  'comprobacion.js', 'perfil.js', 'maestria.js', 'diagnostico/index.js', 'catalogo.js', 'nombres.js'];
+const motorDe = async (raiz) => Object.fromEntries(await Promise.all(MODULOS.map(async (m) => [m.replace(/\.js$/, ''), await cargar(raiz)(m)])));
+const [V, Nu] = await Promise.all([motorDe(VIEJO), motorDe(RAIZ)]);
 
-const [vScore, vRanking, vRival, vRobustez, vEstimacion, vComposicion, vEquipo, vAnalisis, vBaneos, vRegistro] = await Promise.all(
-  ['score.js', 'ranking.js', 'rival-de-linea.js', 'robustez.js', 'estimacion.js', 'composicion.js', 'equipo.js', 'analisis.js', 'baneos.js', 'registro.js'].map(v));
-const [nDraft, nNombres, nMaestria] = await Promise.all(['draft.js', 'nombres.js', 'maestria.js'].map(n));
+const leer = (r) => JSON.parse(readFileSync(resolve(VIEJO, r), 'utf8'));
+const catalogo = leer('public/data/heroes.json');
+const meta = leer('public/data/roam-meta.json');
+const pro = leer('public/data/pro.json');
 
-const catalogo = JSON.parse(readFileSync(resolve(RAIZ, 'public/data/heroes.json'), 'utf8'));
-const meta = JSON.parse(readFileSync(resolve(RAIZ, 'public/data/roam-meta.json'), 'utf8'));
-// La ventana corta (3.2.0) no existe en 2.0.2: con ella el término de héroe
-// difiere POR DISEÑO. Se quita para que la paridad siga midiendo todo lo demás.
-delete meta.recientes;
+// ---- comparar ----
+/** Lo quitado a propósito en 4.0: `terminos.tu` y `deLosTuyos`. */
+function normalizar(x, clave = '') {
+  if (Array.isArray(x)) return x.map((v) => normalizar(v));
+  if (x instanceof Map) return normalizar(Object.fromEntries(x));
+  if (x instanceof Set) return [...x].map((v) => normalizar(v));
+  if (x && typeof x === 'object') {
+    const salida = {};
+    for (const k of Object.keys(x).sort()) {
+      if (k === 'deLosTuyos') continue;
+      if ((clave === 'terminos' || clave === 'puntos') && k === 'tu') continue;
+      salida[k] = normalizar(x[k], k);
+    }
+    return salida;
+  }
+  if (typeof x === 'number' && Number.isNaN(x)) return 'NaN';
+  if (x === undefined) return '__undefined';
+  return x;
+}
+let diferencias = 0;
+let comparaciones = 0;
+const fallos = [];
+const porQue = new Map();
+/** Si los dos lanzan lo mismo la comparación no mide nada: se dice. */
+const lanzanLosDos = new Map();
+function comparar(id, que, fv, fn) {
+  comparaciones += 1;
+  let a; let b;
+  try { a = JSON.stringify(normalizar(fv())); } catch (e) { a = `LANZA ${e.message}`; }
+  try { b = JSON.stringify(normalizar(fn())); } catch (e) { b = `LANZA ${e.message}`; }
+  if (a === b && a.startsWith('LANZA')) lanzanLosDos.set(que, a);
+  if (a === b) return;
+  diferencias += 1;
+  porQue.set(que, (porQue.get(que) ?? 0) + 1);
+  if (fallos.length < 30) {
+    let i = 0; while (i < a.length && a[i] === b[i]) i += 1;
+    fallos.push(`${id} · ${que}\n    viejo: …${a.slice(Math.max(0, i - 80), i + 160)}\n    nuevo: …${b.slice(Math.max(0, i - 80), i + 160)}`);
+  }
+}
 
-// ---- viejo, montado como lo montaba App.jsx 2.0.2 ----
-const allHeroes = vScore.mergeCatalog(catalogo.heroes, meta.heroes);
-const lineasV = vRival.indiceDeLineas(meta.heroes);
-const frecuenciasV = vRival.frecuenciaDeRoles(meta.heroes ?? []);
-const rango = meta.rank ?? 'glory';
-const metaCtx = {
-  stats: vScore.indexByName(meta.statsByRank?.[rango] ?? meta.stats),
-  counters: vScore.indexByName(meta.counters, 2),
-  synergies: vScore.indexByName(meta.synergies, 2),
-  patchAvgWinRate: meta.avgByRank?.[rango] ?? meta.patchAvgWinRate ?? 0.5,
-};
-const poolsV = Object.fromEntries(vScore.LINEAS.map((l) => [l, vScore.poolDeLinea(allHeroes, lineasV, l)]));
-const abiertasV = (enemies) => {
-  if (!enemies.length || enemies.length >= 5) return [];
-  const ocupadas = new Set(vRival.lineasOcupadas(enemies, lineasV, frecuenciasV));
-  return vScore.LINEAS.filter((l) => !ocupadas.has(l));
-};
-
-// ---- nuevo ----
-const datos = nDraft.prepararDatos({ catalogo, meta, rango });
+// ---- datos ----
+const dV = V.draft.prepararDatos({ catalogo, meta, rango: 'glory' });
+const dN = Nu.draft.prepararDatos({ catalogo, meta, rango: 'glory' });
+comparar('datos', 'prepararDatos (sin catálogo crudo)', () => ({ ...dV, catalogo: null, crudo: null }), () => ({ ...dN, catalogo: null, crudo: null }));
+for (const r of ['mythic', 'legend', 'nadie', null]) {
+  comparar(`datos ${r}`, 'prepararDatos de otro rango', () => V.draft.prepararDatos({ catalogo, meta, rango: r }).meta.fuerza,
+    () => Nu.draft.prepararDatos({ catalogo, meta, rango: r }).meta.fuerza);
+}
+comparar('datos', 'sin meta', () => V.draft.prepararDatos({ catalogo, meta: null }).poolsPorLinea, () => Nu.draft.prepararDatos({ catalogo, meta: null }).poolsPorLinea);
 
 // ---- drafts deterministas ----
 function generador(semilla) {
   let a = semilla >>> 0;
   return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
-const rnd = generador(20260914);
-const elegir = (lista, k, fuera) => {
-  const libres = lista.filter((h) => !fuera.has(h.name));
+const rnd = generador(20261114);
+const LINEAS = ['roam', 'jungle', 'mid', 'gold', 'exp'];
+const nombres = dV.heroes.map((h) => h.name);
+const elegir = (k, fuera) => {
+  const libres = nombres.filter((n) => !fuera.has(n));
   const salida = [];
-  while (salida.length < k && libres.length) {
-    const i = Math.floor(rnd() * libres.length);
-    salida.push(libres.splice(i, 1)[0]);
-  }
+  while (salida.length < k && libres.length) salida.push(libres.splice(Math.floor(rnd() * libres.length), 1)[0]);
+  salida.forEach((n) => fuera.add(n));
   return salida;
 };
-const porNombreN = datos.porNombre;
+const azar = (lista) => lista[Math.floor(rnd() * lista.length)];
 
-let diferencias = 0;
-const fallos = [];
-const reportar = (draftId, que, viejo, nuevo) => {
-  diferencias += 1;
-  if (fallos.length < 40) fallos.push(`${draftId} · ${que}\n    viejo: ${JSON.stringify(viejo)}\n    nuevo: ${JSON.stringify(nuevo)}`);
-};
-const casi = (a, b, tol = 1e-9) => (a == null || b == null ? a === b : Math.abs(a - b) <= tol);
-const motivoV = (m) => ({ clave: m.clave, params: m.params ?? null, bueno: m.good, peso: m.w != null ? Number(m.w.toFixed(9)) : null });
-const motivoN = (m) => ({ clave: m.clave, params: m.params ?? null, bueno: m.bueno, peso: m.peso != null ? Number(m.peso.toFixed(9)) : null });
-const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-
-const t0 = Date.now();
-for (let i = 0; i < N; i++) {
-  const linea = vScore.LINEAS[i % 5];
-  const nE = Math.floor(rnd() * 6);
-  const nA = Math.floor(rnd() * 5);
-  const nB = Math.floor(rnd() * 11);
+const partidas = [];
+for (let i = 0; i < 260; i += 1) {
   const fuera = new Set();
-  const bans = elegir(allHeroes, nB, fuera); bans.forEach((h) => fuera.add(h.name));
-  const enemies = elegir(allHeroes, nE, fuera); enemies.forEach((h) => fuera.add(h.name));
-  const allies = elegir(allHeroes.filter((h) => !poolsV[linea].includes(h) || rnd() < 0.3), nA, fuera); allies.forEach((h) => fuera.add(h.name));
-  // Maestría: un puñado de héroes con partidas, a veces ninguna.
-  const maestria = {};
-  if (rnd() < 0.7) {
-    for (const h of elegir(allHeroes, 1 + Math.floor(rnd() * 8), new Set())) {
-      maestria[nNombres.nombreClave(h.name)] = { games: 1 + Math.floor(rnd() * 400), winRate: 0.35 + rnd() * 0.3 };
-    }
-  }
-  const partidas = rnd() < 0.5 ? Array.from({ length: Math.floor(rnd() * 30) }, (_, k) => ({
-    t: 1000 + k, pick: allHeroes[Math.floor(rnd() * allHeroes.length)].name, gane: rnd() < 0.5,
-    bans: elegir(allHeroes, Math.floor(rnd() * 10), new Set()).map((h) => h.name),
-  })) : [];
-  const marcado = enemies.length && rnd() < 0.3 ? enemies[Math.floor(rnd() * enemies.length)].name : null;
-  const id = `#${i} ${linea} E${nE} A${nA} B${nB}`;
-
-  const aN = (hs) => hs.map((h) => porNombreN.get(h.name));
-  const eV = enemies; const alV = allies; const bV = bans;
-  const eN = aN(enemies); const alN = aN(allies); const bN = aN(bans);
-  const maestriaV = vRegistro.maestriaEfectiva(maestria, partidas);
-  const maestriaN = nMaestria.maestriaEfectiva(maestria, partidas);
-  if (!igual(maestriaV, maestriaN)) reportar(id, 'maestriaEfectiva', maestriaV, maestriaN);
-
-  // ranking
-  const lineasAbiertas = abiertasV(eV);
-  const taken = new Set([...eV, ...alV, ...bV].map((h) => h.name));
-  const rankedV = vRanking.rankRoamers(poolsV[linea], {
-    enemies: eV, allies: alV, bans: bV, mastery: maestriaV, meta: metaCtx, lineas: lineasV, lineasAbiertas, poolsPorLinea: poolsV,
-    candidatos: allHeroes.filter((h) => !taken.has(h.name)),
+  const pick = elegir(1, fuera)[0];
+  partidas.push({
+    t: AHORA - (260 - i) * 3600000 * 7 + Math.floor(rnd() * 3600000), pick, gane: rnd() < 0.53 ? true : (rnd() < 0.9 ? false : null),
+    recomendados: elegir(3, new Set([pick])), rango: 'glory', estimacion: 0.4 + rnd() * 0.25, modelo: rnd() < 0.8 ? 5 : 4,
+    ...(rnd() < 0.5 ? { origen: 'lector' } : {}), ...(rnd() < 0.1 ? { supuesto: true } : {}), ...(rnd() < 0.05 ? { previa: true } : {}),
+    bans: elegir(Math.floor(rnd() * 10), fuera),
+    draft: { linea: azar(LINEAS), enemigos: elegir(5, fuera), aliados: elegir(4, fuera), ...(rnd() < 0.3 ? { rival: null } : {}) },
+    ...(rnd() < 0.6 ? { duracion: 8 + Math.round(rnd() * 200) / 10 } : {}),
+    ...(rnd() < 0.3 ? { editada: AHORA - Math.floor(rnd() * 1e9) } : {}),
   });
-  const rec = nDraft.recomendar(datos, { linea, enemigos: eN, aliados: alN, baneos: bN, maestria: maestriaN, rivalMarcado: marcado });
-  const rankedN = rec.ranking;
-  if (!igual(rec.lineasAbiertas, lineasAbiertas)) reportar(id, 'lineasAbiertas', lineasAbiertas, rec.lineasAbiertas);
-  if (rankedV.length !== rankedN.length) reportar(id, 'tamaño del ranking', rankedV.length, rankedN.length);
-  const orden = (r) => r.map((c) => (c.hero ?? c.heroe).name);
-  if (!igual(orden(rankedV), orden(rankedN))) reportar(id, 'orden del ranking', orden(rankedV), orden(rankedN));
-  for (let k = 0; k < Math.min(rankedV.length, rankedN.length); k++) {
-    const a = rankedV[k]; const b = rankedN[k];
-    if (!casi(a.p, b.p)) reportar(id, `p de ${a.hero.name}`, a.p, b.p);
-    if (!casi(a.logOdds, b.logOdds)) reportar(id, `logOdds de ${a.hero.name}`, a.logOdds, b.logOdds);
-    for (const t of ['heroes', 'cruces', 'parejas', 'tu', 'porVer']) if (!casi(a.terminos[t], b.terminos[t])) reportar(id, `término ${t} de ${a.hero.name}`, a.terminos, b.terminos);
-    if (!igual(a.puntos, b.puntos)) reportar(id, `puntos de ${a.hero.name}`, a.puntos, b.puntos);
-    if (a.dato !== b.dato) reportar(id, `dato de ${a.hero.name}`, a.dato, b.dato);
-    if (!casi(a.riesgo, b.riesgo)) reportar(id, `riesgo de ${a.hero.name}`, a.riesgo, b.riesgo);
-    if (!igual(a.reasons.map(motivoV), b.motivos.map(motivoN))) reportar(id, `motivos de ${a.hero.name}`, a.reasons, b.motivos);
+}
+const maestria = Object.fromEntries(elegir(25, new Set()).map((n) => [n, { games: 1 + Math.floor(rnd() * 400), winRate: 0.4 + rnd() * 0.25 }]));
+
+for (let i = 0; i < N; i += 1) {
+  const linea = LINEAS[i % 5];
+  const fuera = new Set();
+  const nE = Math.floor(rnd() * 6); const nA = Math.floor(rnd() * 5); const nB = Math.floor(rnd() * 11);
+  const enemigos = elegir(nE, fuera); const aliados = elegir(nA, fuera); const baneos = elegir(nB, fuera);
+  const pool = Nu.draft.poolDe(dN, linea).filter((h) => !fuera.has(h.name));
+  const miPick = rnd() < 0.3 && pool.length ? azar(pool).name : null;
+  const rivalMarcado = enemigos.length && rnd() < 0.2 ? azar(enemigos) : null;
+  const draft = { linea, enemigos, aliados, baneos, miPick, rivalMarcado };
+  const id = `#${i} ${linea} ${nE}v${nA} b${nB}`;
+  const conSimulacion = i % 7 === 0;
+
+  const rV = V.draft.recomendar(dV, { ...draft, conSimulacion });
+  const rN = Nu.draft.recomendar(dN, { ...draft, conSimulacion });
+  comparar(id, 'recomendar', () => rV, () => rN);
+  const yo = rN.eleccion?.heroe?.name ?? azar(nombres);
+  comparar(id, 'estimarCon', () => V.draft.estimarCon(dV, { yo, enemigos, aliados, baneos }), () => Nu.draft.estimarCon(dN, { yo, enemigos, aliados, baneos }));
+  comparar(id, 'planear', () => V.draft.planear(dV, { yo, aliados, enemigos, linea, baneos, rivalMarcado }), () => Nu.draft.planear(dN, { yo, aliados, enemigos, linea, baneos, rivalMarcado }));
+  for (const bando of ['enemigos', 'aliados']) {
+    const equipo = bando === 'enemigos' ? enemigos : aliados;
+    comparar(id, `probablesDelBando ${bando}`, () => V.draft.probablesDelBando(dV, { equipo, linea, bando }).map((h) => h.name),
+      () => Nu.draft.probablesDelBando(dN, { equipo, linea, bando }).map((h) => h.name));
   }
-
-  // empate
-  const empV = vRanking.empatados(rankedV).map((c) => c.hero.name);
-  if (!igual(empV, rec.empate.map((c) => c.heroe.name))) reportar(id, 'empate', empV, rec.empate.map((c) => c.heroe.name));
-
-  // rival de línea
-  const rivalV = marcado ?? vRival.detectarRivalDeLinea(eV, lineasV, linea, frecuenciasV);
-  if (rivalV !== rec.rival.nombre) reportar(id, 'rival', rivalV, rec.rival);
-
-  // simulación
-  const robV = (eV.length && eV.length < 5 && poolsV[linea].length)
-    ? vRobustez.simularFinales({ pool: poolsV[linea], enemies: eV, allies: alV, lineasAbiertas, poolsPorLinea: poolsV, ctx: { meta: metaCtx, mastery: maestriaV, bans: bV, lineas: lineasV }, linea })
-    : null;
-  if (!igual(robV, rec.robustez)) reportar(id, 'robustez', robV, rec.robustez);
-
-  // composición
-  const compV = (alV.length || eV.length) && rankedV[0] ? vComposicion.analizarComposicion({ allies: alV, yo: rankedV[0].hero, enemies: eV }) : null;
-  const sinHeroes = (c) => c && JSON.parse(JSON.stringify(c));
-  if (!igual(sinHeroes(compV), sinHeroes(rec.composicion))) reportar(id, 'composicion', compV, rec.composicion);
-
-  // consejos a los compañeros
-  const consV = rankedV[0] && eV.length
-    ? vEquipo.aconsejarEquipo({ allHeroes, lineas: lineasV, frecuencias: frecuenciasV, miLinea: linea, yo: rankedV[0].hero, enemies: eV, allies: alV, bans: bV, meta: metaCtx, lineasAbiertas, poolsPorLinea: poolsV })
-    : [];
-  const consejo = (c, campo) => c.map((x) => ({ linea: x.linea, rival: x.rival, s: x.sugerencias.map((s) => [s[campo].name, Number(s.p.toFixed(9)), s.puntos, (s.motivos ?? s.reasons).map((m) => m.clave)]) }));
-  if (!igual(consejo(consV, 'hero'), consejo(rec.consejos, 'heroe'))) reportar(id, 'consejos', consejo(consV, 'hero'), consejo(rec.consejos, 'heroe'));
-
-  // análisis
-  const anV = vAnalisis.analizarDraft({ ranked: rankedV, enemies: eV, allies: alV, meta: metaCtx, rivalLinea: rivalV, linea, empate: vRanking.empatados(rankedV), robustez: robV, composicion: compV });
-  if (!igual(anV, rec.analisis)) reportar(id, 'analisis', anV, rec.analisis);
-
-  // baneos sugeridos
-  const banV = vRanking.suggestBans(allHeroes, { allies: alV, enemies: eV, bans: bV, meta: metaCtx });
-  const ban = (lista, campo, mot) => lista.map((b) => [b[campo].name, Number((b.valor ?? b.score).toFixed(12)), b.puntos, Number(b.disponible.toFixed(12)), b[mot].map(mot === 'reasons' ? motivoV : motivoN)]);
-  if (!igual(ban(banV, 'hero', 'reasons'), ban(rec.baneosSugeridos, 'heroe', 'motivos'))) reportar(id, 'baneos sugeridos', ban(banV, 'hero', 'reasons'), ban(rec.baneosSugeridos, 'heroe', 'motivos'));
-
-  // siguiente baneo probable
-  const histV = vBaneos.coocurrenciaDeBaneos(partidas);
-  const proxV = vBaneos.proximosBaneos(allHeroes, { bans: bV, enemies: eV, allies: alV, meta: metaCtx, historial: histV, n: 10 });
-  const proxN = nDraft.siguientesBaneos(datos, { baneos: bN, enemigos: eN, aliados: alN, partidas, n: 10 });
-  const prox = (lista, campo) => lista.map((x) => [x[campo].name, x.banRate, Number(x.factor.toFixed(12))]);
-  if (!igual(prox(proxV, 'hero'), prox(proxN, 'heroe'))) reportar(id, 'siguiente baneo', prox(proxV, 'hero'), prox(proxN, 'heroe'));
-
-  // estimación con un héroe cualquiera del pool (aunque esté cogido)
-  const yo = poolsV[linea][Math.floor(rnd() * poolsV[linea].length)];
-  const estV = vEstimacion.estimarVictoria({ allies: alV, yo, enemies: eV, meta: metaCtx, mastery: maestriaV, lineas: lineasV, lineasAbiertas, poolsPorLinea: poolsV, bans: bV });
-  const estN = nDraft.estimarCon(datos, { yo: porNombreN.get(yo.name), enemigos: eN, aliados: alN, baneos: bN, maestria: maestriaN });
-  if (!casi(estV.p, estN.p) || !igual(estV.puntos, estN.puntos) || estV.vistos !== estN.vistos) reportar(id, `estimación con ${yo.name}`, { p: estV.p, puntos: estV.puntos, vistos: estV.vistos }, { p: estN.p, puntos: estN.puntos, vistos: estN.vistos });
+  comparar(id, 'siguientesBaneos', () => V.draft.siguientesBaneos(dV, { baneos, enemigos, aliados, miPick, partidas }),
+    () => Nu.draft.siguientesBaneos(dN, { baneos, enemigos, aliados, miPick, partidas }));
+  comparar(id, 'crucesDelDraft', () => V.draft.crucesDelDraft(dV, { yo, enemigos, aliados }), () => Nu.draft.crucesDelDraft(dN, { yo, enemigos, aliados }));
+  comparar(id, 'porQueDetras', () => rV.ranking.slice(1, 6).map((c) => V.ranking.porQueDetras(c, rV.ranking[0])),
+    () => rN.ranking.slice(1, 6).map((c) => Nu.ranking.porQueDetras(c, rN.ranking[0])));
+  if (i % 3 === 0) {
+    comparar(id, 'fichaDeHeroe', () => V.draft.fichaDeHeroe(dV, yo, { ahora: AHORA }), () => Nu.draft.fichaDeHeroe(dN, yo, { ahora: AHORA }));
+    comparar(id, 'tocadoPorElParche', () => V.draft.tocadoPorElParche(dV, yo, AHORA), () => Nu.draft.tocadoPorElParche(dN, yo, AHORA));
+    comparar(id, 'winrateEnLinea', () => V.draft.winrateEnLinea(dV, yo, linea), () => Nu.draft.winrateEnLinea(dN, yo, linea));
+  }
+  const heroe = dN.porNombre.get(yo);
+  const builds = Nu.builds.buildsDe(meta.builds, heroe, linea);
+  comparar(id, 'buildsDe', () => V.builds.buildsDe(meta.builds, dV.porNombre.get(yo), linea), () => builds);
+  const enemigosH = Nu.draft.resolverNombres(dN, enemigos);
+  if (builds.length) {
+    comparar(id, 'ajustesDeBuild', () => V.builds.ajustesDeBuild(builds[0], meta.equipment, V.draft.resolverNombres(dV, enemigos), linea, { builds: meta.builds }),
+      () => Nu.builds.ajustesDeBuild(builds[0], meta.equipment, enemigosH, linea, { builds: meta.builds }));
+    comparar(id, 'buildParaElDraft', () => V.builds.buildParaElDraft(builds, meta.equipment, V.draft.resolverNombres(dV, enemigos), linea, { builds: meta.builds }),
+      () => Nu.builds.buildParaElDraft(builds, meta.equipment, enemigosH, linea, { builds: meta.builds }));
+  }
+  comparar(id, 'buildEnUnaLinea', () => V.builds.buildEnUnaLinea({ builds: meta.builds, equipment: meta.equipment, heroe: dV.porNombre.get(yo), linea, enemigos: V.draft.resolverNombres(dV, enemigos) }),
+    () => Nu.builds.buildEnUnaLinea({ builds: meta.builds, equipment: meta.equipment, heroe, linea, enemigos: enemigosH }));
 }
 
-console.log(`${N} drafts en ${((Date.now() - t0) / 1000).toFixed(1)} s · ${diferencias} diferencias`);
-for (const f of fallos) console.log(f);
-if (fallos.length < diferencias) console.log(`... y ${diferencias - fallos.length} más`);
-process.exit(diferencias ? 1 : 0);
+// ---- por línea ----
+for (const linea of LINEAS) {
+  comparar(linea, 'planDePicks', () => V.draft.planDePicks(dV, { linea }), () => Nu.draft.planDePicks(dN, { linea }));
+  comparar(linea, 'movimientosDelMeta', () => V.draft.movimientosDelMeta(dV, { linea }), () => Nu.draft.movimientosDelMeta(dN, { linea }));
+  comparar(linea, 'lineasEnemigasAbiertas', () => V.draft.lineasEnemigasAbiertas(dV, nombres.slice(0, 3)), () => Nu.draft.lineasEnemigasAbiertas(dN, nombres.slice(0, 3)));
+}
+comparar('meta', 'movimientosDelMeta sin línea', () => V.draft.movimientosDelMeta(dV, {}), () => Nu.draft.movimientosDelMeta(dN, {}));
+
+// ---- revisión de partidas ----
+for (const p of partidas.slice(0, 120)) comparar(`t${p.t}`, 'revisarPartida', () => V.draft.revisarPartida(dV, p), () => Nu.draft.revisarPartida(dN, p));
+comparar('partidas', 'revisarDrafts', () => V.draft.revisarDrafts(dV, partidas), () => Nu.draft.revisarDrafts(dN, partidas));
+
+// ---- buscador ----
+for (const texto of ['', 'a', 'cic', 'Cíclope', 'lyla', 'xb', 'popol', 'chang', 'zzz', 'mos', 'yss']) {
+  comparar(`«${texto}»`, 'filtrarPorNombre', () => V.alias.filtrarPorNombre(dV.heroes, texto).map((h) => h.name), () => Nu.alias.filtrarPorNombre(dN.heroes, texto).map((h) => h.name));
+}
+
+// ---- tus partidas ----
+const opciones = { ahora: AHORA, hora: (t) => new Date(t).getUTCHours() };
+comparar('partidas', 'tusNumeros', () => V.habitos.tusNumeros(partidas, opciones), () => Nu.habitos.tusNumeros(partidas, opciones));
+comparar('partidas', 'tuSemana', () => V.habitos.tuSemana(partidas, { ahora: AHORA }), () => Nu.habitos.tuSemana(partidas, { ahora: AHORA }));
+comparar('partidas', 'resumen', () => V.registro.resumen(partidas, maestria), () => Nu.registro.resumen(partidas, maestria));
+comparar('partidas', 'calibracion', () => V.registro.calibracion(partidas), () => Nu.registro.calibracion(partidas));
+comparar('partidas', 'aciertosDelLector', () => V.registro.aciertosDelLector(partidas), () => Nu.registro.aciertosDelLector(partidas));
+comparar('partidas', 'medirFasesMias', () => V.registro.medirFasesMias(partidas), () => Nu.registro.medirFasesMias(partidas));
+comparar('partidas', 'siguioConsejo', () => partidas.map(V.registro.siguioConsejo), () => partidas.map(Nu.registro.siguioConsejo));
+comparar('partidas', 'evolucion', () => V.analitica.evolucion(partidas, { ahora: AHORA }), () => Nu.analitica.evolucion(partidas, { ahora: AHORA }));
+for (const lado of ['aliados', 'enemigos']) comparar('partidas', `porCompaneros ${lado}`, () => V.analitica.porCompaneros(partidas, { lado }), () => Nu.analitica.porCompaneros(partidas, { lado }));
+comparar('partidas', 'porLinea', () => V.analitica.porLinea(partidas), () => Nu.analitica.porLinea(partidas));
+comparar('partidas', 'porDia', () => V.analitica.porDia(partidas, { dia: (t) => new Date(t).getUTCDay() }), () => Nu.analitica.porDia(partidas, { dia: (t) => new Date(t).getUTCDay() }));
+comparar('partidas', 'conLaApp', () => V.analitica.conLaApp(partidas), () => Nu.analitica.conLaApp(partidas));
+comparar('partidas', 'maestriaEfectiva', () => V.maestria.maestriaEfectiva(maestria, partidas), () => Nu.maestria.maestriaEfectiva(maestria, partidas));
+comparar('partidas', 'maestriaDeSiempre', () => V.maestria.maestriaDeSiempre(maestria, partidas), () => Nu.maestria.maestriaDeSiempre(maestria, partidas));
+comparar('partidas', 'winrateDeReferencia', () => V.maestria.winrateDeReferencia(maestria), () => Nu.maestria.winrateDeReferencia(maestria));
+comparar('partidas', 'fecharMaestria', () => V.maestria.fecharMaestria(maestria, AHORA), () => Nu.maestria.fecharMaestria(maestria, AHORA));
+const comprobadas = partidas.slice(0, 40).map((p, i) => ({ t: p.t, bien: i % 3 !== 0, que: i % 3 ? null : 'resultado', cuando: p.t + 1000 }));
+comparar('partidas', 'paraComprobar', () => V.comprobacion.paraComprobar(partidas, comprobadas, { ahora: AHORA }), () => Nu.comprobacion.paraComprobar(partidas, comprobadas, { ahora: AHORA }));
+comparar('partidas', 'precisionDeLaTablet', () => V.comprobacion.precisionDeLaTablet(comprobadas), () => Nu.comprobacion.precisionDeLaTablet(comprobadas));
+comparar('partidas', 'sanearComprobadas', () => V.comprobacion.sanearComprobadas([...comprobadas, { t: 'x' }, comprobadas[0]]), () => Nu.comprobacion.sanearComprobadas([...comprobadas, { t: 'x' }, comprobadas[0]]));
+const filas = partidas.map((p, i) => ({ jugador: `j${i % 7}`, ...p, referencia: { winRate: 0.45 + (i % 7) / 70, partidas: 100 } }));
+comparar('comunidad', 'medirComunidad', () => V.comunidad.medirComunidad(filas, {}), () => Nu.comunidad.medirComunidad(filas, {}));
+const perfil = { mastery: maestria, partidas, olvidadas: [partidas[3].t], rango: 'glory', linea: 'roam', idioma: 'es' };
+comparar('perfil', 'recogerPerfil+sanear', () => V.perfil.sanear({ ...V.perfil.recogerPerfil(perfil), cuando: AHORA }), () => Nu.perfil.sanear({ ...Nu.perfil.recogerPerfil(perfil), cuando: AHORA }));
+comparar('perfil', 'fundirPerfil', () => V.perfil.fundirPerfil(V.perfil.sanear(perfil), V.perfil.sanear({ ...perfil, partidas: partidas.slice(100), mastery: {} })),
+  () => Nu.perfil.fundirPerfil(Nu.perfil.sanear(perfil), Nu.perfil.sanear({ ...perfil, partidas: partidas.slice(100), mastery: {} })));
+{
+  const codigo = await V.perfil.exportarPerfil({ ...V.perfil.recogerPerfil(perfil), cuando: AHORA });
+  const [lV, lN] = await Promise.all([V.perfil.leerPerfil(codigo), Nu.perfil.leerPerfil(codigo)]);
+  comparar('perfil', 'leerPerfil de un código viejo', () => lV, () => lN);
+  const codigoN = await Nu.perfil.exportarPerfil({ ...Nu.perfil.recogerPerfil(perfil), cuando: AHORA });
+  comparar('perfil', 'código de perfil (mismo texto)', () => codigo, () => codigoN);
+}
+let lista = [];
+let listaN = [];
+for (const p of partidas.slice(0, 60)) {
+  const entrada = { pick: p.pick, gane: p.gane, recomendados: p.recomendados, rango: 'glory', estimacion: p.estimacion, modelo: 5, bans: p.bans, draft: p.draft };
+  lista = V.registro.apuntar(lista, entrada); listaN = Nu.registro.apuntar(listaN, entrada);
+}
+comparar('registro', 'apuntar (sin el instante)', () => lista.map(({ t, ...r }) => r), () => listaN.map(({ t, ...r }) => r));
+
+// ---- diagnóstico (sin la fecha) ----
+const entorno = { almacen: true, version: '4.0.0', publicada: null, sinDatosPersonales: true };
+// MOTOR, MAESTRÍA y MODELO cambian A PROPÓSITO en 4.0: miden por el camino de la app
+// (`ordenar` de draft.js) y no hablan de una maestría que ya no puntúa.
+const sinFecha = (t) => String(t).replace(/^.*\d{1,2}\/\d{1,2}\/\d{4}.*$/gm, '<fecha>').replace(/hace \d+(?:[.,]\d+)? ?[hd]\b/g, 'hace <edad>')
+  .replace(/\n--- (MOTOR|MAESTRÍA|MODELO) ---[\s\S]*?(?=\n--- |\n=== |$)/g, '\n--- $1 --- <cambia en 4.0>');
+for (const linea of LINEAS) {
+  comparar(linea, 'diagnosticar (sin datos personales)', () => sinFecha(V['diagnostico/index'].diagnosticar({ datos: dV, linea, maestria: {}, partidas: [], entorno, historial: [], pro }).texto),
+    () => sinFecha(Nu['diagnostico/index'].diagnosticar({ datos: dN, linea, maestria: {}, partidas: [], entorno, historial: [], pro }).texto));
+}
+
+console.log(`${comparaciones} comparaciones sobre ${N} drafts · ${diferencias} diferencias`);
+if (lanzanLosDos.size) {
+  console.log(`OJO, lanzan los dos (no se compara nada): ${[...lanzanLosDos].map(([q, e]) => `${q}: ${e}`).join(' | ')}`);
+  process.exit(1);
+}
+if (diferencias) {
+  console.log([...porQue].map(([q, n]) => `  ${q}: ${n}`).join('\n'));
+  console.log(fallos.join('\n'));
+  process.exit(1);
+}

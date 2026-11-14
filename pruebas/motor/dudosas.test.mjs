@@ -5,7 +5,7 @@
  * todas las que hay pasan por aquí: si añades una que mire `gane`, añádela.
  */
 import { test, ok, eq, leerJson } from '../ayuda.mjs';
-import { esDudosa, conResultado, DUDOSAS_DESDE, DUDOSAS_HASTA, resumen, calibracion, ajustePersonal, medirFasesMias } from '../../src/motor/registro.js';
+import { esDudosa, conResultado, DUDOSAS_DESDE, DUDOSAS_HASTA, resumen, calibracion, medirFasesMias } from '../../src/motor/registro.js';
 import { evolucion, porCompaneros, porLinea, porDia, conLaApp } from '../../src/motor/analitica.js';
 import { tusNumeros, tuSemana } from '../../src/motor/habitos.js';
 import { medirComunidad } from '../../src/motor/comunidad.js';
@@ -49,7 +49,6 @@ test('ninguna medida de «si ganaste» las cuenta: con ellas y sin ellas sale lo
   const medidas = {
     resumen: r,
     calibracion: (l) => calibracion(l),
-    ajustePersonal: (l) => ajustePersonal(l),
     medirFasesMias: (l) => medirFasesMias(l),
     evolucion: (l) => evolucion(l, { ahora }),
     porCompaneros: (l) => [porCompaneros(l, { minimo: 2 }), porCompaneros(l, { lado: 'enemigos', minimo: 2 })],

@@ -6,8 +6,7 @@
 import { test, ok, eq, leerJson } from '../ayuda.mjs';
 import { catalogo, h, crearRnd } from '../fixtures/catalogo.mjs';
 import { indexarPorNombre, nombreClave, idMotivo } from '../../src/motor/nombres.js';
-import { terminoHeroe, terminoCruce, terminoPareja, evaluarDraft, logit, ESCALA, SUB_MAX, VERSION_MODELO, equilibrioDe, terminoEquilibrio, esperanzaCruces, disponibilidad, PESO_EQUILIBRIO_DANO, terminoTu } from '../../src/motor/modelo.js';
-import { tuNivel } from '../../src/motor/maestria.js';
+import { terminoHeroe, terminoCruce, terminoPareja, evaluarDraft, logit, ESCALA, SUB_MAX, VERSION_MODELO, equilibrioDe, terminoEquilibrio, esperanzaCruces, disponibilidad, PESO_EQUILIBRIO_DANO } from '../../src/motor/modelo.js';
 import { COUNTER_RULES } from '../../src/motor/reglas.js';
 import { mediaDeSinergia, cruce, CRUCE_FUERTE, CRUCE_FUERTE_EN_CONTRA } from '../../src/motor/matrices.js';
 import { LINEAS } from '../../src/motor/catalogo.js';
@@ -76,11 +75,9 @@ test('la estimacion de victoria: neutra sin datos, simetrica, y cae donde se mid
   const perdido = evaluarDraft({ aliados: [], yo: H('E'), enemigos: [H('Y')], meta });
   ok(perdido.terminos.cruces < 0, 'un cruce perdido no resta');
 
-  // 3. Tu maestria: con 100 partidas al 70% con tu heroe, sube; y el termino
-  //    sustituye al del heroe, no se suma encima (nivel 0.5, k medido).
+  // 3. Tus resultados no entran (3.93.0): una maestría exagerada no mueve nada.
   const conMaestria = evaluarDraft({ aliados: [H('A')], yo: H('Y'), enemigos: [H('E')], meta, maestria: { Y: { games: 100, winRate: 0.7 } } });
-  ok(conMaestria.p > r.p + 0.02, `100 partidas al 70% deberian subir la estimacion: ${r.p} -> ${conMaestria.p}`);
-  ok(conMaestria.terminos.heroes === r.terminos.heroes, 'el termino de heroes cambia con la maestria: se cuenta dos veces');
+  ok(conMaestria.p === r.p && !('tu' in conMaestria.terminos), `la maestría mueve la estimación o queda un término «tu»: ${r.p} -> ${conMaestria.p}`);
 
   // 4. Sobre los datos reales: simetrica (p + p del otro lado = 1) y, en 200
   //    drafts completos al azar, centrada en el 50% y entre el 30% y el 70%
@@ -388,20 +385,4 @@ test('la huella del modelo: si cambia la estimación, sube VERSION_MODELO (3.60.
   const huella = r.ranking.map((c) => `${c.heroe.name}:${c.p.toFixed(6)}`).join(' ');
   const HUELLAS = { 3: 'H05:0.520020 H35:0.512588 H30:0.511246 H15:0.509890 H10:0.506061 H25:0.494137 H00:0.489856 H20:0.487107', 4: 'H35:0.536965 H30:0.535567 H15:0.534087 H10:0.530273 H05:0.520020 H25:0.518188 H00:0.513880 H20:0.511161', 5: 'H35:0.512588 H30:0.511246 H15:0.509890 H10:0.506061 H25:0.494137 H00:0.489856 H20:0.487107 H05:0.483528' };
   eq(huella, HUELLAS[VERSION_MODELO], `la estimación cambió sin subir VERSION_MODELO (src/motor/modelo.js): ${huella}`);
-});
-
-test('tu nivel vale para cualquier héroe (3.72.0): uno que no juegas no sale peor por eso; lo que mueve el orden es lo propio de cada héroe', () => {
-  const stats = { Atlas: { winRate: 0.52 }, Khufra: { winRate: 0.52 }, Franco: { winRate: 0.52 } };
-  // Un jugador del 60%: Atlas lo juega justo a su nivel (52% público + 10), Franco por encima.
-  const maestria = { Atlas: { games: 400, winRate: 0.62 }, Franco: { games: 400, winRate: 0.7 } };
-  const nivel = 0.6;
-  ok(tuNivel(maestria) > 0.55, 'tuNivel no sube con una maestría alta');
-  const sinJugar = terminoTu({ name: 'Khufra' }, maestria, stats, nivel);
-  const jugadoEnTuNivel = terminoTu({ name: 'Atlas' }, maestria, stats, nivel);
-  const jugadoMejor = terminoTu({ name: 'Franco' }, maestria, stats, nivel);
-  ok(sinJugar.valor > 0, `un héroe que no juegas no recibe tu nivel: ${sinJugar.valor}`);
-  ok(Math.abs(sinJugar.valor - jugadoEnTuNivel.valor) < 0.05, `jugarlo a tu nivel vale más que no jugarlo: ${jugadoEnTuNivel.valor} frente a ${sinJugar.valor}`);
-  ok(jugadoMejor.valor > jugadoEnTuNivel.valor + 0.05, 'jugarlo mejor que tu nivel no sube');
-  eq(sinJugar.motivos.length, 0, 'un héroe que no juegas lleva un motivo de maestría');
-  eq(terminoTu({ name: 'Khufra' }, {}, stats).valor, 0, 'sin maestría, el término no es cero');
 });

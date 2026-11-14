@@ -1,27 +1,22 @@
 import { nombreClave, buscar, idMotivo } from './nombres.js';
 import { CRUCE_DESTACABLE, valido } from './matrices.js';
-import { PRECISION_DEDUCIDA, hayQueProtegerlo } from './catalogo.js';
-import { terminoHeroe, terminoCruce, ESCALA, PUNTOS_POR_LOGIT, logit, CRUCE_POR_REGLA_MAXIMA, disponibilidad } from './modelo.js';
+import { fiabilidad, hayQueProtegerlo } from './catalogo.js';
+import { terminoHeroe, terminoCruce, ESCALA, PUNTOS_POR_LOGIT, CRUCE_POR_REGLA_MAXIMA, disponibilidad } from './modelo.js';
+import { logit } from './estadistica.js';
 import { DANGER_RULES } from './reglas.js';
 
-/**
- * Baneos: a quién conviene banear por tu equipo, y cuál es el siguiente
- * baneo probable en tu rango.
- */
+/** Baneos: a quién conviene banear por tu equipo, y el siguiente baneo probable en tu rango. */
+
+/** [C] Techo de la tabla de peligro: la más fuerte + ½ de la segunda (= cruce del 56 % a tope). */
+const TECHO_DE_PELIGRO = 1.5;
+const SUGERIDOS = 5;
 
 /**
- * A quién banear: el que más probabilidad de ganar te QUITA si sale, por
- * cuánto sale. Pérdida esperada = (pickrate cuando no está baneado) × (su
- * término de héroe + sus cruces contra tus aliados ya elegidos), en la
- * misma escala que el ranking. El pickrate se divide por (1 − banrate): la
- * tasa de picks ya lleva descontadas las partidas en que estaba baneado, y
- * eso hacía parecer poco jugado justo al más temido.
- *
- * Sin dato del cruce (héroe recién salido) entra la tabla de peligro por
- * etiquetas a la equivalencia de las reglas de counter (techo 1.5 = cruce
- * del 56%), descontada si las etiquetas están deducidas.
- *
- * @returns [{ heroe, stat, puntos, disponible, valor, motivos }] los cinco peores para ti
+ * A quién banear: pérdida esperada = `disponibilidad` × (su término de héroe + sus
+ * cruces contra tus aliados), en la escala del ranking. Sin dato del cruce entra la
+ * tabla de peligro por etiquetas (`soloSiFragil`: saltarle encima a un tanque es lo
+ * que el tanque quiere), descontada si las etiquetas están deducidas.
+ * @returns {Array<{ heroe, stat, puntos, disponible, valor, motivos }>} los cinco peores para ti
  */
 export function sugerirBaneos(heroes, { aliados = [], enemigos = [], baneos = [], meta = {} } = {}) {
   const cogidos = new Set([...aliados, ...enemigos, ...baneos].map((h) => nombreClave(h.name)));
@@ -40,7 +35,7 @@ export function sugerirBaneos(heroes, { aliados = [], enemigos = [], baneos = []
           if (t.cruce >= CRUCE_DESTACABLE) motivos.push({ clave: 'peligro.ganaCruce', params: { a: aliado.name, pct: Math.round(t.cruce * 100) }, bueno: false, peso: t.valor });
           continue;
         }
-        const fiable = (heroe.inferred ? PRECISION_DEDUCIDA : 1) * (aliado.inferred ? PRECISION_DEDUCIDA : 1);
+        const fiable = fiabilidad(heroe) * fiabilidad(aliado);
         const pesos = [];
         for (const r of DANGER_RULES) {
           if (!aliado.tags?.includes(r.allyTag) || !heroe.tags?.includes(r.enemyTag)) continue;
@@ -49,46 +44,34 @@ export function sugerirBaneos(heroes, { aliados = [], enemigos = [], baneos = []
           motivos.push({ clave: r.why, params: { a: aliado.name }, bueno: false, peso: r.weight * fiable });
         }
         pesos.sort((a, b) => b - a);
-        const peligro = Math.min(1, ((pesos[0] ?? 0) + (pesos[1] ?? 0) * 0.5) / 1.5) * fiable;
+        const peligro = Math.min(1, ((pesos[0] ?? 0) + (pesos[1] ?? 0) * 0.5) / TECHO_DE_PELIGRO) * fiable;
         amenaza += logit(0.5 + CRUCE_POR_REGLA_MAXIMA * peligro);
       }
       if (!motivos.length && valido(stat.winRate) && amenaza > 0) {
         motivos.push({ clave: 'peligro.fuerte', params: { pct: (stat.winRate * 100).toFixed(1) }, bueno: false, peso: 0.5 });
       }
-      // Único por identidad (clave + aliado), conservando el primero que
-      // salió; después, el de más peso. Dos reglas de peligro comparten clave
-      // (`peligro.anulaCuracion`) y el orden de las dos cosas cambia cuál queda.
+      // Único por identidad (el primero que salió) y después el de más peso.
       const vistos = new Set();
-      const unicos = motivos.filter((m) => {
-        const id = idMotivo(m);
-        if (vistos.has(id)) return false;
-        vistos.add(id);
-        return true;
-      }).sort((a, b) => b.peso - a.peso);
+      const unicos = motivos.filter((m) => !vistos.has(idMotivo(m)) && vistos.add(idMotivo(m))).sort((a, b) => b.peso - a.peso);
       return {
-        heroe,
-        stat,
+        heroe, stat, disponible,
         puntos: Math.round(ESCALA * amenaza * PUNTOS_POR_LOGIT),
-        disponible,
         valor: disponible * ESCALA * Math.max(0, amenaza),
         motivos: unicos.slice(0, 1),
       };
     })
     .filter((b) => b.valor > 0)
     .sort((a, b) => b.valor - a.valor || b.puntos - a.puntos || a.heroe.name.localeCompare(b.heroe.name))
-    .slice(0, 5);
+    .slice(0, SUGERIDOS);
 }
 
 /**
- * Cuántas partidas le cuesta a un par de baneos mover la lista del
- * siguiente baneo probable: P(x|g) = (n_xg + K·p_x) / (n_g + K). Sin
- * historial el factor es 1 y sin escalón. Justificado en el corpus pro
- * (historial simulado de M partidas): K=2 gana con M=20, 100 y 200; K≥10
- * va perdiendo lo ganado.
+ * [M] P(x|g) = (n_xg + K·p_x)/(n_g + K) en TU historial. K=2 gana en el corpus pro
+ * con historiales simulados de 20, 100 y 200 partidas; K≥10 pierde lo ganado.
  */
 export const K_COOCURRENCIA = 2;
 
-/** Cuenta de baneos y de pares de baneos en las partidas apuntadas, por clave. */
+/** Baneos y pares de baneos de tus partidas, por clave (sin repetir dentro de una partida). */
 export function coocurrenciaDeBaneos(partidas = []) {
   const n = {}; const par = {}; let N = 0;
   for (const p of partidas ?? []) {
@@ -103,6 +86,7 @@ export function coocurrenciaDeBaneos(partidas = []) {
   return { N, n, par };
 }
 
+/** exp(media de log(P(x|g)/P(x))) sobre los marcados; 1 sin historial o sin marcados. */
 function factorDeHistorial(candidato, marcados, historial) {
   if (!historial?.N || !marcados.length) return 1;
   const { N, n, par } = historial;
@@ -110,20 +94,16 @@ function factorDeHistorial(candidato, marcados, historial) {
   let suma = 0;
   for (const g of marcados) {
     const k = candidato < g ? `${candidato}|${g}` : `${g}|${candidato}`;
-    const pxg = ((par[k] ?? 0) + K_COOCURRENCIA * px) / ((n[g] ?? 0) + K_COOCURRENCIA);
-    suma += Math.log(pxg / px);
+    suma += Math.log((((par[k] ?? 0) + K_COOCURRENCIA * px) / ((n[g] ?? 0) + K_COOCURRENCIA)) / px);
   }
   return Math.exp(suma / marcados.length);
 }
 
 /**
- * El siguiente baneo probable: lo más baneado en tu rango sin lo ya
- * marcado, multiplicado por lo que en TU historial cayó junto a los
- * marcados. Es la `banRate` de la API (por partida: ordenar por ella es
- * ordenar por la probabilidad de caer baneado); la co-ocurrencia de las
- * partidas pro no vale, porque los profesionales banean otra cosa.
- *
- * @returns [{ heroe, banRate, factor }] de más a menos probable
+ * El siguiente baneo probable: la `banRate` del rango (por partida: es la
+ * probabilidad de caer baneado) × lo que en TU historial cayó junto a los marcados.
+ * Las co-ocurrencias pro no valen: los profesionales banean otra cosa.
+ * @returns {Array<{ heroe, banRate, factor }>}
  */
 export function proximosBaneos(heroes, { baneos = [], enemigos = [], aliados = [], meta = {}, historial = null, n = 8 } = {}) {
   const cogidos = new Set([...baneos, ...enemigos, ...aliados].map((h) => nombreClave(h.name)));

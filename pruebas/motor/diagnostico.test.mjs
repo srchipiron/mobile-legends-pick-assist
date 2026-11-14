@@ -8,9 +8,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { seccionPro } from '../../src/motor/diagnostico/seccion-pro.js';
-import { test, ok, eq, RAIZ } from '../ayuda.mjs';
+import { test, ok, eq, RAIZ, leerJson } from '../ayuda.mjs';
 import { catalogo, heroes, poolRoam, crearRnd, h } from '../fixtures/catalogo.mjs';
-import { prepararDatos } from '../../src/motor/draft.js';
+import { prepararDatos, ordenar } from '../../src/motor/draft.js';
 import { diagnosticar, titular } from '../../src/motor/diagnostico/index.js';
 import { ESCALA, VERSION_MODELO } from '../../src/motor/modelo.js';
 import { seccionEntorno } from '../../src/motor/diagnostico/seccion-entorno.js';
@@ -135,13 +135,9 @@ test('revision linea a linea del diagnostico: nombres de maestria que no casan y
   const conZzzz = diagnosticar({ ...base, maestria: { Zzzz: { games: 500, winRate: 0.6 }, Khufra: { games: 10, winRate: 0.5 } } });
   ok(/no casan.*Zzzz/.test(conZzzz.texto), 'no dice que Zzzz no casa con el catálogo');
 
-  // 6b. El ejemplo de maestría sale de un héroe de TU línea. Con la línea
-  //     en mid y Diggie el primero, salía «puesto 0 -> 0» (fuera del ranking).
+  // 6b. La maestría no entra en la nota (3.93.0) y el diagnóstico lo dice, sin «puesto a -> b».
   const fuera = diagnosticar({ ...base, maestria: { Layla: { games: 300, winRate: 0.6 }, Khufra: { games: 200, winRate: 0.58 } } }).texto;
-  ok(/Ejemplo: Khufra/.test(fuera), `el ejemplo no es un héroe del pool de roam: ${fuera.match(/Ejemplo:.*/)?.[0]}`);
-  ok(!/puesto 0 ->/.test(fuera), 'el ejemplo de maestría da «puesto 0»: el héroe no está en el ranking de la línea');
-  const ninguno = diagnosticar({ ...base, maestria: { Layla: { games: 300, winRate: 0.6 } } }).texto;
-  ok(/Ninguno de tus héroes con maestría juega roam/.test(ninguno) && !/puesto 0 ->/.test(ninguno), 'sin héroes de la línea en la maestría no lo dice');
+  ok(/no entran en la nota/.test(fuera) && !/puesto \d+ -> \d+/.test(fuera), `el diagnóstico habla de una maestría que puntúa: ${fuera.match(/MAESTRÍA[\s\S]{0,300}/)?.[0]}`);
 
   // 7. Con ≥30 partidas pro pero <30 USABLES no es un fallo del bot:
   //    medir-pro escribe siempre el resumen, también con pocas usables.
@@ -417,4 +413,16 @@ test('el diagnóstico dice dónde está el lector, si contesta y cómo fue la ú
   ok(/aprendido de 640 capturas/.test(bien.lineas.join('\n')) && !/Termux/.test(`${bien.lineas.join('\n')}\n${texto}`), `no dice lo aprendido, o sigue hablando de Termux: ${bien.lineas.join('\n')}`);
   eq(bien.avisos(), 0);
   ok(!/Lector/.test(informe(null).lineas.join('\n')), 'sin lector en uso habla del lector');
+});
+
+test('el diagnóstico mide con el MISMO camino que la app (4.0): sus «Contra dashes» son el ranking de `ordenar`', () => {
+  // Hasta 3.102.0 la sección del motor llamaba a `ordenarPicks` por su cuenta, sin
+  // líneas ni «por ver» y con la maestría: hablaba de un modelo que la app no usaba.
+  const datos = prepararDatos({ catalogo: leerJson('public/data/heroes.json'), meta: leerJson('public/data/roam-meta.json'), rango: 'glory' });
+  for (const linea of ['roam', 'mid']) {
+    const texto = diagnosticar({ datos, linea, maestria: { Khufra: { games: 300, winRate: 0.7 } }, partidas: [], entorno: { almacen: true, sinDatosPersonales: true }, historial: [] }).texto;
+    const enemigos = ['Fanny', 'Ling', 'Lancelot'].map((n) => datos.porNombre.get(n)).filter(Boolean);
+    const app = ordenar(datos, { linea, enemigos }).slice(0, 3).map((c) => c.heroe.name).join(', ');
+    ok(texto.includes(`Contra dashes: ${app}`), `en ${linea} el diagnóstico no dice lo que la app: ${texto.match(/Contra dashes: .*/)?.[0]} frente a ${app}`);
+  }
 });

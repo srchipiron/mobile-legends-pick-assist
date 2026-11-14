@@ -1,23 +1,12 @@
 import { nombreClave } from './nombres.js';
+import { DIA_MS } from './estadistica.js';
 
 /**
- * Quién sube y quién baja en el meta (3.50.0), como el «trending» de
- * mlbb.io o los rastreadores de LoL. Compara la ventana de 7 días de hoy
- * con la de hace una semana (la historia que guarda la ingesta, una foto
- * por día) y solo nombra a un héroe si el cambio es suyo y no del rango:
- *
- *  - se mide RESPECTO A LO QUE SE JUEGA (cada cambio menos la media de los
- *    cambios ponderada por cuota de pick). Tras un reinicio de temporada
- *    Gloria se rellena y casi todos «suben» a la vez: eso no dice nada de
- *    ningún héroe;
- *  - y tiene que verse en las DOS poblaciones (tu rango y su respaldo) en el
- *    mismo sentido. Medido en la historia de roam-meta.json: con el parche
- *    asentado (6–17 de septiembre de 2026) el cambio semanal de un héroe es
- *    σ 0,25–0,3 puntos y casa entre Gloria y Mítico a r ≈ 0,7 (es meta, no
- *    muestra); tras el reinicio Gloria se mueve 1–5 puntos y casa a 0,4–0,6.
- *
- * Es una descripción («ha subido»), no una predicción: no se ha medido si
- * lo que sube sigue subiendo, y no puntúa en ningún sitio.
+ * Quién sube y quién baja en el meta: la ventana de 7 días de hoy contra la de hace
+ * una semana (la historia de la ingesta), centrado en lo que se juega (tras un
+ * reinicio casi todos «suben» a la vez) y confirmado en el rango de respaldo en el
+ * mismo sentido. [M] Con el parche asentado el cambio semanal es σ 0,25–0,3 puntos y
+ * casa entre Gloria y Mítico a r ≈ 0,7. Describe, no predice, y no puntúa.
  */
 
 /** Días de historia que guarda la ingesta: hasta `DIAS_MAX` atrás más hoy (cada día pesa ~1,3 KB comprimido en el móvil). */
@@ -26,11 +15,9 @@ export const HISTORIA_DIAS = 10;
 export const DIAS_ATRAS = 7;
 export const DIAS_MIN = 5;
 export const DIAS_MAX = 9;
-// Decisión de producto con la medida de arriba: 1 punto es más de 3σ del
-// cambio semanal con el parche asentado (allí salían 0–1 héroes por semana:
-// «el meta está quieto» es verdad) y el 8 de octubre de 2026 da 9 y 12.
+/** [M/P] Un punto: más de 3σ del cambio semanal asentado. */
 export const UMBRAL_MOVIMIENTO = 0.01;
-// Lo que tiene que moverse el OTRO rango, en el mismo sentido, para confirmar.
+/** [P] Lo que tiene que moverse el OTRO rango, en el mismo sentido, para confirmar. */
 export const CONFIRMACION = 0.005;
 
 const dia = (fecha) => Date.parse(`${fecha}T00:00:00Z`);
@@ -41,7 +28,7 @@ export function fotoDeReferencia(historia = [], hoy, rangos = []) {
   if (!Number.isFinite(t)) return null;
   let mejor = null;
   for (const e of Array.isArray(historia) ? historia : []) {
-    const d = (t - dia(e?.fecha)) / 864e5;
+    const d = (t - dia(e?.fecha)) / DIA_MS;
     if (!(d >= DIAS_MIN && d <= DIAS_MAX)) continue;
     if (!rangos.every((r) => e[r] && Object.keys(e[r]).length)) continue;
     if (!mejor || Math.abs(d - DIAS_ATRAS) < Math.abs(mejor.dias - DIAS_ATRAS)) mejor = { foto: e, dias: d };

@@ -4,32 +4,20 @@ import { ordenarPicks } from './ranking.js';
 import { disponibilidad } from './modelo.js';
 
 /**
- * ¿Aguanta este pick lo que falta por salir?
- *
- * Con el draft a medias se simulan finales plausibles (por las líneas
- * enemigas abiertas, ponderando cada una por pickrate) y se cuenta en qué
- * fracción tu nº1 sigue siéndolo. Medido (200 drafts por caso): en roam con
- * dos enemigos vistos, cuota ≥ 0.5 → aguanta el 71% del draft completo;
- * < 0.5 → 28%. Con 3: 62/26. Con 4: 71/31. Con uno visto casi nada es
- * robusto. NO se usa para ordenar (medido: no aporta con dos o tres vistos);
- * se enseña como información. Se cuenta por VOTOS de nº1, no por media.
- *
- * Cada final se puntúa COMPLETO (`lineasAbiertas: []`): el término «por
- * ver» del modelo contaría dos veces a los que acaba de sacar. Los
- * baneados no salen por ninguna línea ni son candidatos.
+ * ¿Aguanta este pick lo que falta por salir? Con el draft a medias se simulan
+ * finales plausibles (por las líneas enemigas abiertas, cada una muestreada por
+ * `disponibilidad`) y se cuenta en qué fracción tu nº1 sigue siéndolo, por VOTOS.
+ * Se ENSEÑA: no ordena ([M] ordenar por ella no aporta con dos o tres vistos).
+ * Cada final se puntúa COMPLETO (`lineasAbiertas: []`, o «por ver» contaría dos
+ * veces) y los baneados no salen ni votan.
  */
 
-/** Desde qué cuota el pick se llama «seguro». Es donde la medición separa. */
+/** [M] Desde qué cuota el pick es «seguro»: con 2 vistos, ≥0,5 aguanta el 71 %; <0,5, el 28 %. */
 export const CUOTA_ROBUSTA = 0.5;
-
-/** Finales simulados. Con 60 la cuota del líder se mueve ±6 puntos entre semillas. */
+/** [M] Finales simulados: con 60 la cuota del líder se mueve ±6 puntos entre semillas (si hace falta más, sube esto, no cambies el generador). */
 export const FINALES_POR_DEFECTO = 60;
 
-/**
- * Generador determinista (mulberry32): mismas entradas, misma cuota. El
- * congruencial de antes tenía correlación serial (−0,011) y sesgaba lo que se
- * estimaba con él (+0,034 en un intercepto conocido).
- */
+/** [C] mulberry32: mismas entradas, misma cuota (el congruencial de antes tenía correlación serial). */
 export function generador(semilla) {
   let a = (semilla >>> 0) || 1;
   return () => {
@@ -40,39 +28,33 @@ export function generador(semilla) {
   };
 }
 
-function muestrear(pool, excluidos, pickRateDe, rnd) {
+/** Uno del pool por su peso; sin candidatos no gasta azar. */
+function muestrear(pool, excluidos, pesoDe, rnd) {
   const candidatos = pool.filter((h) => !excluidos.has(h.name));
   if (!candidatos.length) return null;
-  const total = candidatos.reduce((acc, h) => acc + pickRateDe(h), 0);
-  let x = rnd() * total;
-  for (const h of candidatos) { x -= pickRateDe(h); if (x <= 0) return h; }
+  let x = rnd() * candidatos.reduce((acc, h) => acc + pesoDe(h), 0);
+  for (const h of candidatos) { x -= pesoDe(h); if (x <= 0) return h; }
   return candidatos[candidatos.length - 1];
 }
 
 /**
- * @param {object} d
- * @param d.pool            héroes de TU línea (los candidatos)
- * @param d.enemigos        enemigos ya elegidos
- * @param d.aliados         aliados ya elegidos
- * @param d.lineasAbiertas  líneas enemigas por las que aún falta alguien
- * @param d.poolsPorLinea   { linea: [héroes] } de dónde salen los que faltan
- * @param d.ctx             lo mismo que recibe ordenarPicks (meta, maestria, baneos, lineas...)
+ * `ctx` es lo que recibe `ordenarPicks` (meta, baneos, lineas…).
  * @returns {{ cuota, lider, cuotaLider, n, lineasAbiertas, enemigos, aliados, baneos } | null}
+ *   (las tres últimas, claves ordenadas: la MARCA del draft para el que se simuló,
+ *   porque en la app va diferida y el ranking no)
  */
 export function simularFinales({ pool, enemigos = [], aliados = [], lineasAbiertas = [], poolsPorLinea = {}, ctx = {}, n = FINALES_POR_DEFECTO, semilla = 7 }) {
   const abiertas = lineasAbiertas.filter((l) => LINEAS.includes(l) && poolsPorLinea[l]?.length);
   if (!pool?.length || !enemigos.length || !abiertas.length) return null;
   const rnd = generador(semilla);
-  // Cuota de picks cuando NO está baneado: es lo que de verdad sale (medido
-  // en drafts pro, ver `disponibilidad` en modelo.js).
-  const pickRateDe = (h) => disponibilidad(ctx.meta?.stats?.[nombreClave(h.name)]) || 0.001;
+  const pesoDe = (h) => disponibilidad(ctx.meta?.stats?.[nombreClave(h.name)]) || 0.001;
   const fijos = new Set([...enemigos, ...aliados, ...(ctx.baneos ?? [])].map((h) => h.name));
   const votos = {};
   for (let k = 0; k < n; k++) {
     const excluidos = new Set(fijos);
     const completo = [...enemigos];
     for (const l of abiertas) {
-      const h = muestrear(poolsPorLinea[l], excluidos, pickRateDe, rnd);
+      const h = muestrear(poolsPorLinea[l], excluidos, pesoDe, rnd);
       if (!h) continue;
       excluidos.add(h.name);
       completo.push(h);
@@ -82,8 +64,6 @@ export function simularFinales({ pool, enemigos = [], aliados = [], lineasAbiert
   }
   const cuota = Object.fromEntries(Object.entries(votos).map(([k, v]) => [k, v / n]));
   const [lider, cuotaLider] = Object.entries(cuota).sort((a, b) => b[1] - a[1])[0] ?? [null, 0];
-  // Para qué draft se simuló: en la app va diferida y el ranking no; sin la
-  // marca, el análisis cruzaba la cuota del draft anterior con el nº1 nuevo.
   const claves = (hs) => hs.map((h) => nombreClave(h.name)).sort();
   return { cuota, lider, cuotaLider, n, lineasAbiertas: abiertas, enemigos: claves(enemigos), aliados: claves(aliados), baneos: claves(ctx.baneos ?? []) };
 }

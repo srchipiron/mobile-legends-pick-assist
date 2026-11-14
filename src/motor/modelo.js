@@ -1,139 +1,69 @@
 import { nombreClave, buscar } from './nombres.js';
 import { cruce, sinergia, mediaDeSinergia, valido, CRUCE_DESTACABLE, CRUCE_MALO, CRUCE_FUERTE, CRUCE_FUERTE_EN_CONTRA, PAREJA_DESTACABLE } from './matrices.js';
-import { PRECISION_DEDUCIDA, hayQueProtegerlo, tipoDeDano } from './catalogo.js';
-import { tuNivel, priorDeMaestria, motivoDeMaestria } from './maestria.js';
+import { fiabilidad, hayQueProtegerlo, tipoDeDano } from './catalogo.js';
 import { COUNTER_RULES } from './reglas.js';
+import { logit, sigmoide, clamp01 } from './estadistica.js';
+
+export { logit, sigmoide };
 
 /**
- * EL modelo. Uno solo, para todo lo que decide la app.
- *
- * La nota de un pick ES la probabilidad de ganar el draft que resulta con él:
- * aditiva en log-odds, cinco términos centrados sumados con coeficiente 1 y
- * multiplicados por UNA escala medida. Lo que vale cada término lo dice
- * `scripts/medir/ajustar-modelo.mjs` sobre las partidas profesionales con
- * resultado (902 de 120 días; 1.528 de 400 dan lo mismo), con validación
- * cruzada:
- *
- *  - Con los tres términos a coeficiente 1 el modelo exageraba (Brier
- *    0.2510, peor que una moneda). Una escala sobre H+C+S: 0.44 ± 0.12,
- *    Brier 0.2435, AUC 0.56.
- *  - Un coeficiente libre por término (0.50 ± 0.16, 0.49 ± 0.29, 0.11 ±
- *    0.36) NO mejora la validación cruzada: iguales y una escala.
- *  - El cruce de LÍNEA no pesa más que los otros veinte (−0.56 ± 0.62 frente
- *    a 0.78 ± 0.32): ningún cruce pesa doble.
- *  - Los huecos de composición valen 0.00 ± 0.07 por hueco: se dicen, no
- *    puntúan. El hueco de daño no se puede medir (0 de 902 equipos pro).
- *  - El orden de pick de Liquipedia no lleva contrapick medible (0.000):
- *    lo que falta por salir entra como ESPERANZA del cruce contra lo que se
- *    juega en cada línea abierta, sin castigo adversarial.
- *
- * Términos, todos en log-odds:
- *  - heroes:  logit(winrate público) − logit(media del rango), tuyos − suyos.
- *  - cruces:  logit(c[a][e]) por cada par tuyo × suyo.
- *  - parejas: logit(s) − logit(centro) por cada par de un equipo, tuyas − suyas.
- *  - tu:      tu winrate con el héroe (encogido) SUSTITUYE al público.
- *  - porVer:  para cada línea enemiga abierta, el cruce esperado de tu héroe
- *             contra lo que se juega ahí, ponderado por pickrate.
- *
- * 0.1 log-odds del total son ≈2,5 puntos de probabilidad alrededor del 50%.
+ * EL modelo, uno solo para todo lo que decide la app y la tablet. La nota de un
+ * pick ES la probabilidad de ganar el draft que resulta con él: aditiva en
+ * log-odds, términos centrados sumados con coeficiente 1 (el equilibrio con 0,5)
+ * y multiplicados por UNA escala medida (`scripts/ajustar-modelo.mjs`, partidas
+ * pro con resultado y validación cruzada):
+ * - heroes: logit(winrate) − logit(media del rango), tuyos − suyos;
+ * - cruces: logit(c[a][e]) por cada par tuyo × suyo (ninguno pesa doble: el de
+ *   línea, −0,56 ± 0,62 frente a 0,78 ± 0,32);
+ * - parejas: logit(s) − logit(centro) por cada par de un equipo, tuyas − suyas;
+ * - equilibrio: min(físicos, mágicos) tuyo − suyo, centrado por tamaño;
+ * - porVer: el cruce esperado de tu héroe contra lo que aún sale por cada línea
+ *   enemiga abierta (sin contrapick adversarial: 0,000 en 19.072 pares pro).
+ * Tus resultados NO entran (3.93.0, Javi: «que no afecte en nada»).
  */
 
 /**
- * La versión de la ESTIMACIÓN que se guarda con cada partida (3.60.3), para
- * que la calibración no mezcle modelos distintos. Súbela cuando cambie lo que
- * da `evaluarDraft` para el mismo draft y los mismos datos (un término, la
- * escala, cómo se centra, cómo entra tu maestría): la huella de
- * `modelo.test` falla hasta que se sube. 1: hasta 3.3; 2: desde 3.4.0
- * (equilibrio de daño, disponibilidad); 3: desde 3.56.0 (tu maestría con
- * tus partidas con la app); 4: desde 3.72.0 (tu nivel a todos los héroes,
- * no solo a los jugados); 5: desde 3.93.0 (tus resultados fuera de la nota:
- * `RESULTADOS_EN_LA_NOTA` en draft.js, decidido por Javi).
+ * [C] Versión de la ESTIMACIÓN guardada con cada partida, para no mezclar modelos
+ * al calibrar. Súbela si cambia lo que da `evaluarDraft` para el mismo draft: la
+ * huella de `modelo.test` falla hasta que se sube. 5 = desde 3.93.0.
  */
 export const VERSION_MODELO = 5;
-/**
- * Cuándo se PUBLICÓ cada cambio (el commit de su versión): las partidas de
- * antes de 3.60.3 no llevan `modelo` y se reparten por su instante. Es
- * aproximado en los minutos del despliegue y en un móvil que tarde en
- * actualizarse; por eso se dice «deducida».
- */
+/** [C] Cuándo se publicó cada versión: reparte las partidas viejas sin `modelo` («deducida»). */
 export const CAMBIOS_DE_MODELO = [
   { version: 2, desde: Date.parse('2026-09-19T21:19:15Z') },
   { version: 3, desde: Date.parse('2026-10-13T15:23:05Z') },
-  // Aproximado: desde 3.60.3 cada partida lleva su `modelo`, así que esta fecha no reparte ninguna.
   { version: 4, desde: Date.parse('2026-10-24T23:00:00Z') },
 ];
 
-/** Pendiente medida (regresión logística de «ganó» sobre H+C+S, 10 pliegues). */
+/** [M] Pendiente de «ganó» sobre H+C+S (902 pro de 120 días, 10 pliegues): Brier 0,2435 frente a 0,2510 con 1. */
 export const ESCALA = 0.44;
 export const ESCALA_SE = 0.12;
-/** Con qué se ajustó, para que el diagnóstico avise cuando el bot mida otra cosa. */
 export const AJUSTE = { partidas: 902, desde: '2026-05-13', datosDe: '2026-09-08' };
-
-export const logit = (p) => Math.log(p / (1 - p));
-export const sigmoide = (x) => 1 / (1 + Math.exp(-x));
-const acotar01 = (n) => Math.max(0, Math.min(1, n));
-
-/** Puntos de probabilidad por unidad de log-odds ya escalado, para el desglose. */
+/** [P] Puntos de probabilidad por unidad de log-odds escalado, para el desglose (≈ cerca del 50 %). */
 export const PUNTOS_POR_LOGIT = 25;
-
-/** Techo de las reglas contra un enemigo: la más fuerte más media de la segunda, derivado de COUNTER_RULES. */
+/**
+ * [M] Peso del equilibrio de daño: el k óptimo en una escala común cae en 0,45–0,55
+ * (120 y 400 días); +2 a +3,9 de logL por 1.000 fuera de muestra, AUC 0,574 → 0,591.
+ */
+export const PESO_EQUILIBRIO_DANO = 0.5;
+/** [C] A cuánto cruce equivale la regla más fuerte SIN dato: 0,56 (la equivalencia de 1.x). Parejas, igual. */
+export const CRUCE_POR_REGLA_MAXIMA = 0.06;
+const PAREJA_POR_REGLA_MAXIMA = 0.06;
+const SUB_MAX_PAREJA = 0.8;
+/** Techo de las reglas contra un enemigo: la más fuerte + ½ de la segunda (derivado de COUNTER_RULES). */
 export const SUB_MAX = (() => {
   const w = COUNTER_RULES.map((r) => r.weight).sort((a, b) => b - a);
   return (w[0] ?? 1) + (w[1] ?? 0) / 2;
 })();
 
 /**
- * A cuánto cruce equivale la regla más fuerte cuando NO hay dato: 0.56, el
- * techo de la escala de counter de 1.x. Con la matriz al 100% solo entra
- * con un héroe recién salido. Las parejas por regla, igual.
- */
-export const CRUCE_POR_REGLA_MAXIMA = 0.06;
-
-/**
- * Peso del EQUILIBRIO DE DAÑO: cuántos físicos y mágicos lleva cada equipo,
- * medido como min(físicos, mágicos), tuyos menos suyos, en unidades de la
- * escala común. Es el único término que no es un logit de la API: sale de
- * contar el tipo de daño de cada héroe (que la ingesta lee de sus
- * habilidades) y está MEDIDO contra las partidas pro (ajustar-modelo.mjs,
- * validación cruzada con cinco semillas, 18-19 de septiembre de 2026):
- *
- *   winrate por nº de mágicos en el equipo (1.830 partidas, 400 días):
- *   0 → 42,9% (n=77) · 1 → 45,3% (782) · 2 → 51,6% (1.610) · 3 → 52,2%
- *   (1.045) · 4 → 47,2% (144). Un equipo sin mezcla pierde, y no es poco.
- *
- *   Con el término: logL/n fuera de muestra mejora 2,0 por 1.000 (120 días,
- *   944 partidas) y 2,8 (400 días), AUC 0,561 → 0,575 en las dos; el
- *   coeficiente libre sale 0,224 ± 0,088 y 0,214 ± 0,062. Con una sola
- *   escala sobre H+C+S+k·D, el k óptimo cae en 0,45-0,55 en las dos
- *   ventanas (0,51 y 0,49 implícitos) y la escala se queda en 0,48 ± 0,10
- *   y 0,42 ± 0,07: compatible con 0,44. Otras formas del mismo dato
- *   (|f−m|, «hay de los dos», mixtos a medias, nº de mágicos) predicen
- *   peor o igual; min(f,m) es la que mejor separa.
- *
- * Los huecos por ETIQUETA (TEAM_NEEDS) siguen sin predecir (0,00 ± 0,07 por
- * hueco); el tipo de daño se cuenta de las habilidades, no se etiqueta, y
- * por eso funciona donde la etiqueta no. Va centrado por tamaño de equipo
- * (`equilibrioEsperado`) para no favorecer al que lleva más héroes.
- */
-export const PESO_EQUILIBRIO_DANO = 0.5;
-
-/**
- * Cuánto cabe esperar que aparezca un héroe entre los que aún faltan: su
- * cuota de picks CUANDO NO ESTÁ BANEADO, pickRate/(1−banRate). Medido sobre
- * 14.640 situaciones de draft pro (los k primeros picks de un equipo, k=1..4,
- * y adivinar el resto): con el pickrate a secas el pick real cae en el top 10
- * el 13,0% de las veces; corregido por baneos, el 15,3% (MRR 0,054 → 0,081).
- * Condicionar además por sinergia con los ya elegidos o por cruce contra el
- * rival no añade nada (13,3% y 13,2%). Es la misma cantidad que usan los
- * baneos sugeridos desde 2.0.
+ * [M] Lo que cabe esperar que salga de un héroe: su cuota de pick CUANDO NO ESTÁ
+ * BANEADO (14.640 situaciones de draft pro: top-10 13,0 → 15,3 %, MRR 0,054 → 0,081).
+ * La misma cantidad pondera «por ver», la simulación y los baneos.
  */
 export const disponibilidad = (stat) => (stat?.pickRate ?? 0) / Math.max(0.05, 1 - (stat?.banRate ?? 0));
-const PAREJA_POR_REGLA_MAXIMA = 0.06;
-const SUB_MAX_PAREJA = 0.8;
 
-const fiabilidad = (a, b) => (a?.inferred ? PRECISION_DEDUCIDA : 1) * (b?.inferred ? PRECISION_DEDUCIDA : 1);
-
-/** logit(winrate público) centrado en la media del rango. Sin dato, 0 y `dato: false`. */
+/** logit(winrate) centrado en la media del rango; sin dato, 0. */
 export function terminoHeroe(heroe, stats, media = 0.5) {
   const w = buscar(stats, heroe?.name)?.winRate;
   if (!valido(w)) return { valor: 0, dato: false, winRate: null };
@@ -141,9 +71,9 @@ export function terminoHeroe(heroe, stats, media = 0.5) {
 }
 
 /**
- * Ventaja por reglas contra un enemigo, 0..1, con sus motivos. Cuenta la más
- * fuerte y media la segunda: sumarlas todas premiaba al que más etiquetas
- * tiene. Descontada si las etiquetas de cualquiera están deducidas.
+ * Ventaja por reglas contra un enemigo, 0..1: la más fuerte + ½ de la segunda +
+ * las negativas (sumarlas todas premiaba al de más etiquetas), descontada si las
+ * etiquetas de alguno están deducidas. Deja sus motivos en `motivos`.
  */
 export function ventajaPorTags(heroe, enemigo, motivos = null) {
   const positivas = [];
@@ -155,102 +85,50 @@ export function ventajaPorTags(heroe, enemigo, motivos = null) {
   }
   positivas.sort((a, b) => b - a);
   const sub = (positivas[0] ?? 0) + (positivas[1] ?? 0) * 0.5 + penalizacion;
-  return { ventaja: acotar01(sub / SUB_MAX) * fiabilidad(heroe, enemigo), signo: Math.sign(sub) };
+  return { ventaja: clamp01(sub / SUB_MAX) * fiabilidad(heroe) * fiabilidad(enemigo), signo: Math.sign(sub) };
 }
 
 /**
- * Tu cruce contra UN enemigo, en log-odds, con los motivos que se enseñan.
- * Con dato: el cruce real; una regla solo se dice si el dato va en el mismo
- * sentido (la regla explica el porqué; el dato dice si es verdad). Sin dato:
- * la regla, a la equivalencia de 1.x, y se dice tal cual.
+ * Tu cruce contra UN enemigo. Con dato, el cruce; una regla se DICE solo si el dato
+ * va en su sentido. Sin dato, la regla a la equivalencia de 1.x, antisimétrica
+ * (lo que le da a él contra ti se resta: si no, ida y vuelta no suman 1).
  */
 export function terminoCruce(heroe, enemigo, counters) {
-  const motivos = [];
   const porTag = [];
   const { ventaja, signo } = ventajaPorTags(heroe, enemigo, porTag);
   const c = cruce(counters, heroe.name, enemigo.name);
   if (!valido(c)) {
-    motivos.push(...porTag);
-    // Antisimétrico, como el cruce real (c[a][b] + c[b][a] = 1): lo que la
-    // regla le da a él contra ti se resta. Sin esto, con un héroe sin cruces
-    // (recién salido) el draft «ida» y el «vuelta» sumaban 1,006–1,0095
-    // (auditoría de 3.21.1). Si solo uno de los dos tiene regla, vale lo mismo
-    // que antes: no cambia la equivalencia de 1.x.
     const pseudo = (v, s) => 0.5 + CRUCE_POR_REGLA_MAXIMA * v * (s < 0 ? -1 : 1);
     const suya = ventajaPorTags(enemigo, heroe);
-    return { valor: logit(pseudo(ventaja, signo)) - logit(pseudo(suya.ventaja, suya.signo)), dato: false, cruce: null, motivos };
+    return { valor: logit(pseudo(ventaja, signo)) - logit(pseudo(suya.ventaja, suya.signo)), dato: false, cruce: null, motivos: porTag };
   }
-  motivos.push(...porTag.filter((m) => (m.bueno ? c >= 0.5 : c <= 0.5)));
+  const motivos = porTag.filter((m) => (m.bueno ? c >= 0.5 : c <= 0.5));
   if (c >= CRUCE_DESTACABLE) motivos.push({ clave: c >= CRUCE_FUERTE ? 'regla.ganaMatchup' : 'regla.ganaMatchupPoco', params: { e: enemigo.name }, bueno: true, peso: 1.2 });
   if (c <= CRUCE_MALO) motivos.push({ clave: c <= CRUCE_FUERTE_EN_CONTRA ? 'regla.pierdeMatchup' : 'regla.pierdeMatchupPoco', params: { e: enemigo.name }, bueno: false, peso: 1.3 });
   return { valor: logit(c), dato: true, cruce: c, motivos };
 }
 
-/** Tu pareja con UN aliado, en log-odds centrado. Sin dato, las reglas por etiqueta. */
+/** Tu pareja con UN aliado, centrada; sin dato, las reglas por etiqueta. */
 export function terminoPareja(heroe, aliado, synergies, centro) {
-  const motivos = [];
   const s = sinergia(synergies, heroe.name, aliado.name);
   if (valido(s)) {
-    if (s >= PAREJA_DESTACABLE) motivos.push({ clave: 'regla.combinaCon', params: { a: aliado.name }, bueno: true, peso: 0.7 });
+    const motivos = s >= PAREJA_DESTACABLE ? [{ clave: 'regla.combinaCon', params: { a: aliado.name }, bueno: true, peso: 0.7 }] : [];
     return { valor: logit(s) - logit(centro), dato: true, pareja: s, motivos };
   }
+  const motivos = [];
   let sub = 0;
-  if (hayQueProtegerlo(aliado) && aliado.tags?.includes('immobile') && heroe.tags?.includes('peel')) {
-    sub += 0.8; motivos.push({ clave: 'regla.protege', params: { a: aliado.name }, bueno: true, peso: 0.8 });
-  }
-  if (aliado.tags?.includes('dive') && heroe.tags?.includes('engage')) {
-    sub += 0.6; motivos.push({ clave: 'regla.abrePelea', params: { a: aliado.name }, bueno: true, peso: 0.6 });
-  }
-  if (aliado.tags?.includes('hypercarry') && heroe.tags?.includes('sustain')) {
-    sub += 0.5; motivos.push({ clave: 'regla.mantieneVivo', params: { a: aliado.name }, bueno: true, peso: 0.5 });
-  }
-  const pseudo = centro + PAREJA_POR_REGLA_MAXIMA * acotar01(sub / SUB_MAX_PAREJA) * fiabilidad(heroe, aliado);
+  const regla = (cumple, valor, clave) => { if (cumple) { sub += valor; motivos.push({ clave, params: { a: aliado.name }, bueno: true, peso: valor }); } };
+  regla(hayQueProtegerlo(aliado) && aliado.tags?.includes('immobile') && heroe.tags?.includes('peel'), 0.8, 'regla.protege');
+  regla(aliado.tags?.includes('dive') && heroe.tags?.includes('engage'), 0.6, 'regla.abrePelea');
+  regla(aliado.tags?.includes('hypercarry') && heroe.tags?.includes('sustain'), 0.5, 'regla.mantieneVivo');
+  const pseudo = centro + PAREJA_POR_REGLA_MAXIMA * clamp01(sub / SUB_MAX_PAREJA) * fiabilidad(heroe) * fiabilidad(aliado);
   return { valor: logit(pseudo) - logit(centro), dato: false, pareja: null, motivos };
 }
 
 /**
- * Tú con ese héroe: lo que se añade al término de héroe para que tu winrate
- * con él (encogido con el prior de la maestría hacia lo que cabe esperar de
- * ti: su winrate público más tu ventaja sobre el 50%) SUSTITUYA al público.
- * Sin winrate público (API caída, héroe nuevo) la referencia es el 50%. Sin
- * maestría, cero. Los motivos van contra lo esperado ± σ.
- *
- * Un héroe que NO has jugado recibe tu nivel (3.72.0, decidido por Javi:
- * «que a mí se me dé bien un personaje no quiere decir que sea el mejor
- * pick»). Hasta entonces recibía cero y los jugados, tu nivel: un +1,7
- * puntos fijo a lo jugado, el doble de lo que separa al nº1 del nº2, que
- * hacía nº1 a un héroe tuyo en el 90% de tus drafts. Ahora el orden solo lo
- * mueve lo PROPIO de cada héroe (tu winrate con él frente a tu nivel) y la
- * probabilidad sigue llevando tu nivel. Medido con el agente medidor-motor
- * en sus 203 partidas con draft: verosimilitud fuera de muestra igual
- * (−0,6834 → −0,6835 ± 0,0121); el nº1 cambia en el 16% de sus drafts y es
- * un héroe jugado en el 74% (antes, 90%).
- */
-export function terminoTu(heroe, maestria, stats, nivel, prior) {
-  const vacio = { valor: 0, dato: false, motivos: [] };
-  if (!maestria || !Object.keys(maestria).length) return vacio;
-  const publico = buscar(stats, heroe.name)?.winRate;
-  const w = valido(publico) ? publico : 0.5;
-  const m = buscar(maestria, heroe.name);
-  const base = nivel ?? tuNivel(maestria);
-  if (!m || !(m.games > 0) || m.winRate == null) {
-    const esperadoSin = Math.min(0.95, Math.max(0.05, w + (base - 0.5)));
-    return { valor: logit(esperadoSin) - logit(w), dato: false, motivos: [] };
-  }
-  const k = prior ?? priorDeMaestria(maestria, base);
-  const esperado = Math.min(0.95, Math.max(0.05, w + (base - 0.5)));
-  const propio = (m.winRate * m.games + esperado * k) / (m.games + k);
-  const sigma = Math.sqrt(0.25 / k);
-  const motivos = [];
-  if (propio >= esperado + sigma) motivos.push(motivoDeMaestria(m, true));
-  if (propio <= esperado - sigma) motivos.push(motivoDeMaestria(m, false));
-  return { valor: logit(propio) - logit(w), dato: true, propio, motivos };
-}
-
-/**
- * Lo que cabe esperar de tu cruce contra lo que aún falta por salir: para
- * cada línea enemiga abierta, la media de logit(c[tú][e]) sobre los héroes
- * de esa línea que aún pueden salir, ponderada por su pickrate.
+ * Lo que cabe esperar de tu cruce contra lo que falta por salir: por cada línea
+ * enemiga abierta, la media de logit(c[tú][e]) de los que aún pueden salir por
+ * ella, ponderada por `disponibilidad` (mínimo 0,001). Una línea sin peso no suma.
  */
 export function esperanzaCruces(heroe, { lineasAbiertas = [], poolsPorLinea = {}, stats, counters, excluidos = new Set() } = {}) {
   let total = 0;
@@ -274,50 +152,32 @@ export function esperanzaCruces(heroe, { lineasAbiertas = [], poolsPorLinea = {}
   return { valor: total, detalle };
 }
 
-/** min(físicos, mágicos) de un equipo; los mixtos y los sin dato no cuentan para ninguno (así se midió). */
+/** min(físicos, mágicos) de un equipo; mixtos y sin dato no cuentan (así se midió). */
 export function equilibrioDe(equipo = []) {
   let f = 0; let m = 0;
   for (const h of equipo) { const t = tipoDeDano(h); if (t === 'fisico') f++; else if (t === 'magico') m++; }
   return Math.min(f, m);
 }
 
-/**
- * El término de equilibrio de daño: min(físicos, mágicos) de los tuyos menos
- * el de los suyos, cada uno centrado en lo que cabe esperar de un equipo de
- * su tamaño, y por PESO_EQUILIBRIO_DANO. Con motivo cuando TU pick es el que
- * mete la mezcla que faltaba.
- */
+/** El equilibrio de daño centrado por tamaño de equipo; motivo cuando TU pick mete la mezcla que faltaba. */
 export function terminoEquilibrio(mios, enemigos, yo = null, esperado = null) {
   const centro = (n) => esperado?.[n] ?? 0;
   const mio = equilibrioDe(mios) - centro(mios.length);
   const suyo = equilibrioDe(enemigos) - centro(enemigos.length);
   const motivos = [];
-  if (yo && mios.length > 1) {
-    const sinMi = mios.filter((h) => h !== yo);
-    if (equilibrioDe(mios) > equilibrioDe(sinMi)) motivos.push({ clave: 'regla.equilibraDano', params: { tipo: [`comp.${tipoDeDano(yo)}`] }, bueno: true, peso: 1.0 });
+  if (yo && mios.length > 1 && equilibrioDe(mios) > equilibrioDe(mios.filter((h) => h !== yo))) {
+    motivos.push({ clave: 'regla.equilibraDano', params: { tipo: [`comp.${tipoDeDano(yo)}`] }, bueno: true, peso: 1.0 });
   }
   return { valor: PESO_EQUILIBRIO_DANO * (mio - suyo), mio, suyo, motivos };
 }
 
 /**
- * Cuánto hay de ganar el draft con estos, tú incluido si `yo`.
- *
- * @param {object} d
- * @param d.aliados        tus compañeros ya elegidos (sin ti)
- * @param d.yo             tu héroe (el candidato), o null
- * @param d.enemigos       los suyos
- * @param d.meta           { stats, counters, synergies, mediaDelRango } ya indexados
- * @param d.maestria       tu maestría (solo pesa sobre `yo`)
- * @param d.lineas         índice de líneas: centra las parejas en las que pueden ir juntas
- * @param d.lineasAbiertas líneas enemigas por las que aún falta alguien
- * @param d.poolsPorLinea  { linea: [héroes] } de dónde salen los que faltan
- * @param d.baneos         baneados: no pueden salir por una línea abierta
- * @returns {{ p, logOdds, terminos, puntos, motivos, vistos, completo, dato } | null}
+ * La probabilidad de ganar el draft con estos (tú incluido si `yo`).
+ * `meta`: `{stats, counters, synergies, mediaDelRango, equilibrioEsperado}` ya indexados;
+ * `lineas` centra las parejas; `lineasAbiertas` + `poolsPorLinea` + `baneos` dan «por ver».
+ * @returns {{ p, logOdds, terminos, puntos, motivos, mejorPareja, vistos, completo, dato } | null}
  */
-export function evaluarDraft({
-  aliados = [], yo = null, enemigos = [], meta = {}, maestria = null, nivel, prior, lineas = null,
-  lineasAbiertas = [], poolsPorLinea = {}, baneos = [],
-} = {}) {
+export function evaluarDraft({ aliados = [], yo = null, enemigos = [], meta = {}, lineas = null, lineasAbiertas = [], poolsPorLinea = {}, baneos = [] } = {}) {
   const mios = yo ? [yo, ...aliados.filter((h) => nombreClave(h.name) !== nombreClave(yo.name))] : [...aliados];
   if (!mios.length && !enemigos.length) return null;
   const stats = meta.stats ?? {};
@@ -328,9 +188,6 @@ export function evaluarDraft({
   for (const h of mios) { const t = terminoHeroe(h, stats, media); heroes += t.valor; if (t.dato) conDato += 1; }
   for (const h of enemigos) { const t = terminoHeroe(h, stats, media); heroes -= t.valor; if (t.dato) conDato += 1; }
 
-  let tu = 0;
-  if (yo) { const t = terminoTu(yo, maestria, stats, nivel, prior); tu = t.valor; motivos.push(...t.motivos); }
-
   let cruces = 0;
   for (const a of mios) {
     for (const e of enemigos) {
@@ -340,14 +197,11 @@ export function evaluarDraft({
     }
   }
 
+  // `mejorPareja`: con quién de tu equipo combina mejor TU pick, en puntos de
+  // winrate sobre la pareja media. Se ENSEÑA: [M] dar más peso a las parejas
+  // predice peor (2.770 pro, ×2: −1,0 de logL por 1.000).
   const centro = mediaDeSinergia(meta.synergies, lineas, meta.stats ?? null);
   let parejas = 0;
-  // Con quién de tu equipo combina mejor TU pick (3.60.0, pedido por Javi:
-  // «céntrate en sinergias»). Se ENSEÑA, no cambia la nota: medido el 19 de
-  // octubre de 2026, dar más peso a las parejas predice peor en 2.770
-  // partidas pro (×2: −1,0 de logL por 1.000) y en sus 182 partidas el
-  // término no predice nada. `puntos`: lo que rinden juntos sobre la pareja
-  // media, en puntos de winrate (el dato, no el término escalado).
   let mejorPareja = null;
   for (let i = 0; i < mios.length; i++) {
     for (let j = i + 1; j < mios.length; j++) {
@@ -364,7 +218,6 @@ export function evaluarDraft({
   }
 
   const eq = terminoEquilibrio(mios, enemigos, yo, meta.equilibrioEsperado ?? null);
-  const equilibrio = eq.valor;
   if (yo) motivos.push(...eq.motivos);
 
   let porVer = 0;
@@ -373,8 +226,8 @@ export function evaluarDraft({
     porVer = esperanzaCruces(yo, { lineasAbiertas, poolsPorLinea, stats, counters: meta.counters, excluidos }).valor;
   }
 
-  const terminos = { heroes, cruces, parejas, equilibrio, tu, porVer };
-  const logOdds = ESCALA * (heroes + cruces + parejas + equilibrio + tu + porVer);
+  const terminos = { heroes, cruces, parejas, equilibrio: eq.valor, porVer };
+  const logOdds = ESCALA * (heroes + cruces + parejas + eq.valor + porVer);
   const puntos = Object.fromEntries(Object.entries(terminos).map(([k, v]) => [k, Math.round(ESCALA * v * PUNTOS_POR_LOGIT)]));
   return {
     p: sigmoide(logOdds),

@@ -13,15 +13,12 @@
  */
 
 import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, esVersionDeModelo } from './registro.js';
+import { fnv1a } from './estadistica.js';
 
 const MARCA = 'MLPA1';
 
 /** Suma de control corta. No es criptografía: es cazar un pegado a medias. */
-function suma(texto) {
-  let h = 2166136261;
-  for (let i = 0; i < texto.length; i++) h = Math.imul(h ^ texto.charCodeAt(i), 16777619);
-  return (h >>> 0).toString(36);
-}
+const suma = (texto) => fnv1a(texto).toString(36);
 
 const aBase64 = (bytes) => {
   let s = '';

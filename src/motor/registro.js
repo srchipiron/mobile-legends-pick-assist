@@ -1,7 +1,6 @@
 import { nombreClave } from './nombres.js';
 import { maestriaDeSiempre, winrateDeReferencia } from './maestria.js';
 import { TRAMOS } from './fases.js';
-import { tramoDeMinutos, esDuracionPosible } from './directo.js';
 import { VERSION_MODELO, CAMBIOS_DE_MODELO } from './modelo.js';
 
 /**
@@ -132,6 +131,16 @@ export function aciertosDelLector(partidas = []) {
   return { partidas: con.length, leidos, acertados, acierto: leidos ? acertados / leidos : null, fallos, dudas, aprendidos, sinEncontrar, tiempos };
 }
 
+/** [D] Lo que puede durar una partida (min): fuera de (3, 90) es una medida rota (= `tramoDe` de medir-fases). */
+export const DURACION_MINIMA = 3;
+export const DURACION_MAXIMA = 90;
+export const esDuracionPosible = (min) => typeof min === 'number' && min > DURACION_MINIMA && min < DURACION_MAXIMA;
+/** El tramo de fases de una duración (10–12 → 0 … 20+ → 5), el mismo reparto que medir-fases. */
+export function tramoDeMinutos(min) {
+  if (!esDuracionPosible(min)) return null;
+  return Math.max(0, Math.min(TRAMOS.length - 1, Math.floor((min - TRAMOS[0]) / 2)));
+}
+
 /**
  * La duración de la partida (minutos, la mide el lector del inicio a la
  * tabla) y la previsión por tramo de duración que había delante (las seis
@@ -258,10 +267,6 @@ export const esFantasma = (p) => !!p && p.origen === 'lector' && p.supuesto === 
 export const corregir = (partidas = [], t, gane) => partidas.map((p) => (p.t === t ? { ...p, gane: !!gane } : p));
 
 /**
- * Marca cuándo arreglaste una partida (3.76.0): entre el móvil y la tablet,
- * al juntarlas, gana la copia arreglada más tarde (`fundirPerfil`).
- */
-/**
  * Arreglar quién iba en cada equipo de una partida (3.78.0): el lector se
  * dejó a alguien o leyó a otro. Sin repetir entre equipos ni con tu pick, y
  * como mucho cinco enemigos y cuatro compañeros; el rival marcado se queda
@@ -286,6 +291,7 @@ export function cambiarDraft(partidas = [], t, { enemigos, aliados } = {}) {
   });
 }
 
+/** Cuándo arreglaste una partida: al juntar móvil y tablet gana la copia arreglada más tarde (`fundirPerfil`). */
 export const marcarEditada = (partidas = [], t, ahora = Date.now()) => partidas.map((p) => (p.t === t ? { ...p, editada: ahora } : p));
 
 /**
@@ -476,50 +482,4 @@ export function resumen(partidas = [], maestria = {}) {
     concluyente: con.length >= MINIMO_PARA_CONCLUIR && sin.length >= MINIMO_PARA_CONCLUIR,
     faltan: Math.max(0, MINIMO_PARA_CONCLUIR - con.length) + Math.max(0, MINIMO_PARA_CONCLUIR - sin.length),
   };
-}
-
-/**
- * Tu ajuste (3.68.0): lo que la app aprende de tus partidas sobre su propio
- * número. Una regresión logística ganar ~ a + b·logit(estimación) sobre tus
- * partidas apuntadas con estimación, PRUDENTE: parte de «el número vale tal
- * cual» (a = 0, b = 1) y solo se mueve lo que tus partidas justifican
- * (a priori a ~ N(0, σ²), b ~ N(1, σ²)).
- *
- * Medido el 24 de octubre de 2026 sobre las 229 de Javi, en orden, cada
- * partida predicha solo con las de antes (como en la app): verosimilitud
- * −0,6875 tal cual, −0,6771 con σ 0,5, −0,6773 sin prior, −0,6778 con σ 0,3,
- * −0,6799 solo con el intercepto. `SIGMA_AJUSTE` es el mejor de los medidos
- * (justificado experimentalmente). `MINIMO_AJUSTE` es desde donde se midió.
- * No cambia el ORDEN de las recomendaciones (es la misma subida para
- * todas, b > 0): solo el número de lo que te espera a ti.
- */
-export const MINIMO_AJUSTE = 30;
-export const SIGMA_AJUSTE = 0.5;
-export function ajustePersonal(partidas = [], { minimo = MINIMO_AJUSTE, sigma = SIGMA_AJUSTE } = {}) {
-  const con = partidas.filter((p) => !esPrevia(p) && !esSupuesta(p) && conResultado(p) && typeof p.estimacion === 'number' && p.estimacion > 0 && p.estimacion < 1);
-  if (con.length < minimo) return { n: con.length, activo: false, faltan: minimo - con.length };
-  const lg = (q) => Math.log(q / (1 - q));
-  const s2 = sigma * sigma;
-  let a = 0, b = 1;
-  for (let it = 0; it < 50; it++) {
-    let ga = -a / s2, gb = -(b - 1) / s2, haa = 1 / s2, hab = 0, hbb = 1 / s2;
-    for (const p of con) {
-      const x = lg(p.estimacion);
-      const q = 1 / (1 + Math.exp(-(a + b * x)));
-      const r = (p.gane ? 1 : 0) - q, w = q * (1 - q);
-      ga += r; gb += r * x; haa += w; hab += w * x; hbb += w * x * x;
-    }
-    const det = haa * hbb - hab * hab;
-    const da = (hbb * ga - hab * gb) / det, db = (-hab * ga + haa * gb) / det;
-    a += da; b += db;
-    if (Math.abs(da) + Math.abs(db) < 1e-9) break;
-  }
-  // Un b negativo daría la vuelta a las recomendaciones: con tan pocas partidas, nunca.
-  return { n: con.length, activo: true, a, b: Math.max(0.05, b) };
-}
-
-/** La estimación del modelo, con tu ajuste. Sin ajuste activo, la misma. */
-export function conTuHistorial(p, ajuste) {
-  if (!ajuste?.activo || !(p > 0 && p < 1)) return p;
-  return 1 / (1 + Math.exp(-(ajuste.a + ajuste.b * Math.log(p / (1 - p)))));
 }

@@ -1,6 +1,5 @@
-import { nombreClave, buscar } from '../nombres.js';
-import { ordenarPicks } from '../ranking.js';
-import { notaDeMaestria, TOPE_DE_SIEMPRE } from '../maestria.js';
+import { nombreClave } from '../nombres.js';
+import { TOPE_DE_SIEMPRE } from '../maestria.js';
 import { resumen, calibracion, aciertosDelLector, MINIMO_PARA_CONCLUIR } from '../registro.js';
 
 /**
@@ -11,39 +10,19 @@ import { resumen, calibracion, aciertosDelLector, MINIMO_PARA_CONCLUIR } from '.
  *
  * @param {import('./informe.js').Informe} inf
  */
-export function seccionMaestria(inf, { datos, linea, maestria = {}, entorno = {} }) {
-  const pool = datos.poolsPorLinea[linea] ?? [];
+export function seccionMaestria(inf, { datos, maestria = {}, entorno = {} }) {
   inf.seccion('MAESTRÍA');
   const conMaestria = Object.keys(maestria ?? {}).length;
   if (entorno.sinDatosPersonales) inf.linea('Sin acceso: la maestría vive en el móvil');
-  else inf.check(conMaestria >= 5, `${conMaestria} héroes con datos tuyos`, `Solo ${conMaestria} héroes con datos tuyos: rellena más para que la app se ajuste a ti`, true);
+  else inf.check(conMaestria >= 5, `${conMaestria} héroes con datos tuyos`, `Solo ${conMaestria} héroes con datos tuyos: rellena más para el Veredicto y la tablet`, true);
   if (!conMaestria) return;
-  // Cuántas partidas apuntadas cuentan en tu maestría: desde 3.56.0, todas
-  // las de la app, y lo de siempre como mucho TOPE_DE_SIEMPRE por héroe.
+  inf.linea('Tus resultados no entran en la nota (3.93.0): la maestría la usan el Veredicto, la tablet y la comunidad');
   const sumadas = Object.values(maestria).reduce((n, m) => n + (m?.apuntadas ?? 0), 0);
   const acotados = Object.values(maestria).filter((m) => m?.deSiempre > m?.games - (m?.apuntadas ?? 0)).length;
   if (!entorno.sinDatosPersonales) inf.linea(`Tu maestría: ${sumadas} partidas apuntadas con la app; lo de siempre cuenta como mucho ${TOPE_DE_SIEMPRE} partidas por héroe (${acotados} héroes acotados)`);
-  // TODO nombre guardado tiene que casar con el catálogo (antes solo se
-  // miraba la primera clave).
   const sinCasar = Object.keys(maestria).filter((k) => !datos.heroes.some((x) => nombreClave(x.name) === nombreClave(k)));
   inf.check(!sinCasar.length, 'Todos los nombres de tu maestría casan con el catálogo',
     `Nombres de tu maestría que no casan con ningún héroe: ${sinCasar.slice(0, 6).join(', ')}`);
-  // El ejemplo sale de un héroe de TU LÍNEA: con la línea en mid y Diggie el
-  // primero de la maestría, el puesto salía «0 -> 0» (no está en el ranking).
-  const enPool = new Set(pool.map((x) => nombreClave(x.name)));
-  const clave = Object.keys(maestria).find((k) => !sinCasar.includes(k) && enPool.has(nombreClave(k)));
-  const h = clave ? datos.heroes.find((x) => nombreClave(x.name) === nombreClave(clave)) : null;
-  if (!h) {
-    inf.linea(`Ninguno de tus héroes con maestría juega ${linea}: en esta línea la nota es la del público`);
-    return;
-  }
-  const sin = ordenarPicks(pool, { meta: datos.meta }).findIndex((r) => r.heroe.name === h.name);
-  const con = ordenarPicks(pool, { meta: datos.meta, maestria }).findIndex((r) => r.heroe.name === h.name);
-  const m = buscar(maestria, h.name);
-  inf.linea(`Ejemplo: ${h.name} ${Math.round(m.winRate * 100)}% en ${m.games} partidas · puesto ${sin + 1} -> ${con + 1}`);
-  // Se aplica si el motor la ENCUENTRA (3.60.5): mirando si la nota no era
-  // 0,5, un héroe con tu winrate justo en tu nivel daba un FALLO falso.
-  inf.check(notaDeMaestria(h, maestria).encogido != null, 'Tu maestría se está aplicando', 'Tu maestría NO se aplica: los nombres guardados no casan con el catálogo');
 }
 
 /** Las partidas apuntadas: calibración de la estimación y el Veredicto. */

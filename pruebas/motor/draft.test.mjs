@@ -10,7 +10,7 @@ import { catalogo, h } from '../fixtures/catalogo.mjs';
 import { LINEAS, equilibrioEsperado } from '../../src/motor/catalogo.js';
 import {
   rangoActivo, prepararDatos, resolverNombres, poolDe,
-  lineasEnemigasAbiertas, rivalDeLinea, recomendar, eleccionDe, planDePicks, ordenar, winrateEnLinea, probablesDelBando, composicionDe, baneosSugeridos, siguientesBaneos, deLosTuyos, crucesDelDraft, planear } from '../../src/motor/draft.js';
+  lineasEnemigasAbiertas, rivalDeLinea, recomendar, eleccionDe, planDePicks, ordenar, winrateEnLinea, probablesDelBando, composicionDe, baneosSugeridos, siguientesBaneos, crucesDelDraft, planear } from '../../src/motor/draft.js';
 import { cruce, sinergia, mediaDeSinergia, CRUCE_DESTACABLE, CRUCE_MALO } from '../../src/motor/matrices.js';
 import { elegirVentana, elegirRango, mediaDeWinrate } from '../../src/motor/ventana.js';
 import { indexarPorNombre } from '../../src/motor/nombres.js';
@@ -363,11 +363,9 @@ test('los baneos sugeridos no proponen banear tu pick fijado, y lo cuentan de tu
   ok(!recomendar(datos, { linea: 'roam', enemigos, aliados: [], baneos: [], miPick: yo, conSimulacion: false }).baneosSugeridos.some((b) => b.heroe.name === yo.name), 'recomendar sugiere banear tu pick fijado');
 });
 
-test('«De los tuyos» ya no sale (3.94.0, Javi: «aconseja el mejor pick de TODOS»): ni aunque juegues a otro del ranking', () => {
-  const H = (name, p) => ({ heroe: { name }, p });
-  const ranking = [H('Atlas', 0.55), H('Khufra', 0.54), H('Rafaela', 0.53), H('Franco', 0.52)];
-  eq(deLosTuyos(ranking, { Rafaela: { games: 30, winRate: 0.6 }, Franco: { games: 300, winRate: 0.7 } }), null, 'sigue proponiendo uno de los que juegas');
-  eq(deLosTuyos(ranking, {}), null);
+test('«De los tuyos» ya no existe (3.94.0, Javi: «aconseja el mejor pick de TODOS»): recomendar no lo devuelve', () => {
+  const datos = prepararDatos({ catalogo: leerJson('public/data/heroes.json'), meta: leerJson('public/data/roam-meta.json'), rango: 'glory' });
+  ok(!('deLosTuyos' in recomendar(datos, { linea: 'roam', conSimulacion: false })), 'recomendar sigue devolviendo deLosTuyos');
 });
 
 test('los cruces y parejas del draft (3.92.0): cada enemigo con su cruce y cada compañero con su pareja, de las matrices que puntúan, ordenados y con su lado', () => {
@@ -405,5 +403,4 @@ test('tus resultados no deciden nada (3.93.0, Javi): con una maestría exagerada
   eq(con.partida.fases?.pBase, sin.partida.fases?.pBase, 'tus resultados cambian la estimación del plan');
   eq(JSON.stringify(con.ranking.map((x) => x.motivos.map((m) => m.clave))), JSON.stringify(sin.ranking.map((x) => x.motivos.map((m) => m.clave))), 'una tarjeta habla de tu winrate con el héroe');
   // Lo que sí queda: cuánto juegas a cada uno (no si ganas).
-  eq(deLosTuyos(sin.ranking, maestria)?.heroe?.name ?? null, deLosTuyos(con.ranking, maestria)?.heroe?.name ?? null);
 });

@@ -40,10 +40,10 @@ export function diagnosticar({ datos, linea = 'roam', maestria = {}, maestriaMan
   seccionHistorial(inf, { datos, linea, historial });
   seccionPro(inf, pro);
   const cov = cobertura(datos.poolsPorLinea[linea] ?? [], datos.meta.stats, datos.meta.counters);
-  seccionMotor(inf, { datos, linea, maestria, cov });
-  seccionMaestria(inf, { datos, linea, maestria, entorno });
+  seccionMotor(inf, { datos, linea, cov });
+  seccionMaestria(inf, { datos, maestria, entorno });
   seccionPartidas(inf, { partidas, maestria, maestriaManual, entorno });
-  seccionModelo(inf, { datos, linea, maestria, pro });
+  seccionModelo(inf, { datos, linea, pro });
   const cabecera = ['MOBILE LEGENDS PICK ASSIST · DIAGNÓSTICO', new Date().toLocaleString('es-ES'), titular(inf.fallos(), inf.avisos())];
   return { texto: [...cabecera, ...inf.lineas].join('\n'), fallos: inf.fallos(), avisos: inf.avisos() };
 }

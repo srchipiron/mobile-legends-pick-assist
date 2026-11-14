@@ -14,37 +14,32 @@ import { planDePartida } from './plan.js';
 import { elegirVentana, elegirRango, mediaDeWinrate, RANGO_DE_RESPALDO, tiersVigentes } from './ventana.js';
 import { movimientos } from './tendencia.js';
 import { centroDeFases, fasesDePartida } from './fases.js';
+import { DIA_MS } from './estadistica.js';
+
+export { tiersVigentes, TIERS_CADUCAN_DIAS } from './ventana.js';
 
 /**
- * El cerebro: de los ficheros de datos y el draft a todo lo que la app
- * enseña. Puro: sin React, sin almacenamiento, sin red. Lo usan la app
- * (useRecomendacion), el diagnóstico del móvil, el del bot y el arnés de
- * paridad, así que solo hay UN sitio donde se decide cómo se indexa el meta,
- * qué rango manda, cómo se resuelven los nombres o qué líneas están abiertas.
+ * EL cerebro: de los ficheros de datos y el draft a todo lo que enseñan la app, la
+ * tablet, el diagnóstico y los scripts. Un solo sitio decide cómo se indexa el
+ * meta, qué rango y qué ventana mandan, cómo se resuelven los nombres y qué líneas
+ * están abiertas (dos montajes distintos ya hicieron que la app decidiera con uno
+ * y la vigilancia con otro). Las piezas van separadas porque la app memoriza cada
+ * una (el ranking con cada toque; la simulación y el consejo, diferidos);
+ * `recomendar` las junta para quien no tiene render que cuidar.
  *
- * Las funciones son pequeñas y separadas a propósito: la app memoriza cada
- * pieza por su cuenta (el ranking va con cada toque; la simulación, diferida)
- * y `recomendar` las junta para quien no tiene render que cuidar.
- */
-
-/**
  * @typedef {object} Datos
- * @property {object[]} heroes        catálogo fundido con la API (tags, role, id, lanes)
- * @property {Map} lineas             clave → { role, lanes }
- * @property {object} frecuencias     { linea: { rol: 0..1 } }
- * @property {string|null} rango      el rango cuyas estadísticas se usan
- * @property {object} meta            { stats, counters, synergies, mediaDelRango } indexados por clave
- * @property {object} poolsPorLinea   { linea: héroes que se juegan ahí }
- * @property {Map} porNombre          nombre → héroe
- * @property {object|null} catalogo   heroes.json tal cual
- * @property {object|null} crudo      roam-meta.json tal cual (fechas, builds, objetos, diagnósticos)
+ * @property {object[]} heroes       catálogo fundido con la API
+ * @property {Map} lineas            clave → { role, lanes }
+ * @property {object} frecuencias    { linea: { rol: 0..1 } }
+ * @property {string|null} rango     el rango elegido (el que se apunta en cada partida)
+ * @property {object} meta           el contexto del modelo, indexado por clave
+ * @property {object} poolsPorLinea  { linea: héroes que se juegan ahí }
+ * @property {Map} porNombre         nombre tal cual → héroe
+ * @property {object|null} catalogo  heroes.json tal cual
+ * @property {object|null} crudo     roam-meta.json tal cual
  */
 
-/**
- * El rango cuyas estadísticas se usan: el elegido si está descargado, si no
- * el de la ingesta, si no el primero que haya. Antes la app se quedaba sin
- * estadísticas teniéndolas de otro rango.
- */
+/** El rango pedido si está descargado; si no, el de la ingesta; si no, el primero que haya. */
 export function rangoActivo(meta, rango = null) {
   const disponibles = meta?.statsByRank ?? {};
   if (rango && disponibles[rango]) return rango;
@@ -52,155 +47,93 @@ export function rangoActivo(meta, rango = null) {
   return Object.keys(disponibles)[0] ?? meta?.rank ?? rango ?? null;
 }
 
-/** @returns {Datos} */
+/**
+ * Se prepara UNA vez por carga. La fuerza sale del rango que aguanta (Gloria o su
+ * respaldo) y de la ventana más corta que aguanta (3 o 7 días); cruces y parejas a
+ * 7, del rango que decidió la ingesta. El centro del término de héroe es la media
+ * PONDERADA de la misma ventana.
+ * @returns {Datos}
+ */
 export function prepararDatos({ catalogo = null, meta = null, rango = null } = {}) {
   const heroes = catalogo ? fundirCatalogo(catalogo.heroes, meta?.heroes) : [];
   const lineas = indiceDeLineas(meta?.heroes);
-  const frecuencias = frecuenciaDeRoles(meta?.heroes ?? []);
   const rangoUsado = rangoActivo(meta, rango);
-  // Todo por clave normalizada: la API y el catálogo escriben algunos héroes
-  // distinto y sin esto se quedaban sin datos en silencio. Las matrices
-  // tienen nombre de héroe en los DOS niveles.
-  // La fuerza de cada héroe sale de la ventana más corta cuya precisión
-  // aguanta (3 días si la ingesta la trae y es coherente con la de 7, ver
-  // ventana.js); cruces y parejas siguen a 7. Es el ÚNICO sitio donde se
-  // decide: la app, el bot y las pruebas ven las mismas estadísticas.
-  // Y el RANGO del que sale: el tuyo, salvo que sea Gloria y Gloria tenga
-  // tan pocas partidas que no se parezca a Mítico (reinicio de temporada,
-  // ventana.js). `rango` sigue siendo el tuyo: es lo que se apunta en cada
-  // partida y lo que eliges; `meta.fuerza` dice de dónde sale la fuerza.
   const porRango = Object.fromEntries(Object.entries(meta?.statsByRank ?? {}).map(([r, s]) => [r, indexarPorNombre(s)]));
   const fuerza = elegirRango(porRango, rangoUsado);
   const semana = porRango[fuerza.rango] ?? indexarPorNombre(meta?.stats);
   const recientes = meta?.recientes?.statsByRank?.[fuerza.rango] ? indexarPorNombre(meta.recientes.statsByRank[fuerza.rango]) : null;
   const { stats, ventana } = elegirVentana(semana, recientes, meta?.recientes?.dias ?? 3);
   const poolsPorLinea = Object.fromEntries(LINEAS.map((l) => [l, poolDeLinea(heroes, lineas, l)]));
-  const metaCtx = {
-    stats,
-    statsSemana: semana,
-    ventana,
-    fuerza,
-    // De qué rango salen cruces y parejas (3.35.0): lo decide la INGESTA con
-    // la misma guarda que `fuerza` (ventana.js, elegirRangoDeRelaciones),
-    // porque guardar las dos matrices doblaría lo que baja el móvil.
-    relaciones: meta?.relaciones ?? null,
-    // El winrate de cada héroe EN CADA LÍNEA (3.12.0), por clave normalizada.
-    // Se ENSEÑA, no puntúa: medido en 3.11.0, no mejora la predicción sobre
-    // el global de la misma ventana. Su ventana es de ~15–30 días del rango
-    // de la ingesta (Gloria), no la de la fuerza.
-    winrateLinea: indexarPorNombre(meta?.winrateLinea),
-    // La curva por duración (3.43.0): el winrate de cada héroe en su línea
-    // según el minuto en que acaba la partida. Dice en qué fase es fuerte
-    // cada equipo (fases.js); NO puntúa en el ranking. Y su centro (lo que
-    // cabe esperar de lo que sale, ponderado por cuota de pick), UNA vez.
-    curvaLinea: indexarPorNombre(meta?.curvaLinea),
-    centroDeFases: meta?.curvaLinea ? centroDeFases(meta.curvaLinea, meta.winrateLinea, stats) : null,
-    counters: indexarPorNombre(meta?.counters, 2),
-    synergies: indexarPorNombre(meta?.synergies, 2),
-    // Lo que cabe esperar de equilibrio de daño en un equipo de n héroes,
-    // uno por línea (modelo.js, terminoEquilibrio): centra el término a
-    // medias. Con las líneas, no con cinco al azar de los 133: las líneas
-    // no reparten el daño igual y un equipo real mezcla más.
-    equilibrioEsperado: equilibrioEsperado(heroes, stats, poolsPorLinea),
-    // El centro del término de héroe es la media de LA MISMA ventana y
-    // PONDERADA por cuota de pick (ventana.js). Hasta 3.7.1 con la de 7 días
-    // se usaba `avgByRank` de la ingesta, que es la media simple de los 133:
-    // 0,482 frente a 0,502, y cada héroe visto sumaba +0,09 de logit. La
-    // ingesta sigue escribiendo `avgByRank`, pero ya no decide nada.
-    mediaDelRango: mediaDeWinrate(stats),
-    // Los tocados por el parche (3.102.0, `tocadoPorElParche`): el día en que
-    // la ingesta vio cambiar sus habilidades. Se ENSEÑA, no puntúa. `days` es
-    // la ventana de los datos: mientras no pase, su winrate y sus cruces
-    // mezclan días de antes del cambio.
-    tocados: indexarPorNombre(meta?.tocados) ?? {},
-    days: Number.isFinite(meta?.days) ? meta.days : null,
-  };
   return {
-    heroes, lineas, frecuencias, rango: rangoUsado, meta: metaCtx, poolsPorLinea,
+    heroes,
+    lineas,
+    frecuencias: frecuenciaDeRoles(meta?.heroes ?? []),
+    rango: rangoUsado,
+    meta: {
+      stats,
+      statsSemana: semana,
+      ventana,
+      fuerza,
+      relaciones: meta?.relaciones ?? null,
+      // Se ENSEÑAN, no puntúan: el winrate por línea y la curva por duración (fases).
+      winrateLinea: indexarPorNombre(meta?.winrateLinea),
+      curvaLinea: indexarPorNombre(meta?.curvaLinea),
+      centroDeFases: meta?.curvaLinea ? centroDeFases(meta.curvaLinea, meta.winrateLinea, stats) : null,
+      counters: indexarPorNombre(meta?.counters, 2),
+      synergies: indexarPorNombre(meta?.synergies, 2),
+      equilibrioEsperado: equilibrioEsperado(heroes, stats, poolsPorLinea),
+      mediaDelRango: mediaDeWinrate(stats),
+      tocados: indexarPorNombre(meta?.tocados) ?? {},
+      days: Number.isFinite(meta?.days) ? meta.days : null,
+    },
+    poolsPorLinea,
     porNombre: new Map(heroes.map((h) => [h.name, h])),
-    catalogo, crudo: meta,
+    catalogo,
+    crudo: meta,
   };
 }
 
-/** El winrate de un héroe en una línea (0..1) o null si la API no lo da. El único sitio que lo lee. */
+/** El winrate de un héroe en una línea (0..1) o null. El único acceso. */
 export function winrateEnLinea(datos, heroe, linea) {
   const v = buscar(datos?.meta?.winrateLinea ?? {}, heroe?.name ?? heroe)?.[linea];
   return typeof v === 'number' && v > 0 && v < 1 ? v : null;
 }
 
 /**
- * Tocado por el parche (3.102.0): `{ fecha, dias }` si la ingesta vio
- * cambiar sus habilidades (texto o cifras, `meta.tocados`) hace menos de la
- * ventana de los datos (`meta.days`, 7). Hasta entonces su winrate y sus
- * cruces mezclan días de antes del cambio. Se ENSEÑA, no puntúa. null si no,
- * o sin `ahora` (el motor no mira el reloj).
+ * `{fecha, dias, quedan}` si la ingesta vio cambiar sus habilidades hace menos de la
+ * ventana de los datos (`days`, 7): su winrate y sus cruces aún mezclan días de
+ * antes. Se ENSEÑA. null sin `ahora` (el motor no mira el reloj).
  */
 export function tocadoPorElParche(datos, heroe, ahora) {
   const fecha = buscar(datos?.meta?.tocados ?? {}, heroe?.name ?? heroe);
   if (!Number.isFinite(ahora) || typeof fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null;
-  const dias = Math.floor((ahora - Date.parse(`${fecha}T00:00:00Z`)) / 86400000);
+  const dias = Math.floor((ahora - Date.parse(`${fecha}T00:00:00Z`)) / DIA_MS);
   const ventana = Number.isFinite(datos?.meta?.days) && datos.meta.days > 0 ? datos.meta.days : 7;
   return dias >= 0 && dias < ventana ? { fecha, dias, quedan: ventana - dias } : null;
 }
 
-// La tier de mlbb.gg vigente vive en ventana.js (la usa también el diagnóstico).
-export { tiersVigentes, TIERS_CADUCAN_DIAS } from './ventana.js';
-
-/** Los héroes de una lista de nombres guardados; los que ya no existen se ignoran. */
+/** Los héroes de unos nombres guardados (por nombre tal cual); los que ya no existen se ignoran. */
 export const resolverNombres = (datos, nombres = []) => nombres.map((n) => datos.porNombre.get(n)).filter(Boolean);
-
-/** El pool de tu línea. */
 export const poolDe = (datos, linea) => (linea ? datos.poolsPorLinea[linea] ?? [] : []);
 
-/**
- * Por qué líneas enemigas falta alguien: por ahí va el término «por ver» del
- * modelo y por ahí se simulan los finales. Con los cinco a la vista, ninguna.
- */
+/** Por qué líneas enemigas falta alguien (con 0 o con los cinco, ninguna). */
 export function lineasEnemigasAbiertas(datos, enemigos = []) {
   if (!enemigos.length || enemigos.length >= 5) return [];
   const ocupadas = new Set(lineasOcupadas(enemigos, datos.lineas, datos.frecuencias));
   return LINEAS.filter((l) => !ocupadas.has(l));
 }
 
-/**
- * El rival de tu línea: lo marcado a mano manda; si no, se deduce del mejor
- * reparto de los enemigos (y se calla cuando no está claro).
- */
+/** El rival de tu línea: el marcado a mano manda; si no, el mejor reparto (que se calla si no está claro). */
 export function rivalDeLinea(datos, { linea, enemigos = [], marcado = null } = {}) {
-  const valido = marcado && enemigos.some((h) => h.name === marcado) ? marcado : null;
-  if (valido) return { nombre: valido, marcado: true };
+  if (marcado && enemigos.some((h) => h.name === marcado)) return { nombre: marcado, marcado: true };
   return { nombre: detectarRivalDeLinea(enemigos, datos.lineas, linea, datos.frecuencias), marcado: false };
 }
 
-/**
- * Tus resultados NO deciden (3.93.0). Javi, el 7 de noviembre de 2026:
- * «quiero que olvides el ganado/perdido mío, no quiero que la selección de
- * personaje la bases en eso y que no afecte en nada». La maestría (tu
- * winrate con cada héroe y tu nivel general) entraba en la nota en lugar
- * del término público del héroe; desde aquí la nota es SOLO el dato público
- * (héroes, cruces, parejas, equilibrio, lo que falta por salir). Es el
- * único sitio por donde entra: ranking, estimación, simulación y plan pasan
- * por estas tres funciones, en la app y en la tablet. Lo que sí se sigue
- * usando, porque no es ganado/perdido: CUÁNTO juegas a cada héroe
- * (`deLosTuyos`, «Mis héroes», tus habituales en «Capturas»).
- */
-export const RESULTADOS_EN_LA_NOTA = false;
-const paraLaNota = (maestria) => (RESULTADOS_EN_LA_NOTA ? maestria : null);
-/**
- * Ni qué héroes juegas (3.94.0). Javi, el 8 de noviembre de 2026: «a partir
- * de ahora no tengas en cuenta tampoco qué héroes juego o no, aconseja el
- * mejor pick de TODOS los roam». Fuera «el mejor de los tuyos» bajo la nº1
- * y en la burbuja (`deLosTuyos`), y el filtro «Mis héroes». Lo único que
- * sigue mirando cuánto juegas son tus habituales para CORREGIR un draft en
- * «Capturas» (rellenar un hueco, no aconsejar).
- */
-export const TUS_HEROES_EN_EL_CONSEJO = false;
-
-/** Lo que recibe `ordenarPicks` para este draft. Los candidatos son los héroes que el enemigo aún podría elegir. */
-export function contextoDe(datos, { enemigos = [], aliados = [], baneos = [], maestria = null, lineasAbiertas = null } = {}) {
+/** Lo que recibe `ordenarPicks`. Candidatos: los que el enemigo aún podría elegir. */
+export function contextoDe(datos, { enemigos = [], aliados = [], baneos = [], lineasAbiertas = null } = {}) {
   const cogidos = new Set([...enemigos, ...aliados, ...baneos].map((h) => h.name));
   return {
-    enemigos, aliados, baneos, maestria: paraLaNota(maestria),
+    enemigos, aliados, baneos,
     meta: datos.meta,
     lineas: datos.lineas,
     lineasAbiertas: lineasAbiertas ?? lineasEnemigasAbiertas(datos, enemigos),
@@ -214,32 +147,31 @@ export function ordenar(datos, { linea, ...draft }) {
   return ordenarPicks(poolDe(datos, linea), contextoDe(datos, draft));
 }
 
-/** La probabilidad de ganar con UN héroe concreto (el que apuntas, aunque no sea el nº1). */
-export function estimarCon(datos, { yo, enemigos = [], aliados = [], baneos = [], maestria = null }) {
+/** La probabilidad con UN héroe concreto (el que apuntas, aunque no sea el nº1). */
+export function estimarCon(datos, { yo, enemigos = [], aliados = [], baneos = [] }) {
   return evaluarDraft({
-    aliados, yo, enemigos, baneos, maestria: paraLaNota(maestria),
-    meta: datos.meta, lineas: datos.lineas,
+    aliados, yo, enemigos, baneos, meta: datos.meta, lineas: datos.lineas,
     lineasAbiertas: lineasEnemigasAbiertas(datos, enemigos), poolsPorLinea: datos.poolsPorLinea,
   });
 }
 
 /** ¿Aguanta el nº1 lo que falta por salir? Solo con el draft a medias. */
-export function simular(datos, { linea, enemigos = [], aliados = [], baneos = [], maestria = null, n, semilla } = {}) {
+export function simular(datos, { linea, enemigos = [], aliados = [], baneos = [], n, semilla } = {}) {
   const pool = poolDe(datos, linea);
   if (!enemigos.length || enemigos.length >= 5 || !pool.length) return null;
   return simularFinales({
     pool, enemigos, aliados, lineasAbiertas: lineasEnemigasAbiertas(datos, enemigos), poolsPorLinea: datos.poolsPorLinea,
-    ctx: { meta: datos.meta, maestria: paraLaNota(maestria), baneos, lineas: datos.lineas },
+    ctx: { meta: datos.meta, baneos, lineas: datos.lineas },
     ...(n ? { n } : {}), ...(semilla != null ? { semilla } : {}),
   });
 }
 
-/** Qué tiene y qué le falta a cada equipo, contigo (tu nº1) dentro. */
+/** Qué tiene y qué le falta a cada equipo contigo dentro. */
 export function composicionDe({ aliados = [], enemigos = [], yo = null } = {}) {
   return (aliados.length || enemigos.length) && yo ? analizarComposicion({ aliados, yo, enemigos }) : null;
 }
 
-/** Qué pueden coger tus compañeros. Solo con algún enemigo a la vista: sin rival no es un consejo contra nadie. */
+/** Qué pueden coger tus compañeros. Solo con algún enemigo: sin rival no es un consejo contra nadie. */
 export function aconsejar(datos, { linea, yo = null, enemigos = [], aliados = [], baneos = [], lineasAbiertas = null } = {}) {
   if (!yo || !enemigos.length) return [];
   return aconsejarEquipo({
@@ -249,26 +181,15 @@ export function aconsejar(datos, { linea, yo = null, enemigos = [], aliados = []
   });
 }
 
-/**
- * Suelo de la cuota de un héroe cuyas líneas ya están todas ocupadas: queda
- * detrás de los demás pero no desaparece (un reparto de líneas deducido se
- * puede equivocar y el héroe tiene que seguir a mano en la rejilla).
- */
+/** [P] Suelo de la cuota de un héroe con sus líneas ocupadas: queda detrás, no desaparece (con 0,001 da igual). */
 const SUELO_LINEA_CERRADA = 0.05;
 
 /**
- * El orden de las caras en el selector de picks (3.17.0): los héroes de ese
- * bando, del más probable al menos, según lo que se juega (cuota de pick) y
- * qué parte de sus líneas sigue libre en ese equipo. Para tu equipo, tu
- * línea ya está cogida (eres tú). Medido sobre los drafts reales de Javi
- * (221 enemigos y 179 compañeros, en el orden en que los metió): el que
- * salió de verdad cae entre las 12 primeras caras en el 33% de los enemigos
- * y el 45% de los compañeros, frente al 22% y el 14% ordenando solo por
- * cuota de pick; posición mediana 23 y 15 frente a 34 y 28. La
- * disponibilidad (cuota/(1−ban), la de «por ver») ordena PEOR aquí (31% y
- * 34%): en Gloria se pickea lo que se pickea, no lo que sobrevive al ban.
- *
- * @returns {Array} los héroes ordenados (copia)
+ * El orden de las caras en el selector: cuota de pick × (suelo + la parte de sus
+ * líneas que ese equipo aún tiene libre; para tu equipo, sin tu línea). [M] En los
+ * drafts de Javi el que salió cae entre las 12 primeras en el 33 % de los enemigos
+ * y el 45 % de los compañeros (cuota sola: 22 % y 14 %; disponibilidad, peor).
+ * @returns {Array} todos los héroes, ordenados (copia)
  */
 export function probablesDelBando(datos, { equipo = [], linea = null, bando = 'enemigos' } = {}) {
   const candidatas = bando === 'aliados' && linea ? LINEAS.filter((l) => l !== linea) : LINEAS;
@@ -278,24 +199,19 @@ export function probablesDelBando(datos, { equipo = [], linea = null, bando = 'e
   const nota = (h) => {
     const ls = LINEAS.filter((l) => suyas[l].has(h.name));
     if (!ls.length) return 0;
-    const pr = buscar(datos.meta.stats, h.name)?.pickRate ?? 0;
-    return pr * (SUELO_LINEA_CERRADA + ls.filter((l) => libres.has(l)).length / ls.length);
+    return (buscar(datos.meta.stats, h.name)?.pickRate ?? 0) * (SUELO_LINEA_CERRADA + ls.filter((l) => libres.has(l)).length / ls.length);
   };
   const notas = new Map(datos.heroes.map((h) => [h.name, nota(h)]));
   return [...datos.heroes].sort((a, b) => notas.get(b.name) - notas.get(a.name) || a.name.localeCompare(b.name));
 }
 
+/** Para los baneos tu pick fijado es de tu equipo (si no, se proponía banearlo: 34 de 1.500 drafts). */
+const conTuPick = (aliados, miPick) => (miPick && !aliados.some((a) => a.name === miPick.name) ? [...aliados, miPick] : aliados);
+
 /** A quién banear por tu equipo. */
 export function baneosSugeridos(datos, { aliados = [], enemigos = [], baneos = [], miPick = null } = {}) {
   return datos.meta.stats ? sugerirBaneos(datos.heroes, { aliados: conTuPick(aliados, miPick), enemigos, baneos, meta: datos.meta }) : [];
 }
-
-/**
- * Tus aliados con tu pick fijado dentro (3.60.4): para los baneos eres de tu
- * equipo. Sin él, «baneos que merecen la pena» proponía banear tu propio pick
- * (y el chip lo soltaba sin aviso), y no contaba sus cruces.
- */
-const conTuPick = (aliados, miPick) => (miPick && !aliados.some((a) => a.name === miPick.name) ? [...aliados, miPick] : aliados);
 
 /** El siguiente baneo probable en tu rango, con la co-ocurrencia de TUS partidas. */
 export function siguientesBaneos(datos, { baneos = [], enemigos = [], aliados = [], miPick = null, partidas = [], historial = null, n = 10 } = {}) {
@@ -303,27 +219,7 @@ export function siguientesBaneos(datos, { baneos = [], enemigos = [], aliados = 
   return proximosBaneos(datos.heroes, { baneos, enemigos, aliados: conTuPick(aliados, miPick), meta: datos.meta, historial: historial ?? coocurrenciaDeBaneos(partidas), n });
 }
 
-/**
- * Tu pick, del que hablan el análisis, la composición y el consejo a los
- * compañeros: el que has FIJADO («Lo cojo», 3.5.0) si está en el ranking, y
- * si no el nº1. Antes todo lo posterior al pick hablaba del nº1 aunque
- * cogieras el nº2 (nº1 y nº2 empatan en uno de cada cuatro drafts).
- */
-/**
- * El mejor de TUS héroes (3.72.0, «De los tuyos»): desde que tu nivel vale
- * para cualquier héroe, el nº1 ya no tiene por qué ser uno que juegas; esto
- * dice cuál de los que juegas va primero, para elegir con eso delante. «Tuyo»
- * es lo mismo que en el filtro «Mis héroes»: con alguna partida en tu
- * maestría. null si el nº1 ya es tuyo o si no juegas ninguno de la línea.
- */
-export function deLosTuyos(ranking, maestria) {
-  // Desde 3.94.0, nada (Javi: «no tengas en cuenta qué héroes juego o no, aconseja el mejor pick de TODOS»).
-  if (!TUS_HEROES_EN_EL_CONSEJO) return null;
-  const tuyo = (c) => (buscar(maestria, c.heroe.name)?.games ?? 0) > 0;
-  if (!ranking?.length || !maestria || tuyo(ranking[0])) return null;
-  return ranking.find(tuyo) ?? null;
-}
-
+/** De quién se habla (análisis, composición, consejo, plan, apuntar): tu pick fijado si está en el ranking; si no, el nº1. */
 export function eleccionDe(ranking, miPick = null) {
   if (miPick) {
     const c = ranking.find((r) => r.heroe === miPick || r.heroe.name === miPick.name);
@@ -332,38 +228,27 @@ export function eleccionDe(ranking, miPick = null) {
   return ranking[0] ?? null;
 }
 
-/**
- * Tu plan antes de que salga nadie: los mejores de tu línea con el draft
- * vacío (fuerza general y tu maestría), con su tasa de ban. Para la fase de
- * baneos: la mitad de las veces el plan A llega baneado (Marcel 55%, Gloo
- * 51% de ban en Gloria) y conviene saberlo antes de los 30 segundos.
- */
-export function planDePicks(datos, { linea, maestria = null, n = 3 } = {}) {
-  return ordenar(datos, { linea, maestria }).slice(0, n)
+/** Los mejores de tu línea con el draft vacío y su tasa de ban: el plan de la fase de baneos. */
+export function planDePicks(datos, { linea, n = 3 } = {}) {
+  return ordenar(datos, { linea }).slice(0, n)
     .map((c) => ({ heroe: c.heroe, p: c.p, banRate: datos.meta.stats?.[nombreClave(c.heroe.name)]?.banRate ?? null }));
 }
 
 /**
- * El plan de partida de UN héroe en este draft (plan.js): qué hacer con él y
- * qué decir al equipo. Es consejo, no nota: no cambia el ranking.
+ * El plan de partida de UN héroe (consejo, no nota). Los compañeros se reparten
+ * SIN tu línea y el rival va EN tu línea (repartidos todos, el marcado caía en
+ * otra en el 4 % de los drafts y su curva era la de esa otra).
  */
-export function planear(datos, { yo = null, aliados = [], enemigos = [], linea = null, baneos = [], maestria = null, rivalMarcado = null } = {}) {
-  if (!yo) return { ...planDePartida({ yo, aliados, enemigos, meta: datos.meta }) };
-  // Tu línea: la que juegas; sin ella (llamadas de antes de 3.43.0), la
-  // primera del héroe. Los compañeros, repartidos SIN tu línea, y los
-  // enemigos, como el rival: el mismo reparto que el resto del motor.
-  const mia = linea ?? datos.lineas.get(nombreClave(yo.name))?.lanes?.[0] ?? yo.lanes?.[0] ?? null;
+export function planear(datos, { yo = null, aliados = [], enemigos = [], linea = null, baneos = [], rivalMarcado = null } = {}) {
+  if (!yo) return planDePartida({ yo, aliados, enemigos, meta: datos.meta });
+  const mia = linea ?? datos.lineas.get(nombreClave(yo.name))?.lanes?.[0] ?? null;
   const companeros = aliados.filter((a) => a.name !== yo.name);
   const lineasNos = lineasOcupadas(companeros, datos.lineas, datos.frecuencias, LINEAS.filter((l) => l !== mia));
-  // Tu rival va en TU línea (3.43.2): repartidos todos a la vez, el rival
-  // marcado a mano caía en otra línea en el 4% de los drafts y su curva era
-  // la de esa otra (Alpha en jungla, con la de exp), mientras la hoja decía
-  // «tu rival de línea es Alpha». Los demás, sin tu línea.
   const rival = mia ? rivalDeLinea(datos, { linea: mia, enemigos, marcado: rivalMarcado }).nombre : null;
   const otros = enemigos.filter((e) => e.name !== rival);
   const lineasOtros = lineasOcupadas(otros, datos.lineas, datos.frecuencias, rival ? LINEAS.filter((l) => l !== mia) : undefined);
   const lineasEllos = enemigos.map((e) => (e.name === rival ? mia : lineasOtros[otros.indexOf(e)]));
-  const estimacion = (aliados.length || enemigos.length) ? estimarCon(datos, { yo, enemigos, aliados: companeros, baneos, maestria }) : null;
+  const estimacion = (aliados.length || enemigos.length) ? estimarCon(datos, { yo, enemigos, aliados: companeros, baneos }) : null;
   const fases = estimacion ? fasesDePartida({
     pBase: estimacion.p,
     nos: [{ heroe: yo, linea: mia }, ...companeros.map((h, i) => ({ heroe: h, linea: lineasNos[i] ?? null }))],
@@ -375,13 +260,9 @@ export function planear(datos, { yo = null, aliados = [], enemigos = [], linea =
 }
 
 /**
- * Los cruces y las parejas de TU héroe con cada uno de ESTE draft (3.92.0,
- * Javi: «busca más sinergias y counter»). Es el dato de las dos matrices que
- * ya puntúan (no se mide nada nuevo ni cambia la nota), enseñado entero:
- * cada enemigo con su winrate en el cruce y cada compañero con lo que rendís
- * juntos sobre la pareja media, en puntos. `lado` con los cortes de siempre:
- * p90/p10 de los cruces (`CRUCE_DESTACABLE`, `CRUCE_MALO`) y
- * `PAREJA_DESTACABLE` (y su simétrico respecto a la media) en las parejas.
+ * El cruce de tu héroe con CADA enemigo y la pareja con CADA compañero, con los
+ * cortes de siempre (p90/p10 de los cruces; `PAREJA_DESTACABLE` y su simétrico
+ * respecto al centro). Es el dato que ya puntúa, enseñado entero.
  */
 export function crucesDelDraft(datos, { yo = null, enemigos = [], aliados = [] } = {}) {
   if (!yo || !datos?.meta) return { contra: [], con: [] };
@@ -400,44 +281,33 @@ export function crucesDelDraft(datos, { yo = null, enemigos = [], aliados = [] }
   return { contra, con };
 }
 
-/**
- * Todo de una vez, para quien no tiene render que cuidar (diagnóstico, bot,
- * paridad, pruebas). Devuelve lo mismo que la app calcula pieza a pieza.
- *
- * @param {Datos} datos
- * @param {object} draft  { linea, enemigos, aliados, baneos, maestria, rivalMarcado, miPick, conSimulacion }
- */
-export function recomendar(datos, { linea, enemigos = [], aliados = [], baneos = [], maestria = null, rivalMarcado = null, miPick = null, conSimulacion = true } = {}) {
+/** Todo de una vez (tablet, diagnóstico, scripts, pruebas): lo mismo que la app calcula pieza a pieza. */
+export function recomendar(datos, { linea, enemigos = [], aliados = [], baneos = [], rivalMarcado = null, miPick = null, conSimulacion = true } = {}) {
   const pool = poolDe(datos, linea);
   const lineasAbiertas = lineasEnemigasAbiertas(datos, enemigos);
-  const ranking = ordenarPicks(pool, contextoDe(datos, { enemigos, aliados, baneos, maestria, lineasAbiertas }));
+  const ranking = ordenarPicks(pool, contextoDe(datos, { enemigos, aliados, baneos, lineasAbiertas }));
   const empate = empatados(ranking);
   const rival = rivalDeLinea(datos, { linea, enemigos, marcado: rivalMarcado });
   const eleccion = eleccionDe(ranking, miPick);
   const yo = eleccion?.heroe ?? null;
-  const robustez = conSimulacion ? simular(datos, { linea, enemigos, aliados, baneos, maestria }) : null;
+  const robustez = conSimulacion ? simular(datos, { linea, enemigos, aliados, baneos }) : null;
   const composicion = composicionDe({ aliados, enemigos, yo });
-  const consejos = aconsejar(datos, { linea, yo, enemigos, aliados, baneos, lineasAbiertas });
-  const analisis = analizarDraft({ eleccion, ranking, enemigos, aliados, baneos, meta: datos.meta, rivalDeLinea: rival.nombre, empate, robustez, composicion });
   return {
-    pool, lineasAbiertas, ranking, empate, rival, eleccion, robustez, composicion, consejos, analisis,
-    partida: planear(datos, { yo, aliados, enemigos, linea, baneos, maestria, rivalMarcado }),
-    deLosTuyos: deLosTuyos(ranking, maestria),
+    pool, lineasAbiertas, ranking, empate, rival, eleccion, robustez, composicion,
+    consejos: aconsejar(datos, { linea, yo, enemigos, aliados, baneos, lineasAbiertas }),
+    analisis: analizarDraft({ eleccion, ranking, enemigos, aliados, baneos, meta: datos.meta, rivalDeLinea: rival.nombre, empate, robustez, composicion }),
+    partida: planear(datos, { yo, aliados, enemigos, linea, baneos, rivalMarcado }),
     baneosSugeridos: baneosSugeridos(datos, { aliados, enemigos, baneos, miPick }),
     cobertura: cobertura(pool, datos.meta.stats, datos.meta.counters),
   };
 }
 
 /**
- * La revisión de un draft ya jugado (3.49.0, como DraftGap en LoL): con el
- * draft ENTERO que se guardó y los datos de HOY, ¿había en tu línea un pick
- * con más probabilidad que el que cogiste? Lo que sabías al elegir era
- * menos (faltaban enemigos), así que es una lectura a toro pasado, no una
- * nota a la decisión. Los márgenes son los del ranking: empate por debajo
- * de `MARGEN_EMPATE` y «mejor de verdad» desde `BRECHA_CLARA` puntos. null
- * si la partida no lleva draft con línea o no se puede puntuar.
+ * Un draft ya jugado, con los datos de HOY: ¿había en tu línea un pick mejor? Una
+ * lectura a toro pasado (al elegir faltaban enemigos), con los márgenes del ranking.
+ * null sin draft con línea o sin poder puntuar.
  */
-export function revisarPartida(datos, partida, { maestria = null } = {}) {
+export function revisarPartida(datos, partida) {
   const d = partida?.draft;
   if (!d?.linea || !partida.pick) return null;
   const enemigos = resolverNombres(datos, d.enemigos ?? []);
@@ -445,11 +315,11 @@ export function revisarPartida(datos, partida, { maestria = null } = {}) {
   const baneos = resolverNombres(datos, partida.bans ?? []);
   const [yo] = resolverNombres(datos, [partida.pick]);
   if (!yo || !enemigos.length) return null;
-  const ranking = ordenar(datos, { linea: d.linea, enemigos, aliados, baneos, maestria });
+  const ranking = ordenar(datos, { linea: d.linea, enemigos, aliados, baneos });
   if (!ranking.length) return null;
   const i = ranking.findIndex((r) => nombreClave(r.heroe.name) === nombreClave(yo.name));
-  // Fuera del ranking (otra línea, o baneado en el draft guardado): se puntúa aparte.
-  const mio = i >= 0 ? ranking[i].p : estimarCon(datos, { yo, enemigos, aliados, baneos, maestria })?.p;
+  // Fuera del ranking (otra línea, o baneado en el draft guardado), aparte.
+  const mio = i >= 0 ? ranking[i].p : estimarCon(datos, { yo, enemigos, aliados, baneos })?.p;
   if (!(mio > 0 && mio < 1)) return null;
   const mejor = ranking[0];
   const dif = Math.max(0, mejor.p - mio);
@@ -460,33 +330,26 @@ export function revisarPartida(datos, partida, { maestria = null } = {}) {
   };
 }
 
-/**
- * Todas tus partidas con draft, revisadas: cuántas veces cogiste el mejor (o
- * empatado), cuánta probabilidad dejaste de media, y si las partidas en que
- * había uno claramente mejor se perdieron más (dos proporciones con el error
- * agrupado, como el Veredicto: nada se afirma dentro del margen).
- */
-export function revisarDrafts(datos, partidas = [], { maestria = null } = {}) {
-  const filas = partidas.filter((p) => !esPrevia(p) && !esSupuesta(p)).map((p) => { const f = revisarPartida(datos, p, { maestria }); return f && { ...f, fiable: conResultado(p) }; }).filter(Boolean);
+/** [P] Partidas de cada lado para comparar si las de «había uno claramente mejor» se perdieron más. */
+const MINIMO_PARA_COMPARAR = 10;
+
+/** Todas tus partidas con draft, revisadas (sin previas ni supuestas; la comparación, solo con resultado fiable). */
+export function revisarDrafts(datos, partidas = []) {
+  const filas = partidas.filter((p) => !esPrevia(p) && !esSupuesta(p))
+    .map((p) => { const f = revisarPartida(datos, p); return f && { ...f, fiable: conResultado(p) }; })
+    .filter(Boolean);
   const n = filas.length;
   if (!n) return { n: 0, filas };
-  const bien = filas.filter((f) => f.veredicto === 'bien');
-  // Si se perdió más: solo con un resultado del que fiarse (3.100.0: sin las dudosas). El draft sí cuenta entero.
   const claro = filas.filter((f) => f.veredicto === 'mejor' && f.fiable);
   const resto = filas.filter((f) => f.veredicto !== 'mejor' && f.fiable);
   const wr = (l) => l.filter((f) => f.gane).length / l.length;
-  const MINIMO = 10;
-  const comparacion = claro.length >= MINIMO && resto.length >= MINIMO
+  const comparacion = claro.length >= MINIMO_PARA_COMPARAR && resto.length >= MINIMO_PARA_COMPARAR
     ? { nClaro: claro.length, wrClaro: wr(claro), nResto: resto.length, wrResto: wr(resto), ...compararProporciones(wr(claro), claro.length, wr(resto), resto.length) }
     : null;
-  return { n, filas, bien: bien.length, claro: claro.length, difMedia: filas.reduce((a, f) => a + f.dif, 0) / n, comparacion };
+  return { n, filas, bien: filas.filter((f) => f.veredicto === 'bien').length, claro: claro.length, difMedia: filas.reduce((a, f) => a + f.dif, 0) / n, comparacion };
 }
 
-/**
- * Quién sube y quién baja esta semana (3.50.0, tendencia.js): en el rango
- * del que sale la fuerza, confirmado por el otro del par (Gloria y Mítico),
- * con la historia que guarda la ingesta. Con `linea`, solo su pool.
- */
+/** Quién sube y quién baja esta semana en el rango de la fuerza, confirmado por su par. Con `linea`, solo su pool. */
 export function movimientosDelMeta(datos, { linea = null } = {}) {
   const crudo = datos?.crudo ?? {};
   const rango = datos?.meta?.fuerza?.rango ?? datos?.rango;
@@ -501,17 +364,12 @@ export function movimientosDelMeta(datos, { linea = null } = {}) {
   return { ...salida, suben: filtrar(r.suben), bajan: filtrar(r.bajan) };
 }
 
-/** Cuántos héroes en cada lista de la ficha: los que caben de un vistazo en el móvil. Decisión de producto. */
+/** [P] Cuántos en cada lista de la ficha: lo que cabe de un vistazo en el móvil. */
 export const POR_FICHA = 5;
 
 /**
- * La ficha de un héroe (3.67.0), para cualquier aficionado: lo que el motor
- * YA sabe de él, sin nada nuevo medido. Su winrate, pick y ban en el rango
- * del que sale la fuerza; las líneas que juega con su winrate en cada una;
- * a quién gana y quién le gana (la matriz de cruces, la misma que puntúa);
- * con quién combina mejor y peor (parejas, solo con quien puede ir en otra
- * línea: dos de la misma línea no se juntan en un draft); su tier de
- * mlbb.gg si está vigente y cómo se ha movido esta semana. null si no existe.
+ * La ficha de un héroe: lo que el motor ya sabe de él (por clave). Las parejas,
+ * solo con quien juega alguna línea distinta (dos de la misma no coinciden).
  */
 export function fichaDeHeroe(datos, nombre, { n = POR_FICHA, ahora = null } = {}) {
   const clave = nombreClave(nombre ?? '');
@@ -522,10 +380,9 @@ export function fichaDeHeroe(datos, nombre, { n = POR_FICHA, ahora = null } = {}
   const suyas = lineasDe(heroe);
   const otros = datos.heroes.filter((h) => h.name !== heroe.name && buscar(stats, h.name));
   const cruces = otros.map((e) => ({ heroe: e, valor: cruce(datos.meta?.counters, heroe.name, e.name) })).filter((x) => Number.isFinite(x.valor)).sort((a, b) => b.valor - a.valor);
-  const juntos = otros.filter((a) => lineasDe(a).some((l) => !suyas.includes(l)));
-  const parejas = juntos.map((a) => ({ heroe: a, valor: sinergia(datos.meta?.synergies, heroe.name, a.name) })).filter((x) => Number.isFinite(x.valor)).sort((a, b) => b.valor - a.valor);
+  const parejas = otros.filter((a) => lineasDe(a).some((l) => !suyas.includes(l)))
+    .map((a) => ({ heroe: a, valor: sinergia(datos.meta?.synergies, heroe.name, a.name) })).filter((x) => Number.isFinite(x.valor)).sort((a, b) => b.valor - a.valor);
   const mov = movimientosDelMeta(datos);
-  const tendencia = [...(mov.suben ?? []), ...(mov.bajan ?? [])].find((f) => nombreClave(f.heroe) === clave)?.dif ?? null;
   const stat = buscar(stats, heroe.name) ?? null;
   return {
     heroe,
@@ -537,7 +394,7 @@ export function fichaDeHeroe(datos, nombre, { n = POR_FICHA, ahora = null } = {}
     combinaCon: parejas.slice(0, n),
     peorCon: parejas.slice(-n).reverse(),
     tier: tiersVigentes(datos.crudo)?.[heroe.name] ?? null,
-    tendencia,
+    tendencia: [...(mov.suben ?? []), ...(mov.bajan ?? [])].find((f) => nombreClave(f.heroe) === clave)?.dif ?? null,
     parche: tocadoPorElParche(datos, heroe, ahora),
   };
 }

@@ -156,3 +156,18 @@ test('un rol vacío de la API no tapa el del catálogo (3.60.7)', () => {
   const conRol = probabilidadDeLinea(heroe, { role: 'tank', lanes: ['roam'] }, 'roam', frecuencias);
   eq(probabilidadDeLinea(heroe, { role: '', lanes: ['roam'] }, 'roam', frecuencias), conRol, 'el rol vacío de la API cambia la línea');
 });
+
+test('el rival no se nombra si el que cae en tu línea apenas encaja ahí, aunque el reparto le saque margen', () => {
+  // Cuatro enemigos con su línea clara y un tanque sin líneas de la API, que solo
+  // cabe en roam por eliminación: el reparto le gana de sobra al de otro en roam,
+  // pero su encaje (rol típico, 0,1) no da para afirmar que es tu rival.
+  const info = new Map([
+    ['a', { role: 'marksman', lanes: ['gold'] }], ['b', { role: 'mage', lanes: ['mid'] }],
+    ['c', { role: 'assassin', lanes: ['jungle'] }], ['d', { role: 'fighter', lanes: ['exp'] }],
+    ['e', { role: 'tank', lanes: [] }],
+  ]);
+  const frecuencias = { roam: { tank: 1 }, gold: { marksman: 1 }, mid: { mage: 1 }, jungle: { assassin: 1 }, exp: { fighter: 1 } };
+  const enemigos = ['A', 'B', 'C', 'D', 'E'].map((name) => ({ name }));
+  eq(detectarRivalDeLinea(enemigos, info, 'roam', frecuencias), null, 'nombra rival a uno que solo cae en roam por eliminación');
+  eq(detectarRivalDeLinea(enemigos, info, 'gold', frecuencias), 'A', 'el de oro claro no sale');
+});

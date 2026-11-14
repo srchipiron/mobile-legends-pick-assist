@@ -1,57 +1,30 @@
 import { nombreClave, buscar } from './nombres.js';
 
 /**
- * Las matrices de la API: cruces (counters) y parejas (synergies), ya
- * indexadas por clave en sus dos niveles.
- *
- * Lo medido y que no conviene volver a suponer:
- *  - Los cruces son antisimétricos: c[a][b] + c[b][a] = 1.0000 en los 8.778
- *    pares. Leer el sentido contrario no es una estimación, es el mismo dato.
- *  - No llevan dentro la fuerza de nadie (r = −0,003 con el winrate del
- *    rival): son índices de cruce ya centrados.
- *  - No son ruidosos: el cuartil menos jugado dispersa 1,16× lo que el más
- *    jugado (muestreo puro daría 2,65×), y dos corridas separadas nueve
- *    minutos difieren 0,00003. Por eso nada se encoge por muestra.
- *  - Las parejas son simétricas (|s[a][b] − s[b][a]| = 0,0000) y su media no
- *    es 0,5 (0,4954): se centran en la media de las parejas de líneas
- *    distintas ponderada por pick (`mediaDeSinergia`).
+ * Las matrices de la API, indexadas por clave en sus dos niveles: cruces
+ * (counters) y parejas (synergies). Medido y no conviene volver a suponer:
+ * - los cruces son antisimétricos (c[a][b] + c[b][a] = 1 en los 8.778 pares) y no
+ *   llevan la fuerza de nadie (r = −0,003 con el winrate del rival);
+ * - no son ruidosos (cuartil menos jugado 1,16× más disperso; muestreo puro daría
+ *   2,65×), así que nada se encoge por muestra;
+ * - las parejas son simétricas y su media no es 0,5: se centran en `mediaDeSinergia`.
  */
 
-/** Fuera de (0.02, 0.98) no es un winrate: es un dato roto. */
+/** [D] Fuera de (0,02, 0,98) no es un winrate: es un dato roto. */
 export const valido = (p) => typeof p === 'number' && p > 0.02 && p < 0.98;
 
-/**
- * Desde qué cruce merece decir «ganas» o «pierdes»: el p90/p10 de los
- * 17.556 cruces reales (0.5154 / 0.4846). Era 0.53, el percentil 99, y el
- * motivo con dato casi nunca salía. Es dónde está la cola, no una opinión.
- */
+/** [M] Desde qué cruce se dice «ganas» / «pierdes»: p90/p10 de los 17.556 cruces. */
 export const CRUCE_DESTACABLE = 0.5154;
 export const CRUCE_MALO = 0.4846;
-
-/**
- * Desde qué cruce se dice sin matices: el p95/p05 de los mismos 17.556
- * cruces con la matriz asentada (Gloria del 20 de septiembre de 2026,
- * 0,5208/0,4792; Mítico del 3 de octubre, 0,5216/0,4784). Entre el p90 y el
- * p95 el cruce se dice, pero «por poco» (3.35.0): un 48,4% redondeado salía
- * «pierdes el cruce: 48%», que suena a mucho más de lo que es (1,6 puntos;
- * la σ de los cruces es 1,3). Decide QUÉ SE DICE, no la nota.
- */
+/** [M] Desde qué cruce se dice sin el matiz «por poco»: p95/p05 (Gloria 20-9, Mítico 3-10). Decide QUÉ SE DICE, no la nota. */
 export const CRUCE_FUERTE = 0.5208;
 export const CRUCE_FUERTE_EN_CONTRA = 0.4792;
-
-/** Lo mismo para las parejas, con SU distribución: p90 = 0.5100 (8.778 parejas). */
+/** [M] Lo mismo para las parejas, con SU distribución: p90 de 8.778. */
 export const PAREJA_DESTACABLE = 0.51;
-/**
- * Dónde tiene que caer un motivo «ganas el cruce» / «combina bien» para
- * decir algo: en la COLA de su distribución, entre el 4% y el 20% de los
- * pares (calibrado al 10%, p90). Es lo que vigila el diagnóstico con los
- * datos del día (3.30.1): un día ruidoso (parche, reinicio) abre la
- * distribución y el motivo sale en uno de cada cuatro pares; eso se avisa,
- * no bloquea el despliegue.
- */
+/** [P] Fracción de pares en la que un motivo con dato debe caer (calibrado al 10 %); el diagnóstico avisa fuera. */
 export const COLA_DEL_MOTIVO = [0.04, 0.20];
 
-/** Winrate de A contra B, mirando también el sentido contrario (1 − c[b][a]). */
+/** Winrate de A contra B, o 1 − el de B contra A (es el mismo dato). */
 export function cruce(counters, a, b) {
   const ida = buscar(buscar(counters, a), b);
   if (ida != null) return ida;
@@ -59,32 +32,24 @@ export function cruce(counters, a, b) {
   return vuelta != null ? 1 - vuelta : undefined;
 }
 
-/** Sinergia de A con B, mirando los dos sentidos SIN darle la vuelta: es el mismo dato. */
+/** Sinergia de A con B en cualquiera de los dos sentidos, sin darle la vuelta. */
 export function sinergia(synergies, a, b) {
   const ida = buscar(buscar(synergies, a), b);
-  if (ida != null) return ida;
-  return buscar(buscar(synergies, b), a);
+  return ida != null ? ida : buscar(buscar(synergies, b), a);
 }
 
 const mediasDeSinergia = new WeakMap();
 
 /**
- * El centro de las parejas: la media de las que pueden ir JUNTAS (líneas
- * distintas), ponderada por lo que se juegan. La media de toda la matriz
- * mezcla las parejas de la misma línea (las malas, 0,486) con las reales
- * (0,500), y centrar ahí favorecía al equipo con más héroes en pantalla en
- * un draft a medias (1 contra 5: 46%; 5 contra 1: 53%). Sin `lineas` se cae
- * a la media global. Cacheada por matriz.
+ * El centro de las parejas: la media de las que pueden ir JUNTAS (sin compartir
+ * línea), ponderada por pick(a)·pick(b) (sin cuota pesa 0). [M] Con la media global,
+ * 1 contra 5 daba el 46 %. Sin `lineas`, media global. Caché por matriz.
  */
 export function mediaDeSinergia(synergies, lineas = null, stats = null) {
   if (!synergies || typeof synergies !== 'object') return 0.5;
   const cache = mediasDeSinergia.get(synergies);
   if (cache && cache.lineas === lineas && cache.stats === stats) return cache.media;
   const lanesDe = (n) => lineas?.get?.(n)?.lanes ?? null;
-  // Con estadísticas, un héroe sin dato no pesa nada: `?? 1` entre cuotas
-  // que suman 1 le daba a un héroe recién salido 133 veces el peso de
-  // cualquier pareja (medido: quitar las estadísticas de UN héroe movía el
-  // centro 0,36 pp). Es el mismo fallo que `equilibrioEsperado` en 3.4.0.
   const pesoDe = (n) => (stats ? (stats[n]?.pickRate ?? 0) : 1);
   let suma = 0; let n = 0;
   for (const [a, fila] of Object.entries(synergies)) {
@@ -104,18 +69,14 @@ export function mediaDeSinergia(synergies, lineas = null, stats = null) {
   return media;
 }
 
-/** Cuántos del pool tienen winrate y cuántos tienen fila de cruces. */
+/** Cuántos del pool tienen winrate y cuántos fila de cruces. */
 export function cobertura(pool, stats, counters) {
   const faltan = stats ? pool.filter((h) => !buscar(stats, h.name)).map((h) => h.name) : pool.map((h) => h.name);
   const conCounters = counters ? pool.filter((h) => Object.keys(buscar(counters, h.name) ?? {}).length).length : 0;
   return { conDatos: pool.length - faltan.length, total: pool.length, faltan, conCounters };
 }
 
-/**
- * Densidad de la matriz: rivales por héroe del pool de media, y qué fracción
- * de los cruces posibles contra `candidatos` tiene dato. Un héroe contra sí
- * mismo no cuenta: no es un cruce que falte.
- */
+/** Rivales por héroe del pool de media, y fracción de cruces posibles contra `candidatos` con dato (uno contra sí mismo no cuenta). */
 export function densidadCounters(pool, counters, candidatos = []) {
   if (!counters) return { media: 0, cobertura: 0 };
   const tam = pool.map((h) => Object.keys(buscar(counters, h.name) ?? {}).length);

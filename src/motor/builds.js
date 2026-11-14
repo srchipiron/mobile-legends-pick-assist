@@ -1,5 +1,5 @@
 import { nombreClave } from './nombres.js';
-import { tipoDeDano, PRECISION_DEDUCIDA } from './catalogo.js';
+import { tipoDeDano, fiabilidad } from './catalogo.js';
 
 /**
  * Builds de objetos: lo que la gente compra de verdad, y cómo ajustarlo al
@@ -133,20 +133,32 @@ export const ENEMIGOS_PARA_HABLAR = 2;
 export const TOPE_AVISOS = 2;
 
 /** Los tags escritos a mano cuentan uno; los deducidos, `PRECISION_DEDUCIDA`. Lo que se ENSEÑA sigue siendo el número de cabezas. */
-const cuentan = (heroes) => heroes.reduce((n, h) => n + (h?.inferred ? PRECISION_DEDUCIDA : 1), 0);
+const cuentan = (heroes) => heroes.reduce((n, h) => n + fiabilidad(h), 0);
 
 /**
- * Cómo se adapta la build al draft: el lado del que te van a pegar, la
- * curación enemiga y el control duro. Se callan los avisos que la build ya
- * cubre, y salen ordenados por cuánto pesan.
- *
- * @returns [{ clave, params, objetos, peso }]
+ * Los avisos por etiqueta: [P] dos o más enemigos (los de etiquetas deducidas
+ * cuentan 0,67), callados si la build ya lleva el efecto. Control mira `cc_chain`,
+ * no `cc_hard`: [M] 101 de 133 aturden con algo y el aviso salía en el 99,6 % de
+ * los drafts; los que encadenan, el 33 %.
+ */
+const AVISOS_POR_ETIQUETA = [
+  { clave: 'build.ajusteCuracion', efecto: 'antiCuracion', peso: 2, quien: (e) => e?.tags?.includes('heal') || e?.tags?.includes('sustain') },
+  { clave: 'build.ajusteControl', efecto: 'cortaControl', peso: 1, quien: (e) => e?.tags?.includes('cc_chain') },
+  { clave: 'build.ajusteEscudo', efecto: 'antiEscudo', peso: 1.5, quien: (e) => e?.tags?.includes('shield') },
+];
+
+/**
+ * Cómo adaptar la build al draft: el lado del que te van a pegar, curación,
+ * control, escudos y crítico (quien va de crítico se ve en su build más jugada).
+ * Por peso, como mucho `tope`, y solo si hay algún objeto que proponer.
+ * @returns {Array<{ clave, params, objetos, peso }>}
  */
 export function ajustesDeBuild(build, equipment, enemigos = [], linea = null, { builds = null, tope = TOPE_AVISOS } = {}) {
   const avisos = [];
-  const objetos = objetosDe(equipment, build);
-  const tiene = (efecto) => objetos.some((o) => o.efectos?.includes(efecto));
-
+  const lleva = (efecto) => objetosDe(equipment, build).some((o) => o.efectos?.includes(efecto));
+  const aviso = (clave, efecto, peso, quienes) => avisos.push({
+    clave, peso, params: { n: quienes.length, quien: quienes.slice(0, 2).map((e) => e.name).join(', ') }, objetos: conEfecto(equipment, efecto, linea),
+  });
   const defensa = ajusteDefensivo(build, equipment, enemigos, linea);
   if (defensa) {
     avisos.push({
@@ -156,52 +168,12 @@ export function ajustesDeBuild(build, equipment, enemigos = [], linea = null, { 
       peso: 3,
     });
   }
-  const curan = enemigos.filter((e) => e?.tags?.includes('heal') || e?.tags?.includes('sustain'));
-  if (cuentan(curan) >= ENEMIGOS_PARA_HABLAR && !tiene('antiCuracion')) {
-    avisos.push({
-      clave: 'build.ajusteCuracion',
-      params: { n: curan.length, quien: curan.slice(0, 2).map((e) => e.name).join(', ') },
-      objetos: conEfecto(equipment, 'antiCuracion', linea),
-      peso: 2,
-    });
+  for (const a of AVISOS_POR_ETIQUETA) {
+    const quienes = enemigos.filter(a.quien);
+    if (cuentan(quienes) >= ENEMIGOS_PARA_HABLAR && !lleva(a.efecto)) aviso(a.clave, a.efecto, a.peso, quienes);
   }
-  // Encadenan control, no «tienen control»: tras leer los 133 kits (3.20.0)
-  // 101 aturden, levantan o empujan con alguna habilidad, y con `cc_hard`
-  // el aviso saltaba en el 99,6% de los drafts (en el 76% ya antes de la
-  // revisión): un consejo que sale siempre no dice nada. Dos o más que
-  // encadenan (`cc_chain`, 37 héroes) es el 33% de los equipos rivales.
-  const controlan = enemigos.filter((e) => e?.tags?.includes('cc_chain'));
-  if (cuentan(controlan) >= ENEMIGOS_PARA_HABLAR && !tiene('cortaControl')) {
-    avisos.push({
-      clave: 'build.ajusteControl',
-      params: { n: controlan.length, quien: controlan.slice(0, 2).map((e) => e.name).join(', ') },
-      objetos: conEfecto(equipment, 'cortaControl', linea),
-      peso: 1,
-    });
-  }
-  // Escudos (3.57.0): los que se los ponen o se los dan a los suyos. Los
-  // objetos que los reducen (Sea Halberd, Glowing Wand, Dominance Ice) son
-  // también antisanación: con los dos avisos, sale primero el de curación.
-  const escudan = enemigos.filter((e) => e?.tags?.includes('shield'));
-  if (cuentan(escudan) >= ENEMIGOS_PARA_HABLAR && !tiene('antiEscudo')) {
-    avisos.push({
-      clave: 'build.ajusteEscudo',
-      params: { n: escudan.length, quien: escudan.slice(0, 2).map((e) => e.name).join(', ') },
-      objetos: conEfecto(equipment, 'antiEscudo', linea),
-      peso: 1.5,
-    });
-  }
-  // Crítico (3.57.0): quién va de crítico no es una etiqueta, es su BUILD
-  // (la más jugada de ese héroe lleva un objeto de crítico, leído del texto).
   const criticos = builds ? enemigos.filter((e) => vaDeCritico(builds, equipment, e)) : [];
-  if (criticos.length >= ENEMIGOS_PARA_HABLAR && !tiene('antiCritico')) {
-    avisos.push({
-      clave: 'build.ajusteCritico',
-      params: { n: criticos.length, quien: criticos.slice(0, 2).map((e) => e.name).join(', ') },
-      objetos: conEfecto(equipment, 'antiCritico', linea),
-      peso: 1.5,
-    });
-  }
+  if (criticos.length >= ENEMIGOS_PARA_HABLAR && !lleva('antiCritico')) aviso('build.ajusteCritico', 'antiCritico', 1.5, criticos);
   return avisos.filter((a) => a.objetos.length).sort((a, b) => b.peso - a.peso).slice(0, tope);
 }
 

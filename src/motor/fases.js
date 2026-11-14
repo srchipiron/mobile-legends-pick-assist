@@ -1,62 +1,26 @@
 import { buscar } from './nombres.js';
-import { logit } from './modelo.js';
+import { logit, sigmoide } from './estadistica.js';
 
 /**
- * Las fases de la partida (3.43.0): cómo cambia tu probabilidad de ganar
- * según el minuto en que ACABE la partida, y quién de cada equipo empuja
- * hacia las partidas cortas o hacia las largas.
- *
- * El dato es la curva por duración de la API (`curvaLinea` en
- * roam-meta.json): el winrate de cada héroe EN SU LÍNEA en las partidas que
- * acaban en cada tramo de dos minutos (10–12 … 20+). Medido el 5 de octubre
- * de 2026 (ver «Las fases de la partida» en CLAUDE.md):
- *
- *  - Es señal, no ruido: la pendiente de cada héroe-línea casa entre Gloria
- *    y Mítico a r = 0,88 (poblaciones distintas); σ entre héroes 1,4 pp por
- *    tramo, residuo a la recta 1,1 pp.
- *  - Predice: en 2.268 partidas pro con su duración, la forma de las curvas
- *    de los dos equipos EN EL TRAMO EN QUE ACABÓ la partida, sumada al
- *    modelo, mejora la verosimilitud fuera de muestra +4,9 por 1.000 con las
- *    curvas de Gloria (+6,2 con las de Mítico), coeficiente 0,71 ± 0,15
- *    (0,87 ± 0,16); con las curvas barajadas entre héroes, +0,45 y el signo
- *    al revés. El equipo «de late» gana el 42% de las partidas que acaban
- *    antes del 13 y el 50% de las que pasan del 18.
- *
- * Lo que NO dice: quién gana sin saber cuánto dura (eso es la nota de
- * siempre, `evaluarDraft`). Por eso se enseña como «si acaba en tal minuto»,
- * y el ranking no cambia.
+ * Las fases (no puntúa): cómo cambia tu probabilidad según el minuto en que ACABE la
+ * partida, con la curva por duración de la API (`curvaLinea`: winrate de cada héroe
+ * EN SU LÍNEA por tramo de dos minutos). [M] Es señal (pendientes Gloria–Mítico a
+ * r = 0,88) y predice (2.268 pro: +4,9 de logL por 1.000 con su duración; barajadas,
+ * +0,45 y el signo al revés). Se dice como «si acaba en tal minuto»: el ranking no cambia.
  */
 
-/** Minuto en que empieza cada tramo de la curva (el último es «20 o más»). El mismo orden que guarda la ingesta. */
+/** [D/C] Minuto en que empieza cada tramo (el último, «20 o más»); el mismo orden que guarda la ingesta. */
 export const TRAMOS = [10, 12, 14, 16, 18, 20];
 
-/**
- * Cuánto pesa la forma de las curvas en el logit de la partida. Medido: 0,71
- * ± 0,15 con las curvas de Gloria y 2.268 partidas pro de 400 días (0,75 ±
- * 0,23 a 120 días; con las de Mítico, 0,87 y 0,90). La app usa las de
- * Gloria, las que trae la ingesta.
- */
+/** [M] Peso de la forma de las curvas en el logit: 0,71 ± 0,15 (curvas de Gloria, 2.268 pro de 400 días). */
 export const COEF_FASE = 0.71;
 
-/**
- * Diferencia de probabilidad entre la partida corta (10–12) y la larga
- * (20+) a partir de la cual se dice «sois de early / de late». Decisión de
- * producto con la frecuencia medida: en 300 drafts completos de roam la
- * diferencia va de −26 a +29 puntos (p05/p95) y p25/p75 en −10/+13, así que
- * con 10 puntos se dice en la mitad de los drafts. Por debajo, «igual».
- */
+/** [P] Diferencia corta–larga desde la que se dice «sois de early / de late»: sale en la mitad de los drafts. */
 export const DIFERENCIA_DE_FASE = 0.10;
 
-/**
- * Cuánto tiene que separarse la pendiente de UN héroe de la media (en
- * logit, de 10–12 a 20+) para nombrarlo como de early o de late. Decisión
- * de producto: en los 165 pares héroe-línea el p20 es −0,24 y el p80
- * +0,28, así que es el ~20% más extremo de cada lado (unos 6 puntos de
- * winrate entre la partida corta y la larga).
- */
+/** [P] Pendiente de un héroe desde la que se le nombra de early o de late: p20/p80 de 165 pares. */
 export const PENDIENTE_DE_HEROE = 0.25;
 
-const sigmoide = (x) => 1 / (1 + Math.exp(-x));
 const valida = (c) => Array.isArray(c) && c.length === TRAMOS.length && c.every((v) => typeof v === 'number' && v > 0 && v < 1);
 
 /** La forma de una curva: logit de cada tramo menos el de su total (o el de su media, sin total). */
@@ -88,7 +52,7 @@ export function centroDeFases(curvaLinea = {}, winrateLinea = {}, stats = {}) {
   for (const [nombre, porLinea] of Object.entries(curvaLinea ?? {})) {
     const lineas = Object.entries(porLinea ?? {}).filter(([, c]) => valida(c));
     const pr = buscar(stats ?? {}, nombre)?.pickRate;
-    // Entre cuotas, el «no sé» vale 0 (CLAUDE.md, «Un peso por defecto de 1»).
+    // Entre cuotas, el «no sé» vale 0.
     const w = (typeof pr === 'number' && pr > 0 ? pr : 0) / (lineas.length || 1);
     if (!w) continue;
     for (const [l, c] of lineas) {
@@ -152,12 +116,7 @@ export function fasesDePartida({ pBase, nos = [], ellos = [], datosFases }) {
   const ini = puntos[0].p;
   const fin = puntos[puntos.length - 1].p;
   const tendencia = fin - ini >= DIFERENCIA_DE_FASE ? 'tarde' : ini - fin >= DIFERENCIA_DE_FASE ? 'pronto' : 'igual';
-  // El tramo en que la partida cambia de lado (de ≥50% a <50% o al revés).
-  // Solo con tendencia: con la partida igualada en todas las fases, cruzar
-  // el 50% por medio punto no es «la partida cambia de lado». Y el ÚLTIMO
-  // cruce, en el sentido de la tendencia (3.43.2): con 52 48 49 57 62 69 el
-  // primero decía «a partir del 12 van por delante ellos» con las barras al
-  // 57–69% desde el 16.
+  // El ÚLTIMO cruce del 50 %, solo con tendencia y en su sentido.
   let cambio = null;
   for (let i = 1; tendencia !== 'igual' && i < puntos.length; i++) {
     if ((puntos[i - 1].p >= 0.5) !== (puntos[i].p >= 0.5)) cambio = { minuto: puntos[i].desde, aFavor: puntos[i].p >= 0.5 };

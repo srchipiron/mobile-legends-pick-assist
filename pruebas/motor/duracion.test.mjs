@@ -1,11 +1,11 @@
 /**
- * src/motor/directo.js: la duración de una partida y su tramo. Los consejos
+ * src/motor/registro.js: la duración de una partida y su tramo. Los consejos
  * en voz alta que vivían aquí se quitaron en 3.96.0. Propiedad: los tramos
  * repartidos IGUAL que en la medida de las partidas pro (si no, lo medido en
  * tus partidas no es lo mismo que lo medido allí).
  */
 import { test, eq, ok } from '../ayuda.mjs';
-import { tramoDeMinutos, esDuracionPosible } from '../../src/motor/directo.js';
+import { tramoDeMinutos, esDuracionPosible } from '../../src/motor/registro.js';
 import { tramoDe } from '../../scripts/medir-fases.mjs';
 
 test('los tramos de duración, repartidos igual que en la medida de las partidas pro', () => {

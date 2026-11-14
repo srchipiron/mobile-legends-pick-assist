@@ -6,71 +6,10 @@
 import { test, ok, eq, leerJson, porNombre } from '../ayuda.mjs';
 import { catalogo, heroes, poolRoam, h, crearRnd } from '../fixtures/catalogo.mjs';
 import { idMotivo, indexarPorNombre, nombreClave } from '../../src/motor/nombres.js';
-import { esPickCiego, ordenarPicks, motivosDe, riesgoContrapick, empatados, MARGEN_EMPATE } from '../../src/motor/ranking.js';
+import { esPickCiego, ordenarPicks, riesgoContrapick, empatados, MARGEN_EMPATE, ordenarMotivos } from '../../src/motor/ranking.js';
 import { evaluarDraft, terminoCruce, terminoPareja } from '../../src/motor/modelo.js';
 import { cruce, densidadCounters } from '../../src/motor/matrices.js';
 import { prepararDatos, contextoDe, poolDe } from '../../src/motor/draft.js';
-
-test('los motivos se filtran antes de cortar a tres, y el pick a ciegas es un solo criterio', () => {
-  eq(esPickCiego(0.7, 2), true, 'riesgo alto con dos vistos deberia ser a ciegas');
-  eq(esPickCiego(0.7, 4), false, 'con cuatro vistos ya no es a ciegas');
-  eq(esPickCiego(0.5, 1), false, 'riesgo bajo no es a ciegas');
-  eq(esPickCiego(null, 0), false, 'sin riesgo no es a ciegas');
-
-  // Fixture determinista (3.0): un motivo COMÚN a todo el pool y más pesado
-  // que los propios (todos pierden con E0: «pierdeMatchup», 1.3) y tres
-  // motivos propios por héroe (dos cruces ganados a 1.2, una pareja a 0.7),
-  // repartidos para que ninguno pase del 60% del pool. Cortando a tres ANTES
-  // de quitar el común, cada tarjeta se quedaría con dos. Está aquí porque
-  // con el modelo de 2.0 los motivos comunes casi no existen en los datos
-  // reales (medido: 0 de 30 drafts con la semilla de abajo, 1-4 de 30 con
-  // otras, y solo «combinaCon»), así que el muestreo de más abajo ya no
-  // caza esa mutación, que en 1.x acortaba 478 de 1.017 tarjetas.
-  {
-    const H = (name) => ({ name, tags: [] });
-    const pool = Array.from({ length: 10 }, (_, i) => H(`P${i}`));
-    const enemigos = Array.from({ length: 5 }, (_, j) => H(`E${j}`));
-    const aliados = Array.from({ length: 4 }, (_, k) => H(`A${k}`));
-    const counters = {}; const synergies = {};
-    pool.forEach((p, i) => {
-      counters[p.name] = { E0: 0.40, [`E${1 + (i % 4)}`]: 0.55, [`E${1 + ((i + 1) % 4)}`]: 0.55 };
-      synergies[p.name] = { [`A${i % 4}`]: 0.52 };
-    });
-    const ranking = ordenarPicks(pool, { enemigos, aliados, meta: { stats: {}, counters: indexarPorNombre(counters, 2), synergies: indexarPorNombre(synergies, 2) } });
-    eq(ranking.length, 10, 'el fixture tiene que rankear a los diez');
-    for (const r of ranking) {
-      ok(!r.motivos.some((m) => m.clave === 'regla.pierdeMatchup'), `${r.heroe.name} enseña el motivo común a todo el pool`);
-      eq(r.motivos.length, 3, `${r.heroe.name} enseña ${r.motivos.length} motivos teniendo tres propios: se cortó antes de quitar el común`);
-    }
-  }
-
-  // Sobre datos reales: ninguna tarjeta enseña menos de tres motivos teniendo
-  // un cuarto propio disponible (antes pasaba en el 12% de las tarjetas).
-  const meta = leerJson('public/data/roam-meta.json');
-  if (!(meta.heroes ?? []).length) return;
-  const datos = prepararDatos({ catalogo, meta });
-  const todos = datos.heroes;
-  const poolReal = poolDe(datos, 'roam');
-  const rnd = crearRnd(21);
-  let cortas = 0; let tarjetas = 0;
-  for (let d = 0; d < 30; d++) {
-    const u = new Set(); const coge = () => { let h; do { h = todos[Math.floor(rnd() * todos.length)]; } while (u.has(h.name)); u.add(h.name); return h; };
-    const enemigos = [coge(), coge(), coge()]; const aliados = [coge(), coge()];
-    const ctx = contextoDe(datos, { enemigos, aliados });
-    const ranking = ordenarPicks(poolReal, ctx);
-    // Los comunes, recalculados igual que el motor, sobre la lista COMPLETA.
-    const completas = poolReal.filter((h) => !u.has(h.name)).map((h) => motivosDe(h, ctx));
-    const frec = new Map(); for (const rs of completas) for (const k of new Set(rs.map(idMotivo))) frec.set(k, (frec.get(k) ?? 0) + 1);
-    const comunes = new Set([...frec].filter(([, n]) => n > completas.length * 0.6).map(([k]) => k));
-    for (const r of ranking) {
-      const disponibles = motivosDe(r.heroe, ctx).filter((x) => !comunes.has(idMotivo(x))).length;
-      const sinCiego = r.motivos.filter((x) => x.clave !== 'regla.arriesgadoCiego').length;
-      tarjetas += 1;
-      if (sinCiego < Math.min(3, disponibles) && !r.motivos.some((x) => x.clave === 'regla.arriesgadoCiego')) cortas += 1;
-    }
-  }
-  eq(cortas, 0, `${cortas} de ${tarjetas} tarjetas ensenan menos motivos de los que tienen`);
-});
 
 test('ningún cruce pesa doble: el rival marcado no cambia el ranking, y los huecos por etiqueta no puntúan', () => {
   // Medido en 902 partidas pro (ajustar-modelo.mjs): el cruce de línea no
@@ -90,13 +29,6 @@ test('ningún cruce pesa doble: el rival marcado no cambia el ranking, y los hue
   const conOtroTanque = evaluarDraft({ yo: h('Tigreal'), aliados: [h('Layla'), h('Atlas')], meta: {} }).logOdds;
   ok(Number.isFinite(solo) && Number.isFinite(conOtroTanque), 'sin datos la nota no es un numero');
   ok(!('comp' in evaluarDraft({ yo: h('Tigreal'), aliados: [h('Layla')], meta: {} }).terminos), 'sigue habiendo un término de composición');
-});
-
-test('la maestría personal sube el puesto de un héroe', () => {
-  const sin = ordenarPicks(poolRoam, { meta: {} });
-  const con = ordenarPicks(poolRoam, { meta: {}, maestria: { Belerick: { games: 80, winRate: 0.62 } } });
-  const puesto = (r) => r.findIndex((x) => x.heroe.name === 'Belerick');
-  ok(puesto(con) < puesto(sin), 'llevarlo al 62% no mejora su puesto');
 });
 
 test('los héroes ya cogidos o baneados no se recomiendan', () => {
@@ -406,4 +338,67 @@ test('eligiendo pronto, el nº1 espera bien lo que se juega en las lineas abiert
   const completo = ['Fanny', 'Ling', 'Lancelot', 'Gusion', 'Hayabusa'].map(h);
   const cerrado = ordenarPicks(poolRoam, { enemigos: completo, meta: { ...meta, stats: conPick }, lineasAbiertas: [], poolsPorLinea: abiertas.poolsPorLinea });
   ok(cerrado.every((x) => x.terminos.porVer === 0), 'con los cinco enemigos elegidos sigue esperando algo');
+});
+
+test('los motivos se filtran antes de cortar a tres, y el pick a ciegas es un solo criterio', () => {
+  eq(esPickCiego(0.7, 2), true, 'riesgo alto con dos vistos deberia ser a ciegas');
+  eq(esPickCiego(0.7, 4), false, 'con cuatro vistos ya no es a ciegas');
+  eq(esPickCiego(0.5, 1), false, 'riesgo bajo no es a ciegas');
+  eq(esPickCiego(null, 0), false, 'sin riesgo no es a ciegas');
+
+  // Fixture determinista (3.0): un motivo COMÚN a todo el pool y más pesado
+  // que los propios (todos pierden con E0: «pierdeMatchup», 1.3) y tres
+  // motivos propios por héroe (dos cruces ganados a 1.2, una pareja a 0.7),
+  // repartidos para que ninguno pase del 60% del pool. Cortando a tres ANTES
+  // de quitar el común, cada tarjeta se quedaría con dos. Está aquí porque
+  // con el modelo de 2.0 los motivos comunes casi no existen en los datos
+  // reales (medido: 0 de 30 drafts con la semilla de abajo, 1-4 de 30 con
+  // otras, y solo «combinaCon»), así que el muestreo de más abajo ya no
+  // caza esa mutación, que en 1.x acortaba 478 de 1.017 tarjetas.
+  {
+    const H = (name) => ({ name, tags: [] });
+    const pool = Array.from({ length: 10 }, (_, i) => H(`P${i}`));
+    const enemigos = Array.from({ length: 5 }, (_, j) => H(`E${j}`));
+    const aliados = Array.from({ length: 4 }, (_, k) => H(`A${k}`));
+    const counters = {}; const synergies = {};
+    pool.forEach((p, i) => {
+      counters[p.name] = { E0: 0.40, [`E${1 + (i % 4)}`]: 0.55, [`E${1 + ((i + 1) % 4)}`]: 0.55 };
+      synergies[p.name] = { [`A${i % 4}`]: 0.52 };
+    });
+    const ranking = ordenarPicks(pool, { enemigos, aliados, meta: { stats: {}, counters: indexarPorNombre(counters, 2), synergies: indexarPorNombre(synergies, 2) } });
+    eq(ranking.length, 10, 'el fixture tiene que rankear a los diez');
+    for (const r of ranking) {
+      ok(!r.motivos.some((m) => m.clave === 'regla.pierdeMatchup'), `${r.heroe.name} enseña el motivo común a todo el pool`);
+      eq(r.motivos.length, 3, `${r.heroe.name} enseña ${r.motivos.length} motivos teniendo tres propios: se cortó antes de quitar el común`);
+    }
+  }
+
+  // Sobre datos reales: ninguna tarjeta enseña menos de tres motivos teniendo
+  // un cuarto propio disponible (antes pasaba en el 12% de las tarjetas).
+  const meta = leerJson('public/data/roam-meta.json');
+  if (!(meta.heroes ?? []).length) return;
+  const datos = prepararDatos({ catalogo, meta });
+  const todos = datos.heroes;
+  const poolReal = poolDe(datos, 'roam');
+  const rnd = crearRnd(21);
+  let cortas = 0; let tarjetas = 0;
+  for (let d = 0; d < 30; d++) {
+    const u = new Set(); const coge = () => { let h; do { h = todos[Math.floor(rnd() * todos.length)]; } while (u.has(h.name)); u.add(h.name); return h; };
+    const enemigos = [coge(), coge(), coge()]; const aliados = [coge(), coge()];
+    const ctx = contextoDe(datos, { enemigos, aliados });
+    // Los motivos de un candidato ANTES del filtro de comunes (lo que hacía `motivosDe`).
+    const motivosDe = (heroe, c) => ordenarMotivos(evaluarDraft({ aliados: c.aliados, enemigos: c.enemigos, meta: c.meta, lineas: c.lineas, yo: heroe }).motivos);
+    const ranking = ordenarPicks(poolReal, ctx);
+    // Los comunes, recalculados igual que el motor, sobre la lista COMPLETA.
+    const completas = poolReal.filter((h) => !u.has(h.name)).map((h) => motivosDe(h, ctx));
+    const frec = new Map(); for (const rs of completas) for (const k of new Set(rs.map(idMotivo))) frec.set(k, (frec.get(k) ?? 0) + 1);
+    const comunes = new Set([...frec].filter(([, n]) => n > completas.length * 0.6).map(([k]) => k));
+    for (const r of ranking) {
+      const disponibles = motivosDe(r.heroe, ctx).filter((x) => !comunes.has(idMotivo(x))).length;
+      const sinCiego = r.motivos.filter((x) => x.clave !== 'regla.arriesgadoCiego').length;
+      tarjetas += 1;
+      if (sinCiego < Math.min(3, disponibles) && !r.motivos.some((x) => x.clave === 'regla.arriesgadoCiego')) cortas += 1;
+    }
+  }
+  eq(cortas, 0, `${cortas} de ${tarjetas} tarjetas ensenan menos motivos de los que tienen`);
 });

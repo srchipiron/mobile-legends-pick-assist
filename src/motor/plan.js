@@ -1,57 +1,33 @@
 import { cruce, sinergia, valido, CRUCE_FUERTE, CRUCE_FUERTE_EN_CONTRA, CRUCE_DESTACABLE, CRUCE_MALO, PAREJA_DESTACABLE } from './matrices.js';
-import { terminoHeroe, logit } from './modelo.js';
+import { terminoHeroe } from './modelo.js';
+import { logit } from './estadistica.js';
 import { perfilDeDano } from './catalogo.js';
 import { PENDIENTE_DE_HEROE } from './fases.js';
 
 /**
- * El plan de partida (3.36.0): qué hacer con el héroe que vas a coger EN
- * ESTE draft, y frases cortas para decir al equipo por voz. Pedido por
- * Javi: «consejos sobre cómo jugar ese personaje en esa partida en
- * concreto, como focus a tal… que sirva también como instrucciones para el
- * equipo».
- *
- * Es CONSEJO, no predicción, y conviene no mezclarlo con la nota: ninguna
- * frase de aquí está medida contra partidas (en pro, el kit no predice quién
- * gana: ver «Qué hace cada héroe» en CLAUDE.md). Lo que sí está medido son
- * los NOMBRES que salen en cada frase:
- *
- *  - «Focus a X»: el enemigo que más inclina la partida a su favor según el
- *    modelo, o sea su término de héroe más sus cruces contra los vuestros
- *    (lo mismo que suma `evaluarDraft`, visto desde su lado), sin contar a
- *    los que aguantan (`tanky`): ir a por el tanque es lo que NO hay que
- *    hacer.
- *  - Tu mejor y tu peor cruce, y tu mejor pareja: la matriz, con los cortes
- *    del p95/p05 (`CRUCE_FUERTE`): una orden por voz es una afirmación, y
- *    «evita a X» por un 48,4% no lo es.
- *  - Las habilidades (control en área, quitar controles, intocable): las
- *    etiquetas de Moonton de cada habilidad y su texto (la ingesta,
- *    `extraerHabilidades`). Sin ellas (datos de antes de 3.36.0) esas
- *    frases no salen.
- *  - Lo demás (escalado, proteger al tirador, daño, antisanación) lee las
- *    etiquetas de `heroes.json`, revisadas leyendo el kit entero (3.20.0).
- *
- * Los umbrales de «escaláis mejor» (dos héroes de diferencia) y «son todo
- * físico» (cuatro enemigos o más, ninguno mágico ni mixto; el escalado,
- * solo con los dos equipos enteros) son decisiones de producto:
- * cuándo merece la pena decirlo, no una calibración.
+ * El plan de partida: qué hacer con tu héroe EN ESTE draft y frases cortas para el
+ * equipo. Es CONSEJO, no nota (en pro el kit no predice quién gana); lo medido son
+ * los NOMBRES: el focus es el enemigo blando que más inclina la partida según el
+ * modelo, los cruces van con el p95/p05 (una orden por voz es una afirmación), las
+ * habilidades salen de las etiquetas y el texto de Moonton, y las fases de la curva
+ * por duración. Sin órdenes contrarias: manda el cruce con tu rival, luego el
+ * equipo, y la frase de tu héroe solo si no choca.
  */
 
-/** Cuántas frases como mucho: es para leerlas en mitad de una partida. */
+/** [P] Frases para el equipo y por etapa: se leen en mitad de una partida. */
 export const MAX_EQUIPO = 5;
-/** Diferencia de héroes que escalan para decir «cerrad pronto» / «aguantad». Decisión de producto. */
+export const MAX_ETAPA = 3;
+/** [P] Héroes que escalan de diferencia para «aguantad» / «cerrad pronto» (sin curvas, con los dos equipos enteros). */
 export const DIFERENCIA_DE_ESCALADO = 2;
 
 const tiene = (h, tag) => !!h?.tags?.includes(tag);
-/** Apoyo o tanque (rol del catálogo): no farmea ni gana las peleas solo (3.92.0). */
+/** Apoyo o tanque: no farmea ni gana las peleas solo. */
 export const esDeApoyo = (h) => h?.role === 'support' || h?.role === 'tank';
 const habilidades = (h, efecto) => (h?.habilidades ?? []).filter((x) => x.e?.includes(efecto));
 const escala = (h) => tiene(h, 'hypercarry') || tiene(h, 'assassin_late');
 const pct = (v) => Math.round(v * 100);
 
-/**
- * Lo que un enemigo inclina la partida a su favor, en log-odds: su término
- * de héroe y sus cruces contra los vuestros. Exportada para las pruebas.
- */
+/** Lo que un enemigo inclina la partida a su favor: su término de héroe + sus cruces contra los vuestros. */
 export function amenazaDe(enemigo, nos, meta = {}) {
   let v = terminoHeroe(enemigo, meta.stats, meta.mediaDelRango).valor;
   for (const n of nos) {
@@ -61,7 +37,7 @@ export function amenazaDe(enemigo, nos, meta = {}) {
   return v;
 }
 
-/** El enemigo con más control: el que más habilidades de control tiene, y entre iguales, el que más amenaza. */
+/** El de más control (habilidades de control + cc_chain + engage); a igualdad, el de más amenaza. */
 function masControl(enemigos, amenaza) {
   return [...enemigos]
     .map((e) => ({ e, n: habilidades(e, 'cc').length + (tiene(e, 'cc_chain') ? 1 : 0) + (tiene(e, 'engage') ? 1 : 0) }))
@@ -69,57 +45,33 @@ function masControl(enemigos, amenaza) {
     .sort((a, b) => b.n - a.n || amenaza.get(b.e.name) - amenaza.get(a.e.name))[0]?.e ?? null;
 }
 
-/** Cuántas frases como mucho en cada etapa de la partida y en los problemas (3.43.0). */
-export const MAX_ETAPA = 3;
-
 /**
- * @param {{ yo, aliados?, enemigos?, meta, fases?, rival? }} draft  `yo` es el
- *        héroe del que se habla (`eleccionDe`); `meta` el contexto de
- *        `prepararDatos`; `fases` lo de fases.js (3.43.0) y `rival` tu
- *        rival de línea si se sabe.
- * @returns {{ equipo, tuyo, fases, etapas: { temprano, medio, tarde }, problemas }}
- *          `tuyo` junta lo de las etapas y los problemas (para el diagnóstico).
+ * `yo`: el héroe del que se habla (`eleccionDe`); `meta`: el contexto de
+ * `prepararDatos`; `fases`: lo de fases.js; `rival`: tu rival de línea.
+ * @returns {{ equipo, tuyo, fases, fasesConfiables, etapas: { temprano, medio, tarde }, problemas }}
  */
 export function planDePartida({ yo = null, aliados = [], enemigos = [], meta = {}, fases = null, rival = null } = {}) {
-  const equipo = []; const tuyo = [];
-  const temprano = []; const medio = []; const tarde = []; const problemas = [];
-  if (!yo) return { equipo, tuyo, fases: null, etapas: { temprano, medio, tarde }, problemas };
+  const equipo = []; const temprano = []; const medio = []; const tarde = []; const problemas = [];
+  if (!yo) return { equipo, tuyo: [], fases: null, etapas: { temprano, medio, tarde }, problemas };
   const companeros = aliados.filter((a) => a.name !== yo.name);
   const nos = [yo, ...companeros];
   const amenaza = new Map(enemigos.map((e) => [e.name, amenazaDe(e, nos, meta)]));
-  // Entre varios compañeros que encajan, con quien mejor combinas.
+  const porAmenaza = (lista) => [...lista].sort((a, b) => amenaza.get(b.name) - amenaza.get(a.name));
   const conQuien = (lista) => [...lista].sort((a, b) => (sinergia(meta.synergies, yo.name, b.name) ?? 0.5) - (sinergia(meta.synergies, yo.name, a.name) ?? 0.5))[0];
 
-  // ── Para el equipo ──────────────────────────────────────────────────────
-  // 1. A quién matar primero.
+  // ── Para el equipo ──
   if (enemigos.length >= 2) {
-    const blandos = enemigos.filter((e) => !tiene(e, 'tanky')).sort((a, b) => amenaza.get(b.name) - amenaza.get(a.name));
-    if (blandos[0]) equipo.push({ clave: 'partida.focus', params: { e: blandos[0].name } });
+    const blando = porAmenaza(enemigos.filter((e) => !tiene(e, 'tanky')))[0];
+    if (blando) equipo.push({ clave: 'partida.focus', params: { e: blando.name } });
   }
-  // 2. Su control en área: separarse.
-  const iniciador = [...enemigos]
-    .filter((e) => tiene(e, 'engage') && habilidades(e, 'cc').some((x) => x.e.includes('area')))
-    .sort((a, b) => amenaza.get(b.name) - amenaza.get(a.name))[0];
-  if (iniciador) {
-    const hab = habilidades(iniciador, 'cc').find((x) => x.e.includes('area'));
-    equipo.push({ clave: 'partida.separaos', params: { e: iniciador.name, hab: hab.n } });
-  }
-  // 3. Quien se vuelve intocable: no gastarle el control encima.
+  const iniciador = porAmenaza(enemigos.filter((e) => tiene(e, 'engage') && habilidades(e, 'cc').some((x) => x.e.includes('area'))))[0];
+  if (iniciador) equipo.push({ clave: 'partida.separaos', params: { e: iniciador.name, hab: habilidades(iniciador, 'cc').find((x) => x.e.includes('area')).n } });
   const intocable = enemigos.find((e) => habilidades(e, 'inmortal').length);
   if (intocable) equipo.push({ clave: 'partida.intocable', params: { e: intocable.name, hab: habilidades(intocable, 'inmortal')[0].n } });
-  // 4. Proteger a vuestro tirador inmóvil de los que saltan.
   const carry = conQuien(companeros.filter((a) => escala(a) && tiene(a, 'immobile')));
-  const saltador = [...enemigos].filter((e) => tiene(e, 'dive')).sort((a, b) => amenaza.get(b.name) - amenaza.get(a.name))[0];
+  const saltador = porAmenaza(enemigos.filter((e) => tiene(e, 'dive')))[0];
   if (carry && saltador) equipo.push({ clave: 'partida.protegedA', params: { a: carry.name, e: saltador.name } });
-  // 5. Quién escala mejor.
-  // Solo con los dos equipos enteros (3.37.0): con dos picks tuyos por
-  // salir, los que faltan suelen ser justo los que escalan (oro, jungla).
-  // Desde 3.43.0 lo dice la curva por duración medida (fases.js) en vez de
-  // las etiquetas: con tres o más de cada lado. Sin curvas (datos de antes),
-  // las etiquetas, como siempre.
-  // Lo que se afirma de las fases, solo con tres o más de cada lado
-  // (3.43.2: el cambio de lado y «vais por detrás» salían con un héroe
-  // contra uno).
+  // Las fases se AFIRMAN con tres o más por bando; sin curvas, las etiquetas con los dos equipos enteros.
   const fasesConfiables = fases && enemigos.length >= 3 && nos.length >= 3 ? fases : null;
   if (fasesConfiables) {
     if (fases.tendencia === 'tarde') equipo.push({ clave: 'partida.aguantad', params: {} });
@@ -129,25 +81,15 @@ export function planDePartida({ yo = null, aliados = [], enemigos = [], meta = {
     if (dif >= DIFERENCIA_DE_ESCALADO) equipo.push({ clave: 'partida.aguantad', params: {} });
     else if (-dif >= DIFERENCIA_DE_ESCALADO) equipo.push({ clave: 'partida.cerradPronto', params: {} });
   }
-  // 6. De qué pegan.
   if (enemigos.length >= 4) {
     const p = perfilDeDano(enemigos);
     if (p.fisico >= 3 && !p.magico && !p.mixto) equipo.push({ clave: 'partida.todoFisico', params: {} });
     else if (p.magico >= 3 && !p.fisico && !p.mixto) equipo.push({ clave: 'partida.todoMagico', params: {} });
   }
-  // 7. Se curan.
   const curanderos = enemigos.filter((e) => tiene(e, 'heal'));
   if (curanderos.length >= 2) equipo.push({ clave: 'partida.antisanacion', params: { lista: curanderos.map((e) => e.name) } });
 
-  // ── Para ti, por etapas (3.43.0) ────────────────────────────────────────
-  // AL PRINCIPIO: tu héroe por fases (su curva medida), tu línea (el rival y
-  // vuestro cruce), con quién ir y de quién cuidarse mientras la partida es
-  // corta. Los nombres salen de las curvas y de la matriz, no de etiquetas.
-  // Sin órdenes contrarias (3.43.2): en 1.500 drafts, «no regales nada al
-  // principio» salía junto a «apriétale desde el principio» 30 veces, y «juega
-  // agresivo» junto a «juega seguro» o «no forcéis peleas pronto» 54. Manda
-  // lo más concreto: el cruce con tu rival y, después, el plan del equipo;
-  // la frase de tu héroe solo si no choca con ninguno.
+  // ── Al principio: tu héroe por su curva, tu línea, con quién ir y de quién cuidarse ──
   const tuFase = fases?.nos?.porHeroe?.find((x) => x.heroe.name === yo.name);
   const ext = (c) => ({ ini: pct(c.curva[0]), fin: pct(c.curva[c.curva.length - 1]) });
   const cRival = rival ? cruce(meta.counters, yo.name, rival.name) : null;
@@ -155,75 +97,56 @@ export function planDePartida({ yo = null, aliados = [], enemigos = [], meta = {
   const rivalPierdes = rival && valido(cRival) && cRival <= CRUCE_MALO;
   const equipoTarde = equipo.some((f) => f.clave === 'partida.aguantad');
   const equipoPronto = equipo.some((f) => f.clave === 'partida.cerradPronto');
-  // Un apoyo o un tanque no «juega agresivo» solo (3.92.0, Javi: «me aconsejas cosas que no van con mis
-  // héroes»): rota y lleva a su equipo. La cifra es la misma; cambia lo que se le pide.
-  if (tuFase && tuFase.pendiente <= -PENDIENTE_DE_HEROE && !rivalPierdes && !equipoTarde) temprano.push({ clave: esDeApoyo(yo) ? 'etapa.tuHeroeProntoApoyo' : 'etapa.tuHeroePronto', params: { yo: yo.name, ...ext(tuFase) } });
-  else if (tuFase && tuFase.pendiente >= PENDIENTE_DE_HEROE && !rivalGanas && !equipoPronto) temprano.push({ clave: 'etapa.tuHeroeTarde', params: { yo: yo.name, ...ext(tuFase) } });
+  if (tuFase && tuFase.pendiente <= -PENDIENTE_DE_HEROE && !rivalPierdes && !equipoTarde) {
+    temprano.push({ clave: esDeApoyo(yo) ? 'etapa.tuHeroeProntoApoyo' : 'etapa.tuHeroePronto', params: { yo: yo.name, ...ext(tuFase) } });
+  } else if (tuFase && tuFase.pendiente >= PENDIENTE_DE_HEROE && !rivalGanas && !equipoPronto) {
+    temprano.push({ clave: 'etapa.tuHeroeTarde', params: { yo: yo.name, ...ext(tuFase) } });
+  }
   if (rivalGanas) temprano.push({ clave: 'etapa.rivalGanas', params: { e: rival.name, pct: pct(cRival) } });
   else if (rivalPierdes) temprano.push({ clave: 'etapa.rivalPierdes', params: { e: rival.name, pct: pct(cRival) } });
   const aliadoPronto = fases?.nos?.pronto;
   if (aliadoPronto && aliadoPronto.heroe.name !== yo.name && nos.length >= 2) temprano.push({ clave: 'etapa.aliadoPronto', params: { a: aliadoPronto.heroe.name } });
-  // «Cuidado con X al principio», no de tu rival (ya sale arriba, y con
-  // «le ganas el cruce» se contradecía) ni de uno al que le ganas claro.
+  // Ni de tu rival (ya dicho) ni de uno al que le ganas claro.
   const enemigoPronto = fases?.ellos?.pronto;
   const cPronto = enemigoPronto ? cruce(meta.counters, yo.name, enemigoPronto.heroe.name) : null;
-  if (enemigoPronto && enemigos.length >= 2 && enemigoPronto.heroe.name !== rival?.name && !(valido(cPronto) && cPronto >= CRUCE_DESTACABLE)) temprano.push({ clave: 'etapa.enemigoPronto', params: { e: enemigoPronto.heroe.name } });
+  if (enemigoPronto && enemigos.length >= 2 && enemigoPronto.heroe.name !== rival?.name && !(valido(cPronto) && cPronto >= CRUCE_DESTACABLE)) {
+    temprano.push({ clave: 'etapa.enemigoPronto', params: { e: enemigoPronto.heroe.name } });
+  }
 
-  // AL FINAL: quién es su carta y la vuestra cuando la partida se alarga.
-  // «El más … de los suyos» solo con dos o más en ese bando (3.43.2: con un
-  // enemigo visto, «Chang'e es su carta para el final» no decía nada).
-  // La suya, entre los que NO aguantan: «matadlo el primero» a un tanque es
-  // lo contrario del focus (la primera versión lo decía de Tigreal).
+  // ── Al final: su carta (nunca un tanque ni un apoyo) y la vuestra (quien farmea) ──
   const enemigoTarde = [...(fases?.ellos?.porHeroe ?? [])]
-    // Ni un apoyo (3.92.0): «no le dejéis farmear» de Angela o de Floryn no dice nada, no farmean.
     .filter((x) => !tiene(x.heroe, 'tanky') && !esDeApoyo(x.heroe) && x.pendiente >= PENDIENTE_DE_HEROE)
     .sort((a, b) => b.pendiente - a.pendiente)[0];
   if (enemigoTarde && enemigos.length >= 2) tarde.push({ clave: 'etapa.enemigoTarde', params: { e: enemigoTarde.heroe.name } });
   const aliadoTarde = fases?.nos?.tarde;
-  // «Que llegue vivo y con oro» es de quien farmea, no de un apoyo ni de un tanque (3.92.0).
   if (aliadoTarde && aliadoTarde.heroe.name !== yo.name && !esDeApoyo(aliadoTarde.heroe) && nos.length >= 2) tarde.push({ clave: 'etapa.aliadoTarde', params: { a: aliadoTarde.heroe.name } });
-  if (fasesConfiables?.cambio) {
-    tarde.push({ clave: fases.cambio.aFavor ? 'etapa.cambiaAFavor' : 'etapa.cambiaEnContra', params: { min: fases.cambio.minuto } });
-  }
+  if (fasesConfiables?.cambio) tarde.push({ clave: fases.cambio.aFavor ? 'etapa.cambiaAFavor' : 'etapa.cambiaEnContra', params: { min: fases.cambio.minuto } });
 
-  // EN LAS PELEAS (el medio de la partida): lo de siempre, lo que hace tu
-  // héroe en una pelea de equipo.
-  // 1. Tu habilidad que quita controles, para el control que viene.
+  // ── En las peleas: tu limpieza, si abres o proteges, tu pareja, a quién buscar ──
   const limpia = habilidades(yo, 'limpia')[0];
   const control = limpia ? masControl(enemigos, amenaza) : null;
-  if (limpia && control) {
-    tuyo.push({ clave: limpia.e.includes('aliados') ? 'partida.guardaLimpiezaAliados' : 'partida.guardaLimpieza', params: { hab: limpia.n, e: control.name } });
-  }
-  // 2. Si inicias tú, con quién; si proteges, a quién.
+  if (limpia && control) medio.push({ clave: limpia.e.includes('aliados') ? 'partida.guardaLimpiezaAliados' : 'partida.guardaLimpieza', params: { hab: limpia.n, e: control.name } });
   const dano = companeros.filter((a) => tiene(a, 'burst') || escala(a));
   const usados = new Set();
   if (tiene(yo, 'engage') && dano.length) {
     const a = conQuien(dano); usados.add(a.name);
-    tuyo.push({ clave: 'partida.abresTu', params: { a: a.name } });
-  } else if ((tiene(yo, 'peel') || tiene(yo, 'sustain'))) {
-    // A quién: el tirador inmóvil que el equipo tiene que proteger si lo
-    // hay; si no, el que escala y no salta (a un asesino que entra solo no
-    // se le acompaña: la primera versión decía «quédate con Fanny»).
+    medio.push({ clave: 'partida.abresTu', params: { a: a.name } });
+  } else if (tiene(yo, 'peel') || tiene(yo, 'sustain')) {
+    // Al tirador inmóvil; si no, al que escala y no salta (a quien entra solo no se le acompaña).
     const a = carry ?? conQuien(companeros.filter((x) => escala(x) && !tiene(x, 'dive')));
-    if (a) { usados.add(a.name); tuyo.push({ clave: 'partida.quedateCon', params: { a: a.name } }); }
+    if (a) { usados.add(a.name); medio.push({ clave: 'partida.quedateCon', params: { a: a.name } }); }
   }
-  // 3. Tu mejor pareja (si no la has nombrado ya).
   const pareja = companeros
     .map((a) => ({ a, s: sinergia(meta.synergies, yo.name, a.name) }))
     .filter((x) => valido(x.s) && x.s >= PAREJA_DESTACABLE && !usados.has(x.a.name))
     .sort((a, b) => b.s - a.s)[0];
-  if (pareja) tuyo.push({ clave: 'partida.juegaCon', params: { a: pareja.a.name } });
-  // 4. Tu peor y tu mejor cruce, solo si son claros (y si no es el rival de
-  // línea, que ya sale al principio).
+  if (pareja) medio.push({ clave: 'partida.juegaCon', params: { a: pareja.a.name } });
   const cruces = enemigos.map((e) => ({ e, c: cruce(meta.counters, yo.name, e.name) })).filter((x) => valido(x.c) && x.e.name !== rival?.name);
   const peor = [...cruces].sort((a, b) => a.c - b.c)[0];
   const mejor = [...cruces].sort((a, b) => b.c - a.c)[0];
-  if (mejor && mejor.c >= CRUCE_FUERTE) tuyo.push({ clave: 'partida.buscaA', params: { e: mejor.e.name, pct: pct(mejor.c) } });
-  medio.push(...tuyo);
+  if (mejor && mejor.c >= CRUCE_FUERTE) medio.push({ clave: 'partida.buscaA', params: { e: mejor.e.name, pct: pct(mejor.c) } });
 
-  // PROBLEMAS que vas a tener: tu peor cruce y la fase en que vais por
-  // detrás. Lo del equipo (daño, curación, separarse) ya sale en su lista: la
-  // primera versión lo repetía aquí y la hoja decía tres cosas dos veces.
+  // ── Problemas: tu peor cruce y la fase en contra (lo del equipo no se repite) ──
   if (peor && peor.c <= CRUCE_FUERTE_EN_CONTRA) problemas.push({ clave: 'partida.evita', params: { e: peor.e.name, pct: pct(peor.c) } });
   if (fasesConfiables && fases.tendencia !== 'igual') {
     const corto = fases.puntos[0].p; const largo = fases.puntos[fases.puntos.length - 1].p;
@@ -232,14 +155,13 @@ export function planDePartida({ yo = null, aliados = [], enemigos = [], meta = {
   }
 
   const etapas = { temprano: temprano.slice(0, MAX_ETAPA), medio: medio.slice(0, MAX_ETAPA), tarde: tarde.slice(0, MAX_ETAPA) };
-  const problemasCortados = problemas.slice(0, MAX_ETAPA);
+  const cortados = problemas.slice(0, MAX_ETAPA);
   return {
     equipo: equipo.slice(0, MAX_EQUIPO),
-    tuyo: [...etapas.temprano, ...etapas.medio, ...etapas.tarde, ...problemasCortados],
+    tuyo: [...etapas.temprano, ...etapas.medio, ...etapas.tarde, ...cortados],
     fases,
-    // Si las fases se pueden AFIRMAR (tres por bando, 3.43.2).
     fasesConfiables: !!fasesConfiables,
     etapas,
-    problemas: problemasCortados,
+    problemas: cortados,
   };
 }
