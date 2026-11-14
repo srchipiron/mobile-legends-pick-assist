@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { bajarRecortes, bajarMisRecortes, claveDeJugadorValida } from '../basedatos.js';
+import { bajarRecortes, bajarMisRecortes, claveDeJugadorValida } from '../../comun/basedatos.js';
 import { revisiones, cambiosDeRevision, encuadre, tusMasJugados, companerosHabituales, carasParaHueco, sinResultado, HORAS_DE_RECORTES } from '../revisar.js';
 import { Cara as CaraDeHeroe } from './Imagen.jsx';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';

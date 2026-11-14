@@ -9,7 +9,7 @@ import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 
 const REAL = join(RAIZ, 'public/data/roam-meta.json');
 const meta = JSON.parse(readFileSync(REAL, 'utf8'));
@@ -63,4 +63,3 @@ test('baja la tier list y cambia solo eso; con mlbb.gg cerrado no escribe nada',
     servidor.close();
   }
 });
-await terminar('scripts/actualizar-tiers');

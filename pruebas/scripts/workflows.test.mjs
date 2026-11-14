@@ -17,7 +17,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, cpSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { test, ok, eq, terminar, RAIZ, leerTexto, leerJson } from '../arnes.mjs';
+import { test, ok, eq, RAIZ, leerTexto, leerJson } from '../ayuda.mjs';
 import { WORKFLOWS, leerWorkflow, mandatos, ejecuta } from '../fixtures/yaml-workflows.mjs';
 import { medir, FIJAS } from '../../scripts/comparar-ingesta.mjs';
 
@@ -225,9 +225,10 @@ test('los workflows que publican datos pasan por el guardarrail', () => {
     return expandir(pkg.scripts?.[m[1]] ?? '', visto);
   });
   const deNpmTest = expandir(pkg.scripts?.test ?? '');
-  for (const script of ['scripts/comprobar/orden.mjs', 'scripts/comprobar/css.mjs', 'scripts/comprobar/version.mjs', 'pruebas/correr.mjs']) {
+  for (const script of ['scripts/comprobar/css.mjs', 'scripts/comprobar/version.mjs']) {
     ok(deNpmTest.some((c) => c.includes(script)), `npm test ya no ejecuta ${script}`);
   }
+  ok(deNpmTest.some((c) => /^node --test\b/.test(c) && c.includes('pruebas/')), 'npm test ya no corre las pruebas con node --test');
   ok(deNpmTest.some((c) => /^eslint\b/.test(c)), 'npm test ya no pasa el lint (un identificador que no existe volvería a llegar a producción)');
   ok(deploy.pasos.some((p) => mandatos(p.run).some((c) => c === 'npm test')), 'deploy.yml no ejecuta npm test: tiene su propia lista de pruebas');
 
@@ -381,13 +382,7 @@ test('revisión línea a línea de scripts y workflows: guardas que no vigilaban
   ok(rCss.status !== 0 && /se oculta/.test(rCss.stdout + rCss.stderr), `check-css no ve la × oculta: ${(rCss.stdout + rCss.stderr).slice(0, 200)}`);
   eq(corre('scripts/comprobar/css.mjs', []).status, 0, 'check-css falla con el CSS real');
 
-  // 2. check-order: las desestructuradas (useState) también cuentan.
-  const jsxRoto = join(dir, 'roto.jsx');
-  writeFileSync(jsxRoto, 'export default function App() {\n  const total = enemies.length + foo;\n  const [enemies, setEnemies] = useState([]);\n  const { foo } = props;\n  return total;\n}\n');
-  ok(corre('scripts/comprobar/orden.mjs', [jsxRoto]).status !== 0, 'check-order no ve un useState desestructurado usado antes');
-  const jsxBien = join(dir, 'bien.jsx');
-  writeFileSync(jsxBien, 'export default function App() {\n  const [enemies, setEnemies] = useState([]);\n  const { foo = 1 } = props;\n  const total = enemies.length + foo;\n  return total;\n}\n');
-  eq(corre('scripts/comprobar/orden.mjs', [jsxBien]).status, 0, 'check-order falla con un orden correcto');
+  // 2. check-order: desde 4.0 es la regla `no-use-before-define` de ESLint (scripts/comprobar).
 
   // 3. Los bucles de rebase+push salen en rojo si fallan los tres intentos.
   //    No se busca la guarda en el texto: se EJECUTA el paso con un `git` de
@@ -547,5 +542,3 @@ test('el bot del modelo (3.72.0) solo PROPONE: no puede escribir en el repositor
   ok(/if \(!r\.decision\?\.proponer\)[^\n]*return;/.test(w.texto), 'abre la incidencia aunque no haya propuesta');
   ok(/node scripts\/proponer-modelo\.mjs/.test(w.texto) && /persist-credentials: false/.test(w.texto), 'no mide con el script, o deja el token en el checkout');
 });
-
-await terminar('scripts/workflows');

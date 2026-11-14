@@ -7,7 +7,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 
 const cdn = (carpeta, f) => `https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_${carpeta}_1/100_${f}.png`;
 
@@ -39,5 +39,3 @@ test('la vigilancia lo corre tras los datos rancios, con pipefail, y lo pone arr
   const pkg = JSON.parse(readFileSync(join(RAIZ, 'package.json'), 'utf8'));
   ok(!JSON.stringify(pkg.scripts).includes('caras-nuevas'), 'el aviso de caras va en npm test');
 });
-
-await terminar('scripts/caras-nuevas');

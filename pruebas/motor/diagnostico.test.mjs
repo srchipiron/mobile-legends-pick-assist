@@ -8,7 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { seccionPro } from '../../src/motor/diagnostico/seccion-pro.js';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { catalogo, heroes, poolRoam, crearRnd, h } from '../fixtures/catalogo.mjs';
 import { prepararDatos } from '../../src/motor/draft.js';
 import { diagnosticar, titular } from '../../src/motor/diagnostico/index.js';
@@ -418,5 +418,3 @@ test('el diagnóstico dice dónde está el lector, si contesta y cómo fue la ú
   eq(bien.avisos(), 0);
   ok(!/Lector/.test(informe(null).lineas.join('\n')), 'sin lector en uso habla del lector');
 });
-
-await terminar('motor/diagnostico');

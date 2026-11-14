@@ -1,4 +1,4 @@
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { montar, API } from '../../scripts/montar-supabase.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 
@@ -105,5 +105,3 @@ test('con solo la anon de siempre (proyecto viejo), usa esa', async () => {
   ok(/no contestan con la clave publicable \(permiso 401\)/.test(error), `no comprueba con la clave elegida: ${error}`);
   eq(g.vistas.filter((v) => v.url.includes('/rest/v1/rpc/'))[0].cabeceras.apikey, anonJwt);
 });
-
-await terminar('scripts/montar-supabase');

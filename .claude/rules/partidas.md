@@ -12,7 +12,7 @@ paths:
   - "scripts/medir-mias.mjs"
   - "historial/**"
   - "supabase/**"
-  - "src/app/basedatos.js"
+  - "src/comun/basedatos.js"
   - "src/app/estado/useComunidad.js"
   - "src/app/componentes/Comunidad.jsx"
   - "src/motor/comunidad.js"
@@ -168,7 +168,7 @@ que se guarda: `docs/comunidad.md`.
   se probaba con 2, y `huella_de` se llamaba con una clave inválida (fallaba
   por la clave, no por el permiso). No va en `npm test`: publicar no depende
   de tener Postgres.
-- **La app**: `src/app/basedatos.js` (puro salvo la red inyectada).
+- **La app**: `src/comun/basedatos.js` (puro salvo la red inyectada).
   `sanearConfig` solo acepta `https://<20>.supabase.co` y una clave
   publicable (`sb_publishable_` o un JWT con `role: anon`), nunca
   `sb_secret_` ni `service_role`. `paraLaComunidad` saca de cada partida lo

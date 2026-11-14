@@ -6,7 +6,7 @@
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { test, ok, eq, leerJson, RAIZ, terminar } from '../arnes.mjs';
+import { test, ok, eq, leerJson, RAIZ } from '../ayuda.mjs';
 import { h } from '../fixtures/catalogo.mjs';
 import { indexarPorNombre } from '../../src/motor/nombres.js';
 import {
@@ -156,5 +156,3 @@ test('un heroe sin estadisticas no pesa en el centro de las parejas', () => {
   // Sin estadísticas, todos pesan igual: la media simple.
   ok(Math.abs(mediaDeSinergia(JSON.parse(JSON.stringify(synergies)), null, null) - (0.52 * 2 + 0.3 * 4) / 6) < 1e-9, 'sin estadísticas no es la media simple');
 });
-
-await terminar('motor/matrices');

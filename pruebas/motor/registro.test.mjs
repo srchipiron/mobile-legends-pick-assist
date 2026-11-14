@@ -5,7 +5,7 @@
  * ganó más que con <50%. Las partidas previas no entran aunque traigan
  * número.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { sanear } from '../../src/motor/perfil.js';
 import { sanearDraft, sanearLectura, sanearDuracion, sanearFases, medirFasesMias, aciertosDelLector, apuntar, olvidar, corregir, cambiarHeroe, cambiarDraft, marcarEditada, calibracion, modeloDe, esPrevia, esSupuesta, esFantasma, ajustePersonal, resumen, siguioConsejo, MINIMO_PARA_CALIBRAR, MINIMO_PARA_CONCLUIR } from '../../src/motor/registro.js';
 import { maestriaDesdeRegistro, maestriaEfectiva, winrateDeReferencia, TOPE_DE_SIEMPRE } from '../../src/motor/maestria.js';
@@ -525,5 +525,3 @@ test('las partidas fantasma de la tablet (3.89.3): las dos del 2 de noviembre s�
   ok(contestada.editada === 1793691709500 && !esFantasma(contestada), `apuntar pierde el «editada» y la contestada se borraría sola: ${JSON.stringify(contestada)}`);
   ok(!('editada' in apuntar([], { ...fantasmas[0], editada: 'ayer' })[0]), 'apuntar guarda un «editada» que no es una hora');
 });
-
-await terminar('motor/registro');

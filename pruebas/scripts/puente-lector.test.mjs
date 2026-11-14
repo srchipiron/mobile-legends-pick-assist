@@ -6,7 +6,7 @@
 import { mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { crearServidor, lectorEnHilos, leerCaptura, origenPermitido, leerAprendido, plantillasDeSerie, podarCapturas, PUERTO, CAPTURAS_A_MIRAR, VIGILANCIA, RETENCION_CAPTURAS_MS, MAX_CAPTURAS, EN_PARTIDA_PARA_ESCONDER, VISTAZO_MS, sanearAjustes, sanearPregunta, capturasAMirar } from '../../scripts/lector/servir.mjs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { carasGuardadas, vaciosAliadoGuardados } from '../../scripts/lector/leer.mjs';
@@ -683,5 +683,3 @@ test('los recortes del draft miran las capturas repartidas, no las últimas (3.9
   await servidor.interno.recortesDe(ids);
   eq((pedidas[0] ?? []).join(), capturasAMirar(ids).join(), `recorta las últimas del draft: ${pedidas[0]}`);
 });
-
-await terminar('scripts/puente-lector');

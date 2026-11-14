@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { transformSync } from 'esbuild';
-import { test, ok, eq, terminar, RAIZ, leerJson, generador } from '../arnes.mjs';
+import { test, ok, eq, RAIZ, leerJson, generador } from '../ayuda.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
 import { LADO, muestra, normalizar, reconocer, CRIBA_PICKS, PARECIDO_MINIMO } from '../../scripts/lector/caras.mjs';
 import { leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, carasGuardadas, carasDesfasadas, sinRepetidos, REFERENCIA, PICKS_ENEMIGOS, ALIADOS, BANEOS, ambasOrientaciones, aceptarCercanos, CERCA_ENEMIGO, MARGEN_CERCA_ENEMIGO, carasDelPanel } from '../../scripts/lector/leer.mjs';
@@ -457,5 +457,3 @@ test('tu Estes de serie (3.80.0): tu fila de #75, un draft del que no sale la ca
   eq(con.filter((x) => x.nombre === 'Estes').length, 1, 'Estes sale en más de una fila');
   ok(!leerAliados(capturaCompleta(), caras).some((x) => x.nombre === 'Estes' && x.aprendida), 'la cara de Estes lee a Estes donde no está');
 });
-
-await terminar('scripts/lector');

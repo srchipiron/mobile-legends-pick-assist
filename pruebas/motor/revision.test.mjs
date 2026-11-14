@@ -5,7 +5,7 @@
  * exacta; las previas y los drafts sin línea no cuentan; un héroe de otra
  * línea se puntúa aparte; y la comparación pide 10 y 10.
  */
-import { test, ok, eq, casi, leerJson, terminar, generador } from '../arnes.mjs';
+import { test, ok, eq, casi, leerJson, generador } from '../ayuda.mjs';
 import { catalogo } from '../fixtures/catalogo.mjs';
 import { prepararDatos, resolverNombres, ordenar, estimarCon, revisarPartida, revisarDrafts } from '../../src/motor/draft.js';
 import { MARGEN_EMPATE } from '../../src/motor/ranking.js';
@@ -89,5 +89,3 @@ test('revisarDrafts: sin previas, con recuentos, y la comparación solo con 10 y
   eq(revisarDrafts(datos, lista.slice(3)).comparacion, null, 'con 9 de un lado no se compara');
   eq(revisarDrafts(datos, []).n, 0);
 });
-
-await terminar('motor/revision');

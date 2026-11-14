@@ -2,7 +2,7 @@
  * La parte de la app del botón «Leer del juego» (src/app/lector.js): qué
  * nombres mete y cómo dice cada fallo.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { SIN_BANEOS_AVISO } from '../../scripts/revisar-tablet.mjs';
 import { TABLA_SEGUIDAS } from '../../scripts/lector/en-tablet.mjs';
 import { buscarTabletEnLaRed, pruebaDelReto, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, pedirClaveDeLaTablet, lineasDelSistema } from '../../src/app/lector.js';
@@ -421,5 +421,3 @@ test('el sistema de un vistazo (3.77.0): lo que dice la tablet, y en rojo lo que
   ok(sinBaneos(SIN_BANEOS_AVISO)?.mal && sinBaneos(SIN_BANEOS_AVISO).params.n === SIN_BANEOS_AVISO, 'los drafts sin baneos no salen en rojo');
   eq(sinBaneos(SIN_BANEOS_AVISO - 1), undefined, 'sale con un baneo tapado por casualidad');
 });
-
-await terminar('app/lector');

@@ -2,7 +2,7 @@
  * `pedirPublicada` (3.60.2): con la red colgada no espera para siempre. El
  * botón Diagnóstico no respondía y el informe salía minutos después.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { pedirPublicada } from '../../src/app/entorno.js';
 
 test('con la red colgada devuelve null en el plazo; con respuesta, lo que diga', async () => {
@@ -22,5 +22,3 @@ test('con la red colgada devuelve null en el plazo; con respuesta, lo que diga',
     eq(bien.historial?.length, 1);
   } finally { globalThis.fetch = real; clearTimeout(vivo); }
 });
-
-await terminar('app/publicada');

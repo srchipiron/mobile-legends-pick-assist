@@ -4,7 +4,7 @@
  * burbuja; se aparta si el móvil lee o manda el suyo, y en partida solo mira
  * el minimapa.
  */
-import { test, ok, eq, terminar, leerJson } from '../arnes.mjs';
+import { test, ok, eq, leerJson } from '../ayuda.mjs';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -12,7 +12,7 @@ import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, conse
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
 import { buildsDe, buildParaElDraft, objetosDe } from '../../src/motor/builds.js';
 import { crearServidor, RETENCION_CAPTURAS_MS } from '../../scripts/lector/servir.mjs';
-import { RAIZ } from '../arnes.mjs';
+import { RAIZ } from '../ayuda.mjs';
 
 const catalogo = leerJson('public/data/heroes.json');
 const meta = leerJson('public/data/roam-meta.json');
@@ -839,5 +839,3 @@ test('el resumen de la partida dice cómo va la sesión y, en racha mala, cómo 
   await paso();
   ok(resumenes.some((r) => /Quizá toca un descanso/.test(r.texto ?? '')), `el modo solo no pasa tus números al resumen: ${JSON.stringify(resumenes.map((r) => r.texto))}`);
 });
-
-await terminar('scripts/solo');

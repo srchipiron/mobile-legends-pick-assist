@@ -3,7 +3,7 @@
  * las estadísticas y la matriz lleva la suya; con la matriz conservada días,
  * la cabecera decía «0 h» y nada se marcaba viejo.
  */
-import { test, ok, eq, casi, terminar } from '../arnes.mjs';
+import { test, ok, eq, casi } from '../ayuda.mjs';
 import { edadDeLosDatos } from '../../src/app/estado/useDatos.js';
 
 const ahora = Date.parse('2026-10-20T12:00:00Z');
@@ -27,5 +27,3 @@ test('sin `descargada` (ficheros de antes) la matriz es de generatedAt; sin fech
   // Solo la matriz con fecha válida: cuenta esa.
   casi(edadDeLosDatos({ generatedAt: 'x', relaciones: { descargada: hace(7) } }, ahora).edadHoras, 7, 1e-9);
 });
-
-await terminar('app/edad-datos');

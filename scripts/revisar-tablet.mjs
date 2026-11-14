@@ -18,7 +18,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { sanearConfig, bajarPartes } from '../src/app/basedatos.js';
+import { sanearConfig, bajarPartes } from '../src/comun/basedatos.js';
 import { LINEA_DE_ERROR, TABLA_SEGUIDAS } from './lector/en-tablet.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');

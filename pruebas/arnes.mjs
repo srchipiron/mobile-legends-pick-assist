@@ -1,3 +1,4 @@
+// TRANSICIÓN 4.0: solo lo usan las pruebas de navegador hasta que pasen a `node --test` con `./ayuda.mjs`.
 /**
  * El arnés de pruebas. Sin dependencias: cada fichero `*.test.mjs` lo
  * importa, declara sus pruebas con `test()` y termina con `await terminar()`.

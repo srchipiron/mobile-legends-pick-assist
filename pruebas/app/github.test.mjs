@@ -2,7 +2,7 @@
  * El enlace a una incidencia de GitHub ya rellena (src/app/github.js): el
  * repositorio sale de la dirección de Pages y el cuerpo va codificado.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { repositorioDe, urlDeIncidencia, TOPE_URL, escribirFichero, leerFichero, tokenPlausible, API_GITHUB } from '../../src/app/github.js';
 
 test('el repositorio se deduce de la dirección de Pages', () => {
@@ -86,5 +86,3 @@ test('leerFichero y escribirFichero con función (3.65.1): el cambio parte de lo
   eq((await escribirFichero({ ruta: 'public/licencias.json', contenido: () => { throw new Error('yaHay'); }, mensaje: 'm' }, TOKEN, { location: PAGES, fetch: pisar.fetch })).error, 'yaHay');
   eq(pisar.pedidas.length, 1, 'escribe aunque la función se niegue');
 });
-
-await terminar('app/github');

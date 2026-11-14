@@ -19,7 +19,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { sanearConfig, bajarRecortes, bajarComunidad } from '../src/app/basedatos.js';
+import { sanearConfig, bajarRecortes, bajarComunidad } from '../src/comun/basedatos.js';
 import { nombreClave } from '../src/motor/nombres.js';
 import { carasGuardadas, carasDelPanel, leerPicksEnemigos, leerAliados } from './lector/leer.mjs';
 import { aprenderDe } from './lector/aprender.mjs';

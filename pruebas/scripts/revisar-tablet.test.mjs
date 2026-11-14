@@ -5,9 +5,9 @@
  * programada no tenga que leer.
  */
 import { readFileSync } from 'node:fs';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { PARTIDAS_SIN_APUNTAR, PARTIDAS_PARA_MEDIR, revisarParte, revisarPartes, informe, PARTE_CALLADO_MIN, DATOS_VIEJOS_H, CIERRE_POR_FALLO, SALUD_CALLADA_MIN, FALLO_ANTERIOR_H, SIN_BANEOS_AVISO } from '../../scripts/revisar-tablet.mjs';
-import { subirParte, bajarPartes } from '../../src/app/basedatos.js';
+import { subirParte, bajarPartes } from '../../src/comun/basedatos.js';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { parteDeSalud, TABLA_SEGUIDAS, ultimasDeTabla } from '../../scripts/lector/en-tablet.mjs';
 
@@ -167,5 +167,3 @@ await test('partidas jugadas sin apuntar (3.83.2): como el 27 de octubre, 5 h le
   eq(bien.fallos.length + bien.avisos.length, 0, 'avisa con la tablet apuntando');
   eq(con({}).fallos.length, 0, 'una APK de antes (sin la cuenta) da fallo');
 });
-
-terminar('scripts/revisar-tablet');

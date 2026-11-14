@@ -19,7 +19,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
-import { sanearConfig, clavePublicable, llamar } from '../src/app/basedatos.js';
+import { sanearConfig, clavePublicable, llamar } from '../src/comun/basedatos.js';
 
 export const API = 'https://api.supabase.com';
 const ESQUEMA = new URL('../supabase/esquema.sql', import.meta.url);

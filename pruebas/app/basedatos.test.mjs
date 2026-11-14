@@ -1,9 +1,9 @@
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import {
   sanearConfig, clavePublicable, crearClaveDeJugador, claveDeJugadorValida, paraLaComunidad, sanearEstadoComunidad,
   tocaSubirComunidad, llamar, subirPartidas, traerMisPartidas, borrarMisPartidas, bajarComunidad, POR_LOTE, queTraer,
-} from '../../src/app/basedatos.js';
+} from '../../src/comun/basedatos.js';
 
 const URL = 'https://abcdefghijklmnopqrst.supabase.co';
 const jwt = (carga) => `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify(carga)).toString('base64url')}.firma`;
@@ -139,5 +139,3 @@ test('qué se trae de la base de datos (3.76.0): lo que falta, sin lo quitado, y
   s.atender('subir_partidas', { clave, lote: [{ t: 9, pick: 'A', gane: true }] }, c);
   eq(s.jugadores.get(clave).partidas.get(9).gane, false, 'el falso deja pisar lo arreglado');
 });
-
-await terminar('app/basedatos');

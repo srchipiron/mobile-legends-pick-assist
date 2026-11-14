@@ -4,7 +4,7 @@
  * etiqueta documentada en su leyenda. Una etiqueta sin definir no dispara
  * ninguna regla y nadie se entera.
  */
-import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
+import { test, ok, eq, leerJson } from '../ayuda.mjs';
 import { catalogo } from '../fixtures/catalogo.mjs';
 import { poolDeLinea, LINEAS, tagsDeducidos, fundirCatalogo, tipoDeDano, perfilDeDano, tapaElHueco, huellaDeKit, equilibrioEsperado } from '../../src/motor/catalogo.js';
 import { analizarDraft } from '../../src/motor/analisis.js';
@@ -306,5 +306,3 @@ test('la revisión de kits del 7 de noviembre de 2026 (3.92.0): lo que el texto 
   // «can pass through terrain/obstacles»: Kimmy y Novaria se reposicionan.
   ok(!tags('Kimmy').includes('immobile') && !tags('Novaria').includes('immobile'), 'Kimmy o Novaria salen como inmóviles');
 });
-
-await terminar('motor/catalogo');

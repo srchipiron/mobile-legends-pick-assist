@@ -3,7 +3,7 @@
  * daño, los huecos por etiqueta de TEAM_NEEDS, los roles dobles con su cifra
  * medida) y qué tapa el candidato. Desde 2.0 nada de esto puntúa: se dice.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { analizarComposicion, composicionDe, ROL_DOBLE_PP } from '../../src/motor/composicion.js';
 
 test('la composicion dice que le falta al equipo y que tapa el candidato', () => {
@@ -26,5 +26,3 @@ test('la composicion dice que le falta al equipo y que tapa el candidato', () =>
   eq(vacio.dano.falta, null, 'a un equipo vacio le falta dano');
   eq(vacio.dobles.length, 0, 'un equipo vacio tiene roles dobles');
 });
-
-await terminar('motor/composicion');

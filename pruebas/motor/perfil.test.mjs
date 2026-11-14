@@ -4,7 +4,7 @@
  * pegado. La otra mitad de esta prueba (la maestría por nombre normalizado)
  * vive en maestria.test.mjs.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { fundirPerfil, sanear, recogerPerfil, exportarPerfil, leerPerfil, sanearOlvidadas, TOPE_OLVIDADAS } from '../../src/motor/perfil.js';
 import { apuntar, olvidar, corregir, resumen } from '../../src/motor/registro.js';
 import { maestriaDesdeRegistro, tuNivel } from '../../src/motor/maestria.js';
@@ -221,5 +221,3 @@ test('al juntar, la copia arreglada más tarde gana, venga de donde venga (3.76.
   eq(sanear({ partidas: [{ t: 1, pick: 'A', gane: true, editada: 'ayer' }] }).partidas[0].editada, undefined, 'entra un «editada» que no es un número');
   eq(sanear({ partidas: [{ t: 1, pick: 'A', gane: true, editada: 5 }] }).partidas[0].editada, 5);
 });
-
-await terminar('motor/perfil');

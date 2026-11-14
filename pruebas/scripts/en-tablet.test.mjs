@@ -9,10 +9,10 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { TABLA_SEGUIDAS, ultimasDeTabla, principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, TOPE_SIN_RESULTADO, finalParaSubir, partidaSinResultado, draftsArreglados, franjaSinNombres, FRACCION_CABECERA, comprobanteParaSubir } from '../../scripts/lector/en-tablet.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
-import { claveDeJugadorValida, bajarMisRecortes } from '../../src/app/basedatos.js';
+import { claveDeJugadorValida, bajarMisRecortes } from '../../src/comun/basedatos.js';
 import { comprobantes } from '../../src/app/revisar.js';
 import { pruebaDelReto } from '../../src/app/lector.js';
 import { writeFileSync } from 'node:fs';
@@ -688,7 +688,7 @@ test('el parte de salud (3.74.0): sin IPs, sin el código ni tu clave, sin carac
 test('el parte cabe siempre en lo que acepta el servidor, también con un fallo de Node largo, y los errores no se pierden (3.74.2)', async () => {
   const s = supabaseFalso();
   const config = { url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica };
-  const { subirParte } = await import('../../src/app/basedatos.js');
+  const { subirParte } = await import('../../src/comun/basedatos.js');
   const largo = (i) => `Lectura ${i} (1300 ms, captura sin comprimir 283): ${'baneos Hirara, Marcel, Masha, Belerick, Eudora · '.repeat(8)}`;
   const log = Array.from({ length: 200 }, (_, i) => (i === 50 ? 'ERROR sin recoger: TypeError: x' : largo(i))).join('\n');
   const falloNodo = Array.from({ length: 40 }, (_, i) => `    at algo${i} (${'x'.repeat(280)})`).join('\n');
@@ -1077,5 +1077,3 @@ test('las partidas con el héroe sin leer subidas antes de 3.81.2 se suben otra 
   writeFileSync(join(casa, 'partidas.json'), JSON.stringify({ partidas: [p(3, { supuesto: true })], subidas: [3], supuestoResubido: true }));
   eq(partidasDeLaTablet(casa).pendientes().length, 0, 'con la marca puesta vuelve a subirlas');
 });
-
-terminar('scripts/en-tablet');

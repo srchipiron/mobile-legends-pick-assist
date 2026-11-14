@@ -123,7 +123,7 @@ borra a ese jugador.
 - El esquema: `supabase/esquema.sql`. Su prueba, contra un Postgres de
   verdad con los permisos por defecto de Supabase: `npm run test:sql` (corre
   también en `pruebas-ui.yml`).
-- El cliente: `src/app/basedatos.js`; el estado, `src/app/estado/useComunidad.js`
+- El cliente: `src/comun/basedatos.js`; el estado, `src/app/estado/useComunidad.js`
   (`roam-picker:comunidad`); la medida, `src/motor/comunidad.js`.
 - La configuración pública: `public/comunidad.json` (`{ url, clave }`). Sin
   ese fichero no se ve nada de esto.

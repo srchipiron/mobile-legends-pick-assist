@@ -5,7 +5,7 @@
  * que sigan reconociéndose igual (si no, no sirven para medir) y que NO
  * lleven los nombres de los jugadores.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { escribirPng, leerPng } from '../../scripts/lector/png.mjs';
 import { deflateSync, crc32 } from 'node:zlib';
 import { carasGuardadas, leerPicksEnemigos, leerAliados } from '../../scripts/lector/leer.mjs';
@@ -127,5 +127,3 @@ test('un recorte que se infla a lo bestia no llega a la memoria (3.83.1): la cab
   const r = recorteDePicks(img);
   ok(devolverPicks(r).ancho === 2400, 'un recorte bueno ya no se lee');
 });
-
-await terminar('scripts/recortes');

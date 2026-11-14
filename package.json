@@ -10,8 +10,8 @@
     "preview": "vite preview --host",
     "ingest": "node scripts/ingest.mjs",
     "lint": "eslint .",
-    "check": "node scripts/comprobar/orden.mjs src && node scripts/comprobar/css.mjs && node scripts/comprobar/version.mjs",
-    "test": "npm run check && npm run lint && node pruebas/correr.mjs",
+    "check": "node scripts/comprobar/css.mjs && node scripts/comprobar/version.mjs",
+    "test": "npm run check && npm run lint && node --test --test-concurrency=4 --test-reporter=spec \"pruebas/{motor,app,comun,scripts}/**/*.test.mjs\"",
     "test:ui": "node pruebas/correr.mjs --e2e",
     "test:sql": "node pruebas/sql/esquema.sql.mjs",
     "diagnostico": "node scripts/diagnostico.mjs"
@@ -23,6 +23,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@vitejs/plugin-react": "^4.3.1",
+    "esbuild": "^0.21.5",
     "eslint": "^10.10.0",
     "playwright-core": "^1.63.0",
     "vite": "^5.4.0",

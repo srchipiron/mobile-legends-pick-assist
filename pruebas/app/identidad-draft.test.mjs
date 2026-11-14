@@ -3,7 +3,7 @@
  * partida se vigila. Corregir un draft completo (la × a uno mal leído y
  * meter al de verdad) es la MISMA partida; un draft nuevo, otra.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { conCompleto, cerrarConPartida, draftCompleto, COMUNES_DE_LA_MISMA, MISMA_PARTIDA_MS } from '../../src/app/estado/useDraft.js';
 import { lecturasEnPartida, LECTURAS_EN_PARTIDA } from '../../src/app/lector.js';
 import { LECTURAS_EN_PARTIDA as EN_PARTIDA_DEL_LECTOR } from '../../scripts/lector/servir.mjs';
@@ -60,5 +60,3 @@ test('las lecturas en partida se cuentan SEGUIDAS, una fuera (o un lector viejo 
   eq(lecturasEnPartida(n, { partida: 'true' }), 0, 'un texto cuenta como en partida');
   eq(LECTURAS_EN_PARTIDA, EN_PARTIDA_DEL_LECTOR, 'la app y el lector no piden las mismas lecturas seguidas');
 });
-
-await terminar('app/identidad-draft');

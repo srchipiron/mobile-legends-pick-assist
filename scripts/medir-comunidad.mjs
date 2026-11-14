@@ -11,7 +11,7 @@
  * llama a `partidas_comunidad`, que no lleva ni claves ni huellas.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { sanearConfig, bajarComunidad } from '../src/app/basedatos.js';
+import { sanearConfig, bajarComunidad } from '../src/comun/basedatos.js';
 import { medirComunidad } from '../src/motor/comunidad.js';
 
 const args = process.argv.slice(2);

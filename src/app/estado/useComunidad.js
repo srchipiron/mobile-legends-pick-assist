@@ -5,7 +5,7 @@ import { huellaDe, ESPERA_MS, REINTENTO_MS } from '../envio.js';
 import {
   sanearConfig, sanearEstadoComunidad, crearClaveDeJugador, claveDeJugadorValida, tocaSubirComunidad,
   subirPartidas, traerMisPartidas, borrarMisPartidas, bajarComunidad, queTraer,
-} from '../basedatos.js';
+} from '../../comun/basedatos.js';
 import { medirComunidad } from '../../motor/comunidad.js';
 import { maestriaDeSiempre, winrateDeReferencia } from '../../motor/maestria.js';
 import { esPrevia } from '../../motor/registro.js';

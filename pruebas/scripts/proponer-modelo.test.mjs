@@ -3,7 +3,7 @@
  * partidas de sobra, si predice mejor fuera de muestra y si la escala sale
  * del error de la de hoy. Con partidas sintéticas de escala conocida.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { partidaDeGloria, juntarGloria, medirMuestra, decidirPropuesta, informe, MINIMO_PROPUESTA, MEJORA_MINIMA } from '../../scripts/proponer-modelo.mjs';
 import { ESCALA } from '../../src/motor/modelo.js';
 import { DUDOSAS_DESDE, DUDOSAS_HASTA } from '../../src/motor/registro.js';
@@ -66,5 +66,3 @@ test('las partidas de Gloria: solo con el draft completo, sin repetir y del cat�
   eq(juntarGloria({ comunidad: [{ j: 3, t: enLaVentana.t, d: enLaVentana }], desde: 0 }).length, 0, 'las de la comunidad del lector dudoso entran');
   eq(juntarGloria({ mias: [{ ...enLaVentana, editada: DUDOSAS_HASTA + 1 }], desde: 0 }).length, 1, 'una arreglada después no entra');
 });
-
-await terminar('scripts/proponer-modelo');

@@ -3,7 +3,7 @@
  * semana a semana, con quién ganas y contra quién, por línea, por día y con
  * la app. Cada número con su intervalo; «mejor/peor» solo fuera de él.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { evolucion, porCompaneros, porLinea, porDia, conLaApp, partidasValidas, MINIMO_CON_UNO } from '../../src/motor/analitica.js';
 
 const DIA = 24 * 60 * 60 * 1000;
@@ -87,5 +87,3 @@ test('con la app: el nº1, entre los tres y por libre; las de pick supuesto no c
   eq(r.numeroUno.n, 1); eq(r.entreLosTres.n, 2); eq(r.porLibre.n, 1);
   eq(r.entreLosTres.ganadas, 1);
 });
-
-await terminar('motor/analitica');

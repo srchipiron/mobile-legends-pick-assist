@@ -4,7 +4,7 @@
  * formas distintas («X.Borg» / «X Borg»), y un fallo aquí es invisible: el
  * héroe se queda sin datos y nadie se entera.
  */
-import { test, ok, terminar } from '../arnes.mjs';
+import { test, ok } from '../ayuda.mjs';
 import { nombreClave, indexarPorNombre } from '../../src/motor/nombres.js';
 
 test('los nombres se normalizan pese a puntuación y variantes', () => {
@@ -31,5 +31,3 @@ test('la matriz de counters se indexa en sus DOS niveles', () => {
   ok(indexarPorNombre(crudo, 2)[nombreClave('X Borg')]?.[nombreClave('Wanwan')] === 0.44,
     'con profundidad 2 debe encontrarse por clave normalizada');
 });
-
-await terminar('motor/nombres');

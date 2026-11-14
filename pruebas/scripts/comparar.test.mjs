@@ -4,7 +4,7 @@
  * falla conserva lo anterior), así que una corrida mala se parece a una buena
  * en el diff: mismos números y `generatedAt` nuevo. Esto llegó a producción.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { comparar, medir, maximosDelHistorial, FIJAS, diasPerdidos } from '../../scripts/comparar-ingesta.mjs';
 
 test('una corrida de ingesta degradada no llega a los datos guardados', () => {
@@ -160,5 +160,3 @@ test('sin nada fresco se rechaza aunque lo guardado tampoco lo fuera (3.60.2)', 
   const conMatriz = { ...rancia, diagnostics: { ...rancia.diagnostics, frescosRecursos: { relaciones: 133, parejas: 133, pedidas: 133 } } };
   ok(!comparar(conMatriz, rancia).peores.length, 'con la matriz nueva entera se rechaza');
 });
-
-await terminar('scripts/comparar');

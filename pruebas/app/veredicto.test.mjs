@@ -17,7 +17,7 @@
  * cita las tres reglas, así que una guarda por texto pasaría sola aunque el
  * JSX no las cumpliera. Ya ha pasado tres veces en este proyecto.
  */
-import { test, ok, eq, terminar, leerTexto } from '../arnes.mjs';
+import { test, ok, eq, leerTexto } from '../ayuda.mjs';
 import { CLAVES } from '../../src/app/i18n/index.js';
 import { resumen } from '../../src/motor/registro.js';
 
@@ -86,5 +86,3 @@ test('siguiendo contra por libre: con margen en la misma frase, sin afirmar nada
   ok(entera.margen > 0 && entera.seVe, `con 30/30 frente a 0/30 no se distingue o el margen sale cero: ${JSON.stringify(entera)}`);
   ok(resumen(ramas(100, 90, 100, 40), m).entreRamas.seVe, 'con 90% frente a 40% en 100 y 100 no se distingue nada');
 });
-
-await terminar('app/veredicto');

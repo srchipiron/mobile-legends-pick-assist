@@ -9,7 +9,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { test, eq, ok, terminar, RAIZ } from '../arnes.mjs';
+import { test, eq, ok, RAIZ } from '../ayuda.mjs';
 
 const dir = mkdtempSync(join(tmpdir(), 'lectura-draft-'));
 writeFileSync(join(dir, 'react.js'), `
@@ -91,5 +91,3 @@ test('una lectura pedida en el draft anterior no entra en el nuevo (3.60.4)', ()
   d.aplicarLectura({ baneos: [], enemigos: ['Z'], aliados: [], huecos: { enemigos: ['Z'], aliados: [] }, epoca: d.epocaDelDraft() }); d = render(useDraft);
   eq(d.enemigos.join(), 'Z');
 });
-
-await terminar('app/lectura-draft');

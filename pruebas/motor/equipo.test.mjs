@@ -10,7 +10,7 @@
  * app hace de verdad. Llamando a pelo sin esos dos campos, cambiar
  * `lineasAbiertas` por `[]` dentro de equipo.js no lo notaba nadie.
  */
-import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
+import { test, ok, eq, leerJson } from '../ayuda.mjs';
 import { catalogo } from '../fixtures/catalogo.mjs';
 import { LINEAS } from '../../src/motor/catalogo.js';
 import { prepararDatos, aconsejar, lineasEnemigasAbiertas } from '../../src/motor/draft.js';
@@ -109,5 +109,3 @@ test('el consejo para los compañeros cubre las líneas abiertas y responde al e
   // desde la app: es la guarda de la función.
   eq(aconsejarEquipo({ heroes: [], miLinea: 'roam' }).length, 0, 'aconseja sin héroes');
 });
-
-await terminar('motor/equipo');

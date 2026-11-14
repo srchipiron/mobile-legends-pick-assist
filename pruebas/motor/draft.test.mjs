@@ -5,7 +5,7 @@
  * guardados y qué líneas enemigas quedan abiertas. Hasta ahora no tenía
  * pruebas propias: se ejercitaba de refilón desde las de otros módulos.
  */
-import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
+import { test, ok, eq, leerJson } from '../ayuda.mjs';
 import { catalogo, h } from '../fixtures/catalogo.mjs';
 import { LINEAS, equilibrioEsperado } from '../../src/motor/catalogo.js';
 import {
@@ -407,5 +407,3 @@ test('tus resultados no deciden nada (3.93.0, Javi): con una maestría exagerada
   // Lo que sí queda: cuánto juegas a cada uno (no si ganas).
   eq(deLosTuyos(sin.ranking, maestria)?.heroe?.name ?? null, deLosTuyos(con.ranking, maestria)?.heroe?.name ?? null);
 });
-
-await terminar('motor/draft');

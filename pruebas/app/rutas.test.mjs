@@ -7,7 +7,7 @@
  */
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { test, ok, terminar, RAIZ, leerTexto } from '../arnes.mjs';
+import { test, ok, RAIZ, leerTexto } from '../ayuda.mjs';
 
 const FUENTES = [
   ...readdirSync(join(RAIZ, '.github/workflows')).map((f) => `.github/workflows/${f}`),
@@ -42,5 +42,3 @@ test('toda ruta citada en workflows, configuración y documentación existe', ()
 // comparación es un MANDATO y no una mención -`run: echo "antes: node
 // scripts/comparar-ingesta.mjs"` pasaba una guarda por texto como la que había
 // aquí-, y que ningún workflow nuevo llama a la ingesta fuera de la lista.
-
-await terminar('app/rutas');

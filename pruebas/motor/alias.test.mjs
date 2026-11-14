@@ -6,7 +6,7 @@
  * de otro, y que el respaldo por letras en orden solo entre cuando la
  * búsqueda normal no encuentra nada.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { catalogo } from '../fixtures/catalogo.mjs';
 import { ALIAS, filtrarPorNombre } from '../../src/motor/alias.js';
 
@@ -66,5 +66,3 @@ test('si no sale nadie, el buscador prueba con las letras en orden', () => {
   eq(nombres('zzz').length, 0, 'saca heroes para algo que no se parece a nada');
   eq(nombres('').length, heroes.length, 'sin escribir nada deberia salir todo');
 });
-
-await terminar('motor/alias');

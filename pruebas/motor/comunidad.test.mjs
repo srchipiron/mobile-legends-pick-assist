@@ -1,4 +1,4 @@
-import { test, ok, eq, casi, terminar } from '../arnes.mjs';
+import { test, ok, eq, casi } from '../ayuda.mjs';
 import { medirComunidad, porJugador, MINIMO_POR_RAMA } from '../../src/motor/comunidad.js';
 
 let t = 1788000000000;
@@ -93,5 +93,3 @@ test('el pick supuesto no entra en la medida de la comunidad (3.81.2): su pick e
   eq(porJugador(filas).get('1')?.length, 1, 'la supuesta cuenta como siguiendo la app');
   eq(medirComunidad(filas).siguiendo.n, 0);
 });
-
-await terminar('motor/comunidad');

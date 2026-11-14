@@ -25,7 +25,7 @@ import { crearServidor, crearElectorDeCaptura, cargarLoAprendido, podarCapturas,
 import { limpiarTexto } from './servir.mjs';
 import { leerCrudo, escribirPngRapido, leerPng, escribirPng } from './png.mjs';
 import { crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo } from './solo.mjs';
-import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte, subirRecorte, traerMisPartidas, bajarMisRecortes } from '../../src/app/basedatos.js';
+import { sanearConfig, claveDeJugadorValida, crearClaveDeJugador, subirPartidas, subirParte, subirRecorte, traerMisPartidas, bajarMisRecortes } from '../../src/comun/basedatos.js';
 import { maestriaEfectiva } from '../../src/motor/maestria.js';
 import { tusNumeros, tuSemana } from '../../src/motor/habitos.js';
 

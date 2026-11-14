@@ -3,7 +3,7 @@
  * sale al acabar el plazo, no sale si se deshace (y devuelve lo que llevaba),
  * y lo pendiente sale ya si llega otra cosa o la app se va.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { crearDiferido } from '../../src/app/diferido.js';
 
 /** Un reloj de mentira: se avanza a mano. */
@@ -61,5 +61,3 @@ test('si llega otra cosa que esperar, o la app se va, lo de antes sale ya', () =
   r.avanzar(1000);
   eq(salidas.join(), 'a,b', 'lo que ya salió sale otra vez al acabar su plazo');
 });
-
-await terminar('app/diferido');

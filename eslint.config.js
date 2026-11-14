@@ -29,6 +29,23 @@ const reglas = {
   // El código escribe `for (;;)` y `while (true)` a propósito en los bucles de reintento.
   'no-constant-condition': ['error', { checkLoops: false }],
   'no-empty': ['error', { allowEmptyCatch: true }],
+  // Usar algo antes de declararlo dentro de una función dejó la app en negro
+  // (App.jsx). Sustituye a `comprobar/orden.mjs` (4.0): los cierres sí pueden
+  // nombrar lo de más abajo, que es como se escriben los efectos.
+  'no-use-before-define': ['error', { functions: false, classes: true, variables: false }],
+};
+
+// El motor es PURO (CLAUDE.md): solo importa ficheros suyos. Y ningún umbral de
+// cruce se escribe a mano (0,53 en tres sitios, 1.x): van en matrices.js.
+const motor = {
+  'no-restricted-imports': ['error', { patterns: [
+    { regex: '^(?!\\.)', message: 'El motor no importa paquetes ni módulos de Node.' },
+    { regex: '(^|/)\\.\\./(\\.\\./)*(app|scripts|comun)(/|$)', message: 'El motor no importa de la app, de scripts ni de comun.' },
+  ] }],
+  'no-restricted-syntax': ['error', {
+    selector: 'BinaryExpression[operator=/^[<>]=?$/] > Literal[value>0.4][value<0.6][value!=0.5]',
+    message: 'Umbral de cruce escrito a mano: usa las constantes de matrices.js.',
+  }],
 };
 
 export default [
@@ -38,6 +55,7 @@ export default [
     languageOptions: { ecmaVersion: 2024, sourceType: 'module', parserOptions: { ecmaFeatures: { jsx: true } }, globals: navegador },
     rules: { ...reglas, 'no-unused-vars': ['error', { args: 'none', ignoreRestSiblings: true, varsIgnorePattern: '^_|^[A-Z]' }] },
   },
+  { files: ['src/motor/**/*.js'], rules: motor },
   {
     // Las pruebas también: un `test` re-exportado sin importar pasó a seis
     // ficheros e2e porque este bloque no las incluía.

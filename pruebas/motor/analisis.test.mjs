@@ -3,7 +3,7 @@
  * el pick aguanta lo que falta por salir, que se calle con el draft completo
  * y que no cruce la simulación de OTRO draft con el ranking de este.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { nombreClave, indexarPorNombre } from '../../src/motor/nombres.js';
 import { analizarDraft, BRECHA_CLARA } from '../../src/motor/analisis.js';
 import { CRUCE_MALO, CRUCE_FUERTE_EN_CONTRA } from '../../src/motor/matrices.js';
@@ -192,5 +192,3 @@ test('«pick claro» salta con la brecha de verdad, no con la redondeada (3.60.7
   ok(!claro(umbral - 0.004), 'con 1,6 puntos ya dice «pick claro»');
   eq(claro(umbral + 0.004)?.params.puntos, 2, 'con 2,4 puntos no dice «pick claro +2»');
 });
-
-await terminar('motor/analisis');

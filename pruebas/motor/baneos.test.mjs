@@ -4,7 +4,7 @@
  * de la tabla de etiquetas solo sin dato), sin escalón, y que la pérdida
  * esperada escale con lo que ese héroe sale de verdad cuando está libre.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { heroes, h } from '../fixtures/catalogo.mjs';
 import { indexarPorNombre } from '../../src/motor/nombres.js';
 import { sugerirBaneos, proximosBaneos, coocurrenciaDeBaneos } from '../../src/motor/baneos.js';
@@ -141,5 +141,3 @@ test('no propone banear a quien salta encima de tu TANQUE', () => {
   const razonesCarry = conCarry.find((b) => b.heroe.name === 'Asesino')?.motivos ?? [];
   ok(razonesCarry.some((r) => r.clave === 'peligro.saltaEncima'), 'ya no avisa de que le van a saltar encima al tirador');
 });
-
-await terminar('motor/baneos');

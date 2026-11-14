@@ -7,7 +7,7 @@
  * no está claro.
  */
 import { readFileSync } from 'node:fs';
-import { test, ok, eq, casi, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, casi, RAIZ } from '../ayuda.mjs';
 import {
   TRAMOS, COEF_FASE, DIFERENCIA_DE_FASE, PENDIENTE_DE_HEROE,
   formaDe, curvaDe, centroDeFases, formaDeEquipo, probabilidadPorTramo, fasesDePartida,
@@ -140,5 +140,3 @@ test('tu rival de línea va en TU línea también en las curvas, aunque el repar
   const p = planear(datos, { yo, enemigos: caso, aliados: [], linea: 'roam', rivalMarcado: caso[0].name });
   eq(p.fases?.ellos.porHeroe.find((x) => x.heroe.name === caso[0].name)?.linea, 'roam', `la curva del rival marcado (${caso[0].name}) no es la de tu línea: ${JSON.stringify(p.fases?.ellos.porHeroe.map((x) => [x.heroe.name, x.linea]))}`);
 });
-
-await terminar('motor/fases');

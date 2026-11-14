@@ -10,7 +10,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { leerPng } from '../../scripts/lector/png.mjs';
 import { esTabla, reconocerResultado, plantillasIniciales, vectorPalabra, parecidoMaximo, ZONA_PALABRA, RESULTADO_MINIMO, TABLA_MINIMA, DESPLAZAMIENTO } from '../../scripts/lector/resultado.mjs';
 import { plantillasDeSerie } from '../../scripts/lector/servir.mjs';
@@ -56,5 +56,3 @@ test('lo tapado, lo que no es la tabla y lo ambiguo no dan resultado: se pregunt
   eq(reconocerResultado(derrota, { gane: [], perdi: [], tablas: [] }).resultado, null, 'sin plantillas inventa un resultado');
   eq(reconocerResultado(derrota, plantillasIniciales()).resultado, null, 'sin tablas de serie inventa un resultado');
 });
-
-await terminar('scripts/resultado');

@@ -6,7 +6,7 @@
  * partida.
  */
 import { spawnSync } from 'node:child_process';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { tramoDe } from '../../scripts/medir-fases.mjs';
 
 test('el tramo de cada duración: 10–12 es el primero, 20 o más el último, y lo ilegible no cuenta', () => {
@@ -21,5 +21,3 @@ test('el script corre entero con los datos del repositorio y sale con 0', () => 
   eq(r.status, 0, `salida ${r.status}: ${(r.stderr || r.stdout).slice(-400)}`);
   ok(/con las curvas: .* coeficiente/.test(r.stdout) && /curvas barajadas:/.test(r.stdout), `no da la medida: ${r.stdout.slice(0, 400)}`);
 });
-
-await terminar('scripts/medir-fases');

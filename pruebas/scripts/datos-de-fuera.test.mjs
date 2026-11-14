@@ -9,7 +9,7 @@ import { mkdtempSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { pintarTabla } from '../../scripts/derivar-tags.mjs';
 import { ES_SPECIALITY } from '../../scripts/ingesta/extraccion.mjs';
 import { bajarImagenes, esUrlDeImagen } from '../../scripts/ingesta/imagenes.mjs';
@@ -45,5 +45,3 @@ test('una imagen con id «../x» o una dirección que no es https no se baja', a
     eq(r.bajados, 1);
   } finally { srv.close(); }
 });
-
-await terminar('scripts/datos-de-fuera');

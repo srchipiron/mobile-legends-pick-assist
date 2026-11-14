@@ -271,7 +271,7 @@
   (migración `partidas_supuesto_3_81_2`, probada como `anon` en una
   transacción deshecha; los permisos, iguales).
 - **`apk.yml` sin `npm test`**: hecho en 3.81.2 (y recompila también con
-  `src/app/basedatos.js`, `src/app/i18n/**` y `public/comunidad.json`).
+  `src/comun/basedatos.js`, `src/app/i18n/**` y `public/comunidad.json`).
 - **Dos cambios de Supabase propuestos por la revisión de 3.83.1** (28 de
   octubre de 2026), sin aplicar porque el conector no hace llegar a Javi el
   aviso de permiso: que `recortes_recientes` no devuelva `tipo = 'final'`

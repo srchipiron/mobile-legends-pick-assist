@@ -18,7 +18,7 @@ import { copyFileSync, cpSync, existsSync, mkdtempSync, readFileSync, readdirSyn
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { comparar } from '../../scripts/comparar-ingesta.mjs';
 import { huellaTexto, huellaDeHabilidades } from '../../scripts/ingesta/extraccion.mjs';
 
@@ -749,5 +749,3 @@ test('la ingesta arranca sin errores de programación', async () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
-
-await terminar('scripts/ingesta-simulada');

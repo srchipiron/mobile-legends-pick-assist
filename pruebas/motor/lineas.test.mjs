@@ -3,7 +3,7 @@
  * enemigos elegidos, y cuándo callarse. Un rival mal nombrado sale en el
  * análisis como un hecho; no decir nada no cuesta nada.
  */
-import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
+import { test, ok, eq, leerJson } from '../ayuda.mjs';
 import { catalogo, h, crearRnd } from '../fixtures/catalogo.mjs';
 import { detectarRivalDeLinea, probabilidadDeLinea, indiceDeLineas, frecuenciaDeRoles, asignarLineas, lanesDe } from '../../src/motor/lineas.js';
 import { LINEAS } from '../../src/motor/catalogo.js';
@@ -156,5 +156,3 @@ test('un rol vacío de la API no tapa el del catálogo (3.60.7)', () => {
   const conRol = probabilidadDeLinea(heroe, { role: 'tank', lanes: ['roam'] }, 'roam', frecuencias);
   eq(probabilidadDeLinea(heroe, { role: '', lanes: ['roam'] }, 'roam', frecuencias), conRol, 'el rol vacío de la API cambia la línea');
 });
-
-await terminar('motor/lineas');

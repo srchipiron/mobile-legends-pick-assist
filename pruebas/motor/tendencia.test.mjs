@@ -4,7 +4,7 @@
  * el cambio respecto a lo que se juega (un rango que sube entero no hace
  * subir a nadie), la confirmación del otro rango y los estados sin datos.
  */
-import { test, ok, eq, casi, leerJson, terminar } from '../arnes.mjs';
+import { test, ok, eq, casi, leerJson } from '../ayuda.mjs';
 import { catalogo } from '../fixtures/catalogo.mjs';
 import { movimientos, fotoDeReferencia, UMBRAL_MOVIMIENTO, CONFIRMACION } from '../../src/motor/tendencia.js';
 import { prepararDatos, movimientosDelMeta, poolDe } from '../../src/motor/draft.js';
@@ -99,5 +99,3 @@ test('con la fuerza en Mítico (Gloria vaciada) compara Mítico y confirma con G
   eq(r.suben.length, 0, 'mira el rango pedido en vez del de la fuerza');
   eq(r.noConfirmados, 1, 'Khufra sube en Mítico y Gloria no lo confirma');
 });
-
-await terminar('motor/tendencia');

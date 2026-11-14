@@ -7,7 +7,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { leerPng } from '../../scripts/lector/png.mjs';
 import { leerPicksEnemigos, leerAliados, carasGuardadas, PICKS_ENEMIGOS, ALIADO_MINIMO } from '../../scripts/lector/leer.mjs';
 import { leerCaptura } from '../../scripts/lector/lectura.mjs';
@@ -297,5 +297,3 @@ test('tu equipo: una cara que se parece a la aprendida de OTRO héroe no se apre
   eq(JSON.stringify(r.informe[0].aliados.confundibles), JSON.stringify([{ nombre: 'Layla', con: 'Guinevere' }]), `no avisa de la confusión: ${JSON.stringify(r.informe[0].aliados)}`);
   ok(!r.aprendido.aliadosPendientes.Layla && !r.aprendido.aliados.Layla, 'aprende la cara de Guinevere como Layla');
 });
-
-await terminar('scripts/aprender');

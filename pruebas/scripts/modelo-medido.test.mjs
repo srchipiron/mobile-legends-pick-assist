@@ -11,7 +11,7 @@
  * 2,5 SE de la del código». Sin esto, la promesa estaba en el nombre de una
  * prueba y en ningún sitio más.
  */
-import { test, ok, eq, terminar, leerJson } from '../arnes.mjs';
+import { test, ok, eq, leerJson } from '../ayuda.mjs';
 import { catalogo } from '../fixtures/catalogo.mjs';
 import { LINEAS } from '../../src/motor/catalogo.js';
 import { indiceDeLineas, frecuenciaDeRoles, detectarRivalDeLinea } from '../../src/motor/lineas.js';
@@ -148,5 +148,3 @@ test('el modelo: la escala es la medida en las partidas pro', async () => {
     }
   }
 });
-
-await terminar('scripts/modelo-medido');

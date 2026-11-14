@@ -5,7 +5,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -47,5 +47,3 @@ test('datos de más de 72 horas abren la incidencia de la vigilancia (3.81.2); a
   ok(/shell: bash\n\s*run: node scripts\/datos-rancios\.mjs/.test(v), 'sin bash (pipefail), el tee se come el código de salida');
   ok(v.includes('/tmp/rancios.txt') && v.includes('steps.rancios.outcome'), 'la incidencia no dice que los datos están rancios');
 });
-
-await terminar('scripts/salud');

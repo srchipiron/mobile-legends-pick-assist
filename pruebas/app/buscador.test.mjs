@@ -10,7 +10,7 @@
  * palabra aparece en un comentario no vigila nada, y este proyecto ya tuvo
  * tres de esas.
  */
-import { test, ok, terminar, leerTexto } from '../arnes.mjs';
+import { test, ok, leerTexto } from '../ayuda.mjs';
 import { filtrarPorNombre } from '../../src/motor/alias.js';
 import { heroes } from '../fixtures/catalogo.mjs';
 
@@ -36,5 +36,3 @@ test('escribiendo el nombre en español sale el héroe que la app enseña en ing
   // Y sin sacar de paso a media plantilla: el alias es un atajo, no un comodín.
   ok(nombres('Cíclope').length <= 2, `«Cíclope» saca ${nombres('Cíclope').length} héroes`);
 });
-
-await terminar('app/buscador');

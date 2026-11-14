@@ -7,7 +7,7 @@
  * más una regla evidente del juego, así que lo que hay que vigilar es dónde
  * pone el listón de «esta build ya lleva defensa».
  */
-import { test, ok, eq, leerJson, terminar, generador } from '../arnes.mjs';
+import { test, ok, eq, leerJson, generador } from '../ayuda.mjs';
 import {
   ajusteDefensivo, ajustesDeBuild, amenazaEnemiga, buildsDe, coberturaBuilds, conEfecto, mejoresDefensas,
   buildParaElDraft, vaDeCritico, DESEQUILIBRIO, ENEMIGOS_PARA_HABLAR, TOPE_AVISOS,
@@ -403,5 +403,3 @@ test('avisos nuevos: escudos y crítico, y se callan si la build ya los cubre (3
   ok(!ajustesDeBuild({ objetos: [1] }, equipment, [{ name: 'Miya' }, { name: 'Eudora' }], 'roam', { builds }).some((a) => a.clave === 'build.ajusteCritico'), 'uno solo de crítico ya avisa');
   ok(ajustesDeBuild({ objetos: [1] }, equipment, [{ name: 'Miya' }, { name: 'Layla' }], 'roam', { builds, tope: 1 }).length <= 1, 'el tope no se respeta');
 });
-
-await terminar('motor/builds');

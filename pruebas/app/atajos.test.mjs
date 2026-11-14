@@ -2,7 +2,7 @@
  * Las teclas del ordenador (3.87.0, src/app/atajos.js): E, A y B abren su
  * selector, pero nunca escribiendo, con una hoja abierta o con Control.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { atajoDe, escribiendoEn } from '../../src/app/atajos.js';
 
 const PICKS = { hoja: null, fase: 'picks' };
@@ -34,5 +34,3 @@ test('escribiendoEn: campos, áreas, desplegables y lo editable', () => {
   ok(escribiendoEn(el('input')) && escribiendoEn(el('textarea')) && escribiendoEn(el('select')));
   ok(!escribiendoEn(el('button')) && !escribiendoEn(null) && !escribiendoEn({}), 'un botón cuenta como campo');
 });
-
-await terminar('app/atajos');

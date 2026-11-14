@@ -2,7 +2,7 @@
  * La ficha de un héroe (3.67.0, fichaDeHeroe en draft.js): lo que el motor
  * ya sabe de él, con los datos reales. Propiedades, no números del día.
  */
-import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
+import { test, ok, eq, leerJson } from '../ayuda.mjs';
 import { prepararDatos, fichaDeHeroe, POR_FICHA, poolDe, tocadoPorElParche } from '../../src/motor/draft.js';
 import { cruce, sinergia } from '../../src/motor/matrices.js';
 import { LINEAS } from '../../src/motor/catalogo.js';
@@ -57,5 +57,3 @@ test('tocado por el parche (3.102.0): con su fecha y los días, solo durante la 
   eq(fichaDeHeroe(d, 'Atlas', { ahora: dia('2026-11-14') }).parche?.dias, 3);
   eq(fichaDeHeroe(d, 'Atlas').parche, null);
 });
-
-await terminar('motor/ficha');

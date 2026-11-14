@@ -19,7 +19,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test, ok, eq, terminar, leerTexto } from '../arnes.mjs';
+import { test, ok, eq, leerTexto } from '../ayuda.mjs';
 import { heroes } from '../fixtures/catalogo.mjs';
 import { leerWorkflow, mandatos, ejecuta } from '../fixtures/yaml-workflows.mjs';
 import { nombreClave } from '../../src/motor/nombres.js';
@@ -221,5 +221,3 @@ ${mapa(['layla', 'fanny', 'hylos', 'chou', 'saber'], ['tigreal', 'zilong', 'eudo
   const conVentana = resumirPro([{ ...ps[1] }, { ...ps[0], fecha: '2026-09-01' }], heroes, { desde: '2026-06-01' });
   eq(conVentana.partidas, 1, 'una partida sin fecha entra en la ventana');
 });
-
-await terminar('scripts/pro');

@@ -3,7 +3,7 @@
  * móvil se lee, se funde sin perder nada, se mide el modelo contra los
  * drafts y el workflow que lo hace solo escucha al dueño del repositorio.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -158,5 +158,3 @@ test('medir-mias separa las apuntadas por el lector y cuenta los meses en la hor
   ok(/apuntó el lector solo[^\n]*40, 50/.test(informe(m)), `el informe no dice las del lector: ${informe(m).split('\n').find((l) => /lector solo/.test(l))}`);
   eq(m.porMes.map((x) => x.mes).join(), '2026-10', `los meses van en UTC: ${JSON.stringify(m.porMes)}`);
 });
-
-await terminar('scripts/partidas');

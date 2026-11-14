@@ -3,7 +3,7 @@
  * término de héroe sea el winrate sin encoger (el dato no lo pide) y que el
  * cruce real mande sobre las reglas por etiqueta.
  */
-import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
+import { test, ok, eq, leerJson } from '../ayuda.mjs';
 import { catalogo, h, crearRnd } from '../fixtures/catalogo.mjs';
 import { indexarPorNombre, nombreClave, idMotivo } from '../../src/motor/nombres.js';
 import { terminoHeroe, terminoCruce, terminoPareja, evaluarDraft, logit, ESCALA, SUB_MAX, VERSION_MODELO, equilibrioDe, terminoEquilibrio, esperanzaCruces, disponibilidad, PESO_EQUILIBRIO_DANO, terminoTu } from '../../src/motor/modelo.js';
@@ -405,5 +405,3 @@ test('tu nivel vale para cualquier héroe (3.72.0): uno que no juegas no sale pe
   eq(sinJugar.motivos.length, 0, 'un héroe que no juegas lleva un motivo de maestría');
   eq(terminoTu({ name: 'Khufra' }, {}, stats).valor, 0, 'sin maestría, el término no es cero');
 });
-
-await terminar('motor/modelo');

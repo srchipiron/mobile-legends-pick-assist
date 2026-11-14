@@ -3,7 +3,7 @@
  * ganar, los motivos de cada tarjeta y el pick a ciegas. Sobre los datos
  * reales, montados como los monta la app (draft.js).
  */
-import { test, ok, eq, leerJson, terminar, porNombre } from '../arnes.mjs';
+import { test, ok, eq, leerJson, porNombre } from '../ayuda.mjs';
 import { catalogo, heroes, poolRoam, h, crearRnd } from '../fixtures/catalogo.mjs';
 import { idMotivo, indexarPorNombre, nombreClave } from '../../src/motor/nombres.js';
 import { esPickCiego, ordenarPicks, motivosDe, riesgoContrapick, empatados, MARGEN_EMPATE } from '../../src/motor/ranking.js';
@@ -407,5 +407,3 @@ test('eligiendo pronto, el nº1 espera bien lo que se juega en las lineas abiert
   const cerrado = ordenarPicks(poolRoam, { enemigos: completo, meta: { ...meta, stats: conPick }, lineasAbiertas: [], poolsPorLinea: abiertas.poolsPorLinea });
   ok(cerrado.every((x) => x.terminos.porVer === 0), 'con los cinco enemigos elegidos sigue esperando algo');
 });
-
-await terminar('motor/ranking');

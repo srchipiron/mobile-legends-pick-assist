@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { bajarMisRecortes, claveDeJugadorValida } from '../basedatos.js';
+import { bajarMisRecortes, claveDeJugadorValida } from '../../comun/basedatos.js';
 import { comprobantes as comprobantesDe } from '../revisar.js';
 import { ComprobarTablet } from './ComprobarTablet.jsx';
 import { esPrevia, esSupuesta, esDudosa, siguioConsejo } from '../../motor/registro.js';

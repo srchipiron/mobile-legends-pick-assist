@@ -3,7 +3,7 @@
  * partidas suyas al azar (fijo en la semana), solo de las que apuntó ella y
  * nadie tocó, y cuánto acierta en lo comprobado.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { paraComprobar, precisionDeLaTablet, sanearComprobadas, semanaDe, POR_SEMANA, SEMANA_MS, TOPE_COMPROBADAS } from '../../src/motor/comprobacion.js';
 import { DUDOSAS_DESDE, DUDOSAS_HASTA } from '../../src/motor/registro.js';
 
@@ -71,5 +71,3 @@ test('lo guardado con forma: sin repetir partida (manda la última), con tope y 
   eq(sanearComprobadas(Array.from({ length: TOPE_COMPROBADAS + 9 }, (_, i) => ({ t: i, bien: true, cuando: i }))).length, TOPE_COMPROBADAS);
   eq(sanearComprobadas(null).length, 0);
 });
-
-await terminar('motor/comprobacion');

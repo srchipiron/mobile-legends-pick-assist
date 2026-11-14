@@ -2,7 +2,7 @@
  * Las claves de invitación (3.65.0, src/app/licencia.js): firmar con la
  * clave de administrador, comprobar con la pública, y la puerta.
  */
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { crearClaveDeAdministrador, firmarClave, comprobarClave, sanearLicencias, sanearDatosDeClave, claveDeEnlace, enlaceDeClave, pasaLaPuerta } from '../../src/app/licencia.js';
@@ -84,5 +84,3 @@ test('la puerta: abierta si no se exige; si se exige, el administrador y quien t
   eq(pasaLaPuerta({ licencias: exigir, comprobada: { valida: true } }), true);
   eq(pasaLaPuerta({ licencias: exigir, comprobada: null, esAdministrador: true }), true, 'el administrador se queda fuera');
 });
-
-await terminar('app/licencia');

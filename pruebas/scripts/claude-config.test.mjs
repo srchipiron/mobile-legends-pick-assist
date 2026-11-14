@@ -9,7 +9,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 
 const ajustes = JSON.parse(readFileSync(join(RAIZ, '.claude', 'settings.json'), 'utf8'));
 
@@ -100,5 +100,3 @@ test('el glob de las reglas casa como Claude Code', () => {
   ok(globARegex('scripts/medir-*.mjs').test('scripts/medir-pro.mjs') && !globARegex('scripts/medir-*.mjs').test('scripts/ingesta/medir-x.mjs'), '* cruza carpetas');
   ok(!globARegex('src/app/lector.js').test('src/app/lectorXjs'), 'el punto casa con cualquier cosa');
 });
-
-await terminar('scripts/claude-config');

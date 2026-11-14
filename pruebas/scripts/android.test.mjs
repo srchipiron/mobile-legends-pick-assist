@@ -5,7 +5,7 @@
  * permita: sin la excepción, la burbuja no salía nunca y no se enteraba
  * nadie (el error se tragaba). Se exige por forma.
  */
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 
@@ -59,7 +59,7 @@ test('todo lo que importa el lector de la tablet va dentro de la APK (3.70.0): u
     ok(!propiedad, `${f} usa ${propiedad?.[0]} en una expresión regular: el Node de la APK no la entiende y el fichero no carga`);
     ok(!/\/[a-z]*v[a-z]*\.test\(|new RegExp\([^)]*['"][a-z]*v[a-z]*['"]\)/.test(texto), `${f} usa el indicador v de expresiones regulares`);
   }
-  ok([...vistos].some((f) => f.startsWith('src/app/')), 'el recorrido no llega a lo que el lector importa de la app');
+  ok([...vistos].some((f) => f.startsWith('src/comun/')), 'el recorrido no llega a lo que el lector importa de src/comun');
   // Y apk.yml se recompila cuando cambia cualquier cosa que va dentro (3.81.2), menos los datos (la APK los baja sola).
   const apk = readFileSync(join(RAIZ, '.github/workflows/apk.yml'), 'utf8');
   const rutas = [...(/^\s*paths:\s*\[([^\]]*)\]/m.exec(apk)?.[1] ?? '').matchAll(/'([^']+)'/g)].map((m) => m[1]);
@@ -76,7 +76,7 @@ test('el lector de la tablet solo llama a donde debe (3.70.0): su puerto interno
   // fetch es global: la lista de imports permitidos no limita los destinos. Se mira cada llamada.
   const PERMITIDAS = {
     'scripts/lector/en-tablet.mjs': { fetch: ['...a'], pedir: ['`${base}/captura`', '`${base}/voz`', 'url'] },
-    'src/app/basedatos.js': { fetch: ['`${config.url}/rest/v1/rpc/${funcion}`'] },
+    'src/comun/basedatos.js': { fetch: ['`${config.url}/rest/v1/rpc/${funcion}`'] },
   };
   const cola = ['scripts/lector/en-tablet.mjs']; const vistos = new Set(); const vistas = [];
   while (cola.length) {
@@ -191,5 +191,3 @@ test('el aspecto de la APK (3.91.0): las pantallas usan las píldoras de Estilo.
   ok(/boton = pildora\("Empezar a leer", Estilo\.Tipo\.PRINCIPAL\) \{ alternar\(\) \}/.test(principal) && /estadoCard\.addView\(boton/.test(principal), 'el botón de empezar a leer no va arriba, en la tarjeta de estado');
   ok(/estadoTitulo\.text = if \(Lector\.grabando\)/.test(principal), 'la tarjeta de estado no dice si está leyendo');
 });
-
-await terminar('scripts/android');

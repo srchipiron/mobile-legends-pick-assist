@@ -9,7 +9,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { transformSync } from 'esbuild';
-import { test, ok, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, RAIZ } from '../ayuda.mjs';
 
 const ficheros = (dir) => readdirSync(dir).flatMap((n) => {
   const ruta = join(dir, n);
@@ -26,5 +26,3 @@ test('ningún fichero de src/ compila con avisos (atributos repetidos, claves re
   }
   ok(!avisos.length, `avisos del compilador:\n  ${avisos.join('\n  ')}`);
 });
-
-await terminar('app/avisos-jsx');

@@ -3,11 +3,11 @@
  * cruzar los recortes con TUS partidas, poner cada nombre en su hueco y sacar
  * lo que se guarda.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { readFileSync } from 'node:fs';
 import { comprobantes, revisiones, cambiosDeRevision, porRevisar, imagenValida, encuadre, tusMasJugados, companerosHabituales, carasParaHueco, sinResultado, CARAS_POR_HUECO, TOPE_IMAGEN } from '../../src/app/revisar.js';
 import { prepararDatos, probablesDelBando } from '../../src/motor/draft.js';
-import { RAIZ } from '../arnes.mjs';
+import { RAIZ } from '../ayuda.mjs';
 
 const HEROES = ['Atlas', 'Clint', 'Franco', 'Gord', 'Khufra', 'Layla', 'Minotaur', 'Rafaela', 'Selena', 'Tigreal', 'Zilong', 'Floryn'];
 const PNG = 'iVBORw0KGgoAAAANSUhEUg==';
@@ -149,5 +149,3 @@ test('los comprobantes de la tablet (3.101.0): solo los del tipo nuevo, con inst
   eq(JSON.stringify([...m.entries()]), JSON.stringify([[10, { tira: png, gane: false, parecido: 0.98 }]]), 'entra un comprobante sin forma o de otro tipo');
   eq(comprobantes(null).size, 0);
 });
-
-await terminar('app/revisar');

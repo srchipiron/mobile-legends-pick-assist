@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
-import { sanearConfig } from '../basedatos.js';
+import { sanearConfig } from '../../comun/basedatos.js';
 
 /**
  * Administración (3.65.0): solo en el móvil de Javi (con el token de la

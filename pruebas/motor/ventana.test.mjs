@@ -4,7 +4,7 @@
  * coherente con la de 7, y que no entre cuando viene como la de 1 día
  * (héroes al 0% y al 100%, r = 0,09), que es la forma real de fallar.
  */
-import { test, ok, eq, casi, terminar } from '../arnes.mjs';
+import { test, ok, eq, casi } from '../ayuda.mjs';
 import { elegirVentana, elegirRango, elegirRangoDeRelaciones, mediaDeWinrate, COHERENCIA_MINIMA, COHERENCIA_DE_RANGO_MINIMA, CELDAS_PARA_COMPARAR, WINRATE_POSIBLE, tiersVigentes, TIERS_CADUCAN_DIAS } from '../../src/motor/ventana.js';
 
 /** 40 héroes con winrates repartidos entre 0,44 y 0,56, como los de verdad. */
@@ -205,5 +205,3 @@ test('la tier list de mlbb.gg solo se enseña si es de estas dos semanas (3.59.4
   eq(tiersVigentes(de('no es una fecha'), ahora), null, 'una tier sin fecha válida se enseña');
   eq(tiersVigentes(null, ahora), null);
 });
-
-await terminar('motor/ventana');

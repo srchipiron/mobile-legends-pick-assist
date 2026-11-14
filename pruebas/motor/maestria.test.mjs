@@ -4,7 +4,7 @@
  * nivel. La otra mitad de la prueba de perfiles (fundir y sanear) vive en
  * perfil.test.mjs.
  */
-import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
+import { test, ok, eq, leerJson } from '../ayuda.mjs';
 import { catalogo, h } from '../fixtures/catalogo.mjs';
 import { buscar, nombreClave } from '../../src/motor/nombres.js';
 import { maestriaEfectiva, fecharMaestria, maestriaDesdeRegistro, notaDeMaestria, priorDeMaestria, tuNivel, maestriaDeSiempre, TOPE_DE_SIEMPRE, motivoDeMaestria } from '../../src/motor/maestria.js';
@@ -300,5 +300,3 @@ test('el motivo de maestría dice números jugados de verdad, no la mezcla con l
   eq(solo.clave, 'regla.maestriaMala');
   eq(JSON.stringify(solo.params), JSON.stringify({ pct: 53, n: 564 }), `sin la app no dice lo de siempre entero: ${JSON.stringify(solo.params)}`);
 });
-
-await terminar('motor/maestria');

@@ -4,7 +4,7 @@
  * medida de «si ganaste» puede contarlas hasta que se arreglen después, y
  * todas las que hay pasan por aquí: si añades una que mire `gane`, añádela.
  */
-import { test, ok, eq, terminar, leerJson } from '../arnes.mjs';
+import { test, ok, eq, leerJson } from '../ayuda.mjs';
 import { esDudosa, conResultado, DUDOSAS_DESDE, DUDOSAS_HASTA, resumen, calibracion, ajustePersonal, medirFasesMias } from '../../src/motor/registro.js';
 import { evolucion, porCompaneros, porLinea, porDia, conLaApp } from '../../src/motor/analitica.js';
 import { tusNumeros, tuSemana } from '../../src/motor/habitos.js';
@@ -70,5 +70,3 @@ test('ninguna medida de «si ganaste» las cuenta: con ellas y sin ellas sale lo
   eq(resumen([...previas, ...fiables, ...dudosas], maestria).dudosas, dudosas.length, 'el Veredicto no dice cuántas no cuentan');
   ok(JSON.stringify(calibracion([...fiables, ...arregladas])) !== JSON.stringify(calibracion(fiables)), 'la calibración no cuenta las arregladas');
 });
-
-await terminar('motor/dudosas');

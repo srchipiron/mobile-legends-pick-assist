@@ -11,7 +11,7 @@ import { existsSync, mkdtempSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
-import { test, ok, eq, terminar, RAIZ, leerJson } from '../arnes.mjs';
+import { test, ok, eq, RAIZ, leerJson } from '../ayuda.mjs';
 
 test('los iconos que la app va a pedir existen de verdad', () => {
   const meta = leerJson('public/data/roam-meta.json');
@@ -182,5 +182,3 @@ test('la ingesta no escribe las imagenes en el repositorio cuando va a un tempor
     rmSync(dir, { recursive: true, force: true });
   }
 });
-
-await terminar('app/imagenes');

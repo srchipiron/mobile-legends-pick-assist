@@ -3,7 +3,7 @@
  * (src/app/porque.js): por qué un candidato va detrás del nº1, término a
  * término, en la misma escala que el desglose de la tarjeta.
  */
-import { test, ok, eq, casi, leerJson, terminar } from '../arnes.mjs';
+import { test, ok, eq, casi, leerJson } from '../ayuda.mjs';
 import { catalogo } from '../fixtures/catalogo.mjs';
 import { porQueDetras, MARGEN_EMPATE, PUNTOS_A_FAVOR } from '../../src/motor/ranking.js';
 import { ESCALA, PUNTOS_POR_LOGIT } from '../../src/motor/modelo.js';
@@ -65,5 +65,3 @@ test('la frase: empate, en qué pierde y en qué gana, en los dos idiomas', () =
   }
   eq(fraseDetras(null, 'X', es), null);
 });
-
-await terminar('motor/porque');

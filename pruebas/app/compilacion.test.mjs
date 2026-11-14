@@ -14,13 +14,15 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
-import { test, ok, eq, terminar, RAIZ, leerJson, leerTexto } from '../arnes.mjs';
+import { after } from 'node:test';
+import { test, ok, eq, RAIZ, leerJson, leerTexto } from '../ayuda.mjs';
 import { leerPng } from '../../scripts/lector/png.mjs';
 
 const DIST = mkdtempSync(resolve(tmpdir(), 'dist-sw-'));
 execFileSync('npx', ['vite', 'build', '--outDir', DIST], {
   cwd: RAIZ, encoding: 'utf8', timeout: 180000, stdio: ['ignore', 'pipe', 'pipe'],
 });
+after(() => rmSync(DIST, { recursive: true, force: true }));
 const sw = readFileSync(resolve(DIST, 'sw.js'), 'utf8');
 /** Lo que el instalador se descarga de golpe al instalar la app. */
 const precarga = [...sw.matchAll(/url:"([^"]+)"/g)].map((m) => m[1]);
@@ -163,6 +165,3 @@ test('las novedades salen del CHANGELOG.md y la primera es la version que se pub
   ok(js.includes(entradas[0].cambios[0]),
     'las novedades de la app compilada no salen del CHANGELOG.md: se escribirían dos veces y se desincronizarían');
 });
-
-await terminar('app/compilacion');
-rmSync(DIST, { recursive: true, force: true });

@@ -11,7 +11,7 @@
 import { readdirSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
-import { test, ok, eq, terminar, RAIZ, leerTexto } from '../arnes.mjs';
+import { test, ok, eq, RAIZ, leerTexto } from '../ayuda.mjs';
 import { extraerLineas, extraerRol, extraerHabilidades, fetchStats, recogerCurva, TRAMOS_CURVA, huellaTexto, huellaDeHabilidades, extraerCara, urlOriginal } from '../../scripts/ingesta/extraccion.mjs';
 import { TRAMOS } from '../../src/motor/fases.js';
 import { callRoute, request } from '../../scripts/ingesta/descarga.mjs';
@@ -577,5 +577,3 @@ test('los tocados por el parche (3.102.0): la huella de las habilidades ve las c
   // Otro cambio a uno ya tocado le reinicia la semana.
   eq(anotarParche({ heroes: [h('Atlas', 'a'), h('Gloo', 'g'), h('Estes', 'e')], tocados: { Atlas: '2026-11-11' } }, [h('Atlas', 'B'), h('Gloo', 'g'), h('Estes', 'e')], '2026-11-14').tocados.Atlas, '2026-11-14');
 });
-
-await terminar('scripts/ingesta');

@@ -8,7 +8,7 @@
 import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { leerPng, leerCrudo, escribirPngRapido, escribirPng } from '../../scripts/lector/png.mjs';
 import { crearServidor, crearElectorDeCaptura, ELECCION_DE_CAPTURA } from '../../scripts/lector/servir.mjs';
 import { capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
@@ -118,5 +118,3 @@ test('sin elector, /leer sigue con la comprimida y no pide nunca la crudo (las p
     eq(`${r.formato}|${pedidas.join()}`, 'png|png', 'sin elector cambia de formato');
   } finally { servidor.close(); }
 });
-
-await terminar('scripts/captura-cruda');

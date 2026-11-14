@@ -4,7 +4,7 @@
  * repartidos IGUAL que en la medida de las partidas pro (si no, lo medido en
  * tus partidas no es lo mismo que lo medido allí).
  */
-import { test, eq, ok, terminar } from '../arnes.mjs';
+import { test, eq, ok } from '../ayuda.mjs';
 import { tramoDeMinutos, esDuracionPosible } from '../../src/motor/directo.js';
 import { tramoDe } from '../../scripts/medir-fases.mjs';
 
@@ -26,5 +26,3 @@ test('la voz ya no está (3.96.0): el plan no trae guion ni cierres', async () =
   ok(!('directo' in p) && !('cierres' in p), 'el plan sigue trayendo el guion de la voz');
   ok(esDuracionPosible(15) && !esDuracionPosible(2));
 });
-
-await terminar('motor/directo');

@@ -3,12 +3,12 @@
  * partida de verdad (con lo que se arregla después en el historial), y las
  * caras de compañero confirmadas que aún no van de serie.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { medirRecortes, informeLector } from '../../scripts/medir-lector.mjs';
 import { recorteDePicks } from '../../scripts/lector/recortes.mjs';
 import { capturaCompleta, VERDAD } from '../fixtures/juego/captura.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
-import { bajarRecortes } from '../../src/app/basedatos.js';
+import { bajarRecortes } from '../../src/comun/basedatos.js';
 
 const T = 1793140000000;
 const picks = recorteDePicks(capturaCompleta({ columna: 2 }));
@@ -52,5 +52,3 @@ await test('los recortes se bajan de la base de datos (recortes_recientes)', asy
   const r = await bajarRecortes(config, { horas: 24, fetch: s.fetch });
   ok(!r.error && r.recortes.length === 1 && r.recortes[0].d.partida === T, JSON.stringify(r).slice(0, 200));
 });
-
-await terminar('scripts/medir-lector');

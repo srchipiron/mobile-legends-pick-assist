@@ -4,7 +4,7 @@
  * margen sale siempre, nada se afirma dentro de él, las previas no cuentan
  * y los grupos pequeños no se enseñan.
  */
-import { test, ok, eq, casi, terminar } from '../arnes.mjs';
+import { test, ok, eq, casi } from '../ayuda.mjs';
 import { tusNumeros, tuSemana, wilson, HUECO_DE_SESION_MS, MINIMO_POR_GRUPO } from '../../src/motor/habitos.js';
 import { compararProporciones, resumen } from '../../src/motor/registro.js';
 
@@ -179,5 +179,3 @@ test('tus héroes no cuentan el pick supuesto (3.81.2): el resultado sí, el hé
   const s = tuSemana(ps, { ahora });
   ok(s.n === 6 && !s.funcionan.length && !s.numeroUno, `tu semana cuenta el héroe supuesto: ${JSON.stringify(s.funcionan)}`);
 });
-
-terminar('motor/habitos');

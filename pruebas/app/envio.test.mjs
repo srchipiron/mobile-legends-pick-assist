@@ -3,7 +3,7 @@
  * datos, el token (solo administración) guardado sin poder reventar la app,
  * y que la app ya no abra ni comente incidencias.
  */
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { huellaDe, sanearEnvio } from '../../src/app/envio.js';
 import { recogerPerfil } from '../../src/motor/perfil.js';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -39,5 +39,3 @@ test('la app ya no abre ni comenta incidencias por la API (3.98.0): ni github.js
     ok(!/subirIncidencia|comentarIncidencia|subirAparte|\/issues\/\$\{|\/comments\b/.test(texto), `${f} vuelve a subir a incidencias de GitHub`);
   }
 });
-
-terminar('app/envio');

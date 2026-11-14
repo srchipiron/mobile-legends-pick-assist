@@ -7,7 +7,7 @@
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { CLAVES, DICCIONARIOS, crearT, idiomaPorDefecto, IDIOMAS } from '../../src/app/i18n/index.js';
 import { COUNTER_RULES, TEAM_NEEDS, DANGER_RULES } from '../../src/motor/reglas.js';
 
@@ -106,5 +106,3 @@ test('en español los decimales llevan coma, y lo que no es un decimal no se toc
   eq(es('pick.wr', { pct: '2.268 partidas' }), '2.268 partidas% WR', 'un texto con un número dentro se toca');
   eq(en('pick.wr', { pct: '57.1' }), '57.1% WR', 'en inglés la coma también');
 });
-
-await terminar('app/i18n');

@@ -6,7 +6,7 @@
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
 import { parecidoAPartida, enPartida, UMBRAL_PARTIDA, recorteMarcador } from '../../scripts/lector/partida.mjs';
 import { crearServidor, plantillasDeSerie, tocaCapturarFinal, VIGILANCIA } from '../../scripts/lector/servir.mjs';
@@ -398,5 +398,3 @@ test('nunca hacia atrás (3.86.3): un /vigilar de un draft más viejo no quita l
     eq((await p.final()).desde, otro, 'un draft más nuevo no entra');
   } finally { p.cerrar(); }
 });
-
-await terminar('scripts/directo-lector');

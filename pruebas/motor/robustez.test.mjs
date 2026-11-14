@@ -4,7 +4,7 @@
  * final, cada final puntuado COMPLETO, y —lo que importa— que la cuota
  * prediga si el nº1 aguanta hasta el draft completo.
  */
-import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
+import { test, ok, eq, leerJson } from '../ayuda.mjs';
 import { catalogo } from '../fixtures/catalogo.mjs';
 import { LINEAS } from '../../src/motor/catalogo.js';
 import { nombreClave, indexarPorNombre } from '../../src/motor/nombres.js';
@@ -134,5 +134,3 @@ test('el generador del motor no tiene correlacion serial apreciable', () => {
   let num = 0; let den = 0; for (let i = 0; i < v.length - 1; i++) num += (v[i] - m) * (v[i + 1] - m); for (const x of v) den += (x - m) ** 2;
   ok(Math.abs(num / den) < 0.008, `correlacion serial del generador ${num / den}`);
 });
-
-await terminar('motor/robustez');

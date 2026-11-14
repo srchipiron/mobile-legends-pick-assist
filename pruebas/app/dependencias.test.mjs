@@ -6,7 +6,7 @@
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve } from 'node:path';
-import { test, ok, terminar, RAIZ } from '../arnes.mjs';
+import { test, ok, RAIZ } from '../ayuda.mjs';
 
 function ficherosDe(dir) {
   return readdirSync(dir).flatMap((n) => {
@@ -59,5 +59,3 @@ test('las carpetas de 2.x ya no existen', () => {
     ok(!existsSync(join(RAIZ, ruta)), `${ruta} sigue en el repositorio: el código viejo se borra, no se deja al lado`);
   }
 });
-
-await terminar('app/dependencias');

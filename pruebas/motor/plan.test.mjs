@@ -4,7 +4,7 @@
  * dicen los datos (cruces, parejas, habilidades), y una frase sin dato
  * detrás no sale.
  */
-import { test, ok, eq, terminar } from '../arnes.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
 import { planDePartida, amenazaDe, MAX_EQUIPO, MAX_ETAPA } from '../../src/motor/plan.js';
 import { PENDIENTE_DE_HEROE } from '../../src/motor/fases.js';
 import { indexarPorNombre } from '../../src/motor/nombres.js';
@@ -235,5 +235,3 @@ test('de punta a punta: las habilidades de la API llegan al catálogo fundido y 
   const r = recomendar(datos, { linea: 'roam', enemigos, conSimulacion: false });
   ok(r.partida && Array.isArray(r.partida.equipo), 'recomendar no devuelve el plan del héroe elegido');
 });
-
-await terminar('motor/plan');

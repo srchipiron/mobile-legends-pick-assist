@@ -1242,7 +1242,7 @@ pantalla por programa).
   `TOPE_PARTIDAS_TABLET` 500, `subidas` aparte) y `subirLoDeLaTablet` con TU
   clave (`ajustes.clave`, solo con «Guardar mis partidas» puesto en la app) y
   `comunidad.json` (bajado de la web con los datos o el que trae la APK),
-  saneados con `sanearConfig` de src/app/basedatos.js. Sin clave no sube
+  saneados con `sanearConfig` de src/comun/basedatos.js. Sin clave no sube
   nada; un fallo no marca nada y se reintenta cada 10 min.
 - **De vuelta al móvil**: `useComunidad` trae al abrir (y cada
   `TRAER_CADA_MS`, 5 min) `mis_partidas`, se queda con lo que no está aquí ni
@@ -1252,7 +1252,7 @@ pantalla por programa).
   nunca. Lo cazó la prueba de navegador con la base de datos contestando
   después de `comunidad.json`, el orden de un móvil de verdad.
 - **La APK lleva lo que importa el lector**: `copiarLector` copia también
-  `src/app/basedatos.js` y `public/comunidad.json`. `android.test` recorre
+  `src/comun/basedatos.js` y `public/comunidad.json`. `android.test` recorre
   los imports de en-tablet.mjs y exige que cada fichero vaya en la copia: uno
   sin copiar tira la APK al arrancar y desde aquí no se ve.
 - Pruebas en `solo` (el recorrido entero con un final de pega, una vez, con
