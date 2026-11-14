@@ -18,7 +18,7 @@ function animar(el, fotogramas, opciones) {
 }
 
 /**
- * Las tarjetas se DESLIZAN a su puesto nuevo cuando cambia el orden (3.22.0),
+ * Las tarjetas se DESLIZAN a su puesto nuevo cuando cambia el orden,
  * en vez de saltar: al quitar un enemigo o fijar tu pick se ve quién sube y
  * quién baja. Es la técnica FLIP: se mide dónde estaba cada tarjeta
  * (`offsetTop`, que no incluye transformaciones, así que una animación a

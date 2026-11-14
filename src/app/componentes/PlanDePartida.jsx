@@ -4,7 +4,7 @@ import { useT } from '../i18n/contexto.js';
 const pct = (p) => Math.round(p * 100);
 
 /**
- * Cómo va a ir la partida (3.43.0, src/motor/fases.js): vuestra
+ * Cómo va a ir la partida (src/motor/fases.js): vuestra
  * probabilidad de ganar según el minuto en que acabe, en seis barras, y una
  * frase con lo que os conviene. Las barras salen de la línea del 50%: hacia
  * arriba a favor, hacia abajo en contra, con la MISMA escala en todos los
@@ -51,7 +51,7 @@ function Etapa({ titulo, frases, clase}) {
 }
 
 /**
- * El plan de partida (3.36.0, src/motor/plan.js; por fases desde 3.43.0):
+ * El plan de partida (src/motor/plan.js; por fases):
  * cómo va a ir la partida según cuánto dure, qué hacer al principio, en las
  * peleas y al final, qué problemas vas a tener, y frases cortas para decir
  * al equipo por voz. Va arriba de la hoja de objetos, que se abre desde
@@ -62,7 +62,7 @@ function Etapa({ titulo, frases, clase}) {
  * pegarlo en el chat del juego.
  */
 /**
- * Los cruces y las parejas de tu héroe con cada uno de ESTE draft (3.92.0):
+ * Los cruces y las parejas de tu héroe con cada uno de ESTE draft:
  * el dato de las matrices, con su número, en verde lo claro a favor y en
  * rojo lo claro en contra.
  */

@@ -33,7 +33,7 @@ export function idiomaPorDefecto() {
 export function crearT(idioma) {
   const dic = TEXTOS[idioma] ?? EN;
   const y = idioma === 'es' ? ' y ' : ' and ';
-  // En español la coma decimal (3.59.1): «57,1%», no «57.1%». Solo un número
+  // En español la coma decimal: «57,1%», no «57.1%». Solo un número
   // con UN punto y nada más («−4.5», «0.242»): una versión «3.58.1», una hora
   // o un nombre no se tocan.
   const decimal = idioma === 'es'
@@ -45,7 +45,7 @@ export function crearT(idioma) {
     return plantilla
       // Cada rama admite huecos dentro («{n|1 nombre|{n} nombres}»): sin eso
       // la regla cortaba en la primera llave y salía el texto crudo en
-      // pantalla (3.35.0, «Leyendo solo: … ({n nombres nuevos})»).
+      // pantalla («Leyendo solo: … ({n nombres nuevos})»).
       .replace(/\{(\w+)\|((?:[^|{}]|\{\w+\})*)\|((?:[^{}]|\{\w+\})*)\}/g, (_, k, uno, varios) => (Number(params[k]) === 1 ? uno : varios))
       .replace(/\{(\w+)\}/g, (_, k) => {
         const v = params[k];

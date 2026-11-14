@@ -33,7 +33,7 @@ export const PLAZO_PUBLICADA_MS = 4000;
 export async function pedirPublicada({ plazo = PLAZO_PUBLICADA_MS } = {}) {
   const sinCache = async (ruta) => {
     try {
-      // Con plazo (3.60.2): con la red colgada el botón no hacía nada y el
+      // Con plazo: con la red colgada el botón no hacía nada y el
       // informe salía minutos después, cuando ya no se esperaba.
       const res = await fetch(`${ruta}?t=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(plazo) });
       return res.ok ? await res.json() : null;

@@ -21,7 +21,7 @@ export function EditorDeMaestria({ pool, maestria, onGuardar, onCerrar}) {
     const n = leerDecimal(crudo);
     return Number.isNaN(n) || n <= 0 || (max && n > max);
   };
-  // Una fila con un campo y sin el otro (3.60.7): se marca el que falta y la
+  // Una fila con un campo y sin el otro: se marca el que falta y la
   // hoja no se cierra. Antes se guardaba sin ella y sin decir nada.
   const falta = (e, campo) => !!e?.tocada && !(e[campo] ?? '') && !!(e[campo === 'games' ? 'wr' : 'games'] ?? '');
   const faltanPartidas = (e) => falta(e, 'games');
@@ -29,7 +29,7 @@ export function EditorDeMaestria({ pool, maestria, onGuardar, onCerrar}) {
 
   const guardar = () => {
     const limpia = {};
-    // Guardar es decir «estos son mis números del juego HOY» (3.13.0): cada
+    // Guardar es decir «estos son mis números del juego HOY»: cada
     // héroe lleva la fecha, y las partidas que apuntes después se le suman
     // (motor/maestria.js). Un héroe que no has tocado y ya tenía fecha la
     // conserva: sus números siguen siendo los de aquel día.

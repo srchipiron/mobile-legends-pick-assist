@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------------------------
-   El material (3.7.0)
+   El material
 
    La interfaz sigue el lenguaje visual de iOS 26 («Liquid Glass»): fondo
    negro con dos resplandores de color, superficies translúcidas con borde
@@ -9,9 +9,9 @@
    Apple, Inter/Segoe/Roboto donde no) con títulos gruesos y seguimiento
    negativo, y números en la variante redondeada con cifras tabulares.
 
-   Lo que NO cambia respecto a 3.6.0, a propósito: ningún alto, relleno ni
-   hueco que decida dónde cae la tarjeta nº1 (medido en
-   primera-pantalla.e2e.mjs) ni los 32 px de toque (responsive.e2e.mjs).
+   [M] Ningún alto, relleno ni hueco se toca sin volver a medir dónde cae la
+   tarjeta nº1 (primera-pantalla.e2e.mjs) y los 32 px de toque
+   (responsive.e2e.mjs).
    El desenfoque de fondo (`backdrop-filter`) solo va en lo que FLOTA sobre
    contenido que se mueve —el pie, la cabecera fija de la maestría, el panel
    del draft en escritorio—: en ocho tarjetas y veinte chips costaría un
@@ -43,7 +43,6 @@
   --c-counter:  #FF453A;
   --c-synergy:  #409CFF;
   --c-comp:     #30D158;
-  --c-mastery:  #BF5AF2;
   --c-balance:  #FF9F0A;
 
   --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI Variable Display', 'Segoe UI', Roboto, system-ui, sans-serif;
@@ -57,7 +56,7 @@
   --blur: blur(24px) saturate(180%);
   --brillo: inset 0 1px 0 rgba(255, 255, 255, 0.10);
   --sombra: 0 10px 30px rgba(0, 0, 0, 0.45);
-  /* El muelle de todo lo que se mueve (3.22.0): un resorte con amortiguación
+  /* El muelle de todo lo que se mueve: un resorte con amortiguación
      0,75 muestreado en 21 puntos (sube al 1,028 y se asienta), como las
      animaciones de iOS y de Material 3 Expressive. Un navegador sin
      `linear()` lo toma por inválido y usa `ease`. Las tarjetas lo leen de
@@ -101,7 +100,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   font-size: 12px; color: var(--muted); padding: 6px 0;
 }
 .more > summary::-webkit-details-marker { display: none; }
-/* Una flecha que gira (3.59.0): sin ella, «Ajustes» y «Para tus compañeros»
+/* Una flecha que gira: sin ella, «Ajustes» y «Para tus compañeros»
    cerrados parecían títulos de una sección vacía. */
 .more > summary::after, .equipo > summary::after {
   content: '›'; font-size: 18px; line-height: 1; font-weight: 400; color: var(--muted);
@@ -134,7 +133,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   font-family: var(--font-display);
   font-size: 22px; letter-spacing: -0.02em;
   margin: 0; font-weight: 700;
-  /* El título en blanco que se funde a oro (3.91.0). */
+  /* El título en blanco que se funde a oro. */
   background: linear-gradient(100deg, #FFFFFF 30%, #FFD60A 120%); -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .freshness { font-size: 11px; color: var(--muted); font-family: var(--font-num); font-variant-numeric: tabular-nums; }
@@ -166,15 +165,15 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
 }
 /* Lo que hay en el hueco además de la ×: la cara (o el nombre), centrada. En
-   los enemigos es el botón de marcar al rival (3.59.0: antes un ○ aparte de
+   los enemigos es el botón de marcar al rival (antes un ○ aparte de
    11 px que dejaba la cara en 22). */
 .slot-cuerpo { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .slot.empty { color: var(--muted); border-style: dashed; border-color: var(--line-hi); background: transparent; box-shadow: none; }
 /* Área de toque grande sin cambiar la caja: el relleno se compensa con margen
-   negativo. Medido en 3.6.0 en doce tamaños de pantalla: la × salía de 27 a
+   negativo. Medido en doce tamaños de pantalla: la × salía de 27 a
    31 px de ancho y la marca de rival de 21 a 25; desde entonces, 32 o más. */
 .slot .x { color: var(--muted); font-size: 18px; line-height: 1; padding: 10px 11px; margin: -10px -9px; }
-/* Los 32 px de toque de la × no pueden depender de la letra (3.88.0): con una
+/* Los 32 px de toque de la × no pueden depender de la letra: con una
    fuente donde «×» mide 12 px, el botón se quedaba en 30 (responsive.e2e en
    un contenedor con otras fuentes). La caja mínima, centrada. */
 .slot .x { min-width: 32px; text-align: center; }
@@ -200,13 +199,13 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .slot.marked { border-color: var(--gold) !important; box-shadow: 0 0 0 1px var(--gold), var(--brillo); }
 /* Deducido por la app, no marcado por ti: se distingue del marcado a mano. */
 .slot.auto { border-color: var(--gold) !important; border-style: dashed; }
-/* Leído por el lector de la tablet (3.59.0): un punto en la esquina, para
+/* Leído por el lector de la tablet: un punto en la esquina, para
    revisar de un vistazo lo que no metiste tú. */
 .slot.leido::after {
   content: ''; position: absolute; left: 3px; bottom: 3px; width: 6px; height: 6px; border-radius: 50%;
   background: var(--c-comp); box-shadow: 0 0 0 1.5px var(--ink); pointer-events: none;
 }
-/* El bando tiñe el cristal, no solo el borde; desde 3.91.0 con luz de su
+/* El bando tiñe el cristal, no solo el borde; con luz de su
    color desde abajo, como los huecos del propio juego. */
 .side.enemy .slot:not(.empty) {
   border-color: color-mix(in srgb, var(--enemy) 55%, transparent);
@@ -219,7 +218,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   box-shadow: var(--brillo), 0 4px 14px -8px var(--ally);
 }
 .slot-cara { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14); }
-/* Los diez baneos, cinco y cinco a cualquier ancho (3.59.2): con `flex-wrap`
+/* Los diez baneos, cinco y cinco a cualquier ancho: con `flex-wrap`
    a 390 px salían seis y cuatro, de anchos distintos. */
 .side.bans .slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .side.bans .slot { min-width: 0; }
@@ -253,7 +252,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   color: var(--muted); margin: 0;
   display: flex; align-items: center; gap: 8px;
 }
-/* Una barra de oro delante del título de la lista (3.91.0). */
+/* Una barra de oro delante del título de la lista. */
 .results-head h2::before { content: ''; width: 3px; height: 12px; border-radius: 2px; background: var(--gold); box-shadow: 0 0 8px rgba(255, 214, 10, 0.6); }
 
 .pick {
@@ -269,7 +268,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   background: linear-gradient(180deg, rgba(255, 214, 10, 0.10), var(--panel) 70%);
   box-shadow: var(--brillo), 0 12px 36px rgba(255, 214, 10, 0.10);
 }
-/* El aura del héroe (3.91.0): su cara, muy desenfocada y saturada, como luz
+/* El aura del héroe: su cara, muy desenfocada y saturada, como luz
    de fondo en la esquina de la tarjeta (Apple Music hace lo mismo con la
    carátula). Es un pseudo-elemento detrás del contenido: no mueve nada de
    sitio ni añade alto, y un `filter` sobre una imagen quieta se pinta una
@@ -291,7 +290,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   font-family: var(--font-num); font-size: 18px; font-weight: 600; color: var(--muted);
   font-variant-numeric: tabular-nums; padding-top: 2px;
 }
-/* Las medallas del podio (3.91.0): oro, plata y bronce. Caben en la columna
+/* Las medallas del podio: oro, plata y bronce. Caben en la columna
    de 44 px y miden lo mismo que el nombre: la tarjeta no crece. */
 .rank-1, .rank-2, .rank-3 {
   display: grid; place-items: center; width: 34px; height: 34px; padding: 0;
@@ -327,7 +326,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   font-family: var(--font-num); font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em; color: var(--gold); text-align: right;
 }
-/* La cifra del nº1, en degradado de oro (3.91.0): el mismo tamaño, otro brillo. */
+/* La cifra del nº1, en degradado de oro: el mismo tamaño, otro brillo. */
 .pick.top .pick-score {
   font-size: 28px; line-height: 1.05;
   background: linear-gradient(180deg, #FFF3A0, #FFD60A 55%, #F2A900); -webkit-background-clip: text; background-clip: text;
@@ -340,13 +339,13 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .desglose { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-bottom: 6px; font-size: 11px; color: var(--muted); }
 .desglose span { white-space: nowrap; }
 .desglose b { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 600; }
-/* Por qué no es el nº1 (3.51.0): una línea discreta bajo el desglose. */
-/* La mejor pareja con tu equipo (3.60.0), en el color de las parejas del desglose. */
+/* Por qué no es el nº1: una línea discreta bajo el desglose. */
+/* La mejor pareja con tu equipo, en el color de las parejas del desglose. */
 .pick-pareja { margin: 0 0 6px; font-size: 12px; color: var(--c-synergy); font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .pick-pareja.mala { color: var(--enemy); }
 .pick-detras { margin: 0 0 6px; font-size: 11px; color: var(--muted); }
 /* El porqué y los motivos, en la segunda fila de la tarjeta, bajo el nombre Y
-   la columna de cifras (3.59.1). Vacía (sin «detrás» ni motivos) no ocupa. */
+   la columna de cifras. Vacía (sin «detrás» ni motivos) no ocupa. */
 .pick-abajo { grid-column: 2 / -1; margin-top: -6px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px; }
 .pick-abajo .pick-detras { flex: 1 0 100%; margin: 0; }
 .pick-abajo .reasons { flex: 1 1 180px; }
@@ -364,7 +363,6 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* Un motivo de EQUIPO ("no hay primera linea") le vale igual a media lista y
    sale repetido en varias tarjetas. Se apaga para que no compita con los que
    hablan de ESTE heroe contra ESTE draft, que son los que decides mirando. */
-.reasons li.de-equipo { opacity: 0.62; background: transparent; border-style: dashed; border-color: var(--line); }
 
 .legend { display: flex; gap: 12px; flex-wrap: wrap; margin: 14px 0 4px; font-size: 11px; color: var(--muted); }
 .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
@@ -396,7 +394,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 /* Con cuatro botones (Enviar, A GitHub, Copiar, Cerrar) el de Cerrar quedaba
    fuera de la pantalla en un móvil real: se envuelve. */
 .sheet-head { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; align-items: center; }
-/* El asa (3.22.0): arrastrarla hacia abajo cierra la hoja. Va en el relleno
+/* El asa: arrastrarla hacia abajo cierra la hoja. Va en el relleno
    de arriba (posición absoluta), así que no le quita alto a nada; solo el
    relleno superior crece para que el dedo tenga dónde cogerla. */
 .sheet { padding-top: 24px; }
@@ -641,7 +639,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 
 /* ---------- selector de línea ---------- */
 
-/* Los cruces y parejas del draft en el plan (3.92.0): píldoras con su número. */
+/* Los cruces y parejas del draft en el plan: píldoras con su número. */
 .plan-cruces { margin-top: 12px; }
 .cruces-rotulo { margin: 8px 0 6px; font-size: 12px; color: var(--muted); }
 .cruces-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
@@ -654,7 +652,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .cruces-leyenda { margin: 8px 0 0; font-size: 11px; color: var(--muted); }
 
 .lineas { display: flex; flex-direction: column; gap: 10px; }
-/* Cada línea con su icono y su color (3.91.0), sobre un cristal teñido. */
+/* Cada línea con su icono y su color, sobre un cristal teñido. */
 .linea {
   --tono: var(--gold);
   display: grid; grid-template-columns: 48px 1fr auto; align-items: center; column-gap: 14px; text-align: left;
@@ -678,7 +676,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 }
 .linea.elegida .linea-nombre { color: var(--gold); }
 .linea-pista { grid-column: 2; align-self: start; font-size: 12px; color: var(--muted); }
-/* La portada del primer arranque (3.91.0). */
+/* La portada del primer arranque. */
 .portada { margin: 4px 0 18px; }
 .portada-marca {
   margin: 0; font-family: var(--font-display); font-size: 30px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05;
@@ -717,7 +715,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   font-variant-numeric: tabular-nums;
 }
 
-/* Tus números (3.48.0): la misma caja que el Veredicto; un héroe que se sale
+/* Tus números: la misma caja que el Veredicto; un héroe que se sale
    de tu media lleva la marca de color del lado, como las frases. */
 .tus-numeros, .revision-draft { gap: 4px; }
 .numeros-heroe.mejor { color: var(--c-comp); }
@@ -727,9 +725,9 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 
 /* El botón vive en la esquina de la tarjeta, debajo del winrate. Tiene que ser
    tocable con el pulgar: 34px de alto, que es lo mínimo cómodo en móvil. */
-/* Los saltos de la hoja de Plan y objetos (3.59.1): fijos arriba mientras
-   se baja. FLOTAN sobre texto que se mueve, así que llevan desenfoque (la
-   regla de 3.7.0: solo en lo que flota). */
+/* Los saltos de la hoja de Plan y objetos: fijos arriba mientras
+   se baja. FLOTAN sobre texto que se mueve, así que llevan desenfoque (solo
+   lo que flota lo lleva). */
 .build-saltos {
   position: sticky; top: -12px; z-index: 2; display: flex; gap: 8px;
   margin: -12px -14px 0; padding: 8px 14px;
@@ -751,8 +749,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .build-cuerpo { padding: 12px 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
 .build-vacio { margin: 0; font-size: 13px; color: var(--muted); }
 
-/* El plan de partida (3.36.0), arriba de la hoja de objetos. Con su propia
-   clase (3.38.0): con `.plan` pisaba el plan A·B·C de la fase de baneos. Letra grande a
+/* El plan de partida, arriba de la hoja de objetos. Con su propia
+   clase: con `.plan` pisaba el plan A·B·C de la fase de baneos. Letra grande a
    proposito: se lee de un vistazo en mitad de una partida, para decirlo por
    voz. La barra amarilla marca lo del equipo; la azul, lo tuyo. */
 .plan-partida { display: flex; flex-direction: column; gap: 10px; }
@@ -770,13 +768,13 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
   border-radius: var(--r-sm); background: var(--glass);
   box-shadow: inset 3px 0 0 var(--gold);
 }
-/* Por etapas (3.43.0): lo tuyo en azul, los problemas en rojo; lo del equipo
+/* Por etapas: lo tuyo en azul, los problemas en rojo; lo del equipo
    sigue en amarillo. */
 .plan-etapa .plan-lista li { box-shadow: inset 3px 0 0 var(--ally); }
 .etapa-problemas .plan-lista li { box-shadow: inset 3px 0 0 var(--enemy); }
 .plan-equipo .plan-lista li { box-shadow: inset 3px 0 0 var(--gold); }
 
-/* Cómo va a ir la partida (3.43.0): seis barras, del 30% al 70%, verde a
+/* Cómo va a ir la partida: seis barras, del 30% al 70%, verde a
    favor y rojo en contra, con la línea del 50%. */
 .curva-partida { gap: 8px; }
 .curva-ayuda { margin: 0; font-size: 12px; color: var(--muted); }
@@ -843,9 +841,9 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 
 .build-ajuste { display: flex; flex-direction: column; gap: 5px; }
 
-/* Los talentos del emblema (3.57.0): una línea entera, que no parta las cifras. */
+/* Los talentos del emblema: una línea entera, que no parta las cifras. */
 .build-talentos { flex-basis: 100%; overflow-wrap: anywhere; }
-/* La build elegida para este draft (3.57.0) y la marca de la más usada entre las otras. */
+/* La build elegida para este draft y la marca de la más usada entre las otras. */
 .build-para-draft { margin: 0 0 4px; font-size: 13px; line-height: 1.4; }
 .build-mas-usada { font-size: 11px; color: var(--gold); font-weight: 600; }
 
@@ -860,25 +858,24 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
    escondido: es la diferencia entre informar y recomendar. */
 .build-nota { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.4; }
 
-/* ---------- «Leer del juego» (3.25.0) ---------- */
+/* ---------- «Leer del juego» ---------- */
 
 .lector-aviso {
   flex-basis: 100%; margin: 6px 0 0; padding: 8px 12px; border-radius: var(--r-sm);
   background: rgba(255, 69, 58, 0.10); border: 1px solid rgba(255, 69, 58, 0.35);
   font-size: 12px; line-height: 1.4; color: var(--text); overflow-wrap: anywhere;
 }
-/* «Leer solo» (3.28.0): el interruptor y, debajo, qué pasó con la última lectura. */
+/* «Leer solo»: el interruptor y, debajo, qué pasó con la última lectura. */
 .lector-auto[aria-pressed="true"] { border-color: rgba(255, 214, 10, 0.55); background: rgba(255, 214, 10, 0.12); color: var(--text); }
-/* La voz callada (3.53.0): en rojo, que se vea que está apagada. */
 .lector-estado { flex-basis: 100%; margin: 4px 0 0; font-size: 11px; line-height: 1.4; color: var(--muted); overflow-wrap: anywhere; }
-/* El lector en la tablet (3.61.0): vinculado, o dirección y código a mano. */
+/* El lector en la tablet: vinculado, o dirección y código a mano. */
 .lector-tablet { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
 .lector-tablet .empty-state { padding: 0; margin: 0; }
-/* El sistema de un vistazo (3.77.0): las líneas de lo que dice la tablet, juntas. */
+/* El sistema de un vistazo: las líneas de lo que dice la tablet, juntas. */
 .lector-tablet .sistema { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); }
-/* Quién iba en cada equipo (3.78.0), en el historial: chips con su × y un campo para añadir. */
+/* Quién iba en cada equipo, en el historial: chips con su × y un campo para añadir. */
 .editar-draft { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
-/* Revisar con las capturas del lector (3.86.0): cara y campo por hueco, los dos equipos lado a lado si caben. */
+/* Revisar con las capturas del lector: cara y campo por hueco, los dos equipos lado a lado si caben. */
 .revisar-abrir { width: 100%; margin-bottom: 12px; }
 .revisar-partida { border: 1px solid var(--line); border-radius: var(--r); padding: 12px; margin: 12px 0; background: var(--glass); }
 .revisar-partida.pendiente { border-color: var(--gold); }
@@ -893,7 +890,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .revisar-guardar { width: 100%; margin-top: 12px; }
 .revisar-todas { margin-left: 8px; }
 .revisar-ver-entera { margin-left: auto; }
-/* La captura entera (3.87.0): la tablet la sube a un tercio; aquí se ve a tamaño de pantalla de la tablet. */
+/* La captura entera: la tablet la sube a un tercio; aquí se ve a tamaño de pantalla de la tablet. */
 .revisar-entera { display: block; width: min(280px, 100%); height: auto; justify-self: center; border-radius: var(--r-sm); background: #000; }
 .revisar-enlace a { color: var(--gold); word-break: break-all; }
 .revisar-lista { display: flex; flex-direction: column; }
@@ -901,11 +898,11 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--gold);
 .solo-pagina { display: contents; }
 .revisar-tuyos { display: flex; flex-wrap: wrap; gap: 6px; }
 .revisar-hueco:has(.revisar-tuyos) { flex-wrap: wrap; }
-/* Elegir tocando la cara (3.89.0): la cara es un botón y las caras para elegir salen debajo de su hueco. */
+/* Elegir tocando la cara: la cara es un botón y las caras para elegir salen debajo de su hueco. */
 button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
 .revisar-cara[aria-expanded="true"] { outline: 2px solid var(--text); outline-offset: 2px; }
 .revisar-hueco:has(.revisar-elegir) { flex-wrap: wrap; }
-/* Las partidas sin resultado (3.89.4): las pantallas del final y Gané/Perdí, para decirlo de golpe al acabar. */
+/* Las partidas sin resultado: las pantallas del final y Gané/Perdí, para decirlo de golpe al acabar. */
 .revisar-sin-resultado { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); }
 .revisar-fin { display: flex; flex-direction: column; gap: 8px; }
 .revisar-fin-pantallas { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px; }
@@ -919,7 +916,7 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
 .hero-grid.revisar-caras button { flex-direction: column; justify-content: center; gap: 2px; padding: 6px 2px; min-height: 0; font-size: 11px; text-align: center; }
 .revisar-caras .grid-cara { width: 40px; height: 40px; }
 .revisar-caras .grid-nombre { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* El análisis de tus partidas (3.88.0): un panel. Cifras arriba, una serie
+/* El análisis de tus partidas: un panel. Cifras arriba, una serie
    por gráfica (una barra por semana, en el azul de tu equipo), la media como
    raya discontinua y cada porcentaje con su intervalo. */
 .analitica { gap: 12px; }
@@ -954,7 +951,7 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
 .ana-fila.peor .ana-lado, .ana-grupo.peor { color: var(--enemy); }
 .revisar-guardada { font-weight: 600; }
 .revisar-clave { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 12px; }
-/* La barra del ordenador (3.87.0): solo desde 1.100 px (ver la @media de abajo). */
+/* La barra del ordenador: solo desde 1.100 px (ver la @media de abajo). */
 .barra-pc { display: none; }
 .barra-pc-teclas { flex-basis: 100%; margin: 4px 0 0; font-size: 12px; color: var(--muted); }
 .editar-equipo { display: flex; flex-direction: column; }
@@ -965,11 +962,10 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
 .lector-tablet input { width: 100%; box-sizing: border-box; min-height: 40px; padding: 8px 12px; border-radius: var(--r-sm); border: 1px solid transparent; background: var(--field); color: var(--text); font-size: 16px; }
 .lector-tablet input:focus { outline: none; border-color: var(--gold); }
 .lector-traer { border-color: rgba(255, 214, 10, 0.55); }
-/* «Descargar Lector MLBB» (3.65.2) es un enlace con forma de botón. */
+/* «Descargar Lector MLBB» es un enlace con forma de botón. */
 .lector-tablet a.reset { display: block; text-align: center; text-decoration: none; }
-/* La voz de los consejos en directo no suena (3.44.0): en naranja, que hay que hacer algo. */
 
-/* ---------- «Deshacer» (3.23.0) ---------- */
+/* ---------- «Deshacer» ---------- */
 
 /* Flota abajo sobre contenido que se mueve: lleva el desenfoque en el propio
    elemento porque NO tiene descendientes `fixed` (la trampa del pie). Está
@@ -1051,7 +1047,7 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
 .nota.bien { color: var(--c-comp); }
 .nota.mal { color: var(--enemy); }
 .nota-relaciones { margin-top: 2px; }
-/* Las claves de invitación (3.65.0): los campos de la administración y la
+/* Las claves de invitación: los campos de la administración y la
    puerta, que sustituye a la app entera cuando se exige clave. */
 .admin-campo {
   width: 100%; box-sizing: border-box; padding: 10px 12px; min-height: 44px;
@@ -1067,10 +1063,10 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
 }
 .puerta h1 { font-size: 24px; margin: 0; letter-spacing: -0.02em; }
 .puerta p { margin: 0; line-height: 1.5; }
-/* La subida automática de partidas (3.10.0), dentro de «Tus partidas». */
+/* La subida automática de partidas, dentro de «Tus partidas». */
 .envio-auto { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--glass); box-shadow: var(--brillo); }
 .envio-auto a { color: var(--gold); }
-/* La base de datos de partidas (3.69.0): tu clave en letra fija, que se pueda leer y copiar a mano. */
+/* La base de datos de partidas: tu clave en letra fija, que se pueda leer y copiar a mano. */
 .comunidad { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--glass); box-shadow: var(--brillo); }
 .comunidad-clave { font-size: 12px; word-break: break-all; }
 .comunidad-informe { display: flex; flex-direction: column; gap: 6px; }
@@ -1095,7 +1091,7 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
 /* El tipo de partida en pequeño: es lo que menos se mira y lo que mas ocupa. */
 .partida-tipo { color: var(--muted); font-size: 11px; text-align: right; }
 .partida .x { color: var(--muted); font-size: 16px; padding: 12px 10px; margin: -12px -6px; }
-/* La fila de una partida recién quitada, con su «Deshacer» (3.60.2). */
+/* La fila de una partida recién quitada, con su «Deshacer». */
 .partida-quitada { display: flex; color: var(--muted); justify-content: space-between; }
 
 /* Al añadir partidas viejas la rejilla no puede comerse la pantalla: si no, el
@@ -1122,9 +1118,9 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
 /* Área de toque de 40 px aunque el texto mida 11: fallar abría el detalle del pie. */
 .pie-version { color: inherit; font: inherit; padding: 12px 6px; margin: -12px -6px; text-decoration: underline dotted; text-underline-offset: 3px; }
 .pie-version:hover { color: var(--gold); }
-/* «nuevo» tras actualizarse sola (3.65.5), hasta abrir las novedades. */
+/* «nuevo» tras actualizarse sola, hasta abrir las novedades. */
 .pie-nuevo { margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: var(--gold); color: #000; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-block; }
-/* Comprobar la tablet (3.101.0): tres partidas suyas a la semana, con la pantalla del final que leyó. */
+/* Comprobar la tablet: tres partidas suyas a la semana, con la pantalla del final que leyó. */
 .por-comprobar { margin-left: 6px; padding: 0 6px; border-radius: 999px; background: var(--gold); color: #000; font-size: 11px; font-weight: 700; display: inline-block; line-height: 16px; }
 .comprobar { display: flex; flex-direction: column; gap: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: var(--r); }
 .comprobar-partida { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
@@ -1140,9 +1136,6 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
 .changelog ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.4; }
 
 .estimacion-nota { margin: 0 0 8px; font-size: 11px; color: var(--muted); line-height: 1.3; }
-/* Con tu historial (3.68.0): lo que te espera a ti, al lado del número del modelo. */
-.estimacion-tuya { color: var(--gold); font-weight: 600; }
-.estimacion-tuya::before { content: ' · '; color: var(--muted); font-weight: 400; }
 .equipo-vistos { font-size: 11px; color: var(--muted); font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .legend-nota { color: var(--muted); }
 /* El foco va a la hoja al abrirse (teclado y lector): sin anillo visible. */
@@ -1166,7 +1159,7 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
 .grid-nombre { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sheet-cuenta { margin: -4px 0 8px; font-size: 12px; color: var(--muted); }
 .sheet-sugeridos { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
-/* Las dos pestañas del selector de picks (3.16.0): una hoja para los dos
+/* Las dos pestañas del selector de picks: una hoja para los dos
    equipos, con el color de cada bando. */
 .sheet-bandos { display: flex; gap: 8px; margin-bottom: 8px; }
 .sheet-bandos button {
@@ -1203,9 +1196,9 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
   padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px;
 }
 .meta-fila.top .meta-nombre { color: var(--gold); font-weight: 600; }
-/* El nombre en Meta abre la ficha (3.67.0): un botón que no parece botón. */
+/* El nombre en Meta abre la ficha: un botón que no parece botón. */
 .meta-ficha { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; min-height: 32px; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
-/* La ficha de un héroe (3.67.0). */
+/* La ficha de un héroe. */
 .ficha-cab { display: flex; gap: 14px; align-items: center; }
 .ficha-cara { width: 64px; height: 64px; border-radius: var(--r); flex: none; }
 .ficha-linea-dato { margin: 0 0 4px; font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 600; }
@@ -1221,7 +1214,7 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
 .meta-delta { font-family: var(--font-num); font-size: 11px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
 .meta-delta.sube { color: var(--c-comp); }
 .meta-delta.baja { color: var(--enemy); }
-/* Quién sube y quién baja esta semana (3.50.0): fichas que se parten en
+/* Quién sube y quién baja esta semana: fichas que se parten en
    varias filas a 320 px en vez de salirse. */
 .meta-semana { margin-top: 10px; }
 .meta-mov { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
@@ -1239,15 +1232,15 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
   color: var(--muted); text-align: center;
 }
 .pick-tier { display: block; text-align: right; margin-top: 2px; }
-/* Tocado por el parche (3.102.0): información, no alarma; como la tier, sin fondo ni borde que sumen alto. */
+/* Tocado por el parche: información, no alarma; como la tier, sin fondo ni borde que sumen alto. */
 .pick-parche { display: block; text-align: right; margin-top: 2px; font-size: 11px; color: var(--muted); }
 .tier-SS, .tier-S { color: var(--gold); }
 
-/* ---------- tu pick fijado (3.5.0) ---------- */
+/* ---------- tu pick fijado ---------- */
 /* El hueco «Tú» en tu equipo, como en el draft del juego. */
 .slot.yo { border-color: var(--gold) !important; background: rgba(255, 214, 10, 0.10); }
 .slot.empty.yo { color: var(--gold); border-color: var(--gold); border-style: dashed; background: transparent; }
-/* Tu hueco vacío respira (3.91.0, en el bloque de movimiento): es el que falta por decidir. */
+/* Tu hueco vacío respira (en el bloque de movimiento): es el que falta por decidir. */
 @keyframes respira { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 214, 10, 0); } 50% { box-shadow: 0 0 14px 1px rgba(255, 214, 10, 0.35); } }
 /* La tarjeta de tu pick: una franja dorada, sin cambiar de alto. */
 .pick.elegido { border-color: var(--gold); box-shadow: inset 3px 0 0 var(--gold), var(--brillo); }
@@ -1277,12 +1270,11 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
 .filtro + .filtro { margin-left: 6px; }
 /* Los dos filtros de la cabecera no encogen (a 360 px partían su texto en dos líneas). */
 .filtro-domino, .filtro-sinergia { flex: 0 0 auto; }
-/* «Sinergia» pulsado va en el color de las parejas del desglose (3.60.0). */
+/* «Sinergia» pulsado va en el color de las parejas del desglose. */
 .filtro-sinergia[aria-pressed='true'] { border-color: var(--c-synergy); color: var(--c-synergy); background: color-mix(in srgb, var(--c-synergy) 12%, transparent); }
 .filtro[aria-pressed='true'] { border-color: var(--gold); color: var(--gold); background: rgba(255, 214, 10, 0.10); }
 .fuera-de-mios { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
-/* El mejor de tus héroes, tras la nº1 (3.72.0): una línea, sin tapar nada. */
-.de-los-tuyos { margin: -2px 0 10px; font-size: 13px; color: var(--muted); }
+/* El mejor de tus héroes, tras la nº1: una línea, sin tapar nada. */
 /* Tu plan A · B · C en la fase de baneos. */
 .plan { margin-top: 14px; }
 .plan .chip { padding: 8px 12px 8px 6px; font-size: 14px; }
@@ -1319,8 +1311,8 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
   /* Cinco huecos enemigos en 360px: (360-24-4·6)/5 = 57px por hueco. */
   .slot { min-height: 38px; min-width: 0; flex: 1 1 0; padding: 4px 2px; font-size: 12px; gap: 1px; }
   /* 32 px de toque también aquí, y el relleno se compensa con el margen para
-     que la huella en la fila sea el propio signo: la × mide 15 px. Desde
-     3.59.0 no hay ○ (marca al rival la propia cara), así que en el hueco
+     que la huella en la fila sea el propio signo: la × mide 15 px. No hay ○
+     (marca al rival la propia cara), así que en el hueco
      enemigo de 320 px (54 px, 52 de contenido) caben 30 + 1 + 15 y la cara
      pasa de 22 a 30 px sin que el hueco crezca (4 + 30 + 4 = 38). */
   .slot .x { font-size: 18px; padding: 10px 9px; margin: -10px -9px; }
@@ -1381,7 +1373,7 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
   /* Lo que no es una tarjeta ocupa las dos columnas: la cabecera, los avisos,
      el analisis del draft, la leyenda y el pie legal. */
   .results > :not(.pick) { grid-column: 1 / -1; }
-  /* El modo ordenador (3.87.0): lo de «Ajustes» a la vista, a un clic. */
+  /* El modo ordenador: lo de «Ajustes» a la vista, a un clic. */
   .barra-pc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
   .barra-pc .reset { flex: 1 1 calc(50% - 4px); min-height: 40px; }
   /* El análisis en el ordenador: las cuatro listas de compañeros y rivales de dos en dos. */
@@ -1403,7 +1395,7 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
   button:active { transform: scale(0.96); }
   /* La × y el ○ no: viven dentro de un hueco y al encogerse bailaban. */
   .slot .x:active, .slot .mark:active, .partida .x:active { transform: none; }
-  /* Las hojas suben con el muelle (3.22.0). Poco recorrido y poco tiempo a
+  /* Las hojas suben con el muelle. Poco recorrido y poco tiempo a
      propósito: la rejilla se toca nada más abrir, y lo que se toca a
      contrarreloj no puede estar moviéndose bajo el dedo. Nada `fixed`
      cuelga de una hoja, así que el `translate` no encierra a nadie. */

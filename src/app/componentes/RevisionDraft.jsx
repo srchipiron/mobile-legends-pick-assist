@@ -6,7 +6,7 @@ const pct = (v) => Math.round(v * 100);
 const puntos = (v) => (v * 100).toFixed(1);
 
 /**
- * La revisión del draft (3.49.0, como DraftGap en LoL): tu última partida
+ * La revisión del draft (como DraftGap en LoL): tu última partida
  * con draft, con el draft entero y los datos de hoy, y a petición todas.
  * Todas cuestan ~1 s en el móvil por cada 40 drafts: por eso van con botón.
  */

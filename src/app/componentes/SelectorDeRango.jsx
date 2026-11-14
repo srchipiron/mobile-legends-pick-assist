@@ -3,14 +3,12 @@ import { useT } from '../i18n/contexto.js';
 export const ETIQUETAS_RANGO = { epic: 'Epic', legend: 'Legend', mythic: 'Mythic', honor: 'Honor', glory: 'Glory' };
 
 /**
- * Selector del rango del que salen los winrates. Los cruces, las parejas y
- * las builds no cambian con él: con otro rango elegido se mezclan dos
- * poblaciones, y hay que decirlo donde se elige. Desde 3.35.0 los cruces y
- * las parejas pueden ser de OTRO rango que las builds (Mítico mientras
- * Gloria se rellena; las builds siguen en el de la ingesta), y se dice cada
- * uno con el suyo (3.37.0: decía «las builds son de Mythic»).
+ * El rango del que salen los winrates. Los cruces, las parejas y las builds
+ * no cambian con él (se mezclan dos poblaciones, y se dice aquí), y los
+ * cruces pueden ser de OTRO rango que las builds (Mítico mientras Gloria se
+ * rellena): cada uno con el suyo.
  */
-export function SelectorDeRango({ rangos, valor, onCambiar, rangoDeCruces = null, rangoDeBuilds = null}) {
+export function SelectorDeRango({ rangos, valor, onCambiar, rangoDeCruces = null, rangoDeBuilds = null }) {
   const t = useT();
   const etiqueta = (r) => ETIQUETAS_RANGO[r] ?? r;
   const builds = rangoDeBuilds ?? rangoDeCruces;

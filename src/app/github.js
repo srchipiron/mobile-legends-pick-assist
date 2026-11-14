@@ -24,20 +24,14 @@ export function urlDeIncidencia({ titulo, cuerpo, etiquetas = [] }, location = g
 }
 
 /**
- * La API de GitHub, para subir las partidas SIN pasar por el navegador
- * (3.10.0): abrir el formulario ya relleno obligaba a iniciar sesión en
- * GitHub desde el móvil, y con el código dentro de la dirección ese inicio
- * de sesión fallaba (error 501). Con un token de acceso limitado a las
- * incidencias de este repositorio, la app la crea o la edita directamente.
- *
- * Es el ÚNICO destino al que viaja el token: en la cabecera Authorization,
- * nunca en la dirección ni en el cuerpo. Desde 3.98.0 es solo de
- * administración y necesita «Contents: read and write» sobre este
- * repositorio (licencias.json y comunidad.json): GitHub no deja limitarlo a
- * una carpeta, así que con él se puede escribir cualquier fichero y, por
- * `apk.yml`, acabar en la APK de la tablet (revisión de seguridad de
- * 3.100.0). No tiene nada que ver con la cuenta del juego, pero se guarda
- * como una llave de la casa.
+ * La API de GitHub, solo para administrar: leer y escribir
+ * `public/licencias.json` y `public/comunidad.json` con el token de Javi.
+ * Es el ÚNICO destino al que viaja el token, en la cabecera Authorization,
+ * nunca en la dirección ni en el cuerpo. Necesita «Contents: read and write»
+ * y GitHub no deja limitarlo a una carpeta: con él se puede escribir
+ * cualquier fichero (y, por `apk.yml`, acabar en la APK). No toca la cuenta
+ * del juego, pero se guarda como una llave de la casa. Nada sube a
+ * incidencias: el Diagnóstico solo abre el formulario en el navegador.
  */
 export const API_GITHUB = 'https://api.github.com';
 
@@ -69,7 +63,7 @@ const deBase64 = (b64) => new TextDecoder().decode(Uint8Array.from(atob(String(b
 const RUTA_ESCRIBIBLE = /^public\/[\w.-]+\.json$/;
 
 /**
- * Lee un fichero del repositorio tal como está AHORA en `main` (3.65.1): la
+ * Lee un fichero del repositorio tal como está AHORA en `main`: la
  * copia de Pages tarda minutos en rehacerse tras cada cambio, y la
  * administración enseñaba lo de antes. `{ contenido }` (null si no existe) o
  * `{ error }`. Las mismas rutas que `escribirFichero`.
@@ -84,12 +78,10 @@ export async function leerFichero({ ruta }, token, { location = globalThis.locat
 }
 
 /**
- * Escribe un fichero del repositorio en `main` (3.65.0: `licencias.json`,
- * desde el panel de administración de Javi). Con el token de siempre, que
- * necesita además permiso de «Contents: write»; sin él contesta 'permiso'.
- * Solo rutas fijas que pide el código, nunca una que venga de fuera.
- * `contenido` puede ser una función del contenido ACTUAL del repositorio
- * (3.65.1): así un cambio parte de lo último guardado y no de una copia vieja.
+ * Escribe un fichero del repositorio en `main` (desde la Administración);
+ * sin permiso de «Contents: write» contesta 'permiso'. Solo rutas fijas que
+ * pide el código. `contenido` puede ser una función del contenido ACTUAL del
+ * repositorio: así un cambio parte de lo último guardado y no de una copia vieja.
  */
 export async function escribirFichero({ ruta, contenido, mensaje }, token, { location = globalThis.location, fetch = globalThis.fetch } = {}) {
   if (!RUTA_ESCRIBIBLE.test(ruta)) return { error: 'ruta' };

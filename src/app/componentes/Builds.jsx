@@ -15,7 +15,7 @@ import { useT } from '../i18n/contexto.js';
 export function Builds({ heroe, linea, builds, equipment, talentos = null, enemigos, plan = null, onCerrar}) {
   const t = useT();
   const lista = useMemo(() => buildsDe(builds, heroe, linea), [builds, heroe, linea]);
-  // De las que se juegan, la que mejor encaja con ESTE draft (3.57.0); sin
+  // De las que se juegan, la que mejor encaja con ESTE draft; sin
   // ninguna mejor, la más usada. Las demás, debajo, con la más usada marcada.
   const eleccion = useMemo(() => buildParaElDraft(lista, equipment, enemigos, linea, { builds }), [lista, equipment, enemigos, linea, builds]);
   const principal = lista[eleccion.indice] ?? null;
@@ -23,7 +23,7 @@ export function Builds({ heroe, linea, builds, equipment, talentos = null, enemi
   const ajustes = useMemo(() => (principal ? ajustesDeBuild(principal, equipment, enemigos, linea, { builds }) : []), [principal, equipment, enemigos, linea, builds]);
   const nombresDeTalentos = (b) => (b.talentos ?? []).map((id) => talentos?.[id]?.nombre).filter(Boolean);
   const pct = (n) => (n * 100).toFixed(1);
-  // Saltos (3.59.1): con el plan arriba, los objetos empezaban a 1.118 px en
+  // Saltos: con el plan arriba, los objetos empezaban a 1.118 px en
   // una pantalla de 844 (draft completo a 390): pantalla y media de bajar
   // con prisa. Dos botones fijos arriba llevan a cada parte.
   const cuerpo = useRef(null), objetos = useRef(null), saltos = useRef(null);

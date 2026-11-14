@@ -4,7 +4,7 @@ import { sanearConfig } from '../../comun/basedatos.js';
 import { useT } from '../i18n/contexto.js';
 
 /**
- * Administración (3.65.0): solo en el móvil de Javi (con el token de la
+ * Administración: solo en el móvil de Javi (con el token de la
  * subida, o ya con su clave de administrador). Crear la clave de
  * administrador, dar una clave a cada invitado (sale un enlace para
  * mandárselo), revocarla, y decidir si la app pide clave para entrar.
@@ -88,7 +88,7 @@ export function Administracion({ licencia, comunidad = null, onCerrar}) {
               ))}
             </ul>
             <hr />
-            {/* La base de datos de partidas (3.69.0): la dirección y la clave PÚBLICA de Supabase. La secreta no se acepta. */}
+            {/* La base de datos de partidas: la dirección y la clave PÚBLICA de Supabase. La secreta no se acepta. */}
             {comunidad && (
               <>
                 <strong>{t('admin.basedatos')}</strong>
@@ -116,7 +116,7 @@ export function Administracion({ licencia, comunidad = null, onCerrar}) {
 }
 
 /**
- * La puerta (3.65.0): con `exigir`, quien no tiene una clave válida ve esto
+ * La puerta: con `exigir`, quien no tiene una clave válida ve esto
  * en vez de la app. Pegar la clave o abrir el enlace que le dieron.
  */
 export function PuertaDeLicencia({ licencia}) {

@@ -51,7 +51,7 @@ const animar = (el, fotogramas, opciones) => {
 };
 
 /**
- * Cerrar una hoja ARRASTRÁNDOLA hacia abajo (3.22.0), como las hojas de iOS
+ * Cerrar una hoja ARRASTRÁNDOLA hacia abajo, como las hojas de iOS
  * y Android: desde el asa de arriba o desde el título, nunca desde un botón,
  * un campo o la rejilla (ahí el dedo toca o desplaza, y cerrar sin querer en
  * mitad del draft sería peor que no tener el gesto). Cierra con la misma
@@ -104,9 +104,9 @@ function useArrastrarParaCerrar(hoja, onCerrar) {
 
 /**
  * Una hoja a pantalla completa (diálogo modal). Toda hoja de la app pasa por
- * aquí: así todas se cierran con atrás y todas devuelven el foco. Desde
- * 3.22.0 entra con un muelle (CSS, `@starting-style`) y se cierra también
- * arrastrando el asa hacia abajo.
+ * aquí: así todas se cierran con atrás y todas devuelven el foco. Entra con
+ * un muelle (CSS, `@starting-style`) y se cierra también arrastrando el asa
+ * hacia abajo.
  */
 export function Hoja({ etiqueta, onCerrar, children, alClicar }) {
   const ref = useCerrarConAtras(onCerrar);

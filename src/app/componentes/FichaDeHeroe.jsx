@@ -7,7 +7,7 @@ import { ETIQUETAS_RANGO } from './SelectorDeRango.jsx';
 import { useT } from '../i18n/contexto.js';
 
 /**
- * La ficha de un héroe (3.67.0): lo que el motor ya sabe de él, para
+ * La ficha de un héroe: lo que el motor ya sabe de él, para
  * cualquier aficionado. Se abre tocando un héroe en Meta; tocar otro de las
  * listas abre el suyo. Nada se calcula aquí: todo sale de `fichaDeHeroe`
  * (draft.js), con los mismos datos que deciden las recomendaciones.

@@ -1,5 +1,5 @@
 /**
- * Las claves de invitación (3.65.0, decidido por Javi: «controlar quién la
+ * Las claves de invitación (decidido por Javi: «controlar quién la
  * usa», sin servidor). Cómo va:
  *
  * - Javi tiene en SU móvil una clave de administrador (ECDSA P-256, WebCrypto):

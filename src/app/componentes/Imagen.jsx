@@ -35,7 +35,7 @@ export function Imagen({ src, alt, className, tam }) {
   );
 }
 
-// La huella del contenido de cada imagen publicada (vite.config.js, 3.41.0).
+// La huella del contenido de cada imagen publicada (vite.config.js).
 const HUELLAS = typeof __HUELLAS__ === 'undefined' ? {} : __HUELLAS__;
 
 /**

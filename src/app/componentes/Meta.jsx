@@ -67,7 +67,7 @@ export function Meta({ datos, linea, onFicha = null, onCerrar}) {
                 <div key={f.heroe.name} className={`meta-fila${i === 0 ? ' top' : ''}`}>
                   <span className="meta-pos">{i + 1}</span>
                   <Cara heroe={f.heroe} className="grid-cara" tam={30} alt="" />
-                  {/* Tocar el nombre abre su ficha (3.67.0). */}
+                  {/* Tocar el nombre abre su ficha. */}
                   {onFicha ? <button className="meta-nombre meta-ficha" onClick={() => onFicha(f.heroe.name)}>{f.heroe.name}</button> : <span className="meta-nombre">{f.heroe.name}</span>}
                   <span className={`meta-tier${tiers?.[f.heroe.name] ? ` tier-${tiers[f.heroe.name]}` : ''}`}>{tiers?.[f.heroe.name] ?? ''}</span>
                   <span className="meta-wr">{pct(f.stat.winRate)}%</span>
@@ -90,7 +90,7 @@ export function Meta({ datos, linea, onFicha = null, onCerrar}) {
 }
 
 /**
- * Quién sube y quién baja esta semana (3.50.0, motor/tendencia.js): en tu
+ * Quién sube y quién baja esta semana (motor/tendencia.js): en tu
  * línea, y cuántos en todo el juego. Solo lo confirmado por los dos rangos
  * y respecto a lo que se juega; es lo que ha pasado, no una predicción.
  */

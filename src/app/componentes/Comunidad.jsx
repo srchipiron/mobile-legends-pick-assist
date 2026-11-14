@@ -19,8 +19,8 @@ function Comparacion({ c, clave}) {
 }
 
 /**
- * Pegar tu clave de jugador y traerte tus partidas (3.69.0). Aparte desde
- * 3.87.0: «Capturas» la pide también, porque en el ordenador es lo primero.
+ * Pegar tu clave de jugador y traerte tus partidas. Aparte porque «Capturas»
+ * la pide también: en el ordenador es lo primero.
  */
 export function PegarClave({ comunidad, perfil, onImportar, avisar = null}) {
   const t = useT();
@@ -45,7 +45,7 @@ export function PegarClave({ comunidad, perfil, onImportar, avisar = null}) {
 }
 
 /**
- * La base de datos de partidas de todos (3.69.0), dentro de «Tus partidas».
+ * La base de datos de partidas de todos, dentro de «Tus partidas».
  * Solo sale con `comunidad.json` publicado. Guardar las tuyas es una casilla
  * que se pone a propósito (las partidas salen del móvil); ver si la app
  * ayuda, con las de todos, no pide nada.

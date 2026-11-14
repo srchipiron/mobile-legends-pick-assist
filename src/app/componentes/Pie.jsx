@@ -34,7 +34,7 @@ export function Pie({ meta, generado, edadHoras, edadMatrizHoras = null, rango, 
         <div className="pie-detalle">
           <div>{t('pie.datosApi', { fecha: fecha ?? t('pie.nunca') })}</div>
           <div>{t('pie.antiguedad', { horas: edadHoras != null ? `${Math.round(edadHoras)} h` : '—' })}</div>
-          {/* La matriz de cruces y parejas puede ser más vieja que las estadísticas (3.60.1). */}
+          {/* La matriz de cruces y parejas puede ser más vieja que las estadísticas. */}
           {edadMatrizHoras != null && generado && Math.round(edadMatrizHoras) > Math.round((Date.now() - generado) / 3.6e6) && (
             <div className={edadMatrizHoras > HORAS_DATOS_VIEJOS ? 'pie-aviso' : undefined}>{t('pie.antiguedadMatriz', { horas: `${Math.round(edadMatrizHoras)} h` })}</div>
           )}

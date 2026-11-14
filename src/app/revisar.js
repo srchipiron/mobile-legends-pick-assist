@@ -2,15 +2,13 @@ import { probablesDelBando } from '../motor/draft.js';
 import { filtrarPorNombre } from '../motor/alias.js';
 
 /**
- * Revisar lo que no vio el lector, con sus capturas (3.86.0). Javi: «desde
- * el PC, ¿puedo corregirte los picks? Haz algún sistema para ver las
- * capturas y ayudarte a identificar cada héroe». La tablet sube, de cada
- * draft que no leyó entero, las diez caras (sin nombres de jugadores) y lo
- * leído hueco a hueco (`recortes`, 3.81.0). Aquí se cruzan con TUS partidas
- * por el instante (`partida` = `t`) y se arma, hueco a hueco, lo que se
- * enseña y lo que se guarda. Guardar es arreglar la partida (`editada`): la
- * tablet aprende de lo arreglado (`aprenderDeLoArreglado`, 3.83.0) con SUS
- * recortes, no con estos.
+ * Revisar lo que no vio el lector, con sus capturas (desde el móvil o el
+ * PC). La tablet sube, de cada draft que no leyó entero, las diez caras (sin
+ * nombres de jugadores) y lo leído hueco a hueco (`recortes`). Aquí se
+ * cruzan con TUS partidas por el instante (`partida` = `t`) y se arma, hueco
+ * a hueco, lo que se enseña y lo que se guarda. Guardar es arreglar la
+ * partida (`editada`): la tablet aprende de lo arreglado con SUS recortes,
+ * no con estos.
  *
  * Puro: sin red ni React. Lo que llega de la base de datos lo escribe
  * cualquiera con la clave pública, así que se valida por forma y la imagen
@@ -48,7 +46,7 @@ export function revisiones(recortes = [], partidas = [], heroes = []) {
   const porClave = new Map((heroes ?? []).map((n) => [String(n).toLowerCase(), n]));
   const nombre = (n) => (typeof n === 'string' ? porClave.get(n.toLowerCase()) ?? null : null);
   const porT = new Map((partidas ?? []).filter((p) => Number.isFinite(p?.t)).map((p) => [p.t, p]));
-  // Los recortes los puede subir cualquiera con la clave pública (3.86.1, revisión de seguridad): si la
+  // Los recortes los puede subir cualquiera con la clave pública (revisión de seguridad): si la
   // misma partida trae recortes de DOS lectores, uno se hace pasar por el tuyo y no se sabe cuál; no sale.
   const lectores = new Map();
   for (const fila of recortes ?? []) {
@@ -93,13 +91,12 @@ export function cambiosDeRevision({ enemigos = [], aliados = [], tuyoFila = -1, 
   return { pick, enemigos: e.filter(Boolean), aliados: companeros.slice(0, 4) };
 }
 
-/** Cuántos de tus héroes salen como botón junto a tu hueco (3.87.3): los mismos que la burbuja de la tablet (`HABITUALES`). */
+/** Cuántos de tus héroes salen como botón junto a tu hueco: los mismos que la burbuja de la tablet (`HABITUALES`). */
 export const TUS_HABITUALES = 6;
 
 /**
- * Tus héroes más jugados en tus partidas (3.87.3), para rellenar TU hueco
- * con un toque: en las capturas de antes de 3.86.5 tu hueco sale vacío
- * (eliges el último) y había que acordarse y escribirlo. Sin los que ya
+ * Tus héroes más jugados en tus partidas, para rellenar TU hueco con un
+ * toque (eliges el último y tu hueco suele salir vacío). Sin los que ya
  * salen en el draft ni los supuestos (no los jugaste seguro); a igualdad,
  * el último jugado. Solo nombres del catálogo.
  */
@@ -127,11 +124,11 @@ export function encuadre(lado, i, escala) {
   return { ancho: r(c.ancho), alto: r(c.alto), fondo: `${r(COMPOSICION.ancho)}px ${r(COMPOSICION.alto)}px`, posicion: `${-r(c.x)}px ${-r(i * COMPOSICION.fila)}px` };
 }
 
-/** Cuántos de tus compañeros de siempre van delante al elegir un compañero (3.89.0): los mismos que tus héroes (`TUS_HABITUALES`). */
+/** Cuántos de tus compañeros de siempre van delante al elegir un compañero: los mismos que tus héroes (`TUS_HABITUALES`). */
 export const COMPANEROS_HABITUALES = TUS_HABITUALES;
 
 /**
- * Los héroes que más salen a tu lado en tus partidas (3.89.0), sin los que
+ * Los héroes que más salen a tu lado en tus partidas, sin los que
  * ya están en el draft. Juegas con amigos: el hueco que no se leyó suele ser
  * uno de los suyos. Medido en tus 260 partidas: el que falta está entre
  * estos seis en el 23% de los huecos, y entre los seis primeros del motor
@@ -151,11 +148,11 @@ export function companerosHabituales(partidas = [], heroes = [], fuera = [], n =
   return [...cuenta.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, n).map(([h]) => h);
 }
 
-/** Cuántas caras salen al tocar un hueco (3.89.0): el rival que falta está entre las 24 primeras del motor en el 70% de tus huecos. Decisión de producto. */
+/** Cuántas caras salen al tocar un hueco: el rival que falta está entre las 24 primeras del motor en el 70% de tus huecos. Decisión de producto. */
 export const CARAS_POR_HUECO = 24;
 
 /**
- * Las caras para elegir quién va en un hueco (3.89.0), en orden: `primeros`
+ * Las caras para elegir quién va en un hueco, en orden: `primeros`
  * (tus héroes o tus compañeros de siempre) y luego lo que el motor da por
  * más probable en ese equipo (`probablesDelBando`, el orden del selector de
  * la app). Buscando, cualquiera que case. Nunca uno que ya está en el draft
@@ -180,15 +177,14 @@ export function carasParaHueco(datos, { lado = 'enemigos', equipo = [], fuera = 
 }
 
 /**
- * Las partidas que la tablet no supo cómo acabaron (3.89.4), para decirlo en
+ * Las partidas que la tablet no supo cómo acabaron, para decirlo en
  * «Capturas» con un toque al acabar la sesión: Javi juega una detrás de otra
  * y no contesta el «¿Cómo acabó?» de la tablet, así que se quedaban allí sin
  * resultado (casi siempre derrotas) y no llegaban a sus números. Llegan en
  * las pantallas del final (`tipo: 'final'`, con `partida`) que la tablet sube
- * con TU clave, y se leen con `mis_recortes` y esa clave (3.90.2): la primera
- * versión las cogía de `recortes_recientes`, que sube cualquiera, y la
- * revisión de seguridad coló una partida falsa y borró una de verdad con «No
- * la jugué». Por eso, además, nunca sale una con el instante de una partida
+ * con TU clave, y se leen con `mis_recortes` y esa clave (de
+ * `recortes_recientes`, que sube cualquiera, se colaría una partida falsa y
+ * «No la jugué» borraría una de verdad). Y nunca sale una con el instante de una partida
  * tuya, que es también como se ven las ya contestadas (en la tablet o aquí:
  * la tablet fija su instante al preguntar, el mismo en todas partes). Fuera
  * las que descartaste (`olvidadas`). De la más nueva a la más vieja.
@@ -221,7 +217,7 @@ export function sinResultado(propios = [], partidas = [], heroes = [], olvidadas
 }
 
 /**
- * Los comprobantes de las partidas que apuntó la tablet (3.101.0): la franja
+ * Los comprobantes de las partidas que apuntó la tablet: la franja
  * del final de cada una, sin los nombres de los otros jugadores, subida con
  * TU clave (`mis_recortes`, `tipo: 'resultado'`). Por instante de partida;
  * solo PNG en base64 con forma (`imagenValida`), lo demás no sale.
