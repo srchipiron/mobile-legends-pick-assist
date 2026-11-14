@@ -1,249 +1,89 @@
 /**
- * Lo que se conserva de la corrida anterior y lo que eso le hace a la fecha:
- * de donde se lee lo previo, que se guarda heroe a heroe, como se funde la
- * matriz nueva con la guardada y cuando `generatedAt` puede decir «hoy».
+ * Lo que se conserva de la corrida anterior y lo que eso le hace a las
+ * fechas. Todo puro salvo `leerPrevio`: la fecha de hoy se pasa.
  */
 
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { OUT, PREVIO, ROOT, diagnostics } from './contexto.mjs';
-import { huellaDeKit } from '../../src/motor/catalogo.js';
+import { RAIZ } from './contexto.mjs';
+import { LINEAS, huellaDeKit } from '../../src/motor/catalogo.js';
 import { HISTORIA_DIAS } from '../../src/motor/tendencia.js';
 
+/** Los campos que la ingesta ya no escribe: un fichero de antes de 4.0 los trae y no se arrastran [C]. */
+export function sinCamposMuertos(previo) {
+  if (!previo || typeof previo !== 'object') return previo;
+  const sinMatches = (stats) => (stats && typeof stats === 'object'
+    ? Object.fromEntries(Object.entries(stats).map(([n, s]) => [n, s && typeof s === 'object' ? (({ matches, ...r }) => r)(s) : s]))
+    : stats);
+  const { roamCoverage, patchAvgWinRate, ...limpio } = previo;
+  if (Array.isArray(limpio.heroes)) limpio.heroes = limpio.heroes.map((h) => (h && typeof h === 'object' ? (({ lane, ...r }) => r)(h) : h));
+  if (limpio.stats) limpio.stats = sinMatches(limpio.stats);
+  if (limpio.statsByRank) limpio.statsByRank = Object.fromEntries(Object.entries(limpio.statsByRank).map(([r, s]) => [r, sinMatches(s)]));
+  return limpio;
+}
+
 /**
- * Lo anterior se lee de los DATOS GUARDADOS, no de la salida: los tres
- * workflows escriben a un temporal (--out) que no existe, y con eso el
- * "conservo lo anterior" de cada endpoint conservaba la nada, y un fallo
- * suelto de la API tiraba la corrida entera en vez de degradarla.
+ * Lo anterior sale de los DATOS GUARDADOS (`--previo`, public/data, `--out`):
+ * los workflows escriben a un temporal que no existe, y «conservar» la nada
+ * tiraba la corrida por un fallo suelto [C].
  */
-export async function leerPrevio() {
-  let previous = null;
-  for (const ruta of [...(PREVIO ? [PREVIO] : []), resolve(ROOT, 'public/data/roam-meta.json'), OUT]) {
+export async function leerPrevio(op) {
+  for (const ruta of [op.previo, resolve(RAIZ, 'public/data/roam-meta.json'), op.out].filter(Boolean)) {
     try {
-      previous = JSON.parse(await readFile(ruta, 'utf8'));
-      break;
-    } catch {
-      /* primera ejecución, o salida a un temporal */
-    }
+      return sinCamposMuertos(JSON.parse(await readFile(ruta, 'utf8')));
+    } catch { /* primera corrida, o salida a un temporal */ }
   }
-  return previous;
+  return null;
 }
 
-/**
- * La ficha de los 133: el tipo de dano hace falta para todos, y la
- * speciality viene en la misma respuesta y se guarda para todos (el motor
- * solo la usa en los que no tienen tags a mano; derivar-tags.mjs, en todos).
- *
- * Lo anterior se conserva heroe a heroe: el tipo de dano no cambia de un dia
- * para otro, asi que perder la peticion de un heroe no puede costarnos el
- * dato que ya teniamos.
- */
-export function conservarFichasPrevias(heroList, previous) {
-  const danoPrevio = Object.fromEntries(
-    (previous?.heroes ?? []).filter((h) => h?.damage).map((h) => [h.name, h.damage]),
-  );
-  const retratoPrevio = Object.fromEntries(
-    (previous?.heroes ?? []).filter((h) => h?.retrato).map((h) => [h.name, h.retrato]),
-  );
-  const caraPrevia = Object.fromEntries(
-    (previous?.heroes ?? []).filter((h) => h?.cara).map((h) => [h.name, h.cara]),
-  );
-  // Y la speciality: con la ficha caída, derivar-tags.mjs volvía a la
-  // descarga a ciegas por una ruta escrita a mano, justo lo que 1.37.0 quiso
-  // evitar.
-  const specialityPrevia = Object.fromEntries(
-    (previous?.heroes ?? []).filter((h) => Array.isArray(h?.speciality) && h.speciality.length).map((h) => [h.name, h.speciality]),
-  );
-  const kitPrevio = Object.fromEntries(
-    (previous?.heroes ?? []).filter((h) => typeof h?.kitTexto === 'string').map((h) => [h.name, h.kitTexto]),
-  );
-  const cifrasPrevias = Object.fromEntries(
-    (previous?.heroes ?? []).filter((h) => typeof h?.kitCifras === 'string').map((h) => [h.name, h.kitCifras]),
-  );
-  const habilidadesPrevias = Object.fromEntries(
-    (previous?.heroes ?? []).filter((h) => Array.isArray(h?.habilidades) && h.habilidades.length).map((h) => [h.name, h.habilidades]),
-  );
-  for (const h of heroList) {
-    if (danoPrevio[h.name]) h.damage = danoPrevio[h.name];
-    if (habilidadesPrevias[h.name]) h.habilidades = habilidadesPrevias[h.name];
-    if (retratoPrevio[h.name]) h.retrato = retratoPrevio[h.name];
-    if (caraPrevia[h.name]) h.cara = caraPrevia[h.name];
-    if (specialityPrevia[h.name]) h.speciality = specialityPrevia[h.name];
-    if (kitPrevio[h.name]) h.kitTexto = kitPrevio[h.name];
-    if (cifrasPrevias[h.name]) h.kitCifras = cifrasPrevias[h.name];
+const noVacia = (v) => Array.isArray(v) && v.length > 0;
+const esTexto = (v) => typeof v === 'string' && v !== '';
+/** Lo que la ficha de un héroe conserva de la corrida anterior si hoy no llega, por nombre [D]. */
+const DE_LA_FICHA = { damage: Boolean, habilidades: noVacia, retrato: Boolean, cara: Boolean, speciality: noVacia, kitTexto: esTexto, kitCifras: esTexto };
+
+/** Cada héroe hereda de la corrida anterior lo de su ficha; devuelve los nombres que ya tenían daño. */
+export function conservarFichas(heroList, previous) {
+  const antes = previous?.heroes ?? [];
+  for (const [campo, vale] of Object.entries(DE_LA_FICHA)) {
+    const previos = new Map(antes.filter((h) => vale(h?.[campo])).map((h) => [h.name, h[campo]]));
+    for (const h of heroList) if (previos.has(h.name)) h[campo] = previos.get(h.name);
   }
-  return { danoPrevio };
+  return new Set(antes.filter((h) => h?.damage).map((h) => h.name));
 }
 
 /**
- * Héroe a héroe, como el tipo de daño: la matriz nueva se FUNDE con la
- * guardada, no la sustituye entera. Sustituirla dejaba que una corrida a
- * medias (la ruta de counters caída para 13 héroes, que el comparador
- * admite) borrara filas que ya se tenían, y un héroe sin fila pierde
- * además su riesgo de contrapick.
+ * `{ héroe: { línea: valor } }` fundido PAR A PAR (winrate y curva por línea,
+ * builds): lo de hoy manda, lo que falla hoy se conserva, y solo en las
+ * líneas que el héroe juega HOY [C].
  */
-export function relacionesPrevias(previous) {
-  return { counters: { ...(previous?.counters ?? {}) }, synergies: { ...(previous?.synergies ?? {}) } };
-}
-
-/**
- * La matriz de la corrida (3.37.0): sin ninguna fila nueva, la guardada
- * tal cual (y con ella su etiqueta de rango: `conservado`); con filas
- * nuevas de OTRO rango que el de la guardada, se empieza de cero y no se
- * funde (las que falten se quedan sin fila y el comparador las cuenta).
- * Hasta 3.36.0 se fundía siempre sobre la guardada: el día del cambio
- * Gloria → Mítico, los héroes que fallaban conservaban la fila ruidosa de
- * Gloria con la etiqueta de Mítico, y con todo caído salía la de Mítico
- * etiquetada como Gloria.
- */
-export function relacionesDeLaCorrida(previous, elegidas, rango) {
-  const filas = Object.values(elegidas?.counters ?? {}).filter((f) => Object.keys(f ?? {}).length).length;
-  if (!filas) return { relations: relacionesPrevias(previous), frescas: 0, frescasParejas: 0, conservado: true };
-  const rangoPrevio = previous?.relaciones?.rango ?? previous?.rank ?? null;
-  const relations = rangoPrevio && rangoPrevio !== rango ? { counters: {}, synergies: {} } : relacionesPrevias(previous);
-  const cuenta = {};
-  // Lo corto se mide contra lo guardado AUNQUE sea de otro rango (3.60.2):
-  // empezando de cero, una fila de 10 no tenía con qué compararse y entraba.
-  const frescas = fundirRelaciones(relations, elegidas, cuenta, relacionesPrevias(previous));
-  return { relations, frescas, frescasParejas: cuenta.parejas, cortas: cuenta.cortas, cortasParejas: cuenta.cortasParejas, recosidas: cuenta.recosidas, conservado: frescas === 0 && cuenta.parejas === 0 };
-}
-
-/**
- * Funde la matriz nueva sobre la conservada y devuelve cuántas filas de
- * cruces son nuevas; en `cuenta.parejas`, cuántas de PAREJAS. Las parejas se cuentan aparte desde 3.43.1: con la ruta de parejas
- * vacía y la de cruces bien, cada fila conservaba las parejas de la corrida
- * anterior y la corrida salía fresca, con la fecha de hoy.
- */
-export function fundirRelaciones(relations, fresh, cuenta = {}, referencia = relations) {
-  let relacionesFrescas = 0;
-  let parejas = 0;
-  let cortas = 0;
-  let cortasParejas = 0;
-  for (const [nombre, fila] of Object.entries(fresh.counters)) {
-    if (!Object.keys(fila ?? {}).length) continue;
-    const parejasNuevas = fresh.synergies?.[nombre] ?? {};
-    if (Object.keys(parejasNuevas).length) {
-      if (esCorta(parejasNuevas, referencia.synergies?.[nombre])) cortasParejas += 1;
-      else { relations.synergies[nombre] = parejasNuevas; parejas += 1; }
-    }
-    if (esCorta(fila, referencia.counters?.[nombre])) { cortas += 1; continue; }
-    relations.counters[nombre] = fila;
-    relacionesFrescas += 1;
-  }
-  cuenta.recosidas = recoser(relations, fresh);
-  cuenta.parejas = parejas;
-  cuenta.cortas = cortas;
-  cuenta.cortasParejas = cortasParejas;
-  return relacionesFrescas;
-}
-
-/**
- * Las filas que se quedan de la corrida anterior, cosidas a las nuevas
- * (3.65.3). Con unos pocos héroes caídos (500 de la API para Akai, Atlas,
- * Barats y Baxia el 23 de octubre de 2026), su fila era de ayer y la de los
- * demás de hoy: c[X][Y] de ayer y c[Y][X] de hoy ya no sumaban 1, la
- * estimación de un draft y la del draft visto desde el otro lado dejaban de
- * sumar 1 (0,9989) y la prueba del modelo paró el despliegue. Los cruces son
- * antisimétricos y las parejas simétricas (medido: los 17.556 pares de la
- * guardada), así que la celda de una fila conservada contra un héroe fresco
- * sale de la fila fresca, que es de hoy. Devuelve cuántas celdas se cosieron.
- */
-export function recoser(relations, fresh) {
-  const frescos = new Set(Object.keys(fresh?.counters ?? {}).filter((n) => relations.counters[n] === fresh.counters[n]));
-  const parejasFrescas = new Set(Object.keys(fresh?.synergies ?? {}).filter((n) => relations.synergies[n] === fresh.synergies[n]));
-  const a4 = (v) => Math.round(v * 10000) / 10000;
-  let celdas = 0;
-  // La fila conservada es la del fichero anterior: se copia antes de tocarla.
-  const coser = (matriz, frescas, valor) => {
-    for (const [x, fila] of Object.entries(matriz)) {
-      if (frescas.has(x) || !fila) continue;
-      const nueva = { ...fila };
-      let cambio = false;
-      for (const y of frescas) {
-        const suya = matriz[y]?.[x];
-        if (x !== y && y in nueva && Number.isFinite(suya) && nueva[y] !== valor(suya)) { nueva[y] = valor(suya); celdas += 1; cambio = true; }
-      }
-      if (cambio) matriz[x] = nueva;
-    }
-  };
-  coser(relations.counters, frescos, (v) => a4(1 - v));
-  coser(relations.synergies, parejasFrescas, (v) => v);
-  return celdas;
-}
-
-/**
- * Una fila nueva con menos de la mitad de las celdas de la guardada no la
- * sustituye (3.60.1). El 20 de octubre de 2026 la ruta del esquema de cruces
- * pasó a dar 5+5 rivales por héroe (la de academy sigue con los 132); con la
- * API dando 500 al medir las rutas, la ingesta se quedó con la corta y 58
- * filas enteras iban a salir con 10 cruces (17.556 → 10.480). El comparador
- * lo paró, pero tiró la corrida entera. La mitad es decisión de producto: una
- * fila sana cambia de largo en uno o dos héroes, no a la mitad.
- */
-export const esCorta = (fila, previa) => Object.keys(fila ?? {}).length < Object.keys(previa ?? {}).length / 2;
-
-/**
- * El winrate por línea (3.12.0) fundido PAR A PAR: lo descargado hoy manda,
- * y un par que falla hoy conserva el de la corrida anterior. Hasta 3.14.0 la
- * corrida nueva sustituía a la guardada ENTERA con que trajera un solo par,
- * y el comparador aceptaba perder hasta un 10% cada vez: el mismo fallo de
- * forma que ya costó filas de la matriz de cruces. Solo se conservan los
- * pares de las líneas que el héroe juega HOY: una línea que dejó de jugar no
- * se arrastra para siempre.
- */
-export function fundirWinrateLinea(previo = {}, fresco = {}, heroList = []) {
-  const validas = new Set(['roam', 'jungle', 'mid', 'gold', 'exp']);
-  const salida = {};
+export function fundirPorHeroeYLinea(previo = {}, fresco = {}, heroList = []) {
+  const valores = {};
   let conservados = 0;
   for (const h of heroList) {
-    for (const lane of (h.lanes ?? []).filter((l) => validas.has(l))) {
+    for (const lane of (h.lanes ?? []).filter((l) => LINEAS.includes(l))) {
       const nuevo = fresco?.[h.name]?.[lane];
       const viejo = previo?.[h.name]?.[lane];
-      if (nuevo != null) (salida[h.name] ??= {})[lane] = nuevo;
-      else if (viejo != null) { (salida[h.name] ??= {})[lane] = viejo; conservados += 1; }
+      if (nuevo != null) (valores[h.name] ??= {})[lane] = nuevo;
+      else if (viejo != null) { (valores[h.name] ??= {})[lane] = viejo; conservados += 1; }
     }
   }
-  return { winrateLinea: salida, conservados };
+  return { valores, conservados };
 }
 
 /**
- * Las builds, igual que el winrate por línea (3.40.0): héroe a héroe y línea a
- * línea. Antes una corrida con la mitad de las peticiones caídas SUSTITUÍA a
- * las guardadas enteras, y o bien el comparador tiraba la corrida entera (con
- * todo lo bueno que traía) o, perdiendo menos del 10% cada vez, las builds
- * iban menguando corrida a corrida sin fondo.
- */
-export function fundirBuilds(previo = {}, fresco = {}, heroList = []) {
-  const { winrateLinea: builds, conservados } = fundirWinrateLinea(previo, fresco, heroList);
-  return { builds, conservados };
-}
-
-/**
- * Los objetos (3.81.1): la defensa sale SOLO de la ruta larga
- * (`/equipment/expanded`, con `equiptips` de defensa) y la corta trae nombre,
- * icono y a veces algún efecto. El 27 de octubre de 2026 la larga dio 500 y
- * la corta 184 objetos: como el catálogo no venía vacío SUSTITUÍA al
- * guardado, y se perdían la defensa de 33 objetos y los efectos de 19 (el
- * comparador tiró la corrida). Si la corrida no trae NINGUNA defensa, la ruta
- * larga no respondió: cada objeto conserva su defensa y su tipo de antes y
- * sus efectos se juntan con los de hoy. Si trae alguna, manda lo de hoy (un
- * objeto que pierde un efecto en un parche lo pierde de verdad).
- *
- * Y al revés (3.81.2): si alguna ruta no respondió (`completo: false`, lo
- * cuenta `fetchEquipo`), un objeto guardado que hoy no llega se conserva. Con
- * la corta caída llegaban los 152 de la larga y se perdían 32 objetos (nombre
- * e icono de builds enteras), y el comparador habría tirado la corrida por
- * `objetos`. Con todas las rutas respondiendo, el que falta se quita: Moonton
- * retira objetos.
+ * Los objetos. Sin NINGUNA defensa en lo fresco, la ruta larga no respondió:
+ * cada objeto conserva defensa y tipo y junta sus efectos [M]. Con alguna ruta
+ * caída (`completo: false`) se conservan los guardados que hoy no llegan; con
+ * todas respondiendo, el que falta se quita (Moonton retira objetos) [M].
  */
 export function fundirEquipo(previo = {}, fresco = {}, { completo = true } = {}) {
   if (!Object.keys(fresco ?? {}).length) return { equipo: previo ?? {}, conservados: Object.keys(previo ?? {}).length };
   const faltan = completo ? [] : Object.keys(previo ?? {}).filter((id) => !(id in fresco));
-  const conFaltan = (r) => {
-    for (const id of faltan) r.equipo[id] = previo[id];
-    return { equipo: r.equipo, conservados: r.conservados + faltan.length };
+  const conFaltan = (equipo, conservados) => {
+    for (const id of faltan) equipo[id] = previo[id];
+    return { equipo, conservados: conservados + faltan.length };
   };
-  if (Object.values(fresco).some((o) => o?.magica || o?.fisica)) return conFaltan({ equipo: { ...fresco }, conservados: 0 });
+  if (Object.values(fresco).some((o) => o?.magica || o?.fisica)) return conFaltan({ ...fresco }, 0);
   const equipo = {};
   let conservados = 0;
   for (const [id, o] of Object.entries(fresco)) {
@@ -253,76 +93,97 @@ export function fundirEquipo(previo = {}, fresco = {}, { completo = true } = {})
     equipo[id] = { ...o, tipo: o.tipo ?? viejo.tipo ?? null, ...(viejo.magica ? { magica: viejo.magica } : {}), ...(viejo.fisica ? { fisica: viejo.fisica } : {}), ...(efectos.length ? { efectos } : {}) };
     conservados += 1;
   }
-  return conFaltan({ equipo, conservados });
+  return conFaltan(equipo, conservados);
+}
+
+const matricesDe = (previous) => ({ counters: { ...(previous?.counters ?? {}) }, synergies: { ...(previous?.synergies ?? {}) } });
+const llena = (fila) => Object.keys(fila ?? {}).length > 0;
+
+/** Una fila nueva con menos de la mitad de celdas que la guardada no la sustituye (sana: cambia en 1-2 héroes) [M]. */
+export const esCorta = (fila, previa) => Object.keys(fila ?? {}).length < Object.keys(previa ?? {}).length / 2;
+
+/**
+ * La matriz de la corrida: sin ninguna fila de cruces nueva, la guardada TAL
+ * CUAL (`conservado`, con su etiqueta); con filas de OTRO rango que el de la
+ * guardada se empieza de cero (no se funden rangos); lo corto se mide contra
+ * lo guardado aunque sea de otro rango [C]. Luego se cose (`recoser`).
+ */
+export function relacionesDeLaCorrida(previous, elegidas, rango) {
+  if (!Object.values(elegidas?.counters ?? {}).some(llena)) return { relations: matricesDe(previous), frescas: 0, frescasParejas: 0, conservado: true };
+  const rangoPrevio = previous?.relaciones?.rango ?? previous?.rank ?? null;
+  const relations = rangoPrevio && rangoPrevio !== rango ? { counters: {}, synergies: {} } : matricesDe(previous);
+  const guardada = matricesDe(previous);
+  let frescas = 0, frescasParejas = 0, cortas = 0, cortasParejas = 0;
+  for (const [nombre, fila] of Object.entries(elegidas.counters)) {
+    if (!llena(fila)) continue;
+    const parejas = elegidas.synergies?.[nombre] ?? {};
+    if (llena(parejas)) {
+      if (esCorta(parejas, guardada.synergies?.[nombre])) cortasParejas += 1;
+      else { relations.synergies[nombre] = parejas; frescasParejas += 1; }
+    }
+    if (esCorta(fila, guardada.counters?.[nombre])) { cortas += 1; continue; }
+    relations.counters[nombre] = fila;
+    frescas += 1;
+  }
+  const recosidas = recoser(relations, elegidas);
+  return { relations, frescas, frescasParejas, cortas, cortasParejas, recosidas, conservado: frescas === 0 && frescasParejas === 0 };
 }
 
 /**
- * Frescas si se han descargado casi todas: con menos, lo que hay es la
- * matriz de otro día y la fecha no puede decir «hoy». Cruces Y parejas
- * (3.43.1): sin contar las parejas, una ruta de parejas vacía dejaba las de
- * hace días con la fecha de hoy.
+ * Cose las filas conservadas a las frescas: los cruces son antisimétricos y
+ * las parejas simétricas [M], así que la celda de una fila de ayer contra un
+ * héroe de hoy sale de la fila de hoy. Solo celdas que ya existían; las filas
+ * se copian antes de tocarlas. Devuelve cuántas celdas cambió.
  */
-export function anotarFrescura(relacionesFrescas, pedidas, parejasFrescas = relacionesFrescas) {
-  diagnostics.frescosRecursos = { relaciones: relacionesFrescas, parejas: parejasFrescas, pedidas };
-  return pedidas ? relacionesFrescas / pedidas >= 0.9 && parejasFrescas / pedidas >= 0.9 : false;
+export function recoser(relations, fresh) {
+  const frescas = (m, f) => new Set(Object.keys(f ?? {}).filter((n) => m[n] === f[n]));
+  const a4 = (v) => Math.round(v * 10000) / 10000;
+  let celdas = 0;
+  const coser = (matriz, hoy, valor) => {
+    for (const [x, fila] of Object.entries(matriz)) {
+      if (hoy.has(x) || !fila) continue;
+      const nueva = { ...fila };
+      let cambio = false;
+      for (const y of hoy) {
+        const suya = matriz[y]?.[x];
+        if (x !== y && y in nueva && Number.isFinite(suya) && nueva[y] !== valor(suya)) { nueva[y] = valor(suya); celdas += 1; cambio = true; }
+      }
+      if (cambio) matriz[x] = nueva;
+    }
+  };
+  coser(relations.counters, frescas(relations.counters, fresh?.counters), (v) => a4(1 - v));
+  coser(relations.synergies, frescas(relations.synergies, fresh?.synergies), (v) => v);
+  return celdas;
 }
 
-/**
- * ¿Se descargaron las estadísticas que DECIDEN? Las del rango pedido y,
- * si tiene, las de su rango de respaldo (3.43.1): la guarda de rango compara
- * Gloria con Mítico (ventana.js) y, si Gloria no se parece, puntúa con
- * Mítico. Con Mítico conservado de hace días la guarda comparaba contra un
- * dato viejo (con los datos del 5 de octubre de 2026 y el Mítico del 27 de
- * septiembre, la decisión pasaba de Mítico a Gloria y el nº1 de roam
- * cambiaba en 112 de 300 drafts) y la fecha decía «hoy».
- */
+/** Fresca si llegó casi entera, cruces Y parejas: el 90 %, el mismo listón que el respaldo [M]. */
+export function frescura(relaciones, pedidas, parejas = relaciones) {
+  return {
+    frescosRecursos: { relaciones, parejas, pedidas },
+    matrizNueva: pedidas ? relaciones / pedidas >= 0.9 && parejas / pedidas >= 0.9 : false,
+  };
+}
+
+/** ¿Se descargaron las estadísticas que DECIDEN, las del rango pedido y las de su respaldo? [C] */
 export function estadisticasFrescas(frescos, rango, respaldo) {
   return frescos.includes(rango) && (!respaldo || frescos.includes(respaldo));
 }
 
-/**
- * Sin estadísticas nuevas del rango pedido O sin la matriz nueva, la fecha
- * es la de los datos que se conservan, no la de hoy. Antes solo miraba
- * las estadísticas: con la ruta de counters caída salía «hoy» con la
- * matriz de hace semanas, pasaba el comparador (mismos recuentos) y la
- * puerta de 72 h del despliegue. Sin datos previos, no hay fecha.
- */
-export function fechaDeLaCorrida({ frescos, estadisticasNuevas, matrizNueva, previous }) {
-  diagnostics.frescos = frescos;
-  diagnostics.conservado = !(estadisticasNuevas && matrizNueva);
-  // Desde 3.59.6 la fecha sigue a las ESTADÍSTICAS: con cruces y parejas
-  // conservados la corrida sale con fecha de hoy y la matriz lleva la suya
-  // (`relaciones.descargada`, `fechaDeLaMatriz`). Antes hacían falta las dos
-  // cosas a la vez, y del 10 al 19 de octubre de 2026 la ruta de cruces dio
-  // error 1101 en 13 de 16 corridas del bot: el comparador las tiró enteras
-  // con sus estadísticas frescas, y el nerf de Rafaela tardó días en llegar.
-  return estadisticasNuevas ? new Date().toISOString() : (previous?.generatedAt ?? null);
+/** `generatedAt` sigue a las ESTADÍSTICAS: sin las que deciden, la fecha de lo conservado [C]. */
+export function fechaDeLaCorrida({ estadisticasNuevas, previous, ahora = new Date().toISOString() }) {
+  return estadisticasNuevas ? ahora : (previous?.generatedAt ?? null);
 }
 
-/**
- * Cuándo se descargó de verdad la matriz de cruces y parejas que lleva la
- * corrida (3.59.6). Nueva: ahora. Conservada: la de la guardada; un fichero
- * de antes de esta marca la tiene en su `generatedAt`, que hasta 3.59.6 solo
- * avanzaba con la matriz fresca.
- */
+/** La matriz lleva su fecha: nueva, ahora; conservada, la de la guardada (o su `generatedAt` si es de antes de la marca) [C]. */
 export function fechaDeLaMatriz({ matrizNueva, previous, ahora = new Date().toISOString() }) {
   if (matrizNueva) return ahora;
   return previous?.relaciones?.descargada ?? previous?.generatedAt ?? null;
 }
 
 /**
- * Héroes a los que Moonton les ha rehecho el kit DESPUÉS de que alguien les
- * escribiera los tags a mano.
- *
- * `newHeroes` no los ve: siguen en el catálogo y con su nombre de siempre,
- * así que se quedarían con los tags de otro héroe para siempre y en silencio.
- * La huella se guarda en `heroes.json` al revisar los tags, así que el aviso
- * PERSISTE hasta que una persona los mire, igual que con los héroes nuevos;
- * calcularlo contra la corrida anterior lo apagaría solo al día siguiente.
- *
- * Un héroe cuya ficha no haya llegado conserva la anterior
- * (`conservarFichasPrevias`), y si no hay ninguna se queda sin `speciality`:
- * en ese caso NO se avisa, porque una petición caída no es un rework.
+ * Héroes cuyo kit cambió desde que se les escribieron los tags a mano (la
+ * huella está en heroes.json: el aviso persiste hasta que alguien los mire).
+ * Sin speciality no se avisa: una ficha caída no es un rework [D].
  */
 export function kitsRehechos(heroList = [], catalogo = []) {
   const escrito = new Map(catalogo.filter((h) => h?.kit).map((h) => [h.name, h.kit]));
@@ -332,23 +193,17 @@ export function kitsRehechos(heroList = [], catalogo = []) {
     .filter((x) => x.antes !== x.ahora);
 }
 
-
-/**
- * Más de esta proporción de héroes cambiados en una corrida no es un parche:
- * es la API reescribiendo sus textos (el parche del 11 de noviembre de 2026
- * tocó 32 de 133, uno de cada cuatro). Decisión de producto: con la mitad o
- * más, no se marca a nadie y el registro lo dice.
- */
+/** Más de esta parte de los kits a la vez no es un parche, es la API reescribiendo textos (el del 11-11 tocó 32/133) [M]. */
 export const PARCHE_MAX_PROPORCION = 0.5;
 
+const ES_FECHA = /^\d{4}-\d{2}-\d{2}$/;
+const dia = (f) => Date.parse(`${f}T00:00:00Z`);
+const fechaValida = (f) => typeof f === 'string' && ES_FECHA.test(f) && Number.isFinite(dia(f));
+
 /**
- * Los héroes tocados por el parche (3.102.0): `{ nombre: 'AAAA-MM-DD' }`, el
- * día en que su huella de habilidades CON cifras (`kitCifras`) dejó de ser la
- * guardada. Se quedan `dias` (la ventana de los datos, 7): hasta entonces su
- * winrate y sus cruces mezclan días de antes del cambio, y la app lo marca.
- * Solo compara héroes con huella HOY y en lo guardado (una ficha caída
- * conserva la de antes y no inventa un cambio); sin huellas guardadas (la
- * primera corrida) no marca a nadie. Puro: la fecha se pasa.
+ * Los tocados por el parche: `{ nombre: 'AAAA-MM-DD' }` desde el día en que su
+ * `kitCifras` dejó de ser la guardada, durante `dias` (la ventana de los
+ * datos). Solo compara héroes con huella hoy y en lo guardado [D].
  */
 export function anotarParche(previous, heroList = [], fecha, { dias = 7, maxProporcion = PARCHE_MAX_PROPORCION } = {}) {
   const antes = new Map((previous?.heroes ?? []).filter((h) => typeof h?.kitCifras === 'string').map((h) => [h.name, h.kitCifras]));
@@ -356,52 +211,42 @@ export function anotarParche(previous, heroList = [], fecha, { dias = 7, maxProp
   let cambiados = comparables.filter((h) => antes.get(h.name) !== h.kitCifras).map((h) => h.name);
   const reescrito = comparables.length > 0 && cambiados.length > comparables.length * maxProporcion;
   if (reescrito) cambiados = [];
-  const dia = (f) => Date.parse(`${f}T00:00:00Z`);
-  const valida = (f) => typeof f === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(f) && Number.isFinite(dia(f));
   const tocados = {};
-  for (const [nombre, f] of Object.entries(previous?.tocados ?? {})) {
-    if (valida(f) && valida(fecha) && dia(fecha) - dia(f) < dias * 86400000 && dia(fecha) >= dia(f)) tocados[nombre] = f;
+  if (fechaValida(fecha)) {
+    for (const [nombre, f] of Object.entries(previous?.tocados ?? {})) {
+      if (fechaValida(f) && dia(fecha) - dia(f) < dias * 864e5 && dia(fecha) >= dia(f)) tocados[nombre] = f;
+    }
+    for (const n of cambiados) tocados[n] = fecha;
   }
-  if (valida(fecha)) for (const n of cambiados) tocados[n] = fecha;
   const ordenado = Object.fromEntries(Object.entries(tocados).sort(([a], [b]) => a.localeCompare(b)));
   return { tocados: ordenado, cambiados, reescrito, comparables: comparables.length };
 }
 
 /**
- * La historia de la fuerza (3.50.0): una foto por día (UTC) del winrate y
- * la cuota de pick de la ventana de 7 días de los rangos que se comparan
- * (el tuyo y su respaldo), para que la app diga quién sube y quién baja
- * esta semana. Solo entra un rango DESCARGADO en esta corrida: una foto
- * con los datos conservados de ayer bajo la fecha de hoy diría «no se ha
- * movido» sin saberlo (el mismo fallo que ya costó `generatedAt`). La
- * última corrida del día sustituye a la anterior de ese día; lo de hace
- * más de `HISTORIA_DIAS` se cae. Puro: la fecha se pasa.
+ * La historia de la fuerza: una foto por día UTC de los rangos `rangos`
+ * DESCARGADOS hoy (`[wr a 3 decimales, pick a 4]`, 0 < wr < 1); la misma
+ * fecha se funde y lo de más de `dias` se cae [C].
  */
 export function anotarHistoria(previa, statsByRank = {}, frescos = [], fecha, { rangos = [], dias = HISTORIA_DIAS } = {}) {
-  const valida = (e) => e && typeof e.fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.fecha);
-  // Una foto por fecha: si lo previo trae dos (editado a mano), manda la última.
   const porFecha = new Map();
-  for (const e of (Array.isArray(previa) ? previa : []).filter(valida)) porFecha.set(e.fecha, { ...e });
+  for (const e of (Array.isArray(previa) ? previa : []).filter((x) => x && typeof x.fecha === 'string' && ES_FECHA.test(x.fecha))) porFecha.set(e.fecha, { ...e });
   const historia = [...porFecha.values()];
   const foto = {};
-  for (const rango of rangos) {
-    if (!frescos.includes(rango)) continue;
+  for (const rango of rangos.filter((r) => frescos.includes(r))) {
     const fila = {};
     for (const [heroe, s] of Object.entries(statsByRank?.[rango] ?? {})) {
       const wr = Number(s?.winRate); const pick = Number(s?.pickRate);
-      if (Number.isFinite(wr) && wr > 0 && wr < 1) // Winrate a la décima de punto y cuota a cuatro decimales: el umbral
-      // es de un punto y cada cifra más es ruido que pesa en el móvil.
-      fila[heroe] = [Math.round(wr * 1e3) / 1e3, Number.isFinite(pick) ? Math.round(pick * 1e4) / 1e4 : 0];
+      if (Number.isFinite(wr) && wr > 0 && wr < 1) fila[heroe] = [Math.round(wr * 1e3) / 1e3, Number.isFinite(pick) ? Math.round(pick * 1e4) / 1e4 : 0];
     }
     if (Object.keys(fila).length) foto[rango] = fila;
   }
-  if (Object.keys(foto).length && /^\d{4}-\d{2}-\d{2}$/.test(fecha ?? '')) {
+  if (Object.keys(foto).length && ES_FECHA.test(fecha ?? '')) {
     const i = historia.findIndex((e) => e.fecha === fecha);
     if (i >= 0) historia[i] = { ...historia[i], ...foto };
     else historia.push({ fecha, ...foto });
   }
   const ultima = historia.map((e) => e.fecha).sort().at(-1);
   if (!ultima) return [];
-  const limite = new Date(Date.parse(`${ultima}T00:00:00Z`) - (dias - 1) * 864e5).toISOString().slice(0, 10);
+  const limite = new Date(dia(ultima) - (dias - 1) * 864e5).toISOString().slice(0, 10);
   return historia.filter((e) => e.fecha >= limite).sort((a, b) => a.fecha.localeCompare(b.fecha));
 }

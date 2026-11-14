@@ -1,466 +1,306 @@
 /**
- * La orquestacion: lee los argumentos, descubre las rutas, pide cada recurso
- * conservando lo anterior cuando algo falla, baja las imagenes y escribe el
- * JSON. Aqui no se decide NADA sobre la forma de las respuestas.
+ * La corrida: descubre las rutas, pide cada recurso conservando lo anterior
+ * cuando algo falla, baja las imágenes y escribe el JSON. Aquí no se decide
+ * nada sobre la forma de las respuestas. La ingesta NO falla por un endpoint
+ * caído: sale con 0 salvo un error de programación [C].
  */
 
-import { writeFile, readFile, mkdir } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import { DIAS_RECIENTES, RAIZ, crearContexto, leerOpciones } from './contexto.mjs';
+import { esFalloDePaso } from './descarga.mjs';
+import { descubrirRutas, medirRutas } from './descubrimiento.mjs';
+import { pedirBuilds, pedirEquipo, pedirEstadisticas, pedirFichas, pedirLineas, pedirLista, pedirTalentos } from './peticiones.mjs';
+import { pedirRelaciones } from './relaciones.mjs';
 import {
-  CELDAS_MINIMAS, DAYS, DIAS_RECIENTES, HEROES, ICONOS, OUT, RANK, RANKS, RETRATOS, diagnostics, estado, sleep,
-} from './contexto.mjs';
-import { discoverRoutes, elegirRutaConMasDatos } from './descubrimiento.mjs';
-import {
-  fetchBuilds, fetchEquipo, fetchTalentos, fetchFichas, fetchHeroList, fetchStats, fetchWinrateLinea,
-} from './extraccion.mjs';
-import { fetchRelations } from './relaciones.mjs';
-import {
-  anotarFrescura, anotarHistoria, anotarParche, conservarFichasPrevias, estadisticasFrescas, fechaDeLaCorrida, fechaDeLaMatriz, fundirBuilds, fundirEquipo, fundirWinrateLinea,
-  kitsRehechos, leerPrevio, relacionesPrevias, relacionesDeLaCorrida,
+  anotarHistoria, anotarParche, conservarFichas, estadisticasFrescas, fechaDeLaCorrida, fechaDeLaMatriz, frescura,
+  fundirEquipo, fundirPorHeroeYLinea, kitsRehechos, leerPrevio, relacionesDeLaCorrida,
 } from './fusion.mjs';
 import { bajarImagenes } from './imagenes.mjs';
-import { fetchTiers } from './tiers.mjs';
+import { pedirTiers } from './tiers.mjs';
 import { serializar } from './salida.mjs';
-// La MISMA funcion que usa la app para decidir quien entra al pool de roam.
-// Duplicar el criterio aqui ya costo un fallo: la app metia a Marcel (support
-// segun la API) y la ingesta no le pedia counters, porque miraba solo el
-// catalogo escrito a mano.
-import { nombreClave as normName } from '../../src/motor/nombres.js';
-import { fundirCatalogo as mergeCatalog } from '../../src/motor/catalogo.js';
-import { elegirRangoDeRelaciones, RANGO_DE_RESPALDO } from '../../src/motor/ventana.js';
+import { nombreClave } from '../../src/motor/nombres.js';
+import { LINEAS, fundirCatalogo } from '../../src/motor/catalogo.js';
+import { elegirRangoDeRelaciones } from '../../src/motor/ventana.js';
 
-export { parseArgs } from './contexto.mjs';
-
-
-/**
- * Las esperas antes de volver a pedir las estadísticas de los rangos que
- * fallaron (3.87.2). El 28 de octubre (21:40) y el 29 (11:30) de 2026 la
- * ruta de estadísticas dio «Error 1101: Worker threw exception» en los
- * cuatro rangos en un segundo, y un minuto después la misma API servía
- * builds y líneas: sin un rango fresco, el comparador tiró las dos corridas
- * del bot enteras. Decisión de producto, como `REINTENTO_RELACIONES_MS`:
- * dos vueltas más, como mucho 80 s, y solo con fallos de paso.
- */
+/** Esperas antes de volver a pedir los rangos que dieron un fallo de paso: ratos de «Error 1101» de ~1 min [M]. */
 export const REINTENTOS_ESTADISTICAS_MS = [20000, 60000];
-/**
- * La espera antes de volver a pedir los cruces del rango de respaldo cuando
- * el pedido llegó entero y el respaldo no (3.87.4). Decisión de producto: el
- * 29 de octubre de 2026 la API pasó un minuto tirándolo todo y se recuperó;
- * con ella caída, la segunda pasada falla deprisa (0,3 s por héroe).
- */
+/** Espera antes de pedir otra vez el respaldo de los cruces si cayó entero y el pedido no [M]. */
 export const REINTENTO_RESPALDO_MS = 60000;
-/**
- * Un fallo de paso: el servidor contestó con un error suyo (5xx) o con
- * «demasiadas peticiones» (429). Un 4xx o «no acepta days» no se arregla
- * esperando, y sin red o sin respuesta (la API caída del todo) esperar 80 s
- * dos veces solo alarga la corrida.
- */
-export const esFalloDePaso = (e) => e?.status >= 500 || e?.status === 429;
+/** El 90 % de los héroes pedidos: el listón de «llegó casi entero» (frescura y respaldo) [D]. */
+const CASI_ENTERO = 0.9;
 
-/** Las estadísticas de cada rango de `RANKS` a `dias`, con los reintentos. Nunca lanza: lo que no llega va en `fallos`. */
-async function estadisticasConReintento(dias) {
-  const datos = {}, fallos = {};
-  let pendientes = [...RANKS], vueltas = 0;
-  const fallaronAlPrincipio = new Set();
+const ahora = () => new Date().toISOString();
+const paresDe = (m) => Object.values(m ?? {}).reduce((n, porLinea) => n + Object.keys(porLinea ?? {}).length, 0);
+const filasCon = (m) => Object.values(m?.counters ?? {}).filter((f) => Object.keys(f ?? {}).length).length;
+const media = (stats) => {
+  const r = Object.values(stats).map((s) => s.winRate).filter((n) => n != null);
+  return r.length ? r.reduce((a, b) => a + b, 0) / r.length : 0.5;
+};
+
+/** El paso que, si falla, deja lo de antes: devuelve lo que dio `intento` o `undefined` (y lo dice). */
+async function intentar(nombre, intento) {
+  try {
+    return await intento();
+  } catch (err) {
+    console.warn(`  · ${nombre}: fallo (${err.message}); se conserva lo anterior`);
+    return undefined;
+  }
+}
+
+/** Las estadísticas de cada rango a `dias`; los fallos de paso se repiten (2 vueltas). No lanza. */
+async function estadisticasConReintento(ctx, dias) {
+  const datos = {};
+  const fallos = {};
+  const alPrincipio = new Set();
+  let pendientes = [...ctx.op.ranks];
+  let vueltas = 0;
   for (;;) {
     for (const rank of pendientes) {
-      try { datos[rank] = await fetchStats(rank, dias); delete fallos[rank]; } catch (err) { fallos[rank] = err; if (!vueltas) fallaronAlPrincipio.add(rank); }
-      await sleep(250);
+      try { datos[rank] = await pedirEstadisticas(ctx, rank, dias); delete fallos[rank]; } catch (err) { fallos[rank] = err; if (!vueltas) alPrincipio.add(rank); }
+      await ctx.sleep(250);
     }
     pendientes = pendientes.filter((r) => fallos[r] && esFalloDePaso(fallos[r]));
     if (!pendientes.length || vueltas >= REINTENTOS_ESTADISTICAS_MS.length) break;
     console.log(`  · estadísticas a ${dias} días: ${pendientes.join(', ')} fallaron; las pido otra vez en ${REINTENTOS_ESTADISTICAS_MS[vueltas] / 1000} s`);
-    await sleep(REINTENTOS_ESTADISTICAS_MS[vueltas]);
+    await ctx.sleep(REINTENTOS_ESTADISTICAS_MS[vueltas]);
     vueltas += 1;
   }
-  const reintento = vueltas ? { vueltas, recuperados: [...fallaronAlPrincipio].filter((r) => datos[r]), sinRecuperar: [...fallaronAlPrincipio].filter((r) => !datos[r]) } : null;
-  return { datos, fallos, reintento };
+  const reintento = vueltas ? { vueltas, recuperados: [...alPrincipio].filter((r) => datos[r]), sinRecuperar: [...alPrincipio].filter((r) => !datos[r]) } : null;
+  // Por rango: `${n} héroes` o el fallo, en el orden de `ranks`.
+  const textos = Object.fromEntries(ctx.op.ranks.map((r) => [r, datos[r] ? `${Object.keys(datos[r]).length} héroes` : `fallo: ${fallos[r].message.slice(0, 120)}`]));
+  return { datos, fallos, reintento, textos };
 }
 
-async function main() {
-  console.log(`Ingesta MLBB · rangos=${RANKS.join(',')} · ventana=${DAYS}d`);
-
-  estado.ROUTES = await discoverRoutes();
-  if (estado.ROUTES) {
-    for (const [k, r] of Object.entries(estado.ROUTES)) console.log(`  · ${k}: ${r.method} ${r.template}`);
-  } else {
-    console.warn('  · no se pudo leer el esquema; pruebo rutas conocidas a ciegas');
-  }
-
-  const heroes = JSON.parse(await readFile(HEROES, 'utf8'));
-
-  const previous = await leerPrevio();
-
-  let heroList = previous?.heroes ?? [];
+/**
+ * Cruces y parejas del rango pedido y, si trajo algo, de su respaldo; la
+ * guarda de rango (ventana.js) decide cuál se queda. Si el pedido llegó casi
+ * entero y el respaldo no, el respaldo se pide UNA vez más [M].
+ */
+async function relacionesDeRango(ctx, nombres, stats, heroList, previous, remedir) {
+  const { op } = ctx;
+  const minimas = Math.ceil(CASI_ENTERO * nombres.length);
+  const guarda = (o) => elegirRangoDeRelaciones({
+    rango: op.rank, filasMinimas: minimas, ultima: previous?.relaciones?.ultima ?? null, fecha: ahora(), ...(op.celdas != null ? { minimo: op.celdas } : {}), ...o,
+  });
+  const pedido = await pedirRelaciones(ctx, nombres, stats, heroList, op.rank, { remedir });
+  const r = { elegidas: pedido, rango: { rango: op.rank, pedido: op.rank, coherencia: null, motivo: null }, diag: pedido.diag, respaldoReintentado: null };
+  // Sin nada del pedido no se pide el respaldo: no hay con qué comparar [C].
+  if (!op.respaldo || !filasCon(pedido)) return r;
   try {
-    const fresh = await fetchHeroList();
-    if (fresh.length) heroList = fresh;
-    console.log(`  · lista completa: ${heroList.length} héroes`);
-  } catch (err) {
-    console.warn(`  · lista de héroes: fallo (${err.message}); conservo la anterior`);
-  }
-
-  const { danoPrevio } = conservarFichasPrevias(heroList, previous);
-
-  diagnostics.speciality = { pedidos: heroList.length, ok: 0, errores: [] };
-  diagnostics.dano = { ok: 0, conservados: 0, sin: 0 };
-  try {
-    const fichas = await fetchFichas(heroList);
-    for (const h of heroList) {
-      const f = fichas[h.name];
-      // Para TODOS, no solo para los que no están en el catálogo: son 133
-      // listas cortas (5 KB) y con ellas derivar-tags.mjs no vuelve a pedir
-      // 133 fichas por una ruta escrita a mano.
-      if (f?.speciality) h.speciality = f.speciality;
-      if (f?.damage) h.damage = f.damage;
-      if (f?.retrato) h.retrato = f.retrato;
-      if (f?.cara) h.cara = f.cara;
-      // La huella del texto tambien: sin esta linea se calculaba en la ficha
-      // y se quedaba la conservada del repositorio (lo dijo la mutacion).
-      if (f?.kitTexto) h.kitTexto = f.kitTexto;
-      if (f?.kitCifras) h.kitCifras = f.kitCifras;
-      // Lo que hace cada habilidad (3.36.0): el plan de partida lo lee.
-      if (f?.habilidades) h.habilidades = f.habilidades;
+    let otras = await pedirRelaciones(ctx, nombres, stats, heroList, op.respaldo, { remedir });
+    // El diagnóstico es el de la ÚLTIMA pasada del respaldo, la elegida o no.
+    let diagRespaldo = otras.diag;
+    if (filasCon(pedido) >= minimas && filasCon(otras) < minimas) {
+      const antes = filasCon(otras);
+      console.log(`  · ${op.respaldo}: ${antes} de ${nombres.length} para comprobar ${op.rank}; lo pido otra vez en ${REINTENTO_RESPALDO_MS / 1000} s`);
+      await ctx.sleep(REINTENTO_RESPALDO_MS);
+      const otraVez = await pedirRelaciones(ctx, nombres, stats, heroList, op.respaldo, { remedir });
+      diagRespaldo = otraVez.diag;
+      if (filasCon(otraVez) > antes) otras = otraVez;
+      r.respaldoReintentado = { antes, despues: filasCon(otras) };
     }
-    diagnostics.speciality.ok = Object.values(fichas).filter((f) => f.speciality).length;
-    diagnostics.dano.ok = Object.values(fichas).filter((f) => f.damage).length;
-    console.log(`  · fichas: ${Object.keys(fichas).length}/${heroList.length} heroes`);
+    r.rango = guarda({ pedidas: pedido, respaldo: otras });
+    if (r.rango.rango === op.respaldo) { r.elegidas = otras; r.diag = diagRespaldo; }
   } catch (err) {
-    console.warn(`  · fichas: fallo (${err.message}); se conserva lo anterior`);
+    const sin = guarda({ pedidas: pedido, respaldo: null });
+    r.rango = { ...sin, motivo: `${sin.motivo}: ${err.message}` };
+    // Sin respaldo y con la última comprobación diciendo que el pedido está roto, no entra nada nuevo.
+    if (r.rango.rango === op.respaldo) r.elegidas = { counters: {}, synergies: {} };
   }
-  diagnostics.dano.conservados = heroList.filter((h) => h.damage && danoPrevio[h.name]).length;
-  diagnostics.dano.sin = heroList.filter((h) => !h.damage).length;
-  console.log(`  · tipo de dano: ${heroList.length - diagnostics.dano.sin}/${heroList.length} heroes`);
+  const c = r.rango.coherencia;
+  console.log(`  · cruces y parejas de ${r.rango.rango}${c ? ` (r con ${op.respaldo}: cruces ${c.counters?.toFixed(2) ?? '-'}, parejas ${c.synergies?.toFixed(2) ?? '-'})` : ''}${r.rango.motivo ? `: ${r.rango.motivo}` : ''}`);
+  return r;
+}
 
-  // Counters de TODOS los heroes, no solo de los roamers: la app recomienda
-  // para las cinco lineas y un mediocarril necesita sus matchups igual que un
-  // roamer. Son ~266 peticiones en vez de 70, que es el precio de que la app
-  // sirva para cualquier rol.
-  const todos = mergeCatalog(heroes.heroes, heroList);
-  const nombresPedir = [...new Set(todos.map((h) => h.name))];
-  const roamNames = [...new Set(todos.filter((h) => h.roam).map((h) => h.name))];
+export async function main(argv = process.argv.slice(2)) {
+  const op = leerOpciones(argv);
+  const ctx = crearContexto(op);
+  console.log(`Ingesta MLBB · rangos=${op.ranks.join(',')} · ventana=${op.dias}d`);
+
+  const descubierto = await descubrirRutas(ctx);
+  ctx.rutas = descubierto.rutas;
+  if (ctx.rutas) for (const [k, r] of Object.entries(ctx.rutas)) console.log(`  · ${k}: ${r.method} ${r.template}`);
+  else console.warn('  · no se pudo leer el esquema; pruebo rutas conocidas a ciegas');
+
+  const catalogo = JSON.parse(await readFile(resolve(RAIZ, 'public/data/heroes.json'), 'utf8'));
+  const previous = await leerPrevio(op);
+
+  // La lista y las fichas: cada héroe conserva lo suyo si hoy no llega.
+  const lista = await intentar('lista de héroes', () => pedirLista(ctx));
+  const heroList = lista?.length ? lista : (previous?.heroes ?? []);
+  if (lista) console.log(`  · lista completa: ${heroList.length} héroes`);
+  const conDanoAntes = conservarFichas(heroList, previous);
+  const fichas = await intentar('fichas', () => pedirFichas(ctx, heroList));
+  for (const h of heroList) Object.assign(h, fichas?.fichas[h.name]);
+  const leidas = Object.values(fichas?.fichas ?? {});
+  const speciality = { pedidos: heroList.length, ok: leidas.filter((f) => f.speciality).length, errores: fichas?.errores ?? [] };
+  const dano = { ok: leidas.filter((f) => f.damage).length, conservados: heroList.filter((h) => h.damage && conDanoAntes.has(h.name)).length, sin: heroList.filter((h) => !h.damage).length };
+  if (fichas) console.log(`  · fichas: ${leidas.length}/${heroList.length} heroes`);
+  console.log(`  · tipo de dano: ${heroList.length - dano.sin}/${heroList.length} heroes`);
+
+  // Cruces de TODOS los héroes (la app recomienda para las cinco líneas), con el mismo catálogo que la app.
+  const nombresPedir = [...new Set(fundirCatalogo(catalogo.heroes, heroList).map((h) => h.name))];
   console.log(`  · ${nombresPedir.length} heroes a los que pedir counters`);
 
+  // Estadísticas: los rangos que fallan conservan lo anterior; `frescos` decide la fecha.
   const statsByRank = { ...(previous?.statsByRank ?? {}) };
-  // Qué rangos se han DESCARGADO en esta corrida, aparte de los conservados.
-  // Es lo que decide la fecha del fichero: con la API caída la corrida
-  // reproducía los datos de ayer con la fecha de hoy, pasaba el comparador
-  // (no resolvía menos) y engañaba a la puerta de frescura del despliegue.
   const frescos = [];
-  diagnostics.rangos = {};
-  const semana = await estadisticasConReintento(DAYS);
-  if (semana.reintento) diagnostics.reintentoEstadisticas = semana.reintento;
-  for (const rank of RANKS) {
+  const semana = await estadisticasConReintento(ctx, op.dias);
+  for (const rank of op.ranks) {
     const s = semana.datos[rank];
-    if (s) {
-      if (Object.keys(s).length) { statsByRank[rank] = s; frescos.push(rank); }
-      diagnostics.rangos[rank] = `${Object.keys(s).length} héroes`;
-      console.log(`  · ${rank}: ${Object.keys(s).length} héroes`);
-    } else {
-      const err = semana.fallos[rank];
-      // Antes solo salía por consola y en la app no había forma de saber que
-      // faltaban tres de los cuatro rangos.
-      diagnostics.rangos[rank] = `fallo: ${err.message.slice(0, 120)}`;
-      console.warn(`  · ${rank}: fallo (${err.message}); conservo lo anterior`);
-    }
+    if (s && Object.keys(s).length) { statsByRank[rank] = s; frescos.push(rank); }
+    if (s) console.log(`  · ${rank}: ${Object.keys(s).length} héroes`);
+    else console.warn(`  · ${rank}: fallo (${semana.fallos[rank].message}); conservo lo anterior`);
   }
-  const stats = statsByRank[RANK] ?? Object.values(statsByRank)[0] ?? previous?.stats ?? {};
+  const stats = statsByRank[op.rank] ?? Object.values(statsByRank)[0] ?? previous?.stats ?? {};
+  // La ventana corta NUNCA se conserva: unos «recientes» viejos son peores que ninguno [M].
+  const corta = await estadisticasConReintento(ctx, DIAS_RECIENTES);
+  const recientesPorRango = Object.fromEntries(op.ranks.filter((r) => Object.keys(corta.datos[r] ?? {}).length).map((r) => [r, corta.datos[r]]));
+  for (const rank of op.ranks.filter((r) => !corta.datos[r])) console.warn(`  · ${rank} (${DIAS_RECIENTES} días): fallo (${corta.fallos[rank].message}); la app usará la ventana de ${op.dias}`);
 
-  // La ventana corta de las estadisticas por heroe, por rango. NO se conserva
-  // de la corrida anterior: unos datos "recientes" de hace dias son peores
-  // que ninguno, y sin ellos la app cae sola a los de 7 dias (ventana.js).
-  // Es un extra: un fallo aqui no tira la corrida ni deja de publicar.
-  const recientesPorRango = {};
-  diagnostics.recientes = {};
-  const corta = await estadisticasConReintento(DIAS_RECIENTES);
-  for (const rank of RANKS) {
-    const s = corta.datos[rank];
-    if (s) {
-      if (Object.keys(s).length) recientesPorRango[rank] = s;
-      diagnostics.recientes[rank] = `${Object.keys(s).length} héroes`;
-    } else {
-      const err = corta.fallos[rank];
-      diagnostics.recientes[rank] = `fallo: ${err.message.slice(0, 120)}`;
-      console.warn(`  · ${rank} (${DIAS_RECIENTES} días): fallo (${err.message}); la app usará la ventana de ${DAYS}`);
-    }
-  }
-  const recientes = Object.keys(recientesPorRango).length ? { dias: DIAS_RECIENTES, statsByRank: recientesPorRango } : null;
-
-  // La tier list de mlbb.gg: opinion curada, se ensena y no puntua (tiers.mjs).
-  const tiers = await fetchTiers(heroList, previous);
-  console.log(`  · tier list (mlbb.gg): ${diagnostics.tiers}`);
+  const { tiers, diag: diagTiers } = await pedirTiers(op.tiers, heroList, previous, { sleep: ctx.sleep });
+  console.log(`  · tier list (mlbb.gg): ${diagTiers}`);
   console.log(`  · ventana de ${DIAS_RECIENTES} días: ${Object.keys(recientesPorRango).join(', ') || 'ninguno'}`);
 
-  // Antes de pedir 266 veces, comprobar por cual de las rutas candidatas viene
-  // el dato completo. Cuesta unas pocas peticiones y ha valido la matriz entera.
+  // Antes de las 266 peticiones, por cuál de las rutas candidatas viene el dato entero [M].
+  const rutasMedidas = {};
+  const medir = async (clave, heroe) => { const t = await medirRutas(ctx, clave, heroe); if (t) rutasMedidas[clave] = t; };
   const heroeDePrueba = heroList.find((h) => h.id)?.id ?? nombresPedir[0];
-  for (const clave of ['counter', 'compatibility']) {
-    try {
-      await elegirRutaConMasDatos(clave, heroeDePrueba);
-    } catch (err) {
-      console.warn(`  · ${clave}: no se ha podido comparar rutas (${err.message}); se usa la del esquema`);
-    }
-  }
+  for (const clave of ['counter', 'compatibility']) await medir(clave, heroeDePrueba);
 
-  // Objetos y builds. Como todo lo demas, si falla se conserva lo anterior: un
-  // objeto no cambia de estadisticas de un dia para otro, y quedarse sin el
-  // dato es peor que tenerlo con un dia de retraso.
   let equipo = previous?.equipment ?? {};
-  try {
-    const fresco = await fetchEquipo();
-    const fundido = fundirEquipo(equipo, fresco, { completo: !diagnostics.equipo?.caidas });
+  let diagEquipo = null;
+  const objetos = await intentar('objetos', () => pedirEquipo(ctx));
+  if (objetos) {
+    const fundido = fundirEquipo(equipo, objetos.equipo, { completo: !objetos.caidas });
     equipo = fundido.equipo;
-    if (diagnostics.equipo) diagnostics.equipo.conservados = fundido.conservados;
-    console.log(`  · objetos: ${Object.keys(equipo).length}${fundido.conservados ? ` (${fundido.conservados} con lo de antes: ${diagnostics.equipo?.caidas ?? '?'} de ${diagnostics.equipo?.rutas ?? '?'} rutas no respondieron)` : ''}`);
-  } catch (err) {
-    console.warn(`  · objetos: fallo (${err.message}); conservo los anteriores`);
+    if (objetos.rutas != null) diagEquipo = { rutas: objetos.rutas, caidas: objetos.caidas, conservados: fundido.conservados };
+    console.log(`  · objetos: ${Object.keys(equipo).length}${fundido.conservados ? ` (${fundido.conservados} con lo de antes: ${objetos.caidas ?? '?'} de ${objetos.rutas ?? '?'} rutas no respondieron)` : ''}`);
   }
 
-  // Los nombres de los talentos (3.57.0): si falla, los de antes.
-  let talentos = previous?.talentos ?? {};
-  try {
-    const fresh = await fetchTalentos();
-    if (Object.keys(fresh).length) talentos = fresh;
-    console.log(`  · talentos: ${Object.keys(talentos).length}`);
-  } catch (err) {
-    console.warn(`  · talentos: fallo (${err.message}); conservo los anteriores`);
-  }
+  const talentosHoy = await intentar('talentos', () => pedirTalentos(ctx));
+  const talentos = talentosHoy && Object.keys(talentosHoy).length ? talentosHoy : (previous?.talentos ?? {});
+  if (talentosHoy) console.log(`  · talentos: ${Object.keys(talentos).length}`);
 
   let builds = previous?.builds ?? {};
-  try {
-    const fresh = await fetchBuilds(heroList);
-    if (Object.keys(fresh).length) {
-      const fundido = fundirBuilds(previous?.builds, fresh, heroList);
-      builds = fundido.builds;
-      if (diagnostics.builds) diagnostics.builds.conservadas = fundido.conservados;
-    }
-    console.log(`  · builds: ${Object.keys(builds).length} heroes`);
-  } catch (err) {
-    console.warn(`  · builds: fallo (${err.message}); conservo las anteriores`);
+  const buildsHoy = await intentar('builds', () => pedirBuilds(ctx, heroList));
+  const diagBuilds = buildsHoy?.diag ?? null;
+  if (buildsHoy && Object.keys(buildsHoy.builds).length) {
+    const fundido = fundirPorHeroeYLinea(previous?.builds, buildsHoy.builds, heroList);
+    builds = fundido.valores;
+    if (diagBuilds) diagBuilds.conservadas = fundido.conservados;
   }
+  if (buildsHoy) console.log(`  · builds: ${Object.keys(builds).length} heroes`);
 
-  // El winrate de cada heroe en cada linea (3.12.0): se ensena, no puntua.
-  // Si falla, lo anterior, como las builds.
+  // El winrate por línea y su curva (se enseñan, no puntúan), par a par; lo conservado se cuenta SIEMPRE.
   let winrateLinea = previous?.winrateLinea ?? {};
-  // La curva por duración (3.43.0) viaja en la misma respuesta y se funde
-  // igual, par a par: si falla, la de antes.
   let curvaLinea = previous?.curvaLinea ?? {};
-  // Cuántos pares salen de la corrida anterior, también si no llegó NINGUNO
-  // nuevo (3.43.2): con la ruta cambiada de forma se conservaba todo y el
-  // contador ni se escribía, así que nada lo decía.
-  const pares = (m) => Object.values(m ?? {}).reduce((n, porLinea) => n + Object.keys(porLinea ?? {}).length, 0);
-  const anotarConservados = () => {
-    diagnostics.lineas = { ...(diagnostics.lineas ?? {}), conservados: pares(winrateLinea), curvasConservadas: pares(curvaLinea) };
-  };
-  try {
-    const fresh = await fetchWinrateLinea(heroList);
-    anotarConservados();
-    if (Object.keys(fresh).length) {
-      const fundido = fundirWinrateLinea(previous?.winrateLinea, fresh, heroList);
-      winrateLinea = fundido.winrateLinea;
-      diagnostics.lineas.conservados = fundido.conservados;
-    }
-    if (Object.keys(fresh.curvas ?? {}).length) {
-      const fundido = fundirWinrateLinea(previous?.curvaLinea, fresh.curvas, heroList);
-      curvaLinea = fundido.winrateLinea;
-      diagnostics.lineas.curvasConservadas = fundido.conservados;
-    }
-    console.log(`  · winrate por linea: ${Object.keys(winrateLinea).length} heroes, curvas por duracion: ${Object.keys(curvaLinea).length}`);
-  } catch (err) {
-    console.warn(`  · winrate por linea: fallo (${err.message}); conservo el anterior`);
-    anotarConservados();
+  const lineasHoy = await intentar('winrate por linea', () => pedirLineas(ctx, heroList));
+  const diagLineas = { ...(lineasHoy?.diag ?? {}), conservados: paresDe(winrateLinea), curvasConservadas: paresDe(curvaLinea) };
+  if (lineasHoy && Object.keys(lineasHoy.winrate).length) {
+    const fundido = fundirPorHeroeYLinea(previous?.winrateLinea, lineasHoy.winrate, heroList);
+    winrateLinea = fundido.valores;
+    diagLineas.conservados = fundido.conservados;
   }
+  if (lineasHoy && Object.keys(lineasHoy.curvas).length) {
+    const fundido = fundirPorHeroeYLinea(previous?.curvaLinea, lineasHoy.curvas, heroList);
+    curvaLinea = fundido.valores;
+    diagLineas.curvasConservadas = fundido.conservados;
+  }
+  if (lineasHoy) console.log(`  · winrate por linea: ${Object.keys(winrateLinea).length} heroes, curvas por duracion: ${Object.keys(curvaLinea).length}`);
 
-  // Los iconos, solo de los objetos que la app puede llegar a ensenar: los que
-  // salen en alguna build y los que puede proponer por su defensa o su efecto.
-  // Son ~70 de 184, y la segunda corrida no baja ninguno.
-  try {
-    const aEnsenar = new Set();
-    for (const porLinea of Object.values(builds)) {
-      for (const lista of Object.values(porLinea)) for (const b of lista) for (const id of b.objetos ?? []) aEnsenar.add(String(id));
-    }
+  // Iconos solo de lo que la app puede enseñar (en una build, o con defensa o efecto); retratos por id.
+  const imagenes = {};
+  await intentar('iconos', async () => {
+    const aEnsenar = new Set(Object.values(builds).flatMap((porLinea) => Object.values(porLinea).flatMap((lista) => lista.flatMap((b) => (b.objetos ?? []).map(String)))));
     for (const [id, o] of Object.entries(equipo)) if (o.magica || o.fisica || o.efectos?.length) aEnsenar.add(id);
-    const subconjunto = Object.fromEntries(Object.entries(equipo).filter(([id]) => aEnsenar.has(id)));
-    const urls = Object.fromEntries(Object.entries(subconjunto).map(([id, o]) => [id, o.icono]));
-    const { bajados, cambiados, fallos } = await bajarImagenes(urls, ICONOS, '.png', 'objetos');
-    console.log(`  · iconos: ${bajados} bajados (${cambiados} cambiados), ${fallos} fallos (de ${Object.keys(subconjunto).length} que se ensenan)`);
-  } catch (err) {
-    console.warn(`  · iconos: fallo (${err.message}); se ensenaran solo los nombres`);
-  }
+    const urls = Object.fromEntries(Object.entries(equipo).filter(([id]) => aEnsenar.has(id)).map(([id, o]) => [id, o.icono]));
+    imagenes.objetos = await bajarImagenes(urls, op.iconos, '.png', { sleep: ctx.sleep });
+    console.log(`  · iconos: ${imagenes.objetos.bajados} bajados (${imagenes.objetos.cambiados} cambiados), ${imagenes.objetos.fallos} fallos (de ${Object.keys(urls).length} que se ensenan)`);
+  });
+  await intentar('retratos', async () => {
+    const urls = Object.fromEntries(heroList.filter((h) => h.retrato && h.id != null).map((h) => [h.id, h.retrato]));
+    imagenes.heroes = await bajarImagenes(urls, op.retratos, '.jpg', { sleep: ctx.sleep });
+    console.log(`  · retratos: ${imagenes.heroes.bajados} bajados (${imagenes.heroes.cambiados} cambiados), ${imagenes.heroes.fallos} fallos (de ${Object.keys(urls).length} heroes)`);
+  });
 
-  // Los retratos, uno por heroe, por su id: es lo que la app pide y no cambia
-  // aunque a Moonton le de por reescribir el nombre.
-  try {
-    const urls = Object.fromEntries(
-      heroList.filter((h) => h.retrato && h.id != null).map((h) => [h.id, h.retrato]),
-    );
-    const { bajados, cambiados, fallos } = await bajarImagenes(urls, RETRATOS, '.jpg', 'heroes');
-    console.log(`  · retratos: ${bajados} bajados (${cambiados} cambiados), ${fallos} fallos (de ${Object.keys(urls).length} heroes)`);
-  } catch (err) {
-    console.warn(`  · retratos: fallo (${err.message}); la lista saldra sin caras`);
-  }
-
-  let relations = relacionesPrevias(previous);
-  let relacionesFrescas = 0;
-  let parejasFrescas = 0;
-  const filasCon = (m) => Object.values(m?.counters ?? {}).filter((f) => Object.keys(f ?? {}).length).length;
-  // De qué rango salen cruces y parejas (3.35.0): el pedido, salvo que tras
-  // un reinicio de temporada no se parezca al de respaldo (ventana.js).
-  let relacionesRango = { rango: RANK, pedido: RANK, coherencia: null, motivo: null };
-  // La última comprobación que sí se pudo hacer (3.57.3, ventana.js).
-  const ultima = previous?.relaciones?.ultima ?? null;
-  const guarda = (opciones) => elegirRangoDeRelaciones({ rango: RANK, filasMinimas: Math.ceil(0.9 * nombresPedir.length), ultima, fecha: new Date().toISOString(), ...(CELDAS_MINIMAS != null ? { minimo: CELDAS_MINIMAS } : {}), ...opciones });
-  try {
-    const remedir = (clave, id) => elegirRutaConMasDatos(clave, id);
-    const fresh = await fetchRelations(nombresPedir, stats, heroList, RANK, { remedir });
-    let elegidas = fresh;
-    const respaldo = RANGO_DE_RESPALDO[RANK];
-    // Sin nada del rango pedido (API caída) no se pide el de respaldo: no
-    // hay con qué compararlo y serían 266 peticiones para nada (3.37.0).
-    if (respaldo && filasCon(fresh)) {
-      const diagPedido = diagnostics.relations;
-      try {
-        let otras = await fetchRelations(nombresPedir, stats, heroList, respaldo, { remedir });
-        // El pedido llegó casi entero y el respaldo no (3.87.4): la API tiene ratos de minutos en
-        // que lo tira todo («Error 1101»), y sin respaldo el pedido no se comprueba y se queda la
-        // matriz guardada. Se espera y se pide el respaldo UNA vez más, quedándose con la mejor.
-        const minimas = Math.ceil(0.9 * nombresPedir.length);
-        if (filasCon(fresh) >= minimas && filasCon(otras) < minimas) {
-          const antes = filasCon(otras);
-          console.log(`  · ${respaldo}: ${antes} de ${nombresPedir.length} para comprobar ${RANK}; lo pido otra vez en ${REINTENTO_RESPALDO_MS / 1000} s`);
-          await sleep(REINTENTO_RESPALDO_MS);
-          const otraVez = await fetchRelations(nombresPedir, stats, heroList, respaldo, { remedir });
-          if (filasCon(otraVez) > antes) otras = otraVez;
-          diagnostics.respaldoReintentado = { antes, despues: filasCon(otras) };
-        }
-        // El respaldo tiene que llegar casi entero (el 90%, el mismo listón
-        // que `anotarFrescura`) para poder sustituir al pedido.
-        relacionesRango = guarda({ pedidas: fresh, respaldo: otras });
-        // Con el respaldo elegido sin poder comprobarlo (llegó a medias), sus
-        // filas se funden sobre la matriz guardada si es de ese rango; si no,
-        // la corrida sale con menos filas y el comparador la descarta.
-        if (relacionesRango.rango === respaldo) elegidas = otras; else diagnostics.relations = diagPedido;
-      } catch (err) {
-        diagnostics.relations = diagPedido;
-        relacionesRango = guarda({ pedidas: fresh, respaldo: null });
-        relacionesRango = { ...relacionesRango, motivo: `${relacionesRango.motivo}: ${err.message}` };
-        // Sin el respaldo y con la última comprobación diciendo que el pedido
-        // está roto, no entra nada nuevo: se conserva lo guardado.
-        if (relacionesRango.rango === respaldo) elegidas = { counters: {}, synergies: {} };
-      }
-      const c = relacionesRango.coherencia;
-      console.log(`  · cruces y parejas de ${relacionesRango.rango}${c ? ` (r con ${respaldo}: cruces ${c.counters?.toFixed(2) ?? '-'}, parejas ${c.synergies?.toFixed(2) ?? '-'})` : ''}${relacionesRango.motivo ? `: ${relacionesRango.motivo}` : ''}`);
-    }
-    const corrida = relacionesDeLaCorrida(previous, elegidas, relacionesRango.rango);
-    relations = corrida.relations;
-    relacionesFrescas = corrida.frescas;
-    parejasFrescas = corrida.frescasParejas;
-    // Sin ninguna fila nueva se queda la matriz guardada, y con ella su etiqueta.
+  // Cruces y parejas: rango (guarda), fusión con la guardada y frescura.
+  let relations = { counters: { ...(previous?.counters ?? {}) }, synergies: { ...(previous?.synergies ?? {}) } };
+  let relacionesRango = { rango: op.rank, pedido: op.rank, coherencia: null, motivo: null };
+  let frescas = 0, frescasParejas = 0, diagRelaciones = null, respaldoReintentado = null;
+  const hecho = await intentar('relaciones', async () => {
+    const r = await relacionesDeRango(ctx, nombresPedir, stats, heroList, previous, medir);
+    ({ rango: relacionesRango, diag: diagRelaciones, respaldoReintentado } = r);
+    const corrida = relacionesDeLaCorrida(previous, r.elegidas, relacionesRango.rango);
+    ({ relations, frescas, frescasParejas } = corrida);
+    // Sin ninguna fila nueva se queda la matriz guardada, y con ella su etiqueta [C].
     if (corrida.conservado) relacionesRango = previous?.relaciones ?? { ...relacionesRango, motivo: 'sin cruces nuevos: se conservan los de la corrida anterior' };
     if (corrida.cortas || corrida.cortasParejas) {
-      diagnostics.relations = { ...(diagnostics.relations ?? {}), cortas: corrida.cortas, cortasParejas: corrida.cortasParejas };
+      diagRelaciones = { ...(diagRelaciones ?? {}), cortas: corrida.cortas, cortasParejas: corrida.cortasParejas };
       console.warn(`  · relaciones: ${corrida.cortas} filas de cruces y ${corrida.cortasParejas} de parejas con menos de la mitad que la guardada: se conserva la guardada`);
     }
-    console.log(`  · relaciones: ${relacionesFrescas} héroes nuevos de ${nombresPedir.length} · ${Object.keys(relations.counters).length} con fila`);
-  } catch (err) {
-    console.warn(`  · relaciones: fallo (${err.message}); conservo las anteriores`);
-    relacionesRango = previous?.relaciones ?? relacionesRango;
-  }
-  const matrizNueva = anotarFrescura(relacionesFrescas, nombresPedir.length, parejasFrescas);
-
-  const avgOf = (byName) => {
-    const r = Object.values(byName).map((s) => s.winRate).filter((n) => n != null);
-    return r.length ? r.reduce((a, b) => a + b, 0) / r.length : 0.5;
-  };
-
-  // Misma normalización que usa la app, para que el aviso coincida con la realidad.
-  const statKeys = new Set(Object.keys(stats).map(normName));
-  const sinDatos = roamNames.filter((n) => !statKeys.has(normName(n)));
-
-  const known = new Set(heroes.heroes.map((h) => h.name));
-  const seen = new Set([...Object.keys(stats), ...heroList.map((h) => h.name)]);
-  const newHeroes = [...seen].filter((n) => !known.has(n));
-
-  // Heroes a los que Moonton les ha rehecho el kit DESPUES de que alguien les
-  // escribiera los tags a mano. `newHeroes` no los ve: siguen en el catalogo
-  // y con su nombre de siempre, asi que se quedarian con tags de otro heroe
-  // para siempre y en silencio. La huella (tipo de dano + speciality) se
-  // guarda en heroes.json al revisar los tags, asi que el aviso PERSISTE
-  // hasta que una persona los mire, igual que pasa con los heroes nuevos.
-  // Un heroe cuya ficha no haya llegado conserva la anterior (ver
-  // conservarFichasPrevias), asi que una peticion caida no inventa un aviso.
-  const heroesCambiados = kitsRehechos(heroList, heroes.heroes);
-
-  const estadisticasNuevas = estadisticasFrescas(frescos, RANK, RANGO_DE_RESPALDO[RANK]);
-  const generatedAt = fechaDeLaCorrida({ frescos, estadisticasNuevas, matrizNueva, previous });
-  // Quién sube y quién baja (3.50.0): una foto al día de tu rango y su
-  // respaldo, solo de lo descargado en esta corrida.
-  const historia = anotarHistoria(previous?.historia, statsByRank, frescos, new Date().toISOString().slice(0, 10), {
-    rangos: [RANK, RANGO_DE_RESPALDO[RANK]].filter(Boolean),
+    console.log(`  · relaciones: ${frescas} héroes nuevos de ${nombresPedir.length} · ${Object.keys(relations.counters).length} con fila`);
+    return true;
   });
-  // Los tocados por el parche (3.102.0): su huella con cifras cambió hoy, o en los últimos DAYS días.
-  const parche = anotarParche(previous, heroList, new Date().toISOString().slice(0, 10), { dias: DAYS });
+  if (!hecho) relacionesRango = previous?.relaciones ?? relacionesRango;
+  const { frescosRecursos, matrizNueva } = frescura(frescas, nombresPedir.length, frescasParejas);
+
+  const estadisticasNuevas = estadisticasFrescas(frescos, op.rank, op.respaldo);
+  const hoy = ahora().slice(0, 10);
+  const parche = anotarParche(previous, heroList, hoy, { dias: op.dias });
   if (parche.reescrito) console.warn(`  · parche: cambian más de la mitad de ${parche.comparables} kits a la vez; parece la API reescribiendo textos y no marco a nadie`);
   else if (parche.cambiados.length) console.log(`  · parche: tocados hoy ${parche.cambiados.join(', ')}`);
+  const conocidos = new Set(catalogo.heroes.map((h) => h.name));
+  const newHeroes = [...new Set([...Object.keys(stats), ...heroList.map((h) => h.name)])].filter((n) => !conocidos.has(n));
+  const heroesCambiados = kitsRehechos(heroList, catalogo.heroes);
+
   const out = {
-    generatedAt,
-    rank: RANK,
-    // De qué rango salen cruces y parejas, y por qué (3.35.0).
+    generatedAt: fechaDeLaCorrida({ estadisticasNuevas, previous }),
+    rank: op.rank,
     relaciones: { ...relacionesRango, descargada: fechaDeLaMatriz({ matrizNueva, previous }) },
     ranks: Object.keys(statsByRank),
-    days: DAYS,
-    patchAvgWinRate: avgOf(stats),
-    avgByRank: Object.fromEntries(Object.entries(statsByRank).map(([k, v]) => [k, avgOf(v)])),
+    days: op.dias,
+    avgByRank: Object.fromEntries(Object.entries(statsByRank).map(([k, v]) => [k, media(v)])),
     heroCount: Object.keys(stats).length,
-    roamCoverage: { withData: roamNames.length - sinDatos.length, total: roamNames.length, missing: sinDatos },
-    // Cuantos heroes de cada linea tienen counters. Es lo que dice si la app
-    // puede recomendar de verdad para esa linea o esta a medias.
-    coberturaPorLinea: Object.fromEntries(
-      ['roam', 'jungle', 'mid', 'gold', 'exp'].map((linea) => {
-        const de = heroList.filter((h) => (h.lanes ?? []).includes(linea));
-        const con = de.filter((h) => Object.keys(relations.counters[h.name] ?? {}).length);
-        return [linea, { total: de.length, conCounters: con.length }];
-      }),
-    ),
+    // Cuántos héroes de cada línea tienen cruces: si la app puede recomendar de verdad en esa línea.
+    coberturaPorLinea: Object.fromEntries(LINEAS.map((linea) => {
+      const de = heroList.filter((h) => (h.lanes ?? []).includes(linea));
+      return [linea, { total: de.length, conCounters: de.filter((h) => Object.keys(relations.counters[h.name] ?? {}).length).length }];
+    })),
     heroes: heroList,
     newHeroes,
     heroesCambiados,
     tocados: parche.tocados,
     diagnostics: {
-      // Cuando las rutas salen del esquema, LOCKED no llega a usarse: la base
-      // hay que sacarla de ahí o la app muestra "API: desconocida" teniéndola.
-      base: estado.LOCKED
-        ? `${estado.LOCKED.method} ${estado.LOCKED.base}${estado.LOCKED.prefix}`
-        : (estado.ROUTES?.rank ? `${estado.ROUTES.rank.method} ${new URL(estado.ROUTES.rank.template).origin}` : null),
-      schema: diagnostics.schema ?? null,
-      // Cuántos kits se pudieron comparar y cuántos cambiaron hoy (3.102.0).
+      base: ctx.fijada
+        ? `${ctx.fijada.method} ${ctx.fijada.base}${ctx.fijada.prefix}`
+        : (ctx.rutas?.rank ? `${ctx.rutas.rank.method} ${new URL(ctx.rutas.rank.template).origin}` : null),
+      schema: descubierto.schema,
       parche: { comparables: parche.comparables, cambiados: parche.cambiados.length, reescrito: parche.reescrito },
-      routes: diagnostics.routes ?? null,
-      frescos: diagnostics.frescos ?? [],
-      frescosRecursos: diagnostics.frescosRecursos ?? null,
-      conservado: diagnostics.conservado ?? false,
-      relations: diagnostics.relations ?? null,
-      speciality: diagnostics.speciality ?? null,
-      rutasMedidas: diagnostics.rutasMedidas ?? null,
-      dano: diagnostics.dano ?? null,
-      builds: diagnostics.builds ?? null,
-      equipo: diagnostics.equipo ?? null,
-      lineas: diagnostics.lineas ?? null,
-      rangos: diagnostics.rangos ?? null,
-      reintentoEstadisticas: diagnostics.reintentoEstadisticas ?? null,
-      respaldoReintentado: diagnostics.respaldoReintentado ?? null,
-      recientes: diagnostics.recientes ?? null,
-      tiers: diagnostics.tiers ?? null,
-      ok: [...new Set(diagnostics.ok)].slice(0, 6),
-      // Lo que falló, si NO se descargó nada: antes se vaciaba en cuanto había
-      // datos previos (statsByRank lleva dentro el `previous`), o sea casi
-      // siempre, y con la API caída el móvil veía `failed: []`.
-      failed: frescos.length ? [] : [...new Set(diagnostics.failed)].slice(0, 12),
-      imagenes: diagnostics.imagenes ?? null,
+      routes: descubierto.routes,
+      frescos,
+      frescosRecursos,
+      conservado: !(estadisticasNuevas && matrizNueva),
+      relations: diagRelaciones,
+      speciality,
+      rutasMedidas: Object.keys(rutasMedidas).length ? rutasMedidas : null,
+      dano,
+      builds: diagBuilds,
+      equipo: diagEquipo,
+      lineas: diagLineas,
+      rangos: semana.textos,
+      reintentoEstadisticas: semana.reintento,
+      respaldoReintentado,
+      recientes: corta.textos,
+      tiers: diagTiers,
+      // Lo que falló, solo si NO se descargó nada (con datos previos, `statsByRank` nunca está vacío) [D].
+      failed: frescos.length ? [] : [...new Set(ctx.fallos)].slice(0, 12),
+      imagenes: Object.keys(imagenes).length ? imagenes : null,
     },
     stats,
     statsByRank,
-    ...(recientes ? { recientes } : {}),
+    ...(Object.keys(recientesPorRango).length ? { recientes: { dias: DIAS_RECIENTES, statsByRank: recientesPorRango } } : {}),
     ...(tiers ? { tiers } : {}),
     counters: relations.counters,
     synergies: relations.synergies,
@@ -469,31 +309,25 @@ async function main() {
     talentos,
     winrateLinea,
     curvaLinea,
-    historia,
+    historia: anotarHistoria(previous?.historia, statsByRank, frescos, hoy, { rangos: [op.rank, op.respaldo].filter(Boolean) }),
   };
 
-  await mkdir(dirname(OUT), { recursive: true });
-  await writeFile(OUT, serializar(out) + '\n');
+  await mkdir(dirname(op.out), { recursive: true });
+  await writeFile(op.out, serializar(out) + '\n');
+  console.log(`Escrito ${op.out}`);
 
-  console.log(`Escrito ${OUT}`);
-  if (diagnostics.relations) {
-    const r = diagnostics.relations;
-    console.log(`Relaciones: ${r.ok} con datos · ${r.conId} por id · ${r.porNombre} por nombre`);
-    for (const e of r.errores) console.warn(`  ${e}`);
+  if (diagRelaciones) {
+    console.log(`Relaciones: ${diagRelaciones.ok} con datos · ${diagRelaciones.conId} por id · ${diagRelaciones.porNombre} por nombre`);
+    for (const e of diagRelaciones.errores) console.warn(`  ${e}`);
   }
+  const conStats = new Set(Object.keys(stats).map(nombreClave));
+  const sinStats = nombresPedir.filter((n) => !conStats.has(nombreClave(n)));
   if (!Object.keys(statsByRank).length) {
     console.warn('SIN ESTADÍSTICAS. Combinaciones probadas que fallaron:');
-    for (const f of [...new Set(diagnostics.failed)].slice(0, 12)) console.warn(`  ${f}`);
-  } else if (sinDatos.length) {
-    console.warn(`Roamers sin estadísticas (${sinDatos.length}/${roamNames.length}): ${sinDatos.join(', ')}`);
-    console.warn('Si son muchos, los nombres de la API no coinciden con heroes.json.');
+    for (const f of [...new Set(ctx.fallos)].slice(0, 12)) console.warn(`  ${f}`);
+  } else if (sinStats.length) {
+    console.warn(`Héroes sin estadísticas (${sinStats.length}/${nombresPedir.length}): ${sinStats.join(', ')}. Si son muchos, los nombres de la API no casan con heroes.json.`);
   }
-  if (newHeroes.length) {
-    console.log(`Héroes sin tags propios (usan los de su rol): ${newHeroes.join(', ')}`);
-  }
-  if (heroesCambiados.length) {
-    console.log(`Héroes con el kit cambiado desde que se escribieron sus tags: ${heroesCambiados.map((h) => `${h.name} (${h.antes} → ${h.ahora})`).join(', ')}`);
-  }
+  if (newHeroes.length) console.log(`Héroes sin tags propios (usan los de su rol): ${newHeroes.join(', ')}`);
+  if (heroesCambiados.length) console.log(`Héroes con el kit cambiado desde que se escribieron sus tags: ${heroesCambiados.map((h) => `${h.name} (${h.antes} → ${h.ahora})`).join(', ')}`);
 }
-
-export { main };

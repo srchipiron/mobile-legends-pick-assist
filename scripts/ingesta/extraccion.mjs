@@ -1,433 +1,233 @@
 /**
- * Lo que se saca de cada respuesta: linea, rol, speciality, tipo de dano y
- * retrato de un heroe, defensa y efectos de un objeto, y las builds. Todo por
- * FORMA y por contexto de clave, porque la API mueve sus campos de sitio.
+ * Lo que se lee de cada respuesta de la API, POR FORMA y por contexto de
+ * clave: la API mueve sus campos de sitio, así que nada aquí fija una ruta
+ * dentro del JSON. Funciones puras: ni red ni estado.
  */
 
-import { DAYS, RANK, diagnostics, estado, sleep } from './contexto.mjs';
-import { callRoute, fetchResource } from './descarga.mjs';
-import { NAME_KEYS, asRate, idPrincipal, pick } from './relaciones.mjs';
+/** Hasta dónde se baja: la línea de un héroe vive en el nivel 8 [M]. */
+export const HONDURA = 12;
+const SALTAR = 1;
+const PARAR = 2;
 
 /**
- * Líneas en las que se juega un héroe. La API las devuelve de formas distintas
- * (una cadena, una lista, objetos con nombre), así que se recogen todas las
- * cadenas que parezcan una línea conocida.
+ * Recorre `nodo` en profundidad (el nodo es el nivel 0, hasta `HONDURA`).
+ * `visita(valor, claves, indice)` recibe las claves de OBJETO por las que se
+ * llegó (sin los índices de lista) y el índice si el valor está en una lista;
+ * devuelve `SALTAR` para no bajar de ese valor y `PARAR` para acabar.
  */
-const LINEAS = ['roam', 'jungle', 'mid', 'gold', 'exp', 'support', 'farm'];
-
-/**
- * Profundidad maxima al bajar por la respuesta. La API envuelve el dato util
- * muy hondo: el titulo de la linea vive en
- * data.hero.data.roadsort[].data.road_sort_title, o sea nivel 8. Con el limite
- * de 6 que habia antes NUNCA se llegaba, y los 133 heroes salian sin linea y
- * sin rol sin que nada fallara.
- */
-const HONDURA = 12;
-
-export function extraerLineas(node, out = new Set(), depth = 0, dentro = false) {
-  if (depth > HONDURA || node == null) return [...out];
-
-  // Solo se leen las cadenas que estén DENTRO de una clave de línea. Sin ese
-  // contexto, el nombre del héroe o la URL de su icono podían colar palabras
-  // como "gold" o "mid" y darle líneas que no juega.
-  if (typeof node === 'string') {
-    if (dentro) for (const l of LINEAS) if (node.toLowerCase().includes(l)) out.add(l);
-    return [...out];
-  }
-  if (typeof node !== 'object') return [...out];
-
-  if (Array.isArray(node)) {
-    for (const v of node) extraerLineas(v, out, depth + 1, dentro);
-    return [...out];
-  }
-
-  for (const [k, v] of Object.entries(node)) {
-    extraerLineas(v, out, depth + 1, dentro || /lane|position|road/i.test(k));
-  }
-  return [...out];
-}
-
-/**
- * Roles que usa la API. Se reconocen por igualdad exacta, no por subcadena:
- * asi una URL o un nombre de heroe no puede colar un rol que no es.
- */
-const ROLES = ['tank', 'fighter', 'assassin', 'mage', 'marksman', 'support'];
-
-/**
- * Rol del heroe. Igual que las lineas, viene hondo y con otro nombre segun la
- * version de la API (sortid[].data.sort_title hoy), asi que se busca por
- * contexto de clave en vez de por ruta fija.
- */
-export function extraerRol(node, depth = 0, dentro = false) {
-  if (depth > HONDURA || node == null) return '';
-
-  if (typeof node === 'string') {
-    if (!dentro) return '';
-    const s = node.trim().toLowerCase();
-    return ROLES.includes(s) ? s : '';
-  }
-  if (typeof node !== 'object') return '';
-
-  const entradas = Array.isArray(node) ? node.map((v) => [null, v]) : Object.entries(node);
-  for (const [k, v] of entradas) {
-    // 'road' se excluye a proposito: roadsort lleva la LINEA, no el rol.
-    const aqui = dentro || (k != null && /sort|role|class/i.test(k) && !/road/i.test(k));
-    const r = extraerRol(v, depth + 1, aqui);
-    if (r) return r;
-  }
-  return '';
-}
-
-/**
- * Etiquetas de Moonton ("Guard", "Initiator", "Regen"...). Igual que el rol,
- * vienen hondas y pueden cambiar de sitio, asi que se buscan por contexto de
- * clave. Se recogen tal cual: traducirlas a nuestros tags es cosa de
- * SPECIALITY_TAGS, que se deriva del catalogo y se mide.
- */
-export const ES_SPECIALITY = /^[A-Za-z][A-Za-z ]{0,28}$/;
-function extraerSpeciality(node, out = new Set(), depth = 0, dentro = false) {
-  if (depth > HONDURA || node == null) return [...out];
-
-  if (typeof node === 'string') {
-    const s = node.trim();
-    // Solo con la FORMA de una speciality (3.60.4): «Crowd Control»,
-    // «Magic Damage»… Acaban escritas como claves en src/motor/reglas.js
-    // (derivar-tags.mjs) y una con comillas inyectaba código que corría en
-    // el bot de mantenimiento con permiso de escritura.
-    if (dentro && ES_SPECIALITY.test(s)) out.add(s);
-    return [...out];
-  }
-  if (typeof node !== 'object') return [...out];
-
-  const entradas = Array.isArray(node) ? node.map((v) => [null, v]) : Object.entries(node);
-  for (const [k, v] of entradas) {
-    extraerSpeciality(v, out, depth + 1, dentro || (k != null && /special/i.test(k)));
-  }
-  return [...out];
-}
-
-/**
- * Tipo de dano de un heroe, contado en los textos de habilidad que da Moonton.
- *
- * No es una regla escrita a mano ni una deduccion del rol: el propio juego
- * escribe "Physical Damage" / "Magic Damage" / "True Damage" en cada
- * habilidad, y eso es lo que se cuenta. El rol se equivocaria: Gusion es
- * asesino y pega magico, Hylos es tanque y pega magico.
- *
- * Devuelve las cuentas crudas. Quien decide la etiqueta es el motor, con
- * `perfilDeDano`, para poder cambiar el criterio sin reingerir.
- */
-function extraerDano(node, out = { fisico: 0, magico: 0, verdadero: 0 }, depth = 0) {
-  if (depth > HONDURA || node == null) return out;
-
-  if (typeof node === 'string') {
-    // El texto viene con etiquetas de color por medio ("<font ...>Physical
-    // Damage</font>"), asi que se limpian antes de contar.
-    const t = node.replace(/<[^>]*>/g, ' ');
-    out.fisico += (t.match(/Physical Damage/gi) ?? []).length;
-    out.magico += (t.match(/Magic Damage/gi) ?? []).length;
-    out.verdadero += (t.match(/True Damage/gi) ?? []).length;
-    return out;
-  }
-  if (typeof node !== 'object') return out;
-
-  for (const v of Array.isArray(node) ? node : Object.values(node)) {
-    extraerDano(v, out, depth + 1);
-  }
-  return out;
-}
-
-/**
- * Huella del TEXTO de la ficha: todas las cadenas largas (descripciones de
- * habilidades, consejos), sin etiquetas, sin cifras y sin espacios, ordenadas
- * y resumidas en ocho hexadecimales (FNV-1a). Sin las cifras, un
- * reequilibrio de numeros no la mueve; un rework, que reescribe lo que hace
- * cada habilidad, si. Hizo falta porque la huella de tipo de dano +
- * speciality NO vio los reworks de Masha y Bruno del parche 2.2.16: Moonton
- * les reescribio las habilidades y les dejo la misma speciality.
- *
- * Las DIRECCIONES no cuentan (3.57.2): el 11 de octubre de 2026 la API
- * empezo a servir todas las imagenes por un proxy (`wsrv.nl/?url=...`) y la
- * huella de los 133 heroes cambio a la vez, con el texto de las habilidades
- * identico (comprobado desenvolviendo las URL: las 133 dan la huella del 10).
- * El aviso de «kit cambiado» salia para todos y dejaba de decir nada.
- */
-export function extraerTextos(node, out = [], depth = 0) {
-  if (depth > HONDURA || node == null) return out;
-  if (typeof node === 'string') {
-    if (/^\s*[a-z][a-z0-9+.-]*:\/\//i.test(node)) return out;
-    const t = node.replace(/<[^>]*>/g, '').replace(/[0-9%.,]+/g, '').replace(/\s+/g, '').toLowerCase();
-    if (t.length >= 40) out.push(t);
-    return out;
-  }
-  if (typeof node !== 'object') return out;
-  for (const v of Array.isArray(node) ? node : Object.values(node)) extraerTextos(v, out, depth + 1);
-  return out;
-}
-
-/**
- * Qué hace cada habilidad que importa para jugar el draft (3.36.0, el plan
- * de partida): control duro, en área, quitar controles (a sí mismo o a los
- * aliados) y volverse intocable. Sale de las etiquetas de Moonton de cada
- * habilidad (`skilltag`: CC, AOE, Remove CC, CC Immune, Invincible, Death
- * Immunity) y, para quitar controles, también del texto («removes all
- * debuffs»): medido el 3 de octubre de 2026 sobre los 133, la etiqueta solo
- * marca 5 de las 11 que lo hacen (Argus, X.Borg, Masha, Akai, Joy y Nana
- * lo dicen en el texto y no en la etiqueta). Solo las habilidades con algo
- * de eso, una vez cada una (los héroes que se transforman repiten nombres).
- * Por FORMA: cualquier objeto con `skillname` y `skilldesc`.
- */
-// «Death Immunity» NO es intocable (3.37.0): Argus no muere pero se le
-// puede controlar, y el plan decía «guardad el control para cuando se le
-// acabe», que es justo lo contrario. Solo `Invincible` lo es.
-const ETIQUETA_EFECTO = { CC: 'cc', AOE: 'area', 'Remove CC': 'limpia', 'CC Immune': 'limpia', Invincible: 'inmortal' };
-const LIMPIA_TEXTO = /(?:remov|clear)\w* (?:all )?(?:debuffs|negative effects|control effects)|purif|cleans/i;
-const ALIADOS_TEXTO = /allied heroes|allies|teammates/i;
-export function extraerHabilidades(node) {
-  const vistas = new Map();
-  // La PASIVA es la primera de cada lista de habilidades (en los que se
-  // transforman, la primera de cada forma): no se lanza, así que no se
-  // «guarda» ni se avisa de ella (3.37.0: «Guarda Molina's Gift» de Nana y
-  // «Primal Pact» de Masha, que saltan solas). No se distingue por el
-  // enfriamiento: la ulti de Gatotkaca tampoco lo trae.
-  const rec = (n, depth = 0, pasiva = false) => {
-    if (depth > HONDURA || n == null || typeof n !== 'object') return;
-    if (typeof n.skillname === 'string' && typeof n.skilldesc === 'string') {
-      if (pasiva) return;
-      const nombre = n.skillname.trim();
-      const texto = n.skilldesc.replace(/<[^>]*>/g, ' ');
-      const efectos = new Set();
-      for (const g of Array.isArray(n.skilltag) ? n.skilltag : []) {
-        const e = ETIQUETA_EFECTO[String(g?.tagname ?? '').trim()];
-        if (e) efectos.add(e);
-      }
-      if (LIMPIA_TEXTO.test(texto)) efectos.add('limpia');
-      if (efectos.has('limpia') && ALIADOS_TEXTO.test(texto)) efectos.add('aliados');
-      if (nombre && (efectos.has('cc') || efectos.has('limpia') || efectos.has('inmortal'))) {
-        const previa = vistas.get(nombre) ?? new Set();
-        for (const e of efectos) previa.add(e);
-        vistas.set(nombre, previa);
-      }
-      return;
-    }
-    if (Array.isArray(n)) n.forEach((v, i) => rec(v, depth + 1, i === 0));
-    else for (const v of Object.values(n)) rec(v, depth + 1);
+function recorrer(nodo, visita) {
+  let parado = false;
+  const ir = (v, claves, indice, nivel) => {
+    if (parado || nivel > HONDURA || v == null) return;
+    const r = visita(v, claves, indice);
+    if (r === PARAR) { parado = true; return; }
+    if (r === SALTAR || typeof v !== 'object') return;
+    if (Array.isArray(v)) v.forEach((x, i) => ir(x, claves, i, nivel + 1));
+    else for (const [k, x] of Object.entries(v)) ir(x, [...claves, k], null, nivel + 1);
   };
-  rec(node);
-  return [...vistas].map(([n, e]) => ({ n, e: [...e].sort() }));
+  ir(nodo, [], null, 0);
 }
 
-/** FNV-1a de 32 bits, en hexadecimal: sin dependencias y estable entre corridas. */
-export function huellaTexto(node) {
-  const textos = [...new Set(extraerTextos(node))].sort().join('|');
-  if (!textos) return null;
-  let h = 0x811c9dc5;
-  for (let i = 0; i < textos.length; i++) { h ^= textos.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
-  return h.toString(16).padStart(8, '0');
-}
+const esObjeto = (v) => v != null && typeof v === 'object' && !Array.isArray(v);
+const sinEtiquetas = (t, por = '') => String(t ?? '').replace(/<[^>]*>/g, por);
+const ES_IMAGEN = /^https?:\/\/\S+\.(png|jpe?g|webp)(\?|$)/i;
+const round4 = (v) => Math.round(v * 1e4) / 1e4;
 
-/**
- * La huella de las HABILIDADES con sus cifras (3.102.0): nombre, texto y
- * recarga/coste de cada una, por forma (cualquier objeto con `skillname` y
- * `skilldesc`). `huellaTexto` quita las cifras y las frases cortas a
- * proposito (las etiquetas van por mecanicas), asi que no ve un buff o un
- * nerf de numeros: en el parche del 11 de noviembre de 2026 se le escaparon
- * Atlas (Frigid Breath 5 → 4 s), Gloo, Hirara, Lukas y Aldous («CD: 12» →
- * «CD: 9.5»). Esta es la que dice que a un heroe lo han tocado.
- */
-export function huellaDeHabilidades(node) {
-  const lineas = new Set();
-  const limpio = (t) => String(t ?? '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
-  const recorrer = (x, depth = 0) => {
-    if (depth > HONDURA || x == null || typeof x !== 'object') return;
-    if (typeof x.skillname === 'string' && typeof x.skilldesc === 'string') {
-      lineas.add(`${limpio(x.skillname)}|${limpio(x.skilldesc)}|${limpio(x['skillcd&cost'])}`);
-    }
-    for (const v of Array.isArray(x) ? x : Object.values(x)) recorrer(v, depth + 1);
-  };
-  recorrer(node);
-  const texto = [...lineas].sort().join('\n');
-  if (!texto) return null;
+/** FNV-1a de 32 bits en hexadecimal: estable entre corridas y sin dependencias [C]. */
+function fnv1a(texto) {
   let h = 0x811c9dc5;
   for (let i = 0; i < texto.length; i++) { h ^= texto.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16).padStart(8, '0');
 }
 
-/**
- * La direccion ORIGINAL de una imagen que la API sirve por un proxy (3.57.2).
- * Desde el 11 de octubre de 2026 cada imagen llega como
- * `https://wsrv.nl/?url=<la de Moonton>`: el proxy la recomprime (la cara
- * de Miya pasa de 3.795 a 2.783 bytes), es un tercero mas en el camino y,
- * como `fuentes.json` guarda la URL de la que salio cada fichero, rebajo las
- * 210 imagenes y dejo al lector avisando de que sus 133 caras estaban
- * desfasadas. Se guarda la de Moonton, que sigue sirviendo la misma imagen.
- * Solo se desenvuelve si dentro va otra direccion http(s) a una imagen.
- */
-export function urlOriginal(url) {
-  if (typeof url !== 'string') return url;
-  try {
-    const dentro = new URL(url).searchParams.get('url');
-    if (dentro && /^https?:\/\/\S+\.(png|jpe?g|webp)(\?|$)/i.test(dentro)) return dentro;
-  } catch { /* no es una URL: se devuelve tal cual */ }
-  return url;
+/** Las cadenas que cuelgan de alguna clave que casa con `re` (el contexto evita que un nombre o una URL cuelen datos) [D]. */
+function cadenasBajo(nodo, re, alLeer) {
+  recorrer(nodo, (v, claves) => {
+    if (typeof v === 'string' && claves.some((k) => re(k))) return alLeer(v);
+    return undefined;
+  });
 }
 
-/**
- * El retrato de un heroe, de la ficha que ya se descarga.
- *
- * Se busca por FORMA, no por una ruta fija -la API ya ha movido sus campos de
- * sitio mas de una vez-: la imagen mas pequena que parezca un retrato. Y se
- * descarta `smallmap`, que es el dibujo de cuerpo entero: 240x390 y 165 KB por
- * heroe, veintidos megas para los 133.
- *
- * Cero peticiones extra: `fetchFichas` ya pide los 133 para el tipo de dano.
- */
-function extraerRetrato(node) {
-  const urls = [];
-  const rec = (n, clave = '', depth = 0) => {
-    if (depth > HONDURA || n == null) return;
-    if (typeof n === 'string') {
-      const url = urlOriginal(n);
-      if (/^https?:\/\/\S+\.(png|jpe?g|webp)(\?|$)/i.test(url)) urls.push({ clave, url });
-      return;
-    }
-    if (typeof n !== 'object') return;
-    for (const [k, v] of Object.entries(n)) rec(v, Array.isArray(n) ? clave : k, depth + 1);
-  };
-  rec(node);
-  // `head` es el retrato cuadrado. Se prefiere el pequeno, que es el que cabe
-  // en una lista: el grande pesa el doble y se ve igual a 34 pixeles.
-  const cabezas = urls.filter((u) => /^head$/i.test(u.clave));
-  return (cabezas[0] ?? urls.find((u) => /head/i.test(u.clave) && !/big/i.test(u.clave)))?.url ?? null;
+// `support` y `farm` no salen nunca hoy; se leen por si la API vuelve a nombrarlas así [D].
+const LINEAS_API = ['roam', 'jungle', 'mid', 'gold', 'exp', 'support', 'farm'];
+export function extraerLineas(nodo) {
+  const out = new Set();
+  cadenasBajo(nodo, (k) => /lane|position|road/i.test(k), (s) => {
+    for (const l of LINEAS_API) if (s.toLowerCase().includes(l)) out.add(l);
+  });
+  return [...out];
 }
 
-/**
- * La cara del juego ACTUAL: `head` del objeto de configuracion del heroe (el
- * que lleva `heroid`), un PNG del cliente del juego. No es la del retrato:
- * esa es la de la web de Moonton (`records.data.head`) y conserva el arte
- * VIEJO de los heroes rehechos (Floryn, Faramis, Kalea...). La usa el lector
- * de pantalla (scripts/lector): con ella acierta 173 de 178 caras de las
- * capturas de Javi sin ningun error. Por forma, no por ruta.
- */
-export function extraerCara(node, depth = 0) {
-  if (depth > HONDURA || node == null || typeof node !== 'object') return null;
-  if (!Array.isArray(node) && node.heroid != null && typeof node.head === 'string') {
-    const head = urlOriginal(node.head);
-    if (/^https?:\/\/\S+\.(png|jpe?g|webp)(\?|$)/i.test(head)) return head;
-  }
-  for (const v of Array.isArray(node) ? node : Object.values(node)) {
-    const c = extraerCara(v, depth + 1);
-    if (c) return c;
-  }
-  return null;
+/** Por igualdad exacta: una URL o un nombre no pueden colar un rol [D]. */
+const ROLES = ['tank', 'fighter', 'assassin', 'mage', 'marksman', 'support'];
+export function extraerRol(nodo) {
+  let rol = '';
+  // `roadsort` lleva la LÍNEA, no el rol [M].
+  cadenasBajo(nodo, (k) => /sort|role|class/i.test(k) && !/road/i.test(k), (s) => {
+    const r = s.trim().toLowerCase();
+    if (!ROLES.includes(r)) return undefined;
+    rol = r;
+    return PARAR;
+  });
+  return rol;
 }
 
-/**
- * La ficha de cada heroe: speciality y tipo de dano, de UNA sola peticion.
- *
- * Antes se pedia solo para los 7 heroes sin tags a mano. Ahora se pide para
- * todos, porque el tipo de dano hace falta para los 133 y sale de la misma
- * respuesta: 133 peticiones en vez de 7, unos 35 segundos mas en una corrida
- * que ya dura minutos.
- *
- * Si la ruta no esta en el esquema o un heroe falla, se devuelve lo que haya y
- * quien llama conserva lo anterior. Quedarse sin un dato es peor que tenerlo,
- * pero no es una averia.
- */
-export async function fetchFichas(heroes) {
-  const out = {};
-  if (!estado.ROUTES?.detail || !heroes.length) return out;
-  for (const h of heroes) {
-    try {
-      const { data } = await callRoute(estado.ROUTES.detail, { lang: 'en' }, h.id ?? h.name);
-      const esp = extraerSpeciality(data);
-      const dano = extraerDano(data);
-      const ficha = {};
-      if (esp.length) ficha.speciality = esp;
-      if (dano.fisico || dano.magico || dano.verdadero) ficha.damage = dano;
-      const retrato = extraerRetrato(data);
-      if (retrato) ficha.retrato = retrato;
-      const cara = extraerCara(data);
-      if (cara) ficha.cara = cara;
-      const kitTexto = huellaTexto(data);
-      if (kitTexto) ficha.kitTexto = kitTexto;
-      const kitCifras = huellaDeHabilidades(data);
-      if (kitCifras) ficha.kitCifras = kitCifras;
-      // Siempre que la ficha llegue, aunque vacía: un rework que quita el
-      // último control no puede dejar las habilidades de antes (3.37.0).
-      ficha.habilidades = extraerHabilidades(data);
-      if (Object.keys(ficha).length) out[h.name] = ficha;
-    } catch (err) {
-      if (diagnostics.speciality.errores.length < 4) {
-        diagnostics.speciality.errores.push(`${h.name}: ${err.message}`);
-      }
-    }
-    await sleep(250);
-  }
+/** La forma de una speciality («Crowd Control»): acaban como claves de reglas.js, y una con comillas sería código [C]. */
+export const ES_SPECIALITY = /^[A-Za-z][A-Za-z ]{0,28}$/;
+export function extraerSpeciality(nodo) {
+  const out = new Set();
+  cadenasBajo(nodo, (k) => /special/i.test(k), (s) => { if (ES_SPECIALITY.test(s.trim())) out.add(s.trim()); });
+  return [...out];
+}
+
+/** Las veces que los textos de habilidad dicen cada tipo de daño; la etiqueta la decide el motor [D]. */
+export function extraerDano(nodo) {
+  const out = { fisico: 0, magico: 0, verdadero: 0 };
+  recorrer(nodo, (v) => {
+    if (typeof v !== 'string') return;
+    const t = sinEtiquetas(v, ' ');
+    out.fisico += (t.match(/Physical Damage/gi) ?? []).length;
+    out.magico += (t.match(/Magic Damage/gi) ?? []).length;
+    out.verdadero += (t.match(/True Damage/gi) ?? []).length;
+  });
   return out;
 }
 
 /**
- * Cuanta defensa da un objeto, leida del texto del propio juego.
- *
- * Mismo criterio que `extraerDano` con las habilidades: no se deduce del tipo
- * de objeto ni de una lista escrita a mano, se cuenta lo que Moonton escribe
- * en `equiptips` ("+18 Extra Magic Defense"). El tipo mentiria: las botas
- * Tough Boots estan catalogadas como "Movement" y dan 18 de defensa magica.
- *
- * Devuelve numeros, no etiquetas: quien decide es el motor.
+ * Las cadenas largas de la ficha sin etiquetas, cifras ni espacios: un rework
+ * reescribe el texto y un reequilibrio de números no [M]. Las direcciones no
+ * cuentan: un proxy de imágenes no es un rework [M].
  */
+export function extraerTextos(nodo) {
+  const out = [];
+  recorrer(nodo, (v) => {
+    if (typeof v !== 'string' || /^\s*[a-z][a-z0-9+.-]*:\/\//i.test(v)) return;
+    const t = sinEtiquetas(v).replace(/[0-9%.,]+/g, '').replace(/\s+/g, '').toLowerCase();
+    if (t.length >= 40) out.push(t);
+  });
+  return out;
+}
+
+/** La huella del texto de la ficha (sin cifras), la de `kit` en heroes.json [C]. */
+export function huellaTexto(nodo) {
+  const textos = [...new Set(extraerTextos(nodo))].sort().join('|');
+  return textos ? fnv1a(textos) : null;
+}
+
+const esHabilidad = (v) => esObjeto(v) && typeof v.skillname === 'string' && typeof v.skilldesc === 'string';
+
+/** La huella de las habilidades CON cifras (nombre, texto, recarga y coste): la que ve un nerf de números [M]. */
+export function huellaDeHabilidades(nodo) {
+  const lineas = new Set();
+  const limpio = (t) => sinEtiquetas(t).replace(/\s+/g, ' ').trim().toLowerCase();
+  recorrer(nodo, (v) => {
+    if (esHabilidad(v)) lineas.add(`${limpio(v.skillname)}|${limpio(v.skilldesc)}|${limpio(v['skillcd&cost'])}`);
+  });
+  const texto = [...lineas].sort().join('\n');
+  return texto ? fnv1a(texto) : null;
+}
+
+// «Death Immunity» NO es intocable: a Argus se le controla [D].
+const ETIQUETA_EFECTO = { CC: 'cc', AOE: 'area', 'Remove CC': 'limpia', 'CC Immune': 'limpia', Invincible: 'inmortal' };
+// La etiqueta solo marca 5 de las 11 habilidades que limpian; el texto, el resto [M].
+const LIMPIA_TEXTO = /(?:remov|clear)\w* (?:all )?(?:debuffs|negative effects|control effects)|purif|cleans/i;
+const ALIADOS_TEXTO = /allied heroes|allies|teammates/i;
+
+/**
+ * Las habilidades que importan en el draft (control, área, limpiar, intocable),
+ * una por nombre. La primera de cada lista es la PASIVA y no cuenta [D].
+ */
+export function extraerHabilidades(nodo) {
+  const vistas = new Map();
+  recorrer(nodo, (v, _claves, indice) => {
+    if (!esHabilidad(v)) return undefined;
+    if (indice === 0) return SALTAR;
+    const texto = sinEtiquetas(v.skilldesc, ' ');
+    const efectos = new Set();
+    for (const g of Array.isArray(v.skilltag) ? v.skilltag : []) {
+      const e = ETIQUETA_EFECTO[String(g?.tagname ?? '').trim()];
+      if (e) efectos.add(e);
+    }
+    if (LIMPIA_TEXTO.test(texto)) efectos.add('limpia');
+    if (efectos.has('limpia') && ALIADOS_TEXTO.test(texto)) efectos.add('aliados');
+    const nombre = v.skillname.trim();
+    if (nombre && (efectos.has('cc') || efectos.has('limpia') || efectos.has('inmortal'))) {
+      const previa = vistas.get(nombre) ?? new Set();
+      for (const e of efectos) previa.add(e);
+      vistas.set(nombre, previa);
+    }
+    return SALTAR;
+  });
+  return [...vistas].map(([n, e]) => ({ n, e: [...e].sort() }));
+}
+
+/** La dirección original de una imagen servida por un proxy (`?url=`): se guarda la de Moonton [M]. */
+export function urlOriginal(url) {
+  if (typeof url !== 'string') return url;
+  try {
+    const dentro = new URL(url).searchParams.get('url');
+    if (dentro && ES_IMAGEN.test(dentro)) return dentro;
+  } catch { /* no es una URL: se devuelve tal cual */ }
+  return url;
+}
+
+/** El retrato: `head` (210×220), nunca `smallmap`, el cuerpo entero de 165 KB [M]. */
+export function extraerRetrato(nodo) {
+  const urls = [];
+  recorrer(nodo, (v, claves) => {
+    if (typeof v !== 'string') return;
+    const url = urlOriginal(v);
+    if (ES_IMAGEN.test(url)) urls.push({ clave: claves.at(-1) ?? '', url });
+  });
+  const cabezas = urls.filter((u) => /^head$/i.test(u.clave));
+  return (cabezas[0] ?? urls.find((u) => /head/i.test(u.clave) && !/big/i.test(u.clave)))?.url ?? null;
+}
+
+/** La cara del juego ACTUAL (`head` del objeto con `heroid`), la que reconoce el lector [M]. */
+export function extraerCara(nodo) {
+  let cara = null;
+  recorrer(nodo, (v) => {
+    if (!esObjeto(v) || v.heroid == null || typeof v.head !== 'string') return undefined;
+    const head = urlOriginal(v.head);
+    if (!ES_IMAGEN.test(head)) return undefined;
+    cara = head;
+    return PARAR;
+  });
+  return cara;
+}
+
+/** La ficha de un héroe: solo lo que llega; `habilidades` siempre (un rework puede dejarlas vacías) [D]. */
+export function leerFicha(data) {
+  const ficha = {};
+  const esp = extraerSpeciality(data);
+  const dano = extraerDano(data);
+  if (esp.length) ficha.speciality = esp;
+  if (dano.fisico || dano.magico || dano.verdadero) ficha.damage = dano;
+  const valores = { retrato: extraerRetrato(data), cara: extraerCara(data), kitTexto: huellaTexto(data), kitCifras: huellaDeHabilidades(data) };
+  for (const [k, v] of Object.entries(valores)) if (v) ficha[k] = v;
+  ficha.habilidades = extraerHabilidades(data);
+  return ficha;
+}
+
+/** La defensa que el propio juego escribe en `equiptips` (las botas «Movement» dan defensa) [D]. */
 function extraerDefensa(tips) {
   const t = String(tips ?? '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, ' ');
   const suma = (re) => [...t.matchAll(re)].reduce((a, m) => a + Number(m[1]), 0);
-  const magica = suma(/\+\s*(\d+(?:\.\d+)?)\s*(?:Extra\s+)?Magic(?:al)?\s+Defen[cs]e/gi);
-  const fisica = suma(/\+\s*(\d+(?:\.\d+)?)\s*(?:Extra\s+)?Physical\s+Defen[cs]e/gi);
-  return { magica, fisica };
+  return {
+    magica: suma(/\+\s*(\d+(?:\.\d+)?)\s*(?:Extra\s+)?Magic(?:al)?\s+Defen[cs]e/gi),
+    fisica: suma(/\+\s*(\d+(?:\.\d+)?)\s*(?:Extra\s+)?Physical\s+Defen[cs]e/gi),
+  };
 }
 
-/**
- * Que hace un objeto, leido del texto que el propio juego escribe en sus
- * habilidades. NO es una lista escrita a mano de "objetos anti-curacion": es
- * lo que pone el objeto.
- *
- * Mismo criterio que `extraerDano` con los heroes y que `extraerDefensa` con
- * las estadisticas. Y sirve para lo mismo: que la app pueda decir "el equipo
- * enemigo cura, esta build no corta curacion" sin que nadie mantenga a mano
- * una tabla que envejece con cada parche. Ya paso: "Necklace of Durance" era
- * EL objeto anti-curacion y hoy no existe en la API.
- *
- * Solo se apuntan efectos que el texto dice explicitamente:
- *
- * - `antiCuracion`: "reduce the Shield and HP Regen effects" (Sea Halberd,
- *   Dominance Ice, Glowing Wand...).
- * - `cortaControl`: "CC and Slow Duration reduced" o inmunidad (Tough Boots,
- *   Winter Crown, Wind of Nature...).
- *
- * NO se apunta "castiga al que pega con ataque basico" (Blade Armor, Antique
- * Cuirass) aunque el texto tambien lo diga: para usarlo haria falta saber
- * quien pega con ataque basico, y eso NO lo sabemos. Nuestro `damage` se
- * cuenta de las HABILIDADES, asi que a un tirador le falta justo su ataque
- * basico -Melissa sale "mixto" siendo fisica-, y el rol se equivoca con
- * Gusion, Hylos, Natan y Kimmy. Un dato que no se puede usar es dato muerto.
- */
+/** Lo que dice el texto de un objeto, no una lista escrita a mano [D] (comprobado sobre los 152 objetos [M]). */
 const EFECTOS = {
   antiCuracion: /reduc\w*[^.]{0,60}(HP Regen|Regen|healing|Heal)\b/i,
   cortaControl: /(CC and Slow Duration reduced|immune to all damage and effects|reduc\w*[^.]{0,30}\b(CC|Crowd Control)\b)/i,
-  // 3.57.0, comprobados contra los 152 objetos de la API el 13 de octubre de
-  // 2026: reduce escudos (Sea Halberd, Glowing Wand, Dominance Ice), reduce
-  // el daño crítico (Blade Armor) y da probabilidad de crítico (siete de
-  // ataque: con ellos se sabe qué enemigos van de crítico por su build).
   antiEscudo: /reduc\w*[^.]{0,30}\bShield/i,
   antiCritico: /Crit(ical)? Damage Reduction/i,
   critico: /Crit(ical)? Chance/i,
 };
-
-/**
- * Los efectos que se leen de las ESTADÍSTICAS (`equiptips`) y no de la
- * pasiva: el crítico y su reducción. Solo esos (3.57.1): con `equiptips`
- * para todos, «+35% Slow Reduction +12 HP Regen» de Rapid Boots casaba con
- * la antisanación, y salían 13 objetos «antisanación» en vez de 3.
- */
+// Solo el crítico se lee de las estadísticas: «+12 HP Regen» de unas botas no es antisanación [M].
 const DE_ESTADISTICAS = new Set(['antiCritico', 'critico']);
 
 function extraerEfectos(d) {
@@ -438,116 +238,32 @@ function extraerEfectos(d) {
 }
 
 /**
- * El catalogo de objetos: id -> nombre, tipo y defensa medida.
- *
- * Una sola peticion para los 152 objetos. Los nombres van en ingles a
- * proposito, como los de heroe: son la clave del dato, y ensenar un nombre
- * traducido mientras el motor busca otro es el fallo invisible de siempre.
+ * Funde las filas de una ruta de objetos en `out`: gana la primera ruta que da
+ * cada campo, y los efectos se JUNTAN entre rutas [M].
  */
-export async function fetchEquipo() {
-  const out = {};
-  if (!estado.ROUTES?.equipment) return out;
-
-  // Se leen TODAS las rutas de objetos que haya, no solo la mejor. La ruta
-  // /expanded trae `equiptips` -de donde sale la defensa- pero 152 objetos; la
-  // corta trae 184 sin tips. Con solo la primera, tres builds ensenaban
-  // "#10001" en vez de "Lantern of Hope". Gana la primera que dé cada campo,
-  // asi que la que va delante (la del esquema) manda donde tiene dato.
-  const rutas = [estado.ROUTES.equipment, ...(estado.ROUTES.equipment.alternativas ?? [])];
-  // Cuántas no respondieron (3.81.2): con alguna caída, `fundirEquipo`
-  // conserva los objetos guardados que hoy no llegan.
-  diagnostics.equipo = { rutas: rutas.length, caidas: 0 };
-  for (const ruta of rutas) {
-    // Sin valor inicial a proposito: si la ruta falla se sigue con la
-    // siguiente, asi que `rows` solo se lee cuando la peticion ha ido bien.
-    let rows;
-    try {
-      ({ rows } = await callRoute(ruta, { size: 300, index: 1, lang: 'en' }));
-    } catch {
-      diagnostics.equipo.caidas += 1;
-      continue; // una ruta caida no puede costarnos las que si responden
-    }
-    for (const row of rows) {
-      const d = row?.data ?? row;
-      const id = Number(d?.equipid ?? d?.id);
-      const nombre = d?.equipname ?? d?.name;
-      if (!Number.isFinite(id) || !nombre) continue;
-      const { magica, fisica } = extraerDefensa(d.equiptips);
-      const obj = out[id] ?? {};
-      obj.nombre ??= String(nombre).trim();
-      obj.tipo ??= d.equiptypename ?? null;
-      if (d.equipicon && !obj.icono) obj.icono = urlOriginal(String(d.equipicon));
-      if (magica && !obj.magica) obj.magica = magica;
-      if (fisica && !obj.fisica) obj.fisica = fisica;
-      const efectos = extraerEfectos(d);
-      // Se JUNTAN los de todas las rutas (3.57.7): la primera con alguno
-      // mandaba, y una ruta sin `equiptips` que diera la antisanación por la
-      // pasiva dejaba fuera el crítico, que desde 3.57.1 solo sale de ahí.
-      if (efectos.length) obj.efectos = [...new Set([...(obj.efectos ?? []), ...efectos])];
-      out[id] = obj;
-    }
-    await sleep(200);
+export function leerObjetos(rows, out) {
+  for (const row of rows) {
+    const d = row?.data ?? row;
+    const id = Number(d?.equipid ?? d?.id);
+    const nombre = d?.equipname ?? d?.name;
+    if (!Number.isFinite(id) || !nombre) continue;
+    const { magica, fisica } = extraerDefensa(d.equiptips);
+    const obj = out[id] ?? {};
+    obj.nombre ??= String(nombre).trim();
+    obj.tipo ??= d.equiptypename ?? null;
+    if (d.equipicon && !obj.icono) obj.icono = urlOriginal(String(d.equipicon));
+    if (magica && !obj.magica) obj.magica = magica;
+    if (fisica && !obj.fisica) obj.fisica = fisica;
+    const efectos = extraerEfectos(d);
+    if (efectos.length) obj.efectos = [...new Set([...(obj.efectos ?? []), ...efectos])];
+    out[id] = obj;
   }
   return out;
 }
 
-/**
- * Builds por heroe y linea, tal como las juega la gente en el rango pedido.
- *
- * Se pide SOLO para las lineas que cada heroe juega de verdad (164 peticiones,
- * no 665): pedir la build de jungla de un support devuelve ruido o nada.
- *
- * Lo que viene son las tres builds mas frecuentes, con su winrate y su cuota
- * de uso, y TRES objetos: son los del nucleo, no los seis del inventario. Se
- * guarda tal cual, sin completar lo que la API no da.
- *
- * OJO con el winrate de una build: no es causal. Quien elige una build rara
- * suele ser quien mas juega ese heroe, asi que parte de la ventaja es del
- * jugador y no del objeto. La app lo dice en pantalla; aqui solo se recoge.
- */
-export async function fetchBuilds(heroList) {
+/** `giftid` → nombre, nivel (1-3) y texto del talento [C]. */
+export function leerTalentos(rows) {
   const out = {};
-  if (!estado.ROUTES?.builds) return out;
-  const lineasValidas = new Set(['roam', 'jungle', 'mid', 'gold', 'exp']);
-  const errores = [];
-  let pedidas = 0;
-
-  for (const h of heroList) {
-    const suyas = (h.lanes ?? []).filter((l) => lineasValidas.has(l));
-    for (const lane of suyas) {
-      pedidas += 1;
-      try {
-        const { data } = await callRoute(
-          estado.ROUTES.builds,
-          { lane, rank: RANK, lang: 'en', size: 20, index: 1 },
-          h.id ?? h.name,
-        );
-        const lista = recogerBuilds(data);
-        if (lista.length) (out[h.name] ??= {})[lane] = lista;
-      } catch (err) {
-        if (errores.length < 4) errores.push(`${h.name}/${lane}: ${err.message}`);
-      }
-      await sleep(200);
-    }
-  }
-  diagnostics.builds = {
-    pedidas,
-    heroes: Object.keys(out).length,
-    builds: Object.values(out).reduce((a, porLinea) => a + Object.values(porLinea).reduce((b, l) => b + l.length, 0), 0),
-    errores,
-  };
-  return out;
-}
-
-/**
- * Los talentos de los emblemas (3.57.0): `giftid` -> nombre, nivel (1, 2 o
- * 3: la fila del árbol) y lo que hace, del texto del propio juego. Una sola
- * petición. Es lo que da nombre a los `talentos` de cada build.
- */
-export async function fetchTalentos() {
-  const out = {};
-  if (!estado.ROUTES?.talentos) return out;
-  const { rows } = await callRoute(estado.ROUTES.talentos, { size: 300, index: 1, lang: 'en' });
   for (const row of rows) {
     const d = row?.data ?? row;
     const id = Number(d?.giftid);
@@ -556,181 +272,69 @@ export async function fetchTalentos() {
     const t = { nombre: String(nombre).trim() };
     const nivel = Number(d?.gifttiers);
     if ([1, 2, 3].includes(nivel)) t.nivel = nivel;
-    const texto = String(d?.emblemskill?.skilldescemblem ?? d?.emblemskill?.skilldesc ?? '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+    const texto = sinEtiquetas(d?.emblemskill?.skilldescemblem ?? d?.emblemskill?.skilldesc ?? '').replace(/\s+/g, ' ').trim();
     if (texto) t.texto = texto.slice(0, 200);
     out[id] = t;
   }
   return out;
 }
 
-/**
- * El winrate de cada heroe EN CADA UNA DE SUS LINEAS (3.12.0): Saber gana
- * el 53,8% de jungla y el 42,4% de roam, y el winrate global mezcla las
- * dos. Sale de la curva por duracion de partida de la academia
- * (`total_win_rate`), una peticion por heroe y linea, solo las que juega
- * (unas 165). Medido en 3.11.0: su poblacion casa con la ventana de 15-30
- * dias del rango (r = 0,99), no con la de 7, y NO puntua (en partidas pro
- * no mejora la prediccion sobre el global de la misma ventana): se ensena.
- */
-export async function fetchWinrateLinea(heroList) {
-  const out = {};
-  // La curva por duración de la MISMA respuesta (3.43.0): el winrate de ese
-  // héroe en esa línea en las partidas que acaban en cada tramo de dos
-  // minutos. Es lo que dice en qué fase es fuerte (medido contra 2.268
-  // partidas pro: ver «Las fases de la partida» en CLAUDE.md). No cuesta ni
-  // una petición más. Va en una propiedad aparte para no cambiar la forma de
-  // lo que devuelve.
-  const curvas = {};
-  Object.defineProperty(out, 'curvas', { value: curvas, enumerable: false });
-  if (!estado.ROUTES?.lineas) return out;
-  const lineasValidas = new Set(['roam', 'jungle', 'mid', 'gold', 'exp']);
-  const errores = [];
-  let pedidas = 0;
-  for (const h of heroList) {
-    for (const lane of (h.lanes ?? []).filter((l) => lineasValidas.has(l))) {
-      pedidas += 1;
-      try {
-        const { data } = await callRoute(estado.ROUTES.lineas, { lane, rank: RANK, lang: 'en', size: 20, index: 1 }, h.id ?? h.name);
-        const wr = recogerWinrateLinea(data);
-        if (wr != null) (out[h.name] ??= {})[lane] = Math.round(wr * 1e4) / 1e4;
-        const curva = recogerCurva(data);
-        if (curva) (curvas[h.name] ??= {})[lane] = curva;
-      } catch (err) {
-        if (errores.length < 4) errores.push(`${h.name}/${lane}: ${err.message}`);
-      }
-      await sleep(200);
-    }
-  }
-  diagnostics.lineas = {
-    pedidas,
-    heroes: Object.keys(out).length,
-    valores: Object.values(out).reduce((n, porLinea) => n + Object.keys(porLinea).length, 0),
-    curvas: Object.values(curvas).reduce((n, porLinea) => n + Object.keys(porLinea).length, 0),
-    errores,
-  };
+/** Las builds de la respuesta: el primer array con `equipid`, tal cual (sin completar lo que la API no da) [D]. */
+export function recogerBuilds(nodo) {
+  let builds = [];
+  recorrer(nodo, (v) => {
+    if (!Array.isArray(v) || !v.some((x) => x && typeof x === 'object' && Array.isArray(x.equipid))) return undefined;
+    const lista = v.filter((b) => Array.isArray(b?.equipid) && b.equipid.length).map(leerBuild).filter((b) => b.objetos.length);
+    if (!lista.length) return SALTAR;
+    builds = lista;
+    return PARAR;
+  });
+  return builds;
+}
+
+function leerBuild(b) {
+  const out = { objetos: b.equipid.map(Number).filter(Number.isFinite) };
+  const wr = Number(b.build_win_rate ?? b.win_rate);
+  const pr = Number(b.build_pick_rate ?? b.pick_rate);
+  if (Number.isFinite(wr)) out.winRate = wr;
+  if (Number.isFinite(pr)) out.pickRate = pr;
+  const emblema = b?.emblem?.data?.emblemname ?? b?.emblem?.emblemname;
+  const hechizo = b?.battleskill?.data?.__data?.skillname ?? b?.battleskill?.data?.skillname;
+  if (emblema) out.emblema = String(emblema);
+  if (hechizo) out.hechizo = String(hechizo);
+  const talentos = (Array.isArray(b?.new_rune_skill) ? b.new_rune_skill : []).map(Number).filter((n) => Number.isInteger(n) && n > 0);
+  if (talentos.length) out.talentos = talentos;
   return out;
 }
 
-/**
- * Los tramos de la curva por duración, en minutos: 10–12, 12–14, …, 18–20 y
- * 20 o más. Así los da la API hoy; si cambian, la curva NO se guarda (con
- * otros tramos, la cuenta de las fases de la app hablaría de otros minutos).
- */
+/** Los tramos de la curva por duración, en minutos; con otros, la curva NO se guarda (las fases hablarían de otros minutos) [C]. */
 export const TRAMOS_CURVA = [10, 12, 14, 16, 18, 20];
 
-/** La curva por duración (`time_win_rate`) de la respuesta, este donde este: seis winrates en el orden de TRAMOS_CURVA, o null. */
-export function recogerCurva(node, depth = 0) {
-  if (depth > HONDURA || node == null || typeof node !== 'object') return null;
-  if (Array.isArray(node.time_win_rate)) {
-    const tramos = [...node.time_win_rate].filter((x) => x && typeof x === 'object').sort((a, b) => Number(a.time_min) - Number(b.time_min));
+/** `time_win_rate` en el orden de TRAMOS_CURVA, o null; una curva en porcentaje no vale [M]. */
+export function recogerCurva(nodo) {
+  let curva = null;
+  recorrer(nodo, (v) => {
+    if (!esObjeto(v) || !Array.isArray(v.time_win_rate)) return undefined;
+    const tramos = [...v.time_win_rate].filter((x) => x && typeof x === 'object').sort((a, b) => Number(a.time_min) - Number(b.time_min));
     const desde = tramos.map((x) => Number(x.time_min));
     const wr = tramos.map((x) => Number(x.win_rate));
-    if (desde.length !== TRAMOS_CURVA.length || desde.some((d, i) => d !== TRAMOS_CURVA[i])) return null;
-    if (wr.some((v) => !Number.isFinite(v) || v <= 0 || v >= 1)) return null;
-    return wr.map((v) => Math.round(v * 1e4) / 1e4);
-  }
-  for (const x of Array.isArray(node) ? node : Object.values(node)) {
-    const r = recogerCurva(x, depth + 1);
-    if (r) return r;
-  }
-  return null;
+    if (desde.length !== TRAMOS_CURVA.length || desde.some((d, i) => d !== TRAMOS_CURVA[i])) return SALTAR;
+    if (wr.some((x) => !Number.isFinite(x) || x <= 0 || x >= 1)) return SALTAR;
+    curva = wr.map(round4);
+    return PARAR;
+  });
+  return curva;
 }
 
-/** El primer `total_win_rate` posible de la respuesta, este donde este. */
-export function recogerWinrateLinea(node, depth = 0) {
-  if (depth > HONDURA || node == null || typeof node !== 'object') return null;
-  const v = Number(node.total_win_rate);
-  if (node.total_win_rate != null && Number.isFinite(v) && v > 0 && v < 1) return v;
-  for (const x of Array.isArray(node) ? node : Object.values(node)) {
-    const r = recogerWinrateLinea(x, depth + 1);
-    if (r != null) return r;
-  }
-  return null;
-}
-
-/**
- * Saca las builds de la respuesta sin fijar la forma del envoltorio: se busca
- * el primer array cuyos elementos tengan `equipid`, este donde este.
- */
-function recogerBuilds(node, depth = 0) {
-  if (depth > HONDURA || node == null || typeof node !== 'object') return [];
-  if (Array.isArray(node) && node.some((x) => x && typeof x === 'object' && Array.isArray(x.equipid))) {
-    return node
-      .filter((b) => Array.isArray(b?.equipid) && b.equipid.length)
-      .map((b) => {
-        const out = { objetos: b.equipid.map(Number).filter(Number.isFinite) };
-        const wr = Number(b.build_win_rate ?? b.win_rate);
-        const pr = Number(b.build_pick_rate ?? b.pick_rate);
-        if (Number.isFinite(wr)) out.winRate = wr;
-        if (Number.isFinite(pr)) out.pickRate = pr;
-        const emblema = b?.emblem?.data?.emblemname ?? b?.emblem?.emblemname;
-        const hechizo = b?.battleskill?.data?.__data?.skillname ?? b?.battleskill?.data?.skillname;
-        if (emblema) out.emblema = String(emblema);
-        if (hechizo) out.hechizo = String(hechizo);
-        // Los tres talentos del emblema (3.57.0): `new_rune_skill`, ids de
-        // talento (`giftid` de /academy/emblems). Antes no se guardaban y 57
-        // de 492 builds salían repetidas en pantalla.
-        const talentos = (Array.isArray(b?.new_rune_skill) ? b.new_rune_skill : []).map(Number).filter((n) => Number.isInteger(n) && n > 0);
-        if (talentos.length) out.talentos = talentos;
-        return out;
-      })
-      .filter((b) => b.objetos.length);
-  }
-  for (const v of Array.isArray(node) ? node : Object.values(node)) {
-    const found = recogerBuilds(v, depth + 1);
-    if (found.length) return found;
-  }
-  return [];
-}
-
-export async function fetchHeroList() {
-  const values = { size: 300, index: 1, page_size: 300, page_index: 1, lang: 'en' };
-  const { rows } = estado.ROUTES?.position
-    ? await callRoute(estado.ROUTES.position, values)
-    : await fetchResource(['/hero-position/', '/hero-position', '/hero-list/'], values);
-  const heroes = [];
-  for (const row of rows) {
-    const name = pick(row, NAME_KEYS);
-    if (!name) continue;
-    heroes.push({
-      name: String(name).trim(),
-      id: idPrincipal(row),
-      // pick() primero por si la API vuelve a una forma plana; si no, se busca.
-      role: String(pick(row, ['role', 'hero_role', 'primary_role']) ?? '').toLowerCase() || extraerRol(row),
-      lane: String(pick(row, ['lane', 'hero_lane', 'primary_lane']) ?? '').toLowerCase(),
-      // Varias líneas por héroe: es lo que permite adivinar quién es su roam.
-      lanes: extraerLineas(row),
-    });
-  }
-  return heroes;
-}
-
-export async function fetchStats(rank, days = DAYS) {
-  const values = {
-    days, past_days: days,
-    rank, rank_id: rank,
-    size: 200, index: 1, page_size: 200, page_index: 1,
-    sort_field: 'win_rate', sort_order: 'desc', order: 'desc', lang: 'en',
-  };
-  const { rows, sin = [] } = estado.ROUTES?.rank
-    ? await callRoute(estado.ROUTES.rank, values)
-    : await fetchResource(['/hero-rank/', '/hero-rank', '/hero-rate/'], values);
-  // Una ventana que no es la de siempre y que la API no aceptó: lo que llega
-  // es la de por defecto, y guardarlo como «3 días» la haría pasar la guarda
-  // de coherencia sin serlo (3.40.0). Mejor un fallo, que cae a la de 7.
-  if (days !== DAYS && (sin.includes('days') || sin.includes('past_days'))) throw new Error(`la API no acepta days=${days}`);
-
-  const stats = {};
-  for (const row of rows) {
-    const name = pick(row, NAME_KEYS);
-    if (!name) continue;
-    stats[String(name).trim()] = {
-      winRate: asRate(pick(row, ['win_rate', 'winRate', 'main_hero_win_rate'])),
-      pickRate: asRate(pick(row, ['pick_rate', 'pickRate', 'main_hero_appearance_rate'])),
-      banRate: asRate(pick(row, ['ban_rate', 'banRate', 'main_hero_ban_rate'])),
-      matches: Number(pick(row, ['matches', 'match_count', 'total']) ?? 0) || null,
-      heroId: idPrincipal(row),
-    };
-  }
-  return stats;
+/** El primer `total_win_rate` posible (0 < v < 1) de la respuesta [C]. */
+export function recogerWinrateLinea(nodo) {
+  let wr = null;
+  recorrer(nodo, (v) => {
+    if (!esObjeto(v) || v.total_win_rate == null) return undefined;
+    const x = Number(v.total_win_rate);
+    if (!Number.isFinite(x) || x <= 0 || x >= 1) return undefined;
+    wr = x;
+    return PARAR;
+  });
+  return wr;
 }

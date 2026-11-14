@@ -1,110 +1,94 @@
 /**
- * Contexto compartido de la ingesta: los argumentos de la linea de ordenes ya
- * leidos, las constantes que salen de ellos y el estado que escriben todos los
- * modulos (el diagnostico, la base que respondio y las rutas descubiertas).
+ * Las opciones de la ingesta y el contexto de una corrida: lo que se lee de
+ * la línea de órdenes, las rutas descubiertas y la base que respondió. Nada
+ * aquí se lee al importar: `main` crea el contexto y lo pasa.
  */
 
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RANGO_DE_RESPALDO } from '../../src/motor/ventana.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-// Dos niveles: este fichero vive en scripts/ingesta/, no en scripts/.
-export const ROOT = resolve(__dirname, '../..');
-// `--out --iconos /tmp/x` daba `{ out: '--iconos' }`: un valor que empieza
-// por `--` no es un valor.
-export function parseArgs(argv) {
-  return Object.fromEntries(argv.reduce((acc, cur, i, arr) => {
-    if (cur.startsWith('--')) {
-      const v = arr[i + 1];
-      acc.push([cur.slice(2), v != null && !String(v).startsWith('--') ? v : true]);
-    }
-    return acc;
-  }, []));
-}
-export const args = parseArgs(process.argv.slice(2));
-
-// --out escribe en otro sitio. Lo usa la prueba que ejecuta esta ingesta de
-// verdad: sin ello sobrescribia public/data con una corrida contra una base
-// inalcanzable, y como las pruebas corren antes de compilar, ese diagnostico
-// degradado era el que se publicaba.
-export const OUT = resolve(ROOT, typeof args.out === 'string' ? args.out : 'public/data/roam-meta.json');
-export const HEROES = resolve(ROOT, 'public/data/heroes.json');
-
-// Donde se guardan los iconos de los objetos. Mismo motivo que --out: la prueba
-// que ejecuta la ingesta de verdad le pasa un temporal, para no ensuciar el
-// repositorio ni dejarlo a medias si la corrida sale mal.
-export const ICONOS = resolve(ROOT, typeof args.iconos === 'string' ? args.iconos : 'public/objetos');
-export const RETRATOS = resolve(ROOT, typeof args.retratos === 'string' ? args.retratos : 'public/heroes');
-// `--previo`: de dónde leer «lo anterior». Solo para pruebas (ver abajo).
-export const PREVIO = typeof args.previo === 'string' ? resolve(ROOT, args.previo) : null;
-
-// Gloria Mitica por defecto: es el rango del usuario y donde el draft se juega
-// en serio, asi que sus counters son los mas informativos.
-export const RANK = typeof args.rank === 'string' ? args.rank : 'glory';
-export const DAYS = Number.isFinite(Number(args.days)) && Number(args.days) > 0 ? Number(args.days) : 7;
-// `--celdas-para-comparar`: solo para la ingesta simulada, que tiene tres
-// héroes y no llega a las celdas con las que la guarda de cruces y parejas
-// se fía (src/motor/ventana.js, `elegirRangoDeRelaciones`).
-export const CELDAS_MINIMAS = Number.isFinite(Number(args['celdas-para-comparar'])) ? Number(args['celdas-para-comparar']) : null;
-// La ventana CORTA, solo para las estadisticas por heroe: una media de 7 dias
-// tarda una semana en recoger un parche. 3 y no 1 porque esta medido con la
-// misma ruta y la misma poblacion (src/motor/ventana.js): a 3 dias el ruido
-// queda 12 veces por debajo de la dispersion entre heroes; a 1 dia la ruta
-// devuelve heroes al 0% y al 100% (r = 0,09 con la de 7).
-export const DIAS_RECIENTES = 3;
-export const RANKS = (typeof args.ranks === 'string' ? args.ranks : 'epic,legend,mythic,glory').split(',').map((r) => r.trim()).filter(Boolean);
-// El rango pedido se descarga siempre: fuera de la lista, `estadisticasNuevas`
-// era falso para siempre y la fecha del fichero no avanzaba jamás.
-if (!RANKS.includes(RANK)) RANKS.push(RANK);
-// Y su rango de respaldo (3.43.1): con él decide la guarda de rango, y
-// fuera de la lista se quedaba el de una corrida vieja (ver estadisticasFrescas).
-if (RANGO_DE_RESPALDO[RANK] && !RANKS.includes(RANGO_DE_RESPALDO[RANK])) RANKS.unshift(RANGO_DE_RESPALDO[RANK]);
-
-/**
- * Bases conocidas, de la más actual a la más antigua.
- *
- * Si se pasa una a mano (--base o MLBB_API_BASE) se usa ESA Y SOLO ESA. Antes
- * se ponía la primera y se seguía cayendo a las demás, así que la prueba que
- * dice correr "contra una base inalcanzable" hacía en realidad una ingesta
- * completa contra la API de verdad: tardaba más de un minuto, dependía de la
- * red y disparaba cuarenta peticiones en cada despliegue.
- */
-const BASE_FIJADA = args.base ?? process.env.MLBB_API_BASE;
-// La tier list de mlbb.gg (scripts/ingesta/tiers.mjs) tiene su propia base:
-// `--tiers <base>` la cambia, `--tiers off` la apaga, y con la base principal
-// fijada (pruebas, local) se apaga sola para que una prueba no salga a internet.
-export const TIERS = args.tiers === 'off' ? null
-  : (typeof args.tiers === 'string' ? args.tiers.replace(/\/$/, '') : (BASE_FIJADA ? null : 'https://back.mlbb.gg/api/v1'));
-export const BASES = BASE_FIJADA ? [BASE_FIJADA] : [
-  'https://arena-hv.fastapicloud.dev/api',   // responde: /heroes/hero-rank/ existe
-  'https://arena.rone.dev/api',
-  'https://api-mobilelegends.vercel.app/api', // legado
-];
-
-/** Prefijos de grupo de rutas que ha usado el proyecto en distintas versiones. */
-// '/heroes' confirmado: da 405 (existe, otro método) mientras '/mlbb' da 404.
-export const PREFIXES = ['/heroes', '', '/mlbb'];
-
+export const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 export const UA = 'mobile-legends-pick-assist (uso personal)';
+/** Tope de cada petición a la API y de cada imagen [D]. */
 export const TIMEOUT_MS = 15000;
-
-export const diagnostics = { bases: BASES, ok: [], failed: [] };
+/** La ventana de stats, cruces, parejas y `tocados` (cruces sin medir a menos) [M]. */
+export const DIAS = 7;
+/** La ventana corta de la fuerza: a 3 días el ruido queda 12 veces bajo la señal; a 1, héroes al 0 y al 100 % [M]. */
+export const DIAS_RECIENTES = 3;
 
 /**
- * Lo que la ingesta va fijando por el camino. Va en un objeto porque un binding
- * importado no se puede reasignar desde otro modulo, y estos dos los escribe
- * quien descubre las rutas y quien hace la primera peticion que responde.
+ * Bases conocidas, de la más actual a la más antigua [D]. Con `--base` o
+ * `MLBB_API_BASE` se usa esa y SOLO esa (una prueba no puede salir a la red).
  */
-export const estado = {
-  /** { base, prefix, method } en cuanto algo responde */
-  LOCKED: null,
-  /** Rutas descubiertas en el esquema OpenAPI. La rellena discoverRoutes(). */
-  ROUTES: null,
-};
+export const BASES = [
+  'https://arena-hv.fastapicloud.dev/api',
+  'https://arena.rone.dev/api',
+  'https://api-mobilelegends.vercel.app/api',
+];
+/** Prefijos de grupo que ha usado la API, para el camino sin esquema [D]. */
+export const PREFIJOS = ['/heroes', '', '/mlbb'];
+const TIERS = 'https://back.mlbb.gg/api/v1';
 
-// Las esperas entre peticiones son cortesia con una API gratuita. `--pausa 0`
-// las quita: lo usa la prueba que ejecuta la ingesta entera contra una API
-// simulada en local, donde 133 esperas de 250 ms serian medio minuto de nada.
-const PAUSA_MS = args.pausa != null ? Number(args.pausa) : null;
-export const sleep = (ms) => new Promise((r) => setTimeout(r, PAUSA_MS ?? ms));
+/** `--k v`; un valor que empieza por `--` NO es valor (`--out --iconos x`) [C]. */
+export function parseArgs(argv) {
+  const out = {};
+  argv.forEach((cur, i) => {
+    if (!cur.startsWith('--')) return;
+    const v = argv[i + 1];
+    out[cur.slice(2)] = v != null && !String(v).startsWith('--') ? v : true;
+  });
+  return out;
+}
+
+const texto = (v) => typeof v === 'string';
+const numero = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
+
+/**
+ * Las opciones de una corrida. Workflows y pruebas escriben SIEMPRE a un
+ * temporal (`--out`): la ingesta sobre public/data publicó corridas
+ * degradadas [C].
+ */
+export function leerOpciones(argv = process.argv.slice(2), env = process.env) {
+  const a = parseArgs(argv);
+  const rank = texto(a.rank) ? a.rank : 'glory';
+  const ranks = (texto(a.ranks) ? a.ranks : 'epic,legend,mythic,glory').split(',').map((r) => r.trim()).filter(Boolean);
+  // El pedido y su respaldo se bajan siempre: deciden la fecha y la guarda de rango [C].
+  if (!ranks.includes(rank)) ranks.push(rank);
+  const respaldo = RANGO_DE_RESPALDO[rank] ?? null;
+  if (respaldo && !ranks.includes(respaldo)) ranks.unshift(respaldo);
+  const fija = a.base ?? env.MLBB_API_BASE;
+  const dias = numero(a.days);
+  return {
+    out: resolve(RAIZ, texto(a.out) ? a.out : 'public/data/roam-meta.json'),
+    previo: texto(a.previo) ? resolve(RAIZ, a.previo) : null,
+    iconos: resolve(RAIZ, texto(a.iconos) ? a.iconos : 'public/objetos'),
+    retratos: resolve(RAIZ, texto(a.retratos) ? a.retratos : 'public/heroes'),
+    rank,
+    respaldo,
+    ranks,
+    dias: dias > 0 ? dias : DIAS,
+    // Solo la simulación: tiene tres héroes y no llega a las celdas de la guarda de rango [C].
+    celdas: numero(a['celdas-para-comparar']),
+    bases: fija ? [fija] : BASES,
+    // mlbb.gg aparte; con la base fijada se apaga sola [C].
+    tiers: a.tiers === 'off' ? null : texto(a.tiers) ? a.tiers.replace(/\/$/, '') : fija ? null : TIERS,
+    // `--pausa N` sustituye TODA espera, también los reintentos (las pruebas usan 0) [C].
+    pausa: a.pausa != null ? Number(a.pausa) : null,
+  };
+}
+
+/**
+ * El estado de una corrida: las opciones, las rutas del esquema (o null), la
+ * base fijada por el camino sin esquema y los fallos de red para el
+ * diagnóstico (`failed`).
+ */
+export function crearContexto(op) {
+  return {
+    op,
+    rutas: null,
+    fijada: null,
+    fallos: [],
+    sleep: (ms) => new Promise((r) => setTimeout(r, op.pausa ?? ms)),
+  };
+}

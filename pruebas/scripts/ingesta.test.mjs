@@ -1,24 +1,19 @@
 /**
- * La ingesta, por partes. Lo que se comprueba aquí es la lectura de las
- * respuestas (ids, counters, rol y línea hondos), el aflojado ante un 422 y el
+ * La ingesta, por partes: la lectura de las respuestas (ids, counters, rol y
+ * línea hondos), el aflojado ante un 422, las fusiones con lo guardado y el
  * guardado compacto del JSON. La corrida ENTERA contra una API simulada está
- * en `ingesta-simulada.test.mjs`, que levanta un servidor y lanza procesos.
- *
- * Desde 3.0 la ingesta vive en `scripts/ingesta/` y `scripts/ingest.mjs` es
- * una entrada fina de 39 líneas: aquí se importa de donde vive cada cosa, no
- * de la entrada, para que una prueba no acabe mirando un fichero vacío.
+ * en `ingesta-simulada.test.mjs`.
  */
-import { readdirSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { join } from 'node:path';
-import { test, ok, eq, RAIZ, leerTexto } from '../ayuda.mjs';
-import { extraerLineas, extraerRol, extraerHabilidades, fetchStats, recogerCurva, TRAMOS_CURVA, huellaTexto, huellaDeHabilidades, extraerCara, urlOriginal } from '../../scripts/ingesta/extraccion.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
+import { extraerLineas, extraerRol, extraerHabilidades, recogerCurva, TRAMOS_CURVA, huellaTexto, huellaDeHabilidades, extraerCara, urlOriginal, HONDURA } from '../../scripts/ingesta/extraccion.mjs';
+import { pedirEstadisticas } from '../../scripts/ingesta/peticiones.mjs';
 import { TRAMOS } from '../../src/motor/fases.js';
 import { callRoute, request } from '../../scripts/ingesta/descarga.mjs';
-import { estado } from '../../scripts/ingesta/contexto.mjs';
+import { crearContexto, leerOpciones, parseArgs } from '../../scripts/ingesta/contexto.mjs';
 import { idPrincipal, esIdDeHeroe, recogerPares, relationMap, pick } from '../../scripts/ingesta/relaciones.mjs';
 import { serializar } from '../../scripts/ingesta/salida.mjs';
-import { kitsRehechos, fundirWinrateLinea, relacionesDeLaCorrida, anotarHistoria, fundirEquipo, anotarParche, PARCHE_MAX_PROPORCION } from '../../scripts/ingesta/fusion.mjs';
+import { kitsRehechos, fundirPorHeroeYLinea, relacionesDeLaCorrida, anotarHistoria, fundirEquipo, anotarParche, PARCHE_MAX_PROPORCION, sinCamposMuertos } from '../../scripts/ingesta/fusion.mjs';
 
 test('el rol y la línea se leen aunque vengan hondos en la respuesta', () => {
   // Forma REAL de la API: el titulo de la linea vive en el nivel 8. El limite de
@@ -42,66 +37,6 @@ test('el rol y la línea se leen aunque vengan hondos en la respuesta', () => {
   // Y no se inventa nada donde no lo hay.
   ok(extraerRol({ data: { hero: { data: { name: 'Gold Lane Guy' } } } }) === '',
     'saca un rol de donde no hay');
-});
-
-test('el diagnóstico de la ingesta no lee campos sin inicializar', () => {
-  // Esto estuvo publicado: se leia diagnostics.relations.ejemplos.length sin
-  // que 'ejemplos' existiera, y saltaba un TypeError por cada roamer al que SI
-  // le llegaban los counters. La prueba de humo no lo veia porque corre contra
-  // una base inalcanzable, donde ese camino nunca se ejecuta.
-  //
-  // Al partir la ingesta en modulos el literal y sus lecturas dejaron de vivir
-  // en el mismo fichero (`diagnostics.relations` se inicializa en
-  // relaciones.mjs y tambien se lee en cli.mjs), asi que se leen TODOS los
-  // ficheros de scripts/ingesta/ juntos y se comprueban TODOS los grupos de
-  // `diagnostics`, no solo `relations`. Y se quitan los comentarios antes de
-  // mirar: si no, dejar el porque escrito y borrar el campo pasaria la prueba.
-  const sinComentarios = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
-  const fuente = readdirSync(join(RAIZ, 'scripts/ingesta'))
-    .filter((f) => f.endsWith('.mjs'))
-    .map((f) => sinComentarios(leerTexto(`scripts/ingesta/${f}`)))
-    .join('\n');
-
-  // El literal que sigue a `diagnostics.X = {`, con las llaves equilibradas.
-  const literalDesde = (texto, desde) => {
-    let prof = 0;
-    for (let i = desde; i < texto.length; i += 1) {
-      if (texto[i] === '{') prof += 1;
-      else if (texto[i] === '}') { prof -= 1; if (prof === 0) return texto.slice(desde, i + 1); }
-    }
-    return '';
-  };
-
-  const inicializados = new Map();
-  for (const m of fuente.matchAll(/diagnostics\.(\w+)\s*=\s*\{/g)) {
-    const literal = literalDesde(fuente, m.index + m[0].length - 1);
-    const claves = inicializados.get(m[1]) ?? new Set();
-    for (const k of literal.matchAll(/[{,]\s*(\w+)\s*:/g)) claves.add(k[1]);
-    inicializados.set(m[1], claves);
-  }
-
-  const asignados = new Set([...fuente.matchAll(/diagnostics\.(\w+)\.(\w+)\s*=[^=]/g)].map((m) => `${m[1]}.${m[2]}`));
-  const leidos = [...new Set([...fuente.matchAll(/diagnostics\.(\w+)\.(\w+)/g)].map((m) => `${m[1]}.${m[2]}`))];
-
-  const sinInicializar = leidos.filter((campo) => {
-    const [grupo, k] = campo.split('.');
-    // Un grupo que nunca se inicializa con un literal (se crea con ??= y
-    // claves dinamicas) no se juzga aqui: no hay lista con la que comparar.
-    if (!inicializados.has(grupo)) return false;
-    return !inicializados.get(grupo).has(k) && !asignados.has(campo);
-  });
-  ok(!sinInicializar.length,
-    `campos leidos sin inicializar en diagnostics: ${sinInicializar.join(', ')}`);
-  // Y que la prueba esté mirando algo: si el escaneo dejara de encontrar el
-  // literal, la lista de campos sin inicializar saldría vacía y pasaría.
-  // Si el escaneo dejara de casar, `sinInicializar` saldria vacia y la prueba
-  // pasaria sin vigilar nada. Se ancla en los grupos que HOY se inicializan
-  // con un literal: borrar uno de esos literales tambien tiene que chillar,
-  // porque exime de juicio a todos sus campos.
-  for (const g of ['relations', 'speciality', 'builds']) {
-    ok(inicializados.has(g), `el escaneo no encuentra el literal de diagnostics.${g}`);
-  }
-  ok(inicializados.get('relations')?.has('ejemplos'), 'el escaneo no encuentra diagnostics.relations.ejemplos, que es el campo que reventaba');
 });
 
 test('el id del héroe no se confunde con el id del canal', () => {
@@ -188,16 +123,12 @@ test('un 422 NO suelta el rango ni la línea, y la ventana de días que no llega
     const r = await callRoute(ruta(['rank', 'days', 'size']), { rank: 'glory', days: 7, size: 20 }, 'Atlas');
     eq([...r.sin].sort().join(), 'days,size', 'no dice qué parámetros soltó');
     // Y la ventana corta que la API no acepta falla en vez de llegar como la de siempre.
-    const antes = estado.ROUTES;
-    estado.ROUTES = { rank: { template: `${base}/api/heroes/rank`, method: 'GET', params: ['days', 'rank', 'size', 'index'] } };
-    try {
-      error = null;
-      try { await fetchStats('glory', 3); } catch (e) { error = e; }
-      ok(/days=3/.test(error?.message ?? ''), `la de 3 días llega con la ventana por defecto: ${error?.message}`);
-      ok(Object.keys(await fetchStats('glory')).includes('Atlas'), 'la de siempre deja de leerse cuando la API no acepta days');
-    } finally {
-      estado.ROUTES = antes;
-    }
+    const ctx = crearContexto(leerOpciones(['--pausa', '0'], {}));
+    ctx.rutas = { rank: { template: `${base}/api/heroes/rank`, method: 'GET', params: ['days', 'rank', 'size', 'index'] } };
+    error = null;
+    try { await pedirEstadisticas(ctx, 'glory', 3); } catch (e) { error = e; }
+    ok(/days=3/.test(error?.message ?? ''), `la de 3 días llega con la ventana por defecto: ${error?.message}`);
+    ok(Object.keys(await pedirEstadisticas(ctx, 'glory')).includes('Atlas'), 'la de siempre deja de leerse cuando la API no acepta days');
   } finally {
     srv.close();
   }
@@ -372,11 +303,11 @@ test('el winrate por línea se funde PAR A PAR: lo de hoy manda, lo que falla ho
   // costó filas de la matriz de cruces).
   const heroes = [{ name: 'A', lanes: ['exp', 'jungle'] }, { name: 'B', lanes: ['roam'] }, { name: 'C', lanes: ['mid'] }];
   const previo = { A: { exp: 0.5, jungle: 0.52, gold: 0.47 }, B: { roam: 0.49 }, Z: { mid: 0.5 } };
-  const { winrateLinea, conservados } = fundirWinrateLinea(previo, { A: { exp: 0.51 }, C: { mid: 0.53 } }, heroes);
-  eq(JSON.stringify(winrateLinea), JSON.stringify({ A: { exp: 0.51, jungle: 0.52 }, B: { roam: 0.49 }, C: { mid: 0.53 } }), `fusión: ${JSON.stringify(winrateLinea)}`);
+  const { valores, conservados } = fundirPorHeroeYLinea(previo, { A: { exp: 0.51 }, C: { mid: 0.53 } }, heroes);
+  eq(JSON.stringify(valores), JSON.stringify({ A: { exp: 0.51, jungle: 0.52 }, B: { roam: 0.49 }, C: { mid: 0.53 } }), `fusión: ${JSON.stringify(valores)}`);
   eq(conservados, 2, 'no cuenta los pares conservados');
   // Sin nada guardado es lo descargado, tal cual.
-  eq(JSON.stringify(fundirWinrateLinea(undefined, { B: { roam: 0.49 } }, heroes).winrateLinea), JSON.stringify({ B: { roam: 0.49 } }));
+  eq(JSON.stringify(fundirPorHeroeYLinea(undefined, { B: { roam: 0.49 } }, heroes).valores), JSON.stringify({ B: { roam: 0.49 } }));
 });
 
 test('las habilidades: control, área, quitar controles (por etiqueta Y por texto) e intocable, una vez cada una', () => {
@@ -576,4 +507,44 @@ test('los tocados por el parche (3.102.0): la huella de las habilidades ve las c
   ok(r.reescrito && !Object.keys(r.tocados).length, `marca una reescritura de la API: ${JSON.stringify(r)}`);
   // Otro cambio a uno ya tocado le reinicia la semana.
   eq(anotarParche({ heroes: [h('Atlas', 'a'), h('Gloo', 'g'), h('Estes', 'e')], tocados: { Atlas: '2026-11-11' } }, [h('Atlas', 'B'), h('Gloo', 'g'), h('Estes', 'e')], '2026-11-14').tocados.Atlas, '2026-11-14');
+});
+
+test('las opciones: un valor que empieza por -- no es valor; el rango pedido y su respaldo se bajan siempre; con la base fijada no se sale a mlbb.gg', () => {
+  const a = parseArgs(['--out', '--iconos', '/tmp/x', '--days', '7']);
+  ok(a.out === true && a.iconos === '/tmp/x' && a.days === '7', `parseArgs: ${JSON.stringify(a)}`);
+  const op = leerOpciones(['--ranks', 'epic', '--rank', 'glory', '--days', 'x'], {});
+  eq(op.ranks.join(), 'mythic,epic,glory', 'sin el pedido o su respaldo, la fecha del fichero no avanza nunca');
+  eq(op.dias, 7, 'una ventana ilegible no cae a 7 días');
+  ok(op.bases.length === 3 && op.tiers, 'sin base fijada no se prueban las conocidas ni la tier list');
+  const fija = leerOpciones(['--pausa', '0'], { MLBB_API_BASE: 'http://127.0.0.1:9/api' });
+  ok(fija.bases.join() === 'http://127.0.0.1:9/api' && fija.tiers === null && fija.pausa === 0, `con la base fijada sale a otra parte: ${JSON.stringify(fija)}`);
+  eq(leerOpciones(['--base', 'http://127.0.0.1:9/api', '--tiers', 'http://127.0.0.1:9/api/v1/'], {}).tiers, 'http://127.0.0.1:9/api/v1');
+});
+
+test('la línea vive en el nivel 8 de la respuesta: se lee hasta HONDURA y no más', () => {
+  const envolver = (n, hoja) => (n ? { data: envolver(n - 1, hoja) } : hoja);
+  // roadsort → lista → objeto → road_sort_title: la cadena queda tres niveles bajo el envoltorio.
+  const fila = (n) => envolver(n, { roadsort: [{ road_sort_title: 'Jungle' }] });
+  eq(extraerLineas(fila(8)).join(), 'jungle', 'la línea del nivel 8 no se lee: los 133 salían sin línea');
+  eq(extraerLineas(fila(HONDURA - 3)).join(), 'jungle', 'no se baja hasta HONDURA');
+  eq(extraerLineas(fila(HONDURA - 2)).length, 0, 'se baja más allá de HONDURA');
+  eq(extraerRol(envolver(8, { sortid: [{ sort_title: 'Mage' }] })), 'mage');
+});
+
+test('lo guardado por una versión anterior no arrastra los campos que ya no se escriben', () => {
+  const previo = {
+    patchAvgWinRate: 0.5, roamCoverage: { total: 1 }, rank: 'glory',
+    heroes: [{ name: 'A', id: 1, role: 'tank', lane: '', lanes: ['roam'] }],
+    stats: { A: { winRate: 0.5, pickRate: 0.1, banRate: 0.2, matches: null, heroId: 1 } },
+    statsByRank: { glory: { A: { winRate: 0.5, matches: null, heroId: 1 } } },
+  };
+  const limpio = sinCamposMuertos(previo);
+  eq(JSON.stringify(limpio), JSON.stringify({
+    rank: 'glory',
+    heroes: [{ name: 'A', id: 1, role: 'tank', lanes: ['roam'] }],
+    stats: { A: { winRate: 0.5, pickRate: 0.1, banRate: 0.2, heroId: 1 } },
+    statsByRank: { glory: { A: { winRate: 0.5, heroId: 1 } } },
+  }), `quedan campos muertos: ${JSON.stringify(limpio)}`);
+  ok('lane' in previo.heroes[0] && 'matches' in previo.stats.A, 'limpiar toca el fichero de antes');
+  eq(sinCamposMuertos(null), null);
 });

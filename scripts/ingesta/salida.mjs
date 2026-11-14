@@ -1,59 +1,30 @@
 /**
- * La escritura del JSON: aqui no se decide nada del dato, solo como se
- * escribe. Todo el porque esta en el comentario de `serializar`.
+ * Cómo se escribe `roam-meta.json`: matrices, builds, winrate y curva por
+ * línea e historia a UNA LÍNEA POR HÉROE (el diff dice «cambiaron estos 12
+ * héroes», legible desde el móvil) y las matrices a 4 decimales (la quinta
+ * cifra es ruido) [D]. `serializar(JSON.parse(f)) + '\n' === f` [C].
  */
 
-/**
- * El JSON de salida, con las dos matrices en UNA LINEA POR HEROE.
- *
- * Desde que los counters vienen completos son 17.556 numeros. Con la
- * indentacion normal eso son 17.556 lineas: el fichero pasa de 377 KB a 623 KB
- * y el diff se vuelve ilegible, justo lo que Javi no puede permitirse
- * revisando desde el movil. Con una linea por heroe, el diff dice "cambiaron
- * estos 12 heroes" en vez de doce mil lineas sueltas.
- *
- * Los winrates se redondean a cuatro decimales. La quinta cifra de un winrate
- * es ruido: la API la da, pero no significa nada y ocupa.
- */
+/** El texto del fichero, sin el `\n` final (lo pone quien escribe). */
 export function serializar(out) {
-  // Marca de texto normal, no un caracter de control: JSON.stringify escapa
-  // \u0000 como la secuencia literal "\u0000", asi que la marca no volvia a
-  // encontrarse y el fichero salia con basura donde iban los datos.
+  // Una marca de texto normal: JSON.stringify escapa un carácter de control y la marca no volvía a encontrarse [C].
   const MARCA = '@@fila';
   const filas = [];
-  const compactar = (m) => Object.fromEntries(Object.entries(m ?? {}).map(([k, fila]) => {
-    const redondeada = Object.fromEntries(
-      Object.entries(fila ?? {}).map(([n, v]) => [n, typeof v === 'number' ? Math.round(v * 1e4) / 1e4 : v]),
-    );
-    filas.push(JSON.stringify(redondeada));
-    return [k, `${MARCA}:${filas.length - 1}:${MARCA}`];
-  }));
-
-  // Las builds tambien van a una linea por heroe: son tres builds por linea y
-  // con la indentacion normal se comen 3.000 lineas de diff por nada.
-  const compactarBuilds = (m) => Object.fromEntries(Object.entries(m ?? {}).map(([k, porLinea]) => {
-    filas.push(JSON.stringify(porLinea));
-    return [k, `${MARCA}:${filas.length - 1}:${MARCA}`];
-  }));
-
-  const texto = JSON.stringify(
-    {
-      ...out,
-      counters: compactar(out.counters),
-      synergies: compactar(out.synergies),
-      builds: compactarBuilds(out.builds),
-      ...(out.winrateLinea ? { winrateLinea: compactarBuilds(out.winrateLinea) } : {}),
-      ...(out.curvaLinea ? { curvaLinea: compactarBuilds(out.curvaLinea) } : {}),
-      // La historia (3.50.0): una línea por rango y día, no 133 × 15.
-      ...(out.historia ? {
-        historia: out.historia.map(({ fecha, ...porRango }) => ({ fecha, ...compactarBuilds(porRango) })),
-      } : {}),
-    },
-    null,
-    2,
-  );
-  return texto.replace(
-    new RegExp(`"${MARCA}:(\\d+):${MARCA}"`, 'g'),
-    (_, i) => filas[Number(i)],
-  );
+  const enUnaLinea = (valor) => {
+    filas.push(JSON.stringify(valor));
+    return `${MARCA}:${filas.length - 1}:${MARCA}`;
+  };
+  const a4 = (fila) => Object.fromEntries(Object.entries(fila ?? {}).map(([n, v]) => [n, typeof v === 'number' ? Math.round(v * 1e4) / 1e4 : v]));
+  const matriz = (m) => Object.fromEntries(Object.entries(m ?? {}).map(([k, fila]) => [k, enUnaLinea(a4(fila))]));
+  const porHeroe = (m) => Object.fromEntries(Object.entries(m ?? {}).map(([k, v]) => [k, enUnaLinea(v)]));
+  const texto = JSON.stringify({
+    ...out,
+    counters: matriz(out.counters),
+    synergies: matriz(out.synergies),
+    builds: porHeroe(out.builds),
+    ...(out.winrateLinea ? { winrateLinea: porHeroe(out.winrateLinea) } : {}),
+    ...(out.curvaLinea ? { curvaLinea: porHeroe(out.curvaLinea) } : {}),
+    ...(out.historia ? { historia: out.historia.map(({ fecha, ...porRango }) => ({ fecha, ...porHeroe(porRango) })) } : {}),
+  }, null, 2);
+  return texto.replace(new RegExp(`"${MARCA}:(\\d+):${MARCA}"`, 'g'), (_, i) => filas[Number(i)]);
 }

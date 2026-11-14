@@ -1,33 +1,14 @@
 /**
- * La tier list de mlbb.gg, héroe a héroe.
- *
- * Es OPINIÓN curada, no dato, y se guarda como tal: se enseña al lado del
- * winrate (hoja Meta y tarjetas) y NO puntúa. Está medido por qué (18 de
- * septiembre de 2026, 133 héroes en Gloria): la tier solo coincide con los
- * datos en la cima (SS: 53,9% de winrate medio; S: 50,3%; A/B/C/D todas
- * entre 48,0% y 49,5%, indistinguibles), Spearman tier~winrate 0,51, y en la
- * regresión wr3 ~ wr7 + tier el coeficiente de la tier es −0,045 pp ± 0,015:
- * sabiendo el winrate, la tier no dice nada de hacia dónde va. Donde
- * discrepan es sistemático: Fanny y Granger en S con 40–42% de winrate, Argus
- * y Dyrroth en C/D ganando el 52–54%. La tier mide «techo en buenas manos»;
- * el winrate, «qué gana en Gloria». Para el techo de Javi ya está su
- * maestría. Se enseña para poder comparar con lo que se lee por ahí, no para
- * decidir.
- *
- * Se pide como el contraste de counters (`scripts/contrastar-counters.mjs`):
- * la lista y luego la ficha de cada héroe, con pausa. No es la API principal
- * y por eso tiene su propia base (`--tiers`), se apaga con `--tiers off` y
- * se apaga sola cuando la base principal viene fijada (pruebas, local): una
- * prueba no debe salir a internet. Si falla, se conserva la de la corrida
- * anterior con su fecha: una tier de ayer sigue siendo la misma opinión.
+ * La tier list de mlbb.gg, héroe a héroe. Es OPINIÓN: se enseña y NO puntúa
+ * (sabiendo el winrate, la tier no dice nada de hacia dónde va: −0,045 pp ±
+ * 0,015) [M]. Tiene su propia base; si falla se conserva la anterior.
  */
 
-import { TIERS, diagnostics, sleep } from './contexto.mjs';
 import { nombreClave } from '../../src/motor/nombres.js';
 
 const CABECERAS = { 'User-Agent': 'mobile-legends-pick-assist (tier list, uso personal)', Accept: 'application/json' };
 const TOPE_MS = 20000;
-/** Los escalones que publica, del mejor al peor. Cualquier otra cosa se descarta. */
+/** Los escalones que publica, del mejor al peor; cualquier otra cosa se descarta [C]. */
 export const ESCALONES = ['SS', 'S', 'A', 'B', 'C', 'D'];
 
 async function pedir(url) {
@@ -37,26 +18,22 @@ async function pedir(url) {
 }
 
 /**
- * @param {Array<{name:string}>} heroList  nuestros héroes (para casar los nombres)
- * @param {object|null} previous  el roam-meta.json guardado, por si hay que conservar
- * @returns {Promise<{fuente:string, fecha:string, tiers:Record<string,string>}|null>}
+ * `{ tiers: {fuente, fecha, tiers} | null, diag }`. Con menos de la mitad de
+ * héroes no es una tier list y se conserva la anterior entera; si no, el que
+ * no llega hoy conserva la suya [D]. `base` null: apagada.
  */
-export async function fetchTiers(heroList, previous) {
-  const conservar = (motivo) => {
-    diagnostics.tiers = `fallo: ${motivo.slice(0, 120)}${previous?.tiers ? '; conservo la anterior' : ''}`;
-    return previous?.tiers ?? null;
-  };
-  if (!TIERS) { diagnostics.tiers = 'apagada'; return previous?.tiers ?? null; }
+export async function pedirTiers(base, heroList, previous, { sleep = (ms) => new Promise((r) => setTimeout(r, ms)), ahora = () => new Date().toISOString() } = {}) {
+  const anterior = previous?.tiers ?? null;
+  const conservar = (motivo) => ({ tiers: anterior, diag: `fallo: ${motivo.slice(0, 120)}${anterior ? '; conservo la anterior' : ''}` });
+  if (!base) return { tiers: anterior, diag: 'apagada' };
   let lista;
   try {
-    lista = await pedir(`${TIERS}/heroes`);
+    lista = await pedir(`${base}/heroes`);
   } catch (err) {
     return conservar(err.message);
   }
   if (!Array.isArray(lista) || !lista.length) return conservar('la lista viene vacía');
 
-  // Casar por clave normalizada, como todo en este proyecto: mlbb.gg y la API
-  // escriben algún nombre distinto y sin esto se quedarían sin tier en silencio.
   const nuestros = new Map(heroList.map((h) => [nombreClave(h.name), h.name]));
   const tiers = {};
   let fallos = 0;
@@ -64,7 +41,7 @@ export async function fetchTiers(heroList, previous) {
     const nombre = nuestros.get(nombreClave(h?.name ?? ''));
     if (!nombre || h?.id == null) continue;
     try {
-      const ficha = await pedir(`${TIERS}/heroes/${h.id}`);
+      const ficha = await pedir(`${base}/heroes/${h.id}`);
       if (ESCALONES.includes(ficha?.tier)) tiers[nombre] = ficha.tier;
     } catch {
       fallos++;
@@ -72,16 +49,12 @@ export async function fetchTiers(heroList, previous) {
     await sleep(200);
   }
   const n = Object.keys(tiers).length;
-  // Con menos de la mitad no es una tier list, es un trozo: mejor la de ayer entera.
   if (n < heroList.length / 2) return conservar(`solo ${n} héroes con tier (${fallos} fallos)`);
-  // Los que no han llegado hoy (una ficha que falla) conservan la de antes,
-  // héroe a héroe (3.60.1): con 70 de 133 la tier nueva sustituía a la
-  // entera y 63 héroes se quedaban sin tier sin que nada lo dijera.
   let conservados = 0;
   for (const h of heroList) {
-    const antes = previous?.tiers?.tiers?.[h.name];
+    const antes = anterior?.tiers?.[h.name];
     if (tiers[h.name] == null && ESCALONES.includes(antes)) { tiers[h.name] = antes; conservados++; }
   }
-  diagnostics.tiers = `${n} héroes${fallos ? ` (${fallos} fallos)` : ''}${conservados ? ` · ${conservados} con la tier anterior` : ''}`;
-  return { fuente: 'mlbb.gg', fecha: new Date().toISOString(), tiers };
+  const diag = `${n} héroes${fallos ? ` (${fallos} fallos)` : ''}${conservados ? ` · ${conservados} con la tier anterior` : ''}`;
+  return { tiers: { fuente: 'mlbb.gg', fecha: ahora(), tiers }, diag };
 }

@@ -457,7 +457,7 @@ test('revisión línea a línea de scripts y workflows: guardas que no vigilaban
   }
 
   // 9. parseArgs no se traga el siguiente flag como valor.
-  const { parseArgs } = await import('../../scripts/ingest.mjs');
+  const { parseArgs } = await import('../../scripts/ingesta/contexto.mjs');
   const a = parseArgs(['--out', '--iconos', '/tmp/x', '--days', '7']);
   ok(a.out === true && a.iconos === '/tmp/x' && a.days === '7', `parseArgs: ${JSON.stringify(a)}`);
 

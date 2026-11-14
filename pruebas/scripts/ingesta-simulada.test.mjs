@@ -1,751 +1,307 @@
 /**
- * La ingesta ejecutada DE VERDAD, como proceso: una vez contra una base
- * inalcanzable (que es lo que caza un error de programación al arrancar) y
- * tres veces contra una API simulada en local que sirve la FORMA real de las
- * respuestas.
+ * La ingesta ejecutada DE VERDAD, como proceso (`scripts/ingest.mjs`, la
+ * entrada de los workflows): contra una API simulada en local que sirve la
+ * FORMA real de las respuestas (`api-simulada.mjs`) y contra una base
+ * inalcanzable. Se comprueba que lo que sale es lo SERVIDO, no lo
+ * conservado: «no reventó» no es «funciona».
  *
- * Se lanza `scripts/ingest.mjs` a propósito: es la entrada que llaman los
- * workflows, y la que tiene que arrancar `main` sin reventar. Lo que se mira
- * de dentro (el comparador) se importa de donde vive.
- *
- * NUNCA escribe en public/data: todas las corridas llevan `--out`, `--iconos`
- * y `--retratos` a un temporal. Sin eso, cada `npm test` ensuciaba el repo y,
- * como en el workflow las pruebas van antes de compilar, el diagnóstico
- * degradado era el que acababa publicado.
+ * NUNCA escribe en public/: `--out`, `--iconos` y `--retratos` van a un
+ * temporal, y lo guardado (`--previo`) lleva sus imágenes en la propia
+ * máquina, así que ninguna corrida sale a internet.
  */
-import { spawn } from 'node:child_process';
 import { copyFileSync, cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { createServer } from 'node:http';
+import { after, before } from 'node:test';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { comparar } from '../../scripts/comparar-ingesta.mjs';
 import { huellaTexto, huellaDeHabilidades } from '../../scripts/ingesta/extraccion.mjs';
+import { DESCRIPCION, JPG2, SIN_CRUCES, correr, levantarApiSimulada } from './api-simulada.mjs';
 
-/** Como sirve la API las imágenes desde el 11 de octubre de 2026: por el proxy wsrv.nl (3.57.2). */
-const proxy = (url) => `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
 const INGESTA = resolve(RAIZ, 'scripts/ingest.mjs');
 const REAL = resolve(RAIZ, 'public/data/roam-meta.json');
+const hoy = () => new Date().toISOString().slice(0, 10);
+const errorDeProgramacion = /is not defined|is not a function|Cannot read|TypeError|ReferenceError/;
 
-/**
- * Lanza la ingesta y espera a que acabe. `spawn` y no `spawnSync`: la API
- * simulada vive en ESTE proceso, y una espera síncrona bloquearía el bucle de
- * eventos que tiene que responderle.
- */
-const correrIngesta = (args) => new Promise((listo) => {
-  const hijo = spawn(process.execPath, [INGESTA, ...args], { timeout: 120000 });
-  let stdout = ''; let stderr = '';
-  hijo.stdout.on('data', (b) => { stdout += b; });
-  hijo.stderr.on('data', (b) => { stderr += b; });
-  hijo.on('close', (status) => listo({ status, stdout, stderr }));
-});
+let api, dir, previoSim;
+const leer = (f) => JSON.parse(readFileSync(f, 'utf8'));
+/** Una corrida contra la API simulada; devuelve lo escrito. */
+async function corrida(nombre, { previo = previoSim, ranks = 'glory', extra = [] } = {}) {
+  const out = resolve(dir, `${nombre}.json`);
+  const r = await correr(INGESTA, [
+    '--base', api.base, '--tiers', api.tiers, '--previo', previo, '--ranks', ranks, '--rank', 'glory', '--pausa', '0',
+    '--out', out, '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'), ...extra,
+  ]);
+  const salida = `${r.stdout}\n${r.stderr}`;
+  eq(r.status, 0, `${nombre}: la ingesta acaba con ${r.status}: ${salida.slice(-600)}`);
+  ok(!errorDeProgramacion.test(salida), `${nombre}: error de programación: ${salida.split('\n').find((l) => errorDeProgramacion.test(l))}`);
+  return { d: leer(out), out, salida };
+}
 
-test('la ingesta entera recorre todos los endpoints contra una API simulada', async () => {
-  // La prueba de abajo corre con la API caída, así que fetchEquipo,
-  // fetchBuilds, fetchFichas y fetchRelations devuelven antes de ejecutarse:
-  // un `RUTASX is not defined` dentro de cualquiera de ellas pasaba npm test
-  // (probado por mutación) y en producción se tapaba solo, porque cada
-  // endpoint que falla conserva lo anterior y el comparador no ve nada peor.
-  // Aquí una API local sirve un esquema OpenAPI y respuestas con la FORMA de
-  // la real, y se comprueba que lo que sale es lo que sirvió la API simulada,
-  // no lo conservado.
-  // `signo` −1: los cruces de Gloria «ruidosos» tras un reinicio de
-  // temporada (3.35.0), lo contrario de los de Mítico (r = −1).
-  const pares = (n, signo = 1) => ({ data: { sub_hero: [
-    { hero_name: 'Khufra', increase_win_rate: 0.0123 }, { hero_name: 'Tigreal', increase_win_rate: -0.02 },
-    { hero_name: 'Alice', increase_win_rate: 0.01 }, { hero_name: 'Layla', increase_win_rate: 0.03 },
-  ].slice(0, n).map((p) => ({ ...p, increase_win_rate: signo * p.increase_win_rate })) } });
-  const imagen = (firma) => Buffer.concat([firma, Buffer.alloc(300)]);
-  const PNG = imagen(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
-  const JPG = imagen(Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
-  // El retrato rehecho (3.41.0): otra URL y otros bytes para el mismo héroe.
-  const JPG2 = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe1]), Buffer.alloc(400, 7)]);
-  let retratoNuevo = false;
-  const heroes = [
-    { id: 1, name: 'Atlas', linea: 'Roam', rol: 'Tank' },
-    { id: 2, name: 'Khufra', linea: 'Roam', rol: 'Tank' },
-    { id: 3, name: 'Tigreal', linea: 'Roam', rol: 'Tank' },
-  ];
-  const parametros = (...n) => ({ get: { parameters: n.map((name) => ({ name, in: 'query' })) } });
-  const esquema = { paths: {
-    '/api/heroes/hero-rank/': parametros('rank', 'days', 'size', 'index'),
-    '/api/heroes/hero-position/': parametros('size', 'index'),
-    '/api/heroes/{hero_id}/': parametros('lang'),
-    '/api/heroes/{hero_id}/counters': parametros('rank', 'days', 'size', 'index'),
-    '/api/academy/heroes/{hero_id}/counters': parametros('rank', 'days', 'size', 'index'),
-    '/api/heroes/{hero_id}/compatibility': parametros('rank', 'days', 'size', 'index'),
-    '/api/equipment/expanded': parametros('size', 'index', 'lang'),
-    '/api/equipment': parametros('size', 'index', 'lang'),
-    '/api/heroes/{hero_id}/builds': parametros('lane', 'rank', 'size', 'index'),
-    '/api/academy/emblems': parametros('size', 'index', 'lang'),
-    '/api/academy/heroes/{hero_id}/win-rate/timeline': parametros('lane', 'rank', 'size', 'index'),
-    // Las rutas de la cuenta (tras el inicio de sesión) NO se tocan nunca:
-    // la cuenta de Javi vale dinero. Esta encaja con el patrón de los cruces
-    // y trae MÁS pares que ninguna, así que sin el filtro ganaría (3.40.0).
-    '/api/user/heroes/{hero_id}/counters': parametros('rank', 'days', 'size', 'index'),
-  } };
-  // Larga a proposito: la huella del texto solo cuenta cadenas de 40 o mas
-  // caracteres una vez quitadas etiquetas, cifras y espacios. Con una corta,
-  // la huella salia CONSERVADA del repositorio y la prueba pasaba sin mirar
-  // lo servido (lo dijo la mutacion).
-  const DESCRIPCION = 'Deals 300 <font color="x">Magic Damage</font> to enemies in a line and slows them by 40% for 1.5 seconds, then heals allies';
-  const golpes = {};
-  let fallaCounters = false;
-  // El winrate por línea: un héroe cuya ruta falla y un desplazamiento para
-  // distinguir lo descargado hoy de lo conservado de la corrida anterior.
-  let fallaLineaDe = null; let desplazaLinea = 0;
-  let fallaRecientes = false;
-  let fallaDetail = false;
-  // La ruta larga de objetos (con la defensa) da 500 y la corta responde (3.81.1, como el 27 de octubre de 2026).
-  let fallaEquipoLargo = false;
-  let fallaEquipoCorto = false;
-  let academyVacia = false;
-  // Academy da 500 a las primeras N peticiones: la medida de rutas (y su reintento) falla (3.60.2).
-  let academyFallaAlMedir = 0;
-  let fallosCountersPendientes = 0;
-  let gloriaRuidosa = false;
-  // 3.43.1: las estadísticas de Mítico (el rango de respaldo) caídas, y la
-  // ruta de parejas contestando sin ningún par.
-  let fallaMitico = false; let parejasVacias = false;
-  // Las estadísticas de un rango dan 500 las primeras N veces (3.87.2): «Error 1101», como el 28 y el 29 de octubre de 2026.
-  let fallaGloriaVeces = 0;
-  // 3.43.2: la curva por duración en porcentaje (otra forma de la ruta).
-  let curvaEnPorcentaje = false;
-  // Un rework que le quita el último control (3.37.0): la ficha llega sin nada que contar.
-  let kitSinControl = false;
-  // Mítico cortado a mitad de la segunda tanda (3.37.0): solo los primeros tres héroes traen cruces.
-  let miticoAMedias = false, miticosServidos = 0;
-  // Mítico (el respaldo) caído en su primera pasada entera y de vuelta después (3.87.4): la primera de cada héroe da 500.
-  let miticoCaido = false; const miticoYaCaido = new Map();
-  // Gloria (el pedido) caída en su primera pasada entera (3.87.5): la primera de cada héroe da 500.
-  let gloriaCaida = false; const gloriaYaCaida = new Set();
-  // La API a medias (3.57.5): los `fallarPrimeros` héroes de Gloria que se
-  // piden (menos Atlas, el del sondeo de rutas) dan 500 la PRIMERA vez.
-  let fallarPrimeros = 0; const fallaronYa = new Set();
-  const fallaUnaVez = (u, ruta, i) => {
-    const h = decodeURIComponent(ruta.split('/')[i]);
-    if (fallarPrimeros <= 0 || h === '1' || h === 'Atlas' || fallaronYa.has(h) || u.searchParams.get('rank') !== 'glory') return false;
-    fallaronYa.add(h); fallarPrimeros -= 1; return true;
-  };
-  // Respuestas VACÍAS, no errores (3.57.7, lo pidió pr-test-analyzer): los
-  // `parejasVaciasPrimeras` héroes de Gloria reciben las parejas vacías la
-  // primera vez (van a la segunda pasada) y los cruces vacíos la segunda: lo
-  // que llegó bien en la primera no se puede perder.
-  // Héroes fijados de antemano: cruces y parejas se piden a la vez y, marcándolos
-  // al vuelo, los cruces de la primera pasada podían llegar antes que la marca.
-  let parejasVaciasActivas = false; const sinParejas = new Set(); const crucesPedidos = new Map();
-  const SIN_PAREJAS = ['Ruby', 'Terizla', 'Uranus', 'Yve', 'Zilong'];
-  const parejaVacia = (u, ruta) => {
-    const h = decodeURIComponent(ruta.split('/')[3]);
-    if (!parejasVaciasActivas || !SIN_PAREJAS.includes(h) || sinParejas.has(h) || u.searchParams.get('rank') !== 'glory') return false;
-    sinParejas.add(h); return true;
-  };
-  const cruceVacioAlReintentar = (u, ruta, i) => {
-    const h = decodeURIComponent(ruta.split('/')[i]);
-    if (!parejasVaciasActivas || !SIN_PAREJAS.includes(h) || u.searchParams.get('rank') !== 'glory') return false;
-    crucesPedidos.set(h, (crucesPedidos.get(h) ?? 0) + 1);
-    return crucesPedidos.get(h) >= 2;
-  };
-  // Y al revés: cruces vacíos la primera vez y parejas vacías la segunda.
-  const SIN_CRUCES = ['Vexana', 'Wanwan', 'Xavier', 'Yin', 'Yu Zhong'];
-  const pedidosSinCruces = new Map();
-  const cuenta = (m, h) => { m.set(h, (m.get(h) ?? 0) + 1); return m.get(h); };
-  const cruceVacioPrimero = (u, ruta, i) => {
-    const h = decodeURIComponent(ruta.split('/')[i]);
-    return parejasVaciasActivas && SIN_CRUCES.includes(h) && u.searchParams.get('rank') === 'glory' && cuenta(pedidosSinCruces, `c:${h}`) === 1;
-  };
-  const parejaVaciaAlReintentar = (u, ruta) => {
-    const h = decodeURIComponent(ruta.split('/')[3]);
-    return parejasVaciasActivas && SIN_CRUCES.includes(h) && u.searchParams.get('rank') === 'glory' && cuenta(pedidosSinCruces, `s:${h}`) >= 2;
-  };
-  const srv = createServer((req, res) => {
-    const u = new URL(req.url, 'http://x');
-    const ruta = u.pathname;
-    const marca = (k) => { golpes[k] = (golpes[k] ?? 0) + 1; };
-    const json = (o) => { res.setHeader('content-type', 'application/json'); res.end(JSON.stringify(o)); };
-    const bin = (b) => { res.setHeader('content-type', 'image/png'); res.end(b); };
-    let m;
-    if (/^\/api\/user\//.test(ruta)) { marca('user'); return json(pares(8, 1)); }
-    if (/openapi\.json$/.test(ruta)) { marca('esquema'); return json(esquema); }
-    if (ruta === '/api/heroes/hero-rank/') {
-      // La ventana corta (days=3) se sirve DISTINTA a la de 7 para poder
-      // comprobar que lo que sale es lo servido y no lo de siempre; y se
-      // puede tirar sola, porque es un extra que no debe tumbar la corrida.
-      const corta = u.searchParams.get('days') === '3';
-      if (corta && fallaRecientes) { res.statusCode = 500; return res.end('{}'); }
-      if (fallaMitico && u.searchParams.get('rank') === 'mythic') { res.statusCode = 500; return res.end('{}'); }
-      if (!corta && fallaGloriaVeces > 0 && u.searchParams.get('rank') === 'glory') { fallaGloriaVeces -= 1; res.statusCode = 500; return res.end('{"title":"Error 1101: Worker threw exception"}'); }
-      marca(`${corta ? 'rank3' : 'rank'}:${u.searchParams.get('rank')}`);
-      return json({ code: 0, data: { records: heroes.map((h) => ({ data: {
-        main_heroid: h.id, main_hero: { data: { name: h.name } },
-        main_hero_win_rate: 0.5 + h.id / 100 + (corta ? 0.002 : 0), main_hero_appearance_rate: 0.01 * h.id, main_hero_ban_rate: 0.2,
-      } })) } });
-    }
-    if (ruta === '/api/heroes/hero-position/') {
-      marca('position');
-      return json({ code: 0, data: { records: heroes.map((h) => ({ data: { hero_id: h.id, hero: { data: {
-        name: h.name, roadsort: [{ data: { road_sort_title: h.linea } }], sortid: [{ data: { sort_title: h.rol } }],
-      } } } })) } });
-    }
-    if ((m = ruta.match(/^\/api\/heroes\/([^/]+)\/$/))) {
-      if (fallaDetail) { res.statusCode = 500; return res.end('{}'); }
-      marca('detail');
-      const h = heroes.find((x) => String(x.id) === m[1]) ?? heroes[0];
-      // La forma real (medida el 28-9-2026): el retrato de la web fuera y la
-      // cara del juego dentro del objeto de configuración, junto a `heroid`.
-      return json({ code: 0, data: { records: [{ data: { head: proxy(`http://127.0.0.1:${puerto}/img/${h.id}.jpg${retratoNuevo && h.id === 1 ? '?n=2' : ''}`), hero: { data: {
-        heroid: h.id, name: h.name, head: proxy(`http://127.0.0.1:${puerto}/cara/${h.id}.png`), speciality: ['Guard', 'Crowd Control', "x':(globalThis.P=1),'y"],
-        // Las habilidades con sus etiquetas de Moonton (3.36.0): una de
-        // control en área por etiqueta y una que limpia a los aliados por
-        // TEXTO (corto, para no mover la huella del kit).
-        // La primera de la lista es la pasiva, como en la API: no cuenta.
-        // Solo Atlas se rehace (3.102.0): un parche toca a unos pocos, y con los tres a la vez sería la API reescribiendo textos.
-        skill: { skilllist: kitSinControl && h.id === 1 ? [
-          { skillname: 'Frigid Breath', skilldesc: 'Passive.', skilltag: [{ tagname: 'Buff' }] },
-          { skillname: 'Fatal Links', skilldesc: DESCRIPCION, skilltag: [{ tagname: 'Buff' }] },
-        ] : [
-          { skillname: 'Frigid Breath', skilldesc: 'Removes all debuffs on allies.', skilltag: [{ tagname: 'CC Immune' }] },
-          { skillname: 'Fatal Links', skilldesc: DESCRIPCION, skilltag: [{ tagname: 'CC' }, { tagname: 'AOE' }] },
-          { skillname: 'Time Journey', skilldesc: 'Removes all debuffs on allies.', skilltag: [{ tagname: 'Speed Up' }] },
-        ] },
-      } } } }] } });
-    }
-    if (/^\/api\/(academy\/)?heroes\/[^/]+\/counters$/.test(ruta) && fallaCounters) { res.statusCode = 500; return res.end('{}'); }
-    if (/^\/api\/heroes\/[^/]+\/counters$/.test(ruta)) {
-      if (fallosCountersPendientes > 0) { fallosCountersPendientes -= 1; res.statusCode = 500; return res.end('{}'); }
-      if (fallaUnaVez(u, ruta, 3)) { res.statusCode = 500; return res.end('{}'); }
-      if (cruceVacioAlReintentar(u, ruta, 3)) return json({ data: { sub_hero: [] } });
-      if (cruceVacioPrimero(u, ruta, 3)) return json({ data: { sub_hero: [] } });
-      marca('counters'); return json(pares(2));
-    }
-    const signoDelRango = gloriaRuidosa && u.searchParams.get('rank') === 'glory' ? -1 : 1;
-    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && academyFallaAlMedir > 0) { academyFallaAlMedir -= 1; res.statusCode = 500; return res.end('{}'); }
-    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && miticoCaido && u.searchParams.get('rank') === 'mythic' && (miticoYaCaido.get(ruta) ?? 0) < 2) { miticoYaCaido.set(ruta, (miticoYaCaido.get(ruta) ?? 0) + 1); res.statusCode = 500; return res.end('{"title":"Error 1101: Worker threw exception"}'); }
-    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && gloriaCaida && u.searchParams.get('rank') === 'glory' && !gloriaYaCaida.has(ruta)) { gloriaYaCaida.add(ruta); res.statusCode = 500; return res.end('{"title":"Error 1101: Worker threw exception"}'); }
-    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && miticoAMedias && u.searchParams.get('rank') === 'mythic' && ++miticosServidos > 3) return json({ data: { sub_hero: [] } });
-    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && fallaUnaVez(u, ruta, 4)) { res.statusCode = 500; return res.end('{}'); }
-    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && cruceVacioAlReintentar(u, ruta, 4)) return json({ data: { sub_hero: [] } });
-    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta) && cruceVacioPrimero(u, ruta, 4)) return json({ data: { sub_hero: [] } });
-    if (/^\/api\/academy\/heroes\/[^/]+\/counters$/.test(ruta)) { marca('academy'); marca(`academy:${u.searchParams.get('rank')}`); return json(academyVacia ? { data: { sub_hero: [] } } : pares(4, signoDelRango)); }
-    if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta) && parejasVacias) return json({ data: { sub_hero: [] } });
-    if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta) && parejaVacia(u, ruta)) return json({ data: { sub_hero: [] } });
-    if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta) && parejaVaciaAlReintentar(u, ruta)) return json({ data: { sub_hero: [] } });
-    if (/^\/api\/heroes\/[^/]+\/compatibility$/.test(ruta)) { marca('compat'); marca(`compat:${u.searchParams.get('rank')}`); return json(pares(3, signoDelRango)); }
-    if (ruta === '/api/equipment/expanded' && fallaEquipoLargo) { res.statusCode = 500; return res.end('{}'); }
-    if (ruta === '/api/equipment/expanded') {
-      marca('equipo');
-      return json({ code: 0, data: { records: [{ data: {
-        equipid: 90001, equipname: 'Objeto de Prueba', equiptypename: 'Defense',
-        equipicon: proxy(`http://127.0.0.1:${puerto}/img/90001.png`),
-        equiptips: '+18 Extra Magic Defense<br>+5 Extra Physical Defense<br>+20% Crit Damage Reduction', equipskill1: 'Reduces HP Regen effects by 50%',
-        equipskill2: ' Lifebane: Dealing damage to a target will reduce the Shield and HP Regen effects on them to 60% of normal for 3s.',
-      } }, { data: {
-        equipid: 90002, equipname: 'Segundo Objeto', equiptypename: 'Attack', equipskill1: 'Reduces the target HP Regen by 40%.',
-      } }, { data: {
-        // Como Rapid Boots (3.57.1): «Slow Reduction» y «HP Regen» en las estadísticas NO son antisanación.
-        equipid: 90004, equipname: 'Botas Rápidas', equiptypename: 'Movement',
-        equiptips: '+65 Movement Speed<br>+35% Slow Reduction<br>+12 HP Regen', equipskill1: ' Side Effect: Loses 20 Movement Speed for 5s upon dealing or taking damage.',
-      } }] } });
-    }
-    if (ruta === '/api/equipment' && fallaEquipoCorto) { res.statusCode = 500; return res.end('{}'); }
-    if (ruta === '/api/equipment') {
-      marca('equipoCorto');
-      // El Segundo Objeto da la antisanación por la pasiva en la ruta larga y
-      // el crítico por las estadísticas solo en esta (3.57.7: se juntan).
-      return json({ code: 0, data: { records: [{ data: { equipid: 90001, equipname: 'Objeto de Prueba' } }, { data: { equipid: 90002, equipname: 'Segundo Objeto', equiptips: '+25% Crit Chance' } }] } });
-    }
-    // Los talentos de los emblemas (3.57.0), con la forma real: `giftid`, `gifttiers` y el texto con etiquetas.
-    if (ruta === '/api/academy/emblems') {
-      marca('talentos');
-      return json({ code: 0, data: { records: [
-        { data: { giftid: 611, gifttiers: 1, emblemskill: { skillname: 'Inspire', skilldescemblem: 'Gain <font color="x">5%</font> extra Cooldown Reduction.' } } },
-        { data: { giftid: 621, gifttiers: 2, emblemskill: { skillname: 'Bargain Hunter', skilldescemblem: 'Equipment can be purchased at 95% of their base price.' } } },
-        { data: { giftid: 131, gifttiers: 3, emblemskill: { skillname: 'Impure Rage', skilldesc: 'Deal extra damage.' } } },
-      ], total: 3 } });
-    }
-    if ((m = ruta.match(/^\/api\/heroes\/([^/]+)\/builds$/))) {
-      // La misma caída que el winrate por línea: las builds se funden héroe a héroe (3.40.0).
-      if (m[1] === fallaLineaDe) { res.statusCode = 500; return res.end('{}'); }
-      marca(`builds:${u.searchParams.get('lane')}`);
-      return json({ code: 0, data: [{ equipid: [90001, 90002, 90003], build_win_rate: 0.555, build_pick_rate: 0.1,
-        emblem: { data: { emblemname: 'Tank' } }, battleskill: { data: { skillname: 'Flicker' } }, new_rune_skill: [611, 621, 131] }] });
-    }
-    // El winrate por línea (3.12.0), con la forma real: el dato en
-    // `total_win_rate`, junto a la curva por duración. Distinto por héroe
-    // para saber que se guarda el de cada uno.
-    if ((m = ruta.match(/^\/api\/academy\/heroes\/([^/]+)\/win-rate\/timeline$/))) {
-      if (!u.searchParams.get('lane') || m[1] === fallaLineaDe) { res.statusCode = 422; res.end('{}'); return; }
-      marca(`lineas:${u.searchParams.get('lane')}`);
-      return json({ code: 0, data: { records: [{ data: { heroid: Number(m[1]), real_road: 3, big_rank: '9', total_win_rate: 0.4321 + desplazaLinea + Number(m[1]) / 1000,
-        // La curva por duración (3.43.0), con la forma real: seis tramos,
-        // desordenados a propósito y distinta por héroe y por corrida.
-        time_win_rate: [20, 10, 12, 14, 16, 18].map((t) => ({ time_min: t, ...(t < 20 ? { time_max: t + 2 } : {}), win_rate: (curvaEnPorcentaje ? 100 : 1) * (0.4 + (t - 10) / 100 + desplazaLinea + Number(m[1]) / 1000) })) } }], total: 1 } });
-    }
-    // La tier list de mlbb.gg, en el mismo servidor con otra base (--tiers).
-    if (ruta === '/api/v1/heroes') { marca('tiers'); return json(heroes.map((h) => ({ id: h.id, name: h.name }))); }
-    if ((m = ruta.match(/^\/api\/v1\/heroes\/(\d+)$/))) { marca('tier'); return json({ id: Number(m[1]), name: heroes.find((x) => String(x.id) === m[1])?.name, tier: m[1] === '1' ? 'S' : 'B' }); }
-    if (ruta.startsWith('/img/')) { marca('img'); return bin(u.searchParams.get('n') === '2' ? JPG2 : ruta.endsWith('.jpg') ? JPG : PNG); }
-    res.statusCode = 404; res.end('{}');
-  });
-  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
-  const puerto = srv.address().port;
-
-  const dir = mkdtempSync(resolve(tmpdir(), 'ingesta-simulada-'));
-  const out = resolve(dir, 'roam-meta.json');
-  // Lo guardado es el fichero real con cada fila de cruces y parejas recortada
-  // a los cuatro rivales que sirve la API simulada: con las 132 celdas de
-  // verdad, las filas de cuatro serían «cortas» y no entrarían (3.60.1).
-  const previoSim = resolve(dir, 'previo.json');
-  const real = JSON.parse(readFileSync(REAL, 'utf8'));
+before(async () => {
+  api = await levantarApiSimulada();
+  dir = mkdtempSync(resolve(tmpdir(), 'ingesta-simulada-'));
+  // Lo guardado: el fichero real con las filas recortadas a los cuatro rivales que sirve la API
+  // (con 132 celdas, las de cuatro serían «cortas») y sus imágenes en la propia máquina.
+  const real = leer(REAL);
+  const local = (id) => `http://127.0.0.1:${api.puerto}/img/${id}.png`;
   const recortar = (m) => Object.fromEntries(Object.entries(m ?? {}).map(([h, f]) => [h, Object.fromEntries(Object.entries(f ?? {}).filter(([k]) => ['Khufra', 'Tigreal', 'Alice', 'Layla'].includes(k)))]));
-  writeFileSync(previoSim, JSON.stringify({ ...real, counters: recortar(real.counters), synergies: recortar(real.synergies) }));
-  const antes = Date.now();
-  try {
-    const r = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', previoSim,
-      '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
-      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
-    ]);
-    const salida = `${r.stdout}\n${r.stderr}`;
-    eq(r.status, 0, `la ingesta simulada acaba con código ${r.status}: ${salida.slice(-600)}`);
-    ok(!/is not defined|is not a function|Cannot read|TypeError|ReferenceError/.test(salida),
-      `error de programación en la ingesta: ${salida.split('\n').find((l) => /is not|TypeError|ReferenceError/.test(l))}`);
-    ok(!/fallo \(/.test(salida), `algún endpoint falló contra la API simulada: ${salida.split('\n').filter((l) => /fallo \(/.test(l)).join(' | ')}`);
-
-    // Cada endpoint que la ingesta conoce se ha llamado. Si uno deja de
-    // llamarse, la app se queda con el dato conservado sin que nadie lo vea.
-    for (const k of ['esquema', 'rank:mythic', 'rank:glory', 'rank3:glory', 'position', 'detail', 'counters', 'academy', 'academy:glory', 'academy:mythic', 'compat', 'compat:glory', 'compat:mythic', 'equipo', 'equipoCorto', 'talentos', 'builds:roam', 'lineas:roam', 'img', 'tiers', 'tier']) {
-      ok(golpes[k] > 0, `la ingesta no ha llamado a ${k}: ${JSON.stringify(golpes)}`);
-    }
-
-    // Y lo que sale es lo que sirvió la API simulada, no lo conservado del
-    // repositorio: esa es la diferencia entre "no reventó" y "funciona".
-    const d = JSON.parse(readFileSync(out, 'utf8'));
-    ok(Date.parse(d.generatedAt) >= antes - 1000, `la fecha no es la de esta corrida: ${d.generatedAt}`);
-    eq(d.diagnostics.conservado, false, 'dice que conserva teniendo datos nuevos');
-    ok(d.diagnostics.frescos.includes('glory') && d.diagnostics.frescos.includes('mythic'), `rangos frescos: ${d.diagnostics.frescos}`);
-    eq(d.stats.Atlas?.winRate, 0.51, `winrate de Atlas: ${JSON.stringify(d.stats.Atlas)}`);
-    eq(d.statsByRank.mythic?.Khufra?.winRate, 0.52, 'las estadísticas por rango no son las servidas');
-    // La ventana corta: pedida, guardada aparte y con lo que sirvió la API
-    // (0.512 y no 0.51), sin pisar la de 7 días.
-    eq(d.recientes?.dias, 3, `la ventana corta no se guarda: ${JSON.stringify(d.recientes)}`);
-    eq(d.recientes?.statsByRank?.glory?.Atlas?.winRate, 0.512, `la ventana corta no es la servida: ${JSON.stringify(d.recientes?.statsByRank?.glory?.Atlas)}`);
-    eq(d.stats.Atlas?.winRate, 0.51, 'la ventana corta ha pisado a la de 7 días');
-    // La historia de la fuerza (3.50.0): la foto de hoy, con lo servido, de
-    // tu rango y su respaldo.
-    const hoy = new Date().toISOString().slice(0, 10);
-    eq(d.historia?.at(-1)?.fecha, hoy, `la historia no lleva la foto de hoy: ${JSON.stringify(d.historia?.map((e) => e.fecha))}`);
-    eq(d.historia?.at(-1)?.glory?.Atlas?.[0], 0.51, `la foto de Gloria no es la servida: ${JSON.stringify(d.historia?.at(-1)?.glory?.Atlas)}`);
-    eq(d.historia?.at(-1)?.mythic?.Khufra?.[0], 0.52, 'la foto de Mítico no es la servida');
-    // La tier list: la servida, casada por nombre, y la huella del texto de la ficha.
-    eq(d.tiers?.tiers?.Atlas, 'S', `la tier de Atlas no es la servida: ${JSON.stringify(d.tiers)}`);
-    eq(d.tiers?.tiers?.Khufra, 'B', 'la tier de Khufra no es la servida');
-    const atlas = d.heroes.find((h) => h.name === 'Atlas');
-    ok(atlas && atlas.id === 1 && atlas.role === 'tank' && atlas.lanes.includes('roam'), `ficha de Atlas: ${JSON.stringify(atlas)}`);
-    eq(atlas?.damage?.magico, 1, `tipo de daño de Atlas: ${JSON.stringify(atlas?.damage)}`);
-    eq(atlas?.kitTexto, huellaTexto({ skilldesc: DESCRIPCION }), `la huella del texto no es la de la ficha SERVIDA: ${atlas?.kitTexto}`);
-    // Y la de las habilidades con sus cifras (3.102.0), la que dice si al héroe lo tocó un parche.
-    eq(atlas?.kitCifras, huellaDeHabilidades([
-      { skillname: 'Frigid Breath', skilldesc: 'Removes all debuffs on allies.' },
-      { skillname: 'Fatal Links', skilldesc: DESCRIPCION },
-      { skillname: 'Time Journey', skilldesc: 'Removes all debuffs on allies.' },
-    ]), `la huella de las habilidades no es la de la ficha SERVIDA: ${atlas?.kitCifras}`);
-    eq(JSON.stringify(atlas?.habilidades), JSON.stringify([{ n: 'Fatal Links', e: ['area', 'cc'] }, { n: 'Time Journey', e: ['aliados', 'limpia'] }]),
-      `las habilidades no son las de la ficha SERVIDA: ${JSON.stringify(atlas?.habilidades)}`);
-    // La cara del juego (la del objeto con `heroid`), no el retrato de la web: la usa el lector de pantalla.
-    ok(atlas?.cara?.endsWith('/cara/1.png'), `la cara del juego no es la servida en hero.data.head: ${atlas?.cara}`);
-    ok(atlas?.retrato?.endsWith('/img/1.jpg'), `el retrato ya no es el de la web: ${atlas?.retrato}`);
-    eq(d.counters.Atlas?.Khufra, 0.5123, `cruce Atlas→Khufra: ${JSON.stringify(d.counters.Atlas)}`);
-    eq(d.counters.Atlas?.Layla, 0.53, 'no ha elegido la ruta con MÁS cruces (academy trae 4, la del esquema 2)');
-    ok(/^4 pares .*academy/.test(d.diagnostics.rutasMedidas?.counter ?? ''), `rutas medidas: ${JSON.stringify(d.diagnostics.rutasMedidas)}`);
-    eq(golpes.user ?? 0, 0, 'la ingesta ha llamado a una ruta de la cuenta (/api/user/)');
-    // Y ni se intenta: el descubrimiento las quita del esquema; la puerta de `request` es la segunda.
-    ok(!/prohibida|\/api\/user\//.test(salida + JSON.stringify(d.diagnostics)), 'el descubrimiento ofrece una ruta de la cuenta como candidata');
-    eq(d.synergies.Atlas?.Tigreal, 0.48, `pareja Atlas+Tigreal: ${JSON.stringify(d.synergies.Atlas)}`);
-    const obj = d.equipment?.['90001'];
-    ok(obj && obj.nombre === 'Objeto de Prueba' && obj.magica === 18 && obj.fisica === 5 && obj.tipo === 'Defense', `objeto servido: ${JSON.stringify(obj)}`);
-    ok((obj?.efectos ?? []).includes('antiCuracion'), `efectos del objeto: ${JSON.stringify(obj?.efectos)}`);
-    // 3.57.0: la reducción de escudos (de la pasiva) y la de crítico (de las estadísticas, `equiptips`).
-    ok(['antiEscudo', 'antiCritico'].every((e) => obj?.efectos?.includes(e)) && !obj?.efectos?.includes('critico'), `efectos nuevos del objeto: ${JSON.stringify(obj?.efectos)}`);
-    ok(['antiCuracion', 'critico'].every((e) => d.equipment?.['90002']?.efectos?.includes(e)), `los efectos de dos rutas no se juntan: ${JSON.stringify(d.equipment?.['90002'])}`);
-    eq(JSON.stringify(d.equipment?.['90004']?.efectos ?? []), '[]', `las estadísticas de unas botas salen como antisanación: ${JSON.stringify(d.equipment?.['90004'])}`);
-    eq(d.equipment?.['90002']?.nombre, 'Segundo Objeto', 'la ruta corta de objetos no se funde con la larga');
-    const build = d.builds?.Atlas?.roam?.[0];
-    ok(build && build.objetos.join(',') === '90001,90002,90003' && build.emblema === 'Tank' && build.hechizo === 'Flicker', `build de Atlas: ${JSON.stringify(build)}`);
-    // Los talentos (3.57.0): los de la build, y su nombre, nivel y texto sin etiquetas.
-    eq(JSON.stringify(build?.talentos), '[611,621,131]', `la build no trae sus talentos: ${JSON.stringify(build)}`);
-    eq(JSON.stringify(d.talentos?.['611']), JSON.stringify({ nombre: 'Inspire', nivel: 1, texto: 'Gain 5% extra Cooldown Reduction.' }), `los talentos no son los servidos: ${JSON.stringify(d.talentos)}`);
-    eq(build?.winRate, 0.555, `winrate de la build: ${build?.winRate}`);
-    eq(d.winrateLinea?.Atlas?.roam, 0.4331, `winrate de Atlas en roam: ${JSON.stringify(d.winrateLinea?.Atlas)}`);
-    eq(d.winrateLinea?.Khufra?.roam, 0.4341, 'el winrate por línea no es el de cada héroe');
-    ok(!(d.diagnostics.lineas?.errores ?? []).length && d.diagnostics.lineas?.valores === 3, `diagnóstico del winrate por línea: ${JSON.stringify(d.diagnostics.lineas)}`);
-    // La curva por duración de la misma respuesta (3.43.0): la servida, en el
-    // orden de los tramos aunque la API los dé desordenados.
-    eq(JSON.stringify(d.curvaLinea?.Atlas?.roam), JSON.stringify([0.401, 0.421, 0.441, 0.461, 0.481, 0.501]), `curva de Atlas en roam: ${JSON.stringify(d.curvaLinea?.Atlas)}`);
-    eq(d.curvaLinea?.Khufra?.roam?.[0], 0.402, 'la curva no es la de cada héroe');
-    eq(d.diagnostics.lineas?.curvas, 3, `el diagnóstico no cuenta las curvas: ${JSON.stringify(d.diagnostics.lineas)}`);
-    ok(existsSync(resolve(dir, 'objetos', '90001.png')), 'no ha bajado el icono del objeto');
-    ok(existsSync(resolve(dir, 'heroes', '1.jpg')), 'no ha bajado el retrato de Atlas');
-    // Una speciality con forma de código no se guarda (3.60.4): acabaría escrita en reglas.js.
-    const espAtlas = d.heroes.find((h) => h.name === 'Atlas')?.speciality ?? [];
-    ok(espAtlas.includes('Guard') && !espAtlas.some((x) => x.includes("'")), `la speciality con comillas se guarda: ${JSON.stringify(espAtlas)}`);
-    for (const [k, v] of Object.entries({ speciality: d.diagnostics.speciality?.errores, builds: d.diagnostics.builds?.errores, relations: d.diagnostics.relations?.errores })) {
-      ok(!(v ?? []).length, `errores de ${k} contra la API simulada: ${JSON.stringify(v)}`);
-    }
-
-    // Segunda corrida con la ruta de counters CAÍDA: estadísticas frescas
-    // pero matriz de otro día. Antes salía con la fecha de hoy, pasaba el
-    // comparador (mismos recuentos) y la puerta de 72 h del despliegue.
-    fallaCounters = true; fallaRecientes = true;
-    const out2 = resolve(dir, 'sin-counters.json');
-    const r2 = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', previoSim,
-      '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', out2, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
-      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
-    ]);
-    eq(r2.status, 0, `la ingesta sin counters no acaba bien: ${(r2.stdout + r2.stderr).slice(-400)}`);
-    const guardada = JSON.parse(readFileSync(previoSim, 'utf8'));
-    const d2 = JSON.parse(readFileSync(out2, 'utf8'));
-    // Desde 3.59.6 la fecha sigue a las estadísticas (frescas aquí) y la matriz lleva la suya.
-    ok(d2.generatedAt !== guardada.generatedAt, 'con estadísticas nuevas y la matriz conservada la corrida no sale con fecha de hoy');
-    eq(d2.relaciones?.descargada, guardada.relaciones?.descargada ?? guardada.generatedAt, `la matriz conservada no lleva la fecha en que se descargó: ${JSON.stringify(d2.relaciones)}`);
-    eq(d2.diagnostics.conservado, true, 'no dice que conserva la matriz');
-    // Con la API caída del todo hay UNA segunda pasada (3.87.5: los ratos de «Error 1101» duran un minuto) y no recupera nada.
-    ok(d2.diagnostics.relations?.reintentados > 0 && d2.diagnostics.relations?.recuperados === 0, `con todo caído no se reintenta una vez: ${JSON.stringify(d2.diagnostics.relations)}`);
-    // Con la ventana corta caída no se conserva la de ayer (unos «recientes»
-    // viejos son peores que ninguno): simplemente no va, y la app cae a 7.
-    ok(d2.recientes === undefined, `la ventana corta caída sale conservada o inventada: ${JSON.stringify(d2.recientes)}`);
-    ok(/fallo:/.test(d2.diagnostics.recientes?.glory ?? ''), `el diagnóstico no dice que la ventana corta falló: ${JSON.stringify(d2.diagnostics.recientes)}`);
-    eq(d2.diagnostics.frescosRecursos?.relaciones, 0, `cuenta relaciones frescas sin haberlas descargado: ${JSON.stringify(d2.diagnostics.frescosRecursos)}`);
-    const atlasAntes = JSON.stringify(guardada.counters?.Atlas ?? null);
-    ok(atlasAntes !== 'null' && JSON.stringify(d2.counters?.Atlas) === atlasAntes, 'la fila de Atlas no se conserva héroe a héroe');
-    // Y la etiqueta de rango es la de la matriz conservada, no la pedida (3.37.0: salía la de Mítico etiquetada como Gloria).
-    eq(JSON.stringify({ ...(d2.relaciones ?? {}), descargada: undefined }), JSON.stringify({ ...(guardada.relaciones ?? {}), descargada: undefined }), `la matriz conservada sale con otra etiqueta de rango: ${JSON.stringify(d2.relaciones)}`);
-    // Y el comparador la ACEPTA (3.59.6): del 10 al 19 de octubre de 2026 tiró así 13 de 16 corridas del bot.
-    // (Contra la primera corrida simulada, la de la misma API de tres héroes.)
-    eq(comparar(d2, d).peores.map((p) => `${p.clave}:${p.antes}→${p.ahora}`).join(), '', 'el comparador tira una corrida con estadísticas nuevas por llevar la matriz conservada');
-
-    // Las estadísticas de Mítico caídas con todo lo demás bien (3.43.1): la
-    // guarda de rango compara Gloria con Mítico y puntúa con él, así que un
-    // Mítico conservado de otra corrida no puede salir con la fecha de hoy.
-    fallaCounters = false; fallaRecientes = false; fallaMitico = true; fallaGloriaVeces = 2;
-    const outM = resolve(dir, 'sin-mitico.json');
-    const rM = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', previoSim,
-      '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', outM, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
-      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
-    ]);
-    eq(rM.status, 0, `la ingesta sin Mítico no acaba bien: ${(rM.stdout + rM.stderr).slice(-400)}`);
-    const dM = JSON.parse(readFileSync(outM, 'utf8'));
-    ok(golpes['rank:mythic'] > 1, 'con --ranks glory no se pide el rango de respaldo');
-    ok(dM.diagnostics.frescos.includes('glory') && !dM.diagnostics.frescos.includes('mythic'), `rangos frescos (Gloria da 500 dos veces y se reintenta): ${dM.diagnostics.frescos}`);
-    eq(fallaGloriaVeces, 0, 'no se volvió a pedir Gloria tras su 500');
-    eq(JSON.stringify(dM.diagnostics.reintentoEstadisticas), JSON.stringify({ vueltas: 2, recuperados: ['glory'], sinRecuperar: ['mythic'] }), `el reintento no queda en el diagnóstico: ${JSON.stringify(dM.diagnostics.reintentoEstadisticas)}`);
-    eq(dM.diagnostics.frescosRecursos?.parejas > 100, true, `con la matriz entera no cuenta las parejas: ${JSON.stringify(dM.diagnostics.frescosRecursos)}`);
-    eq(dM.generatedAt, guardada.generatedAt, 'con Mítico conservado la corrida se fecha como si fuera nueva');
-    eq(dM.diagnostics.conservado, true, 'no dice que Mítico es de otra corrida');
-    // Desde 3.60.2 se acepta si la matriz llegó entera: Mítico se queda el de antes con su fecha.
-    // (La API simulada tiene 3 héroes: contra el fichero real los recuentos siempre son peores; se mira solo rangoFresco.)
-    ok(!comparar(dM, guardada).peores.some((p) => p.clave === 'rangoFresco'), 'con la matriz nueva entera y Mítico conservado, el comparador tira la corrida por rangoFresco');
-    ok(comparar({ ...dM, diagnostics: { ...dM.diagnostics, frescosRecursos: { ...dM.diagnostics.frescosRecursos, relaciones: 0, parejas: 0 } } }, guardada).peores.some((p) => p.clave === 'nadaFresco'), 'sin matriz nueva el comparador acepta una corrida sin el rango de respaldo');
-
-    // Y la ruta de parejas sin ningún par, con los cruces bien (3.43.1): cada
-    // fila conservaba las parejas de la corrida anterior y salía fresca.
-    fallaMitico = false; parejasVacias = true; curvaEnPorcentaje = true;
-    const outP = resolve(dir, 'sin-parejas.json');
-    const rP = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', previoSim,
-      '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', outP, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
-      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
-    ]);
-    eq(rP.status, 0, `la ingesta sin parejas no acaba bien: ${(rP.stdout + rP.stderr).slice(-400)}`);
-    const dP = JSON.parse(readFileSync(outP, 'utf8'));
-    ok(dP.diagnostics.frescos.includes('mythic'), `Mítico no se descargó: ${dP.diagnostics.frescos}`);
-    eq(dP.diagnostics.frescosRecursos?.parejas, 0, `cuenta parejas frescas sin haberlas descargado: ${JSON.stringify(dP.diagnostics.frescosRecursos)}`);
-    ok(dP.diagnostics.frescosRecursos?.relaciones > 100, `los cruces no se descargaron: ${JSON.stringify(dP.diagnostics.frescosRecursos)}`);
-    // Desde 3.59.6 se ACEPTA: estadísticas de hoy, y la matriz con la fecha de
-    // cuando se descargó (del 10 al 19 de octubre de 2026 el bot tiró así 13
-    // de 16 corridas con sus estadísticas frescas).
-    ok(dP.generatedAt !== guardada.generatedAt, 'con las estadísticas nuevas y las parejas conservadas la corrida no sale con fecha de hoy');
-    eq(dP.relaciones?.descargada, guardada.relaciones?.descargada ?? guardada.generatedAt, `la matriz conservada no lleva la fecha en que se descargó: ${JSON.stringify(dP.relaciones)}`);
-    // Aquí no hay parejas guardadas de estos tres héroes que conservar (la guardada es la real), así
-    // que la corrida PIERDE parejas: eso sí la tira; que no sean frescas, ya no.
-    const pP = comparar(dP, d).peores.map((p) => p.clave);
-    ok(pP.includes('sinergias') && !pP.includes('relacionesFrescas'), `el comparador no tira por perder parejas, o tira por no ser frescas: ${pP}`);
-    // Las curvas en porcentaje no se leen y se conservan las de antes: se
-    // cuenta (3.43.2; antes el contador ni se escribía y la app decía 37/37).
-    ok(dP.diagnostics.lineas?.curvasConservadas > 0 && dP.diagnostics.lineas?.curvas === 0, `las curvas conservadas no dejan marca: ${JSON.stringify(dP.diagnostics.lineas)}`);
-    eq(dP.diagnostics.lineas?.conservados, 0, `el winrate por línea, que sí llegó, sale conservado: ${JSON.stringify(dP.diagnostics.lineas)}`);
-    parejasVacias = false; curvaEnPorcentaje = false;
-
-    // Tercera corrida: la ficha de los héroes caída (speciality se conserva
-    // de la corrida anterior, que se pasa con --previo), la ruta principal
-    // de counters falla UNA vez al sondear y la alternativa trae CERO pares:
-    // antes 0 > -1 cambiaba la ruta por la vacía y la matriz entera salía
-    // conservada.
-    fallaCounters = false; fallaRecientes = false; fallaDetail = true; academyVacia = true; fallosCountersPendientes = 1;
-    fallaLineaDe = '2'; desplazaLinea = 0.01; fallaEquipoLargo = true;
-    const out3 = resolve(dir, 'ficha-caida.json');
-    // Una foto de ayer en lo previo: la tercera corrida tiene que conservarla.
-    const ayer = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
-    const previoConAyer = JSON.parse(readFileSync(out, 'utf8'));
-    previoConAyer.historia = [...previoConAyer.historia, { fecha: ayer, glory: { Atlas: [0.49, 0.01] }, mythic: { Atlas: [0.5, 0.01] } }];
-    writeFileSync(out, JSON.stringify(previoConAyer));
-    const r3 = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`,
-      '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', out3, '--previo', out, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
-      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
-    ]);
-    eq(r3.status, 0, `la tercera corrida no acaba bien: ${(r3.stdout + r3.stderr).slice(-400)}`);
-    const d3 = JSON.parse(readFileSync(out3, 'utf8'));
-    ok(d3.historia?.find((e) => e.fecha === ayer)?.glory?.Atlas?.[0] === 0.49 && new Set(d3.historia.map((e) => e.fecha)).size === d3.historia.length && d3.historia.at(-1)?.glory?.Atlas, `la historia de la corrida anterior no se conserva: ${JSON.stringify(d3.historia?.map((e) => e.fecha))}`);
-    // La ruta larga de objetos caída: cada objeto conserva su defensa y sus efectos de antes (3.81.1).
-    const obj3 = d3.equipment?.['90001'];
-    ok(obj3?.magica === 18 && obj3?.fisica === 5 && obj3?.efectos?.length, `con la ruta larga de objetos caída se pierde la defensa: ${JSON.stringify(obj3)}`);
-    fallaEquipoLargo = false;
-    const atlas3 = d3.heroes.find((h) => h.name === 'Atlas');
-    ok(atlas3?.speciality?.includes('Guard'), `con la ficha caída la speciality no se conserva: ${JSON.stringify(atlas3?.speciality)}`);
-    eq(atlas3?.kitTexto, huellaTexto({ skilldesc: DESCRIPCION }), 'con la ficha caída la huella del texto no se conserva de la corrida anterior: avisaría de un rework falso');
-    ok(atlas3?.kitCifras === atlas?.kitCifras && d3.tocados?.Atlas !== new Date().toISOString().slice(0, 10), `con la ficha caída se marca a Atlas como tocado hoy: ${JSON.stringify({ k: atlas3?.kitCifras, t: d3.tocados })}`);
-    eq(atlas3?.habilidades?.length, 2, `con la ficha caída las habilidades no se conservan: ${JSON.stringify(atlas3?.habilidades)}`);
-    ok(atlas3?.cara?.endsWith('/cara/1.png'), `con la ficha caída la cara del juego no se conserva: ${atlas3?.cara}`);
-    ok(/^2 pares /.test(d3.diagnostics.rutasMedidas?.counter ?? '') && !/academy/.test(d3.diagnostics.rutasMedidas?.counter ?? ''),
-      `un fallo suelto al sondear cambió la ruta de counters por una vacía: ${d3.diagnostics.rutasMedidas?.counter}`);
-    eq(d3.counters.Atlas?.Khufra, 0.5123, 'la matriz no se descargó por la ruta buena tras el fallo suelto');
-    eq(d3.diagnostics.frescosRecursos?.relaciones > 100, true, `relaciones frescas: ${JSON.stringify(d3.diagnostics.frescosRecursos)}`);
-    // El winrate por línea se funde par a par (3.14.0): Atlas trae el de hoy
-    // y Khufra, cuya ruta falla, conserva el de la corrida anterior. Antes la
-    // corrida entera sustituía a la guardada y Khufra desaparecía.
-    eq(d3.winrateLinea?.Atlas?.roam, 0.4431, `Atlas no trae el winrate por línea de hoy: ${JSON.stringify(d3.winrateLinea?.Atlas)}`);
-    eq(d3.winrateLinea?.Khufra?.roam, 0.4341, `el winrate por línea de Khufra se pierde con su ruta caída: ${JSON.stringify(d3.winrateLinea?.Khufra)}`);
-    eq(d3.diagnostics.lineas?.conservados, 1, `no cuenta los pares conservados: ${JSON.stringify(d3.diagnostics.lineas)}`);
-    // La curva igual: la de hoy para Atlas, la de antes para Khufra.
-    eq(d3.curvaLinea?.Atlas?.roam?.[0], 0.411, `Atlas no trae la curva de hoy: ${JSON.stringify(d3.curvaLinea?.Atlas)}`);
-    eq(d3.curvaLinea?.Khufra?.roam?.[0], 0.402, `la curva de Khufra se pierde con su ruta caída: ${JSON.stringify(d3.curvaLinea?.Khufra)}`);
-    eq(d3.diagnostics.lineas?.curvasConservadas, 1, `no cuenta las curvas conservadas: ${JSON.stringify(d3.diagnostics.lineas)}`);
-    // Y las builds igual (3.40.0): antes la corrida sustituía a las guardadas
-    // enteras y Khufra se quedaba sin build.
-    ok(d3.builds?.Atlas?.roam?.length && d3.builds?.Khufra?.roam?.length, `las builds de Khufra se pierden con su ruta caída: ${JSON.stringify(Object.keys(d3.builds ?? {}))}`);
-    eq(d3.diagnostics.builds?.conservadas, 1, `no cuenta las builds conservadas: ${JSON.stringify(d3.diagnostics.builds)}`);
-
-    // La guarda de rango de cruces y parejas (3.35.0). En la primera corrida
-    // Gloria y Mítico sirven lo mismo: los cruces (una fila por héroe del
-    // catálogo) llegan al mínimo y casan; las parejas (tres) no llegan y no
-    // cuentan. Se queda Gloria, sin motivo.
-    ok(d.relaciones?.rango === 'glory' && d.relaciones?.coherencia?.counters > 0.99 && d.relaciones?.coherencia?.synergies === null && !d.relaciones?.motivo,
-      `la primera corrida no se queda Gloria con los cruces comparados: ${JSON.stringify(d.relaciones)}`);
-    // Cuarta corrida: Gloria «ruidosa» (lo contrario de Mítico) y el mínimo de
-    // celdas bajado a lo que tiene la simulación: cruces y parejas salen de
-    // Mítico, los dos del mismo rango, y lo marca.
-    fallaDetail = false; academyVacia = false; fallaLineaDe = null; gloriaRuidosa = true;
-    // Y la ruta CORTA de objetos caída (3.81.2): la larga trae tres, lo guardado 184.
-    fallaEquipoCorto = true;
-    // Y Atlas, rehecho, trae otra cara: se baja otra vez aunque el fichero ya esté (3.41.0).
-    retratoNuevo = true;
-    const out4 = resolve(dir, 'gloria-ruidosa.json');
-    const r4 = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', previoSim,
-      '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out4, '--celdas-para-comparar', '1', '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
-      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
-    ]);
-    eq(r4.status, 0, `la corrida con Gloria ruidosa no acaba bien: ${(r4.stdout + r4.stderr).slice(-400)}`);
-    const d4 = JSON.parse(readFileSync(out4, 'utf8'));
-    fallaEquipoCorto = false;
-    const objetosGuardados = Object.keys(JSON.parse(readFileSync(previoSim, 'utf8')).equipment ?? {});
-    ok(objetosGuardados.length > 100 && objetosGuardados.every((id) => d4.equipment?.[id]), `con la ruta corta de objetos caída se pierden objetos guardados: ${Object.keys(d4.equipment ?? {}).length} de ${objetosGuardados.length}`);
-    ok(d4.equipment?.['90004']?.nombre === 'Botas Rápidas' && d4.diagnostics.equipo?.caidas === 1 && d4.diagnostics.equipo.conservados === objetosGuardados.length, `no se queda lo de la larga o no dice qué conservó: ${JSON.stringify(d4.diagnostics.equipo)}`);
-    eq(d4.relaciones?.rango, 'mythic', `con Gloria incoherente los cruces no salen de Mítico: ${JSON.stringify(d4.relaciones)}`);
-    ok(d4.relaciones?.coherencia?.counters < 0.8 && /no se parecen/.test(d4.relaciones?.motivo ?? ''), `no dice la coherencia ni el porqué: ${JSON.stringify(d4.relaciones)}`);
-    eq(d4.counters.Atlas?.Khufra, 0.5123, `el cruce guardado no es el de Mítico (0.5123; el de Gloria ruidosa sería 0.4877): ${JSON.stringify(d4.counters.Atlas)}`);
-    eq(d4.diagnostics.imagenes?.heroes?.cambiados, 1, `el retrato rehecho no se vuelve a bajar: ${JSON.stringify(d4.diagnostics.imagenes)}`);
-    ok(readFileSync(resolve(dir, 'heroes', '1.jpg')).equals(JPG2), 'el fichero del retrato sigue siendo el de antes');
-    ok(JSON.parse(readFileSync(resolve(dir, 'heroes', 'fuentes.json'), 'utf8'))['1']?.endsWith('?n=2'), 'no se apunta de dónde salió el retrato nuevo');
-    eq(d4.synergies.Atlas?.Tigreal, 0.48, `la pareja guardada no es la de Mítico (0.48; la de Gloria sería 0.52): ${JSON.stringify(d4.synergies.Atlas)}`);
-    // Y con Gloria coherente (sirve lo mismo que Mítico), se queda Gloria.
-    // Y Atlas, rehecho sin control: sus habilidades de antes no se quedan.
-    gloriaRuidosa = false; kitSinControl = true;
-    // Y veinte de los 133 fallan una vez al pedir los cruces: sin la segunda
-    // pasada la matriz se quedaba en el 85%, por debajo del 90%, y el
-    // comparador tiraba la corrida entera (14 de octubre de 2026, 106 de 133).
-    fallarPrimeros = 20; parejasVaciasActivas = true;
-    const out5 = resolve(dir, 'gloria-buena.json');
-    // Con las huellas de habilidades de la primera corrida en lo guardado: Atlas llega rehecho y sale tocado HOY (3.102.0).
-    const previoConKits = resolve(dir, 'previo-con-kits.json');
-    const kitsDeLaPrimera = new Map(d.heroes.map((h) => [h.name, h.kitCifras]));
-    const conKits = JSON.parse(readFileSync(previoSim, 'utf8'));
-    conKits.heroes = conKits.heroes.map((h) => (kitsDeLaPrimera.get(h.name) ? { ...h, kitCifras: kitsDeLaPrimera.get(h.name) } : h));
-    writeFileSync(previoConKits, JSON.stringify(conKits));
-    const r5 = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', previoConKits,
-      '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out5, '--celdas-para-comparar', '1', '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
-      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
-    ]);
-    eq(r5.status, 0, `la corrida con Gloria coherente no acaba bien: ${(r5.stdout + r5.stderr).slice(-400)}`);
-    const d5 = JSON.parse(readFileSync(out5, 'utf8'));
-    parejasVaciasActivas = false;
-    eq(fallaronYa.size, 20, `la prueba no ha llegado a fallar a veinte: ${fallaronYa.size}`);
-    eq(sinParejas.size, 5, `la prueba no ha dejado sin parejas a cinco: ${sinParejas.size}`);
-    ok(crucesPedidos.size === 5 && [...crucesPedidos.values()].every((n) => n >= 2), `los que solo traían cruces no se reintentan: ${JSON.stringify([...crucesPedidos])}`);
-    const vacias = (m) => Object.entries(m ?? {}).filter(([, f]) => !Object.keys(f ?? {}).length).map(([n]) => n);
-    ok(SIN_CRUCES.every((h) => pedidosSinCruces.get(`s:${h}`) >= 2), `los que solo traían parejas no se reintentan: ${JSON.stringify([...pedidosSinCruces])}`);
-    eq(vacias(d5.counters).join(), '', 'la segunda pasada borra los cruces que ya habían llegado bien');
-    eq(vacias(d5.synergies).join(), '', 'las parejas vacías de la primera pasada no se recuperan, o la segunda pasada borra las buenas');
-    eq(d5.diagnostics.relations?.recuperados, d5.diagnostics.relations?.reintentados, `no se recuperan en la segunda pasada: ${JSON.stringify(d5.diagnostics.relations)}`);
-    ok(d5.diagnostics.relations?.reintentados >= 20 && !d5.diagnostics.conservado && d5.diagnostics.frescosRecursos?.relaciones === d5.diagnostics.frescosRecursos?.pedidas, `con fallos pasajeros la matriz no sale fresca: ${JSON.stringify({ f: d5.diagnostics.frescosRecursos, r: d5.diagnostics.relations, c: d5.diagnostics.conservado })}`);
-    ok(d5.relaciones?.rango === 'glory' && d5.relaciones?.coherencia?.counters > 0.99 && !d5.relaciones?.motivo, `con Gloria coherente no se queda Gloria: ${JSON.stringify(d5.relaciones)}`);
-    eq(d5.diagnostics.imagenes?.heroes?.bajados, 0, `se vuelven a bajar retratos que no han cambiado: ${JSON.stringify(d5.diagnostics.imagenes)}`);
-    eq(JSON.stringify(d5.heroes.find((h) => h.name === 'Atlas')?.habilidades), '[]', 'una ficha que llega sin habilidades deja las de antes');
-    const hoy5 = new Date().toISOString().slice(0, 10);
-    const otrosDeLaSimulacion = [...kitsDeLaPrimera.keys()].filter((n) => n !== 'Atlas' && kitsDeLaPrimera.get(n));
-    ok(d5.tocados?.Atlas === hoy5 && otrosDeLaSimulacion.length && otrosDeLaSimulacion.every((n) => d5.tocados?.[n] !== hoy5) && d5.diagnostics.parche?.cambiados === 1,
-      `Atlas rehecho no sale tocado hoy, o salen los demás: ${JSON.stringify({ t: d5.tocados, p: d5.diagnostics.parche, otros: otrosDeLaSimulacion })}`);
-    // Sexta: Gloria ruidosa pero Mítico llega a medias: no se cambia a un
-    // Mítico de tres héroes tirando la Gloria entera, y se dice por qué.
-    gloriaRuidosa = true; miticoAMedias = true;
-    const out6 = resolve(dir, 'mitico-a-medias.json');
-    // La anterior es la quinta, que MIDIÓ Gloria buena: sin `--previo` leía
-    // public/data, y el 14 de octubre de 2026 el despliegue metió ahí una
-    // corrida que había medido Mítico: la prueba dependía del dato del día.
-    const r6 = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', out5,
-      '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out6, '--celdas-para-comparar', '1', '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
-      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
-    ]);
-    eq(r6.status, 0, `la corrida con Mítico a medias no acaba bien: ${(r6.stdout + r6.stderr).slice(-400)}`);
-    const d6 = JSON.parse(readFileSync(out6, 'utf8'));
-    ok(d6.relaciones?.rango === 'glory' && /entero/.test(d6.relaciones?.motivo ?? ''), `cambia a un Mítico a medias: ${JSON.stringify(d6.relaciones)}`);
-    // Séptima (3.57.3): lo mismo, pero la corrida anterior es la cuarta, que
-    // MIDIÓ Gloria rota y eligió Mítico. Sin poder comprobar hoy se sigue con
-    // Mítico (el 11 y el 12 de octubre de 2026 se volvió a Gloria) y las
-    // filas de Mítico que llegan se funden sobre las suyas.
-    ok(d4.relaciones?.ultima?.rango === 'mythic' && d4.relaciones.ultima.coherencia?.counters < 0.8, `la corrida que mide no guarda su medida: ${JSON.stringify(d4.relaciones)}`);
-    miticosServidos = 0; // las mismas condiciones que la sexta
-    const out7 = resolve(dir, 'mitico-a-medias-tras-medir.json');
-    const r7 = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', out4,
-      '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out7, '--celdas-para-comparar', '1', '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
-      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
-    ]);
-    eq(r7.status, 0, `la corrida con Mítico a medias tras medir no acaba bien: ${(r7.stdout + r7.stderr).slice(-400)}`);
-    const d7 = JSON.parse(readFileSync(out7, 'utf8'));
-    ok(d7.relaciones?.rango === 'mythic' && /última comprobación/.test(d7.relaciones?.motivo ?? ''), `vuelve a la Gloria medida como rota: ${JSON.stringify(d7.relaciones)}`);
-    eq(d7.relaciones?.ultima?.rango, 'mythic', 'se pierde la última comprobación');
-    eq(d7.counters.Atlas?.Khufra, 0.5123, `el cruce guardado no es el de Mítico: ${JSON.stringify(d7.counters.Atlas)}`);
-    eq(d7.synergies.Atlas?.Tigreal, 0.48, `la pareja guardada no es la de Mítico: ${JSON.stringify(d7.synergies.Atlas)}`);
-    // Novena (3.87.4): Gloria llega entera y Mítico, el que la comprueba, cae
-    // ENTERO en su pasada (el 29 de octubre de 2026: 121 de 133 de Gloria y 0
-    // de 120 de Mítico, y la matriz se quedó en la del 27). Se espera y se
-    // vuelve a pedir Mítico una vez: con él de vuelta, Gloria se comprueba.
-    gloriaRuidosa = false; miticoAMedias = false; miticoCaido = true;
-    const outMC = resolve(dir, 'mitico-caido-un-rato.json');
-    const rMC = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', out5,
-      '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', outMC, '--celdas-para-comparar', '1', '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
-      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
-    ]);
-    eq(rMC.status, 0, `la corrida con Mítico caído un rato no acaba bien: ${(rMC.stdout + rMC.stderr).slice(-400)}`);
-    const dMC = JSON.parse(readFileSync(outMC, 'utf8'));
-    miticoCaido = false;
-    ok(miticoYaCaido.size >= 20, `la prueba no ha llegado a tirar Mítico: ${miticoYaCaido.size}`);
-    ok(dMC.relaciones?.rango === 'glory' && dMC.relaciones?.coherencia?.counters > 0.99 && !dMC.relaciones?.motivo, `con Mítico de vuelta no se comprueba Gloria: ${JSON.stringify(dMC.relaciones)}`);
-    ok(dMC.diagnostics.respaldoReintentado?.antes === 0 && dMC.diagnostics.respaldoReintentado?.despues > 0, `el reintento de Mítico no queda en el diagnóstico: ${JSON.stringify(dMC.diagnostics.respaldoReintentado)}`);
-
-    // Décima (3.87.5): Gloria cae ENTERA en su primera pasada y vuelve (el 29
-    // de octubre de 2026 a las 16:32: 0 de 133 en 41 s). Con la segunda pasada
-    // de toda la vida solo para «la mitad o menos», la matriz no se renovaba.
-    gloriaCaida = true;
-    const outGC = resolve(dir, 'gloria-caida-un-rato.json');
-    const rGC = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', out5,
-      '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', outGC, '--celdas-para-comparar', '1', '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
-      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
-    ]);
-    gloriaCaida = false;
-    eq(rGC.status, 0, `la corrida con Gloria caída un rato no acaba bien: ${(rGC.stdout + rGC.stderr).slice(-400)}`);
-    const dGC = JSON.parse(readFileSync(outGC, 'utf8'));
-    ok(gloriaYaCaida.size >= 20, `la prueba no ha llegado a tirar Gloria: ${gloriaYaCaida.size}`);
-    ok(dGC.relaciones?.rango === 'glory' && dGC.relaciones?.coherencia?.counters > 0.99 && !dGC.diagnostics.conservado, `con Gloria de vuelta la matriz no sale fresca: ${JSON.stringify({ r: dGC.relaciones, c: dGC.diagnostics.conservado })}`);
-
-    // Octava (3.60.2): academy (la ruta larga) falla al MEDIR las rutas y gana
-    // la del esquema, que trae menos (aquí 2 de 4; en la API real, 10 de 132).
-    // La primera fila corta vuelve a medir y la corrida sigue por academy.
-    academyFallaAlMedir = 2;
-    const out8 = resolve(dir, 'ruta-corta.json');
-    const r8 = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', out,
-      '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', out8, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
-      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
-    ]);
-    academyFallaAlMedir = 0;
-    eq(r8.status, 0, `la corrida con la medida de rutas fallando no acaba bien: ${(r8.stdout + r8.stderr).slice(-400)}`);
-    const d8 = JSON.parse(readFileSync(out8, 'utf8'));
-    ok(d8.counters.Atlas?.Layla != null, `con la ruta corta elegida (Layla solo la da academy), los cruces no vuelven a la larga: ${JSON.stringify(d8.counters.Atlas)}`);
-    ok(d8.diagnostics.relations?.rutaCambiada?.some((x) => /academy/.test(x)), `no cambió de ruta (la medida no se quedó con la corta, o no lo dice): ${JSON.stringify(d8.diagnostics.relations?.rutaCambiada)}`);
-    // Novena: un solo 500 al medir. La medida reintenta la larga y ni hace falta cambiar a mitad.
-    academyFallaAlMedir = 1;
-    const out9 = resolve(dir, 'ruta-un-fallo.json');
-    const r9 = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', out,
-      '--ranks', 'glory', '--rank', 'glory', '--pausa', '0', '--out', out9, '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
-      '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
-    ]);
-    academyFallaAlMedir = 0;
-    const d9 = JSON.parse(readFileSync(out9, 'utf8'));
-    ok(r9.status === 0 && /academy/.test(d9.diagnostics.rutasMedidas?.counter ?? '') && !d9.diagnostics.relations?.rutaCambiada?.length, `con un 500 suelto al medir no se reintenta la ruta larga: ${JSON.stringify({ m: d9.diagnostics.rutasMedidas, c: d9.diagnostics.relations?.rutaCambiada })}`);
-  } finally {
-    srv.close();
-    rmSync(dir, { recursive: true, force: true });
-  }
+  previoSim = resolve(dir, 'previo.json');
+  writeFileSync(previoSim, JSON.stringify({
+    ...real, counters: recortar(real.counters), synergies: recortar(real.synergies),
+    equipment: Object.fromEntries(Object.entries(real.equipment).map(([id, o]) => [id, { ...o, icono: local(id) }])),
+    heroes: real.heroes.map((h) => ({ ...h, retrato: local(`r${h.id}`), cara: local(`c${h.id}`) })),
+  }));
+});
+after(async () => {
+  await api?.cerrar();
+  if (dir) rmSync(dir, { recursive: true, force: true });
 });
 
-test('la ingesta arranca sin errores de programación', async () => {
-  // Comprobar solo la sintaxis no basta: un `ROUTES is not defined` pasaba
-  // node --check y reventaba en la primera línea, dejando los datos congelados
-  // en silencio porque el workflow lleva continue-on-error.
+let d1, out1;
+test('1. con la API sana se llama a todo y sale lo servido, sin campos muertos ni rutas de la cuenta', async () => {
+  const antes = Date.now();
+  const { d, out, salida } = await corrida('sana', { ranks: 'mythic,glory' });
+  d1 = d; out1 = out;
+  ok(!/fallo \(/.test(salida), `algún endpoint falló contra la API simulada: ${salida.split('\n').filter((l) => /fallo \(/.test(l)).join(' | ')}`);
+  for (const k of ['esquema', 'rank:mythic', 'rank:glory', 'rank3:glory', 'position', 'detail', 'counters', 'academy', 'academy:glory', 'academy:mythic', 'compat', 'compat:glory', 'compat:mythic', 'equipo', 'equipoCorto', 'talentos', 'builds:roam', 'lineas:roam', 'img', 'tiers', 'tier']) {
+    ok(api.golpes[k] > 0, `la ingesta no ha llamado a ${k}: ${JSON.stringify(api.golpes)}`);
+  }
+  ok(Date.parse(d.generatedAt) >= antes - 1000, `la fecha no es la de esta corrida: ${d.generatedAt}`);
+  eq(d.diagnostics.conservado, false, 'dice que conserva teniendo datos nuevos');
+  ok(d.diagnostics.frescos.includes('glory') && d.diagnostics.frescos.includes('mythic'), `rangos frescos: ${d.diagnostics.frescos}`);
+  eq(d.stats.Atlas?.winRate, 0.51, `winrate de Atlas: ${JSON.stringify(d.stats.Atlas)}`);
+  eq(d.statsByRank.mythic?.Khufra?.winRate, 0.52, 'las estadísticas por rango no son las servidas');
+  // La ventana corta, aparte y con lo servido (0.512), sin pisar la de 7 días.
+  eq(d.recientes?.dias, 3);
+  eq(d.recientes?.statsByRank?.glory?.Atlas?.winRate, 0.512, `la ventana corta no es la servida: ${JSON.stringify(d.recientes?.statsByRank?.glory?.Atlas)}`);
+  eq(d.historia?.at(-1)?.fecha, hoy(), 'la historia no lleva la foto de hoy');
+  eq(d.historia?.at(-1)?.glory?.Atlas?.[0], 0.51);
+  eq(d.historia?.at(-1)?.mythic?.Khufra?.[0], 0.52);
+  eq(d.tiers?.tiers?.Atlas, 'S', `la tier de Atlas no es la servida: ${JSON.stringify(d.tiers)}`);
+  eq(d.tiers?.tiers?.Khufra, 'B');
+  const atlas = d.heroes.find((h) => h.name === 'Atlas');
+  ok(atlas && atlas.id === 1 && atlas.role === 'tank' && atlas.lanes.includes('roam'), `ficha de Atlas: ${JSON.stringify(atlas)}`);
+  eq(atlas?.damage?.magico, 1, `tipo de daño de Atlas: ${JSON.stringify(atlas?.damage)}`);
+  eq(atlas?.kitTexto, huellaTexto({ skilldesc: DESCRIPCION }), 'la huella del texto no es la de la ficha SERVIDA');
+  eq(atlas?.kitCifras, huellaDeHabilidades([
+    { skillname: 'Frigid Breath', skilldesc: 'Removes all debuffs on allies.' },
+    { skillname: 'Fatal Links', skilldesc: DESCRIPCION },
+    { skillname: 'Time Journey', skilldesc: 'Removes all debuffs on allies.' },
+  ]), 'la huella de las habilidades no es la de la ficha SERVIDA');
+  eq(JSON.stringify(atlas?.habilidades), JSON.stringify([{ n: 'Fatal Links', e: ['area', 'cc'] }, { n: 'Time Journey', e: ['aliados', 'limpia'] }]));
+  ok(atlas?.cara?.endsWith('/cara/1.png'), `la cara del juego no es la de hero.data.head: ${atlas?.cara}`);
+  ok(atlas?.retrato?.endsWith('/img/1.jpg'), `el retrato no es el de la web: ${atlas?.retrato}`);
+  // Academy trae 4 pares y la del esquema 2: gana la que MÁS trae.
+  eq(d.counters.Atlas?.Khufra, 0.5123, `cruce Atlas→Khufra: ${JSON.stringify(d.counters.Atlas)}`);
+  eq(d.counters.Atlas?.Layla, 0.53, 'no ha elegido la ruta con MÁS cruces');
+  ok(/^4 pares .*academy/.test(d.diagnostics.rutasMedidas?.counter ?? ''), `rutas medidas: ${JSON.stringify(d.diagnostics.rutasMedidas)}`);
+  eq(api.golpes.user ?? 0, 0, 'la ingesta ha llamado a una ruta de la cuenta (/api/user/)');
+  ok(!/prohibida|\/api\/user\//.test(salida + JSON.stringify(d.diagnostics)), 'el descubrimiento ofrece una ruta de la cuenta como candidata');
+  eq(d.synergies.Atlas?.Tigreal, 0.48);
+  const obj = d.equipment?.['90001'];
+  ok(obj && obj.nombre === 'Objeto de Prueba' && obj.magica === 18 && obj.fisica === 5 && obj.tipo === 'Defense', `objeto servido: ${JSON.stringify(obj)}`);
+  ok(['antiCuracion', 'antiEscudo', 'antiCritico'].every((e) => obj?.efectos?.includes(e)) && !obj?.efectos?.includes('critico'), `efectos del objeto: ${JSON.stringify(obj?.efectos)}`);
+  ok(['antiCuracion', 'critico'].every((e) => d.equipment?.['90002']?.efectos?.includes(e)), 'los efectos de dos rutas no se juntan');
+  eq(JSON.stringify(d.equipment?.['90004']?.efectos ?? []), '[]', 'las estadísticas de unas botas salen como antisanación');
+  const build = d.builds?.Atlas?.roam?.[0];
+  ok(build && build.objetos.join(',') === '90001,90002,90003' && build.emblema === 'Tank' && build.hechizo === 'Flicker' && build.winRate === 0.555, `build de Atlas: ${JSON.stringify(build)}`);
+  eq(JSON.stringify(build?.talentos), '[611,621,131]');
+  eq(JSON.stringify(d.talentos?.['611']), JSON.stringify({ nombre: 'Inspire', nivel: 1, texto: 'Gain 5% extra Cooldown Reduction.' }));
+  eq(d.winrateLinea?.Atlas?.roam, 0.4331);
+  eq(d.winrateLinea?.Khufra?.roam, 0.4341, 'el winrate por línea no es el de cada héroe');
+  ok(!d.diagnostics.lineas?.errores?.length && d.diagnostics.lineas?.valores === 3 && d.diagnostics.lineas?.curvas === 3, `diagnóstico del winrate por línea: ${JSON.stringify(d.diagnostics.lineas)}`);
+  // La curva, en el orden de los tramos aunque la API los dé desordenados.
+  eq(JSON.stringify(d.curvaLinea?.Atlas?.roam), JSON.stringify([0.401, 0.421, 0.441, 0.461, 0.481, 0.501]));
+  eq(d.curvaLinea?.Khufra?.roam?.[0], 0.402);
+  ok(existsSync(resolve(dir, 'objetos', '90001.png')) && existsSync(resolve(dir, 'heroes', '1.jpg')), 'no baja el icono o el retrato');
+  const esp = atlas?.speciality ?? [];
+  ok(esp.includes('Guard') && !esp.some((x) => x.includes("'")), `una speciality con comillas se guarda: ${JSON.stringify(esp)}`);
+  for (const [k, v] of Object.entries({ speciality: d.diagnostics.speciality?.errores, builds: d.diagnostics.builds?.errores, relations: d.diagnostics.relations?.errores })) {
+    ok(!(v ?? []).length, `errores de ${k}: ${JSON.stringify(v)}`);
+  }
+  // Los campos que nadie lee no se escriben (4.0).
+  const texto = readFileSync(out, 'utf8');
+  ok(!/"(patchAvgWinRate|roamCoverage|matches|lane)"/.test(texto) && !('ok' in d.diagnostics), 'la salida lleva campos muertos');
+  // La guarda de rango: Gloria y Mítico sirven lo mismo; los cruces llegan y casan, las parejas (tres) no cuentan.
+  ok(d.relaciones?.rango === 'glory' && d.relaciones?.coherencia?.counters > 0.99 && d.relaciones?.coherencia?.synergies === null && !d.relaciones?.motivo, `relaciones: ${JSON.stringify(d.relaciones)}`);
+});
 
-  // A un temporal, nunca a public/data. Esta corrida falla a proposito y su
-  // salida es peor que los datos buenos: mismos numeros, pero un diagnostico
-  // que dice que solo se resolvio un rango. Escribiendo en su sitio ensuciaba
-  // el repo en cada npm test y, como en el workflow las pruebas van antes de
-  // compilar, ese diagnostico degradado era el que acababa publicado.
-  // Se copia el fichero real para que la ingesta encuentre su "previous" y la
-  // prueba recorra el mismo camino que una corrida de verdad.
-  const dir = mkdtempSync(resolve(tmpdir(), 'ingesta-'));
-  const out = resolve(dir, 'roam-meta.json');
-  if (existsSync(REAL)) copyFileSync(REAL, out);
+test('2. con la ruta de cruces caída: fecha nueva, la matriz con la suya, una segunda pasada que no recupera y el comparador la acepta', async () => {
+  Object.assign(api.f, { fallaCounters: true, fallaRecientes: true });
+  const mitico = api.golpes['rank:mythic'];
+  const { d } = await corrida('sin-cruces');
+  ok(api.golpes['rank:mythic'] > mitico, 'con --ranks glory no se pide el rango de respaldo');
+  Object.assign(api.f, { fallaCounters: false, fallaRecientes: false });
+  const guardada = leer(previoSim);
+  ok(d.generatedAt !== guardada.generatedAt, 'con estadísticas nuevas y la matriz conservada no sale con fecha de hoy');
+  eq(d.relaciones?.descargada, guardada.relaciones?.descargada ?? guardada.generatedAt, 'la matriz conservada no lleva su fecha');
+  eq(d.diagnostics.conservado, true);
+  ok(d.diagnostics.relations?.reintentados > 0 && d.diagnostics.relations?.recuperados === 0, `con todo caído no se reintenta una vez: ${JSON.stringify(d.diagnostics.relations)}`);
+  // La ventana corta caída no se conserva ni se inventa: la app cae a 7.
+  ok(d.recientes === undefined && /fallo:/.test(d.diagnostics.recientes?.glory ?? ''), `ventana corta: ${JSON.stringify(d.diagnostics.recientes)}`);
+  eq(d.diagnostics.frescosRecursos?.relaciones, 0);
+  eq(JSON.stringify(d.counters?.Atlas), JSON.stringify(guardada.counters.Atlas), 'la fila de Atlas no se conserva');
+  eq(JSON.stringify({ ...d.relaciones, descargada: undefined }), JSON.stringify({ ...guardada.relaciones, descargada: undefined }), 'la matriz conservada sale con otra etiqueta de rango');
+  eq(comparar(d, d1).peores.map((p) => p.clave).join(), '', 'el comparador tira una corrida con estadísticas nuevas por llevar la matriz conservada');
+});
 
+test('3. Mítico caído y Gloria con dos 500: se reintenta, la fecha NO avanza y sin matriz nueva no hay nada fresco', async () => {
+  Object.assign(api.f, { fallaMitico: true, fallaGloriaVeces: 2 });
+  const { d } = await corrida('sin-mitico');
+  api.f.fallaMitico = false;
+  const guardada = leer(previoSim);
+  eq(api.f.fallaGloriaVeces, 0, 'no se volvió a pedir Gloria tras su 500');
+  ok(d.diagnostics.frescos.includes('glory') && !d.diagnostics.frescos.includes('mythic'), `rangos frescos: ${d.diagnostics.frescos}`);
+  eq(JSON.stringify(d.diagnostics.reintentoEstadisticas), JSON.stringify({ vueltas: 2, recuperados: ['glory'], sinRecuperar: ['mythic'] }));
+  ok(d.diagnostics.frescosRecursos?.parejas > 100, 'con la matriz entera no cuenta las parejas');
+  eq(d.generatedAt, guardada.generatedAt, 'con Mítico conservado la corrida se fecha como nueva');
+  eq(d.diagnostics.conservado, true);
+  ok(!comparar(d, guardada).peores.some((p) => p.clave === 'rangoFresco'), 'con la matriz nueva entera el comparador tira la corrida por rangoFresco');
+  const sinMatriz = { ...d, diagnostics: { ...d.diagnostics, frescosRecursos: { ...d.diagnostics.frescosRecursos, relaciones: 0, parejas: 0 } } };
+  ok(comparar(sinMatriz, guardada).peores.some((p) => p.clave === 'nadaFresco'), 'sin matriz nueva el comparador acepta una corrida sin el rango de respaldo');
+});
+
+test('4. parejas vacías y curva en porcentaje: parejas 0, se tira por perder parejas (no por frescura) y lo conservado se cuenta', async () => {
+  Object.assign(api.f, { parejasVacias: true, curvaEnPorcentaje: true });
+  const { d } = await corrida('sin-parejas');
+  Object.assign(api.f, { parejasVacias: false, curvaEnPorcentaje: false });
+  const guardada = leer(previoSim);
+  eq(d.diagnostics.frescosRecursos?.parejas, 0);
+  ok(d.diagnostics.frescosRecursos?.relaciones > 100, 'los cruces no se descargaron');
+  ok(d.generatedAt !== guardada.generatedAt);
+  eq(d.relaciones?.descargada, guardada.relaciones?.descargada ?? guardada.generatedAt);
+  const peores = comparar(d, d1).peores.map((p) => p.clave);
+  ok(peores.includes('sinergias') && !peores.includes('relacionesFrescas'), `peores: ${peores}`);
+  ok(d.diagnostics.lineas?.curvasConservadas > 0 && d.diagnostics.lineas?.curvas === 0 && d.diagnostics.lineas?.conservados === 0, `líneas: ${JSON.stringify(d.diagnostics.lineas)}`);
+});
+
+let atlas1;
+test('5. ficha, academy, una medida y la línea de Khufra caídas: se conserva cada cosa, la ruta buena sigue y lo de hoy se funde par a par', async () => {
+  atlas1 = d1.heroes.find((h) => h.name === 'Atlas');
+  Object.assign(api.f, { fallaDetail: true, academyVacia: true, fallosCountersPendientes: 1, fallaLineaDe: '2', desplazaLinea: 0.01, fallaEquipoLargo: true });
+  const ayer = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+  const previo = resolve(dir, 'previo-ayer.json');
+  writeFileSync(previo, JSON.stringify({ ...d1, historia: [...d1.historia, { fecha: ayer, glory: { Atlas: [0.49, 0.01] }, mythic: { Atlas: [0.5, 0.01] } }] }));
+  const { d } = await corrida('ficha-caida', { previo });
+  Object.assign(api.f, { fallaDetail: false, academyVacia: false, fallaLineaDe: null, fallaEquipoLargo: false });
+  ok(d.historia.find((e) => e.fecha === ayer)?.glory?.Atlas?.[0] === 0.49 && new Set(d.historia.map((e) => e.fecha)).size === d.historia.length, 'la historia de ayer no se conserva');
+  const obj = d.equipment?.['90001'];
+  ok(obj?.magica === 18 && obj?.fisica === 5 && obj?.efectos?.length, `con la ruta larga caída se pierde la defensa: ${JSON.stringify(obj)}`);
+  const atlas = d.heroes.find((h) => h.name === 'Atlas');
+  ok(atlas?.speciality?.includes('Guard') && atlas?.kitTexto === huellaTexto({ skilldesc: DESCRIPCION }) && atlas?.habilidades?.length === 2 && atlas?.cara?.endsWith('/cara/1.png'), `con la ficha caída no se conserva: ${JSON.stringify(atlas)}`);
+  ok(atlas?.kitCifras === atlas1.kitCifras && d.tocados?.Atlas !== hoy(), 'con la ficha caída se marca a Atlas como tocado hoy');
+  // Un 500 suelto al medir no cambia la ruta por una vacía (0 > −1).
+  ok(/^2 pares /.test(d.diagnostics.rutasMedidas?.counter ?? '') && !/academy/.test(d.diagnostics.rutasMedidas?.counter ?? ''), `rutas medidas: ${d.diagnostics.rutasMedidas?.counter}`);
+  ok(d.counters.Atlas?.Khufra === 0.5123 && d.diagnostics.frescosRecursos?.relaciones > 100, 'la matriz no se descargó por la ruta buena');
+  eq(d.winrateLinea?.Atlas?.roam, 0.4431, 'Atlas no trae el winrate de hoy');
+  eq(d.winrateLinea?.Khufra?.roam, 0.4341, 'el winrate de Khufra se pierde con su ruta caída');
+  eq(d.curvaLinea?.Atlas?.roam?.[0], 0.411);
+  eq(d.curvaLinea?.Khufra?.roam?.[0], 0.402);
+  ok(d.diagnostics.lineas?.conservados === 1 && d.diagnostics.lineas?.curvasConservadas === 1, `líneas: ${JSON.stringify(d.diagnostics.lineas)}`);
+  ok(d.builds?.Atlas?.roam?.length && d.builds?.Khufra?.roam?.length && d.diagnostics.builds?.conservadas === 1, `builds: ${JSON.stringify(d.diagnostics.builds)}`);
+});
+
+let d4, out4;
+test('6. Gloria ruidosa y la ruta corta de objetos caída: cruces y parejas de Mítico, objetos guardados conservados y el retrato rehecho rebajado', async () => {
+  Object.assign(api.f, { gloriaRuidosa: true, fallaEquipoCorto: true, retratoNuevo: true });
+  ({ d: d4, out: out4 } = await corrida('gloria-ruidosa', { ranks: 'mythic,glory', extra: ['--celdas-para-comparar', '1'] }));
+  api.f.fallaEquipoCorto = false;
+  const guardados = Object.keys(leer(previoSim).equipment);
+  ok(guardados.length > 100 && guardados.every((id) => d4.equipment?.[id]), 'con la ruta corta caída se pierden objetos guardados');
+  ok(d4.equipment?.['90004']?.nombre === 'Botas Rápidas' && d4.diagnostics.equipo?.caidas === 1 && d4.diagnostics.equipo.conservados === guardados.length, `equipo: ${JSON.stringify(d4.diagnostics.equipo)}`);
+  eq(d4.relaciones?.rango, 'mythic', `con Gloria incoherente los cruces no salen de Mítico: ${JSON.stringify(d4.relaciones)}`);
+  ok(d4.relaciones?.coherencia?.counters < 0.8 && /no se parecen/.test(d4.relaciones?.motivo ?? '') && d4.relaciones?.ultima?.rango === 'mythic', `relaciones: ${JSON.stringify(d4.relaciones)}`);
+  eq(d4.counters.Atlas?.Khufra, 0.5123, 'el cruce guardado no es el de Mítico (el de Gloria ruidosa sería 0.4877)');
+  eq(d4.synergies.Atlas?.Tigreal, 0.48, 'la pareja guardada no es la de Mítico');
+  eq(d4.diagnostics.imagenes?.heroes?.cambiados, 1, 'el retrato rehecho no se vuelve a bajar');
+  ok(readFileSync(resolve(dir, 'heroes', '1.jpg')).equals(JPG2), 'el fichero del retrato sigue siendo el de antes');
+  ok(leer(resolve(dir, 'heroes', 'fuentes.json'))['1']?.endsWith('?n=2'), 'no se apunta de dónde salió el retrato nuevo');
+});
+
+let out5;
+test('7. Gloria coherente con 20 caídas y respuestas vacías cruzadas: segunda pasada, matriz fresca, kit sin control y Atlas tocado hoy', async () => {
+  Object.assign(api.f, { gloriaRuidosa: false, kitSinControl: true, fallarPrimeros: 20, parejasVaciasActivas: true });
+  const kits = new Map(d1.heroes.map((h) => [h.name, h.kitCifras]));
+  const conKits = leer(previoSim);
+  conKits.heroes = conKits.heroes.map((h) => (kits.get(h.name) ? { ...h, kitCifras: kits.get(h.name) } : h));
+  const previo = resolve(dir, 'previo-con-kits.json');
+  writeFileSync(previo, JSON.stringify(conKits));
+  const { d, out } = await corrida('gloria-buena', { previo, ranks: 'mythic,glory', extra: ['--celdas-para-comparar', '1'] });
+  out5 = out;
+  api.f.parejasVaciasActivas = false;
+  eq(api.e.fallaronYa.size, 20, 'la prueba no ha llegado a fallar a veinte');
+  eq(api.e.sinParejas.size, 5);
+  ok(api.e.crucesPedidos.size === 5 && [...api.e.crucesPedidos.values()].every((n) => n >= 2), 'los que solo traían cruces no se reintentan');
+  ok(SIN_CRUCES.every((h) => api.e.pedidosSinCruces.get(`s:${h}`) >= 2), 'los que solo traían parejas no se reintentan');
+  const vacias = (m) => Object.entries(m ?? {}).filter(([, f]) => !Object.keys(f ?? {}).length).map(([n]) => n);
+  eq(vacias(d.counters).join(), '', 'la segunda pasada borra cruces que habían llegado bien');
+  eq(vacias(d.synergies).join(), '', 'las parejas vacías no se recuperan, o la segunda pasada borra las buenas');
+  eq(d.diagnostics.relations?.recuperados, d.diagnostics.relations?.reintentados);
+  ok(d.diagnostics.relations?.reintentados >= 20 && !d.diagnostics.conservado && d.diagnostics.frescosRecursos?.relaciones === d.diagnostics.frescosRecursos?.pedidas, `matriz: ${JSON.stringify(d.diagnostics.frescosRecursos)}`);
+  ok(d.relaciones?.rango === 'glory' && d.relaciones?.coherencia?.counters > 0.99 && !d.relaciones?.motivo, `relaciones: ${JSON.stringify(d.relaciones)}`);
+  eq(d.diagnostics.imagenes?.heroes?.bajados, 0, 'se vuelven a bajar retratos que no han cambiado');
+  eq(JSON.stringify(d.heroes.find((h) => h.name === 'Atlas')?.habilidades), '[]', 'una ficha sin habilidades deja las de antes');
+  const otros = [...kits.keys()].filter((n) => n !== 'Atlas' && kits.get(n));
+  ok(d.tocados?.Atlas === hoy() && otros.length && otros.every((n) => d.tocados?.[n] !== hoy()) && d.diagnostics.parche?.cambiados === 1, `tocados: ${JSON.stringify({ t: d.tocados, p: d.diagnostics.parche })}`);
+});
+
+test('8. Mítico a medias: tras una Gloria buena se queda Gloria «entero»; tras una que midió Mítico, sigue Mítico («última comprobación»)', async () => {
+  Object.assign(api.f, { gloriaRuidosa: true, miticoAMedias: true });
+  const tras = await corrida('mitico-a-medias', { previo: out5, ranks: 'mythic,glory', extra: ['--celdas-para-comparar', '1'] });
+  ok(tras.d.relaciones?.rango === 'glory' && /entero/.test(tras.d.relaciones?.motivo ?? ''), `cambia a un Mítico a medias: ${JSON.stringify(tras.d.relaciones)}`);
+  api.e.miticosServidos = 0;
+  const { d } = await corrida('mitico-a-medias-tras-medir', { previo: out4, ranks: 'mythic,glory', extra: ['--celdas-para-comparar', '1'] });
+  Object.assign(api.f, { gloriaRuidosa: false, miticoAMedias: false });
+  ok(d.relaciones?.rango === 'mythic' && /última comprobación/.test(d.relaciones?.motivo ?? '') && d.relaciones?.ultima?.rango === 'mythic', `vuelve a la Gloria medida como rota: ${JSON.stringify(d.relaciones)}`);
+  ok(d.counters.Atlas?.Khufra === 0.5123 && d.synergies.Atlas?.Tigreal === 0.48, 'lo guardado no es de Mítico');
+});
+
+test('9. Mítico caído en su pasada: se pide otra vez y Gloria se comprueba; Gloria caída entera: segunda pasada y matriz fresca', async () => {
+  api.f.miticoCaido = true;
+  const mc = await corrida('mitico-caido', { previo: out5, ranks: 'mythic,glory', extra: ['--celdas-para-comparar', '1'] });
+  api.f.miticoCaido = false;
+  ok(api.e.miticoYaCaido.size >= 20, 'la prueba no ha llegado a tirar Mítico');
+  ok(mc.d.relaciones?.rango === 'glory' && mc.d.relaciones?.coherencia?.counters > 0.99 && !mc.d.relaciones?.motivo, `relaciones: ${JSON.stringify(mc.d.relaciones)}`);
+  ok(mc.d.diagnostics.respaldoReintentado?.antes === 0 && mc.d.diagnostics.respaldoReintentado?.despues > 0, `respaldo: ${JSON.stringify(mc.d.diagnostics.respaldoReintentado)}`);
+  api.f.gloriaCaida = true;
+  const gc = await corrida('gloria-caida', { previo: out5, ranks: 'mythic,glory', extra: ['--celdas-para-comparar', '1'] });
+  api.f.gloriaCaida = false;
+  ok(api.e.gloriaYaCaida.size >= 20, 'la prueba no ha llegado a tirar Gloria');
+  ok(gc.d.relaciones?.rango === 'glory' && gc.d.relaciones?.coherencia?.counters > 0.99 && !gc.d.diagnostics.conservado, `relaciones: ${JSON.stringify(gc.d.relaciones)}`);
+});
+
+test('10. academy con 500 al medir: con dos, la primera fila corta vuelve a medir y sigue por academy; con uno, la medida reintenta', async () => {
+  api.f.academyFallaAlMedir = 2;
+  const dos = await corrida('ruta-corta', { previo: out1 });
+  ok(dos.d.counters.Atlas?.Layla != null && dos.d.diagnostics.relations?.rutaCambiada?.some((x) => /academy/.test(x)), `ruta cambiada: ${JSON.stringify(dos.d.diagnostics.relations?.rutaCambiada)}`);
+  api.f.academyFallaAlMedir = 1;
+  const uno = await corrida('ruta-un-fallo', { previo: out1 });
+  api.f.academyFallaAlMedir = 0;
+  ok(/academy/.test(uno.d.diagnostics.rutasMedidas?.counter ?? '') && !uno.d.diagnostics.relations?.rutaCambiada?.length, `medida: ${JSON.stringify(uno.d.diagnostics.rutasMedidas)}`);
+});
+
+test('con la base inalcanzable arranca, escribe, no toca public/ y conserva la fecha: el comparador no ve nada fresco', async () => {
+  const caja = mkdtempSync(resolve(tmpdir(), 'ingesta-'));
+  const out = resolve(caja, 'roam-meta.json');
+  copyFileSync(REAL, out);
   try {
-    // Las imágenes a una COPIA de las publicadas (3.41.0): sin `--iconos` ni
-    // `--retratos` esta prueba escribía en public/ (las rebajaba de verdad
-    // del CDN en cuanto cambiaba una URL, y con ellas `fuentes.json`). Una
-    // copia, y no una carpeta vacía: vacía bajaría las 206 en cada `npm test`.
-    for (const c of ['objetos', 'heroes']) cpSync(resolve(RAIZ, 'public', c), resolve(dir, c), { recursive: true });
+    // Las imágenes a una COPIA de las publicadas: vacía, bajaría las 206; en public/, las reescribiría.
+    for (const c of ['objetos', 'heroes']) cpSync(resolve(RAIZ, 'public', c), resolve(caja, c), { recursive: true });
     const tocado = () => ['objetos', 'heroes'].flatMap((c) => readdirSync(resolve(RAIZ, 'public', c)).map((f) => statSync(resolve(RAIZ, 'public', c, f)).mtimeMs)).reduce((a, b) => Math.max(a, b), 0);
     const antes = tocado();
-    const r = await correrIngesta(['--base', 'http://127.0.0.1:1/api', '--ranks', 'mythic', '--out', out, '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes')]);
-    eq(tocado(), antes, 'la prueba escribe en public/objetos o public/heroes');
+    const r = await correr(INGESTA, ['--base', 'http://127.0.0.1:1/api', '--ranks', 'mythic', '--pausa', '0', '--out', out, '--iconos', resolve(caja, 'objetos'), '--retratos', resolve(caja, 'heroes')]);
     const salida = `${r.stdout}\n${r.stderr}`;
-    eq(r.status, 0, `la ingesta contra una base inalcanzable acaba con código ${r.status}: ${salida.slice(-400)}`);
-
-    ok(!/is not defined|is not a function|Cannot read/.test(salida),
-      `error de programación en la ingesta: ${salida.split('\n').find((l) => /is not/.test(l))}`);
-    ok(salida.includes('Escrito'), 'no llega a escribir el fichero cuando la red falla');
-
-    // Con la API caida la corrida conserva lo anterior, y eso tiene que
-    // notarse: la fecha es la de los datos conservados (no la de hoy) y el
-    // comparador la rechaza por no traer nada nuevo. Sin esto, el bot
-    // commiteaba los datos de ayer con la fecha de hoy y la puerta de
-    // frescura del despliegue (72 h) no saltaba nunca.
-    if (existsSync(REAL)) {
-      const guardada = JSON.parse(readFileSync(REAL, 'utf8'));
-      const nueva = JSON.parse(readFileSync(out, 'utf8'));
-      eq(nueva.generatedAt, guardada.generatedAt, 'una corrida sin red se fecha como si trajera datos nuevos');
-      eq(nueva.diagnostics?.conservado, true, 'la corrida no dice que conserva lo anterior');
-      const veredicto = comparar(nueva, guardada);
-      ok(veredicto.peores.some((p) => p.clave === 'nadaFresco'),
-        `el comparador acepta una corrida que no ha descargado nada: ${JSON.stringify(veredicto.peores)}`);
-    }
+    eq(tocado(), antes, 'la prueba escribe en public/objetos o public/heroes');
+    eq(r.status, 0, `contra una base inalcanzable acaba con ${r.status}: ${salida.slice(-400)}`);
+    ok(!errorDeProgramacion.test(salida) && salida.includes('Escrito'), `no llega a escribir: ${salida.slice(-400)}`);
+    const guardada = leer(REAL);
+    const nueva = leer(out);
+    eq(nueva.generatedAt, guardada.generatedAt, 'una corrida sin red se fecha como si trajera datos nuevos');
+    eq(nueva.diagnostics?.conservado, true);
+    ok(nueva.diagnostics.imagenes?.objetos?.bajados === 0 && nueva.diagnostics.imagenes?.heroes?.bajados === 0, 'sin red intenta bajar imágenes');
+    ok(comparar(nueva, guardada).peores.some((p) => p.clave === 'nadaFresco'), 'el comparador acepta una corrida que no ha descargado nada');
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(caja, { recursive: true, force: true });
   }
 });
