@@ -2231,3 +2231,28 @@ lejos de `PARECIDO_MINIMO`. `carasDesfasadas` compara desde hoy el FICHERO
 de la imagen, no la URL entera (daba 132 «desfasadas»). Sigue sin haber
 aviso automático de una cara cambiada fuera de `leer.mjs --archivo`, y NO
 va en `npm test`: tiraría el despliegue de los datos del bot.
+
+**Los baneos fantasma de la fila rota (3.101.3)**. «No se está comportando
+bien la selección de picks» (14 de noviembre de 2026): con la fila de
+baneos sin leerse (3.101.1), una lectura de cada ~30 «leía» UN baneo suelto
+que no estaba (28 de 949 del 12 al 14: Atlas, Chang'e, Gord, Wanwan… y el
+14 a las 19:52 tu propio Minotaur), y `acumularDraft` sumaba los de todas
+las lecturas del draft abierto: el motor quitaba a esos héroes del consejo
+(Atlas y Minotaur, de roam) y la partida se apuntaba con ellos en `bans`
+(el 13 a las 22:30, seis, tres de ellos elegidos). Hoy:
+- Una lectura aporta baneos (y huecos de baneo) solo con
+  `BANEOS_EN_EL_DRAFT` (2) DISTINTOS, como para reconocer la fila. Con la
+  fila bien (8–10 de noviembre), el 99% de los baneos vistos (3.874 de
+  3.914) iban en lecturas con dos o más; uno de verdad sigue en pantalla
+  todo el draft, así que entra en la lectura siguiente.
+- `decidirSolo` quita de los baneos a cualquier héroe elegido (en
+  clasificatoria nadie coge un baneado: si sale en los dos sitios, el
+  baneo es el leído mal). De ahí salen el consejo y los `bans` de la
+  partida.
+- En el móvil, `nombresDeLectura` igual (`BANEOS_DE_LA_FILA`, atado a la
+  de la tablet con prueba).
+- Pruebas en `solo` (los dos drafts de esos días; Gord en dos huecos; los
+  huecos de los fantasmas no abren «otro draft»; un baneo de verdad entra
+  en la lectura siguiente) y `app/lector`. Seis mutaciones; dos
+  sobrevivían al principio porque la lectura de prueba volvía a traer
+  todos los picks y tapaba el reinicio del draft.

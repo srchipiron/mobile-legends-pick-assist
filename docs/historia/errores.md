@@ -1321,3 +1321,11 @@ instante anterior lo sustituya; el tiempo solo va hacia delante.
   de un draft lo hacen) y dos drafts cerrados sin baneos son aviso. Lección:
   una puerta que depende de UNA zona de la pantalla del juego necesita otra
   entrada y un aviso propio; el juego se actualiza sin preguntar.
+- **Los baneos fantasma (12–14 de noviembre de 2026, 3.101.3)** — con la
+  fila de baneos rota, una lectura de cada ~30 «leía» un baneo suelto que no
+  estaba y el draft de la tablet los sumaba todos: el consejo quitaba a
+  Atlas o a tu propio Minotaur, y las partidas se apuntaban con baneos que
+  eran héroes elegidos. Javi lo notó como «la selección de picks no se
+  comporta bien». Lección: una zona de la pantalla que deja de leerse no da
+  «nada», da falsos sueltos; y lo que se acumula de muchas lecturas
+  multiplica cualquier falso que deje pasar una sola.

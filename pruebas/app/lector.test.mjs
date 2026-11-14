@@ -6,7 +6,8 @@ import { test, ok, eq, terminar } from '../arnes.mjs';
 import { SIN_BANEOS_AVISO } from '../../scripts/revisar-tablet.mjs';
 import { TABLA_SEGUIDAS } from '../../scripts/lector/en-tablet.mjs';
 import { buscarTabletEnLaRed, pruebaDelReto, queApk, versionAnterior, pedirUltimaApk, DESCARGA_APK, mandarALaTablet, consejoParaLaTablet, resumenParaLaTablet, pedirEstadoLector, sanearLectorTablet, lectorTabletDeEnlace, ponerLectorEnTablet, baseLector, pedirAlLector, claveDeFallo, pedirClaveDeLaTablet, lineasDelSistema } from '../../src/app/lector.js';
-import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS } from '../../src/app/lector.js';
+import { pedirLectura, pedirFinal, avisarVigilancia, fundirFinal, ensenarResultado, tocaVigilarFinal, nombresDeLectura, cambiosDeHueco, fueraDeLosPicks, CAMBIOS_A_LA_VEZ, corregirLectura, dudasDeLectura, dudasQueQuedan, PLAZO_LECTOR_MS, PLAZO_CORREGIR_MS, tocaLeerSolo, tuyoDeTuLinea, LEER_TU_PICK_MS, INTERVALO_AUTO_MS, INTERVALO_AUTO_VACIO_MS, INTERVALO_FINAL_MS, DESDE_FINAL_MIN, HASTA_FINAL_MIN, MAX_FOTOGRAMAS, BANEOS_DE_LA_FILA } from '../../src/app/lector.js';
+import { BANEOS_EN_EL_DRAFT } from '../../scripts/lector/solo.mjs';
 
 const heroes = ['Hirara', 'X Borg', 'Clint', 'Khufra', 'Saber'].map((name) => ({ name }));
 
@@ -19,6 +20,10 @@ test('mete los nombres reconocidos con la grafía del catálogo, sin repetir y s
   eq(n.baneos.join(), 'Hirara,X Borg', `los baneos salen ${n.baneos}`);
   eq(n.enemigos.join(), 'Clint', `los enemigos salen ${n.enemigos}`);
   eq(nombresDeLectura(null, heroes).baneos.length, 0, 'una lectura vacía mete algo');
+  // 3.101.3: un baneo suelto (la fila rota «lee» un héroe que no está) no entra; dos distintos sí, como en la tablet.
+  eq(BANEOS_DE_LA_FILA, BANEOS_EN_EL_DRAFT, 'el móvil y la tablet piden filas distintas');
+  eq(nombresDeLectura({ tuyos: [{ nombre: 'Clint' }], suyos: [] }, heroes).baneos.length, 0, 'un baneo suelto entra');
+  eq(nombresDeLectura({ tuyos: [{ nombre: 'Clint' }], suyos: [{ nombre: 'Clint' }] }, heroes).baneos.length, 0, 'el mismo héroe en dos huecos cuenta como fila');
   // Tu equipo (3.31.0): las otras cuatro filas son compañeros y la tuya (amarilla) es tu pick; sin saber cuál es la tuya, nadie.
   const filas = [{ nombre: 'Clint' }, { nombre: 'Hirara' }, { nombre: null, candidato: 'Saber' }, { nombre: 'X.Borg' }, { nombre: 'Clint' }];
   const con = nombresDeLectura({ aliados: filas, tuyoFila: 1 }, heroes);

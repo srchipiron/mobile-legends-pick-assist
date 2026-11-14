@@ -565,6 +565,15 @@ export async function ensenarResultado({ ids = [], gane, desde = null, base = ba
 }
 
 /**
+ * Los baneos de una lectura solo entran si lee la FILA (3.101.3): dos
+ * distintos. Con la fila de baneos rota desde el 11 de noviembre de 2026,
+ * 28 de 949 lecturas «leían» un baneo suelto que no estaba (hasta tu propio
+ * pick); con la fila bien, el 99% de los baneos vistos iban con otros. Es
+ * `BANEOS_EN_EL_DRAFT` de la tablet (solo.mjs): hay prueba de que coinciden.
+ */
+export const BANEOS_DE_LA_FILA = 2;
+
+/**
  * Los nombres que el lector reconoció, con la grafía del catálogo (el
  * lector usa la de sus caras de referencia: «X.Borg» frente a «X Borg»).
  * Lo que sale como «?» (hueco vacío, eligiendo, skin) no se mete.
@@ -584,8 +593,9 @@ export function nombresDeLectura(lectura, heroes = []) {
   // cambiar al héroe que un jugador solo estaba MIRANDO por el que coge
   // (`cambiosDeHueco`). Tu fila va a null: no es un compañero.
   const porHueco = (lista, saltar = -1) => (Array.isArray(lista) ? lista : []).map((x, i) => (i === saltar ? null : uno(x)));
+  const baneos = [...new Set([...resolver(lectura?.tuyos), ...resolver(lectura?.suyos)])];
   return {
-    baneos: [...new Set([...resolver(lectura?.tuyos), ...resolver(lectura?.suyos)])],
+    baneos: baneos.length >= BANEOS_DE_LA_FILA ? baneos : [],
     enemigos: [...new Set(resolver(lectura?.enemigos))],
     aliados,
     tuyo,

@@ -8,6 +8,16 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.101.3
+
+- El consejo ya no quita héroes por baneos que no existen. Con la fila de
+  baneos sin leerse desde el parche, de vez en cuando la tablet «veía» un
+  baneo suelto que no estaba (Atlas, Chang'e, Gord… y el 14 de noviembre tu
+  propio Minotaur), y el draft los iba sumando: el consejo quitaba a esos
+  héroes y la partida se apuntaba con baneos falsos. Ahora un baneo solo
+  cuenta si se lee junto a otro, y un héroe que alguien ha elegido no puede
+  salir como baneado. Lo mismo al leer desde el móvil.
+
 ## 3.101.2
 
 - El lector reconoce a Popol and Kupa y a Cyclops con su cara nueva: el

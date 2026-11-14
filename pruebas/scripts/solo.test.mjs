@@ -281,6 +281,38 @@ test('sin la fila de baneos, el draft se abre por los picks (3.101.1): la burbuj
   ok(registro.some((l) => /sin leer los baneos/.test(l)), 'no lo dice en el registro');
 });
 
+test('los baneos fantasma de la fila rota (3.101.3): un baneo suelto no entra, y un héroe elegido no puede estar baneado', () => {
+  const nada = [V, V, V, V, V];
+  // 14 de noviembre de 2026, 19:52: el draft se abrió por los picks y una lectura «leyó» a tu Minotaur en la fila de baneos.
+  const picks = { enemigos: [N('Sun'), N('Fredrinn'), N('Karina'), N('Hanabi'), V], aliados: [N('Xavier'), N('Kadita'), N('Alucard'), V, N('Minotaur')], tuyoFila: 4 };
+  let d = acumularDraft(draftVacio(), lectura({ tuyos: nada, suyos: nada, ...picks }), 1000);
+  d = acumularDraft(d, lectura({ tuyos: [V, V, N('Minotaur'), V, V], suyos: nada, ...picks }), 2500);
+  d = acumularDraft(d, lectura({ tuyos: nada, suyos: [N('Atlas'), V, V, V, V], ...picks }), 4000);
+  eq(d.baneos.length, 0, `un baneo suelto entra en el draft: ${JSON.stringify(d.baneos)}`);
+  // Ni el mismo héroe en dos huecos de la fila (la zona oscura: «Gord» en todas partes) cuenta como fila leída.
+  eq(acumularDraft(d, lectura({ tuyos: [N('Gord'), V, V, V, V], suyos: [N('Gord'), V, V, V, V], ...picks }), 4500).baneos.length, 0, 'Gord en dos huecos de baneo entra como baneado');
+  // Y los huecos de los fantasmas no se recuerdan: la fila de verdad en esos mismos huecos no es «otro draft».
+  // (Esa lectura solo ve a Sun: si el draft se reiniciara, se perderían los otros tres rivales.)
+  const conFila = acumularDraft(d, lectura({ tuyos: [V, V, N('Hirara'), V, V], suyos: [N('Belerick'), V, V, V, V], enemigos: [N('Sun'), V, V, V, V] }), 5000);
+  ok(conFila.enemigos.includes('Fredrinn') && conFila.baneos.join() === 'Hirara,Belerick', `los huecos de los baneos fantasma tiran el draft: ${JSON.stringify(conFila)}`);
+  const decision = decidirSolo({ datos, draft: d, linea: 'roam' });
+  eq(decision.tuyo?.name, 'Minotaur');
+  ok(decision.rec.ranking.some((r) => r.heroe.name === 'Minotaur') && decision.rec.ranking.some((r) => r.heroe.name === 'Atlas'), 'el consejo quita a Minotaur o a Atlas por un baneo fantasma');
+  const p = partidaSolo({ decision, linea: 'roam', gane: true, t: 5 });
+  ok(p.estimacion > 0 && !p.bans, `la partida se apunta sin la estimación de tu héroe o con baneos fantasma: ${JSON.stringify(p)}`);
+  // 13 de noviembre, 22:30: una lectura con varios «baneos» que eran héroes elegidos (Atlas, Gord).
+  let e = acumularDraft(draftVacio(), lectura({ tuyos: [N('Atlas'), N('Gord'), V, V, V], suyos: [N("Chang'e"), V, V, V, V],
+    enemigos: [N('Fredrinn'), N('Zetian'), N('Atlas'), N('Yi Sun-shin'), V], aliados: [N('Lylia'), N('Gord'), V, V, V] }), 1000);
+  const otra = decidirSolo({ datos, draft: e, linea: 'roam' });
+  eq(otra.baneos.map((h) => h.name).join(), "Chang'e", 'un héroe elegido sigue contando como baneado');
+  // Con la fila bien, el primer baneo aparece solo y entra en cuanto se lee junto a otro.
+  e = acumularDraft(draftVacio(), lectura({ tuyos: [N('Hirara'), N('Belerick'), V, V, V], suyos: nada }), 1000);
+  e = acumularDraft(e, lectura({ tuyos: nada, suyos: [N('Valir'), V, V, V, V] }), 2000);
+  eq(e.baneos.join(), 'Hirara,Belerick', 'entra un baneo leído solo');
+  e = acumularDraft(e, lectura({ tuyos: [N('Hirara'), N('Belerick'), V, V, V], suyos: [N('Valir'), V, V, V, V] }), 3000);
+  eq(e.baneos.join(), 'Hirara,Belerick,Valir', 'un baneo de verdad se pierde');
+});
+
 test('la misma tabla del final no se apunta dos veces (3.89.1): otra a menos de MINUTOS_ENTRE_TABLAS es la misma partida', async () => {
   let t = 7_000_000;
   const draftLeido = (ban) => lectura({ tuyos: [N(ban), N('Belerick')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 });

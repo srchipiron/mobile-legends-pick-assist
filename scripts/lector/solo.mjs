@@ -189,15 +189,26 @@ export function acumularDraft(estado, lectura, ahora) {
   // de baneo con OTRO héroe (alguien abandonó el draft y empezó otro) o,
   // tras la partida, baneos que el de antes no tenía. Antes solo valían los
   // minutos, y el draft siguiente no entraba o se mezclaba con el anterior.
+  // Los baneos de una lectura solo cuentan si lee la FILA (3.101.3): dos
+  // distintos, como para reconocer la pantalla del draft. Con la fila rota
+  // (desde el 11 de noviembre de 2026), de 949 lecturas 28 «leían» un baneo
+  // suelto que no estaba (Atlas, Chang'e, Gord… y tu propio Minotaur) y el
+  // draft abierto los sumaba todos: el motor quitaba a esos héroes del
+  // consejo. Con la fila bien (8–10 de noviembre), el 99% de los baneos
+  // vistos (3.874 de 3.914) iban en lecturas con dos o más, y uno de verdad
+  // sigue en pantalla todo el draft junto a los demás: no se pierde ninguno.
+  const deFila = banDistintos >= BANEOS_EN_EL_DRAFT;
+  const huecosFila = deFila ? huecosBan : Array(10).fill(null);
+  const baneosFila = deFila ? baneos : [];
   const banHuecos = e.banHuecos ?? Array(10).fill(null);
-  const huecosDistintos = huecosBan.filter((n, i) => n && banHuecos[i] && banHuecos[i] !== n).length;
-  const nuevos = baneos.filter((n) => !e.baneos.includes(n)).length;
+  const huecosDistintos = huecosFila.filter((n, i) => n && banHuecos[i] && banHuecos[i] !== n).length;
+  const nuevos = baneosFila.filter((n) => !e.baneos.includes(n)).length;
   const otro = algo && ((e.cerrado && (ahora - e.cerradoEn >= MINUTOS_PARA_OTRO_DRAFT * 60000 || nuevos >= BANEOS_DE_OTRO_DRAFT || huecosDistintos >= BANEOS_DE_OTRO_DRAFT))
     || (!e.cerrado && (huecosDistintos >= BANEOS_DE_OTRO_DRAFT || (e.actividad != null && ahora - e.actividad >= MINUTOS_DRAFT_ABANDONADO * 60000))));
   if (otro) e = draftVacio();
   if (e.cerrado) return { ...e, enPartida: 0 };
   const leida = Number.isInteger(lectura.tuyoFila) && lectura.tuyoFila >= 0 && lectura.tuyoFila < 5 ? lectura.tuyoFila : -1;
-  const nuevosBaneos = [...new Set([...e.baneos, ...baneos])].slice(0, 10);
+  const nuevosBaneos = [...new Set([...e.baneos, ...baneosFila])].slice(0, 10);
   const enem = fundirHuecos(e.enemigos, enemigos);
   const ali = fundirHuecos(e.aliados, filas, e.tuyoFila >= 0 ? e.tuyoFila : leida);
   // Tu fila la votan las lecturas que no se descartan (3.100.0).
@@ -207,7 +218,7 @@ export function acumularDraft(estado, lectura, ahora) {
   const cambio = nuevosBaneos.length !== e.baneos.length || enem.cambio || ali.cambio || tuyoFila !== e.tuyoFila;
   // La captura de esta lectura (3.71.0): si luego dices quién era el «?», el lector aprende de ella.
   const ids = typeof lectura.id === 'string' && /^lectura-[\w-]+$/.test(lectura.id) && banDistintos >= BANEOS_EN_EL_DRAFT ? conCaptura(e.ids ?? [], lectura.id) : e.ids ?? [];
-  const nuevosHuecos = (e.banHuecos ?? Array(10).fill(null)).map((n, i) => n ?? huecosBan[i]);
+  const nuevosHuecos = (e.banHuecos ?? Array(10).fill(null)).map((n, i) => n ?? huecosFila[i]);
   return { ...e, baneos: nuevosBaneos, banHuecos: nuevosHuecos, enemigos: enem.huecos, aliados: ali.huecos, tuyoFila, votosFila, enPartida: 0, actividad: cambio ? ahora : e.actividad ?? (algo ? ahora : null), ids, porPicks: !!(e.porPicks || porPicks) };
 }
 
@@ -230,11 +241,15 @@ export function decidirSolo({ datos, draft, linea, maestria = null }) {
   const porClave = new Map(datos.heroes.map((h) => [nombreClave(h.name), h]));
   const heroe = (n) => (n ? porClave.get(nombreClave(n)) ?? null : null);
   const unicos = (lista) => [...new Map(lista.filter(Boolean).map((h) => [h.name, h])).values()];
-  const baneos = unicos(draft.baneos.map(heroe));
   const enemigos = unicos(draft.enemigos.map(heroe));
   const tuyo = draft.tuyoFila >= 0 ? heroe(draft.aliados[draft.tuyoFila]) : null;
   const nombresEnemigos = new Set(enemigos.map((h) => h.name));
   const aliados = unicos(draft.aliados.filter((_, i) => i !== draft.tuyoFila).map(heroe)).filter((h) => !nombresEnemigos.has(h.name) && h.name !== tuyo?.name);
+  // Un héroe elegido no puede estar baneado (en clasificatoria nadie coge un
+  // baneado): si sale en los dos sitios, el baneo es el leído mal (3.101.3; el
+  // 14 de noviembre de 2026 tu Minotaur salía «baneado» y el consejo lo quitaba).
+  const elegidos = new Set([...enemigos, ...aliados, tuyo].filter(Boolean).map((h) => h.name));
+  const baneos = unicos(draft.baneos.map(heroe)).filter((h) => !elegidos.has(h.name));
   if (!baneos.length && !enemigos.length && !aliados.length && !tuyo) return null;
   const rec = recomendar(datos, { linea, enemigos, aliados, baneos, maestria, miPick: tuyo, conSimulacion: false });
   return { rec, tuyo, baneos, enemigos, aliados };
