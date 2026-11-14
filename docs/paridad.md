@@ -1,27 +1,31 @@
-# La paridad de la reescritura 3.0
+# La paridad de una reescritura
 
-El programa se rehízo entero en 3.0.0 SIN cambiar ninguna decisión medida: el
-mismo modelo, los mismos datos, las mismas claves guardadas y las mismas
-pantallas. La paridad se verificó con un arnés que compara 2.0.2 con 3.0 sobre
-2.000 drafts de las cinco líneas —ranking entero, probabilidad, términos,
-motivos, empate, rival, simulación, composición, consejo a los compañeros,
-análisis, baneos sugeridos, siguiente baneo y estimación— con CERO diferencias,
-y el informe del diagnóstico sale letra por letra igual. El arnés se queda en
-`pruebas/paridad/viejo-vs-nuevo.mjs`: si algún día hay que rehacer otra cosa,
-esa es la forma de hacerlo sin fiarse. NO corre en `npm test` (necesita los
-dos árboles); para volver a pasarlo:
+Una reescritura no cambia ninguna decisión medida, y eso se comprueba, no se
+supone: un arnés compara el motor viejo con el nuevo con los MISMOS datos sobre
+miles de drafts deterministas de las cinco líneas y lista cualquier diferencia.
+Está en `pruebas/paridad/viejo-vs-nuevo.mjs`. NO corre en `npm test` (necesita
+los dos árboles):
 
 ```bash
-git worktree add /tmp/viejo becb6a5     # el último commit con src/engine (2.0.2)
+git worktree add /tmp/viejo <commit anterior a la reescritura>
 ln -s "$PWD/node_modules" /tmp/viejo/node_modules
 PARIDAD_VIEJO=/tmp/viejo node pruebas/paridad/viejo-vs-nuevo.mjs 2000
 ```
 
-Tarda unos 3,5 minutos y tiene que decir «0 diferencias».
+Compara `prepararDatos` (y otros rangos), `recomendar` con y sin simulación,
+`estimarCon`, `planear`, `probablesDelBando`, `siguientesBaneos`,
+`crucesDelDraft`, `porQueDetras`, `fichaDeHeroe`, `tocadoPorElParche`,
+`winrateEnLinea`, las builds, `planDePicks`, `movimientosDelMeta`,
+`revisarPartida`/`revisarDrafts`, el buscador, lo de tus partidas (números,
+semana, resumen, calibración, analítica, maestría, comprobaciones, comunidad,
+perfil y su código) y el diagnóstico letra a letra. Si los dos lados lanzan lo
+mismo, lo dice: esa comparación no mide nada.
 
-OJO: desde 3.4.0 la paridad con 2.0.2 se rompe A PROPÓSITO (el término de
-equilibrio de daño y la disponibilidad con baneos cambian la nota), así que
-contra `becb6a5` ya no da cero. El arnés sigue valiendo para lo que nació:
-comparar dos versiones que DEBAN dar lo mismo (una reescritura), no dos
-modelos distintos. Si se rehace otra cosa, la referencia es el commit
-anterior a la reescritura, no 2.0.2.
+- **3.0.0** (contra 2.0.2): 2.000 drafts, 0 diferencias.
+- **4.0.0** (contra 3.102.0, `0c6d784`): 26.186 comparaciones sobre 2.000 drafts,
+  0 diferencias. Quitado a propósito y normalizado en el arnés: el término `tu`
+  (siempre 0) y `deLosTuyos` (siempre null). Del diagnóstico cambian a propósito
+  las secciones MOTOR, MAESTRÍA y MODELO: ahora miden por el camino de la app.
+
+Para una reescritura nueva, la referencia es el commit anterior a ella; para dos
+modelos distintos este arnés no sirve (dará diferencias, que es lo esperado).

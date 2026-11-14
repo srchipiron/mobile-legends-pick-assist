@@ -6,7 +6,7 @@ Modo: **ejecutar**, salvo que en los argumentos ponga `analizar` (entonces te de
 
 Actúas como ingeniero principal, arquitecto, revisor, QA y responsable de calidad del sistema. Este prompt se ejecuta muchas veces: en cada corrida analizas el estado ACTUAL del repositorio, incluidas las iteraciones anteriores, y decides qué merece mejorarse AHORA. No des por buenas las decisiones anteriores porque ya estén implementadas; tampoco cambies nada porque pueda escribirse de otra forma.
 
-**`CLAUDE.md` es la fuente de verdad del proyecto**, junto con las reglas por zona de `.claude/rules/` (se cargan solas al tocar su zona; su índice está al final de `CLAUDE.md`) y la historia de `docs/historia/`. Antes de nada lee `docs/historia/errores.md` y `docs/historia/descartados.md`: ahí están los errores ya cometidos y lo ya medido. Este prompt no los repite: si algo de aquí contradice a `CLAUDE.md` o a una regla, mandan ellos y me lo dices.
+**`CLAUDE.md` es la fuente de verdad del proyecto**, junto con las reglas por zona de `.claude/rules/` (se cargan solas al tocar su zona; su índice está al final de `CLAUDE.md`) y la historia de `docs/`. Antes de nada lee `docs/lecciones.md` y `docs/descartados.md`: ahí están los errores ya cometidos y lo ya medido. Este prompt no los repite: si algo de aquí contradice a `CLAUDE.md` o a una regla, mandan ellos y me lo dices.
 
 ---
 
@@ -20,7 +20,7 @@ Antes de proponer un solo cambio, construye un modelo mental del sistema complet
 - todos los workflows de CI (no solo los principales): qué ejecutan, qué commitean, qué despliegan;
 - persistencia local, caché, service worker y actualización;
 - interfaz en móvil y autodiagnóstico;
-- `git log` reciente y `docs/historia/descartados.md`, para no volver a examinar lo ya medido.
+- `git log` reciente y `docs/descartados.md`, para no volver a examinar lo ya medido.
 
 Resultado de la fase: un resumen de diez líneas como máximo. No empieces por el primer fichero que te llame la atención.
 
@@ -89,8 +89,8 @@ Si no puedes responder las cinco, no es un cambio: es un candidato descartado (v
 
 ## Fase 5 — Cerrar
 
-1. Añade a `docs/historia/descartados.md` una línea por cada cosa que examinaste y decidiste no tocar, con el motivo y la medida si la hay. Es lo que evita que la siguiente iteración repita el análisis.
-2. Si el cambio corrige algo que llegó a producción, añádelo a `docs/historia/errores.md`, con la lección en una frase.
+1. Añade a `docs/descartados.md` una línea por cada cosa que examinaste y decidiste no tocar, con el motivo y la medida si la hay. Es lo que evita que la siguiente iteración repita el análisis.
+2. Si el cambio corrige algo que llegó a producción, añádelo a `docs/lecciones.md`, con la lección en una frase.
 3. Lo que aprendiste de una zona (una medida, una decisión, cómo funciona algo) va a su regla de `.claude/rules/`; una zona nueva, a una regla nueva con su `paths:` y su línea en el índice de `CLAUDE.md`. **`CLAUDE.md` no crece**: tiene tope (`pruebas/scripts/claude-config.test.mjs`) porque se paga entero en cada sesión. Solo entra ahí una regla que valga para cualquier tarea, y entonces sale otra cosa.
 4. Informe final, en español, legible en un móvil (25 líneas como máximo):
    - **Modelo del sistema**: qué entendiste que no estaba escrito.

@@ -19,8 +19,8 @@ por el paso 1). Lleva la cuenta con una casilla por paso.
    `.claude/`, `docs/`, pruebas) no sube versión.
 2. **Lo aprendido, en su sitio.** Lo de una zona en su regla de
    `.claude/rules/`; un error que llegó a producción en
-   `docs/historia/errores.md`; lo descartado en
-   `docs/historia/descartados.md`. `CLAUDE.md` no crece (tiene tope).
+   `docs/lecciones.md`; lo descartado en
+   `docs/descartados.md`. `CLAUDE.md` no crece (tiene tope).
 3. **`npm test`**, mirando el CÓDIGO DE SALIDA, no la última línea
    (`npm test > /tmp/t.txt 2>&1; echo $?`): `npm test | tail` devuelve el
    código de `tail`.
@@ -28,7 +28,7 @@ por el paso 1). Lleva la cuenta con una casilla por paso.
 5. **Pruebas de navegador** sobre `dist/`, si se tocó `src/`, `vite.config.js`
    o `pruebas/interfaz/`:
    `PLAYWRIGHT_CHROME=$(ls -d /opt/pw-browsers/chromium*/chrome-linux/chrome | head -1) npm run test:ui`
-   (o `node pruebas/correr.mjs --e2e <ficheros>` para las de lo tocado).
+   (o `node --test pruebas/interfaz/<fichero>.e2e.mjs` para las de lo tocado).
    No bloquean el despliegue, pero su rojo después del push nadie lo para.
 6. **Releer el diff** (`git diff --stat` y `git diff`) a la contra: nada
    accidental, ningún `.bak` de una mutación, ningún identificador de modelo

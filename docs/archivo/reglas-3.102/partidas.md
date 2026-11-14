@@ -1,0 +1,404 @@
+
+# Tus partidas y la maestría
+
+Se carga al tocar el registro de partidas, la maestría, el perfil o su subida al proyecto.
+
+**Sin incidencias desde 3.98.0** (decisión de Javi, valoración del 8 de noviembre de 2026): la app ya no sube nada a GitHub. Se fueron la subida automática de tus partidas a una incidencia («Enviar al proyecto», `enviar` de useEnvio, `partidas.yml`), las pantallas del final y las caras de los picks (`subirAparte`, `cuerpoDeFotogramas`, `cuerpoDePicks`: la tablet sube sus recortes a la base de datos desde 3.81.0) y el parte de salud de la tablet (`subirParte`, `parteDeLaTablet`: la tablet sube sus partes desde 3.74.0). Tus partidas viven en la base de datos (useComunidad, la tablet con tu clave). `historial/partidas.json` se queda como está (lo leen `medir-mias` y `proponer-modelo`, que además baja la base de datos) y `importar-partidas.mjs` sigue a mano. El token de GitHub queda solo para administrar (licencias, `comunidad.json`; `escribirFichero`/`leerFichero`) y `roam-picker:envio` guarda solo `{ token }`. El botón de Diagnóstico que abre una incidencia rellena en el navegador (`urlDeIncidencia`) sigue: es a mano. Prueba en `app/envio` (ningún fichero de `src/app` sube a incidencias) y `scripts/partidas` (no vuelve `partidas.yml`).
+
+## La base de datos de tus partidas (3.8.0)
+
+`historial/partidas.json`: las partidas de Javi apuntadas con la app (con
+su draft, resultado, baneos y estimación) y su maestría, fundidas envío a
+envío. Es la ÚNICA forma de medir el modelo en su cola: hasta 3.8.0 esos
+datos vivían solo en su móvil y ninguna sesión podía leerlos.
+
+- **Cómo llegan**: «Tus partidas» → «Enviar mis partidas al proyecto»
+  (HistorialPartidas.jsx) abre una incidencia de GitHub ya rellena con el
+  código de perfil (`exportarPerfil`, el mismo de «Tu perfil»); si el
+  código no cabe en la dirección (`TOPE_URL`, 7.000 caracteres) se copia
+  al portapapeles y la incidencia se abre para pegarlo. `partidas.yml`
+  escucha `issues` (opened, edited), SOLO del dueño del repositorio y SOLO
+  si el cuerpo lleva `MLPA1.`; el cuerpo va por variable de entorno a un
+  fichero, nunca dentro del mandato; `scripts/importar-partidas.mjs` busca
+  la forma exacta del código, lo lee con `leerPerfil` (suma de control y
+  `sanear`) y lo funde con `fundirPerfil` con el MÓVIL como copia que gana
+  (lleva las correcciones); commitea con rebase y reintentos; y
+  `scripts/medir-mias.mjs` responde en la incidencia y la cierra.
+- **Qué mide `medir-mias.mjs`**: el Veredicto (`resumen`), la calibración
+  de la estimación guardada (`calibracion`) y, lo nuevo, la RE-PUNTUACIÓN
+  de cada draft guardado con el modelo y los datos de hoy (Brier, AUC,
+  acierto del lado, pendiente logística sobre el log-odds con su error
+  típico), más partidas por héroe y por mes. Cuando haya unas 100 partidas
+  con draft, la pendiente dice si la escala 0,44 vale en su cola; hasta
+  entonces manda el ±. El fichero se puede leer en cualquier sesión y
+  `medir-mias.mjs` se puede pasar a mano. Desde 3.60.2 dice aparte las que
+  apuntó el lector solo (`soloLector`), porque las de a mano pueden llevar
+  sesgo. El 20 de octubre de 2026 salía un 55% en 56 del lector frente a un
+  64% en 181 a mano, y +1,5 ± 16 puntos contra tu winrate de siempre. Los
+  meses van en la hora de Madrid. Desde 3.60.3 cada partida con estimación
+  guarda `modelo` (`VERSION_MODELO`, modelo.js; `sanear` lo valida y
+  `cambiarHeroe` lo quita con la estimación). Las de antes se reparten por su
+  instante con `CAMBIOS_DE_MODELO` (los commits de 3.4.0 y 3.56.0, marcadas
+  como `deducido`). `calibracion` devuelve `porModelo` y `actual`, y el bot,
+  el Diagnóstico y el Veredicto dicen aparte la del modelo de hoy. El 20 de
+  octubre de 2026: modelo 1, 29 partidas (previsto 54%, real 69%); modelo
+  2, 164 (54% / 63%); modelo 3, 25 (55% / 56%).
+- **La subida automática (3.10.0)**: `src/app/envio.js` (puro: huella
+  FNV-1a de partidas+maestría, `tocaSubir`, `ESPERA_MS` 3 s, `REINTENTO_MS`
+  10 min), `src/app/estado/useEnvio.js` (el estado en `roam-picker:envio`:
+  token, incidencia, huella subida, último error) y `subirIncidencia` en
+  `src/app/github.js` (la API: PATCH a la incidencia guardada, POST con
+  etiqueta si no hay o si ya no existe; 401 → `token`, 403/404 al crear →
+  `permiso`, fetch roto → `red`). El token es de grano fino, limitado a
+  «Issues: read and write» de este repositorio, lo pega Javi en «Tus
+  partidas» y SOLO viaja a `api.github.com` en la cabecera Authorization:
+  no entra en el código de perfil (`recogerPerfil` toma campos explícitos)
+  ni en el diagnóstico, y la hoja recibe `activo`, no el token
+  (`envio.e2e.mjs` lo comprueba, verificado por mutación). Con él, cada
+  cambio en partidas o maestría se sube solo a la MISMA incidencia, que el
+  bot procesa igual (`edited` también dispara `partidas.yml`), así que las
+  respuestas quedan en hilo. Sin token, el botón sigue abriendo el
+  formulario. Desde 3.60.2 cada subida lleva solo las `PARTIDAS_POR_ENVIO`
+  (200) más recientes (`paraSubir`, envio.js); el bot funde por instante con
+  lo que tiene. Con todas, el cuerpo pasaba de 65.536 caracteres hacia las
+  350–400 partidas (237 eran 38.114) y GitHub la habría rechazado para
+  siempre. Prueba con las partidas reales repetidas hasta 600. Si el token caduca, la hoja lo dice y no se insiste: los
+  mismos datos que fallaron esperan `REINTENTO_MS` o un cambio. Nació de
+  que el formulario ya relleno obligaba a iniciar sesión en GitHub desde el
+  móvil y ese inicio de sesión, con el código dentro de la dirección,
+  fallaba con un 501.
+- **Las partidas quitadas dejan marca (3.10.1)**: `olvidadas` (instantes,
+  `roam-picker:olvidadas`, tope `TOPE_OLVIDADAS` 1.000) viaja en el código
+  de perfil y en `historial/partidas.json`, y `fundirPerfil` descarta toda
+  partida marcada venga del lado que venga. Sin eso la fusión solo sumaba:
+  una partida apuntada por error y quitada en el móvil se quedaba en la
+  base de datos del proyecto (la subida automática la manda a los 3 s) y
+  volvía al importar un código viejo. Corregir un resultado ya se
+  propagaba (mismo instante, gana el móvil). Pruebas en perfil, partidas
+  y `envio.e2e`, verificadas por tres mutaciones. Desde 3.60.2 la × del
+  historial no borra en el acto: la fila dice «Quitada · Deshacer» durante
+  `QUITAR_MS` (6 s) y solo después llama a `onOlvidar`; al cerrar la hoja
+  también. Tiene que ser ANTES de la subida, porque en el proyecto la marca
+  ya no se deshace.
+- **No se redespliega**: la app no lee `historial/partidas.json` (el bot
+  no está en el `workflow_run` de `deploy.yml` a propósito). Si algún día
+  la app lo enseña, hay que meterlo ahí.
+- **Privacidad**: es su repositorio público y lo manda él con un botón
+  que lo dice; la promesa «tus datos no salen de tu móvil» sigue: salen
+  porque los saca él. No hay servidor ni credencial en la app.
+
+**El tope de 500 (3.60.8)**: `apuntar` recorta a `tope` por fecha y se
+llevaba primero las `previa` (tu historial del juego, las más viejas). Desde
+3.60.8, decisión de Javi, las previas no se recortan nunca: el tope cuenta
+con ellas y solo quita apuntadas con la app. Prueba en `registro.test`, dos
+mutaciones.
+
+**«Para ti»: el número ajustado a tus partidas (3.68.0)**, pedido: «haz que
+el programa pueda ir mejorando conforme juegue».
+- Ya aprendían de cada partida la maestría (`maestriaEfectiva`, la que pesa
+  en el ranking), la co-ocurrencia de baneos y las caras del lector. Lo que
+  no aprendía era el número.
+- `ajustePersonal` (registro.js) es una logística prudente
+  ganar ~ a + b·logit(estimación), con a priori a ~ N(0, 0,5²) y
+  b ~ N(1, 0,5²), sobre las partidas con estimación que no son previas.
+- Medido el 24 de octubre de 2026 en 229 partidas, cada una predicha con
+  las de antes (verosimilitud por partida):
+  - tal cual, −0,6875;
+  - σ 0,5, −0,6771 (+1,04 por 100 partidas);
+  - sin prior, −0,6773;
+  - σ 0,3, −0,6778;
+  - solo el intercepto, −0,6799.
+- Con todas: a 0,39, b 0,57. Javi gana el 62% y la media estimada era 54%;
+  el número del modelo separa poco en su cola (b libre 0,18).
+- `MINIMO_AJUSTE` 30 (desde donde se midió). `b ≥ 0,05`, para que nunca dé
+  la vuelta al orden.
+- Se enseña («Para ti», `.estimacion-tuya`, en la misma línea que
+  «Con X · n de 10») y NO puntúa: el orden lo deciden el modelo y la
+  maestría. La estimación que se guarda en cada partida sigue siendo la del
+  modelo, sin ajustar: si se guardara la ajustada, el ajuste se ajustaría
+  sobre sí mismo.
+- Pruebas en `registro.test` y `primera-pantalla.e2e` (40 partidas: sale y la
+  nº1 sigue asomando a 360×640).
+
+## La base de datos de la comunidad (3.69.0)
+
+Pedido por Javi: «una base de datos de todas las partidas por clave… para
+saber si el programa ayuda». Eligió (preguntado) **clave por jugador** frente
+a usuario y contraseña o seguir solo con la suya. La guía para montarla y lo
+que se guarda: `docs/comunidad.md`.
+- **El servidor** es un proyecto gratuito de Supabase de Javi, con
+  `supabase/esquema.sql`. Tablas con RLS sin políticas Y sin permisos para
+  `anon`/`authenticated` (dos capas: cada una sola aguanta, la prueba exige
+  las dos). Solo se entra por cuatro funciones `security definer` con
+  `search_path` fijo: `subir_partidas` (lote ≤ 200, partida ≤ 2 KB con `t`,
+  `pick` y `gane`, y se guardan SOLO los campos conocidos; ≤ 5.000 por
+  jugador, 200.000 y 20.000 jugadores en total; un winrate de siempre fuera
+  de 30–70% no se guarda), `mis_partidas`, `borrar_mis_partidas` y `partidas_comunidad`
+  (páginas de ≤ 1.000 por `(jugador, t)`, con un número de jugador y nunca
+  la huella). La clave se guarda como SHA-256. En SQL, `<>` con un campo que
+  falta da NULL y NO rechaza: se valida con `is distinct from` (la prueba lo
+  cazó con una partida sin `gane`).
+- **La prueba del SQL** (`pruebas/sql/esquema.sql.mjs`, `npm run test:sql`,
+  también en `pruebas-ui.yml`) monta un Postgres temporal con los roles y los
+  permisos POR DEFECTO de Supabase (todo lo nuevo de `public` se da a anon),
+  pega el esquema dos veces y prueba como `anon`. Diecinueve mutaciones,
+  todas cazadas; tres sobrevivían al principio y eran la prueba: quitar el
+  RLS lo tapaba el `revoke` (hoy se mira cada capa), el tope de 1.000 filas
+  se probaba con 2, y `huella_de` se llamaba con una clave inválida (fallaba
+  por la clave, no por el permiso). No va en `npm test`: publicar no depende
+  de tener Postgres.
+- **La app**: `src/app/basedatos.js` (puro salvo la red inyectada).
+  `sanearConfig` solo acepta `https://<20>.supabase.co` y una clave
+  publicable (`sb_publishable_` o un JWT con `role: anon`), nunca
+  `sb_secret_` ni `service_role`. `paraLaComunidad` saca de cada partida lo
+  que sirve para medir: nada de `lector`. La primera subida va entera en lotes
+  de 200; después, las 200 más recientes y las quitadas
+  (`olvidadas`). `useComunidad` (`roam-picker:comunidad`, clave NUEVA:
+  casilla, clave de jugador, huella subida) sube a los `ESPERA_MS` como
+  useEnvio, con la huella de partidas, quitadas y referencia. El token de
+  GitHub no pasa por aquí; la Administración publica `public/comunidad.json`
+  con `escribir` de useEnvio. Sin ese fichero no se ve nada.
+- **La medida** (`src/motor/comunidad.js`): siguiendo frente a por libre
+  DENTRO de cada jugador (≥ `MINIMO_POR_RAMA` 5 en cada rama, pesado por
+  1/(1/n₁+1/n₂)), contra el winrate de siempre de CADA uno (su
+  `referencia`), lo mismo solo con `origen: 'lector'`, y la calibración de
+  siempre. Conclusión solo con `MINIMO_JUGADORES` 3. La prueba tiene el caso
+  de Simpson: dos jugadores que ganan igual sigan o no, uno sigue mucho y
+  gana mucho; mezclados salen +27 puntos, dentro de cada uno 0.
+- Pruebas: `app/basedatos` (Supabase de pega en `pruebas/fixtures/
+  supabase-falso.mjs`, las mismas respuestas que el esquema: si cambias una,
+  cambia la otra), `motor/comunidad` y `comunidad.e2e` (sin
+  configuración no sale; la casilla sube sin lector ni token; quitar borra
+  allí; «Dejar de guardar» no sube; tu clave en otro móvil trae y funde; Ver;
+  borrar; la Administración no deja publicar la secreta). Mutaciones: 19 en
+  el cliente y la medida, 9 en el navegador.
+- **La revisión de seguridad (antes de publicar)** no encontró nada crítico
+  (token, clave secreta y cuenta del juego, a salvo) y sí cuatro cosas,
+  reproducidas y arregladas con su prueba y su mutación: los topes globales
+  bloqueaban también a quien ya estaba (hoy solo frenan jugadores y
+  partidas NUEVOS: quien está puede corregir y borrar aunque alguien llene
+  el resto); se guardaba cualquier campo (4 KB × 300.000 pasaba de los 500
+  MB gratuitos); un winrate de siempre inventado movía la medida de todos
+  (`REFERENCIA_POSIBLE` en la medida, el mismo filtro en el servidor); y un
+  `t` con «.0» daba un error genérico. Aceptado y dicho en la guía: sin
+  cuentas, cualquiera puede subir partidas falsas, y bajar la comunidad
+  entera muchas veces gasta la transferencia del plan gratuito.
+- **Montarla sin el panel** (`scripts/montar-supabase.mjs`): con
+  `SUPABASE_ACCESS_TOKEN` (un secreto del entorno, nunca en el chat), crea o
+  reutiliza el proyecto, espera a `ACTIVE_HEALTHY`, pega el esquema por
+  `/database/query`, elige SOLO una clave que pase `clavePublicable`
+  (`api-keys?reveal=false`), comprueba `partidas_comunidad` con ella y
+  escribe `public/comunidad.json`. El token solo va a api.supabase.com en
+  la cabecera y no sale en ningún error. Prueba con una API de gestión de
+  pega, siete mutaciones. Publicar comunidad.json cambia lo que hace la app:
+  sube la versión.
+- **No medible desde aquí**: el Supabase de verdad (la prueba es un Postgres
+  con sus roles). Si el primer «Guardar mis partidas» dice «no acepta la
+  clave pública», es la clave o el esquema sin pegar.
+
+## Los partes de la tablet (3.74.0)
+
+Javi: «que puedas ver en tiempo real o mediante un log que todo está
+funcionando bien… para no estar todo el rato con "mejora, revisa…"».
+- Tabla `partes` (RLS sin políticas y revokes, como las otras), funciones
+  `subir_parte(clave, parte)` (objeto ≤ 16.000 bytes, `pronto` con otro de
+  hace menos de 4 min, se quedan los 100 últimos y 7 días; crea el jugador
+  si no existe) y `partes_recientes(horas ≤ 168)` (`[{j, recibido, d}]`, sin
+  huella). En el cliente, `subirParte` y `bajarPartes` (basedatos.js); en el
+  falso, las dos con `ahora` inyectable. Prueba en `pruebas/sql`.
+- Lo lee `scripts/revisar-tablet.mjs` (el más reciente de cada lector:
+  FALLO y AVISO; sale con 1 con algún FALLO y con 2 si la base de datos no
+  contesta). `CIERRE_POR_FALLO` son los textos de `FALLOS` de Salidas.kt, y
+  una prueba los compara con el fichero: con la primera expresión, «se cerró
+  ella misma» (el cierre de 3.72.x) no avisaba. Lo corre la revisión
+  programada de Claude cada día.
+
+## Móvil y tablet con una clave (3.76.0)
+
+Javi: «que el móvil sea como un centro de comandos estadísticos del apk».
+- **Una clave**: `GET /clave` (servir.mjs, solo con `Origin` de la app y el
+  código del portero; la APK y otra web, 403) da `claveConLaQueSube`. App.jsx,
+  vinculado y SIN clave propia, la pide (`pedirClaveDeLaTablet`, lector.js;
+  `vinculada` explícito en la prueba porque las asíncronas corren a la vez)
+  y `comunidad.usarClave`: trae y funde, y desde ahí sube con ella. Con una
+  clave tuya, manda la tuya (va a la tablet con el consejo, como desde
+  3.70.0); lo ya subido con la del lector se queda allí.
+- **Los arreglos en los dos sentidos**: `editada` (la hora del arreglo) en
+  la partida: `marcarEditada` (registro.js) en `corregirPartida` y
+  `cambiarHeroePartida` (usePersonal), `partidas.editar` en la tablet;
+  `CAMPOS` y el esquema la guardan (solo si es número). `fundirPerfil`: en
+  la misma partida, gana la de fuera solo si se arregló DESPUÉS (sin
+  `editada` en ninguna, la local, como siempre). `queTraer` (basedatos.js,
+  lo usa useComunidad) trae lo que falta y lo arreglado allí después. La
+  tablet, al listar, `alDiaCon`: lo arreglado en el móvil sustituye a su
+  copia ya subida (conserva `desde` y `resultadoDe`), nunca a una pendiente.
+- **El servidor no deja pisar un arreglo**: `subir_partidas` hace el
+  `on conflict` solo si la `editada` que llega es ≥ la guardada. El móvil
+  vuelve a subir sus 200 más recientes en cada cambio, y sin esto su copia
+  vieja deshacía lo arreglado en la tablet. Lo mismo en el Supabase de pega.
+  Aplicado en el Supabase de Javi el 26 de octubre de 2026 (migración
+  `partidas_editadas_3_76_0`, probada como `anon` en una transacción
+  deshecha).
+- Pruebas en `pruebas/sql` (guarda `editada` solo si es número; una copia
+  vieja no pisa, una más nueva sí), `app/basedatos` (`queTraer`, el falso),
+  `motor/perfil`, `motor/registro`, `app/lector` y `en-tablet` (`/clave`,
+  `alDiaCon`). Veinte mutaciones, todas cazadas tras apretar dos.
+- **Quién iba en cada equipo, desde el móvil (3.78.0)**: `cambiarDraft`
+  (registro.js) cambia enemigos (hasta 5) y compañeros (hasta 4) de una
+  partida, sin tu pick ni repetidos ENTRE equipos (lo que no se toca cuenta
+  como ya puesto), y pasa por `sanearDraft`. `cambiarDraftPartida`
+  (usePersonal) la marca `editada`, así que viaja a la tablet como
+  cualquier arreglo. En el historial, `EditarDraft` (chips con × y un campo
+  con la lista de héroes). Pruebas en `motor/registro` y
+  `persistencia.e2e`; cuatro mutaciones cazadas, la del tope sobrevive
+  porque `sanearDraft` también corta en cinco (inofensiva).
+- **Tu semana (3.79.0)**, pedido por Javi: `tuSemana` (habitos.js, puro,
+  `ahora` inyectado) da los últimos `SEMANA_MS` contra los anteriores con
+  `compararProporciones` (la misma regla del Veredicto: afirmar solo fuera
+  del margen), `funcionan`/`cuestan` por saldo con `MINIMO_SEMANA_HEROE` (3)
+  y por clave de nombre, y `numeroUno` (`recomendados[0]` por clave; las de
+  `supuesto`, que solo la tablet sabe, no cuentan: el pick ES el nº1). Todo
+  decisión de producto, no calibrado. Lo de los héroes es lo que PASÓ, no
+  una medida de qué héroe te va: eso es «Tus números». En el móvil,
+  `TuSemana` antes de «Tus números»; en la tablet, `semanaParaLaApk`
+  (en-tablet) en `/partidas` y `tuSemana` en Partidas.kt. Pruebas en
+  `motor/habitos`, `en-tablet` y `persistencia.e2e`; ocho mutaciones.
+
+**El pick supuesto (3.81.2)**: apuntada sola sin tu fila leída ni pick
+fijado, el pick es el nº1 y la partida lleva `supuesto: true` (`apuntar`,
+`sanear`, `CAMPOS`, `subir_partidas`; solo `true`). `esSupuesta` (registro.js)
+la saca de todo lo que mira con quién jugaste: Veredicto (`resumen`, que
+cuenta `supuestas` aparte), calibración, `ajustePersonal`, `medirFasesMias`,
+`maestriaEfectiva`, la comunidad (`porJugador`), `revisarDrafts`, tus héroes
+en `tusNumeros` y `tuSemana`, `repuntuar` de medir-mias y `juntarGloria` del
+bot del modelo. El resultado sí cuenta (racha, sesión, winrate). Cambiar el
+héroe, o confirmar el mismo, quita la marca (`cambiarHeroe`). Las de antes
+de 3.81.2 no llevan la marca y no se pueden deducir con seguridad. Pruebas en
+`motor/registro`, `motor/comunidad`, `motor/habitos`, `app/basedatos`,
+`en-tablet` y `pruebas/sql`; ocho mutaciones.
+
+**Lo que se perdía entre móvil y tablet (3.81.3, silent-failure-hunter)**:
+(1) con `completo`, `subirPartidas` subía solo las 200 más recientes y la
+huella se daba por subida: un arreglo (`editada`) en la 201.ª no salía del
+móvil. Hoy van también las de más atrás con `editada` (el servidor no deja
+que una copia vieja pise otra arreglada después). (2) `fundirPerfil` con la
+de fuera arreglada después la cogía ENTERA y se perdía `lector`, que la base
+de datos no guarda: hoy se queda el de la copia local. Solo `lector`: copiar
+cualquier campo local resucitaría lo que el arreglo quitó (la estimación al
+cambiar de héroe, `supuesto` al confirmarlo). Pruebas en `app/basedatos` y
+`motor/perfil`, dos mutaciones.
+
+## El análisis de tus partidas (3.88.0)
+
+Javi: «que la app sirva como dashboard de partidas, estadísticas, con qué
+juego mejor… la tablet lee todo y lleva los datos a la app, que los analiza
+y los interpreta». La tablet apunta; el móvil (o el PC) analiza.
+- `src/motor/analitica.js` (puro, reloj y día inyectados): `evolucion`
+  (`SEMANAS_EN_LA_EVOLUCION` 12 semanas de 7 días hacia atrás, la última =
+  los últimos 7 días como «Tu semana»; las vacías con `wr: null`),
+  `porCompaneros` (`lado` aliados o enemigos, desde `MINIMO_CON_UNO` 8
+  partidas, Wilson y «mejor/peor» solo fuera de tu media; los mejores por
+  el borde BAJO y los peores por el ALTO, `CUANTOS_POR_LISTA` 5), `porLinea`
+  y `porDia` (cada grupo contra el resto con `compararProporciones`, desde
+  10; los días de lunes a domingo) y `conLaApp` (su nº1, uno de sus tres y
+  por libre; las supuestas no cuentan). Todo decisión de producto.
+- Lo que ya había se reutiliza tal cual: `tusNumeros` (racha, sesión,
+  franjas, duraciones, tras perder, héroes), `tuSemana` y el Veredicto.
+- La pantalla, `Analitica.jsx` (hoja `analisis`): cifras arriba, la
+  evolución en SVG (una serie, barras del azul de tu equipo, tu media en raya
+  discontinua, el número exacto en `<title>`), filas con intervalo (tramo
+  95%, punto, raya de tu media) para héroes, compañeros y rivales, y los
+  grupos con su margen. Se abre desde Ajustes («Análisis», entre Perfil y
+  Meta: las pruebas abren por posición los tres primeros y Meta la última),
+  la barra del PC, «Tus partidas» y `#analisis` (página suelta, como
+  `#capturas`: `PAGINAS_SUELTAS` en App.jsx).
+- Con las 264 de Javi (30 de octubre de 2026): con Lukas de compañero 5 de
+  15 (peor que tu media), contra Brody 2 de 10 (peor), contra Ixia 12 de 13
+  (mejor); el resto cabe en el margen.
+- Pruebas en `motor/analitica` e `interfaz/analitica` (más `idioma.e2e` con
+  partidas, para que el análisis entero pase por la prueba del inglés).
+  Diez mutaciones; dos sobrevivían hasta que los datos de la prueba
+  distinguieron el orden por partidas del de lunes a domingo, y el winrate
+  del borde bajo.
+
+**Las partidas fantasma se quitan solas (3.89.3)**. Javi: «consigue
+permisos para poder borrar las partidas que crees que no son correctas…
+quiero que hagas tú todo». `esFantasma` (registro.js): `origen: 'lector'`,
+`supuesto`, sin `editada`, como mucho un héroe leído y menos de dos baneos
+distintos. Es exactamente lo que 3.89.1 ya no deja apuntar. En la base de
+datos, el 4 de noviembre de 2026, solo lo cumplían las dos del 2 de
+noviembre (las apuntadas a mano de agosto y septiembre sin draft no llevan
+`origen`). `usePersonal` las quita como `olvidarPartida`, con marca en
+`olvidadas`, así que la siguiente subida las borra también de la base de
+datos (`quitar`). Borrarlas solo allí no bastaba: el móvil sube todas las
+suyas y las habría vuelto a subir. Borrar a mano en Supabase pide
+confirmación en el conector, y a esa pregunta nadie contestó a tiempo.
+Pruebas en `motor/registro` (las de la base de datos pasadas por `sanear`)
+y `comunidad.e2e` (del móvil, de la base de datos, sin volver a subir);
+siete mutaciones.
+Desde 3.90.2 una partida contestada en «Capturas» lleva `editada` (lo pone
+el botón y `apuntar` ya no lo tira): sin eso, la contestada sin draft leído
+era fantasma y se borraba al momento. La duración NO salva a una partida:
+la primera fantasma del 2 de noviembre la llevaba (12,9 min, de la tabla de
+la anterior). Lo propuso la revisión a la contra y se midió contra la base
+de datos antes de hacerlo.
+
+**El resultado dudoso (3.100.0)**. Tras 3.99.0 el lector lee bien, pero lo
+ya apuntado seguía midiendo: el Veredicto decía «+17,4 ± 6,7, se distingue
+del azar» con 100 victorias falsas dentro, la calibración daba real 70% para
+un previsto de 55% y `proponer-modelo` medía la escala con ellas. Medido en
+la base de datos el 11 de noviembre de 2026: lo del lector ganaba el 52–57%
+las semanas del 5, 12 y 19 de octubre, y 132 de 135 del 26 de octubre al 10
+de noviembre (la tablet arrancó con 3.99.0 a las 18:11 UTC del 10).
+- `esDudosa` (registro.js): `origen: 'lector'`, `t` entre `DUDOSAS_DESDE` y
+  `DUDOSAS_HASTA`, y sin `editada` posterior a `DUDOSAS_HASTA` (las 23
+  editadas de esos días eran arreglos del draft con el resultado leído:
+  todas victorias). `conResultado` = `gane` booleano y no dudosa: es la
+  puerta de TODO lo que mide si ganaste: `resumen` (cuenta `dudosas`
+  aparte), `calibracion`, `ajustePersonal`, `medirFasesMias`,
+  `partidasValidas` de analitica, `tusNumeros` y `tuSemana`, `porJugador`
+  de la comunidad, la comparación de `revisarDrafts` (el draft sí cuenta),
+  `juntarGloria` del bot del modelo y `medir-mias`.
+- No se borra nada. En «Tus partidas» salen como «resultado dudoso» con ✓
+  (confirmar tal cual: `corregirPartida` con el mismo resultado, que pone
+  `editada`) y ⇄; el Veredicto dice cuántas no cuentan. Arreglarlas en la
+  tablet también pone `editada`.
+- Sin ellas: Veredicto +9,1 ± 7,6 (61,8% en 251 contra 51,3% de siempre).
+- Pruebas en `motor/dudosas` (cada medida da lo mismo con y sin ellas, y
+  las fechas son las del dato), `proponer-modelo` y `persistencia.e2e`; 16
+  mutaciones. Si añades una medida que mire `gane`, va por `conResultado` y
+  en `motor/dudosas`.
+
+**Comprobar la tablet cada semana (3.101.0)**. El fallo de octubre (132
+victorias de 135) tardó dos semanas en verse porque nadie miraba lo que la
+tablet apuntaba sola. `src/motor/comprobacion.js` (puro):
+- `paraComprobar(partidas, comprobadas, { ahora })`: hasta `POR_SEMANA` (3,
+  decisión de producto: un minuto a la semana) menos las comprobadas esta
+  semana (semanas de lunes a lunes UTC, `semanaDe`), de las partidas con
+  `origen: 'lector'`, `conResultado`, pick, sin `editada` (lo arreglado ya
+  es la verdad, no lo que apuntó ella), de los últimos siete días y no
+  comprobadas antes. AL AZAR con una semilla por semana (FNV-1a de
+  `semana:t`): la misma lista al volver a abrir y otra la semana siguiente.
+  Al azar y no «las que parecen raras», para que el acierto sea una muestra
+  sin sesgo.
+- `precisionDeLaTablet`: aciertos con su Wilson y los fallos por tipo
+  (`resultado`, `heroe`).
+- Se guarda en `roam-picker:comprobadas` (clave NUEVA, sin migración;
+  `{ t, bien, que, cuando }`, `sanearComprobadas`: sin repetir partida, manda
+  la última, tope `TOPE_COMPROBADAS` 500). Es del móvil: no va en el perfil
+  ni en la base de datos.
+- En la pantalla (`ComprobarTablet`, arriba en «Tus partidas»): cada
+  partida con su comprobante si llegó; «Todo bien», «El resultado no»
+  (`corregirPartida` al revés, que pone `editada`) y «Mi héroe no» (rejilla
+  del pool, `cambiarHeroe`). La frase del acierto en rojo con algún fallo.
+  En Ajustes, `.por-comprobar` con las que faltan (`porComprobar` en App).
+- Pruebas en `motor/comprobacion` (cada partida que no toca, sola; el azar
+  cambia el lunes con las MISMAS partidas; los fallos por tipo asimétricos)
+  y `interfaz/comprobar.e2e` (numerito, tres partidas con su pantalla, cada
+  botón y lo que guarda). Dieciocho mutaciones; seis sobrevivían al principio
+  (las que no tocan iban mezcladas con doce buenas y el azar no las cogía).
+- Los comprobantes los pide `HistorialPartidas` con un efecto atado a la url,
+  la clave pública y tu clave, NO al objeto `comunidad.config`: subir
+  partidas rehace ese objeto con los mismos valores, y la primera versión
+  volvía a pedir `mis_recortes` tras cada subida (lo cazó `comunidad.e2e`,
+  que hoy exige una sola petición).

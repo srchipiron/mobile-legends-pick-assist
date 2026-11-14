@@ -12,8 +12,8 @@ import { test, ok, RAIZ, leerTexto } from '../ayuda.mjs';
 const FUENTES = [
   ...readdirSync(join(RAIZ, '.github/workflows')).map((f) => `.github/workflows/${f}`),
   'package.json', 'vite.config.js', 'README.md', 'CLAUDE.md',
-  // Desde el 14 de octubre de 2026 lo que era CLAUDE.md vive también aquí.
-  ...['.claude/rules', '.claude/commands', '.claude/agents', 'docs', 'docs/historia']
+  // La memoria viva; `docs/archivo/` es crónica congelada de 3.x y no se mira.
+  ...['.claude/rules', '.claude/commands', '.claude/agents', 'docs']
     .flatMap((d) => readdirSync(join(RAIZ, d)).filter((f) => f.endsWith('.md')).map((f) => `${d}/${f}`)),
 ];
 // Rutas con la forma de un fichero del repositorio. Los nombres sueltos

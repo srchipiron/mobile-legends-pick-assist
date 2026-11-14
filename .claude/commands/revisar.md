@@ -13,7 +13,7 @@ pasa DESPUÉS de una tanda de cambios y ANTES de subir la versión. Nació de
 3.40.0 (la primera pasada con los agentes de ECC encontró seis fallos de
 toque, nueve silenciosos y uno crítico de seguridad). `CLAUDE.md` y las reglas de
 `.claude/rules/` mandan sobre todo lo de aquí; los errores ya cometidos
-están en `docs/historia/errores.md`.
+están en `docs/lecciones.md`.
 
 ## 1. Qué ha cambiado
 
@@ -57,9 +57,9 @@ explica (una mutación inofensiva se apunta como tal).
 ## 5. Cerrar
 
 `npm test`, `npm run build` y las de navegador
-(`PLAYWRIGHT_CHROME=… node pruebas/correr.mjs --e2e`). Lo encontrado va a
-`docs/historia/errores.md` si llegó a producción, a
-`docs/historia/descartados.md` si se decidió no tocar, y lo aprendido de
+(`PLAYWRIGHT_CHROME=… npm run test:ui`). Lo encontrado va a
+`docs/lecciones.md` si llegó a producción, a
+`docs/descartados.md` si se decidió no tocar, y lo aprendido de
 una zona a su regla de `.claude/rules/`; nunca a `CLAUDE.md`, que tiene
 tope. La versión sigue las reglas de siempre y se publica con `/publicar`. Informe corto, en español, legible en el móvil: hallazgos,
 reproducidos, arreglados, descartados y lo que queda para Javi.

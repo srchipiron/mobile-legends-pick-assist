@@ -1,10 +1,8 @@
 /**
- * La configuración de Claude Code del repositorio (.claude/settings.json):
- * el plugin ECC va con sus hooks APAGADOS (pedido el 3 de octubre de 2026).
- * Su perfil por defecto puede reescribir mandatos, bloquear ediciones y
- * mandar texto de la conversación a otro modelo; aquí ya hay guardarraíles
- * propios. ECC lee el interruptor general de `ECC_HOOKS_ENABLED`
- * (su `hook-flags.js`) y Claude Code pasa `env` a los hooks.
+ * La configuración de Claude Code del repositorio: `.claude/settings.json`
+ * mínimo (sin plugins ni hooks: el plugin ECC no carga en la nube y sus hooks
+ * reescribían mandatos; lo útil va copiado en `.claude/agents/`), CLAUDE.md y
+ * las reglas de zona con tope, y lo que CLAUDE.md cita, existiendo.
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -13,16 +11,9 @@ import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 
 const ajustes = JSON.parse(readFileSync(join(RAIZ, '.claude', 'settings.json'), 'utf8'));
 
-test('si el plugin ECC está activado, sus hooks van apagados', () => {
-  if (ajustes.enabledPlugins?.['ecc@ecc'] !== true) return;
-  eq(String(ajustes.env?.ECC_HOOKS_ENABLED ?? '').toLowerCase(), 'false', 'ECC va activado con sus hooks encendidos');
-  ok(!ajustes.hooks, 'hay hooks propios en settings.json: los hooks del proyecto se deciden aparte, no se cuelan aquí');
-});
-
-test('el marketplace de ECC es el oficial (affaan-m/ECC), no una copia', () => {
-  const m = ajustes.extraKnownMarketplaces?.ecc;
-  if (!m) return;
-  eq(`${m.source?.source}:${m.source?.repo}`, 'github:affaan-m/ECC', 'el marketplace de ECC apunta a otro sitio');
+test('settings.json no instala plugins ni hooks (4.0): nada reescribe mandatos ni manda la conversación fuera', () => {
+  eq(JSON.stringify(Object.keys(ajustes).sort()), JSON.stringify(['env']), `settings.json con claves de más: ${Object.keys(ajustes)}`);
+  ok(!('hooks' in ajustes) && !('enabledPlugins' in ajustes) && !('extraKnownMarketplaces' in ajustes), 'settings.json vuelve a traer plugins o hooks');
 });
 
 test('lo traído de ECC se carga (nombre y descripción), lleva su licencia y sus agentes solo leen (5 de octubre de 2026)', () => {
@@ -45,21 +36,39 @@ test('lo traído de ECC se carga (nombre y descripción), lleva su licencia y su
 });
 
 /**
- * CLAUDE.md se carga ENTERO en cada sesión (y en cada subagente y cada
- * «@claude» de GitHub). Llegó a 3.948 líneas y 272 KB (unos 75.000 tokens
- * antes de escribir nada) porque cada iteración le añadía su lección. Desde
- * el 14 de octubre de 2026 lleva solo lo que vale para cualquier tarea; lo de
- * cada zona va en `.claude/rules/` (se carga al tocar esa zona) y la historia
- * en `docs/historia/`. Tope: unas 60 líneas por encima de lo que tiene hoy.
+ * CLAUDE.md se carga ENTERO en cada sesión (y en cada subagente). Llegó a 3.948
+ * líneas y 272 KB porque cada iteración le añadía su lección. Desde 4.0 lleva solo
+ * lo que vale para cualquier tarea (131 líneas); cada regla de zona tiene su tope
+ * (`lector.md` llegó a 2.260 líneas y 154 KB, ~45.000 tokens al tocar un fichero).
  */
-const MAX_LINEAS_CLAUDE = 250;
-const MAX_BYTES_CLAUDE = 16 * 1024;
+const MAX_LINEAS_CLAUDE = 140;
+const MAX_BYTES_CLAUDE = 9 * 1024;
+const MAX_LINEAS_REGLA = 220;
+const MAX_BYTES_REGLA = 15 * 1024;
 
 test('CLAUDE.md no vuelve a crecer sin freno (14 de octubre de 2026)', () => {
   const texto = readFileSync(join(RAIZ, 'CLAUDE.md'), 'utf8');
   const lineas = texto.split('\n').length;
-  ok(lineas <= MAX_LINEAS_CLAUDE, `CLAUDE.md tiene ${lineas} líneas (tope ${MAX_LINEAS_CLAUDE}): lo de una zona va en .claude/rules/, la historia en docs/historia/`);
+  ok(lineas <= MAX_LINEAS_CLAUDE, `CLAUDE.md tiene ${lineas} líneas (tope ${MAX_LINEAS_CLAUDE}): lo de una zona va en .claude/rules/, lo demás en docs/`);
   ok(Buffer.byteLength(texto) <= MAX_BYTES_CLAUDE, `CLAUDE.md pesa ${Buffer.byteLength(texto)} bytes (tope ${MAX_BYTES_CLAUDE})`);
+});
+
+test('cada regla de zona lleva solo el estado actual, con tope (4.0): la crónica va a docs/archivo/', () => {
+  const dir = join(RAIZ, '.claude', 'rules');
+  for (const f of readdirSync(dir).filter((x) => x.endsWith('.md'))) {
+    const texto = readFileSync(join(dir, f), 'utf8');
+    const lineas = texto.split('\n').length;
+    ok(lineas <= MAX_LINEAS_REGLA, `${f} tiene ${lineas} líneas (tope ${MAX_LINEAS_REGLA})`);
+    ok(Buffer.byteLength(texto) <= MAX_BYTES_REGLA, `${f} pesa ${Buffer.byteLength(texto)} bytes (tope ${MAX_BYTES_REGLA})`);
+  }
+});
+
+test('lo que CLAUDE.md dice que hay en docs/ existe', () => {
+  const indice = readFileSync(join(RAIZ, 'CLAUDE.md'), 'utf8');
+  for (const f of ['lecciones.md', 'descartados.md', 'decisiones.md', 'pendiente.md', 'paridad.md', 'comunidad.md']) {
+    ok(indice.includes(`\`${f}\``), `CLAUDE.md no nombra docs/${f}`);
+    ok(existsSync(join(RAIZ, 'docs', f)), `CLAUDE.md nombra docs/${f} y no existe`);
+  }
 });
 
 /** Un glob de `paths:` (`**`, `*`, `?`, `{a,b}`) como expresión regular. */
