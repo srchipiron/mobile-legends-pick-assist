@@ -40,14 +40,15 @@ export function useApuntar({ datos, rec, draft, personal, perfil, linea, hoja, c
   };
 
   /** El resultado que esperaba su plazo sale a la tablet; si no lo toma, se apunta aquí. */
+  const mandarResultado = tablet.resultado;
   const enviarPendiente = useCallback(async ({ alSalir = false } = {}) => {
     const p = pendiente.current;
     if (!p) return;
     pendiente.current = null;
     clearTimeout(p.reloj);
-    const ok = await tablet.resultado(p.desde, p.gane, { keepalive: alSalir });
+    const ok = await mandarResultado(p.desde, p.gane, { keepalive: alSalir });
     if (!ok) p.apuntarAqui();
-  }, [tablet]);
+  }, [mandarResultado]);
 
   /**
    * Gané/Perdí desde el recordatorio o «Apuntar partida», con el MISMO
