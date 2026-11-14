@@ -8,6 +8,20 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 3.102.0
+
+- Los héroes que ha tocado un parche llevan «Parche: hace N d» en su tarjeta
+  y una línea en su ficha durante su primera semana: su porcentaje aún mezcla
+  partidas de antes del cambio, así que fíate de él con algo más de cuidado.
+  Hoy salen los 32 del parche del 11 de noviembre (hasta el 18). A partir de
+  ahora lo detecta solo el bot de datos, también los cambios que son solo de
+  números (como Atlas, de 5 a 4 s), y no marca nada si el juego reescribe de
+  golpe los textos de medio plantel.
+- El bot de vigilancia avisa solo cuando el juego cambia la cara de un héroe:
+  abre una incidencia diciendo cuáles, porque hasta rehacerlas la tablet no
+  los reconoce en el draft. El 11 de noviembre (Popol and Kupa y Cyclops) se
+  vio solo al revisar el parche a mano.
+
 ## 3.101.3
 
 - El consejo ya no quita héroes por baneos que no existen. Con la fila de

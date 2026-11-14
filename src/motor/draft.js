@@ -108,6 +108,12 @@ export function prepararDatos({ catalogo = null, meta = null, rango = null } = {
     // 0,482 frente a 0,502, y cada héroe visto sumaba +0,09 de logit. La
     // ingesta sigue escribiendo `avgByRank`, pero ya no decide nada.
     mediaDelRango: mediaDeWinrate(stats),
+    // Los tocados por el parche (3.102.0, `tocadoPorElParche`): el día en que
+    // la ingesta vio cambiar sus habilidades. Se ENSEÑA, no puntúa. `days` es
+    // la ventana de los datos: mientras no pase, su winrate y sus cruces
+    // mezclan días de antes del cambio.
+    tocados: indexarPorNombre(meta?.tocados) ?? {},
+    days: Number.isFinite(meta?.days) ? meta.days : null,
   };
   return {
     heroes, lineas, frecuencias, rango: rangoUsado, meta: metaCtx, poolsPorLinea,
@@ -120,6 +126,21 @@ export function prepararDatos({ catalogo = null, meta = null, rango = null } = {
 export function winrateEnLinea(datos, heroe, linea) {
   const v = buscar(datos?.meta?.winrateLinea ?? {}, heroe?.name ?? heroe)?.[linea];
   return typeof v === 'number' && v > 0 && v < 1 ? v : null;
+}
+
+/**
+ * Tocado por el parche (3.102.0): `{ fecha, dias }` si la ingesta vio
+ * cambiar sus habilidades (texto o cifras, `meta.tocados`) hace menos de la
+ * ventana de los datos (`meta.days`, 7). Hasta entonces su winrate y sus
+ * cruces mezclan días de antes del cambio. Se ENSEÑA, no puntúa. null si no,
+ * o sin `ahora` (el motor no mira el reloj).
+ */
+export function tocadoPorElParche(datos, heroe, ahora) {
+  const fecha = buscar(datos?.meta?.tocados ?? {}, heroe?.name ?? heroe);
+  if (!Number.isFinite(ahora) || typeof fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null;
+  const dias = Math.floor((ahora - Date.parse(`${fecha}T00:00:00Z`)) / 86400000);
+  const ventana = Number.isFinite(datos?.meta?.days) && datos.meta.days > 0 ? datos.meta.days : 7;
+  return dias >= 0 && dias < ventana ? { fecha, dias, quedan: ventana - dias } : null;
 }
 
 // La tier de mlbb.gg vigente vive en ventana.js (la usa también el diagnóstico).
@@ -492,7 +513,7 @@ export const POR_FICHA = 5;
  * línea: dos de la misma línea no se juntan en un draft); su tier de
  * mlbb.gg si está vigente y cómo se ha movido esta semana. null si no existe.
  */
-export function fichaDeHeroe(datos, nombre, { n = POR_FICHA } = {}) {
+export function fichaDeHeroe(datos, nombre, { n = POR_FICHA, ahora = null } = {}) {
   const clave = nombreClave(nombre ?? '');
   const heroe = (datos?.heroes ?? []).find((h) => nombreClave(h.name) === clave);
   if (!heroe) return null;
@@ -517,5 +538,6 @@ export function fichaDeHeroe(datos, nombre, { n = POR_FICHA } = {}) {
     peorCon: parejas.slice(-n).reverse(),
     tier: tiersVigentes(datos.crudo)?.[heroe.name] ?? null,
     tendencia,
+    parche: tocadoPorElParche(datos, heroe, ahora),
   };
 }

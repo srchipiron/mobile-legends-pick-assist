@@ -124,6 +124,14 @@ Queda propuesto, sin hacer, porque cambia cuándo saltan las alarmas:
   cuando los datos vuelven a entrar. Prueba en `scripts/salud`, dos
   mutaciones. «El mismo aviso N corridas» sigue sin hacer: la fila de salud
   cuenta los avisos, no dice cuáles.
+- Desde 3.102.0, tras los datos rancios, `scripts/caras-nuevas.mjs`
+  compara la cara que da la API de cada héroe con la que tiene el lector
+  (`caras.json`, `carasDesfasadas`: el FICHERO, no la carpeta del CDN) y
+  sale con 1 si el juego cambió alguna: la incidencia dice cuáles y que se
+  arregla con `sacar-caras.mjs`. Nació del 11 de noviembre (Popol and Kupa
+  y Cyclops), que solo se vio revisando el parche a mano. Mismo patrón que
+  `datos-rancios` (`bash` con pipefail, `/tmp/caras.txt` en el cuerpo).
+  Prueba en `scripts/caras-nuevas`, seis mutaciones.
 - Hacer FALLO los valores imposibles de winrate, cuotas y ban.
 - La mediana del historial, solo con filas sanas.
 - `tendencia.mjs` con más campos y por tramos.

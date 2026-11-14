@@ -150,6 +150,16 @@ jobs:
         shell: bash
         run: node scripts/datos-rancios.mjs historial/salud.jsonl 2>&1 | tee /tmp/rancios.txt
 
+      # 4) Las caras del lector, al día con las del juego (3.102.0). Un parche
+      #    puede cambiar el dibujo de un héroe (Popol and Kupa y Cyclops el 11
+      #    de noviembre de 2026) y la tablet deja de reconocerlo sin que nada
+      #    lo diga. No va en npm test: tiraría el despliegue de los datos.
+      - name: Caras nuevas en el juego
+        id: caras
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: node scripts/caras-nuevas.mjs 2>&1 | tee /tmp/caras.txt
+
       - name: Abrir incidencia si algo falla
         if: ${{ failure() || steps.guardar.outcome == 'failure' }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -162,6 +172,7 @@ jobs:
             const cuerpo = [
               ...(filaPerdida ? ['**La fila de esta corrida NO se ha guardado en `historial/salud.jsonl`** (push rechazado tres veces). Si el diagnóstico de abajo dice que todo está bien, es solo eso.', ''] : []),
               ...('${{ steps.rancios.outcome }}' === 'failure' ? [`**${leer('/tmp/rancios.txt').trim()}**`, ''] : []),
+              ...('${{ steps.caras.outcome }}' === 'failure' ? [`**${leer('/tmp/caras.txt').trim()}**`, ''] : []),
               'La vigilancia automática ha encontrado algo. Esto NO lo ha pulsado nadie:',
               'lo ha detectado la comprobación programada contra la app publicada.',
               '',

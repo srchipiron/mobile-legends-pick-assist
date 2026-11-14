@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { fichaDeHeroe } from '../../motor/draft.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Cara } from './Imagen.jsx';
+import { diaYMes } from './Tarjeta.jsx';
 import { ETIQUETAS_RANGO } from './SelectorDeRango.jsx';
 import { tPorDefecto } from './tPorDefecto.js';
 
@@ -12,7 +13,7 @@ import { tPorDefecto } from './tPorDefecto.js';
  * (draft.js), con los mismos datos que deciden las recomendaciones.
  */
 export function FichaDeHeroe({ datos, nombre, onOtro, onCerrar, t = tPorDefecto }) {
-  const f = useMemo(() => fichaDeHeroe(datos, nombre), [datos, nombre]);
+  const f = useMemo(() => fichaDeHeroe(datos, nombre, { ahora: Date.now() }), [datos, nombre]);
   // Solo el número: el «%» va en la frase y el traductor pone la coma decimal en español.
   const num = (v, d = 1) => (v == null ? '—' : (v * 100).toFixed(d));
   const pct = (v, d = 1) => (v == null ? '—' : t('ficha.pct', { v: num(v, d) }));
@@ -49,6 +50,7 @@ export function FichaDeHeroe({ datos, nombre, onOtro, onCerrar, t = tPorDefecto 
                   {f.stat ? t('ficha.datos', { wr: num(f.stat.winRate), pick: num(f.stat.pickRate), ban: num(f.stat.banRate, 0), rango: ETIQUETAS_RANGO[f.rango] ?? f.rango }) : t('ficha.sinDatos')}
                 </p>
                 {f.tier && <p className="nota">{t('ficha.tier', { tier: f.tier })}</p>}
+                {f.parche && <p className="nota">{t('ficha.parche', { fecha: diaYMes(f.parche.fecha), dias: f.parche.dias, quedan: f.parche.quedan })}</p>}
                 {f.tendencia != null && <p className={`nota ${f.tendencia > 0 ? 'bien' : 'mal'}`}>{t(f.tendencia > 0 ? 'ficha.sube' : 'ficha.baja', { puntos: (Math.abs(f.tendencia) * 100).toFixed(1) })}</p>}
                 {f.lineas.length > 0 && (
                   <p className="nota">{f.lineas.map((l) => (l.winRate != null ? t('ficha.enLinea', { linea: t(`linea.${l.linea}`), wr: num(l.winRate) }) : t(`linea.${l.linea}`))).join(' · ')}</p>

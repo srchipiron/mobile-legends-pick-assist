@@ -20,7 +20,7 @@ import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
 import { comparar } from '../../scripts/comparar-ingesta.mjs';
-import { huellaTexto } from '../../scripts/ingesta/extraccion.mjs';
+import { huellaTexto, huellaDeHabilidades } from '../../scripts/ingesta/extraccion.mjs';
 
 /** Como sirve la API las imágenes desde el 11 de octubre de 2026: por el proxy wsrv.nl (3.57.2). */
 const proxy = (url) => `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
@@ -199,7 +199,8 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
         // control en área por etiqueta y una que limpia a los aliados por
         // TEXTO (corto, para no mover la huella del kit).
         // La primera de la lista es la pasiva, como en la API: no cuenta.
-        skill: { skilllist: kitSinControl ? [
+        // Solo Atlas se rehace (3.102.0): un parche toca a unos pocos, y con los tres a la vez sería la API reescribiendo textos.
+        skill: { skilllist: kitSinControl && h.id === 1 ? [
           { skillname: 'Frigid Breath', skilldesc: 'Passive.', skilltag: [{ tagname: 'Buff' }] },
           { skillname: 'Fatal Links', skilldesc: DESCRIPCION, skilltag: [{ tagname: 'Buff' }] },
         ] : [
@@ -343,6 +344,12 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     ok(atlas && atlas.id === 1 && atlas.role === 'tank' && atlas.lanes.includes('roam'), `ficha de Atlas: ${JSON.stringify(atlas)}`);
     eq(atlas?.damage?.magico, 1, `tipo de daño de Atlas: ${JSON.stringify(atlas?.damage)}`);
     eq(atlas?.kitTexto, huellaTexto({ skilldesc: DESCRIPCION }), `la huella del texto no es la de la ficha SERVIDA: ${atlas?.kitTexto}`);
+    // Y la de las habilidades con sus cifras (3.102.0), la que dice si al héroe lo tocó un parche.
+    eq(atlas?.kitCifras, huellaDeHabilidades([
+      { skillname: 'Frigid Breath', skilldesc: 'Removes all debuffs on allies.' },
+      { skillname: 'Fatal Links', skilldesc: DESCRIPCION },
+      { skillname: 'Time Journey', skilldesc: 'Removes all debuffs on allies.' },
+    ]), `la huella de las habilidades no es la de la ficha SERVIDA: ${atlas?.kitCifras}`);
     eq(JSON.stringify(atlas?.habilidades), JSON.stringify([{ n: 'Fatal Links', e: ['area', 'cc'] }, { n: 'Time Journey', e: ['aliados', 'limpia'] }]),
       `las habilidades no son las de la ficha SERVIDA: ${JSON.stringify(atlas?.habilidades)}`);
     // La cara del juego (la del objeto con `heroid`), no el retrato de la web: la usa el lector de pantalla.
@@ -499,6 +506,7 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     const atlas3 = d3.heroes.find((h) => h.name === 'Atlas');
     ok(atlas3?.speciality?.includes('Guard'), `con la ficha caída la speciality no se conserva: ${JSON.stringify(atlas3?.speciality)}`);
     eq(atlas3?.kitTexto, huellaTexto({ skilldesc: DESCRIPCION }), 'con la ficha caída la huella del texto no se conserva de la corrida anterior: avisaría de un rework falso');
+    ok(atlas3?.kitCifras === atlas?.kitCifras && d3.tocados?.Atlas !== new Date().toISOString().slice(0, 10), `con la ficha caída se marca a Atlas como tocado hoy: ${JSON.stringify({ k: atlas3?.kitCifras, t: d3.tocados })}`);
     eq(atlas3?.habilidades?.length, 2, `con la ficha caída las habilidades no se conservan: ${JSON.stringify(atlas3?.habilidades)}`);
     ok(atlas3?.cara?.endsWith('/cara/1.png'), `con la ficha caída la cara del juego no se conserva: ${atlas3?.cara}`);
     ok(/^2 pares /.test(d3.diagnostics.rutasMedidas?.counter ?? '') && !/academy/.test(d3.diagnostics.rutasMedidas?.counter ?? ''),
@@ -561,8 +569,14 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     // comparador tiraba la corrida entera (14 de octubre de 2026, 106 de 133).
     fallarPrimeros = 20; parejasVaciasActivas = true;
     const out5 = resolve(dir, 'gloria-buena.json');
+    // Con las huellas de habilidades de la primera corrida en lo guardado: Atlas llega rehecho y sale tocado HOY (3.102.0).
+    const previoConKits = resolve(dir, 'previo-con-kits.json');
+    const kitsDeLaPrimera = new Map(d.heroes.map((h) => [h.name, h.kitCifras]));
+    const conKits = JSON.parse(readFileSync(previoSim, 'utf8'));
+    conKits.heroes = conKits.heroes.map((h) => (kitsDeLaPrimera.get(h.name) ? { ...h, kitCifras: kitsDeLaPrimera.get(h.name) } : h));
+    writeFileSync(previoConKits, JSON.stringify(conKits));
     const r5 = await correrIngesta([
-      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', previoSim,
+      '--base', `http://127.0.0.1:${puerto}/api`, '--previo', previoConKits,
       '--ranks', 'mythic,glory', '--rank', 'glory', '--pausa', '0', '--out', out5, '--celdas-para-comparar', '1', '--tiers', `http://127.0.0.1:${puerto}/api/v1`,
       '--iconos', resolve(dir, 'objetos'), '--retratos', resolve(dir, 'heroes'),
     ]);
@@ -581,6 +595,10 @@ test('la ingesta entera recorre todos los endpoints contra una API simulada', as
     ok(d5.relaciones?.rango === 'glory' && d5.relaciones?.coherencia?.counters > 0.99 && !d5.relaciones?.motivo, `con Gloria coherente no se queda Gloria: ${JSON.stringify(d5.relaciones)}`);
     eq(d5.diagnostics.imagenes?.heroes?.bajados, 0, `se vuelven a bajar retratos que no han cambiado: ${JSON.stringify(d5.diagnostics.imagenes)}`);
     eq(JSON.stringify(d5.heroes.find((h) => h.name === 'Atlas')?.habilidades), '[]', 'una ficha que llega sin habilidades deja las de antes');
+    const hoy5 = new Date().toISOString().slice(0, 10);
+    const otrosDeLaSimulacion = [...kitsDeLaPrimera.keys()].filter((n) => n !== 'Atlas' && kitsDeLaPrimera.get(n));
+    ok(d5.tocados?.Atlas === hoy5 && otrosDeLaSimulacion.length && otrosDeLaSimulacion.every((n) => d5.tocados?.[n] !== hoy5) && d5.diagnostics.parche?.cambiados === 1,
+      `Atlas rehecho no sale tocado hoy, o salen los demás: ${JSON.stringify({ t: d5.tocados, p: d5.diagnostics.parche, otros: otrosDeLaSimulacion })}`);
     // Sexta: Gloria ruidosa pero Mítico llega a medias: no se cambia a un
     // Mítico de tres héroes tirando la Gloria entera, y se dice por qué.
     gloriaRuidosa = true; miticoAMedias = true;

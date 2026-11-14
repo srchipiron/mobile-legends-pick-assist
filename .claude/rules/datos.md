@@ -391,3 +391,31 @@ Iconos de objeto (`public/objetos/{id}.png`, 71) y caras de héroe
 - **El prop se llama `className`, no `clase`.** `comprobar/css.mjs` busca
   literalmente `className=` para saber qué clases usa la interfaz; con otro
   nombre, una clase sin estilo pasa el control sin que nadie se entere.
+
+## Los tocados por el parche (3.102.0)
+
+Javi: «marcar en la app los héroes tocados por el parche durante su primera
+semana, para que sepas que su porcentaje aún mezcla días de antes».
+- `huellaDeKit` quita las CIFRAS a propósito (las etiquetas van por
+  mecánicas), así que un nerf solo de números (Atlas 5 → 4 s el 11 de
+  noviembre) no sale en `heroesCambiados`. Por eso hay una segunda huella,
+  `kitCifras` (`huellaDeHabilidades`, extraccion.mjs: nombre, texto y
+  `skillcd&cost` de cada habilidad, sin HTML, CON cifras, FNV-1a), que la
+  ingesta guarda en cada héroe de `roam-meta.json` y conserva si la ficha
+  no llega (`conservarFichasPrevias`).
+- `anotarParche` (fusion.mjs) compara con la corrida anterior y deja en
+  `tocados` `{héroe: 'AAAA-MM-DD'}` los que cambian, los de antes mientras
+  tengan menos de `days` (7, la ventana de cruces y parejas). GUARDA: si
+  cambia más de `PARCHE_MAX_PROPORCION` (la mitad) de los comparables, no
+  es un parche sino la API cambiando el formato de los textos (un parche
+  de verdad, el del 11 de noviembre, tocó 32 de 133): no marca a nadie y
+  lo dice el log
+  (`diagnostics.parche.reescrito`). Sin `kitCifras` en la anterior (la
+  primera corrida tras 3.102.0) no compara: esa corrida es la base.
+- Sembrado a mano el 14 de noviembre: los 32 del parche del 11 (lista de
+  `motor.md`), con esa fecha. Se van solos el 18.
+- En la app: `tocadoPorElParche` (draft.js, con `meta.days` de ventana)
+  pone «Parche: hace N d» bajo la tarjeta y una línea en la ficha. Pruebas
+  en `scripts/ingesta` (la guarda, la caducidad, fechas malas),
+  `ingesta-simulada` (la ingesta entera: Atlas cambia y sale con fecha de
+  hoy, los otros no), `motor/ficha` y `hojas.e2e`; trece mutaciones.

@@ -3,7 +3,7 @@
  * ya sabe de él, con los datos reales. Propiedades, no números del día.
  */
 import { test, ok, eq, leerJson, terminar } from '../arnes.mjs';
-import { prepararDatos, fichaDeHeroe, POR_FICHA, poolDe } from '../../src/motor/draft.js';
+import { prepararDatos, fichaDeHeroe, POR_FICHA, poolDe, tocadoPorElParche } from '../../src/motor/draft.js';
 import { cruce, sinergia } from '../../src/motor/matrices.js';
 import { LINEAS } from '../../src/motor/catalogo.js';
 
@@ -36,6 +36,26 @@ test('la ficha encuentra al héroe con otra grafía y no se inventa uno que no e
   eq(fichaDeHeroe(datos, 'Nadie Nunca'), null);
   eq(fichaDeHeroe(datos, null), null);
   eq(fichaDeHeroe({ heroes: [] }, 'Tigreal'), null);
+});
+
+test('tocado por el parche (3.102.0): con su fecha y los días, solo durante la ventana de los datos, por clave y sin mirar el reloj', () => {
+  const catalogo = leerJson('public/data/heroes.json');
+  const meta = leerJson('public/data/roam-meta.json');
+  const d = prepararDatos({ catalogo, meta: { ...meta, days: 7, tocados: { Atlas: '2026-11-11', 'Popol and Kupa': '2026-11-11', Roto: '11/11/2026' } }, rango: 'glory' });
+  const dia = (f, h = 12) => Date.parse(`${f}T${String(h).padStart(2, '0')}:00:00Z`);
+  eq(JSON.stringify(tocadoPorElParche(d, 'Atlas', dia('2026-11-11', 0))), JSON.stringify({ fecha: '2026-11-11', dias: 0, quedan: 7 }), 'el mismo día');
+  eq(tocadoPorElParche(d, { name: 'popol and kupa' }, dia('2026-11-17', 23))?.dias, 6, 'el sexto día, o sin casar por clave');
+  eq(tocadoPorElParche(d, 'Atlas', dia('2026-11-18', 0)), null, 'sigue cumplida la ventana');
+  eq(tocadoPorElParche(d, 'Atlas', dia('2026-11-10')), null, 'antes de la fecha');
+  eq(tocadoPorElParche(d, 'Atlas'), null, 'sin reloj, el motor no puede saber cuánto hace');
+  eq(tocadoPorElParche(d, 'Roto', dia('2026-11-12')), null, 'una fecha sin forma');
+  eq(tocadoPorElParche(d, 'Diggie', dia('2026-11-12')), null, 'uno sin tocar');
+  // La ventana es la de los datos: con 3 días, al cuarto ya no.
+  const d3 = prepararDatos({ catalogo, meta: { ...meta, days: 3, tocados: { Atlas: '2026-11-11' } }, rango: 'glory' });
+  ok(tocadoPorElParche(d3, 'Atlas', dia('2026-11-13')) && !tocadoPorElParche(d3, 'Atlas', dia('2026-11-14')), 'no sigue a la ventana de los datos');
+  // La ficha lo lleva con el reloj que le pasen.
+  eq(fichaDeHeroe(d, 'Atlas', { ahora: dia('2026-11-14') }).parche?.dias, 3);
+  eq(fichaDeHeroe(d, 'Atlas').parche, null);
 });
 
 await terminar('motor/ficha');

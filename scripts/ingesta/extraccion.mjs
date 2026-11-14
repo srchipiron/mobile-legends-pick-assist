@@ -227,6 +227,33 @@ export function huellaTexto(node) {
 }
 
 /**
+ * La huella de las HABILIDADES con sus cifras (3.102.0): nombre, texto y
+ * recarga/coste de cada una, por forma (cualquier objeto con `skillname` y
+ * `skilldesc`). `huellaTexto` quita las cifras y las frases cortas a
+ * proposito (las etiquetas van por mecanicas), asi que no ve un buff o un
+ * nerf de numeros: en el parche del 11 de noviembre de 2026 se le escaparon
+ * Atlas (Frigid Breath 5 → 4 s), Gloo, Hirara, Lukas y Aldous («CD: 12» →
+ * «CD: 9.5»). Esta es la que dice que a un heroe lo han tocado.
+ */
+export function huellaDeHabilidades(node) {
+  const lineas = new Set();
+  const limpio = (t) => String(t ?? '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+  const recorrer = (x, depth = 0) => {
+    if (depth > HONDURA || x == null || typeof x !== 'object') return;
+    if (typeof x.skillname === 'string' && typeof x.skilldesc === 'string') {
+      lineas.add(`${limpio(x.skillname)}|${limpio(x.skilldesc)}|${limpio(x['skillcd&cost'])}`);
+    }
+    for (const v of Array.isArray(x) ? x : Object.values(x)) recorrer(v, depth + 1);
+  };
+  recorrer(node);
+  const texto = [...lineas].sort().join('\n');
+  if (!texto) return null;
+  let h = 0x811c9dc5;
+  for (let i = 0; i < texto.length; i++) { h ^= texto.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16).padStart(8, '0');
+}
+
+/**
  * La direccion ORIGINAL de una imagen que la API sirve por un proxy (3.57.2).
  * Desde el 11 de octubre de 2026 cada imagen llega como
  * `https://wsrv.nl/?url=<la de Moonton>`: el proxy la recomprime (la cara
@@ -324,6 +351,8 @@ export async function fetchFichas(heroes) {
       if (cara) ficha.cara = cara;
       const kitTexto = huellaTexto(data);
       if (kitTexto) ficha.kitTexto = kitTexto;
+      const kitCifras = huellaDeHabilidades(data);
+      if (kitCifras) ficha.kitCifras = kitCifras;
       // Siempre que la ficha llegue, aunque vacía: un rework que quita el
       // último control no puede dejar las habilidades de antes (3.37.0).
       ficha.habilidades = extraerHabilidades(data);

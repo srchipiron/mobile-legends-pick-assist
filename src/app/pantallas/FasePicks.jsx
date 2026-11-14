@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { buscar } from '../../motor/nombres.js';
 import { tic } from '../tacto.js';
-import { winrateEnLinea, tiersVigentes } from '../../motor/draft.js';
+import { winrateEnLinea, tiersVigentes, tocadoPorElParche } from '../../motor/draft.js';
 import { porQueDetras } from '../../motor/ranking.js';
 import { MINUTOS_PARA_RECORDAR } from '../estado/useDraft.js';
 import { useAhora } from '../estado/useAhora.js';
@@ -244,6 +244,7 @@ export function FasePicks({ t, linea, rango, idioma, onIdioma, tacto, onTacto, o
               pro={pro?.heroes?.[c.heroe.name] ?? null}
               tier={tiers?.[c.heroe.name] ?? null}
               wrLinea={linea ? winrateEnLinea(datos, c.heroe, linea) : null}
+              parche={tocadoPorElParche(datos, c.heroe, Date.now())}
               linea={linea}
               onBuild={meta ? (h) => abrir({ build: h }) : null /* también sin builds: la hoja lleva el plan (3.37.0) */}
               elegido={miPick?.name === c.heroe.name}

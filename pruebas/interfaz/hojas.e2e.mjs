@@ -293,6 +293,35 @@ await prueba('tocar un héroe en Meta abre su ficha, y tocar otro de sus listas 
   await contexto.close();
 });
 
+await prueba('los tocados por el parche llevan su marca en la tarjeta y en la ficha durante la semana, y luego nada (3.102.0)', async () => {
+  // Las fechas van relativas a hoy: la semilla del 11 de noviembre de 2026 caduca sola y la prueba no puede depender de ella.
+  const diasAtras = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+  const conTocados = (fecha) => (p) => p.route('**/data/roam-meta.json', async (ruta) => {
+    const r = await ruta.fetch(); const m = await r.json();
+    await ruta.fulfill({ response: r, json: { ...m, tocados: Object.fromEntries(m.heroes.map((h) => [h.name, fecha])) } });
+  });
+  const abrir = (fecha) => paginaCon(navegador, url, { sinServiceWorker: true, almacen: { ...LINEA, 'roam-picker:draft': PICKS }, antes: conTocados(fecha) });
+  let { contexto, pagina, errores } = await abrir(diasAtras(2));
+  try {
+    await pagina.locator('.pick').first().waitFor({ timeout: 10000 });
+    eq((await pagina.locator('.pick').first().locator('.pick-parche').innerText()).trim(), 'Parche: hace 2 d', 'la nº1 tocada por el parche no lo dice');
+    ok(/mezcla días de antes/.test(await pagina.locator('.pick .pick-parche').first().getAttribute('title')), 'la marca no explica por qué');
+    // En la ficha, la frase entera.
+    await abrirAjustes(pagina);
+    await pagina.locator('.more .tools .reset').last().click(); await pagina.waitForTimeout(300);
+    await pagina.locator('.meta-ficha').first().click(); await pagina.waitForTimeout(300);
+    ok(/Lo tocó el parche del \d+\/\d+ \(hace 2 d\).*en 5 d serán todos de después/.test(await pagina.locator('[role=dialog]').innerText()), 'la ficha no dice que lo tocó el parche');
+    ok(!errores.length, `errores: ${errores}`);
+  } finally { await contexto.close(); }
+  // Pasada la semana (la ventana de los datos), ni marca ni frase.
+  ({ contexto, pagina, errores } = await abrir(diasAtras(8)));
+  try {
+    await pagina.locator('.pick').first().waitFor({ timeout: 10000 });
+    eq(await pagina.locator('.pick-parche').count(), 0, 'la marca sigue pasada la semana');
+    ok(!errores.length, `errores: ${errores}`);
+  } finally { await contexto.close(); }
+});
+
 await prueba('la hoja Meta enseña la tier list por línea, con la tuya primero, y se cierra con Escape', async () => {
   const { contexto, pagina, errores } = await con(PICKS);
   await pagina.locator('.more summary').click(); await pagina.waitForTimeout(200);

@@ -2228,9 +2228,11 @@ nueva del juego la API sirve TODAS las caras desde otra carpeta del CDN
 0,37 de parecido con la cara vieja) y Cyclops (0,24). `sacar-caras.mjs` las
 rehízo; ninguna se parece a otro héroe por encima de 0,53 (Cyclops–Gord),
 lejos de `PARECIDO_MINIMO`. `carasDesfasadas` compara desde hoy el FICHERO
-de la imagen, no la URL entera (daba 132 «desfasadas»). Sigue sin haber
-aviso automático de una cara cambiada fuera de `leer.mjs --archivo`, y NO
-va en `npm test`: tiraría el despliegue de los datos del bot.
+de la imagen, no la URL entera (daba 132 «desfasadas»). NO va en `npm
+test`: tiraría el despliegue de los datos del bot. Desde 3.102.0 lo avisa la
+vigilancia (`scripts/caras-nuevas.mjs`, ver «La vigilancia automática» en
+`bots.md`): sale con 1, abre la incidencia de siempre con los nombres y el
+comando que lo arregla (`sacar-caras.mjs`; la APK se recompila con el push).
 
 **Los baneos fantasma de la fila rota (3.101.3)**. «No se está comportando
 bien la selección de picks» (14 de noviembre de 2026): con la fila de

@@ -12,13 +12,13 @@ import { readdirSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
 import { test, ok, eq, terminar, RAIZ, leerTexto } from '../arnes.mjs';
-import { extraerLineas, extraerRol, extraerHabilidades, fetchStats, recogerCurva, TRAMOS_CURVA, huellaTexto, extraerCara, urlOriginal } from '../../scripts/ingesta/extraccion.mjs';
+import { extraerLineas, extraerRol, extraerHabilidades, fetchStats, recogerCurva, TRAMOS_CURVA, huellaTexto, huellaDeHabilidades, extraerCara, urlOriginal } from '../../scripts/ingesta/extraccion.mjs';
 import { TRAMOS } from '../../src/motor/fases.js';
 import { callRoute, request } from '../../scripts/ingesta/descarga.mjs';
 import { estado } from '../../scripts/ingesta/contexto.mjs';
 import { idPrincipal, esIdDeHeroe, recogerPares, relationMap, pick } from '../../scripts/ingesta/relaciones.mjs';
 import { serializar } from '../../scripts/ingesta/salida.mjs';
-import { kitsRehechos, fundirWinrateLinea, relacionesDeLaCorrida, anotarHistoria, fundirEquipo } from '../../scripts/ingesta/fusion.mjs';
+import { kitsRehechos, fundirWinrateLinea, relacionesDeLaCorrida, anotarHistoria, fundirEquipo, anotarParche, PARCHE_MAX_PROPORCION } from '../../scripts/ingesta/fusion.mjs';
 
 test('el rol y la línea se leen aunque vengan hondos en la respuesta', () => {
   // Forma REAL de la API: el titulo de la linea vive en el nivel 8. El limite de
@@ -544,6 +544,38 @@ test('una fila conservada se cose a las nuevas: los cruces siguen sumando 1 y la
   // Una celda que la fila de ayer no tenía no se inventa.
   const sinC = relacionesDeLaCorrida({ ...previo, counters: { ...previo.counters, A: { B: 0.6 } } }, hoy, 'glory');
   eq(Object.keys(sinC.relations.counters.A).join(), 'B', 'inventa una celda que no había');
+});
+
+test('los tocados por el parche (3.102.0): la huella de las habilidades ve las cifras, y cada tocado se marca con su día durante la ventana', () => {
+  // Las de Aldous el 11 de noviembre de 2026: solo cambió la recarga.
+  const ficha = (cd, texto = 'Aldous consumes Soul Steal stacks to <font color="x">explode</font>, dealing damage.') => ({ data: { hero: { data: { heroskilllist: [{ skilllist: [
+    { skillname: 'Contract: Explosion', skilldesc: texto, 'skillcd&cost': cd },
+    { skillname: 'Soul Steal', skilldesc: 'Passive.', 'skillcd&cost': '' },
+  ] }] } } } });
+  const antes = huellaDeHabilidades(ficha('CD: 12   Mana Cost: 80'));
+  ok(/^[0-9a-f]{8}$/.test(antes), `sin huella: ${antes}`);
+  ok(antes !== huellaDeHabilidades(ficha('CD: 9.5   Mana Cost: 80')), 'no ve un cambio de recarga');
+  ok(huellaDeHabilidades(ficha('CD: 12', 'Deals 300 damage.')) !== huellaDeHabilidades(ficha('CD: 12', 'Deals 250 damage.')), 'no ve un cambio de cifras en el texto');
+  eq(huellaTexto(ficha('CD: 12', 'Deals 300 damage to enemies in a long line around him.')), huellaTexto(ficha('CD: 9', 'Deals 250 damage to enemies in a long line around him.')), 'la huella de las etiquetas empieza a ver cifras');
+  eq(huellaDeHabilidades(ficha('CD: 12', 'Deals <b>300</b>  damage.')), huellaDeHabilidades(ficha('CD: 12', 'Deals 300 damage.')), 'cambia con etiquetas o espacios');
+  eq(huellaDeHabilidades({ data: { nada: 'x' } }), null);
+  const h = (name, kitCifras) => ({ name, ...(kitCifras ? { kitCifras } : {}) });
+  const previo = { heroes: [h('Atlas', 'a'), h('Gloo', 'g'), h('Diggie', 'd'), h('Estes', 'e'), h('Floryn', 'f'), h('Rafaela', 'r')], tocados: { Kalea: '2026-11-11', Viejo: '2026-11-01', Roto: 'ayer' } };
+  // Cambian Atlas y Gloo; Diggie sin ficha hoy no inventa nada; Kalea se queda dentro de la semana.
+  let r = anotarParche(previo, [h('Atlas', 'A'), h('Gloo', 'G'), h('Diggie'), h('Estes', 'e'), h('Floryn', 'f'), h('Rafaela', 'r')], '2026-11-14', { dias: 7 });
+  eq(JSON.stringify(r.tocados), JSON.stringify({ Atlas: '2026-11-14', Gloo: '2026-11-14', Kalea: '2026-11-11' }), `tocados: ${JSON.stringify(r)}`);
+  ok(!r.reescrito && r.comparables === 5, JSON.stringify(r));
+  // Pasada la semana se cae; un día después de la fecha de lo guardado, no.
+  eq(JSON.stringify(anotarParche(previo, [], '2026-11-18').tocados), '{}', 'se queda pasada la ventana');
+  eq(JSON.stringify(anotarParche(previo, [], '2026-11-17').tocados), JSON.stringify({ Kalea: '2026-11-11' }), 'se cae antes de la ventana');
+  // Sin huellas guardadas (la primera corrida) no se marca a nadie.
+  eq(Object.keys(anotarParche({ heroes: [h('Atlas')] }, [h('Atlas', 'A')], '2026-11-14').tocados).length, 0, 'marca sin nada con que comparar');
+  // Más de la mitad a la vez es la API reescribiendo textos, no un parche.
+  eq(PARCHE_MAX_PROPORCION, 0.5);
+  r = anotarParche({ heroes: [h('Atlas', 'a'), h('Gloo', 'g'), h('Estes', 'e')] }, [h('Atlas', 'A'), h('Gloo', 'G'), h('Estes', 'e')], '2026-11-14');
+  ok(r.reescrito && !Object.keys(r.tocados).length, `marca una reescritura de la API: ${JSON.stringify(r)}`);
+  // Otro cambio a uno ya tocado le reinicia la semana.
+  eq(anotarParche({ heroes: [h('Atlas', 'a'), h('Gloo', 'g'), h('Estes', 'e')], tocados: { Atlas: '2026-11-11' } }, [h('Atlas', 'B'), h('Gloo', 'g'), h('Estes', 'e')], '2026-11-14').tocados.Atlas, '2026-11-14');
 });
 
 await terminar('scripts/ingesta');

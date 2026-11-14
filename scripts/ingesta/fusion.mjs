@@ -57,6 +57,9 @@ export function conservarFichasPrevias(heroList, previous) {
   const kitPrevio = Object.fromEntries(
     (previous?.heroes ?? []).filter((h) => typeof h?.kitTexto === 'string').map((h) => [h.name, h.kitTexto]),
   );
+  const cifrasPrevias = Object.fromEntries(
+    (previous?.heroes ?? []).filter((h) => typeof h?.kitCifras === 'string').map((h) => [h.name, h.kitCifras]),
+  );
   const habilidadesPrevias = Object.fromEntries(
     (previous?.heroes ?? []).filter((h) => Array.isArray(h?.habilidades) && h.habilidades.length).map((h) => [h.name, h.habilidades]),
   );
@@ -67,6 +70,7 @@ export function conservarFichasPrevias(heroList, previous) {
     if (caraPrevia[h.name]) h.cara = caraPrevia[h.name];
     if (specialityPrevia[h.name]) h.speciality = specialityPrevia[h.name];
     if (kitPrevio[h.name]) h.kitTexto = kitPrevio[h.name];
+    if (cifrasPrevias[h.name]) h.kitCifras = cifrasPrevias[h.name];
   }
   return { danoPrevio };
 }
@@ -328,6 +332,40 @@ export function kitsRehechos(heroList = [], catalogo = []) {
     .filter((x) => x.antes !== x.ahora);
 }
 
+
+/**
+ * Más de esta proporción de héroes cambiados en una corrida no es un parche:
+ * es la API reescribiendo sus textos (el parche del 11 de noviembre de 2026
+ * tocó 32 de 133, uno de cada cuatro). Decisión de producto: con la mitad o
+ * más, no se marca a nadie y el registro lo dice.
+ */
+export const PARCHE_MAX_PROPORCION = 0.5;
+
+/**
+ * Los héroes tocados por el parche (3.102.0): `{ nombre: 'AAAA-MM-DD' }`, el
+ * día en que su huella de habilidades CON cifras (`kitCifras`) dejó de ser la
+ * guardada. Se quedan `dias` (la ventana de los datos, 7): hasta entonces su
+ * winrate y sus cruces mezclan días de antes del cambio, y la app lo marca.
+ * Solo compara héroes con huella HOY y en lo guardado (una ficha caída
+ * conserva la de antes y no inventa un cambio); sin huellas guardadas (la
+ * primera corrida) no marca a nadie. Puro: la fecha se pasa.
+ */
+export function anotarParche(previous, heroList = [], fecha, { dias = 7, maxProporcion = PARCHE_MAX_PROPORCION } = {}) {
+  const antes = new Map((previous?.heroes ?? []).filter((h) => typeof h?.kitCifras === 'string').map((h) => [h.name, h.kitCifras]));
+  const comparables = heroList.filter((h) => typeof h?.kitCifras === 'string' && antes.has(h.name));
+  let cambiados = comparables.filter((h) => antes.get(h.name) !== h.kitCifras).map((h) => h.name);
+  const reescrito = comparables.length > 0 && cambiados.length > comparables.length * maxProporcion;
+  if (reescrito) cambiados = [];
+  const dia = (f) => Date.parse(`${f}T00:00:00Z`);
+  const valida = (f) => typeof f === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(f) && Number.isFinite(dia(f));
+  const tocados = {};
+  for (const [nombre, f] of Object.entries(previous?.tocados ?? {})) {
+    if (valida(f) && valida(fecha) && dia(fecha) - dia(f) < dias * 86400000 && dia(fecha) >= dia(f)) tocados[nombre] = f;
+  }
+  if (valida(fecha)) for (const n of cambiados) tocados[n] = fecha;
+  const ordenado = Object.fromEntries(Object.entries(tocados).sort(([a], [b]) => a.localeCompare(b)));
+  return { tocados: ordenado, cambiados, reescrito, comparables: comparables.length };
+}
 
 /**
  * La historia de la fuerza (3.50.0): una foto por día (UTC) del winrate y

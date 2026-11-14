@@ -18,6 +18,9 @@ export { idMotivo };
  * dentro de una variable se resuelve contra la hoja de estilos
  * (`assets/…`), no contra la página, y daba 404.
  */
+/** «11/11» de «2026-11-11», sin pasar por el reloj ni la zona del móvil. */
+export const diaYMes = (fecha) => `${Number(fecha.slice(8, 10))}/${Number(fecha.slice(5, 7))}`;
+
 export function aura(heroe, base = typeof document === 'undefined' ? null : document.baseURI) {
   if (heroe?.id == null || !base) return undefined;
   return { '--cara': `url("${new URL(rutaDeImagen('heroes', heroe.id, '.jpg'), base).href}")` };
@@ -27,7 +30,7 @@ export function aura(heroe, base = typeof document === 'undefined' ? null : docu
  * Tarjeta de recomendación: la probabilidad de ganar el draft con ese pick
  * y de dónde sale, en puntos, término a término.
  */
-export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLinea = null, linea = null, onBuild, elegido = false, onElegir = null, detras = null, primero = null, t = tPorDefecto }) {
+export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLinea = null, linea = null, parche = null, onBuild, elegido = false, onElegir = null, detras = null, primero = null, t = tPorDefecto }) {
   const pct = Math.round(candidato.p * 100);
   const heroe = candidato.heroe;
   const pareja = candidato.mejorPareja ?? null;
@@ -77,6 +80,14 @@ export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLi
         {/* La tier de mlbb.gg: OPINIÓN, al lado del dato y sin puntuar. Medido
             que no añade nada al winrate (scripts/ingesta/tiers.mjs). */}
         {tier && <span className={`pick-tier tier-${tier}`} title={t('pick.tierTitulo')}>{t('pick.tier', { tier })}</span>}
+        {/* Tocado por el parche (3.102.0): su porcentaje aún mezcla días de
+            antes del cambio. En la columna de las cifras, como la tier: no es
+            la que marca el alto de la tarjeta. */}
+        {parche && (
+          <span className="pick-parche" title={t('pick.parcheTitulo', { fecha: diaYMes(parche.fecha), quedan: parche.quedan })}>
+            {parche.dias ? t('pick.parche', { dias: parche.dias }) : t('pick.parcheHoy')}
+          </span>
+        )}
         {/* Lo que hacen los profesionales con él (Liquipedia): DATO, no
             opinión. El porcentaje solo con muestra: «0% en 1 pick» no dice nada. */}
         {pro && pro.picks + pro.bans >= 3 && (

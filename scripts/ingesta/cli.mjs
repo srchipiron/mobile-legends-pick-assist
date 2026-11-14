@@ -15,7 +15,7 @@ import {
 } from './extraccion.mjs';
 import { fetchRelations } from './relaciones.mjs';
 import {
-  anotarFrescura, anotarHistoria, conservarFichasPrevias, estadisticasFrescas, fechaDeLaCorrida, fechaDeLaMatriz, fundirBuilds, fundirEquipo, fundirWinrateLinea,
+  anotarFrescura, anotarHistoria, anotarParche, conservarFichasPrevias, estadisticasFrescas, fechaDeLaCorrida, fechaDeLaMatriz, fundirBuilds, fundirEquipo, fundirWinrateLinea,
   kitsRehechos, leerPrevio, relacionesPrevias, relacionesDeLaCorrida,
 } from './fusion.mjs';
 import { bajarImagenes } from './imagenes.mjs';
@@ -118,6 +118,7 @@ async function main() {
       // La huella del texto tambien: sin esta linea se calculaba en la ficha
       // y se quedaba la conservada del repositorio (lo dijo la mutacion).
       if (f?.kitTexto) h.kitTexto = f.kitTexto;
+      if (f?.kitCifras) h.kitCifras = f.kitCifras;
       // Lo que hace cada habilidad (3.36.0): el plan de partida lo lee.
       if (f?.habilidades) h.habilidades = f.habilidades;
     }
@@ -397,6 +398,10 @@ async function main() {
   const historia = anotarHistoria(previous?.historia, statsByRank, frescos, new Date().toISOString().slice(0, 10), {
     rangos: [RANK, RANGO_DE_RESPALDO[RANK]].filter(Boolean),
   });
+  // Los tocados por el parche (3.102.0): su huella con cifras cambió hoy, o en los últimos DAYS días.
+  const parche = anotarParche(previous, heroList, new Date().toISOString().slice(0, 10), { dias: DAYS });
+  if (parche.reescrito) console.warn(`  · parche: cambian más de la mitad de ${parche.comparables} kits a la vez; parece la API reescribiendo textos y no marco a nadie`);
+  else if (parche.cambiados.length) console.log(`  · parche: tocados hoy ${parche.cambiados.join(', ')}`);
   const out = {
     generatedAt,
     rank: RANK,
@@ -420,6 +425,7 @@ async function main() {
     heroes: heroList,
     newHeroes,
     heroesCambiados,
+    tocados: parche.tocados,
     diagnostics: {
       // Cuando las rutas salen del esquema, LOCKED no llega a usarse: la base
       // hay que sacarla de ahí o la app muestra "API: desconocida" teniéndola.
@@ -427,6 +433,8 @@ async function main() {
         ? `${estado.LOCKED.method} ${estado.LOCKED.base}${estado.LOCKED.prefix}`
         : (estado.ROUTES?.rank ? `${estado.ROUTES.rank.method} ${new URL(estado.ROUTES.rank.template).origin}` : null),
       schema: diagnostics.schema ?? null,
+      // Cuántos kits se pudieron comparar y cuántos cambiaron hoy (3.102.0).
+      parche: { comparables: parche.comparables, cambiados: parche.cambiados.length, reescrito: parche.reescrito },
       routes: diagnostics.routes ?? null,
       frescos: diagnostics.frescos ?? [],
       frescosRecursos: diagnostics.frescosRecursos ?? null,

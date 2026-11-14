@@ -1239,6 +1239,8 @@ button.revisar-cara { padding: 0; border: 0; cursor: pointer; }
   color: var(--muted); text-align: center;
 }
 .pick-tier { display: block; text-align: right; margin-top: 2px; }
+/* Tocado por el parche (3.102.0): información, no alarma; como la tier, sin fondo ni borde que sumen alto. */
+.pick-parche { display: block; text-align: right; margin-top: 2px; font-size: 11px; color: var(--muted); }
 .tier-SS, .tier-S { color: var(--gold); }
 
 /* ---------- tu pick fijado (3.5.0) ---------- */
