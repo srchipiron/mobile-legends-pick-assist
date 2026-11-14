@@ -1,12 +1,8 @@
 /**
- * La huella de cada imagen que se publica (3.41.0), para pedirla con
- * `?v=<huella>`. Las caras y los iconos se guardan en el móvil con
- * `CacheFirst` (funcionan sin cobertura), así que una imagen que cambia en el
- * servidor con el MISMO nombre no llegaba nunca: Masha y Bruno, rehechos,
- * habrían seguido con la cara vieja en el móvil aunque el repositorio ya
- * tuviera la nueva. La huella sale del CONTENIDO del fichero que se publica,
- * no de la URL de la API: si una bajada falla, la huella sigue siendo la del
- * fichero viejo y no se guarda en caché una imagen vieja con una clave nueva.
+ * La huella de cada imagen que se publica, para pedirla con `?v=<huella>`:
+ * las caras y los iconos van al móvil con `CacheFirst`, y una imagen
+ * cambiada con el MISMO nombre no llegaba nunca [C]. Sale del CONTENIDO del
+ * fichero, no de la URL: una bajada fallida deja la huella del fichero viejo.
  */
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';

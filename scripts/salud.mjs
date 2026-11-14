@@ -1,9 +1,8 @@
 /**
- * Las filas de historial/salud.jsonl, línea a línea (3.60.5). Tres sitios lo
- * leían con un `map(JSON.parse)` dentro de un `try`: una sola línea rota
- * (un commit cortado) vaciaba el historial entero, y el diagnóstico (el del
- * móvil y el de la vigilancia) comparaba con un pasado que no existía. Las
- * rotas se saltan y se cuentan.
+ * Las filas de historial/salud.jsonl, línea a línea: una rota (un commit
+ * cortado) vaciaba el historial entero y el diagnóstico comparaba con un
+ * pasado que no existía [C]. Las rotas se saltan y se cuentan. Lo leen
+ * vite.config.js, diagnostico.mjs, tendencia.mjs y datos-rancios.mjs.
  */
 export function filasDeSalud(texto, { max = Infinity } = {}) {
   const filas = [];
@@ -16,16 +15,14 @@ export function filasDeSalud(texto, { max = Infinity } = {}) {
 }
 
 /**
- * Lo que aguantan los datos sin actualizarse antes de abrir incidencia
- * (3.81.2): el mismo límite de rancio que el despliegue (`::warning::`) y
- * «El sistema» en Ajustes. Decisión de producto. Hasta aquí la vigilancia
- * solo abría incidencia con un FALLO, y del 10 al 19 de octubre de 2026 la
- * API caída dejó 353 filas sin un solo fallo: los datos envejecían y nadie se
- * enteraba sin preguntar.
+ * Lo que aguantan los datos sin actualizarse antes de abrir incidencia: el
+ * mismo límite que el aviso del despliegue y «El sistema» en Ajustes [P]. Un
+ * aviso del diagnóstico no abre incidencia, y una API caída nueve días dejó
+ * 353 filas sin un solo fallo [M].
  */
 export const DATOS_RANCIOS_H = 72;
 
-/** La frase de por qué hay que mirar, con la última fila del historial; null si los datos están al día o no se sabe. */
+/** La frase de por qué hay que mirar, con la última fila; null si los datos están al día o no se sabe. */
 export function datosRancios(filas = [], limite = DATOS_RANCIOS_H) {
   const f = filas.at(-1);
   const h = Number(f?.edadHoras);
