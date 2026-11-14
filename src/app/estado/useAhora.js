@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 
 /**
- * La hora, para lo que depende del tiempo que pasa sin que nadie toque nada
- * (la pregunta de cómo fue la partida, diez minutos después de fijar el
- * pick). Se refresca cada minuto y al volver a la app: ahí es cuando se mira.
+ * El único reloj de la app, para lo que depende del tiempo sin que nadie
+ * toque nada (la pregunta de cómo fue la partida, las partidas a
+ * comprobar, reintentar la subida): cada minuto y al volver a la app.
  */
 export function useAhora(intervaloMs = 60 * 1000) {
   const [ahora, setAhora] = useState(() => Date.now());

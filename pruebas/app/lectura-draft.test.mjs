@@ -1,93 +1,103 @@
 /**
- * `aplicarLectura` (useDraft) con lecturas seguidas del lector, sin
- * navegador: el hook de verdad con un React mínimo (estado y referencias en
- * orden de llamada), empaquetado con esbuild. Vigila lo que una sola lectura
- * no enseña: cómo se encadenan.
+ * Fundir el draft de la tablet en el del móvil (`fundirTablet`,
+ * src/app/estado/draftMovil.js), copia tras copia: la tablet manda sobre lo
+ * que ella leyó y la mano sobre lo que tocó. Y lo guardado en 3.102.0 se
+ * carga y se vuelve a guardar sin perder nada.
  */
-import { buildSync } from 'esbuild';
-import { mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { test, eq, ok, RAIZ } from '../ayuda.mjs';
+import { test, ok, eq } from '../ayuda.mjs';
+import { fundirTablet, vacio, cargarDraft, paraGuardar, correccionDe, huellaDeNombres, huellaDeLaTablet } from '../../src/app/estado/draftMovil.js';
+import { sanearDraftTablet } from '../../src/comun/contrato.js';
 
-const dir = mkdtempSync(join(tmpdir(), 'lectura-draft-'));
-writeFileSync(join(dir, 'react.js'), `
-let slots = [], idx = 0;
-export function useState(init) { const i = idx++; if (!(i in slots)) slots[i] = typeof init === 'function' ? init() : init; return [slots[i], (v) => { slots[i] = typeof v === 'function' ? v(slots[i]) : v; }]; }
-export function useRef(init) { const i = idx++; if (!(i in slots)) slots[i] = { current: init }; return slots[i]; }
-export function useCallback(f) { idx++; return f; }
-export function useMemo(f) { idx++; return f(); }
-export function useEffect() { idx++; }
-export function render(hook) { idx = 0; return hook(); }
-export function reiniciar() { slots = []; idx = 0; }
-`);
-writeFileSync(join(dir, 'entrada.js'), `export { useDraft } from ${JSON.stringify(join(RAIZ, 'src/app/estado/useDraft.js'))};\nexport { render, reiniciar } from 'react';\n`);
-const salida = join(dir, 'hook.mjs');
-buildSync({ entryPoints: [join(dir, 'entrada.js')], bundle: true, platform: 'node', format: 'esm', outfile: salida, alias: { react: join(dir, 'react.js') }, logLevel: 'silent' });
-globalThis.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
-const { useDraft, render, reiniciar } = await import(pathToFileURL(salida).href);
+const D = 1763150000000;
+/** Un draft de la tablet: cinco huecos por equipo y tu fila. */
+const tablet = (o = {}) => sanearDraftTablet({ desde: D, enemigos: [], aliados: [], tuyoFila: -1, baneos: [], ...o });
+const copiar = (antes, t, extra) => fundirTablet(antes, t, { ahora: D + 1000, ...extra });
+const nombres = (d) => JSON.stringify({ b: d.baneos, e: d.enemigos, a: d.aliados, tu: d.miPick });
 
-/** Un draft nuevo y una función que le pasa lecturas de enemigos hueco a hueco (null = «?»). */
-function nuevo() {
-  reiniciar();
-  let d = render(useDraft);
-  return {
-    leer(huecos) {
-      d.aplicarLectura({ baneos: [], enemigos: [...new Set(huecos.filter(Boolean))], aliados: [], huecos: { enemigos: huecos, aliados: [] } });
-      d = render(useDraft);
-      return d.enemigos;
-    },
+test('una copia mete baneos, enemigos, compañeros y tu fila como tu pick, pasa a picks y cuenta lo que entró', () => {
+  const t = tablet({ baneos: ['Hirara', 'Fanny'], enemigos: ['Clint', null, 'Khufra'], aliados: ['Miya', 'Estes', null, 'Gloo', null], tuyoFila: 1 });
+  const r = copiar(vacio(), t);
+  eq(nombres(r.despues), JSON.stringify({ b: ['Hirara', 'Fanny'], e: ['Clint', 'Khufra'], a: ['Miya', 'Gloo'], tu: 'Estes' }));
+  ok(r.despues.miPickLeido && r.despues.miPickDesde === D + 1000, 'tu fila no queda como pick leído con su instante');
+  eq(r.despues.fase, 'picks');
+  eq(r.despues.desdeTablet, D, 'el móvil no sabe qué draft de la tablet sigue');
+  eq(JSON.stringify(r.nuevos), JSON.stringify({ baneos: 2, enemigos: 2, aliados: 2, tuyo: 'Estes' }));
+  const otra = copiar(r.despues, t);
+  eq(nombres(otra.despues), nombres(r.despues), 'la misma copia otra vez cambia algo');
+  eq(otra.nuevos.baneos + otra.nuevos.enemigos + otra.nuevos.aliados, 0, 'la misma copia otra vez cuenta como nueva');
+});
+
+test('lo metido a mano se queda aunque la tablet no lo vea; lo que la tablet cambió (el que solo miraba) sale', () => {
+  const t1 = tablet({ enemigos: ['Clint', 'Khufra'] });
+  let d = copiar(vacio(), t1).despues;
+  d = { ...d, enemigos: [...d.enemigos, 'Layla'], aMano: ['Layla'] };
+  // En el hueco de Clint ahora se ve a Rafaela: Clint solo se miraba.
+  const r = copiar(d, tablet({ enemigos: ['Rafaela', 'Khufra'] }));
+  eq(JSON.stringify(r.despues.enemigos), JSON.stringify(['Khufra', 'Layla', 'Rafaela']), `no se cambia al que miraba o se va lo de la mano: ${r.despues.enemigos}`);
+  eq(r.quitados, 1);
+  // Un héroe metido a mano antes de que la tablet empezara se queda con su draft.
+  const aMano = { ...vacio(), enemigos: ['Saber'], fase: 'picks' };
+  eq(JSON.stringify(copiar(aMano, t1).despues.enemigos), JSON.stringify(['Saber', 'Clint', 'Khufra']), 'lo de antes de la tablet se pierde');
+});
+
+test('lo leído que quitas (×, «Deshacer») no vuelve en la copia siguiente, ni de baneo, enemigo o compañero', () => {
+  const t = tablet({ baneos: ['Hirara', 'Fanny'], enemigos: ['Clint', 'Khufra'], aliados: ['Miya', 'Estes', 'Gloo', null, null], tuyoFila: 1 });
+  const d = copiar(vacio(), t).despues;
+  const quitado = { ...d, baneos: ['Fanny'], enemigos: ['Khufra'], aliados: ['Gloo'] };
+  const r = copiar(quitado, t);
+  eq(nombres(r.despues), nombres(quitado), 'lo quitado vuelve con la copia siguiente');
+  ok(r.despues.lectura.enemigos.includes('Clint') && r.despues.lectura.baneos.includes('Hirara'), 'se olvida que se quitó (volvería después)');
+});
+
+test('tu pick: el que soltaste no vuelve, uno fijado a mano manda y uno fuera de tu línea no se fija', () => {
+  const t = tablet({ aliados: ['Miya', 'Estes', null, null, null], tuyoFila: 1 });
+  const d = copiar(vacio(), t).despues;
+  eq(copiar({ ...d, miPick: null, miPickDesde: null, miPickLeido: false }, t).despues.miPick, null, 'el pick soltado vuelve');
+  eq(copiar({ ...vacio(), miPick: 'Rafaela', miPickLeido: false }, t).despues.miPick, 'Rafaela', 'la tablet pisa tu pick fijado a mano');
+  eq(copiar(vacio(), t, { pool: new Set(['Rafaela']) }).despues.miPick, null, 'un pick que no es de tu línea se fija');
+  eq(copiar({ ...vacio(), miPick: 'Miya', miPickLeido: true }, tablet({ aliados: ['Rafaela', null, null, null, null], tuyoFila: 0 })).despues.miPick, 'Rafaela', 'el leído no cambia cuando cambias de héroe');
+});
+
+test('otro draft de la tablet empieza uno nuevo; uno viejo o ya vaciado no entra', () => {
+  const d = copiar(vacio(), tablet({ enemigos: ['Clint'] })).despues;
+  const r = copiar(d, tablet({ desde: D + 600000, enemigos: ['Ling'] }));
+  ok(r.otro && JSON.stringify(r.despues.enemigos) === '["Ling"]', `el draft siguiente se mezcla con el anterior: ${r.despues.enemigos}`);
+  ok(copiar(r.despues, tablet({ enemigos: ['Clint'] })).ignorado, 'un draft más viejo que el que se sigue entra');
+  const vaciado = vacio({ ignorarTabletHasta: D });
+  ok(copiar(vaciado, tablet({ enemigos: ['Clint'] })).ignorado, '«Nuevo draft» no ignora el draft que vació');
+  ok(!copiar(vaciado, tablet({ desde: D + 1, enemigos: ['Clint'] })).ignorado, 'tras «Nuevo draft» no entra el siguiente');
+  // Un draft a mano completado antes de que empezara el de la tablet es otra partida.
+  const viejo = { ...vacio(), enemigos: ['A', 'B', 'C', 'D', 'E'], aliados: ['F', 'G', 'H', 'I'], completoDesde: D - 1000, fase: 'picks' };
+  eq(JSON.stringify(copiar(viejo, tablet({ enemigos: ['Clint'] })).despues.enemigos), '["Clint"]', 'el draft de la tablet se mezcla con una partida vieja');
+});
+
+test('cerrado por la partida en la tablet: cerrado y completo en el móvil, salvo sin enemigos', () => {
+  const r = copiar(vacio(), tablet({ enemigos: ['Clint', 'Khufra'], cerrado: true, cerradoEn: D + 500 }));
+  ok(r.despues.cerrado && r.despues.completoDesde === D + 1000, JSON.stringify(r.despues));
+  ok(!copiar(vacio(), tablet({ baneos: ['Hirara', 'Fanny'], cerrado: true })).despues.cerrado, 'se cierra un draft sin enemigos');
+});
+
+test('la corrección para la tablet: tú fuera de tus compañeros, y la huella dice si el móvil ve otra cosa', () => {
+  const t = tablet({ enemigos: ['Clint', 'Khufra'], aliados: ['Miya', 'Estes', null, null, null], tuyoFila: 1 });
+  const d = copiar(vacio(), t).despues;
+  eq(huellaDeNombres(correccionDe(d)), huellaDeLaTablet(t), 'el móvil y la tablet ven lo mismo y sale corrección');
+  const tocado = { ...d, enemigos: ['Khufra'], aliados: [...d.aliados, 'Gloo'] };
+  const c = correccionDe(tocado);
+  eq(JSON.stringify(c), JSON.stringify({ desde: D, enemigos: ['Khufra'], aliados: ['Miya', 'Gloo'], tuyo: 'Estes', baneos: [] }));
+  ok(huellaDeNombres(c) !== huellaDeLaTablet(t), 'lo tocado no cuenta como distinto');
+  eq(correccionDe(vacio()), null, 'sin draft de la tablet hay corrección');
+});
+
+test('lo guardado por 3.102.0 se carga entero y se vuelve a guardar igual (los campos de 4.0 solo se añaden)', () => {
+  const viejo = {
+    enemies: ['Clint', 'Khufra'], allies: ['Miya'], bans: ['Hirara'], enemyRoam: 'Khufra', fase: 'picks', miPick: 'Estes', miPickDesde: 5, miPickLeido: true,
+    completoDesde: 9, cerrado: true, recordarDesde: 11, apuntadaSola: 7,
+    lectura: { baneos: ['Hirara'], enemigos: ['Clint', 'Khufra'], aliados: ['Miya'], tuyo: 'Estes', ids: ['lectura-2026-1'], dudas: [{ hueco: 'e3', candidato: 'Gord', parecido: 0.74 }], ms: [1200], msCaptura: [800], formatos: ['crudo'] },
   };
-}
-
-test('un héroe que solo se miraba y se cambia por uno que el lector no reconoce no bloquea al equipo (3.56.0)', () => {
-  // La secuencia de la revisión de 3.55.0: con 3.54.0, desde la sexta
-  // lectura todas se tiraban y Kadita, Gloo y Eudora no entraban nunca.
-  const d = nuevo();
-  d.leer(['Joy', null, null, null, null]);
-  d.leer([null, null, null, null, null]); // coge a Barats: «?»
-  d.leer([null, 'Wanwan', null, null, null]);
-  d.leer([null, null, null, null, null]); // coge a Rafaela: «?»
-  d.leer([null, null, 'Hanabi', null, null]);
-  d.leer([null, null, 'Kadita', 'Gloo', null]);
-  const final = d.leer([null, null, 'Kadita', 'Gloo', 'Eudora']);
-  ok(['Kadita', 'Gloo', 'Eudora'].every((n) => final.includes(n)), `el equipo se queda bloqueado: ${final}`);
-  ok(!final.includes('Hanabi'), `Hanabi, que solo se miraba, no se cambia por Kadita: ${final}`);
-});
-
-test('la fase de skins (cambian los cinco a la vez) sigue sin tocar los picks', () => {
-  const d = nuevo();
-  const antes = d.leer(['Clint', 'Khufra', 'Layla', 'Miya', 'Nana']);
-  eq(d.leer([null, 'Wanwan', null, 'Joy', 'Esmeralda']).join(), antes.join(), 'una lectura con cinco huecos cambiados mete o quita picks');
-  eq(d.leer([null, 'Wanwan', null, 'Joy', 'Esmeralda']).join(), antes.join(), 'la segunda lectura de la fase de skins sí entra');
-  // Dos cambios a la vez (los dos que eligen) sí se aplican.
-  const despues = d.leer(['Clint', 'Khufra', 'Layla', 'Lesley', 'Aamon']);
-  ok(despues.includes('Lesley') && despues.includes('Aamon') && !despues.includes('Miya'), `dos cambios no se aplican: ${despues}`);
-});
-
-test('tras «Nuevo draft», un héroe metido a mano antes de la primera lectura no bloquea al bando (3.60.4)', () => {
-  reiniciar();
-  let d = render(useDraft);
-  const leer = (huecos, extra = {}) => { const r = d.aplicarLectura({ baneos: [], enemigos: [...new Set(huecos.filter(Boolean))], aliados: [], huecos: { enemigos: huecos, aliados: [] }, ...extra }); d = render(useDraft); return r; };
-  leer(['A', 'B', 'C', 'D', 'E']);
-  d.reiniciar(); d = render(useDraft);
-  d.anadir('aliados', { name: 'Mio' }); d = render(useDraft);
-  leer(['P', 'Q', 'R', null, null]);
-  leer(['P', 'Q', 'R', 'S', 'T']);
-  eq(d.enemigos.join(), 'P,Q,R,S,T', 'el bando del draft nuevo se tira por los huecos del anterior');
-});
-
-test('una lectura pedida en el draft anterior no entra en el nuevo (3.60.4)', () => {
-  reiniciar();
-  let d = render(useDraft);
-  d.aplicarLectura({ baneos: ['Hirara'], enemigos: ['A'], aliados: [], huecos: { enemigos: ['A'], aliados: [] } }); d = render(useDraft);
-  const epoca = d.epocaDelDraft();
-  d.reiniciar(); d = render(useDraft);
-  const r = d.aplicarLectura({ baneos: ['Hirara'], enemigos: ['A', 'B'], aliados: [], id: 'lectura-viejo-1', huecos: { enemigos: ['A', 'B'], aliados: [] }, epoca });
-  d = render(useDraft);
-  ok(r.otroDraft && !d.enemigos.length && !d.baneos.length && !d.lectura, `la lectura del draft anterior entra en el nuevo: ${JSON.stringify({ e: d.enemigos, b: d.baneos, l: d.lectura })}`);
-  // Pedida en ESTE draft, sí.
-  d.aplicarLectura({ baneos: [], enemigos: ['Z'], aliados: [], huecos: { enemigos: ['Z'], aliados: [] }, epoca: d.epocaDelDraft() }); d = render(useDraft);
-  eq(d.enemigos.join(), 'Z');
+  eq(JSON.stringify(paraGuardar(cargarDraft(viejo))), JSON.stringify(viejo), 'un draft de 3.102.0 pierde algo al cargarlo y guardarlo');
+  const raro = cargarDraft({ enemies: 'Clint', allies: [1, 'Miya'], fase: 'otra', completoDesde: 9 });
+  ok(JSON.stringify(raro.enemigos) === '[]' && JSON.stringify(raro.aliados) === '["Miya"]' && raro.fase === 'picks' && raro.completoDesde === null, JSON.stringify(raro));
+  const nuevo = paraGuardar({ ...cargarDraft(viejo), aMano: ['Miya'], desdeTablet: D, ignorarTabletHasta: D - 1 });
+  eq(JSON.stringify(cargarDraft(nuevo).aMano), '["Miya"]');
+  eq(cargarDraft(nuevo).desdeTablet, D);
 });

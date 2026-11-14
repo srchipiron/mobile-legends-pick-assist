@@ -1,14 +1,16 @@
 import { useMemo, useState } from 'react';
 import { paraComprobar, precisionDeLaTablet } from '../../motor/comprobacion.js';
-import { tPorDefecto } from './tPorDefecto.js';
+import { RejillaDeHeroes } from './RejillaDeHeroes.jsx';
+import { useT } from '../i18n/contexto.js';
 
 /**
- * Comprobar la tablet (3.101.0): tres partidas suyas al azar cada semana, con
- * la pantalla del final que leyó (si llegó su comprobante), y cuánto acierta
- * en lo que comprobaste. Del 26 de octubre al 10 de noviembre de 2026 apuntó
- * 132 victorias de 135 y nadie lo vio en dos semanas: así se ve en días.
+ * Comprobar la tablet: hasta tres partidas suyas al azar cada semana, con la
+ * pantalla del final que leyó si llegó su comprobante, y cuánto acierta en
+ * lo comprobado. Un fallo de lectura se ve en días, no en semanas.
  */
-export function ComprobarTablet({ partidas, comprobadas, comprobantes = new Map(), pool = [], onComprobar, onCorregir, onCambiarHeroe, t = tPorDefecto }) {
+export function ComprobarTablet({ personal, comprobantes = new Map(), pool = [] }) {
+  const t = useT();
+  const { partidas, comprobadas, comprobarPartida, corregirPartida, cambiarHeroePartida } = personal;
   const pendientes = useMemo(() => paraComprobar(partidas, comprobadas, { ahora: Date.now() }), [partidas, comprobadas]);
   const precision = useMemo(() => precisionDeLaTablet(comprobadas), [comprobadas]);
   const [eligiendo, setEligiendo] = useState(null);
@@ -26,18 +28,17 @@ export function ComprobarTablet({ partidas, comprobadas, comprobantes = new Map(
             <p className="comprobar-que">{fecha(p.t)} · <strong>{p.pick}</strong> · {p.gane ? t('hist.gane') : t('hist.perdi')}</p>
             {c && <img className="partida-comprobante" src={`data:image/png;base64,${c.tira}`} alt={t('comprobar.pantalla')} />}
             <div className="resultado">
-              <button type="button" className="reset partida-bien" onClick={() => onComprobar(p.t, true)}>{t('comprobar.bien')}</button>
-              <button type="button" className="reset partida-mal" onClick={() => { onCorregir(p.t, !p.gane); onComprobar(p.t, false, 'resultado'); }}>{t('comprobar.resultadoMal')}</button>
+              <button type="button" className="reset partida-bien" onClick={() => comprobarPartida(p.t, true)}>{t('comprobar.bien')}</button>
+              <button type="button" className="reset partida-mal" onClick={() => { corregirPartida(p.t, !p.gane); comprobarPartida(p.t, false, 'resultado'); }}>{t('comprobar.resultadoMal')}</button>
               <button type="button" className="reset" aria-expanded={eligiendo === p.t} onClick={() => setEligiendo((e) => (e === p.t ? null : p.t))}>{t('comprobar.heroeMal')}</button>
             </div>
             {eligiendo === p.t && (
               <div className="partida-cambiar">
                 <strong>{t('comprobar.elegirHeroe')}</strong>
-                <div className="hero-grid corto">
-                  {pool.filter((h) => h.name !== p.pick).map((h) => (
-                    <button type="button" key={h.name} onClick={() => { onCambiarHeroe(p.t, h.name); onComprobar(p.t, false, 'heroe'); setEligiendo(null); }}>{h.name}</button>
-                  ))}
-                </div>
+                <RejillaDeHeroes
+                  className="corto" heroes={pool.filter((h) => h.name !== p.pick)}
+                  onElegir={(h) => { cambiarHeroePartida(p.t, h.name); comprobarPartida(p.t, false, 'heroe'); setEligiendo(null); }}
+                />
               </div>
             )}
           </div>

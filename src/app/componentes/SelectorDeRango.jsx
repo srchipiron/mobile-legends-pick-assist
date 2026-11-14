@@ -1,5 +1,5 @@
-import { tPorDefecto } from './tPorDefecto.js';
 
+import { useT } from '../i18n/contexto.js';
 export const ETIQUETAS_RANGO = { epic: 'Epic', legend: 'Legend', mythic: 'Mythic', honor: 'Honor', glory: 'Glory' };
 
 /**
@@ -10,7 +10,8 @@ export const ETIQUETAS_RANGO = { epic: 'Epic', legend: 'Legend', mythic: 'Mythic
  * Gloria se rellena; las builds siguen en el de la ingesta), y se dice cada
  * uno con el suyo (3.37.0: decía «las builds son de Mythic»).
  */
-export function SelectorDeRango({ rangos, valor, onCambiar, rangoDeCruces = null, rangoDeBuilds = null, t = tPorDefecto }) {
+export function SelectorDeRango({ rangos, valor, onCambiar, rangoDeCruces = null, rangoDeBuilds = null}) {
+  const t = useT();
   const etiqueta = (r) => ETIQUETAS_RANGO[r] ?? r;
   const builds = rangoDeBuilds ?? rangoDeCruces;
   if (!rangos?.length) return null;

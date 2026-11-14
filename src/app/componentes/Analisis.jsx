@@ -1,7 +1,8 @@
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
-/** Las dos o tres frases sobre el draft. Arriba del todo: es lo que se lee en los tres segundos que hay de verdad. */
-export function Analisis({ frases, t = tPorDefecto }) {
+/** Las dos o tres frases sobre el draft, encima de las tarjetas: lo que se lee en los tres segundos que hay. */
+export function Analisis({ frases }) {
+  const t = useT();
   if (!frases?.length) return null;
   return (
     <section className="analisis">

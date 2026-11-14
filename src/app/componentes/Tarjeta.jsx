@@ -2,36 +2,30 @@ import { tic } from '../tacto.js';
 import { idMotivo } from '../../motor/nombres.js';
 import { Cara, rutaDeImagen } from './Imagen.jsx';
 import { Desglose } from './Desglose.jsx';
-import { tPorDefecto } from './tPorDefecto.js';
 import { fraseDetras } from '../porque.js';
+import { useT } from '../i18n/contexto.js';
 
-/**
- * La identidad de un motivo, para las `key` de React: la MISMA que usa el
- * motor para filtrar los comunes y quitar repetidos (`idMotivo`). Estuvo
- * escrita dos veces; si una se cambia y la otra no, las claves de la lista y
- * el dedupe dejan de hablar de lo mismo.
- */
-export { idMotivo };
-
-/**
- * La cara como fondo del aura, con la ruta ABSOLUTA: un `url()` relativo
- * dentro de una variable se resuelve contra la hoja de estilos
- * (`assets/…`), no contra la página, y daba 404.
- */
 /** «11/11» de «2026-11-11», sin pasar por el reloj ni la zona del móvil. */
 export const diaYMes = (fecha) => `${Number(fecha.slice(8, 10))}/${Number(fecha.slice(5, 7))}`;
 
+/**
+ * La cara como fondo del aura, con la ruta ABSOLUTA: un `url()` relativo
+ * dentro de una variable CSS se resuelve contra la hoja de estilos
+ * (`assets/…`), no contra la página, y daba 404 sin ningún error.
+ */
 export function aura(heroe, base = typeof document === 'undefined' ? null : document.baseURI) {
   if (heroe?.id == null || !base) return undefined;
   return { '--cara': `url("${new URL(rutaDeImagen('heroes', heroe.id, '.jpg'), base).href}")` };
 }
 
 /**
- * Tarjeta de recomendación: la probabilidad de ganar el draft con ese pick
- * y de dónde sale, en puntos, término a término.
+ * Una recomendación: la probabilidad de ganar el draft con ese pick, de dónde
+ * sale (en puntos, término a término) y lo que se enseña sin puntuar (winrate
+ * en la línea, tier, parche, pro). El nombre es el botón de «Lo cojo»: no
+ * añade alto a la tarjeta (cada bloque nuevo empujó la nº1 fuera de pantalla).
  */
-export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLinea = null, linea = null, parche = null, onBuild, elegido = false, onElegir = null, detras = null, primero = null, t = tPorDefecto }) {
-  const pct = Math.round(candidato.p * 100);
+export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLinea = null, linea = null, parche = null, onBuild, elegido = false, onElegir = null, detras = null, primero = null }) {
+  const t = useT();
   const heroe = candidato.heroe;
   const pareja = candidato.mejorPareja ?? null;
   // El «combina bien con X» de los motivos lo dice ya la línea de la pareja.
@@ -40,29 +34,20 @@ export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLi
     <>
       <Cara heroe={heroe} className="hero-cara" tam={34} />
       {heroe.name}
-      {/* Un héroe que no está en el catálogo escrito a mano juega con los
-          tags genéricos de su rol. Se recomienda igual, pero conviene saberlo. */}
       {heroe.inferred && <span className="inferred" title={t('app.tagsDeRolTitulo')}>{t('app.tagsDeRol')}</span>}
       {elegido && <span className="pick-tuyo">{t('pick.tuyo')}</span>}
     </>
   );
   return (
-    // El aura (3.91.0): la cara del héroe, desenfocada detrás de la tarjeta. Va en
-    // una variable y un pseudo-elemento: no añade un píxel de alto.
     <article className={`pick ${indice === 0 ? 'top' : ''} ${elegido ? 'elegido' : ''}`.trim()} data-heroe={heroe.name} style={aura(heroe)}>
       <div className={`rank ${indice < 3 ? `rank-${indice + 1}` : ''}`.trim()}>{indice + 1}</div>
       <div>
-        {/* El nombre es el botón de «lo cojo»: sin añadir un píxel de alto a
-            la tarjeta (medido: cada bloque nuevo empujaba la nº1 fuera de la
-            primera pantalla). Segundo toque lo suelta. */}
         <h3 className="pick-name">
           {onElegir ? (
             <button className="pick-nombre-boton" aria-pressed={elegido} title={t(elegido ? 'pick.soltar' : 'pick.loCojo', { nombre: heroe.name })} onClick={() => { tic(); onElegir(heroe); }}>{nombre}</button>
           ) : nombre}
         </h3>
-        <Desglose puntos={candidato.puntos} t={t} />
-        {/* Con quién de tu equipo combina mejor (3.60.0): el dato de la
-            pareja, se enseña siempre que haya compañeros con dato. */}
+        <Desglose puntos={candidato.puntos} />
         {pareja && (
           <p className={`pick-pareja ${pareja.puntos < 0 ? 'mala' : ''}`.trim()} title={t('pick.parejaTitulo')}>
             {t('pick.pareja', { nombre: pareja.con, signo: pareja.puntos >= 0 ? '+' : '−', pp: Math.abs(pareja.puntos).toFixed(1) })}
@@ -70,28 +55,19 @@ export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLi
         )}
       </div>
       <div>
-        <div className="pick-score" title={t('pick.probTitulo')} aria-label={t('pick.probTitulo')}>{pct}%</div>
+        <div className="pick-score" title={t('pick.probTitulo')} aria-label={t('pick.probTitulo')}>{Math.round(candidato.p * 100)}%</div>
         <span className="pick-wr">{stat?.winRate != null ? t('pick.wr', { pct: (stat.winRate * 100).toFixed(1) }) : t('app.sinDatos')}</span>
-        {/* Su winrate EN ESTA LÍNEA (3.12.0): el global mezcla todas las que
-            juega (Saber: jungla 53,8%, roam 42,4%). Se enseña, no puntúa. */}
         {wrLinea != null && linea && (
           <span className="pick-wrlinea" title={t('pick.wrLineaTitulo', { linea: t(`linea.${linea}`) })}>{t('pick.wrLinea', { linea: t(`linea.${linea}`), pct: (wrLinea * 100).toFixed(1) })}</span>
         )}
-        {/* La tier de mlbb.gg: OPINIÓN, al lado del dato y sin puntuar. Medido
-            que no añade nada al winrate (scripts/ingesta/tiers.mjs). */}
         {tier && <span className={`pick-tier tier-${tier}`} title={t('pick.tierTitulo')}>{t('pick.tier', { tier })}</span>}
-        {/* Tocado por el parche (3.102.0): su porcentaje aún mezcla días de
-            antes del cambio. En la columna de las cifras, como la tier: no es
-            la que marca el alto de la tarjeta. */}
         {parche && (
           <span className="pick-parche" title={t('pick.parcheTitulo', { fecha: diaYMes(parche.fecha), quedan: parche.quedan })}>
             {parche.dias ? t('pick.parche', { dias: parche.dias }) : t('pick.parcheHoy')}
           </span>
         )}
-        {/* Lo que hacen los profesionales con él (Liquipedia): DATO, no
-            opinión. El porcentaje solo con muestra: «0% en 1 pick» no dice nada. */}
+        {/* [D] Liquipedia: con ≥3 picks+bans; el porcentaje solo con ≥5 picks («0% en 1 pick» no dice nada). */}
         {pro && pro.picks + pro.bans >= 3 && (
-          // Corto (3.59.0): «Pro: 248 picks · 57% · 263 bans» ocupaba tres líneas en la columna; los baneos van en el título.
           <span className="pick-pro" title={`${t('pro.titulo')} · ${t('pro.detalle', { picks: pro.picks, bans: pro.bans })}`}>
             {pro.picks >= 5
               ? t('pro.linea', { picks: pro.picks, pct: Math.round((pro.ganadas / pro.picks) * 100), bans: pro.bans })
@@ -99,31 +75,16 @@ export function Tarjeta({ candidato, indice, stat, pro = null, tier = null, wrLi
           </span>
         )}
       </div>
-      {/* Debajo y a todo lo ancho (3.59.1): en la columna del nombre, de unos
-          170 px a 390, cada motivo ocupaba dos líneas y la tarjeta crecía. */}
+      {/* A todo lo ancho: en la columna del nombre cada motivo ocupaba dos líneas. */}
       <div className="pick-abajo">
-        {/* Por qué no es el nº1 (3.51.0): solo de la nº2 para abajo, así que
-            la nº1 no gana ni un píxel (primera-pantalla.e2e). */}
         {detras && primero && <p className="pick-detras">{fraseDetras(detras, primero, t)}</p>}
         <ul className="reasons">
-          {motivos.length ? motivos.map((m) => (
-            <li
-              key={idMotivo(m)}
-              /* Un motivo de EQUIPO («no hay primera línea») le vale igual a
-                 media lista: se apaga para que no compita con los que sí
-                 hablan de ESTE héroe contra ESTE draft. */
-              className={`${m.bueno ? '' : 'bad'} ${m.clave.startsWith('necesidad.') ? 'de-equipo' : ''}`.trim()}
-            >
-              {t(m.clave, m.params)}
-            </li>
-          )) : <li>{t('app.pickSolido')}</li>}
+          {motivos.length
+            ? motivos.map((m) => <li key={idMotivo(m)} className={m.bueno ? '' : 'bad'}>{t(m.clave, m.params)}</li>)
+            : <li>{t('app.pickSolido')}</li>}
         </ul>
-        {/* Los objetos son lo siguiente que necesitas DESPUÉS de elegir: detrás
-            de un toque. Al pie, a la derecha (3.59.1): en la columna de cifras
-            dejaba un hueco vacío bajo el nombre. */}
         {onBuild && <button className="pick-build" onClick={() => onBuild(heroe)}>{t('partida.boton')}</button>}
       </div>
     </article>
   );
 }
-

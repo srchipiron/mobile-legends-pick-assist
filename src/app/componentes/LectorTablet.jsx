@@ -1,19 +1,29 @@
 import { useEffect, useState } from 'react';
 import { sanearLectorTablet, pedirEstadoLector, lineasDelSistema, pedirUltimaApk, queApk, claveDeFallo, buscarTabletUnaVez, sinLlegarALaTablet, DESCARGA_APK } from '../lector.js';
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
+
+/** Al día o mirando, en gris; lo demás, en rojo: hay que hacer algo. */
+const claseDeApk = (estado) => (['alDia', 'nose', 'mirando', 'buscando'].includes(estado) ? 'empty-state' : 'nota mal');
+
+/** Qué decir de la Lector MLBB de la tablet: SIEMPRE algo (callado, no se sabía por qué no iba). */
+function textoDeApk(apk, vinculo, t) {
+  if (apk.estado === 'sinRespuesta') return `${t('lectorTablet.apk.sinRespuesta', { direccion: vinculo.direccion })} ${t(claveDeFallo(apk.tipo))}`;
+  if (apk.estado === 'nose') return apk.tuya ? t('lectorTablet.apk.solo', { tuya: apk.tuya }) : t('lectorTablet.apk.nose');
+  return t(`lectorTablet.apk.${apk.estado}`, { tuya: apk.tuya, ultima: apk.ultima });
+}
 
 /**
- * El lector en la tablet (3.61.0), en Ajustes: con quién está vinculada la
- * app y, si no, cómo vincularla a mano (lo normal es escanear el QR de la
- * app «Lector MLBB», que ya trae dirección y código).
+ * La tablet en Ajustes. Vinculada: dónde, qué Lector MLBB tiene (con el
+ * enlace para bajarla si es vieja), «El sistema» (lo que dice de sí misma),
+ * «Volver a mirar» y desvincular; si no contesta, se la busca en la wifi.
+ * Sin vincular: dirección y código a mano (lo normal es escanear su QR).
  */
-export function LectorTablet({ vinculo = null, onVinculo, t = tPorDefecto }) {
+export function LectorTablet({ vinculo = null, onVinculo }) {
+  const t = useT();
   const [direccion, setDireccion] = useState('');
   const [codigo, setCodigo] = useState('');
-  // Qué Lector MLBB tienes (3.65.2): las anteriores a 3.64.0 no se actualizan solas y nadie lo decía.
   const [apk, setApk] = useState(null);
   const [mirar, setMirar] = useState(0);
-  // El sistema de un vistazo (3.77.0): lo que dice la tablet de sí misma.
   const [sistema, setSistema] = useState([]);
   useEffect(() => {
     if (!vinculo) return undefined;
@@ -23,7 +33,6 @@ export function LectorTablet({ vinculo = null, onVinculo, t = tPorDefecto }) {
       if (!vivo) return;
       setSistema(lineasDelSistema(estado));
       const q = queApk(estado, ultima);
-      // Sin llegar a la tablet, se la busca en la wifi (3.65.4): cambia de IP.
       if (q.estado !== 'sinRespuesta' || !sinLlegarALaTablet(q.tipo)) { setApk(q); return; }
       setApk({ estado: 'buscando' });
       const nueva = await buscarTabletUnaVez(vinculo);
@@ -33,6 +42,7 @@ export function LectorTablet({ vinculo = null, onVinculo, t = tPorDefecto }) {
     });
     return () => { vivo = false; };
   }, [vinculo, mirar, onVinculo]);
+
   if (vinculo) {
     return (
       <div className="lector-tablet">
@@ -62,23 +72,9 @@ export function LectorTablet({ vinculo = null, onVinculo, t = tPorDefecto }) {
   );
 }
 
-/** Al día o mirando, en gris como lo demás; lo demás, en rojo: hay que hacer algo. */
-function claseDeApk(estado) {
-  return ['alDia', 'nose', 'mirando', 'buscando'].includes(estado) ? 'empty-state' : 'nota mal';
-}
-
-/**
- * Qué decir de la Lector MLBB de la tablet, SIEMPRE algo (3.65.3): callado
- * cuando no contestaba, Javi solo veía «Vinculado…» y no sabía por qué.
- */
-function textoDeApk(apk, vinculo, t) {
-  if (apk.estado === 'sinRespuesta') return `${t('lectorTablet.apk.sinRespuesta', { direccion: vinculo.direccion })} ${t(claveDeFallo(apk.tipo))}`;
-  if (apk.estado === 'nose') return apk.tuya ? t('lectorTablet.apk.solo', { tuya: apk.tuya }) : t('lectorTablet.apk.nose');
-  return t(`lectorTablet.apk.${apk.estado}`, { tuya: apk.tuya, ultima: apk.ultima });
-}
-
 /** «¿Vincular con la tablet en …?» al abrir el enlace de su QR: sin el toque no se guarda nada. */
-export function ConfirmarVinculo({ vinculo, onResponder, t = tPorDefecto }) {
+export function ConfirmarVinculo({ vinculo, onResponder }) {
+  const t = useT();
   return (
     <div className="aviso-deshacer" role="dialog" aria-label={t('lectorTablet.titulo')}>
       <span>{t('lectorTablet.confirmar', { direccion: vinculo.direccion })}</span>

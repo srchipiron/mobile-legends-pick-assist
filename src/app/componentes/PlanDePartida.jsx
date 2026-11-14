@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
 const pct = (p) => Math.round(p * 100);
 
@@ -11,7 +11,8 @@ const pct = (p) => Math.round(p * 100);
  * drafts (±30 puntos llena la mitad) para que se puedan comparar.
  */
 const ESCALA_BARRA = 0.3;
-function CurvaDePartida({ fases, t }) {
+function CurvaDePartida({ fases}) {
+  const t = useT();
   const puntos = fases.puntos;
   const ini = pct(puntos[0].p); const fin = pct(puntos[puntos.length - 1].p);
   const lista = puntos.map((x) => pct(x.p));
@@ -38,7 +39,8 @@ function CurvaDePartida({ fases, t }) {
 }
 
 /** Una lista de frases con su título; no pinta nada si está vacía. */
-function Etapa({ titulo, frases, clase, t }) {
+function Etapa({ titulo, frases, clase}) {
+  const t = useT();
   if (!frases?.length) return null;
   return (
     <div className={`plan-bloque plan-etapa ${clase}`}>
@@ -64,7 +66,8 @@ function Etapa({ titulo, frases, clase, t }) {
  * el dato de las matrices, con su número, en verde lo claro a favor y en
  * rojo lo claro en contra.
  */
-function CrucesDelDraft({ cruces, yo, t }) {
+function CrucesDelDraft({ cruces, yo}) {
+  const t = useT();
   const { contra = [], con = [] } = cruces ?? {};
   if (!contra.length && !con.length) return null;
   const chip = (x, texto) => <li key={x.nombre} className={`cruce-chip cruce-${x.lado}`}>{texto}</li>;
@@ -88,7 +91,8 @@ function CrucesDelDraft({ cruces, yo, t }) {
   );
 }
 
-export function PlanDePartida({ plan, yo, t = tPorDefecto }) {
+export function PlanDePartida({ plan, yo}) {
+  const t = useT();
   const [copiado, setCopiado] = useState(false);
   const equipo = plan?.equipo ?? [];
   const etapas = plan?.etapas ?? { temprano: [], medio: plan?.tuyo ?? [], tarde: [] };
@@ -106,12 +110,12 @@ export function PlanDePartida({ plan, yo, t = tPorDefecto }) {
   return (
     <section className="plan-partida">
       <p className="build-nucleo">{t('partida.titulo', { yo: yo?.name ?? '' })}</p>
-      {plan?.fases && <CurvaDePartida fases={plan.fases} t={t} />}
-      <CrucesDelDraft cruces={plan?.cruces} yo={yo} t={t} />
-      <Etapa titulo={t('etapa.temprano')} frases={etapas.temprano} clase="etapa-temprano" t={t} />
-      <Etapa titulo={t('etapa.medio')} frases={etapas.medio} clase="etapa-medio" t={t} />
-      <Etapa titulo={t('etapa.tarde')} frases={etapas.tarde} clase="etapa-tarde" t={t} />
-      <Etapa titulo={t('etapa.problemas')} frases={problemas} clase="etapa-problemas" t={t} />
+      {plan?.fases && <CurvaDePartida fases={plan.fases} />}
+      <CrucesDelDraft cruces={plan?.cruces} yo={yo} />
+      <Etapa titulo={t('etapa.temprano')} frases={etapas.temprano} clase="etapa-temprano" />
+      <Etapa titulo={t('etapa.medio')} frases={etapas.medio} clase="etapa-medio" />
+      <Etapa titulo={t('etapa.tarde')} frases={etapas.tarde} clase="etapa-tarde" />
+      <Etapa titulo={t('etapa.problemas')} frases={problemas} clase="etapa-problemas" />
       {equipo.length > 0 && (
         <div className="plan-bloque plan-equipo">
           <div className="plan-cabecera">

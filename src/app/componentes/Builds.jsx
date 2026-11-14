@@ -3,8 +3,8 @@ import { tic } from '../tacto.js';
 import { buildsDe, objetosDe, ajustesDeBuild, buildParaElDraft } from '../../motor/builds.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Icono } from './Imagen.jsx';
-import { tPorDefecto } from './tPorDefecto.js';
 import { PlanDePartida } from './PlanDePartida.jsx';
+import { useT } from '../i18n/contexto.js';
 
 /**
  * Los objetos de un héroe en una línea. Dos bloques que NO valen lo mismo:
@@ -12,7 +12,8 @@ import { PlanDePartida } from './PlanDePartida.jsx';
  * ajuste por el draft (un CONSEJO: de qué pega cada enemigo más cuánta
  * defensa da cada objeto, con su aviso).
  */
-export function Builds({ heroe, linea, builds, equipment, talentos = null, enemigos, plan = null, onCerrar, t = tPorDefecto }) {
+export function Builds({ heroe, linea, builds, equipment, talentos = null, enemigos, plan = null, onCerrar}) {
+  const t = useT();
   const lista = useMemo(() => buildsDe(builds, heroe, linea), [builds, heroe, linea]);
   // De las que se juegan, la que mejor encaja con ESTE draft (3.57.0); sin
   // ninguna mejor, la más usada. Las demás, debajo, con la más usada marcada.
@@ -60,7 +61,7 @@ export function Builds({ heroe, linea, builds, equipment, talentos = null, enemi
             <button onClick={() => ir(objetos.current)}>{t('build.irObjetos')}</button>
           </nav>
         )}
-        {plan && <PlanDePartida plan={plan} yo={heroe} t={t} />}
+        {plan && <PlanDePartida plan={plan} yo={heroe} />}
         {!principal && <p className="build-vacio">{t('build.sinBuild')}</p>}
         {principal && (
           <>

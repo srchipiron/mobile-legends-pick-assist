@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { CLAVES, leer, guardar } from './almacen.js';
 import { sanearLicencias, comprobarClave, claveDeEnlace, crearClaveDeAdministrador, firmarClave, enlaceDeClave, pasaLaPuerta } from '../licencia.js';
 
-/** Lo que se espera a licencias.json antes de dar por buena la copia guardada. Decisión de producto. */
+/** [P] Lo que se espera a licencias.json antes de dar por buena la copia guardada. */
 const PLAZO_LICENCIAS_MS = 4000;
 const RUTA = 'public/licencias.json';
 
-/** La clave del enlace (`#clave=…`), una vez por carga, y fuera de la barra de direcciones. */
+/** La clave del enlace (`#clave=…`), una vez por carga y fuera de la barra de direcciones. */
 let enlaceLeido;
 function claveDelEnlace() {
   if (enlaceLeido !== undefined) return enlaceLeido;
@@ -20,12 +20,12 @@ function claveDelEnlace() {
 const mismaPublica = (a, b) => !!a && !!b && a.x === b.x && a.y === b.y;
 
 /**
- * Las claves de invitación (3.65.0): la clave de este usuario, la lista
- * publicada (`licencias.json`, sin caché; sin red, la última vista) y, en el
- * móvil de Javi, la administración: crear su clave de administrador, dar
- * claves, revocarlas y exigir clave para entrar. Publicar es escribir
- * `public/licencias.json` en el repositorio (`escribir`, de useEnvio: el
- * token no llega aquí).
+ * Las claves de invitación: la de este usuario, la lista publicada
+ * (`licencias.json`, sin caché; sin red, la última vista) y, en el móvil de
+ * Javi, la administración (crear su clave, dar claves, revocarlas, exigir
+ * clave). Publicar es escribir `public/licencias.json` en el repositorio con
+ * `escribir` (del token, que no llega aquí); lo leído del repositorio manda
+ * sobre Pages, que tarda minutos en rehacerse.
  */
 export function useLicencia({ escribir = null, leerRepositorio = null } = {}) {
   const [clave, setClaveCruda] = useState(() => claveDelEnlace() ?? leer(CLAVES.clave, null));
@@ -33,11 +33,9 @@ export function useLicencia({ escribir = null, leerRepositorio = null } = {}) {
   const [admin, setAdmin] = useState(() => leer(CLAVES.admin, null));
   const [emitidas, setEmitidas] = useState(() => (Array.isArray(leer(CLAVES.emitidas, [])) ? leer(CLAVES.emitidas, []) : []));
   const [comprobada, setComprobada] = useState(null);
+  const delRepositorio = useRef(false);
 
   useEffect(() => { guardar(CLAVES.clave, clave); }, [clave]);
-  // Lo leído del repositorio (con el token) manda sobre la copia de Pages,
-  // que tarda minutos en rehacerse tras cada cambio (3.65.1).
-  const delRepositorio = useRef(false);
   const ponerLicencias = useCallback((l) => { setLicencias(l); guardar(CLAVES.licencias, l); }, []);
   useEffect(() => {
     let vivo = true;
@@ -69,11 +67,7 @@ export function useLicencia({ escribir = null, leerRepositorio = null } = {}) {
   const esAdministrador = mismaPublica(admin?.publica, licencias?.publica) || (!!admin && !licencias?.publica);
   const setClave = useCallback((c) => setClaveCruda(typeof c === 'string' && c.trim() ? c.trim() : null), []);
 
-  /**
-   * Publica licencias.json aplicando `cambio` a lo que hay AHORA en el
-   * repositorio (no a la copia de aquí, que puede ser vieja: dos cambios
-   * seguidos se pisaban), y lo deja ya puesto aquí sin esperar al despliegue.
-   */
+  /** Publica licencias.json aplicando `cambio` a lo que hay AHORA en el repositorio (no a la copia de aquí). */
   const publicar = useCallback(async (cambio, mensaje) => {
     if (!escribir) return { error: 'sinToken' };
     let limpias = null;
@@ -83,8 +77,7 @@ export function useLicencia({ escribir = null, leerRepositorio = null } = {}) {
         let j;
         try { j = actual ? JSON.parse(actual) : null; } catch { j = null; }
         const base = sanearLicencias(j);
-        // Sin pública en el repositorio y con la clave de administrador aquí, se
-        // vuelve a poner la suya (3.65.1: una copia vieja la borró una vez).
+        // Sin pública en el repositorio y con la clave de administrador aquí, se vuelve a poner la suya.
         limpias = sanearLicencias(cambio(!base.publica && admin?.publica ? { ...base, publica: admin.publica } : base));
         return `${JSON.stringify(limpias, null, 2)}\n`;
       },
@@ -93,12 +86,7 @@ export function useLicencia({ escribir = null, leerRepositorio = null } = {}) {
     return r;
   }, [escribir, ponerLicencias, admin]);
 
-  /**
-   * La primera vez: la clave de administrador, guardada aquí y su parte
-   * pública publicada. Si ya hay OTRA publicada, no se pisa sin `forzar`:
-   * pisarla deja sin valor todas las claves dadas (lo normal es restaurar
-   * la copia de seguridad).
-   */
+  /** La clave de administrador, aquí y su pública publicada. Con OTRA ya publicada no se pisa sin `forzar`. */
   const crearAdministrador = useCallback(async ({ forzar = false } = {}) => {
     const par = await crearClaveDeAdministrador();
     const r = await publicar((l) => {
@@ -119,7 +107,6 @@ export function useLicencia({ escribir = null, leerRepositorio = null } = {}) {
   }, [admin, emitidas]);
 
   const revocar = useCallback((id) => publicar((l) => ({ ...l, revocadas: [...new Set([...l.revocadas, id])] }), 'Licencias: clave revocada'), [publicar]);
-  /** Vuelve a publicar la pública del administrador si falta (sin tocar lo demás). */
   const republicar = useCallback(() => publicar((l) => l, 'Licencias: clave pública del administrador'), [publicar]);
   const exigir = useCallback((si) => publicar((l) => ({ ...l, exigir: !!si }), si ? 'Licencias: se exige clave para entrar' : 'Licencias: la app vuelve a estar abierta'), [publicar]);
 

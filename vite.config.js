@@ -1,64 +1,49 @@
-import { parsearChangelog } from './scripts/changelog.mjs';
-import { huellasDeImagenes } from './scripts/huellas.mjs';
-import { filasDeSalud } from './scripts/salud.mjs';
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
-import { readFileSync } from 'node:fs';
+import { parsearChangelog } from './scripts/changelog.mjs';
+import { huellasDeImagenes } from './scripts/huellas.mjs';
+import { filasDeSalud } from './scripts/salud.mjs';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
+// [P] La versión sale de package.json; las pruebas compilan «otra» con APP_VERSION sin tocar el repositorio.
+const VERSION = process.env.APP_VERSION ?? pkg.version;
+const leer = (ruta) => readFileSync(new URL(ruta, import.meta.url), 'utf8');
 
 export default defineConfig({
-  // La versión sale de package.json y la fecha del momento de compilar, así que
-  // el pie de la app siempre dice qué build estás usando de verdad.
   define: {
-    __APP_VERSION__: JSON.stringify(pkg.version),
-    // Las novedades, del mismo CHANGELOG.md que exige comprobar/version.mjs.
-    __CHANGELOG__: JSON.stringify(parsearChangelog(readFileSync(new URL('./CHANGELOG.md', import.meta.url), 'utf8'))),
+    __APP_VERSION__: JSON.stringify(VERSION),
+    // Las novedades, del mismo CHANGELOG.md que exige la versión documentada.
+    __CHANGELOG__: JSON.stringify(parsearChangelog(leer('./CHANGELOG.md'))),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
-    // La huella del contenido de cada cara e icono (3.41.0): la app los pide
-    // con `?v=` y una imagen rehecha entra aunque el móvil tenga la vieja en
-    // caché. ~3 KB en el paquete.
+    // La huella del contenido de cada cara e icono: se piden con `?v=` y una rehecha entra aunque haya otra en caché.
     __HUELLAS__: JSON.stringify({
       heroes: huellasDeImagenes(new URL('./public/heroes', import.meta.url).pathname, '.jpg'),
       objetos: huellasDeImagenes(new URL('./public/objetos', import.meta.url).pathname, '.png'),
     }),
   },
-  // En GitHub Pages el workflow pasa BASE_PATH=/nombre-del-repo/.
-  // En local ('npm run dev') no hace falta nada.
+  // En GitHub Pages el despliegue pasa BASE_PATH=/nombre-del-repo/.
   base: process.env.BASE_PATH ?? './',
   plugins: [
     react(),
-    // Un fichero diminuto con la version compilada, SIN cachear.
-    //
-    // Existe porque Javi no puede mirar nada desde el movil: el service worker
-    // guarda la app entera, asi que puede estar usando la de ayer mientras los
-    // datos si se han refrescado -pasa, y el diagnostico decia "todo correcto"
-    // enseñando una version vieja sin poder saberlo-. Con esto el diagnostico
-    // compara lo que esta ejecutando contra lo que hay publicado y lo dice.
+    // La versión compilada, SIN caché: el diagnóstico compara lo que corre con lo publicado.
     {
       name: 'version-publicada',
       generateBundle() {
-        this.emitFile({
-          type: 'asset',
-          fileName: 'version.json',
-          source: JSON.stringify({ version: pkg.version, buildTime: new Date().toISOString() }),
-        });
+        this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ version: VERSION, buildTime: new Date().toISOString() }) });
       },
     },
-    // Las ultimas corridas de la vigilancia, para que el diagnostico del movil
-    // compare la app con SU propio pasado. Van fuera de /data y sin cachear
-    // por el mismo motivo que version.json: de cache dirian siempre lo mismo.
+    // Las últimas corridas de la vigilancia (fuera de /data y sin caché, por lo mismo), línea a línea.
     {
       name: 'historial-de-salud',
       generateBundle() {
         let filas = [];
         try {
-          // Línea a línea (3.60.5): una línea rota vaciaba el historial entero.
-          const leido = filasDeSalud(readFileSync(new URL('./historial/salud.jsonl', import.meta.url), 'utf8'), { max: 40 });
+          const leido = filasDeSalud(leer('./historial/salud.jsonl'), { max: 40 });
           filas = leido.filas;
           if (leido.rotas) this.warn(`historial/salud.jsonl: ${leido.rotas} líneas rotas, descartadas`);
-        } catch { /* sin historial todavia: el diagnostico lo dice */ }
+        } catch { /* sin historial todavía: el diagnóstico lo dice */ }
         this.emitFile({ type: 'asset', fileName: 'historial.json', source: JSON.stringify(filas) });
       },
     },
@@ -72,45 +57,27 @@ export default defineConfig({
         theme_color: '#000000',
         background_color: '#000000',
         display: 'standalone',
-        // 'any', no 'landscape': forzarla giraba la app instalada en un móvil
-        // que se usa en vertical.
+        // 'any': forzar el apaisado giraba la app instalada en un móvil en vertical.
         orientation: 'any',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
-          // Icono ADAPTABLE (3.24.0): sin `maskable`, Android mete el icono
-          // cuadrado dentro de un círculo blanco con borde. El dibujo cabe
-          // en la zona segura (radio 165 de 205 a 512 px; hay prueba) y el
-          // fondo llega al borde, así que el mismo fichero vale.
+          // [M] Adaptable: el dibujo cabe en la zona segura (radio 165 de 205 a 512 px; hay prueba).
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
-        // Las imágenes NO entran en la precarga: 71 iconos de objeto (1,7 MB) y
-        // 133 caras de héroe (~2,9 MB). Meterlas ahí multiplicaría por cinco lo
-        // que la app descarga al instalarse, y de todas ellas un draft usa tres
-        // objetos y ocho caras. Se quedan fuera y se guardan en cuanto se ven,
-        // con la regla de abajo.
+        // [M] Sin imágenes en la precarga (1,7 MB de objetos y 2,9 de caras): se guardan al verlas.
         globPatterns: ['**/*.{js,css,html,svg}', 'icon-*.png'],
         runtimeCaching: [
           {
-            // Un icono o una cara no cambian salvo que Moonton los rediseñe: se
-            // sirven de caché sin preguntar, y así funcionan sin cobertura.
-            // Cuando los rediseña cambia la huella (`?v=`, 3.41.0), que va en
-            // la clave de la caché: la nueva se pide y la vieja caduca sola.
+            // Una cara o un icono no cambian salvo rediseño, y entonces cambia su huella (`?v=`).
             urlPattern: /\/(objetos|heroes)\/\d+\.(png|jpg)(\?v=[0-9a-f]+)?$/,
             handler: 'CacheFirst',
-            options: {
-              cacheName: 'imagenes',
-              expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 180 },
-            },
+            options: { cacheName: 'imagenes', expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 180 } },
           },
-          {
-            urlPattern: /\/data\/.*\.json$/,
-            handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'meta-data' },
-          },
+          { urlPattern: /\/data\/.*\.json$/, handler: 'StaleWhileRevalidate', options: { cacheName: 'meta-data' } },
         ],
       },
     }),

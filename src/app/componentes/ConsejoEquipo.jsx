@@ -1,15 +1,15 @@
 import { tic } from '../tacto.js';
 import { Cara } from './Imagen.jsx';
 import { idMotivo } from '../../motor/nombres.js';
-import { tPorDefecto } from './tPorDefecto.js';
 import { motivosAEnsenar } from '../motivos.js';
+import { useT } from '../i18n/contexto.js';
 
 /**
- * Qué pueden coger tus compañeros en las líneas abiertas (motor/equipo.js).
- * Plegado por defecto y DESPUÉS de tu nº1: no puede empujarlo fuera de la
- * primera pantalla. Cada opción se toca para meterla en tu equipo.
+ * Qué pueden coger tus compañeros en las líneas abiertas (motor/equipo.js):
+ * plegado y DESPUÉS de tu nº1, para no empujarlo. Tocar una opción la mete en tu equipo.
  */
-export function ConsejoEquipo({ consejos, yo, onElegir, t = tPorDefecto }) {
+export function ConsejoEquipo({ consejos, yo, onElegir }) {
+  const t = useT();
   if (!consejos?.length || !yo) return null;
   return (
     <details className="equipo">
@@ -20,8 +20,6 @@ export function ConsejoEquipo({ consejos, yo, onElegir, t = tPorDefecto }) {
       <p className="equipo-pista">{t('equipo.con', { yo: yo.name })}</p>
       {consejos.map((c) => {
         const mejor = c.sugerencias[0];
-        // Lo bueno delante: coger «el primero» sin mirar el signo enseñaba
-        // «pierde contra Selena» como si ESA fuera la razón para cogerlo.
         const motivos = motivosAEnsenar(mejor?.motivos ?? []);
         return (
           <div className="equipo-linea" key={c.linea}>
@@ -31,13 +29,7 @@ export function ConsejoEquipo({ consejos, yo, onElegir, t = tPorDefecto }) {
             </span>
             <div className="equipo-chips">
               {c.sugerencias.map((s, i) => (
-                <button
-                  key={s.heroe.name}
-                  className={`chip ${i === 0 ? 'mejor' : ''}`}
-                  onClick={() => { tic(); onElegir?.(s.heroe); }}
-                  aria-label={t('equipo.anadir', { nombre: s.heroe.name })}
-                  title={t('equipo.anadir', { nombre: s.heroe.name })}
-                >
+                <button key={s.heroe.name} className={`chip ${i === 0 ? 'mejor' : ''}`} onClick={() => { tic(); onElegir(s.heroe); }} aria-label={t('equipo.anadir', { nombre: s.heroe.name })} title={t('equipo.anadir', { nombre: s.heroe.name })}>
                   <Cara heroe={s.heroe} alt="" className="grid-cara" tam={22} />
                   {s.heroe.name}
                   {s.p != null && <span className="chip-pct">{Math.round(s.p * 100)}%</span>}

@@ -5,24 +5,21 @@ import { nombreClave } from '../../motor/nombres.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Cara } from './Imagen.jsx';
 import { Veredicto } from './Veredicto.jsx';
-import { tPorDefecto } from './tPorDefecto.js';
-
-const pct = (v) => Math.round(v * 100);
+import { Grupos, pct } from './TusNumeros.jsx';
+import { useT } from '../i18n/contexto.js';
 
 /**
- * La analítica de tus partidas (3.88.0): un panel con todo lo que dicen tus
- * partidas, las que apunta la tablet y las que apuntas tú. Arriba las cifras
- * de un vistazo; luego cómo vas semana a semana, con qué héroes, con quién y
- * contra quién, cuándo y si te ayuda la app. Cada porcentaje lleva su
- * intervalo y «mejor/peor» solo sale si el intervalo deja fuera tu media:
- * con 10 partidas un 70% cabe en una racha normal.
+ * El análisis de tus partidas (las de la tablet y las tuyas): cifras de un
+ * vistazo, la evolución semana a semana, con qué héroes, con quién y contra
+ * quién, cuándo y si te ayuda la app. Cada porcentaje con su intervalo, y
+ * «mejor/peor» solo si el intervalo deja fuera tu media.
  */
-export function Analitica({ partidas, maestria, datos, onCerrar, t = tPorDefecto, ahora }) {
-  const opciones = ahora ? { ahora } : {};
+export function Analitica({ partidas, maestria, datos, onCerrar, ahora }) {
+  const t = useT();
   const r = useMemo(() => {
-    const validas = partidasValidas(partidas);
+    const opciones = ahora ? { ahora } : {};
     return {
-      n: validas.length,
+      n: partidasValidas(partidas).length,
       numeros: tusNumeros(partidas, opciones),
       semana: tuSemana(partidas, opciones),
       evolucion: evolucion(partidas, opciones),
@@ -32,11 +29,11 @@ export function Analitica({ partidas, maestria, datos, onCerrar, t = tPorDefecto
       lineas: porLinea(partidas),
       app: conLaApp(partidas),
     };
-    // `opciones` es nuevo en cada render; lo que cambia el cálculo es `ahora`.
   }, [partidas, ahora]);
   const porClave = useMemo(() => new Map((datos?.heroes ?? []).map((h) => [nombreClave(h.name), h])), [datos]);
   const heroe = (nombre) => porClave.get(nombreClave(nombre)) ?? null;
   const media = r.numeros.wr;
+  const lista = (titulo, items, m) => <Lista titulo={titulo} items={items} heroe={heroe} media={m} vacio={t('ana.pocosCon')} />;
 
   return (
     <Hoja etiqueta={t('ana.titulo')} onCerrar={onCerrar}>
@@ -46,47 +43,43 @@ export function Analitica({ partidas, maestria, datos, onCerrar, t = tPorDefecto
       <div className="sheet-body analitica">
         {!r.n ? <p className="nota">{t('ana.vacio')}</p> : (
           <>
-            <Cifras r={r} t={t} />
+            <Cifras r={r} />
             <section className="ana-bloque" aria-label={t('ana.evolucion')}>
               <h3>{t('ana.evolucion')}</h3>
-              <Evolucion semanas={r.evolucion} media={media} t={t} />
+              <Evolucion semanas={r.evolucion} media={media} />
             </section>
-
             <section className="ana-bloque" aria-label={t('ana.heroes')}>
               <h3>{t('ana.heroes')}</h3>
               {r.numeros.heroes.length ? (
                 <div className="ana-filas">
-                  {r.numeros.heroes.map((h) => <Fila key={h.heroe} heroe={heroe(h.heroe)} nombre={h.heroe} d={{ ...h, ganadas: Math.round(h.wr * h.n) }} media={media} t={t} />)}
+                  {r.numeros.heroes.map((h) => <Fila key={h.heroe} heroe={heroe(h.heroe)} nombre={h.heroe} d={{ ...h, ganadas: Math.round(h.wr * h.n) }} media={media} />)}
                 </div>
               ) : <p className="nota">{t('ana.pocasHeroe')}</p>}
               <p className="build-nota">{t('ana.notaIntervalo', { media: pct(media) })}</p>
             </section>
-
             <div className="ana-dos">
-              <Lista titulo={t('ana.aliadosMejores')} items={r.aliados.mejores} heroe={heroe} media={r.aliados.media} vacio={t('ana.pocosCon')} t={t} />
-              <Lista titulo={t('ana.aliadosPeores')} items={r.aliados.peores} heroe={heroe} media={r.aliados.media} vacio={t('ana.pocosCon')} t={t} />
-              <Lista titulo={t('ana.enemigosMejores')} items={r.enemigos.mejores} heroe={heroe} media={r.enemigos.media} vacio={t('ana.pocosCon')} t={t} />
-              <Lista titulo={t('ana.enemigosPeores')} items={r.enemigos.peores} heroe={heroe} media={r.enemigos.media} vacio={t('ana.pocosCon')} t={t} />
+              {lista(t('ana.aliadosMejores'), r.aliados.mejores, r.aliados.media)}
+              {lista(t('ana.aliadosPeores'), r.aliados.peores, r.aliados.media)}
+              {lista(t('ana.enemigosMejores'), r.enemigos.mejores, r.enemigos.media)}
+              {lista(t('ana.enemigosPeores'), r.enemigos.peores, r.enemigos.media)}
             </div>
-
             <section className="ana-bloque" aria-label={t('ana.cuando')}>
               <h3>{t('ana.cuando')}</h3>
-              <Grupos grupos={r.dias} nombre={(id) => t(`ana.dia.${id}`)} t={t} />
-              <Grupos grupos={r.numeros.franjas} nombre={(id) => t(`numeros.franja.${id}`)} t={t} />
-              <Grupos grupos={r.numeros.duraciones} nombre={(id) => t(`numeros.duracion.${id}`)} t={t} />
-              {r.numeros.trasPerder && <Grupos grupos={[{ ...r.numeros.trasPerder, id: 'trasPerder' }]} nombre={() => t('ana.trasPerder')} t={t} />}
-              {r.lineas.length > 0 && <Grupos grupos={r.lineas} nombre={(id) => t(`linea.${id}`)} t={t} />}
+              <Grupos grupos={r.dias} nombre={(id) => t(`ana.dia.${id}`)} />
+              <Grupos grupos={r.numeros.franjas} nombre={(id) => t(`numeros.franja.${id}`)} />
+              <Grupos grupos={r.numeros.duraciones} nombre={(id) => t(`numeros.duracion.${id}`)} />
+              {r.numeros.trasPerder && <Grupos grupos={[{ ...r.numeros.trasPerder, id: 'trasPerder' }]} nombre={() => t('ana.trasPerder')} />}
+              {r.lineas.length > 0 && <Grupos grupos={r.lineas} nombre={(id) => t(`linea.${id}`)} />}
               <p className="build-nota">{t('ana.notaGrupos')}</p>
             </section>
-
             <section className="ana-bloque" aria-label={t('ana.app')}>
               <h3>{t('ana.app')}</h3>
               {r.app.n > 0 ? (
                 <div className="ana-filas">
-                  {['numeroUno', 'entreLosTres', 'porLibre'].filter((k) => r.app[k]).map((k) => <Fila key={k} nombre={t(`ana.app.${k}`)} d={r.app[k]} media={r.app.media} t={t} />)}
+                  {['numeroUno', 'entreLosTres', 'porLibre'].filter((k) => r.app[k]).map((k) => <Fila key={k} nombre={t(`ana.app.${k}`)} d={r.app[k]} media={r.app.media} />)}
                 </div>
               ) : <p className="nota">{t('ana.pocasApp')}</p>}
-              <Veredicto partidas={partidas} maestria={maestria} t={t} />
+              <Veredicto partidas={partidas} maestria={maestria} />
             </section>
           </>
         )}
@@ -95,8 +88,9 @@ export function Analitica({ partidas, maestria, datos, onCerrar, t = tPorDefecto
   );
 }
 
-/** Las cifras de un vistazo: partidas, winrate, racha, hoy y esta semana. */
-function Cifras({ r, t }) {
+/** Partidas, winrate, racha, esta semana (con la anterior) y hoy. */
+function Cifras({ r }) {
+  const t = useT();
   const { numeros: nu, semana: s } = r;
   const a = s.anterior;
   return (
@@ -113,12 +107,11 @@ function Cifras({ r, t }) {
 }
 
 /**
- * Semana a semana (una sola serie: winrate por semana, una barra cada una),
- * con tu media de línea de referencia. El número exacto, al pasar por
- * encima (`<title>`) y en la tabla de debajo, que también es la vista sin
- * color. Las semanas sin partidas dejan el hueco.
+ * Semana a semana: una barra por semana con tu media de raya. El número
+ * exacto en `<title>` y debajo; las semanas sin partidas dejan el hueco.
  */
-function Evolucion({ semanas, media, t }) {
+function Evolucion({ semanas, media }) {
+  const t = useT();
   const ancho = 360, alto = 120, abajo = 18, izquierda = 26, barra = (ancho - izquierda) / semanas.length;
   const y = (v) => 4 + (alto - abajo - 4) * (1 - v);
   const fecha = (ms) => new Date(ms).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' });
@@ -151,14 +144,16 @@ function Evolucion({ semanas, media, t }) {
   );
 }
 
-/** Una fila con su intervalo: la barra es de 0 a 100%, el tramo es el intervalo, el punto tu winrate y la raya tu media. */
-function Fila({ heroe, nombre, d, media, t }) {
+/** Una fila con su intervalo: barra de 0 a 100 %, el tramo es el intervalo, el punto tu winrate y la raya tu media. */
+function Fila({ heroe, nombre, d, media }) {
+  const t = useT();
+  const intervalo = t('ana.intervalo', { bajo: pct(d.bajo), alto: pct(d.alto) });
   return (
     <div className={`ana-fila ${d.lado ?? ''}`}>
       <span className="ana-nombre">{heroe && <Cara heroe={heroe} alt="" className="grid-cara" tam={22} />}{nombre}</span>
       <span className="ana-wr">{pct(d.wr)}%</span>
       <span className="ana-n-fila">{t('ana.de', { g: d.ganadas, n: d.n })}</span>
-      <span className="ana-intervalo" role="img" aria-label={t('ana.intervalo', { bajo: pct(d.bajo), alto: pct(d.alto) })} title={t('ana.intervalo', { bajo: pct(d.bajo), alto: pct(d.alto) })}>
+      <span className="ana-intervalo" role="img" aria-label={intervalo} title={intervalo}>
         <i className="ana-tramo" style={{ left: `${d.bajo * 100}%`, width: `${(d.alto - d.bajo) * 100}%` }} />
         {media != null && <i className="ana-raya" style={{ left: `${media * 100}%` }} />}
         <i className="ana-punto" style={{ left: `${d.wr * 100}%` }} />
@@ -168,22 +163,11 @@ function Fila({ heroe, nombre, d, media, t }) {
   );
 }
 
-function Lista({ titulo, items, heroe, media, vacio, t }) {
+function Lista({ titulo, items, heroe, media, vacio }) {
   return (
     <section className="ana-bloque" aria-label={titulo}>
       <h3>{titulo}</h3>
-      {items.length ? <div className="ana-filas">{items.map((h) => <Fila key={h.heroe} heroe={heroe(h.heroe)} nombre={h.heroe} d={h} media={media} t={t} />)}</div> : <p className="nota">{vacio}</p>}
+      {items.length ? <div className="ana-filas">{items.map((h) => <Fila key={h.heroe} heroe={heroe(h.heroe)} nombre={h.heroe} d={h} media={media} />)}</div> : <p className="nota">{vacio}</p>}
     </section>
   );
-}
-
-/** Cada grupo contra el resto, con el margen al lado; el que se distingue, marcado. */
-function Grupos({ grupos, nombre, t }) {
-  if (!grupos.length) return null;
-  return grupos.map((g) => (
-    <p key={g.id} className={`veredicto-cifra ana-grupo ${g.seVe ? (g.dif > 0 ? 'mejor' : 'peor') : ''}`}>
-      {t('ana.grupo', { grupo: nombre(g.id), a: pct(g.wr), na: g.n, b: pct(g.wrResto), signo: g.dif >= 0 ? '+' : '−', dif: Math.abs(g.dif * 100).toFixed(1), margen: (g.margen * 100).toFixed(1) })}
-      {g.seVe && <> · {t(g.dif > 0 ? 'ana.lado.mejor' : 'ana.lado.peor')}</>}
-    </p>
-  ));
 }

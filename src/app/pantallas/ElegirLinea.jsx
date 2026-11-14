@@ -1,12 +1,9 @@
 import { LINEAS } from '../../motor/catalogo.js';
 import { Hoja } from '../componentes/Hoja.jsx';
 import { Idiomas } from '../componentes/AvisoLegal.jsx';
-import { tPorDefecto } from '../componentes/tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
-/**
- * El icono y el color de cada línea (3.91.0). Dibujos propios y sencillos
- * (escudo, hoja, rayo, moneda, espada), no los del juego.
- */
+/** [P] El icono y el color de cada línea: dibujos propios y sencillos (escudo, hoja, rayo, moneda, espada), no los del juego. */
 const ASPECTO = {
   roam: { tono: '#409CFF', d: 'M12 2.5 4.5 5.5v6c0 4.6 3.2 8.4 7.5 10 4.3-1.6 7.5-5.4 7.5-10v-6L12 2.5Z' },
   jungle: { tono: '#30D158', d: 'M5 19C5 10.5 10.5 5 19 5c0 8.5-5.5 14-14 14Zm0 0 8.5-8.5' },
@@ -16,14 +13,14 @@ const ASPECTO = {
 };
 
 /**
- * Qué línea juegas. Se pregunta una sola vez y se recuerda: no es una
- * preferencia estética, es el dato que decide entre 21 y 40 héroes. En el
- * primer arranque tapa el pie, así que el idioma va dentro.
+ * Qué línea juegas: el dato que decide entre 21 y 40 héroes. La primera vez
+ * es la portada (sin cerrar, con el idioma dentro porque tapa el pie); desde
+ * Ajustes, la misma hoja con Cerrar y la línea marcada.
  */
-export function ElegirLinea({ valor, onElegir, onCerrar, idioma, onIdioma, idiomas = [], t = tPorDefecto }) {
+export function ElegirLinea({ valor, onElegir, onCerrar, idioma, onIdioma }) {
+  const t = useT();
   return (
     <Hoja etiqueta={t('app.elegirLinea')} onCerrar={onCerrar}>
-      {/* La portada, solo la primera vez (3.91.0): sin línea elegida. */}
       {!valor && (
         <div className="portada">
           <p className="portada-marca">Pick Assist</p>
@@ -32,7 +29,7 @@ export function ElegirLinea({ valor, onElegir, onCerrar, idioma, onIdioma, idiom
       )}
       <div className="sheet-head">
         <strong style={{ flex: 1, alignSelf: 'center' }}>{t('linea.pregunta')}</strong>
-        {onIdioma && idiomas.length > 1 && <Idiomas idioma={idioma} onIdioma={onIdioma} idiomas={idiomas} />}
+        {onIdioma && <Idiomas idioma={idioma} onIdioma={onIdioma} />}
         {onCerrar && <button className="close" onClick={onCerrar}>{t('app.cerrar')}</button>}
       </div>
       <div className="lineas">

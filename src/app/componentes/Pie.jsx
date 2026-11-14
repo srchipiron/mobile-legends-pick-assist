@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Novedades } from './Novedades.jsx';
-import { tPorDefecto } from './tPorDefecto.js';
 import { ETIQUETAS_RANGO } from './SelectorDeRango.jsx';
+import { useT } from '../i18n/contexto.js';
 
 /** A partir de cuántas horas los datos se enseñan como «viejos» (pie y cabecera). */
 export const HORAS_DATOS_VIEJOS = 36;
@@ -12,7 +12,8 @@ export const HORAS_DATOS_VIEJOS = 36;
  * Si faltan los counters, el motivo se enseña aquí: leer el JSON en un móvil
  * no es una opción razonable.
  */
-export function Pie({ meta, generado, edadHoras, edadMatrizHoras = null, rango, rangoDatos = null, diasDatos = null, cov, novedadesNuevas = false, onVerNovedades = null, t = tPorDefecto }) {
+export function Pie({ meta, generado, edadHoras, edadMatrizHoras = null, rango, rangoDatos = null, diasDatos = null, cov, novedadesNuevas = false, onVerNovedades = null}) {
+  const t = useT();
   const [abierto, setAbierto] = useState(false);
   const [novedades, setNovedades] = useState(false);
   const fecha = generado ? generado.toLocaleString(undefined, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : null;
@@ -73,7 +74,7 @@ export function Pie({ meta, generado, edadHoras, edadMatrizHoras = null, rango, 
         {novedadesNuevas && <span className="pie-nuevo">{t('pie.nuevo')}</span>}
         {' · '}{fecha ? t('pie.datos', { fecha }) : t('pie.sinDatos')}
       </span>
-      {novedades && <Novedades entradas={__CHANGELOG__} actual={__APP_VERSION__} onCerrar={() => setNovedades(false)} t={t} />}
+      {novedades && <Novedades entradas={__CHANGELOG__} actual={__APP_VERSION__} onCerrar={() => setNovedades(false)} />}
     </footer>
   );
 }

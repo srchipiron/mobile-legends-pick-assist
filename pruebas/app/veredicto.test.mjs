@@ -1,88 +1,68 @@
 /**
- * Que la pantalla del Veredicto siga siendo honesta.
- *
- * `CLAUDE.md` llama a estas tres reglas «no negociables»: el margen va en la
- * misma frase que la diferencia, no se afirma nada mientras la diferencia
- * quepa en el margen, y se dice que no está aleatorizado. Con once partidas
- * al 73% el margen es ±29 puntos: el número sin el margen es publicidad.
- *
- * La comprobación existía en 2.0.2 (`la pantalla del veredicto ensena el
- * margen y la trampa, no solo el numero`, contra `src/components/ui.jsx`) y
- * el port de 3.0 la perdió: leía la interfaz desde la prueba del motor, y el
- * motor ya no puede leer la interfaz. Lo que quedó garantizado en el motor
- * (`resumen()` devuelve siempre el margen) no dice nada de si la PANTALLA lo
- * pinta, que es lo que se ve.
- *
- * Se mira el código SIN comentarios a propósito: el docstring del componente
- * cita las tres reglas, así que una guarda por texto pasaría sola aunque el
- * JSX no las cumpliera. Ya ha pasado tres veces en este proyecto.
+ * Que la pantalla del Veredicto siga siendo honesta, con sus tres reglas: el
+ * margen en la MISMA frase que la diferencia, nada afirmado mientras quepa en
+ * él, y la trampa dicha (no está aleatorizado). Se pinta el componente de
+ * verdad (esbuild + react-dom/server) y se mira el TEXTO que sale: mirar el
+ * código pasaría con un comentario que citara las reglas.
  */
-import { test, ok, eq, leerTexto } from '../ayuda.mjs';
-import { CLAVES } from '../../src/app/i18n/index.js';
+import { buildSync } from 'esbuild';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createRequire } from 'node:module';
+import { after } from 'node:test';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { resumen } from '../../src/motor/registro.js';
 
-/** El código de un fichero sin comentarios de línea ni de bloque. */
-const sinComentarios = (ruta) => leerTexto(ruta).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+const dir = mkdtempSync(join(tmpdir(), 'veredicto-'));
+after(() => rmSync(dir, { recursive: true, force: true }));
+const salida = join(dir, 'veredicto.cjs');
+buildSync({
+  stdin: { contents: `import { createElement } from 'react';\nimport { renderToStaticMarkup } from 'react-dom/server';\nimport { Veredicto } from ${JSON.stringify(join(RAIZ, 'src/app/componentes/Veredicto.jsx'))};\nexport const pintar = (p) => renderToStaticMarkup(createElement(Veredicto, p));\n`, resolveDir: RAIZ, loader: 'jsx' },
+  bundle: true, platform: 'node', format: 'cjs', outfile: salida, jsx: 'automatic', logLevel: 'silent',
+  define: { 'process.env.NODE_ENV': '"production"' },
+});
+const { pintar } = createRequire(import.meta.url)(salida);
+const texto = (html) => html.replace(/<[^>]+>/g, '\n').replace(/&#x27;/g, "'").replace(/&quot;/g, '"');
 
-test('la pantalla del veredicto enseña el margen y la trampa, no solo el número', () => {
-  const jsx = sinComentarios('src/app/componentes/Veredicto.jsx');
+const t0 = Date.parse('2026-09-01T10:00:00Z');
+const maestria = { Akai: { games: 400, winRate: 0.52 } };
+const siguiendo = (n, ganadas) => Array.from({ length: n }, (_, i) => ({ t: t0 + i * 3600000, pick: 'Akai', gane: i < ganadas, recomendados: ['Akai'] }));
+const ramas = (nCon, gCon, nSin, gSin) => [
+  ...siguiendo(nCon, gCon),
+  ...Array.from({ length: nSin }, (_, i) => ({ t: t0 + 1e9 + i, pick: 'Akai', gane: i < gSin, recomendados: ['Tigreal'] })),
+];
+/** La línea de la pantalla que contiene `trozo`. */
+const linea = (html, trozo) => texto(html).split('\n').find((l) => l.includes(trozo)) ?? '';
 
-  // Las tres cosas que no pueden desaparecer de esa pantalla sin que deje de
-  // ser honesta, y que además existan en los dos idiomas: una clave que la
-  // pantalla usa y el diccionario no tiene sale cruda en pantalla.
-  for (const clave of ['veredicto.dif', 'veredicto.noSeVe', 'veredicto.trampa']) {
-    ok(jsx.includes(clave), `la pantalla ya no usa ${clave}`);
-    ok(CLAVES.includes(clave), `${clave} no existe en los idiomas`);
-  }
-
-  // Y que el margen se pinte en la MISMA frase que la diferencia. Separarlos
-  // en dos párrafos es exactamente cómo se acaba enseñando el número solo.
-  ok(/veredicto\.dif[\s\S]{0,260}margen/.test(jsx),
-    'el margen se ha separado de la diferencia: el número solo es publicidad');
-
-  // Mientras la diferencia quepa en el margen no se afirma nada: la rama de
-  // «todavía no se sabe» tiene que seguir colgando de `seVe`.
-  ok(/seVe[\s\S]{0,400}veredicto\.noSeVe/.test(jsx),
-    'la pantalla ya no distingue entre «se ve» y «todavía no se sabe»');
+test('con once partidas al 73% la pantalla pinta la diferencia CON su margen, no afirma nada y dice la trampa', () => {
+  const partidas = siguiendo(11, 8);
+  const c = resumen(partidas, maestria).contraReferencia;
+  ok(c && c.margen > 0 && !c.seVe, `el motor afirma con 11 partidas: ${JSON.stringify(c)}`);
+  const html = pintar({ partidas, maestria });
+  const dif = linea(html, 'puntos, con un margen de');
+  ok(/[+−][\d,]+ puntos, con un margen de ±[\d,]+/.test(dif), `la diferencia sale sin su margen en la misma frase: «${dif}»`);
+  ok(texto(html).includes('El margen se come la diferencia'), 'con la diferencia dentro del margen se afirma algo');
+  ok(!texto(html).includes('ya no cabe en el azar'), 'dice que funciona sin salir del margen');
+  ok(texto(html).includes('no es un experimento controlado'), 'no dice la trampa');
 });
 
-test('el motor da margen y duda con pocas partidas, que es lo que la pantalla pinta', () => {
-  // La otra mitad: que lo que la pantalla enseña venga con margen de verdad.
-  // Once partidas ganando ocho es una racha normal, no una prueba de nada.
-  const t0 = Date.parse('2026-09-01T10:00:00Z');
-  const partidas = Array.from({ length: 11 }, (_, i) => ({
-    t: t0 + i * 3600000, pick: 'Akai', gane: i < 8, recomendados: ['Akai'],
-  }));
-  const r = resumen(partidas, { Akai: { games: 400, winRate: 0.52 } });
-  const c = r.contraReferencia;
-  ok(c, 'sin comparación no hay nada que pintar');
-  ok(c.margen > 0, 'la comparación vuelve sin margen: la pantalla no podría enseñarlo');
-  ok(!c.seVe, `con 11 partidas al ${(r.wrSiguiendo * 100).toFixed(0)}% se afirma que la app funciona (margen ±${(c.margen * 100).toFixed(0)} puntos)`);
+test('fuera del margen sí lo dice; y con menos de cinco siguiendo no pinta ninguna cifra', () => {
+  const html = pintar({ partidas: siguiendo(200, 170), maestria });
+  ok(texto(html).includes('ya no cabe en el azar'), 'con 170 de 200 no afirma nada');
+  ok(/con un margen de ±/.test(texto(html)), 'al afirmar quita el margen');
+  const pocas = pintar({ partidas: siguiendo(3, 3), maestria });
+  ok(!/con un margen de/.test(texto(pocas)) && texto(pocas).includes('no es un experimento controlado'), 'con tres partidas pinta una diferencia');
 });
 
-test('siguiendo contra por libre: con margen en la misma frase, sin afirmar nada mientras quepa, y solo con 30 y 30', () => {
-  // Hasta 3.18.0 el informe decía «ya hay 30 y 30, se puede concluir» sin
-  // decir qué: con 69,8% (63) frente a 71,9% (32), −2 puntos ± 19.
-  const jsx = sinComentarios('src/app/componentes/Veredicto.jsx');
-  for (const clave of ['veredicto.ramas', 'veredicto.ramasNoSeVe']) {
-    ok(jsx.includes(clave), `la pantalla no usa ${clave}`);
-    ok(CLAVES.includes(clave), `${clave} no existe en los idiomas`);
-  }
-  ok(/veredicto\.ramas'[\s\S]{0,260}margen/.test(jsx), 'el margen de siguiendo/por libre no va en la misma frase que la diferencia');
-  ok(/\.seVe[\s\S]{0,200}veredicto\.ramasNoSeVe/.test(jsx), 'la comparación entre ramas no distingue «se ve» de «no se sabe»');
-  const t0 = Date.parse('2026-09-01T10:00:00Z');
-  const ramas = (nCon, gCon, nSin, gSin) => [
-    ...Array.from({ length: nCon }, (_, i) => ({ t: t0 + i, pick: 'Akai', gane: i < gCon, recomendados: ['Akai'] })),
-    ...Array.from({ length: nSin }, (_, i) => ({ t: t0 + 1e6 + i, pick: 'Akai', gane: i < gSin, recomendados: ['Tigreal'] })),
-  ];
-  const m = { Akai: { games: 400, winRate: 0.52 } };
-  eq(resumen(ramas(63, 44, 29, 21), m).entreRamas, null, 'con menos de 30 por libre ya compara');
-  const parecidas = resumen(ramas(63, 44, 32, 23), m).entreRamas;
-  ok(parecidas && parecidas.margen > 0.15 && !parecidas.seVe, `con 69,8% frente a 71,9% afirma algo: ${JSON.stringify(parecidas)}`);
+test('siguiendo contra por libre: solo con 30 y 30, con margen en la misma frase y sin afirmar mientras quepa', () => {
+  eq(resumen(ramas(63, 44, 29, 21), maestria).entreRamas, null, 'con menos de 30 por libre ya compara');
+  const html = pintar({ partidas: ramas(63, 44, 32, 23), maestria });
+  const frase = linea(html, 'frente a por libre');
+  ok(/frente a por libre [\d,]+% \(32\): [+−][\d,]+ puntos, con un margen de ±[\d,]+/.test(frase), `sin margen en la misma frase: «${frase}»`);
+  ok(texto(html).includes('Esa diferencia cabe en el margen'), 'con 69,8% frente a 71,9% afirma algo');
   // Una rama ganada entera no da margen cero (error agrupado, no Wald).
-  // 30 de 30 frente a 0 de 30: con Wald el error es CERO y no se afirmaría
-  // nada de la diferencia más grande posible.
-  const entera = resumen(ramas(30, 30, 30, 0), m).entreRamas;
-  ok(entera.margen > 0 && entera.seVe, `con 30/30 frente a 0/30 no se distingue o el margen sale cero: ${JSON.stringify(entera)}`);
-  ok(resumen(ramas(100, 90, 100, 40), m).entreRamas.seVe, 'con 90% frente a 40% en 100 y 100 no se distingue nada');
+  const entera = resumen(ramas(30, 30, 30, 0), maestria).entreRamas;
+  ok(entera.margen > 0 && entera.seVe, JSON.stringify(entera));
+  ok(!texto(pintar({ partidas: ramas(100, 90, 100, 40), maestria })).includes('Esa diferencia cabe en el margen'), 'con 90% frente a 40% no se distingue nada');
 });

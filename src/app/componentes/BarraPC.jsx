@@ -1,12 +1,12 @@
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
 /**
- * La barra del ordenador (3.87.0): en pantalla ancha (desde 1.100 px, el
- * corte de styles.css) todo lo que en el móvil vive dentro de «Ajustes» va
- * a la vista, a un clic, con las teclas del draft al lado. En el móvil no
- * se ve (CSS): ahí no cambia ni un píxel de dónde cae la nº1.
+ * La barra del ordenador: desde 1.100 px (el corte de styles.css) lo que en
+ * el móvil vive en «Ajustes» va a un clic, con las teclas al lado. En el
+ * móvil es `display: none`: no mueve la nº1.
  */
-export function BarraPC({ abrir, onDiagnostico, conCapturas, fase, t = tPorDefecto }) {
+export function BarraPC({ abrir, onDiagnostico, conCapturas, fase }) {
+  const t = useT();
   return (
     <nav className="barra-pc" aria-label={t('pc.barra')}>
       <button className="reset" onClick={() => abrir('analisis')}>{t('ana.boton')}</button>

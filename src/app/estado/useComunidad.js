@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CLAVES, leer, guardar } from './almacen.js';
-import { useAhora } from './useAhora.js';
-import { huellaDe, ESPERA_MS, REINTENTO_MS } from '../envio.js';
 import {
   sanearConfig, sanearEstadoComunidad, crearClaveDeJugador, claveDeJugadorValida, tocaSubirComunidad,
   subirPartidas, traerMisPartidas, borrarMisPartidas, bajarComunidad, queTraer,
@@ -10,26 +8,35 @@ import { medirComunidad } from '../../motor/comunidad.js';
 import { maestriaDeSiempre, winrateDeReferencia } from '../../motor/maestria.js';
 import { esPrevia } from '../../motor/registro.js';
 
-/** Lo que se espera a comunidad.json antes de quedarse con la copia guardada. Decisión de producto, como licencias.json. */
+/** [P] Lo que se espera a comunidad.json antes de quedarse con la copia guardada (como licencias.json). */
 const PLAZO_CONFIG_MS = 4000;
 const RUTA = 'public/comunidad.json';
-/** Cada cuánto se miran las partidas que subió la tablet. Decisión de producto. */
+/** [P] Cada cuánto se miran las partidas que subió la tablet. */
 export const TRAER_CADA_MS = 5 * 60 * 1000;
+/** [P] Lo que se espera tras un cambio antes de subir: corregir justo después de apuntar sube una vez. */
+export const ESPERA_MS = 3000;
+/** [P] Tras un fallo, lo que se espera antes de volver a subir lo mismo. */
+export const REINTENTO_MS = 10 * 60 * 1000;
+
+/** Huella de lo que se sube (partidas, quitadas y referencia), FNV-1a con el nº de partidas delante: si no cambia, no se sube. */
+export function huellaDeSubida({ partidas = [], olvidadas = [], referencia = null }) {
+  const texto = JSON.stringify({ p: partidas, m: { o: olvidadas, r: referencia } });
+  let h = 0x811c9dc5;
+  for (let i = 0; i < texto.length; i++) { h ^= texto.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return `${partidas.length}.${h.toString(16)}`;
+}
 
 /**
- * La base de datos de partidas de todos (3.69.0). Con la casilla puesta y
- * `comunidad.json` publicado, cada cambio en tus partidas se sube solo (a los
- * ESPERA_MS, como la subida a GitHub) con TU clave. Y cualquiera puede bajar
- * las de todos para ver si la app ayuda (`cargarEstadisticas`).
- *
- * `escribir` (de useEnvio, solo en el móvil de Javi) publica comunidad.json:
- * el token no llega aquí.
+ * La base de datos de partidas. Con «Guardar mis partidas» y `comunidad.json`
+ * publicado, cada cambio en tus partidas se sube solo con TU clave; al abrir
+ * (y como mucho cada TRAER_CADA_MS) se trae lo que la tablet apuntó; y se
+ * pueden bajar las de todos para ver si la app ayuda. `escribir` (del token,
+ * solo en el móvil de Javi) publica comunidad.json: el token no llega aquí.
  */
-export function useComunidad({ perfil, escribir = null }) {
+export function useComunidad({ perfil, escribir = null, ahora }) {
   const [estado, setEstado] = useState(() => sanearEstadoComunidad(leer(CLAVES.comunidad, {})));
   const [enCurso, setEnCurso] = useState(false);
   const [estadisticas, setEstadisticas] = useState(null);
-  const ahora = useAhora();
   const ultimo = useRef({ estado, perfil, enCurso: false });
   ultimo.current.perfil = perfil;
 
@@ -50,20 +57,19 @@ export function useComunidad({ perfil, escribir = null }) {
     return () => { vivo = false; };
   }, [cambiar]);
 
-  // Tu winrate de siempre (maestría manual + previas), el mismo del Veredicto.
+  // Tu winrate de siempre (maestría a mano + previas), el mismo del Veredicto.
   const referencia = useMemo(() => {
     const r = winrateDeReferencia(maestriaDeSiempre(perfil.mastery ?? {}, (perfil.partidas ?? []).filter(esPrevia)));
     return r ? { winRate: r.winRate, partidas: r.partidas } : null;
   }, [perfil.mastery, perfil.partidas]);
-  // La huella cubre partidas, quitadas y referencia: cambiar cualquiera sube.
-  const huella = useMemo(() => huellaDe({ partidas: perfil.partidas ?? [], mastery: { o: perfil.olvidadas ?? [], r: referencia } }), [perfil.partidas, perfil.olvidadas, referencia]);
+  const huella = useMemo(() => huellaDeSubida({ partidas: perfil.partidas ?? [], olvidadas: perfil.olvidadas ?? [], referencia }), [perfil.partidas, perfil.olvidadas, referencia]);
 
   const subir = useCallback(async ({ todas = false } = {}) => {
     const { estado: e, perfil: p } = ultimo.current;
     if (!e.activo || !e.config) return { error: 'apagado' };
     if (ultimo.current.enCurso) return { error: 'ocupado' };
     ultimo.current.enCurso = true; setEnCurso(true);
-    const h = huellaDe({ partidas: p.partidas ?? [], mastery: { o: p.olvidadas ?? [], r: referencia } });
+    const h = huellaDeSubida({ partidas: p.partidas ?? [], olvidadas: p.olvidadas ?? [], referencia });
     try {
       const r = await subirPartidas({ config: e.config, clave: e.clave, partidas: p.partidas ?? [], olvidadas: p.olvidadas ?? [], referencia, completo: e.completo && !todas });
       if (r.error) { cambiar({ error: r.error, intento: Date.now(), huellaIntentada: h }); return r; }
@@ -74,7 +80,7 @@ export function useComunidad({ perfil, escribir = null }) {
     }
   }, [cambiar, referencia]);
 
-  // Lo automático, como useEnvio: a los ESPERA_MS de un cambio, y `ahora` reintenta.
+  // A los ESPERA_MS de un cambio; `ahora` (cada minuto) reintenta tras un fallo.
   useEffect(() => {
     if (enCurso) return undefined;
     const enLinea = typeof navigator === 'undefined' || navigator.onLine !== false;
@@ -135,12 +141,7 @@ export function useComunidad({ perfil, escribir = null }) {
     return r;
   }, [escribir, cambiar]);
 
-  /**
-   * Lo que apuntó la tablet sola (3.70.0) llega a la base de datos con tu
-   * clave: al abrir la app (y cada `ahora`, como mucho cada TRAER_CADA_MS)
-   * se trae lo que aquí no está ni se quitó, y lo arreglado allí después
-   * que aquí (3.76.0), para que App lo funda.
-   */
+  // Lo que apuntó la tablet con tu clave y lo arreglado allí después que aquí, para que App lo funda.
   const [nuevas, setNuevas] = useState([]);
   const ultimaTraida = useRef(0);
   const montado = useRef(true);
@@ -149,9 +150,7 @@ export function useComunidad({ perfil, escribir = null }) {
     const { estado: e } = ultimo.current;
     if (!e.activo || !e.config || !e.clave || Date.now() - ultimaTraida.current < TRAER_CADA_MS) return;
     ultimaTraida.current = Date.now();
-    // Sin cancelar al rearmarse: al llegar comunidad.json la configuración es
-    // otro objeto, el efecto vuelve a correr y la respuesta se tiraba (y el
-    // tope de arriba no dejaba pedirla otra vez). Lo de aquí se mira AL LLEGAR.
+    // Sin cancelar al rearmarse (al llegar comunidad.json la configuración es otro objeto): se mira AL LLEGAR.
     traerMisPartidas({ config: e.config, clave: e.clave }).then((r) => {
       if (!montado.current || r.error) { if (r.error) ultimaTraida.current = 0; return; }
       const p = ultimo.current.perfil;

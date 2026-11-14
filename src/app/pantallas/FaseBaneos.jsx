@@ -4,14 +4,18 @@ import { ProximosBaneos } from '../componentes/ProximosBaneos.jsx';
 import { BaneosSugeridos } from '../componentes/BaneosSugeridos.jsx';
 import { AvisoLegal } from '../componentes/AvisoLegal.jsx';
 import { Cara } from '../componentes/Imagen.jsx';
-import { IDIOMAS } from '../i18n/index.js';
+import { useT } from '../i18n/contexto.js';
 
 /**
  * Fase 1: los baneos, solos. Diez toques en medio minuto: el selector
- * multi-toque se abre desde cualquier hueco o desde el botón grande, y el
- * único camino hacia delante es «Ir a los picks».
+ * multi-toque se abre desde cualquier hueco o desde «Buscar», y el único
+ * camino hacia delante es «Ir a los picks».
+ *
+ * @param lector  lo de la tablet (null sin tablet vinculada: ni botón ni petición)
+ * @param plan    tu plan A·B·C antes de que salga nadie (uno ya baneado sale tachado)
  */
-export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, rangoDatos = '', sinWinrates, idioma, onIdioma, tacto, onTacto, onAbrirSelector, onBanear, onQuitar, onAPicks, lector = null, onLeer = null, lectorAuto = false, onLectorAuto = null, pie, barra = null }) {
+export function FaseBaneos({ baneos, proximos, sugeridos, plan = [], tasaDe, rangoDatos = '', sinWinrates, idioma, onIdioma, tacto, onTacto, onAbrirSelector, onBanear, onQuitar, onAPicks, lector = null, pie, barra = null }) {
+  const t = useT();
   const baneados = new Set(baneos.map((h) => h.name));
   return (
     <div className="app fase-baneos">
@@ -22,18 +26,13 @@ export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, 
           <span className="freshness version">v{__APP_VERSION__}</span>
         </div>
         <p className="fase-pista">{t('fase.baneosPista')}</p>
-        <Bando t={t} titulo={t('app.baneados')} tipo="bans" picks={baneos} max={10} onAnadir={onAbrirSelector} onQuitar={onQuitar} />
-        <ProximosBaneos t={t} items={proximos} baneos={baneos} visibles={baneos.length < 10 ? 8 : 0} tasaDe={tasaDe} rango={rangoDatos} onBanear={onBanear} onQuitar={onQuitar} />
-        {/* En una fila (3.38.0): apilados eran tres botones a lo ancho entre los
-            baneos probables e «Ir a los picks». */}
+        <Bando titulo={t('app.baneados')} tipo="bans" picks={baneos} max={10} onAnadir={onAbrirSelector} onQuitar={onQuitar} />
+        <ProximosBaneos items={proximos} baneos={baneos} visibles={baneos.length < 10 ? 8 : 0} tasaDe={tasaDe} rango={rangoDatos} onBanear={onBanear} onQuitar={onQuitar} />
         <div className="tools">
           <button className="reset" onClick={onAbrirSelector}>{t('fase.buscarBaneo')}</button>
-          {onLeer && <BotonLector estado={lector?.estado} aviso={lector?.aviso} ultimo={lector?.ultimo} auto={lectorAuto} onAuto={onLectorAuto} onLeer={onLeer} t={t} />}
+          {lector && <BotonLector lector={lector} conAuto />}
         </div>
         <button className="reset primario" onClick={onAPicks}>{baneos.length ? t('fase.aPicks') : t('fase.sinBaneosAPicks')}</button>
-        {/* Tu plan antes de que salga nadie: la mitad de las veces el plan A
-            llega baneado (Marcel 55% de ban), y verlo aquí ahorra los 30
-            segundos del pick. Un plan ya baneado sale tachado. */}
         {plan.length > 0 && (
           <section className="plan">
             <div className="side-label"><span>{t('plan.titulo')}</span><span>{t('plan.segun')}</span></div>
@@ -48,12 +47,10 @@ export function FaseBaneos({ t, baneos, proximos, sugeridos, plan = [], tasaDe, 
             </div>
           </section>
         )}
-        {/* Con los diez marcados no hay más que banear: el undécimo no existe. */}
-        <BaneosSugeridos t={t} items={baneos.length < 10 ? sugeridos : []} onBanear={onBanear} rango={rangoDatos} plan={plan.map((x) => x.heroe.name)} />
-        {/* Sin winrates (API caída en el primer arranque) la fase quedaba con huecos «+» y un selector alfabético sin explicación. */}
+        <BaneosSugeridos items={baneos.length < 10 ? sugeridos : []} onBanear={onBanear} rango={rangoDatos} plan={plan.map((x) => x.heroe.name)} />
         {sinWinrates ? <div className="notice">{t('app.sinWinrates')}</div> : null}
         {barra}
-        <AvisoLegal t={t} idioma={idioma} onIdioma={onIdioma} idiomas={IDIOMAS} tacto={tacto} onTacto={onTacto} />
+        <AvisoLegal idioma={idioma} onIdioma={onIdioma} tacto={tacto} onTacto={onTacto} />
       </aside>
       {pie}
     </div>

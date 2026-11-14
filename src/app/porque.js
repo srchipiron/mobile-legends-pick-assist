@@ -1,14 +1,13 @@
-import { tPorDefecto } from './componentes/tPorDefecto.js';
+import { crearT } from './i18n/index.js';
 
 const decimal = (v) => v.toFixed(1);
 
 /**
- * La línea de «por qué no es el nº1» de una tarjeta (3.51.0), a partir de
- * `porQueDetras` (motor/ranking.js): «1.2 puntos por detrás de Rafaela: más
- * flojo en general (−1.5), aunque mejores cruces (+0.6)». Puro, para poder
- * probarla sin navegador.
+ * La línea de «por qué no es el nº1» de una tarjeta, de `porQueDetras`
+ * (motor/ranking.js): «1,2 puntos por detrás de Rafaela: más flojo en
+ * general (−1,5), aunque mejores cruces (+0,6)». Pura.
  */
-export function fraseDetras(d, primero, t = tPorDefecto) {
+export function fraseDetras(d, primero, t = crearT('es')) {
   if (!d || !primero) return null;
   if (d.empate) return t('porque.empate', { hero: primero });
   if (!d.principal) return t('porque.detrasSolo', { dif: decimal(d.dif), hero: primero });

@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { resumen as resumenDeCambio } from '../../../scripts/changelog.mjs';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
 /**
  * Las novedades, al tocar la versión del pie. Resumidas: la primera frase de
  * cada cambio, y «ver todo» para el porqué. Vienen del CHANGELOG.md en la
  * compilación (el MISMO fichero que exige comprobar/version.mjs).
  */
-export function Novedades({ entradas, actual, onCerrar, t = tPorDefecto }) {
+export function Novedades({ entradas, actual, onCerrar}) {
+  const t = useT();
   const [enteras, setEnteras] = useState(() => new Set());
   const alternar = (v) => setEnteras((prev) => { const n = new Set(prev); if (n.has(v)) n.delete(v); else n.add(v); return n; });
   return (

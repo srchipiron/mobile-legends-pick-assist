@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { bajarRecortes, bajarMisRecortes, claveDeJugadorValida } from '../../comun/basedatos.js';
 import { revisiones, cambiosDeRevision, encuadre, tusMasJugados, companerosHabituales, carasParaHueco, sinResultado, HORAS_DE_RECORTES } from '../revisar.js';
-import { Cara as CaraDeHeroe } from './Imagen.jsx';
+import { RejillaDeHeroes } from './RejillaDeHeroes.jsx';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { PegarClave } from './Comunidad.jsx';
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
-/** A qué escala se pintan las caras (píxeles por píxel de la referencia): 85 px de ancho las de tu equipo. Decisión de producto. */
+/** [P] A qué escala se pintan las caras (píxeles por píxel de la referencia): 85 px de ancho las de tu equipo. */
 const ESCALA = 0.45;
-/** En el ordenador (3.87.0), más grandes: 133 px las de tu equipo, que es lo que deja ver la skin. Decisión de producto. */
+/** [P] En el ordenador, 133 px las de tu equipo: lo que deja ver la skin. */
 const ESCALA_PC = 0.7;
 /** Desde qué ancho es «ordenador»: el mismo corte que pone las tarjetas a dos columnas en styles.css. */
 export const ANCHO_PC = 1100;
@@ -26,22 +26,24 @@ function useAncho() {
   return ancho;
 }
 
-/** El enlace que abre la app directamente en «Capturas» (3.87.0): para el ordenador. */
+/** El enlace que abre la app directamente en «Capturas» (para el ordenador). */
 export const enlaceDeCapturas = () => `${window.location.origin}${window.location.pathname}#capturas`;
 
 /**
- * Revisar lo que no vio el lector, con sus capturas (3.86.0): las caras de
- * cada draft que la tablet no leyó entero, junto a un campo por hueco. Se
- * hace igual desde el móvil que desde el PC (la misma app, con tu clave de
- * la base de datos). Guardar arregla la partida: llega a la tablet y la
- * tablet aprende de ella.
+ * Revisar lo que no vio el lector, con sus capturas: las caras de cada draft
+ * que la tablet no leyó entero, junto a un campo por hueco (igual desde el
+ * móvil que desde el PC, con tu clave). Guardar arregla la partida: llega a
+ * la tablet y la tablet aprende de ella. Arriba, las que no supo cómo
+ * acabaron, con sus pantallas del final.
  */
-export function RevisarCapturas({ partidas, olvidadas = [], datos, comunidad, perfil, onImportar, onGuardar, onApuntar, onDescartar, onCerrar, t = tPorDefecto }) {
+export function RevisarCapturas({ personal, datos, comunidad, perfil, onImportar, onCerrar }) {
+  const t = useT();
+  const { partidas, olvidadas } = personal;
   const [recortes, setRecortes] = useState(null);
   const [error, setError] = useState(null);
   const [todas, setTodas] = useState(false);
   const [avisoClave, setAvisoClave] = useState(null);
-  // «Guardada» va aquí y no en la partida (3.87.1): guardada, deja de estar pendiente y sale de la lista.
+  // «Guardada» va aquí y no en la partida: guardada, deja de estar pendiente y sale de la lista.
   const [guardada, setGuardada] = useState(false);
   const escala = useAncho() ? ESCALA_PC : ESCALA;
   const config = comunidad?.config ?? null;
@@ -54,7 +56,7 @@ export function RevisarCapturas({ partidas, olvidadas = [], datos, comunidad, pe
     });
     return () => { vivo = false; };
   }, [config]);
-  // Las pantallas del final con la partida sin resultado (3.90.2): solo las subidas con TU clave.
+  // Las pantallas del final con la partida sin resultado: solo las subidas con TU clave.
   const [propios, setPropios] = useState([]);
   const clave = comunidad?.clave ?? null;
   useEffect(() => {
@@ -85,7 +87,7 @@ export function RevisarCapturas({ partidas, olvidadas = [], datos, comunidad, pe
         {config && comunidad && !comunidad.clave && (
           <div className="revisar-clave">
             <p className="nota">{t('revisar.pegaClave')}</p>
-            <PegarClave comunidad={comunidad} perfil={perfil} onImportar={onImportar} avisar={setAvisoClave} t={t} />
+            <PegarClave comunidad={comunidad} perfil={perfil} onImportar={onImportar} avisar={setAvisoClave} />
           </div>
         )}
         {avisoClave && <p className={avisoClave.mal ? 'nota mal' : 'nota bien'} role="status">{avisoClave.texto}</p>}
@@ -101,9 +103,9 @@ export function RevisarCapturas({ partidas, olvidadas = [], datos, comunidad, pe
         )}
         {recortes && !partidas.length && <p className="nota">{t('revisar.sinPartidas')}</p>}
         {guardada && <p className="nota bien revisar-guardada" role="status">{t('revisar.guardada')}</p>}
-        {sinAcabar.length > 0 && onApuntar && <SinResultado lista={sinAcabar} onApuntar={onApuntar} onDescartar={onDescartar} t={t} />}
+        {sinAcabar.length > 0 && <SinResultado lista={sinAcabar} onApuntar={personal.apuntarPartida} onDescartar={personal.olvidarPartida} />}
         <div className="revisar-lista">
-          {vistas.map((r) => <Revision key={r.t} r={r} datos={datos} nombres={nombres} partidas={partidas} escala={escala} onGuardar={(t0, c) => { onGuardar(t0, c); setGuardada(true); aLaSiguiente(t0); }} onCambio={() => setGuardada(false)} t={t} />)}
+          {vistas.map((r) => <Revision key={r.t} r={r} datos={datos} nombres={nombres} partidas={partidas} escala={escala} onGuardar={(t0, c) => { personal.revisarPartida(t0, c); setGuardada(true); aLaSiguiente(t0); }} onCambio={() => setGuardada(false)} />)}
         </div>
       </div>
     </Hoja>
@@ -111,12 +113,12 @@ export function RevisarCapturas({ partidas, olvidadas = [], datos, comunidad, pe
 }
 
 /**
- * Las partidas que la tablet no supo cómo acabaron (3.89.4): sus pantallas
- * del final (la explosión de la base o el «DEFEAT» suelen decirlo) y Gané /
- * Perdí con un toque. Así llegan a tus números las que no contestaste en la
- * tablet mientras jugabas, que casi siempre son derrotas.
+ * Las partidas que la tablet no supo cómo acabaron: sus pantallas del final
+ * (la explosión de la base o el «DEFEAT» suelen decirlo) y Gané / Perdí con
+ * un toque. Contestar es decirlo tú: van con `editada`.
  */
-function SinResultado({ lista, onApuntar, onDescartar, t }) {
+function SinResultado({ lista, onApuntar, onDescartar }) {
+  const t = useT();
   return (
     <section className="revisar-sin-resultado" aria-label={t('revisar.sinResultado', { n: lista.length })}>
       <h3>{t('revisar.sinResultado', { n: lista.length })}</h3>
@@ -132,7 +134,7 @@ function SinResultado({ lista, onApuntar, onDescartar, t }) {
           <div className="revisar-fin-botones">
             <button type="button" className="reset partida-bien" onClick={() => onApuntar({ ...s.partida, gane: true, editada: Date.now() })}>{t('revisar.gane')}</button>
             <button type="button" className="reset partida-mal" onClick={() => onApuntar({ ...s.partida, gane: false, editada: Date.now() })}>{t('revisar.perdi')}</button>
-            {onDescartar && <button type="button" className="filtro" onClick={() => onDescartar(s.t)}>{t('revisar.noJugada')}</button>}
+            <button type="button" className="filtro" onClick={() => onDescartar(s.t)}>{t('revisar.noJugada')}</button>
           </div>
         </div>
       ))}
@@ -143,38 +145,32 @@ function SinResultado({ lista, onApuntar, onDescartar, t }) {
 function Cara({ png, lado, i, etiqueta, escala, abierto, onTocar }) {
   const e = encuadre(lado, i, escala);
   const estilo = { width: e.ancho, height: e.alto, backgroundImage: `url("data:image/png;base64,${png}")`, backgroundSize: e.fondo, backgroundPosition: e.posicion };
-  // La cara es el botón (3.89.0): tocarla abre las caras para elegir quién es, sin escribir.
+  // La cara es el botón: tocarla abre las caras para elegir quién es, sin escribir.
   return <button type="button" className="revisar-cara" aria-label={etiqueta} aria-expanded={abierto} style={estilo} onClick={onTocar} />;
 }
 
 /**
- * Elegir quién va en un hueco tocando su cara (3.89.0). Javi: «juego una
- * partida detrás de otra… no me da tiempo a ir corrigiendo». Revisar varias
- * de golpe tenía que ser tocar, no escribir: aquí salen las caras más
- * probables (tus héroes o tus compañeros de siempre delante, luego el
- * motor) y un buscador para el resto.
+ * Elegir quién va en un hueco tocando su cara: revisar varias de golpe es
+ * tocar, no escribir. Las más probables (tus héroes o tus compañeros de
+ * siempre delante, luego el motor) y un buscador para el resto.
  */
-function ElegirCara({ datos, opciones, onElegir, t }) {
+function ElegirCara({ datos, opciones, onElegir }) {
+  const t = useT();
   const [buscar, setBuscar] = useState('');
   const caras = useMemo(() => carasParaHueco(datos, { ...opciones, buscar }), [datos, opciones, buscar]);
   return (
     <div className="revisar-elegir">
       <input type="search" autoComplete="off" value={buscar} placeholder={t('app.buscar')} aria-label={t('revisar.buscarHeroe')} onChange={(ev) => setBuscar(ev.target.value)}
         onKeyDown={(ev) => { if (ev.key === 'Enter' && caras[0]) onElegir(caras[0].name); }} />
-      <div className="hero-grid revisar-caras">
-        {caras.map((h) => (
-          <button key={h.name} type="button" onClick={() => onElegir(h.name)}>
-            <CaraDeHeroe heroe={h} className="grid-cara" tam={40} />
-            <span className="grid-nombre">{h.name}</span>
-          </button>
-        ))}
+      <RejillaDeHeroes className="revisar-caras" heroes={caras} caras={40} onElegir={(h) => onElegir(h.name)}>
         {!caras.length && <p className="empty-state">{t('app.sinNombre')}</p>}
-      </div>
+      </RejillaDeHeroes>
     </div>
   );
 }
 
-function Revision({ r, datos, nombres, partidas, escala, onGuardar, onCambio, t }) {
+function Revision({ r, datos, nombres, partidas, escala, onGuardar, onCambio }) {
+  const t = useT();
   const [captura, setCaptura] = useState(0);
   const [entera, setEntera] = useState(false);
   const [enemigos, setEnemigos] = useState(() => r.enemigos.map((n) => n ?? ''));
@@ -184,7 +180,7 @@ function Revision({ r, datos, nombres, partidas, escala, onGuardar, onCambio, t 
   // El hueco con las caras abiertas: { lado, i } o null.
   const [abierto, setAbierto] = useState(null);
   const png = r.capturas[captura]?.png ?? r.capturas[0].png;
-  // Tus más jugados para tu hueco (3.87.3), sin los que ya están escritos en esta partida.
+  // Tus más jugados para tu hueco, sin los que ya están escritos en esta partida.
   const tuyos = useMemo(() => tusMasJugados(partidas, nombres, [...enemigos, ...aliados.filter((_, i) => i !== r.tuyoFila)]), [partidas, nombres, enemigos, aliados, r.tuyoFila]);
   const ponerTuyo = (h) => {
     if (r.tuyoFila >= 0) setAliados((x) => x.map((n, k) => (k === r.tuyoFila ? h : n))); else setTuyo(h);
@@ -217,7 +213,7 @@ function Revision({ r, datos, nombres, partidas, escala, onGuardar, onCambio, t 
   };
   const tocar = (lado, i) => setAbierto((a) => (a?.lado === lado && a.i === i ? null : { lado, i }));
   const elegirAqui = (lado, i) => abierto?.lado === lado && abierto.i === i && (
-    <ElegirCara datos={datos} opciones={opciones} onElegir={(n) => elegir(lado, i, n)} t={t} />
+    <ElegirCara datos={datos} opciones={opciones} onElegir={(n) => elegir(lado, i, n)} />
   );
   const campo = (lado, lista, poner, i) => (
     <input
@@ -242,7 +238,7 @@ function Revision({ r, datos, nombres, partidas, escala, onGuardar, onCambio, t 
         <button className="filtro revisar-ver-entera" aria-pressed={entera} onClick={() => setEntera((x) => !x)}>{t('revisar.entera')}</button>
       </h3>
       <div className="revisar-equipos">
-        {/* La captura entera (3.87.0): con la cara recortada a veces no basta; aquí se ven las diez juntas. En el ordenador, al lado. */}
+        {/* La captura entera: con la cara recortada a veces no basta. En el ordenador, al lado. */}
         {entera && <img className="revisar-entera" alt={t('revisar.entera')} src={`data:image/png;base64,${png}`} />}
         <div className="revisar-equipo">
           <strong>{t('revisar.aliados')}</strong>

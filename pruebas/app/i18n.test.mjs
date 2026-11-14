@@ -9,7 +9,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 import { CLAVES, DICCIONARIOS, crearT, idiomaPorDefecto, IDIOMAS } from '../../src/app/i18n/index.js';
-import { COUNTER_RULES, TEAM_NEEDS, DANGER_RULES } from '../../src/motor/reglas.js';
+import { COUNTER_RULES, DANGER_RULES } from '../../src/motor/reglas.js';
 
 function ficherosDe(dir) {
   return readdirSync(dir).flatMap((n) => {
@@ -28,7 +28,7 @@ test('los dos idiomas están completos', () => {
 });
 
 test('las reglas usan claves de verdad', () => {
-  const usadas = [...COUNTER_RULES.map((r) => r.why), ...TEAM_NEEDS.map((n) => n.why), ...DANGER_RULES.map((r) => r.why)];
+  const usadas = [...COUNTER_RULES.map((r) => r.why), ...DANGER_RULES.map((r) => r.why)];
   for (const clave of usadas) {
     ok(typeof clave === 'string', `why debería ser una clave, no ${typeof clave}`);
     ok(CLAVES.includes(clave), `la regla usa una clave que no existe: ${clave}`);

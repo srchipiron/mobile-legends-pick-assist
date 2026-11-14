@@ -1,22 +1,19 @@
 import { tic } from '../tacto.js';
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
 /**
- * «Deshacer» (3.23.0): el aviso que queda abajo tras vaciar el draft con
- * «Nuevo draft» o quitar a alguien con la ×. Un toque en falso a mitad de
- * partida ya no se lleva el draft: se recupera tal cual estaba (orden,
- * rival marcado, pick fijado, fase). Se va solo a los `DESHACER_MS` o en
- * cuanto cambias otra cosa del draft.
- *
- * Va montado en App, fuera de todo lo que se transforma o se anima: es
+ * «Deshacer»: tras «Nuevo draft», la ×, lo que copió la tablet o una partida
+ * apuntada. Va montado en App, fuera de todo lo que se transforma: es
  * `position: fixed` y un antecesor con `transform` lo encerraría.
  */
-export function AvisoDeshacer({ deshacible, onDeshacer, onCerrar, t = tPorDefecto }) {
+export function AvisoDeshacer({ deshacible, onDeshacer, onCerrar }) {
+  const t = useT();
   if (!deshacible) return null;
-  const texto = deshacible.tipo === 'quitado' ? t('deshacer.quitado', { nombre: deshacible.nombre })
-    : deshacible.tipo === 'apuntada' ? t(deshacible.aMano ? 'deshacer.apuntadaMano' : 'deshacer.apuntada', { resultado: t(deshacible.gane ? 'deshacer.ganada' : 'deshacer.perdida') })
-    : deshacible.tipo === 'leido' ? t('deshacer.leido', { b: deshacible.baneos, e: deshacible.enemigos, a: deshacible.aliados ?? 0 }) + (deshacible.tuyo ? ' ' + t('deshacer.leidoTuyo', { nombre: deshacible.tuyo }) : '')
-      : t('deshacer.vaciado');
+  const d = deshacible;
+  const texto = d.tipo === 'quitado' ? t('deshacer.quitado', { nombre: d.nombre })
+    : d.tipo === 'apuntada' ? t(d.aMano ? 'deshacer.apuntadaMano' : 'deshacer.apuntada', { resultado: t(d.gane ? 'deshacer.ganada' : 'deshacer.perdida') })
+    : d.tipo === 'leido' ? t('deshacer.leido', { b: d.baneos, e: d.enemigos, a: d.aliados ?? 0 }) + (d.tuyo ? ` ${t('deshacer.leidoTuyo', { nombre: d.tuyo })}` : '')
+    : t('deshacer.vaciado');
   return (
     <div className="aviso-deshacer" role="status">
       <span>{texto}</span>

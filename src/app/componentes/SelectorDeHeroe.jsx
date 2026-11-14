@@ -1,78 +1,49 @@
-import { tic } from '../tacto.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { filtrarPorNombre } from '../../motor/alias.js';
 import { nombreClave, buscar } from '../../motor/nombres.js';
+import { tic } from '../tacto.js';
 import { Hoja } from './Hoja.jsx';
 import { Cara } from './Imagen.jsx';
+import { RejillaDeHeroes } from './RejillaDeHeroes.jsx';
 import { useOrdenEstable } from './useOrdenEstable.js';
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
 /**
- * Selector a pantalla completa: buscador enfocado y rejilla de toque grande.
+ * El selector de héroe a pantalla completa. En `multi` (baneos y picks) no
+ * se cierra al tocar: se marca, otro toque quita, y se sigue. Los picks son
+ * UNA hoja con pestañas (`bandos`); los baneos empiezan por tu línea
+ * (`pool`) con los siguientes probables arriba, estables. La búsqueda acepta
+ * el nombre del juego en otros idiomas; lo que se enseña es el nombre en
+ * inglés, que es la clave de los datos.
  *
- * Modo `multi` (baneos): no se cierra al tocar, se marca y se sigue. En la
- * fase de baneos hay diez toques en medio minuto, y abrir-buscar-cerrar por
- * cada uno no daba tiempo. Los sugeridos van arriba, con orden estable.
- *
- * Desde 3.16.0 los picks van igual: el selector de enemigos y el de tu
- * equipo son UNO, con pestañas (`bandos`), y no se cierra al tocar. Antes
- * cada pick era abrir, buscar y cerrar, y a Javi se le echaba encima la
- * partida metiendo el draft. Y el de baneos enseña primero tu línea
- * (`pool`): medido sobre sus 42 drafts, los baneos de otras líneas no
- * cambian el nº1 en NINGUNO; los de la tuya solo tachan al que no puedes
- * coger.
- *
- * La búsqueda acepta el nombre que el juego usa en otros idiomas («Cíclope»)
- * y, si aun así no sale nadie, las letras en orden. Lo que se ENSEÑA es el
- * nombre en inglés, que es la clave de los datos.
+ * @param orden  'ban' (más baneados), 'pick' (más jugados) o 'dado' (el orden en que llegan)
  */
-export function SelectorDeHeroe({
-  heroes, cogidos, stats, onElegir, onCerrar, t = tPorDefecto,
-  multi = false, seleccionados = null, max = 10, sugeridos = [], orden = 'pick',
-  bandos = null, onBando = null, cuenta = null, pool: poolDado = null,
-}) {
+export function SelectorDeHeroe({ heroes, cogidos, stats, onElegir, onCerrar, multi = false, seleccionados = null, max = 10, sugeridos = [], orden = 'pick', bandos = null, onBando = null, cuenta = null, pool: poolDado = null }) {
+  const t = useT();
   const [q, setQ] = useState('');
-  // Con `pool` (tu línea), empieza enseñando solo esos; buscando, todos. Un
-  // pool vacío (el meta aún no ha llegado) no filtra: «Tu línea (0)» no enseñaba nada.
+  // Un pool vacío (el meta aún no ha llegado) no filtra: «Tu línea (0)» no enseñaba nada.
   const pool = poolDado?.size ? poolDado : null;
   const [soloPool, setSoloPool] = useState(!!pool);
   const inputRef = useRef(null);
-  // Enfocar UNA vez al abrir: con `onCerrar` en las dependencias el efecto se
-  // repetía con cada baneo y el teclado volvía a salir encima de la rejilla.
-  // Y SOLO con puntero fino (ratón, teclado físico): en un móvil el foco saca
-  // el teclado, que tapaba media rejilla, y la rejilla va ordenada para que
-  // el héroe caiga entre las primeras caras (3.17.0). Para buscar, un toque
-  // en el campo (3.24.0).
+  // [M] Foco UNA vez y solo con puntero fino: en el móvil el teclado tapaba media rejilla (22 caras → 8).
   useEffect(() => {
     if (window.matchMedia?.('(pointer: coarse)').matches) return;
     inputRef.current?.focus();
   }, []);
 
-  // Quién no se puede tocar, tal como estaba al recibir el ORDEN (al abrir
-  // o al cambiar de pestaña, cuando llega `heroes` nuevo) (3.40.0): una
-  // lectura que mete a un compañero con la hoja abierta lo mandaba al final
-  // y todas las caras de detrás se movían un sitio bajo el dedo. El que pasa
-  // a no poderse tocar después se deshabilita en su sitio.
+  // Los que no se pueden tocar al RECIBIR el orden van al final y ahí se quedan: nada se mueve bajo el dedo.
   const fueraAlOrdenar = useMemo(() => cogidos, [heroes]);
   const lista = useMemo(() => {
     const pickRate = (h) => buscar(stats, h.name)?.pickRate ?? -1;
-    // Para banear, primero los más baneados: es lo que se va a buscar.
     const banRate = (h) => buscar(stats, h.name)?.banRate ?? -1;
-    // `dado`: el orden en que llegan (el ranking, para fijar tu pick).
     const posicion = new Map(heroes.map((h, i) => [h.name, -i]));
     const criterio = orden === 'ban' ? banRate : orden === 'dado' ? (h) => posicion.get(h.name) : pickRate;
-    // Buscando, primero los que EMPIEZAN por lo escrito: «la» + Intro cogía a
-    // Angela habiendo Lancelot, Layla y Lapu-Lapu. Sin buscar, los más
-    // jugados: el pick que necesitas suele estar entre los veinte primeros.
+    // Buscando, primero los que EMPIEZAN por lo escrito («la» + Intro cogía a Angela habiendo Layla).
     const qk = nombreClave(q);
     const empieza = (h) => (qk && nombreClave(h.name).startsWith(qk) ? 1 : 0);
-    const base = pool && soloPool && !q ? heroes.filter((h) => pool.has(h.name)) : heroes;
-    // Los que no se pueden tocar (del otro bando, baneados) van al final
-    // (3.38.0): sin buscar, ocupaban caras de las primeras doce, que es lo
-    // que se ve sin bajar y donde se midió el orden de 3.17.0.
     const fuera = (h) => (fueraAlOrdenar.has(h.name) ? 1 : 0);
-    return filtrarPorNombre(base, q)
-      .sort((a, b) => fuera(a) - fuera(b) || (q ? empieza(b) - empieza(a) : 0) || criterio(b) - criterio(a) || a.name.localeCompare(b.name));
+    const base = pool && soloPool && !q ? heroes.filter((h) => pool.has(h.name)) : heroes;
+    return filtrarPorNombre(base, q).sort((a, b) => fuera(a) - fuera(b) || (q ? empieza(b) - empieza(a) : 0) || criterio(b) - criterio(a) || a.name.localeCompare(b.name));
   }, [heroes, q, stats, orden, pool, soloPool, fueraAlOrdenar]);
 
   const marcado = (h) => !!seleccionados?.has(h.name);
@@ -84,16 +55,12 @@ export function SelectorDeHeroe({
   const chips = ordenSugeridos.map((n) => porNombre.get(n)).filter(Boolean);
 
   const elegir = (h) => {
-    if (cogidos.has(h.name)) return;
-    if (multi && lleno && !marcado(h)) return;
+    if (cogidos.has(h.name) || (lleno && !marcado(h))) return;
     tic();
     onElegir(h);
     if (multi) setQ('');
   };
-  // Intro coge el primero de la lista: tres letras y darle es más rápido que
-  // apuntar al botón con el teclado del móvil abierto. En multi-toque se
-  // salta a los ya marcados: tocarlos los QUITA, y con Alice metida, «al» +
-  // Intro buscando a Alucard la quitaba sin avisar.
+  // Intro coge el primero que se puede tocar y, en multi, no marcado (tocar un marcado lo QUITA).
   const conIntro = (e) => {
     if (e.key !== 'Enter') return;
     const primero = lista.find((h) => !cogidos.has(h.name) && !(multi && marcado(h)));
@@ -134,21 +101,12 @@ export function SelectorDeHeroe({
           ))}
         </div>
       )}
-      <div className="hero-grid">
-        {lista.map((h) => (
-          <button
-            key={h.name}
-            className={marcado(h) ? 'elegido' : ''}
-            disabled={cogidos.has(h.name) || (lleno && !marcado(h))}
-            aria-pressed={multi ? marcado(h) : undefined}
-            onClick={() => elegir(h)}
-          >
-            <Cara heroe={h} className="grid-cara" tam={30} />
-            <span className="grid-nombre">{h.name}</span>
-          </button>
-        ))}
+      <RejillaDeHeroes
+        heroes={lista} caras={30} onElegir={elegir} elegido={marcado} pulsado={multi ? marcado : null}
+        bloqueado={(h) => cogidos.has(h.name) || (lleno && !marcado(h))}
+      >
         {!lista.length && <p className="empty-state">{t('app.sinNombre')}</p>}
-      </div>
+      </RejillaDeHeroes>
     </Hoja>
   );
 }

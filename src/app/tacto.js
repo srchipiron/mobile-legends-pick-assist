@@ -1,16 +1,11 @@
 /**
- * Un toque que se nota (3.22.0): un pulso corto al marcar o quitar algo del
- * draft, como el «tic» de los selectores de iOS y Android. Con la partida
- * encima se mira la rejilla y no el hueco: el pulso dice «entró» sin
- * levantar la vista. Solo lo hace un navegador con `navigator.vibrate`
- * (Chrome en Android); en iOS no existe y no pasa nada.
- *
- * Se llama SOLO desde lo que toca el dedo (selector, chips, ×, nombre de la
- * tarjeta), nunca desde el estado: la limpieza de nombres al cargar el
- * catálogo también cambia el draft y no debe vibrar.
+ * Un pulso corto al tocar algo del draft («entró», sin levantar la vista de
+ * la rejilla). Solo desde lo que toca el dedo, nunca desde el estado (la
+ * limpieza de nombres al cargar cambia el draft y no debe vibrar). Solo con
+ * `navigator.vibrate` (Chrome en Android).
  */
 
-/** Decisión de producto: el pulso más corto que se nota en un móvil de gama media. */
+/** [P] El pulso más corto que se nota en un móvil de gama media. */
 export const PULSO_MS = 10;
 
 let activo = true;

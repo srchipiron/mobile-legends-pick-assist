@@ -1,17 +1,15 @@
-import { tPorDefecto } from './tPorDefecto.js';
 import { puedeVibrar } from '../tacto.js';
+import { IDIOMAS } from '../i18n/index.js';
+import { useT } from '../i18n/contexto.js';
 
-/**
- * Enlace de donación. Vacío hasta que Javi ponga el suyo: mejor un hueco que
- * un enlace inventado.
- */
+/** [P] El enlace de donación: vacío hasta que Javi ponga el suyo (mejor un hueco que uno inventado). */
 export const ENLACE_DONAR = '';
 
-/** Los botones de idioma. Van en el pie y en la primera pantalla (que tapa el pie). */
-export function Idiomas({ idioma, onIdioma, idiomas = ['es', 'en'] }) {
+/** Los botones de idioma (en el pie y en la portada, que tapa el pie). */
+export function Idiomas({ idioma, onIdioma }) {
   return (
     <div className="idiomas">
-      {idiomas.map((l) => (
+      {IDIOMAS.map((l) => (
         <button key={l} className={idioma === l ? 'elegido' : ''} aria-pressed={idioma === l} onClick={() => onIdioma(l)}>{l.toUpperCase()}</button>
       ))}
     </div>
@@ -19,16 +17,15 @@ export function Idiomas({ idioma, onIdioma, idiomas = ['es', 'en'] }) {
 }
 
 /**
- * Pie público: idioma, vibración, aviso de no afiliación, privacidad y donación. El
- * aviso NO es adorno: los nombres y los datos son de Moonton, y esto es una
- * herramienta de aficionado.
+ * Idioma, vibración (solo donde el navegador sabe vibrar), el aviso de no
+ * afiliación (los nombres y los datos son de Moonton), privacidad y donación.
  */
-export function AvisoLegal({ t = tPorDefecto, idioma, onIdioma, idiomas = ['es', 'en'], tacto = null, onTacto = null }) {
+export function AvisoLegal({ idioma, onIdioma, tacto = null, onTacto = null }) {
+  const t = useT();
   return (
     <section className="aviso">
       <div className="aviso-ajustes">
-        <Idiomas idioma={idioma} onIdioma={onIdioma} idiomas={idiomas} />
-        {/* El pulso al tocar: solo donde el navegador sabe vibrar (Android). */}
+        <Idiomas idioma={idioma} onIdioma={onIdioma} />
         {onTacto && puedeVibrar() && (
           <button className="tacto" aria-pressed={!!tacto} onClick={() => onTacto(!tacto)}>{t(tacto ? 'ajustes.tactoSi' : 'ajustes.tactoNo')}</button>
         )}

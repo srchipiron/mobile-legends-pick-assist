@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { titular } from '../../motor/diagnostico/index.js';
 import { Hoja } from './Hoja.jsx';
 import { urlDeIncidencia } from '../github.js';
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
 /** El informe del diagnóstico, listo para copiar, compartir o dejar como incidencia en GitHub. */
-export function Diagnostico({ resultado, onCerrar, t = tPorDefecto }) {
+export function Diagnostico({ resultado, onCerrar}) {
+  const t = useT();
   // `ok` copiado; `mano` (3.60.4): sin portapapeles se selecciona el texto y
   // el botón lo dice. Antes no cambiaba y no se sabía que había que copiar a mano.
   const [copiado, setCopiado] = useState(null);

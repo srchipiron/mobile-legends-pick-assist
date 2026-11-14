@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { fundirPerfil, sanear } from '../../motor/perfil.js';
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
 const pct = (x) => Math.round(x * 1000) / 10;
 
 /** Una línea del informe: diferencia en puntos, su margen y si se distingue del azar. */
-function Comparacion({ c, clave, t }) {
+function Comparacion({ c, clave}) {
+  const t = useT();
   if (!c?.jugadores) return <p className="nota">{t(`comunidad.${clave}.pocos`)}</p>;
   const dif = pct(c.dif);
   return (
@@ -21,7 +22,8 @@ function Comparacion({ c, clave, t }) {
  * Pegar tu clave de jugador y traerte tus partidas (3.69.0). Aparte desde
  * 3.87.0: «Capturas» la pide también, porque en el ordenador es lo primero.
  */
-export function PegarClave({ comunidad, perfil, onImportar, avisar = null, t = tPorDefecto }) {
+export function PegarClave({ comunidad, perfil, onImportar, avisar = null}) {
+  const t = useT();
   const [pegada, setPegada] = useState('');
   const [propio, setPropio] = useState(null);
   // Con la clave buena este formulario desaparece: el aviso lo enseña quien lo monta, si puede.
@@ -48,7 +50,8 @@ export function PegarClave({ comunidad, perfil, onImportar, avisar = null, t = t
  * que se pone a propósito (las partidas salen del móvil); ver si la app
  * ayuda, con las de todos, no pide nada.
  */
-export function Comunidad({ comunidad, perfil, onImportar, t = tPorDefecto }) {
+export function Comunidad({ comunidad, perfil, onImportar}) {
+  const t = useT();
   const [aviso, setAviso] = useState(null);
   if (!comunidad?.config) return null;
   const e = comunidad.estadisticas;
@@ -84,7 +87,7 @@ export function Comunidad({ comunidad, perfil, onImportar, t = tPorDefecto }) {
           <p className="nota">{t('comunidad.queEs')}</p>
           <button className="ancho" onClick={comunidad.activar}>{t('comunidad.activar')}</button>
           <p className="nota">{t('comunidad.yaTengo')}</p>
-          <PegarClave comunidad={comunidad} perfil={perfil} onImportar={onImportar} avisar={setAviso} t={t} />
+          <PegarClave comunidad={comunidad} perfil={perfil} onImportar={onImportar} avisar={setAviso} />
         </>
       )}
       {aviso && <p className={aviso.mal ? 'nota mal' : 'nota bien'} role="status">{aviso.texto}</p>}
@@ -104,9 +107,9 @@ export function Comunidad({ comunidad, perfil, onImportar, t = tPorDefecto }) {
           {e.siguiendo.n > 0 && e.libre.n > 0 && (
             <p className="nota">{t('comunidad.ramas', { a: pct(e.siguiendo.winrate), na: e.siguiendo.n, b: pct(e.libre.winrate), nb: e.libre.n })}</p>
           )}
-          <Comparacion c={e.entreRamas} clave="entreRamas" t={t} />
-          <Comparacion c={e.contraReferencia} clave="contraReferencia" t={t} />
-          <Comparacion c={e.soloLector} clave="soloLector" t={t} />
+          <Comparacion c={e.entreRamas} clave="entreRamas" />
+          <Comparacion c={e.contraReferencia} clave="contraReferencia" />
+          <Comparacion c={e.soloLector} clave="soloLector" />
           {e.calibracion?.n > 0 && (
             <p className="nota">{t('comunidad.calibracion', { n: e.calibracion.n, prevista: pct(e.calibracion.prevista), real: pct(e.calibracion.real), brier: Math.round(e.calibracion.brier * 1000) / 1000 })}</p>
           )}

@@ -1,4 +1,4 @@
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
 /** Los términos del modelo (motor/modelo.js), con su color. */
 export const COLORES_TERMINO = {
@@ -7,16 +7,13 @@ export const COLORES_TERMINO = {
   parejas: 'var(--c-synergy)',
   equilibrio: 'var(--c-balance)',
   porVer: 'var(--c-comp)',
-  tu: 'var(--c-mastery)',
 };
 
 export const signo = (v) => (v > 0 ? `+${v}` : `${v}`);
 
-/**
- * El desglose de una nota en puntos de probabilidad por término. Los que
- * valen cero no se pintan (tú sin maestría, por ver con el draft cerrado).
- */
-export function Desglose({ puntos, t = tPorDefecto, className = 'desglose' }) {
+/** La nota en puntos de probabilidad por término: héroes y cruces siempre, el resto si no vale cero. */
+export function Desglose({ puntos, className = 'desglose' }) {
+  const t = useT();
   if (!puntos) return null;
   const partes = Object.keys(COLORES_TERMINO).filter((k) => puntos[k] != null && (puntos[k] !== 0 || k === 'heroes' || k === 'cruces'));
   return (
@@ -30,14 +27,13 @@ export function Desglose({ puntos, t = tPorDefecto, className = 'desglose' }) {
   );
 }
 
-/** La leyenda de colores y qué es la probabilidad. Lo que antes vivía en un `title`, que en táctil no existe. */
-export function Leyenda({ t = tPorDefecto }) {
+/** La leyenda de colores y qué es la probabilidad (un `title` no existe en táctil). */
+export function Leyenda() {
+  const t = useT();
   return (
     <div className="legend">
       <span className="legend-nota">{t('leyenda.prob')}</span>
-      {Object.keys(COLORES_TERMINO).map((k) => (
-        <span key={k}><i style={{ background: COLORES_TERMINO[k] }} />{t(`termino.${k}Largo`)}</span>
-      ))}
+      {Object.keys(COLORES_TERMINO).map((k) => <span key={k}><i style={{ background: COLORES_TERMINO[k] }} />{t(`termino.${k}Largo`)}</span>)}
       <span className="legend-nota">{t('leyenda.pro')}</span>
       <span className="legend-nota">{t('leyenda.modelo')}</span>
     </div>

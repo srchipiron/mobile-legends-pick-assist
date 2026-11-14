@@ -1,37 +1,25 @@
 import { useEffect } from 'react';
 
+/** [P] Cada cuánto se pregunta por una versión nueva con la app abierta, y cada cuánto se mira si ya se puede recargar. */
+const CADA_HORA_MS = 60 * 60 * 1000;
+const PENDIENTE_MS = 15 * 1000;
+
 /**
- * Que la app se actualice sola.
- *
- * El service worker guarda la app entera para que funcione sin cobertura, y
- * el navegador solo comprueba si hay una nueva al navegar. Con la pestaña
- * abierta desde hace horas te quedas con la de ayer: pasó, y el diagnóstico
- * tenía que pedirte que cerraras y volvieras a abrir.
- *
- * Se pregunta al volver a la app y una vez por hora, y se recarga en cuanto
- * la nueva toma el control (`controllerchange`: es el mecanismo
- * imprescindible, comprobado en un navegador de verdad). Recargar no quita
- * nada: el draft, la maestría y las partidas se guardan en cada cambio.
+ * Que la app se actualice sola: se pregunta al volver a la app y cada hora,
+ * y se recarga cuando el worker nuevo toma el control (`controllerchange`,
+ * el mecanismo imprescindible). Con pestillo (sin él podría quedar en
+ * bucle), sin recargar en la primera visita (no había controlador) y nunca
+ * con una hoja abierta (se perdería lo escrito): espera a que se cierre.
  */
 export function useActualizacion() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return undefined;
-
-    // Una sola vez: sin el pestillo, un navegador que reinstale el worker
-    // podría dejar la página recargándose en bucle.
     let yaRecargado = false;
-    // En la PRIMERA visita el worker toma el control de una página que ya es
-    // la nueva: recargar ahí era una recarga en frío para nada, y podía
-    // cortar la elección de línea del primer arranque.
     let habiaControlador = !!navigator.serviceWorker.controller;
-    // Con una hoja abierta (maestría a medias de teclear, un código pegado)
-    // no se recarga: se espera a que se cierre. Medido: una actualización
-    // con «Tu maestría» abierta perdía lo escrito.
     let pendiente = false;
-    const hojaAbierta = () => !!document.querySelector('[role="dialog"]');
     const recargar = () => {
       if (yaRecargado) return;
-      if (hojaAbierta()) { pendiente = true; return; }
+      if (document.querySelector('[role="dialog"]')) { pendiente = true; return; }
       yaRecargado = true;
       window.location.reload();
     };
@@ -39,23 +27,21 @@ export function useActualizacion() {
       if (!habiaControlador) { habiaControlador = true; return; }
       recargar();
     };
-    navigator.serviceWorker.addEventListener('controllerchange', alCambiar);
-
     const preguntar = () => {
       if (document.visibilityState !== 'visible') return;
       if (pendiente) { recargar(); return; }
       navigator.serviceWorker.getRegistration().then((r) => r?.update()).catch(() => {});
     };
-    preguntar();
+    navigator.serviceWorker.addEventListener('controllerchange', alCambiar);
     document.addEventListener('visibilitychange', preguntar);
-    const cadaHora = setInterval(preguntar, 60 * 60 * 1000);
-    const siPendiente = setInterval(() => { if (pendiente) recargar(); }, 15 * 1000);
-
+    preguntar();
+    const cadaHora = setInterval(preguntar, CADA_HORA_MS);
+    const siPendiente = setInterval(() => { if (pendiente) recargar(); }, PENDIENTE_MS);
     return () => {
+      clearInterval(cadaHora);
       clearInterval(siPendiente);
       navigator.serviceWorker.removeEventListener('controllerchange', alCambiar);
       document.removeEventListener('visibilitychange', preguntar);
-      clearInterval(cadaHora);
     };
   }, []);
 }

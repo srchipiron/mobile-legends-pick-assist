@@ -6,7 +6,7 @@ import { winrateEnLinea, movimientosDelMeta, tiersVigentes } from '../../motor/d
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Cara } from './Imagen.jsx';
 import { ETIQUETAS_RANGO } from './SelectorDeRango.jsx';
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
 /** Cuántos héroes por línea: los que decide un draft, no los 42 de exp. */
 const POR_LINEA = 12;
@@ -22,7 +22,8 @@ const POR_LINEA = 12;
  * trae las dos y la corta es coherente (src/motor/ventana.js): un héroe que
  * sube tras un parche se ve aquí antes de que la media de 7 días lo recoja.
  */
-export function Meta({ datos, linea, onFicha = null, onCerrar, t = tPorDefecto }) {
+export function Meta({ datos, linea, onFicha = null, onCerrar}) {
+  const t = useT();
   const { stats, ventana, mediaDelRango, fuerza, relaciones } = datos.meta;
   // De qué rango sale la fuerza: el tuyo, salvo Gloria recién vaciada por un
   // reinicio de temporada (motor/ventana.js, elegirRango).
@@ -55,7 +56,7 @@ export function Meta({ datos, linea, onFicha = null, onCerrar, t = tPorDefecto }
         {tiers && <p className="nota">{t('meta.tierPista')}</p>}
         {datos.meta.winrateLinea && Object.keys(datos.meta.winrateLinea).length > 0 && <p className="nota">{t('meta.wrLineaPista')}</p>}
         {onFicha && <p className="nota">{t('meta.fichaPista')}</p>}
-        <EstaSemana datos={datos} linea={linea} t={t} />
+        <EstaSemana datos={datos} linea={linea} />
         {lineas.map(({ linea: l, filas }) => (
           <section key={l} className="meta-linea">
             <h3 className="meta-titulo">{t(`linea.${l}`)}</h3>
@@ -93,7 +94,8 @@ export function Meta({ datos, linea, onFicha = null, onCerrar, t = tPorDefecto }
  * línea, y cuántos en todo el juego. Solo lo confirmado por los dos rangos
  * y respecto a lo que se juega; es lo que ha pasado, no una predicción.
  */
-function EstaSemana({ datos, linea, t }) {
+function EstaSemana({ datos, linea}) {
+  const t = useT();
   const todo = useMemo(() => movimientosDelMeta(datos), [datos]);
   const enLinea = useMemo(() => (linea ? movimientosDelMeta(datos, { linea }) : todo), [datos, linea, todo]);
   if (todo.estado === 'sinOtro') return null;

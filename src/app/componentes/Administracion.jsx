@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
-import { tPorDefecto } from './tPorDefecto.js';
 import { sanearConfig } from '../../comun/basedatos.js';
+import { useT } from '../i18n/contexto.js';
 
 /**
  * Administración (3.65.0): solo en el móvil de Javi (con el token de la
@@ -9,7 +9,8 @@ import { sanearConfig } from '../../comun/basedatos.js';
  * administrador, dar una clave a cada invitado (sale un enlace para
  * mandárselo), revocarla, y decidir si la app pide clave para entrar.
  */
-export function Administracion({ licencia, comunidad = null, onCerrar, t = tPorDefecto }) {
+export function Administracion({ licencia, comunidad = null, onCerrar}) {
+  const t = useT();
   const [url, setUrl] = useState('');
   const [publica, setPublica] = useState('');
   const [nombre, setNombre] = useState('');
@@ -118,7 +119,8 @@ export function Administracion({ licencia, comunidad = null, onCerrar, t = tPorD
  * La puerta (3.65.0): con `exigir`, quien no tiene una clave válida ve esto
  * en vez de la app. Pegar la clave o abrir el enlace que le dieron.
  */
-export function PuertaDeLicencia({ licencia, t = tPorDefecto }) {
+export function PuertaDeLicencia({ licencia}) {
+  const t = useT();
   const [pegada, setPegada] = useState('');
   const motivo = licencia.comprobada?.motivo;
   return (

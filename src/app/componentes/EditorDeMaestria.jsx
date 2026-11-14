@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Hoja } from './Hoja.jsx';
 import { leerDecimal } from './numero.js';
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
 /**
  * Tu maestría: partidas y winrate con cada héroe de tu línea. Es el término
@@ -9,7 +9,8 @@ import { tPorDefecto } from './tPorDefecto.js';
  * porcentaje (50,6) porque es como sale en el perfil del juego; la
  * conversión a fracción se hace solo al guardar.
  */
-export function EditorDeMaestria({ pool, maestria, onGuardar, onCerrar, t = tPorDefecto }) {
+export function EditorDeMaestria({ pool, maestria, onGuardar, onCerrar}) {
+  const t = useT();
   const [borrador, setBorrador] = useState(() => Object.fromEntries(
     Object.entries(maestria).map(([nombre, m]) => [nombre, { games: String(m.games ?? ''), wr: m.winRate != null ? String(+(m.winRate * 100).toFixed(1)) : '' }]),
   ));

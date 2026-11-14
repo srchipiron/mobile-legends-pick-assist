@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { revisarPartida, revisarDrafts } from '../../motor/draft.js';
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
 const pct = (v) => Math.round(v * 100);
 const puntos = (v) => (v * 100).toFixed(1);
@@ -10,7 +10,8 @@ const puntos = (v) => (v * 100).toFixed(1);
  * con draft, con el draft entero y los datos de hoy, y a petición todas.
  * Todas cuestan ~1 s en el móvil por cada 40 drafts: por eso van con botón.
  */
-export function RevisionDraft({ datos, partidas, maestria, t = tPorDefecto }) {
+export function RevisionDraft({ datos, partidas, maestria}) {
+  const t = useT();
   const ultima = useMemo(() => {
     if (!datos) return null;
     const conDraft = (partidas ?? []).filter((p) => p.draft?.linea && !p.previa).sort((a, b) => b.t - a.t);
@@ -33,8 +34,8 @@ export function RevisionDraft({ datos, partidas, maestria, t = tPorDefecto }) {
   return (
     <section className="veredicto revision-draft" aria-label={t('revision.titulo')}>
       <p className="build-nucleo">{t('revision.titulo')}</p>
-      <Fila r={ultima} t={t} />
-      {todas ? <Resumen r={todas} t={t} /> : (
+      <Fila r={ultima} />
+      {todas ? <Resumen r={todas} /> : (
         <button className="ancho" disabled={calculando} onClick={revisarTodas}>{t(calculando ? 'revision.calculando' : 'revision.todas')}</button>
       )}
       <p className="build-nota">{t('revision.nota')}</p>
@@ -42,7 +43,8 @@ export function RevisionDraft({ datos, partidas, maestria, t = tPorDefecto }) {
   );
 }
 
-function Fila({ r, t }) {
+function Fila({ r}) {
+  const t = useT();
   const puesto = r.puesto ? t('revision.puesto', { puesto: r.puesto, de: r.de }) : t('revision.fuera');
   return (
     <p className={`frase ${r.veredicto === 'mejor' ? 'ojo' : r.veredicto === 'bien' ? 'bien' : 'duda'}`}>
@@ -53,7 +55,8 @@ function Fila({ r, t }) {
   );
 }
 
-function Resumen({ r, t }) {
+function Resumen({ r}) {
+  const t = useT();
   if (!r.n) return <p className="frase duda">{t('revision.ninguna')}</p>;
   const c = r.comparacion;
   const cuenta = new Map();

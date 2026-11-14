@@ -1,19 +1,13 @@
 import { tic } from '../tacto.js';
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
 /**
- * A quién banear por tu equipo, con el motivo cuando lo hay.
- * @param items  [{ heroe, stat, puntos, motivos }] (motor/baneos.js)
- * @param rango  el rango del que salen los winrates y las tasas de ban
- *               (`meta.fuerza.rango`), que tras un reinicio de temporada no
- *               es el tuyo: decir «en tu rango» con números de Mítico mentía.
- * @param plan   tu plan A·B·C (nombres, en orden). El baneo sugerido mide lo
- *               que te quita ese héroe EN EL OTRO EQUIPO, y a menudo es tu
- *               propio plan (Rafaela era a la vez tu plan B y el primer
- *               baneo sugerido): banearlo es quitártelo también a ti, y la
- *               fila lo dice para que no se banee sin querer.
+ * A quién banear por tu equipo (motor/baneos.js), con su motivo.
+ * @param rango  el rango del que salen las tasas (`meta.fuerza.rango`): tras un reinicio de temporada no es el tuyo.
+ * @param plan   tu plan A·B·C: banear uno de ellos es quitártelo también a ti, y la fila lo dice.
  */
-export function BaneosSugeridos({ items, onBanear, rango = '', plan = [], t = tPorDefecto }) {
+export function BaneosSugeridos({ items, onBanear, rango = '', plan = [] }) {
+  const t = useT();
   if (!items.length) return null;
   return (
     <section className="bans-suggested">

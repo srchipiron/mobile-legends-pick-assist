@@ -3,82 +3,58 @@ import { CLAVES, leer, guardar } from './almacen.js';
 import { sanear, sanearOlvidadas } from '../../motor/perfil.js';
 import { apuntar, olvidar, corregir, cambiarHeroe, cambiarDraft, marcarEditada, esFantasma } from '../../motor/registro.js';
 import { maestriaEfectiva, fecharMaestria } from '../../motor/maestria.js';
-import { ajustePersonal } from '../../motor/registro.js';
 import { sanearComprobadas } from '../../motor/comprobacion.js';
 
 /**
- * Lo tuyo: la maestría escrita a mano y las partidas apuntadas. Lo guardado
- * se sanea al cargar, igual que un perfil importado: un almacén con la forma
- * rota (una versión vieja, una edición a mano) reventaba la pantalla de
- * partidas en vez de degradarse.
- *
- * `maestriaUsada` es la que ve el motor: la manual MÁS la que sale de las
- * partidas apuntadas. Antes eran dos cosas que no se hablaban y apuntar
- * partidas no personalizaba nada.
+ * Lo tuyo: la maestría escrita a mano, las partidas, las quitadas (viajan
+ * para que fundir no las resucite) y lo comprobado de la tablet. Todo se
+ * sanea al cargar, como un perfil importado. Cada lista vive también en una
+ * referencia: se escribe sobre la última y se guarda FUERA de los updaters.
+ * `maestriaUsada` = la de a mano más la que sale de las partidas apuntadas.
  */
 export function usePersonal() {
   const [maestria, setMaestria] = useState(() => sanear({ mastery: leer(CLAVES.maestria, {}) }).mastery);
   const [partidas, setPartidas] = useState(() => sanear({ partidas: leer(CLAVES.partidas, []) }).partidas);
   const [olvidadas, setOlvidadas] = useState(() => sanearOlvidadas(leer(CLAVES.olvidadas, [])));
-  // Lo que comprobaste de la tablet (3.101.0), en este móvil: { t, bien, que, cuando }.
   const [comprobadas, setComprobadas] = useState(() => sanearComprobadas(leer(CLAVES.comprobadas, [])));
-  const ultimasComprobadas = useRef(comprobadas);
-  const ultimasOlvidadas = useRef(olvidadas);
-  const maestriaUsada = useMemo(() => maestriaEfectiva(maestria, partidas), [maestria, partidas]);
-  // Lo que la app aprende de tus partidas sobre su número (3.68.0).
-  const ajuste = useMemo(() => ajustePersonal(partidas), [partidas]);
-
-  // La lista de partidas en una referencia, para poder apuntar sobre la última
-  // sin leer un cierre viejo Y sin guardar dentro de un updater de estado:
-  // React puede llamar a un updater más de una vez, y ahí dentro `guardar` es
-  // un efecto secundario. El único que la escribe es `guardarPartidas`.
   const ultimas = useRef(partidas);
+  const ultimasOlvidadas = useRef(olvidadas);
+  const ultimasComprobadas = useRef(comprobadas);
+  const maestriaUsada = useMemo(() => maestriaEfectiva(maestria, partidas), [maestria, partidas]);
 
   const guardarMaestria = useCallback((siguiente) => { setMaestria(siguiente); guardar(CLAVES.maestria, siguiente); }, []);
+  const guardarPartidas = useCallback((siguiente) => { ultimas.current = siguiente; setPartidas(siguiente); guardar(CLAVES.partidas, siguiente); }, []);
+  const guardarOlvidadas = useCallback((siguiente) => { ultimasOlvidadas.current = siguiente; setOlvidadas(siguiente); guardar(CLAVES.olvidadas, siguiente); }, []);
 
-  // La maestría sin fecha (guardada antes de 3.13.0 o traída de un código
-  // viejo) se fecha al verla: desde ahí, lo que apuntes se le suma
-  // (motor/maestria.js, fecharMaestria). Fuera de cualquier updater.
+  // La maestría sin fecha se fecha al verla: desde ahí, lo que apuntes se le suma.
   useEffect(() => {
     const fechada = fecharMaestria(maestria);
     if (fechada !== maestria) guardarMaestria(fechada);
   }, [maestria, guardarMaestria]);
-  const guardarPartidas = useCallback((siguiente) => {
-    ultimas.current = siguiente;
-    setPartidas(siguiente);
-    guardar(CLAVES.partidas, siguiente);
-  }, []);
 
   const apuntarPartida = useCallback((entrada) => guardarPartidas(apuntar(ultimas.current, entrada)), [guardarPartidas]);
-  const guardarOlvidadas = useCallback((siguiente) => {
-    ultimasOlvidadas.current = siguiente;
-    setOlvidadas(siguiente);
-    guardar(CLAVES.olvidadas, siguiente);
-  }, []);
-  // Quitar deja marca: sin ella, un código viejo (o la base de datos del
-  // proyecto) devolvía la partida al fundir.
+  /** Quitar deja marca: sin ella, otro móvil o la base de datos la devolvían al fundir. */
   const olvidarPartida = useCallback((t) => {
     guardarOlvidadas(sanearOlvidadas([t, ...ultimasOlvidadas.current]));
     guardarPartidas(olvidar(ultimas.current, t));
   }, [guardarPartidas, guardarOlvidadas]);
-  // Las partidas fantasma de la tablet (3.89.3) se quitan solas, como si las
-  // quitaras tú: con su marca, para que se borren también de la base de datos
-  // y no vuelvan al fundir. Sin esto, el móvil las volvía a subir.
+  // Las fantasma de la tablet se quitan solas, con su marca: así se borran también de la base de datos.
   useEffect(() => {
     const fantasmas = partidas.filter(esFantasma).map((p) => p.t);
     if (!fantasmas.length) return;
     guardarOlvidadas(sanearOlvidadas([...fantasmas, ...ultimasOlvidadas.current]));
     guardarPartidas(ultimas.current.filter((p) => !esFantasma(p)));
   }, [partidas, guardarPartidas, guardarOlvidadas]);
-  // Con la hora del arreglo (3.76.0): así llega a la tablet y no lo pisa la copia de allí.
-  const corregirPartida = useCallback((t, gane) => guardarPartidas(marcarEditada(corregir(ultimas.current, t, gane), t)), [guardarPartidas]);
-  const cambiarHeroePartida = useCallback((t, pick) => guardarPartidas(marcarEditada(cambiarHeroe(ultimas.current, t, pick), t)), [guardarPartidas]);
-  // Quién iba en cada equipo (3.78.0): el lector se dejó a alguien o leyó a otro.
-  const cambiarDraftPartida = useCallback((t, cambios) => guardarPartidas(marcarEditada(cambiarDraft(ultimas.current, t, cambios), t)), [guardarPartidas]);
-  // Con las capturas del lector (3.86.0): tu pick y los dos equipos de una vez, con una sola hora de arreglo.
-  const revisarPartida = useCallback((t, { pick, enemigos, aliados }) => guardarPartidas(marcarEditada(cambiarDraft(cambiarHeroe(ultimas.current, t, pick), t, { enemigos, aliados }), t)), [guardarPartidas]);
 
-  // Apunta si la tablet acertó en una partida (3.101.0); lo que haya que arreglar lo arreglan los de arriba.
+  // Cada arreglo lleva su hora (`editada`): así llega a la tablet y no lo pisa la copia de allí.
+  const arreglar = useCallback((t, cambio) => guardarPartidas(marcarEditada(cambio(ultimas.current), t)), [guardarPartidas]);
+  const corregirPartida = useCallback((t, gane) => arreglar(t, (l) => corregir(l, t, gane)), [arreglar]);
+  const cambiarHeroePartida = useCallback((t, pick) => arreglar(t, (l) => cambiarHeroe(l, t, pick)), [arreglar]);
+  const cambiarDraftPartida = useCallback((t, cambios) => arreglar(t, (l) => cambiarDraft(l, t, cambios)), [arreglar]);
+  /** Con las capturas del lector: tu pick y los dos equipos de una vez, con una sola hora de arreglo. */
+  const revisarPartida = useCallback((t, { pick, enemigos, aliados }) => arreglar(t, (l) => cambiarDraft(cambiarHeroe(l, t, pick), t, { enemigos, aliados })), [arreglar]);
+
+  /** Si la tablet acertó en una partida; lo que haya que arreglar lo arreglan los de arriba. */
   const comprobarPartida = useCallback((t, bien, que = null) => {
     const nuevas = sanearComprobadas([{ t, bien, que, cuando: Date.now() }, ...ultimasComprobadas.current]);
     ultimasComprobadas.current = nuevas;
@@ -86,15 +62,15 @@ export function usePersonal() {
     setComprobadas(nuevas);
   }, []);
 
-  /**
-   * Trae los datos de otro dispositivo. Vienen ya FUNDIDOS con los de aquí
-   * (`fundirPerfil`), así que esto solo guarda: no puede borrar nada.
-   */
+  /** Trae los datos de otro sitio, ya FUNDIDOS con los de aquí: solo guarda, no puede borrar nada. */
   const importarPerfil = useCallback((fundido) => {
     guardarMaestria(fundido.mastery);
     guardarPartidas(fundido.partidas);
     guardarOlvidadas(sanearOlvidadas(fundido.olvidadas));
   }, [guardarMaestria, guardarPartidas, guardarOlvidadas]);
 
-  return { comprobadas, comprobarPartida, maestria, maestriaUsada, ajuste, partidas, olvidadas, guardarMaestria, guardarPartidas, apuntarPartida, olvidarPartida, corregirPartida, cambiarHeroePartida, cambiarDraftPartida, revisarPartida, importarPerfil };
+  return {
+    maestria, maestriaUsada, partidas, olvidadas, comprobadas, guardarMaestria, apuntarPartida, olvidarPartida,
+    corregirPartida, cambiarHeroePartida, cambiarDraftPartida, revisarPartida, comprobarPartida, importarPerfil,
+  };
 }

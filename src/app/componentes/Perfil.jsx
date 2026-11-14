@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { recogerPerfil, exportarPerfil, leerPerfil, fundirPerfil } from '../../motor/perfil.js';
 import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
 /**
  * Tu perfil: el código que lleva tus datos a otro dispositivo. Sin servidor
@@ -9,7 +9,8 @@ import { tPorDefecto } from './tPorDefecto.js';
  * sustituye: si juegas en los dos sitios las copias divergen, y un «pegar y
  * reemplazar» te borraría medio historial.
  */
-export function Perfil({ datos, onImportar, onCerrar, t = tPorDefecto }) {
+export function Perfil({ datos, onImportar, onCerrar}) {
+  const t = useT();
   const [codigo, setCodigo] = useState('');
   const [pegado, setPegado] = useState('');
   const [copiado, setCopiado] = useState(false);

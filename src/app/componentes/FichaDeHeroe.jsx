@@ -4,7 +4,7 @@ import { Hoja, CabeceraDeHoja } from './Hoja.jsx';
 import { Cara } from './Imagen.jsx';
 import { diaYMes } from './Tarjeta.jsx';
 import { ETIQUETAS_RANGO } from './SelectorDeRango.jsx';
-import { tPorDefecto } from './tPorDefecto.js';
+import { useT } from '../i18n/contexto.js';
 
 /**
  * La ficha de un héroe (3.67.0): lo que el motor ya sabe de él, para
@@ -12,7 +12,8 @@ import { tPorDefecto } from './tPorDefecto.js';
  * listas abre el suyo. Nada se calcula aquí: todo sale de `fichaDeHeroe`
  * (draft.js), con los mismos datos que deciden las recomendaciones.
  */
-export function FichaDeHeroe({ datos, nombre, onOtro, onCerrar, t = tPorDefecto }) {
+export function FichaDeHeroe({ datos, nombre, onOtro, onCerrar}) {
+  const t = useT();
   const f = useMemo(() => fichaDeHeroe(datos, nombre, { ahora: Date.now() }), [datos, nombre]);
   // Solo el número: el «%» va en la frase y el traductor pone la coma decimal en español.
   const num = (v, d = 1) => (v == null ? '—' : (v * 100).toFixed(d));
