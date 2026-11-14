@@ -5,10 +5,14 @@
  * semana con partidas, cada héroe y cada compañero lleva su intervalo, y
  * «mejor que tu media» sale solo donde el intervalo la deja fuera.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 const DIA = 24 * 60 * 60 * 1000;
 const AHORA = Date.now();
 const LINEA = { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: ['Layla'], allies: [], bans: [], enemyRoam: null, fase: 'picks' } };
@@ -30,7 +34,7 @@ function partidas() {
   return lista;
 }
 
-await prueba('en el móvil, desde Ajustes: cifras, una barra por semana con partidas, héroes y compañeros con su intervalo', async () => {
+test('en el móvil, desde Ajustes: cifras, una barra por semana con partidas, héroes y compañeros con su intervalo', async () => {
   const lista = partidas();
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:partidas': lista }, sinServiceWorker: true });
   await pagina.locator('.more summary').click();
@@ -61,7 +65,7 @@ await prueba('en el móvil, desde Ajustes: cifras, una barra por semana con part
   await contexto.close();
 });
 
-await prueba('en el ordenador: desde la barra y con #analisis solo', async () => {
+test('en el ordenador: desde la barra y con #analisis solo', async () => {
   const lista = partidas();
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: 1440, height: 900 }, almacen: { ...LINEA, 'roam-picker:partidas': lista }, sinServiceWorker: true });
   await pagina.locator('.barra-pc').getByRole('button', { name: 'Análisis' }).click();
@@ -80,7 +84,7 @@ await prueba('en el ordenador: desde la barra y con #analisis solo', async () =>
   await solo.contexto.close();
 });
 
-await prueba('sin partidas lo dice, y «Tus partidas» lleva al análisis', async () => {
+test('sin partidas lo dice, y «Tus partidas» lleva al análisis', async () => {
   const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:partidas': partidas().slice(0, 3) }, sinServiceWorker: true });
   await pagina.locator('.more summary').click();
   await pagina.locator('.more').getByRole('button', { name: 'Partidas', exact: true }).click();
@@ -90,7 +94,3 @@ await prueba('sin partidas lo dice, y «Tus partidas» lleva al análisis', asyn
   ok(/Ningún héroe llega/.test(await pagina.locator('.analitica').textContent()), 'con 3 partidas enseña héroes sin el mínimo');
   await contexto.close();
 });
-
-await navegador.close();
-cerrar();
-await terminar('interfaz/analitica');

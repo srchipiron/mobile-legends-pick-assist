@@ -6,17 +6,21 @@
  * dos ayudas que no tocan el motor: el filtro «mis héroes» y el plan A·B·C
  * de la fase de baneos.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq, abrirAjustes } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 const LINEA = { 'roam-picker:linea': 'roam' };
 const PICKS = { enemies: ['Layla', 'Fanny'], allies: ['Chou'], bans: ['Hirara'], enemyRoam: null, fase: 'picks' };
 const leer = (pagina, clave) => pagina.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), clave);
 // El nombre tal cual (el CSS lo pinta en mayúsculas): cada tarjeta lo lleva en `data-heroe`.
 const nombreDe = (tarjeta) => tarjeta.getAttribute('data-heroe');
 
-await prueba('el aura y la medalla (3.91.0): la cara del héroe detrás de cada tarjeta se carga de verdad, y el podio lleva oro, plata y bronce', async () => {
+test('el aura y la medalla (3.91.0): la cara del héroe detrás de cada tarjeta se carga de verdad, y el podio lleva oro, plata y bronce', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS } });
   await pagina.locator('.pick').first().waitFor();
   const fondos = await pagina.$$eval('.pick', (ts) => ts.slice(0, 3).map((t) => window.getComputedStyle(t, '::before').backgroundImage));
@@ -29,7 +33,7 @@ await prueba('el aura y la medalla (3.91.0): la cara del héroe detrás de cada 
   await contexto.close();
 });
 
-await prueba('tocar el nombre de la tarjeta nº2 la fija como tu pick, y todo lo demás habla de ella', async () => {
+test('tocar el nombre de la tarjeta nº2 la fija como tu pick, y todo lo demás habla de ella', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS } });
   eq(await pagina.locator('.side.ally .slot.empty.yo').count(), 1, 'tu equipo no tiene el hueco «Tú»');
   ok(/1\/5/.test(await pagina.locator('.side.ally .side-label').innerText()), 'tu equipo no cuenta 1/5 (Chou, sin ti)');
@@ -65,7 +69,7 @@ await prueba('tocar el nombre de la tarjeta nº2 la fija como tu pick, y todo lo
   await contexto.close();
 });
 
-await prueba('diez minutos después de fijar el pick, al volver, la app pregunta cómo fue y apuntar guarda el draft', async () => {
+test('diez minutos después de fijar el pick, al volver, la app pregunta cómo fue y apuntar guarda el draft', async () => {
   const hace11min = Date.now() - 11 * 60 * 1000;
   const { contexto, pagina, errores } = await paginaCon(navegador, url, {
     almacen: { ...LINEA, 'roam-picker:draft': { ...PICKS, miPick: 'Tigreal', miPickDesde: hace11min } },
@@ -92,7 +96,7 @@ await prueba('diez minutos después de fijar el pick, al volver, la app pregunta
   await contexto.close();
 });
 
-await prueba('lo que juegas y lo que ganas no deciden nada (3.93.0 y 3.94.0): con maestría guardada, las mismas tarjetas y porcentajes, sin «de los tuyos», y «Domino» solo como vista (3.95.0)', async () => {
+test('lo que juegas y lo que ganas no deciden nada (3.93.0 y 3.94.0): con maestría guardada, las mismas tarjetas y porcentajes, sin «de los tuyos», y «Domino» solo como vista (3.95.0)', async () => {
   const tarjetas = async (pagina) => Promise.all((await pagina.locator('.pick').all()).map(async (c) => `${await nombreDe(c)} ${(await c.locator('.pick-score').innerText()).trim()}`));
   const con = await paginaCon(navegador, url, {
     almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:mastery': { Franco: { games: 200, winRate: 0.95 }, Minotaur: { games: 100, winRate: 0.05 } } },
@@ -122,7 +126,7 @@ await prueba('lo que juegas y lo que ganas no deciden nada (3.93.0 y 3.94.0): co
   await con.contexto.close(); await sin.contexto.close();
 });
 
-await prueba('la fase de baneos enseña tu plan A · B · C con su tasa de ban, y apuntar preselecciona tu pick', async () => {
+test('la fase de baneos enseña tu plan A · B · C con su tasa de ban, y apuntar preselecciona tu pick', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': { enemies: [], allies: [], bans: [], enemyRoam: null, fase: 'baneos' } } });
   eq(await pagina.locator('.plan .chip').count(), 3, 'el plan no trae tres héroes');
   ok(/^A · /.test((await pagina.locator('.plan .chip').first().innerText()).trim()), 'el primero del plan no es el A');
@@ -139,7 +143,7 @@ await prueba('la fase de baneos enseña tu plan A · B · C con su tasa de ban, 
   await con.contexto.close();
 });
 
-await prueba('con el draft completo y sin pick fijado, a los diez minutos pregunta por el nº1, y «Otro héroe» abre apuntar', async () => {
+test('con el draft completo y sin pick fijado, a los diez minutos pregunta por el nº1, y «Otro héroe» abre apuntar', async () => {
   // 3.9.0: quien mete el draft entero y no toca «Lo cojo» también juega, y
   // antes no se le preguntaba nunca. El instante de completarse se guarda
   // en el draft; aquí se siembra hace once minutos.
@@ -198,7 +202,7 @@ await prueba('con el draft completo y sin pick fijado, a los diez minutos pregun
   await contexto.close();
 });
 
-await prueba('la nº2 dice por qué no es la nº1, con la frase del motor, y la nº1 no lleva nada (3.51.0)', async () => {
+test('la nº2 dice por qué no es la nº1, con la frase del motor, y la nº1 no lleva nada (3.51.0)', async () => {
   const { readFile } = await import('node:fs/promises');
   const motor = await import('../../src/motor/draft.js');
   const { porQueDetras } = await import('../../src/motor/ranking.js');
@@ -219,7 +223,7 @@ await prueba('la nº2 dice por qué no es la nº1, con la frase del motor, y la 
   } finally { await contexto.close(); }
 });
 
-await prueba('los huecos del draft (3.59.0): la cara marca al rival, la × quita, y lo que puso el lector lleva su punto', async () => {
+test('los huecos del draft (3.59.0): la cara marca al rival, la × quita, y lo que puso el lector lleva su punto', async () => {
   const draft = { ...PICKS, lectura: { enemigos: ['Fanny'], aliados: ['Chou'], baneos: ['Hirara'] } };
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: 360, height: 640 }, almacen: { ...LINEA, 'roam-picker:draft': draft } });
   // El punto del lector: Fanny y Chou sí, Layla (metida a mano) no.
@@ -249,7 +253,7 @@ await prueba('los huecos del draft (3.59.0): la cara marca al rival, la × quita
   await contexto.close();
 });
 
-await prueba('la tier de mlbb.gg sale en las tarjetas si es de estas dos semanas, y no si es más vieja (3.59.4)', async () => {
+test('la tier de mlbb.gg sale en las tarjetas si es de estas dos semanas, y no si es más vieja (3.59.4)', async () => {
   const con = async (dias) => {
     const { contexto, pagina } = await paginaCon(navegador, url, {
       almacen: { ...LINEA, 'roam-picker:draft': PICKS },
@@ -267,7 +271,7 @@ await prueba('la tier de mlbb.gg sale en las tarjetas si es de estas dos semanas
   eq(await con(20), 0, 'una tier de hace veinte días sigue saliendo en las tarjetas');
 });
 
-await prueba('las sinergias (3.60.0): cada tarjeta dice su mejor pareja y «Sinergia» las ordena por cómo encajan, sin tocar su número ni su nota', async () => {
+test('las sinergias (3.60.0): cada tarjeta dice su mejor pareja y «Sinergia» las ordena por cómo encajan, sin tocar su número ni su nota', async () => {
   const draft = { enemies: ['Layla', 'Atlas', 'Lylia'], allies: ['Chou', 'Miya'], bans: [], enemyRoam: null, fase: 'picks' };
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': draft } });
   const parejas = await pagina.locator('.pick .pick-pareja').allTextContents();
@@ -291,7 +295,7 @@ await prueba('las sinergias (3.60.0): cada tarjeta dice su mejor pareja y «Sine
   await contexto.close();
 });
 
-await prueba('revisión de 3.60.0 (3.60.1): el consejo va tras la tarjeta de la que habla, el punto del lector no sale en lo metido a mano y «Sinergia» no se queda puesta a escondidas', async () => {
+test('revisión de 3.60.0 (3.60.1): el consejo va tras la tarjeta de la que habla, el punto del lector no sale en lo metido a mano y «Sinergia» no se queda puesta a escondidas', async () => {
   // Con Eudora de compañera, el héroe del consejo queda 4º con «Sinergia» (medido): ni el primero ni fuera.
   const draft = { ...PICKS, allies: ['Eudora'], lectura: { enemigos: ['Layla'] } };
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': draft } });
@@ -329,7 +333,7 @@ await prueba('revisión de 3.60.0 (3.60.1): el consejo va tras la tarjeta de la 
   await contexto.close();
 });
 
-await prueba('cambiar de línea suelta un pick fijado que no se juega en ella; uno que sí, se queda (3.60.2)', async () => {
+test('cambiar de línea suelta un pick fijado que no se juega en ella; uno que sí, se queda (3.60.2)', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': { ...PICKS, miPick: 'Gloo', miPickDesde: Date.now() } } });
   try {
     const aLinea = async (nombre) => {
@@ -344,7 +348,3 @@ await prueba('cambiar de línea suelta un pick fijado que no se juega en ella; u
     ok(!errores.length, `errores de página: ${errores}`);
   } finally { await contexto.close(); }
 });
-
-await terminar('interfaz/pick');
-await navegador.close();
-await cerrar();

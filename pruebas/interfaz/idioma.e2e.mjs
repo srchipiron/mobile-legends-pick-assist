@@ -4,14 +4,18 @@
  * picks, el consejo, los ajustes, las tres hojas y la fase de baneos. Las
  * novedades (CHANGELOG) van en español a propósito y quedan fuera.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 const ESPANOL = /[áéíóúñ¿¡]|\b(de la|del|para|según|contra|con|sin|añadir|equipo|partida|baneo|banear|ajustes|cambiar|nuevo|buscar|cerrar|listo|gané|perdí|apuntar)\b/i;
 const sospechosas = (txt) => [...new Set(txt.split('\n').map((s) => s.trim()).filter((s) => s && ESPANOL.test(s)))];
 
-await prueba('la interfaz en inglés no enseña español', async () => {
+test('la interfaz en inglés no enseña español', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, {
     locale: 'en-US',
     almacen: {
@@ -42,7 +46,3 @@ await prueba('la interfaz en inglés no enseña español', async () => {
   ok(!errores.length, `errores: ${errores}`);
   await contexto.close();
 });
-
-await terminar('interfaz/idioma');
-await navegador.close();
-await cerrar();

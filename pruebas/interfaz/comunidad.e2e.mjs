@@ -8,12 +8,16 @@
  * todos; borrar se lo lleva todo; y la Administración publica SOLO la
  * clave pública.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq, abrirAjustes } from './navegador.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { crearClaveDeAdministrador, sanearLicencias } from '../../src/app/licencia.js';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 const SUPA = 'https://abcdefghijklmnopqrst.supabase.co';
 const PUBLICA = 'sb_publishable_prueba1234567890';
 const TOKEN = 'github_pat_PRUEBA_0123456789abcdefghij';
@@ -43,7 +47,7 @@ const abrirPartidas = async (pagina) => {
   await pagina.getByRole('button', { name: 'Partidas', exact: true }).click(); await pagina.waitForTimeout(400);
 };
 
-await prueba('sin comunidad.json la sección no sale', async () => {
+test('sin comunidad.json la sección no sale', async () => {
   const s = supabaseFalso();
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:partidas': PARTIDAS }, sinServiceWorker: true, antes: conBaseDeDatos(s, null) });
   await abrirPartidas(pagina);
@@ -53,7 +57,7 @@ await prueba('sin comunidad.json la sección no sale', async () => {
   await contexto.close();
 });
 
-await prueba('con la casilla, tus partidas suben solas con tu clave, sin el lector ni el token; quitar una la borra allí', async () => {
+test('con la casilla, tus partidas suben solas con tu clave, sin el lector ni el token; quitar una la borra allí', async () => {
   const s = supabaseFalso();
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:partidas': PARTIDAS, 'roam-picker:envio': { token: TOKEN } }, sinServiceWorker: true, antes: conBaseDeDatos(s) });
   await contexto.route('https://api.github.com/**', (ruta) => ruta.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ number: 7, html_url: 'https://github.com/x/y/issues/7' }) }));
@@ -99,7 +103,7 @@ await prueba('con la casilla, tus partidas suben solas con tu clave, sin el lect
   await contexto.close();
 });
 
-await prueba('con tu clave en otro móvil te traes tus partidas, «Ver» mide las de todos, y borrar se lo lleva todo', async () => {
+test('con tu clave en otro móvil te traes tus partidas, «Ver» mide las de todos, y borrar se lo lleva todo', async () => {
   const s = supabaseFalso();
   const clave = 'Q'.repeat(43);
   s.atender('subir_partidas', { clave, lote: PARTIDAS.map(({ lector, ...p }) => p), quitar: [], referencia: { winRate: 0.5, partidas: 300 } }, { apikey: PUBLICA });
@@ -123,7 +127,7 @@ await prueba('con tu clave en otro móvil te traes tus partidas, «Ver» mide la
   await contexto.close();
 });
 
-await prueba('lo que apuntó la tablet sola llega a la app al abrirla, sin repetir lo que ya hay ni resucitar lo quitado (3.70.0)', async () => {
+test('lo que apuntó la tablet sola llega a la app al abrirla, sin repetir lo que ya hay ni resucitar lo quitado (3.70.0)', async () => {
   const s = supabaseFalso();
   const clave = 'T'.repeat(43);
   const deLaTablet = { t: 1788009000000, pick: 'Rafaela', gane: true, recomendados: ['Rafaela', 'Estes', 'Angela'], origen: 'lector', draft: { linea: 'roam', enemigos: ['Clint'], aliados: [] } };
@@ -141,7 +145,7 @@ await prueba('lo que apuntó la tablet sola llega a la app al abrirla, sin repet
   await contexto.close();
 });
 
-await prueba('una partida fantasma de la tablet (3.89.3) se quita sola: del móvil y de la base de datos, y no vuelve', async () => {
+test('una partida fantasma de la tablet (3.89.3) se quita sola: del móvil y de la base de datos, y no vuelve', async () => {
   const s = supabaseFalso();
   const clave = 'F'.repeat(43);
   // La del 2 de noviembre de 2026 a las 22:29: tu pick supuesto, un héroe leído y un baneo.
@@ -161,7 +165,7 @@ await prueba('una partida fantasma de la tablet (3.89.3) se quita sola: del móv
   await contexto.close();
 });
 
-await prueba('la Administración publica la dirección y la clave pública, y no deja publicar la secreta', async () => {
+test('la Administración publica la dirección y la clave pública, y no deja publicar la secreta', async () => {
   const s = supabaseFalso();
   const admin = await crearClaveDeAdministrador();
   const puestas = [];
@@ -193,7 +197,3 @@ await prueba('la Administración publica la dirección y la clave pública, y no
   eq(errores.length, 0, errores.join(' | '));
   await contexto.close();
 });
-
-await navegador.close();
-await cerrar();
-await terminar('interfaz/comunidad');

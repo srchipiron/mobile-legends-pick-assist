@@ -31,7 +31,7 @@ jobs:
         run: npm run build
       # El runner trae Google Chrome; playwright-core lo usa por `channel: 'chrome'` sin descargar nada.
       - name: Pruebas de interfaz
-        run: node pruebas/correr.mjs --e2e
+        run: npm run test:ui
       # supabase/esquema.sql contra un Postgres de verdad (el runner trae uno, parado; la prueba arranca el suyo).
       - name: Base de datos (Postgres)
         run: npm run test:sql

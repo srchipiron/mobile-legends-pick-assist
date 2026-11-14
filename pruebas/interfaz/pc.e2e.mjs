@@ -5,12 +5,16 @@
  * `#capturas` abre la app SOLO en «Capturas», donde se pega la clave del
  * móvil, se traen tus partidas y salen sus caras más grandes que en el móvil.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq } from './navegador.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { escribirPng } from '../../scripts/lector/png.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 const PC = { width: 1440, height: 900 };
 const SUPA = 'https://abcdefghijklmnopqrst.supabase.co';
 const T = 1793222711480;
@@ -32,7 +36,7 @@ const conBaseDeDatos = (s) => async (p) => {
   });
 };
 
-await prueba('en el ordenador, lo de «Ajustes» a la vista; en el móvil, no', async () => {
+test('en el ordenador, lo de «Ajustes» a la vista; en el móvil, no', async () => {
   const s = supabaseFalso();
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: PC, almacen: PICKS, sinServiceWorker: true, antes: conBaseDeDatos(s) });
   const barra = pagina.locator('.barra-pc');
@@ -51,7 +55,7 @@ await prueba('en el ordenador, lo de «Ajustes» a la vista; en el móvil, no', 
   await contexto.close();
 });
 
-await prueba('E, A y B abren su selector; escribiendo en un campo, no', async () => {
+test('E, A y B abren su selector; escribiendo en un campo, no', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: PC, almacen: PICKS, sinServiceWorker: true });
   const activa = () => pagina.locator('.sheet-bandos [aria-selected="true"], .sheet-bandos .activo').first().textContent();
   await pagina.keyboard.press('e');
@@ -101,7 +105,7 @@ await prueba('E, A y B abren su selector; escribiendo en un campo, no', async ()
   await contexto.close();
 });
 
-await prueba('#capturas abre solo «Capturas»: pegas la clave, se traen tus partidas y salen sus caras en grande', async () => {
+test('#capturas abre solo «Capturas»: pegas la clave, se traen tus partidas y salen sus caras en grande', async () => {
   const s = supabaseFalso();
   s.atender('subir_partidas', { clave: CLAVE, lote: [PARTIDA] }, { apikey: s.clavePublica });
   s.recortes.push({ clave: 'L'.repeat(43), recibido: Date.now() - 3600000, d: { v: 1, partida: T, faltan: 3, capturas: [{ id: 'lectura-2026-10-28T21-02-27-027Z-1517', picks: PNG }], leidos } });
@@ -129,7 +133,3 @@ await prueba('#capturas abre solo «Capturas»: pegas la clave, se traen tus par
   eq(errores.length, 0, errores.join(' | '));
   await contexto.close();
 });
-
-await navegador.close();
-cerrar();
-await terminar('interfaz/pc');

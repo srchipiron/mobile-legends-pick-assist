@@ -16,11 +16,11 @@
  */
 import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { extname, join, normalize, resolve } from 'node:path';
-import { abrirNavegador, prueba, ok, eq, terminar, RAIZ } from './navegador.mjs';
+import { extname, join, normalize } from 'node:path';
+import { abrirNavegador, test, after, ok, eq, leerJson, RAIZ } from './navegador.mjs';
 
 const TIPOS = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
@@ -28,28 +28,19 @@ const TIPOS = {
 };
 const tmp = mkdtempSync(join(tmpdir(), 'actualizacion-'));
 const VERSION_NUEVA = '9.9.9';
-const pkg = resolve(RAIZ, 'package.json');
-const original = readFileSync(pkg, 'utf8');
-const versionReal = JSON.parse(original).version;
+const versionReal = leerJson('package.json').version;
 
-/** Compila el repositorio a un directorio, opcionalmente con otra versión. */
+/** Compila el repositorio a un temporal; la «versión nueva» va por APP_VERSION (vite.config.js): el repositorio no se toca. */
 function compilar(destino, version = null) {
-  try {
-    if (version) writeFileSync(pkg, original.replace(`"version": "${versionReal}"`, `"version": "${version}"`));
-    const r = spawnSync('npx', ['vite', 'build', '--outDir', destino, '--emptyOutDir'], { cwd: RAIZ, encoding: 'utf8' });
-    if (r.status !== 0) throw new Error(`no compila: ${(r.stderr || r.stdout || '').slice(-400)}`);
-  } finally {
-    // La versión del repositorio se restaura SIEMPRE, aunque la compilación
-    // reviente: dejarla en 9.9.9 rompería el despliegue.
-    if (version) writeFileSync(pkg, original);
-  }
+  const r = spawnSync('npx', ['vite', 'build', '--outDir', destino, '--emptyOutDir'], { cwd: RAIZ, encoding: 'utf8', env: { ...process.env, ...(version ? { APP_VERSION: version } : {}) } });
+  if (r.status !== 0) throw new Error(`no compila: ${(r.stderr || r.stdout || '').slice(-400)}`);
 }
 
 const dirA = join(tmp, 'vieja');
 const dirB = join(tmp, 'nueva');
 compilar(dirB, VERSION_NUEVA);
 compilar(dirA);
-eq(JSON.parse(readFileSync(pkg, 'utf8')).version, versionReal, 'la versión de package.json no se ha restaurado');
+eq(leerJson('package.json').version, versionReal, 'compilar la versión nueva cambia package.json');
 eq(JSON.parse(readFileSync(join(dirB, 'version.json'), 'utf8')).version, VERSION_NUEVA, 'la segunda compilación no lleva la versión nueva');
 
 // Un servidor cuya raíz se puede cambiar en caliente: así «se publica» la
@@ -72,8 +63,13 @@ const srv = createServer(async (req, res) => {
 await new Promise((r) => srv.listen(0, '127.0.0.1', r));
 const url = `http://127.0.0.1:${srv.address().port}/`;
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await new Promise((r) => srv.close(r));
+  rmSync(tmp, { recursive: true, force: true });
+});
 
-await prueba('la app se actualiza sola cuando sale una versión nueva', async () => {
+test('la app se actualiza sola cuando sale una versión nueva', async () => {
   const contexto = await navegador.newContext({ viewport: { width: 390, height: 844 }, locale: 'es-ES' });
   const pagina = await contexto.newPage();
   const errores = [];
@@ -119,7 +115,7 @@ await prueba('la app se actualiza sola cuando sale una versión nueva', async ()
   await contexto.close();
 });
 
-await prueba('con una hoja abierta no se recarga: esperaría a que se cierre', async () => {
+test('con una hoja abierta no se recarga: esperaría a que se cierre', async () => {
   // Medido en su día: una actualización con «Tu maestría» abierta perdía lo
   // escrito. Por eso la recarga se aplaza mientras haya un [role=dialog].
   raiz = dirA;
@@ -152,7 +148,3 @@ await prueba('con una hoja abierta no se recarga: esperaría a que se cierre', a
   await contexto.close();
 });
 
-await terminar('interfaz/actualizacion');
-await navegador.close();
-await new Promise((r) => srv.close(r));
-rmSync(tmp, { recursive: true, force: true });

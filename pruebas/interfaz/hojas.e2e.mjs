@@ -5,7 +5,7 @@
  * los plurales, el nº1 en la primera pantalla, el pie con teclado y la
  * limpieza de nombres fantasma. Cada una nació de un fallo real (CLAUDE.md).
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq, abrirAjustes } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 /** El motor con los datos que sirve dist/, con Gloria pedida (lo que ve la app sin rango guardado). */
@@ -18,11 +18,15 @@ async function datosServidos() {
 /** De qué rango sale la fuerza con los datos servidos. */
 const decisionDeRango = async () => (await datosServidos()).datos.meta.fuerza;
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 const LINEA = { 'roam-picker:linea': 'roam' };
 const PICKS = { enemies: ['Layla', 'Fanny', 'Pharsa'], allies: ['Chou'], bans: ['Hirara'], enemyRoam: null, fase: 'picks' };
 const con = (draft, extra = {}, viewport) => paginaCon(navegador, url, { viewport, almacen: { ...LINEA, 'roam-picker:draft': draft, ...extra } });
 
-await prueba('el selector de rango dice de qué rango son los cruces y de cuál las builds, cada uno con el suyo (3.37.0)', async () => {
+test('el selector de rango dice de qué rango son los cruces y de cuál las builds, cada uno con el suyo (3.37.0)', async () => {
   // Con los datos servidos: cruces y parejas de `relaciones.rango` (Mítico
   // mientras Gloria se rellena) y builds del rango de la ingesta.
   const { readFile } = await import('node:fs/promises');
@@ -38,7 +42,7 @@ await prueba('el selector de rango dice de qué rango son los cruces y de cuál 
   await contexto.close();
 });
 
-await prueba('con Ajustes abierto a 360x640 la lista sigue viéndose', async () => {
+test('con Ajustes abierto a 360x640 la lista sigue viéndose', async () => {
   const { contexto, pagina, errores } = await con(PICKS, {}, { width: 360, height: 640 });
   await pagina.locator('.more summary').click(); await pagina.waitForTimeout(300);
   const alto = await pagina.locator('.results').evaluate((e) => e.getBoundingClientRect().height);
@@ -48,7 +52,7 @@ await prueba('con Ajustes abierto a 360x640 la lista sigue viéndose', async () 
   await contexto.close();
 });
 
-await prueba('atrás y Escape cierran la hoja sin salir de la app, y cerrar por botón retira la entrada de historial', async () => {
+test('atrás y Escape cierran la hoja sin salir de la app, y cerrar por botón retira la entrada de historial', async () => {
   const { contexto, pagina } = await con(PICKS);
   await pagina.locator('.side.enemy .slot.empty').first().click(); await pagina.waitForTimeout(300);
   eq(await pagina.locator('[role=dialog]').count(), 1, 'no se abre el selector');
@@ -66,7 +70,7 @@ await prueba('atrás y Escape cierran la hoja sin salir de la app, y cerrar por 
   await contexto.close();
 });
 
-await prueba('Intro elige el prefijo y la fila de maestría no salta al escribir', async () => {
+test('Intro elige el prefijo y la fila de maestría no salta al escribir', async () => {
   const { contexto, pagina } = await con(PICKS, { 'roam-picker:mastery': { Khufra: { games: 40, winRate: 0.6 } } });
   // El primer hueco de tu equipo es «Tú» (tu pick, solo tu pool): el de un compañero es el siguiente.
   await pagina.locator('.side.ally .slot.empty:not(.yo)').first().click(); await pagina.waitForTimeout(300);
@@ -87,7 +91,7 @@ await prueba('Intro elige el prefijo y la fila de maestría no salta al escribir
 
 // 3.60.7: una fila con partidas y sin winrate se descartaba sin decir nada,
 // y guardar sin tocar redondeaba a un decimal lo guardado.
-await prueba('el editor de maestría no cierra con una fila a medias y no toca las filas sin tocar', async () => {
+test('el editor de maestría no cierra con una fila a medias y no toca las filas sin tocar', async () => {
   const guardada = { Khufra: { games: 40, winRate: 0.50637, desde: 1000 } };
   const { contexto, pagina, errores } = await con(PICKS, { 'roam-picker:mastery': guardada });
   const leerMaestria = () => pagina.evaluate(() => JSON.parse(localStorage.getItem('roam-picker:mastery') ?? 'null'));
@@ -109,7 +113,7 @@ await prueba('el editor de maestría no cierra con una fila a medias y no toca l
   await contexto.close();
 });
 
-await prueba('los chips del siguiente baneo no se mueven: el tocado se queda tachado y el nuevo entra al final', async () => {
+test('los chips del siguiente baneo no se mueven: el tocado se queda tachado y el nuevo entra al final', async () => {
   const { contexto, pagina } = await con({ enemies: [], allies: [], bans: [], enemyRoam: null, fase: 'baneos' });
   const chips = pagina.locator('.proximos .chip');
   const antes = await chips.allTextContents();
@@ -146,7 +150,7 @@ await prueba('los chips del siguiente baneo no se mueven: el tocado se queda tac
   await contexto.close();
 });
 
-await prueba('la fase de baneos y el pie dicen de qué rango salen los números (la guarda de rango, no «tu rango»)', async () => {
+test('la fase de baneos y el pie dicen de qué rango salen los números (la guarda de rango, no «tu rango»)', async () => {
   // Tras un reinicio de temporada la fuerza, el pick y el ban salen de
   // Mítico (ventana.js, elegirRango) y hasta 3.14.0 la fase de baneos decía
   // «por tasa de ban en tu rango» y el pie «glory · 7 días». Se compara con
@@ -167,7 +171,7 @@ await prueba('la fase de baneos y el pie dicen de qué rango salen los números 
   await contexto.close();
 });
 
-await prueba('«Merece la pena banear» marca a los de tu plan A·B·C, con su letra, y solo a ellos', async () => {
+test('«Merece la pena banear» marca a los de tu plan A·B·C, con su letra, y solo a ellos', async () => {
   // Con los datos del 26 de septiembre de 2026, en roam dos de los cinco
   // baneos sugeridos eran tu plan A y tu plan B: banearlos es quitártelos.
   // Se compara con el motor sobre los MISMOS datos, no con nombres de hoy.
@@ -187,7 +191,7 @@ await prueba('«Merece la pena banear» marca a los de tu plan A·B·C, con su l
   }
 });
 
-await prueba('plurales, sin frases crudas, la probabilidad en la tarjeta y el consejo después del nº1', async () => {
+test('plurales, sin frases crudas, la probabilidad en la tarjeta y el consejo después del nº1', async () => {
   const { contexto, pagina } = await con({ enemies: ['Layla'], allies: ['Chou', 'Miya', 'Kagura'], bans: [], enemyRoam: null, fase: 'picks' });
   // La tier de mlbb.gg en la tarjeta: una letra al lado del winrate, nunca una
   // clave cruda. Con los datos publicados (3.3.0) la traen los 133 heroes.
@@ -205,7 +209,7 @@ await prueba('plurales, sin frases crudas, la probabilidad en la tarjeta y el co
   await contexto.close();
 });
 
-await prueba('el botón Cerrar del diagnóstico cabe en 360px aunque haya botón de compartir', async () => {
+test('el botón Cerrar del diagnóstico cabe en 360px aunque haya botón de compartir', async () => {
   const contexto = await navegador.newContext({ viewport: { width: 360, height: 640 }, locale: 'es-ES' });
   const pagina = await contexto.newPage();
   await pagina.addInitScript(() => { navigator.share = async () => {}; localStorage.setItem('roam-picker:linea', JSON.stringify('roam')); localStorage.setItem('roam-picker:draft', JSON.stringify({ enemies: ['Layla'], allies: [], bans: [], enemyRoam: null, fase: 'picks' })); });
@@ -217,7 +221,7 @@ await prueba('el botón Cerrar del diagnóstico cabe en 360px aunque haya botón
   await contexto.close();
 });
 
-await prueba('Copiar del diagnóstico sin portapapeles selecciona el texto y lo dice (3.60.4)', async () => {
+test('Copiar del diagnóstico sin portapapeles selecciona el texto y lo dice (3.60.4)', async () => {
   const contexto = await navegador.newContext({ viewport: { width: 360, height: 640 }, locale: 'es-ES' });
   const pagina = await contexto.newPage();
   // Sin permiso de portapapeles y sin el camino viejo: lo de un Chrome de Android sin permiso.
@@ -236,7 +240,7 @@ await prueba('Copiar del diagnóstico sin portapapeles selecciona el texto y lo 
   await contexto.close();
 });
 
-await prueba('si la caché da los datos de la visita anterior, a los pocos segundos se usan los nuevos (3.60.5)', async () => {
+test('si la caché da los datos de la visita anterior, a los pocos segundos se usan los nuevos (3.60.5)', async () => {
   // Lo que hace el service worker (StaleWhileRevalidate): la primera vez, lo
   // de antes; la siguiente, lo que bajó mientras tanto.
   let veces = 0;
@@ -259,7 +263,7 @@ await prueba('si la caché da los datos de la visita anterior, a los pocos segun
   } finally { await contexto.close(); }
 });
 
-await prueba('un nombre guardado que ya no existe se limpia, y el rival fantasma se desmarca', async () => {
+test('un nombre guardado que ya no existe se limpia, y el rival fantasma se desmarca', async () => {
   const { contexto, pagina, errores } = await con({ enemies: ['Layla', 'NoExiste', 'Fanny'], allies: ['Chou', 'Fantasma'], bans: ['Hirara', 'Nadie'], enemyRoam: 'NoExiste', fase: 'picks' });
   await pagina.waitForTimeout(800);
   const d = await pagina.evaluate(() => JSON.parse(localStorage.getItem('roam-picker:draft')));
@@ -270,7 +274,7 @@ await prueba('un nombre guardado que ya no existe se limpia, y el rival fantasma
   await contexto.close();
 });
 
-await prueba('tocar un héroe en Meta abre su ficha, y tocar otro de sus listas abre la del otro (3.67.0)', async () => {
+test('tocar un héroe en Meta abre su ficha, y tocar otro de sus listas abre la del otro (3.67.0)', async () => {
   const { contexto, pagina, errores } = await con(PICKS);
   await abrirAjustes(pagina);
   await pagina.locator('.more .tools .reset').last().click(); await pagina.waitForTimeout(300);
@@ -293,7 +297,7 @@ await prueba('tocar un héroe en Meta abre su ficha, y tocar otro de sus listas 
   await contexto.close();
 });
 
-await prueba('los tocados por el parche llevan su marca en la tarjeta y en la ficha durante la semana, y luego nada (3.102.0)', async () => {
+test('los tocados por el parche llevan su marca en la tarjeta y en la ficha durante la semana, y luego nada (3.102.0)', async () => {
   // Las fechas van relativas a hoy: la semilla del 11 de noviembre de 2026 caduca sola y la prueba no puede depender de ella.
   const diasAtras = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
   const conTocados = (fecha) => (p) => p.route('**/data/roam-meta.json', async (ruta) => {
@@ -322,7 +326,7 @@ await prueba('los tocados por el parche llevan su marca en la tarjeta y en la fi
   } finally { await contexto.close(); }
 });
 
-await prueba('la hoja Meta enseña la tier list por línea, con la tuya primero, y se cierra con Escape', async () => {
+test('la hoja Meta enseña la tier list por línea, con la tuya primero, y se cierra con Escape', async () => {
   const { contexto, pagina, errores } = await con(PICKS);
   await pagina.locator('.more summary').click(); await pagina.waitForTimeout(200);
   // El botón Meta va el ÚLTIMO de la fila a propósito: los de antes se abren por posición.
@@ -396,7 +400,7 @@ await prueba('la hoja Meta enseña la tier list por línea, con la tuya primero,
   await contexto.close();
 });
 
-await prueba('el pie se abre con teclado, la cabecera dice la línea y el foco vuelve al botón que abrió la hoja', async () => {
+test('el pie se abre con teclado, la cabecera dice la línea y el foco vuelve al botón que abrió la hoja', async () => {
   const { contexto, pagina } = await con(PICKS);
   const pie = pagina.locator('footer.pie');
   ok(await pie.getAttribute('role') === 'button' && await pie.getAttribute('aria-expanded') === 'false', 'el pie no es un botón cerrado');
@@ -414,7 +418,7 @@ await prueba('el pie se abre con teclado, la cabecera dice la línea y el foco v
   await contexto.close();
 });
 
-await prueba('la tarjeta enseña el winrate del héroe EN TU LÍNEA, el mismo que da el motor, y no en otra', async () => {
+test('la tarjeta enseña el winrate del héroe EN TU LÍNEA, el mismo que da el motor, y no en otra', async () => {
   // En exp: es la línea con más héroes que juegan también otra (42 en el pool).
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { 'roam-picker:linea': 'exp', 'roam-picker:draft': PICKS } });
   const { motor, datos } = await datosServidos();
@@ -434,7 +438,3 @@ await prueba('la tarjeta enseña el winrate del héroe EN TU LÍNEA, el mismo qu
   ok(!errores.length, `errores: ${errores}`);
   await contexto.close();
 });
-
-await terminar('interfaz/hojas');
-await navegador.close();
-await cerrar();

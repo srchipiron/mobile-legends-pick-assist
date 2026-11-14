@@ -6,12 +6,16 @@
  * la hora del arreglo para que llegue a la tablet). Un recorte con una
  * imagen que no es un PNG no sale.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq, abrirAjustes } from './navegador.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { escribirPng } from '../../scripts/lector/png.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 const SUPA = 'https://abcdefghijklmnopqrst.supabase.co';
 const T = 1793222711480;
 const LINEA = { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: ['Layla'], allies: [], bans: [], enemyRoam: null, fase: 'picks' } };
@@ -33,7 +37,7 @@ const conBaseDeDatos = (s) => async (p) => {
 };
 const leer = (pagina, clave) => pagina.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), clave);
 
-await prueba('las caras de cada hueco con lo leído; guardar arregla la partida y quita el «supuesto»', async () => {
+test('las caras de cada hueco con lo leído; guardar arregla la partida y quita el «supuesto»', async () => {
   const s = supabaseFalso();
   s.recortes.push({ clave: 'L'.repeat(43), recibido: Date.now() - 3600000, d: { v: 1, partida: T, faltan: 3, capturas: [{ id: 'lectura-2026-10-28T21-02-27-027Z-1517', picks: PNG }], leidos } });
   // Otro con una «imagen» que no es un PNG, de una partida tuya: no sale.
@@ -76,7 +80,7 @@ await prueba('las caras de cada hueco con lo leído; guardar arregla la partida 
   await contexto.close();
 });
 
-await prueba('en el móvil, sin escribir (3.89.0): tocar la cara abre caras para elegir, y elegir salta al siguiente hueco vacío', async () => {
+test('en el móvil, sin escribir (3.89.0): tocar la cara abre caras para elegir, y elegir salta al siguiente hueco vacío', async () => {
   const s = supabaseFalso();
   s.recortes.push({ clave: 'L'.repeat(43), recibido: Date.now() - 3600000, d: { v: 1, partida: T, faltan: 3, capturas: [{ id: 'lectura-2026-10-28T21-02-27-027Z-1517', picks: PNG }], leidos } });
   // Tus partidas de antes: juegas con alguien que lleva Tigreal (tu compañero de siempre) y tú con Minotaur.
@@ -117,7 +121,7 @@ await prueba('en el móvil, sin escribir (3.89.0): tocar la cara abre caras para
   await contexto.close();
 });
 
-await prueba('las partidas sin resultado (3.89.4, 3.90.2): sus pantallas del final y Gané/Perdí con un toque, solo las subidas con TU clave', async () => {
+test('las partidas sin resultado (3.89.4, 3.90.2): sus pantallas del final y Gané/Perdí con un toque, solo las subidas con TU clave', async () => {
   const s = supabaseFalso();
   const T2 = T + 3 * 3600000;
   const clave = 'J'.repeat(43);
@@ -152,7 +156,7 @@ await prueba('las partidas sin resultado (3.89.4, 3.90.2): sus pantallas del fin
   await contexto.close();
 });
 
-await prueba('sin base de datos el botón no sale', async () => {
+test('sin base de datos el botón no sale', async () => {
   const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:partidas': [PARTIDA] }, sinServiceWorker: true, antes: async (p) => p.route(`${url}comunidad.json*`, (r) => r.fulfill({ status: 404, body: '' })) });
   await abrirAjustes(pagina);
   await pagina.getByRole('button', { name: 'Partidas', exact: true }).click();
@@ -160,7 +164,3 @@ await prueba('sin base de datos el botón no sale', async () => {
   eq(await pagina.getByRole('button', { name: 'Revisar con las capturas del lector' }).count(), 0);
   await contexto.close();
 });
-
-await navegador.close();
-cerrar();
-await terminar('interfaz/revisar');

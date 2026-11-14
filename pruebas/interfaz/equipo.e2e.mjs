@@ -4,13 +4,17 @@
  * línea, el motivo positivo delante, y tocar una opción la mete en tu equipo
  * y cierra esa línea.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, anchoDePagina, elegirEnSelector } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq, anchoDePagina, elegirEnSelector } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 
 for (const ancho of [390, 360]) {
-  await prueba(`el consejo para los compañeros a ${ancho}px`, async () => {
+  test(`el consejo para los compañeros a ${ancho}px`, async () => {
     const { contexto, pagina, errores } = await paginaCon(navegador, url, {
       viewport: { width: ancho, height: 844 },
       almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: [], allies: [], bans: [], enemyRoam: null, fase: 'picks' } },
@@ -44,7 +48,3 @@ for (const ancho of [390, 360]) {
     await contexto.close();
   });
 }
-
-await terminar('interfaz/equipo');
-await navegador.close();
-await cerrar();

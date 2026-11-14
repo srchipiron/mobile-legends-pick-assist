@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "check": "node scripts/comprobar/css.mjs && node scripts/comprobar/version.mjs",
     "test": "npm run check && npm run lint && node --test --test-concurrency=4 --test-reporter=spec \"pruebas/{motor,app,comun,scripts}/**/*.test.mjs\"",
-    "test:ui": "node pruebas/correr.mjs --e2e",
+    "test:ui": "node pruebas/interfaz/dist-al-dia.mjs && node --test --test-concurrency=3 --test-reporter=spec \"pruebas/interfaz/*.e2e.mjs\"",
     "test:sql": "node pruebas/sql/esquema.sql.mjs",
     "diagnostico": "node scripts/diagnostico.mjs"
   },

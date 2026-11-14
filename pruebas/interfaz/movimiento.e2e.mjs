@@ -5,10 +5,14 @@
  * draft. Todo se apaga con «reducir movimiento» (la vibración, con su
  * interruptor), y nada de esto mueve lo que se toca a contrarreloj.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 
 const DRAFT = { enemies: ['Layla', 'Fanny', 'Tigreal'], allies: ['Chou'], bans: [], enemyRoam: null, fase: 'picks' };
 const almacen = { 'roam-picker:linea': 'roam', 'roam-picker:draft': DRAFT };
@@ -45,7 +49,7 @@ const arrastrar = async (pagina, x, y0, y1, pasos) => {
   await pagina.waitForTimeout(450);
 };
 
-await prueba('la hoja entra con un muelle y se cierra arrastrando el asa hacia abajo, no desde la rejilla', async () => {
+test('la hoja entra con un muelle y se cierra arrastrando el asa hacia abajo, no desde la rejilla', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen, antes: espiar });
   await abrirSelector(pagina);
   const entradas = await pagina.evaluate(() => window.__entradas);
@@ -70,7 +74,7 @@ await prueba('la hoja entra con un muelle y se cierra arrastrando el asa hacia a
   await contexto.close();
 });
 
-await prueba('las tarjetas que cambian de puesto se deslizan; las demás no se mueven', async () => {
+test('las tarjetas que cambian de puesto se deslizan; las demás no se mueven', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen, antes: espiar });
   eq(await pagina.evaluate(() => window.__animadas.length), 0, 'las tarjetas se animan al cargar');
   const antes = await orden(pagina);
@@ -92,7 +96,7 @@ await prueba('las tarjetas que cambian de puesto se deslizan; las demás no se m
   await contexto.close();
 });
 
-await prueba('con «reducir movimiento» nada se anima', async () => {
+test('con «reducir movimiento» nada se anima', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen, antes: (p) => espiar(p, { quieto: true }) });
   const antes = await orden(pagina);
   await pagina.getByRole('button', { name: 'Quitar Fanny' }).click();
@@ -105,7 +109,7 @@ await prueba('con «reducir movimiento» nada se anima', async () => {
   await contexto.close();
 });
 
-await prueba('vibra al tocar el draft (no al cargarlo) y el interruptor lo apaga y se recuerda', async () => {
+test('vibra al tocar el draft (no al cargarlo) y el interruptor lo apaga y se recuerda', async () => {
   // Un nombre que ya no existe: la limpieza al cargar cambia el draft sin toque.
   const { contexto, pagina, errores } = await paginaCon(navegador, url, {
     almacen: { ...almacen, 'roam-picker:draft': { ...DRAFT, enemies: [...DRAFT.enemies, 'Nadie Nunca'] } },
@@ -131,7 +135,3 @@ await prueba('vibra al tocar el draft (no al cargarlo) y el interruptor lo apaga
   eq(errores.join(' | '), '', 'errores en la página');
   await contexto.close();
 });
-
-await navegador.close();
-await cerrar();
-terminar('interfaz/movimiento');

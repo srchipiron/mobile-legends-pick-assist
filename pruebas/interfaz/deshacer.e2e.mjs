@@ -5,10 +5,14 @@
  * devuelve el draft TAL CUAL (orden, rival marcado, pick fijado, fase), que
  * caduca solo y que se anula en cuanto cambias otra cosa.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 
 const DRAFT = {
   enemies: ['Layla', 'Fanny', 'Tigreal'], allies: ['Chou'], bans: ['Hirara'],
@@ -19,7 +23,7 @@ const leer = (pagina) => pagina.evaluate(() => JSON.parse(localStorage.getItem('
 const aviso = (pagina) => pagina.locator('.aviso-deshacer');
 const clave = (d) => JSON.stringify([d.enemies, d.allies, d.bans, d.enemyRoam, d.fase, d.miPick]);
 
-await prueba('«Nuevo draft» deja un «Deshacer» que devuelve el draft entero', async () => {
+test('«Nuevo draft» deja un «Deshacer» que devuelve el draft entero', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen });
   const antes = await leer(pagina);
   eq(clave(antes), clave(DRAFT), 'el draft sembrado no es el que se lee');
@@ -35,7 +39,7 @@ await prueba('«Nuevo draft» deja un «Deshacer» que devuelve el draft entero'
   await contexto.close();
 });
 
-await prueba('la × deja un «Deshacer» que devuelve al héroe a su sitio y el rival marcado; el segundo quitado manda', async () => {
+test('la × deja un «Deshacer» que devuelve al héroe a su sitio y el rival marcado; el segundo quitado manda', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen });
   await pagina.getByRole('button', { name: 'Quitar Fanny' }).click(); await pagina.waitForTimeout(250);
   let d = await leer(pagina);
@@ -56,7 +60,7 @@ await prueba('la × deja un «Deshacer» que devuelve al héroe a su sitio y el 
   await contexto.close();
 });
 
-await prueba('el «Deshacer» se anula al cambiar otra cosa y caduca solo', async () => {
+test('el «Deshacer» se anula al cambiar otra cosa y caduca solo', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen });
   await pagina.getByRole('button', { name: 'Nuevo draft' }).click(); await pagina.waitForTimeout(300);
   eq(await aviso(pagina).count(), 1, 'no sale el aviso');
@@ -74,7 +78,7 @@ await prueba('el «Deshacer» se anula al cambiar otra cosa y caduca solo', asyn
   await contexto.close();
 });
 
-await prueba('vaciar un draft que ya está vacío no ofrece deshacer (no hay nada que devolver)', async () => {
+test('vaciar un draft que ya está vacío no ofrece deshacer (no hay nada que devolver)', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, {
     almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: [], allies: [], bans: [], fase: 'picks' } },
   });
@@ -90,7 +94,7 @@ const partidas = (pagina) => pagina.evaluate(() => JSON.parse(localStorage.getIt
 // 3.60.7: Gané/Perdí a mano también tiene «Deshacer», que desapunta la
 // partida y devuelve el draft. Antes un toque equivocado solo se arreglaba
 // buscando la partida en Ajustes, que en baneos (adonde vuelve) ni sale.
-await prueba('apuntar la partida a mano vacía el draft y deja un «Deshacer» que la desapunta', async () => {
+test('apuntar la partida a mano vacía el draft y deja un «Deshacer» que la desapunta', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, {
     almacen: { ...almacen, 'roam-picker:draft': { ...DRAFT, miPickDesde: Date.now() - 11 * 60 * 1000 } },
   });
@@ -108,7 +112,7 @@ await prueba('apuntar la partida a mano vacía el draft y deja un «Deshacer» q
 // 3.60.7: el draft vacío era un objeto compartido, así que apuntar una
 // partida dentro de los segundos de «Nuevo draft» devolvía el draft justo a
 // ese objeto y resucitaba el «Deshacer» del vaciado (con el draft viejo).
-await prueba('apuntar una partida tras «Nuevo draft» no resucita el «Deshacer» del vaciado', async () => {
+test('apuntar una partida tras «Nuevo draft» no resucita el «Deshacer» del vaciado', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen });
   await pagina.getByRole('button', { name: 'Nuevo draft' }).click(); await pagina.waitForTimeout(200);
   await pagina.evaluate(() => {
@@ -123,7 +127,3 @@ await prueba('apuntar una partida tras «Nuevo draft» no resucita el «Deshacer
   ok(!errores.length, `errores de página: ${errores}`);
   await contexto.close();
 });
-
-await navegador.close();
-await cerrar();
-terminar('interfaz/deshacer');

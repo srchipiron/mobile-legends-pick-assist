@@ -4,10 +4,14 @@
  * 3.98.0 es solo de administración: nada va a incidencias, y el token no
  * aparece ni en el código de perfil ni en el diagnóstico.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq, abrirAjustes } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 const TOKEN = 'github_pat_PRUEBA_0123456789abcdefghij';
 // La fila de herramientas (.more) solo está en la fase de picks: se siembra un draft con un enemigo.
 const LINEA = { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: ['Layla'], allies: [], bans: [], enemyRoam: null, fase: 'picks' } };
@@ -33,7 +37,7 @@ const abrirPartidas = async (pagina) => {
   await pagina.getByRole('button', { name: 'Partidas', exact: true }).click(); await pagina.waitForTimeout(400);
 };
 
-await prueba('con token y partidas, nada va a una incidencia (3.98.0); el token se presenta como de administración y quitarlo lo borra del almacén', async () => {
+test('con token y partidas, nada va a una incidencia (3.98.0); el token se presenta como de administración y quitarlo lo borra del almacén', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:partidas': PARTIDAS, 'roam-picker:envio': { token: TOKEN, incidencia: 7, huella: 'x' } } });
   const peticiones = await simularApi(contexto);
   await abrirPartidas(pagina);
@@ -47,7 +51,7 @@ await prueba('con token y partidas, nada va a una incidencia (3.98.0); el token 
   await contexto.close();
 });
 
-await prueba('el token no sale ni en el código de perfil ni en el diagnóstico', async () => {
+test('el token no sale ni en el código de perfil ni en el diagnóstico', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, {
     almacen: { ...LINEA, 'roam-picker:partidas': PARTIDAS, 'roam-picker:envio': { token: TOKEN, incidencia: 7, huella: 'x' } },
   });
@@ -71,7 +75,3 @@ await prueba('el token no sale ni en el código de perfil ni en el diagnóstico'
   ok(!errores.length, `errores de página: ${errores}`);
   await contexto.close();
 });
-
-await terminar('interfaz/envio');
-await navegador.close();
-await cerrar();

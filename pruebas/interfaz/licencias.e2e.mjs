@@ -6,11 +6,15 @@
  * token) crea la clave de administrador, publica solo la parte pública y da
  * claves que la app acepta.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq, abrirAjustes } from './navegador.mjs';
 import { crearClaveDeAdministrador, firmarClave, comprobarClave, sanearLicencias } from '../../src/app/licencia.js';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 const TOKEN = 'github_pat_PRUEBA_0123456789abcdefghij';
 const LINEA = { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: ['Layla'], allies: [], bans: [], enemyRoam: null, fase: 'picks' } };
 const admin = await crearClaveDeAdministrador();
@@ -25,7 +29,7 @@ const EXIGIDA = sanearLicencias({ publica: admin.publica, exigir: true });
 const enLaPuerta = (pagina) => pagina.locator('main.puerta').count().then((n) => n === 1);
 const enLaApp = (pagina) => pagina.locator('.app').count().then((n) => n > 0);
 
-await prueba('con clave exigida y sin clave, se ve la puerta y no la app; una clave mala se dice y una buena deja entrar', async () => {
+test('con clave exigida y sin clave, se ve la puerta y no la app; una clave mala se dice y una buena deja entrar', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: LINEA, sinServiceWorker: true, antes: conLicencias(EXIGIDA) });
   ok(await esperar(() => enLaPuerta(pagina)), 'sin clave no sale la puerta');
   ok(!(await enLaApp(pagina)), 'sin clave se ve la app');
@@ -41,7 +45,7 @@ await prueba('con clave exigida y sin clave, se ve la puerta y no la app; una cl
   await contexto.close();
 });
 
-await prueba('el enlace con la clave deja entrar, la guarda y se va de la barra de direcciones; una revocada no vale', async () => {
+test('el enlace con la clave deja entrar, la guarda y se va de la barra de direcciones; una revocada no vale', async () => {
   const { contexto, pagina } = await paginaCon(navegador, `${url}#clave=${buena}`, { almacen: LINEA, sinServiceWorker: true, antes: conLicencias(EXIGIDA) });
   ok(await esperar(() => enLaApp(pagina)), 'con el enlace no se entra');
   ok(!(await pagina.evaluate(() => location.hash)).includes('clave'), 'la clave se queda en la barra (y en el historial)');
@@ -53,7 +57,7 @@ await prueba('el enlace con la clave deja entrar, la guarda y se va de la barra 
   await otra.contexto.close();
 });
 
-await prueba('sin clave exigida la app está abierta, y la Administración solo sale con el token', async () => {
+test('sin clave exigida la app está abierta, y la Administración solo sale con el token', async () => {
   const abierta = sanearLicencias({ publica: admin.publica });
   const { contexto, pagina } = await paginaCon(navegador, url, { almacen: LINEA, sinServiceWorker: true, antes: conLicencias(abierta) });
   ok(await enLaApp(pagina), 'sin exigir, la app no se ve');
@@ -85,7 +89,7 @@ const abrirAdministracion = async (pagina) => {
   await pagina.waitForTimeout(300);
 };
 
-await prueba('con el token: crear la clave de administrador publica SOLO la pública, y las claves que da la app las acepta', async () => {
+test('con el token: crear la clave de administrador publica SOLO la pública, y las claves que da la app las acepta', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: CON_TOKEN, sinServiceWorker: true, antes: conLicencias(sanearLicencias({})) });
   const repo = await simularRepositorio(contexto, sanearLicencias({}));
   const puestas = repo.puestas;
@@ -114,7 +118,7 @@ await prueba('con el token: crear la clave de administrador publica SOLO la púb
   await contexto.close();
 });
 
-await prueba('el administrador ve lo que hay en el REPOSITORIO aunque Pages siga con lo de antes, y cada cambio parte de ahí', async () => {
+test('el administrador ve lo que hay en el REPOSITORIO aunque Pages siga con lo de antes, y cada cambio parte de ahí', async () => {
   // Pages, viejo: abierta. El repositorio: ya exige y tiene una revocada.
   const enRepo = sanearLicencias({ publica: admin.publica, exigir: true, revocadas: ['viejaaa1'] });
   const { contexto, pagina, errores } = await paginaCon(navegador, url, {
@@ -133,7 +137,7 @@ await prueba('el administrador ve lo que hay en el REPOSITORIO aunque Pages siga
   await contexto.close();
 });
 
-await prueba('crear otra clave de administrador cuando ya hay una publicada pide confirmación y, sin ella, no pisa nada', async () => {
+test('crear otra clave de administrador cuando ya hay una publicada pide confirmación y, sin ella, no pisa nada', async () => {
   const enRepo = sanearLicencias({ publica: otro.publica });
   const { contexto, pagina } = await paginaCon(navegador, url, { almacen: CON_TOKEN, sinServiceWorker: true, antes: conLicencias(enRepo) });
   const repo = await simularRepositorio(contexto, enRepo);
@@ -147,7 +151,7 @@ await prueba('crear otra clave de administrador cuando ya hay una publicada pide
   await contexto.close();
 });
 
-await prueba('si una copia vieja dejó el repositorio sin pública, el administrador la vuelve a poner (lo que pasó en 3.65.0)', async () => {
+test('si una copia vieja dejó el repositorio sin pública, el administrador la vuelve a poner (lo que pasó en 3.65.0)', async () => {
   const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { ...CON_TOKEN, 'roam-picker:admin': admin }, sinServiceWorker: true, antes: conLicencias(sanearLicencias({})) });
   const repo = await simularRepositorio(contexto, sanearLicencias({}));
   await pagina.reload({ waitUntil: 'networkidle' });
@@ -159,7 +163,3 @@ await prueba('si una copia vieja dejó el repositorio sin pública, el administr
   eq(repo.puestas[0].json.exigir, true, 'sin pública, «pedir clave» no se queda');
   await contexto.close();
 });
-
-await navegador.close();
-await cerrar();
-await terminar('interfaz/licencias');

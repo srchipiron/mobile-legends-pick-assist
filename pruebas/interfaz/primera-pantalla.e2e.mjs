@@ -7,10 +7,14 @@
  * «✓», «Leer solo» en la fila de botones y la nota de la estimación en dos
  * líneas) y bajó a 555–590.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 const FASES = [
   { e: ['Layla'], a: [] },
   { e: ['Layla', 'Fanny', 'Pharsa'], a: ['Chou'] },
@@ -18,7 +22,7 @@ const FASES = [
 ];
 
 for (const [ancho, alto] of [[360, 640], [390, 844], [430, 932]]) {
-  await prueba(`la tarjeta nº1 en ${ancho}×${alto}`, async () => {
+  test(`la tarjeta nº1 en ${ancho}×${alto}`, async () => {
     const salida = [];
     for (const f of FASES) {
       const { contexto, pagina } = await paginaCon(navegador, url, {
@@ -41,7 +45,7 @@ for (const [ancho, alto] of [[360, 640], [390, 844], [430, 932]]) {
 
 // «Para ti» (3.68.0) era el número ajustado con tus victorias y derrotas: desde
 // 3.95.0 no sale, aunque haya historial (Javi: que tus resultados no afecten en nada).
-await prueba('con tu historial NO sale «Para ti» (3.95.0): tus resultados no cambian ningún número', async () => {
+test('con tu historial NO sale «Para ti» (3.95.0): tus resultados no cambian ningún número', async () => {
   const partidas = Array.from({ length: 40 }, (_, i) => ({ t: 1_700_000_000_000 + i * 3_600_000, pick: 'Tigreal', gane: i % 3 !== 0, estimacion: 0.5 + (i % 5) * 0.02, rango: 'glory' }));
   const { contexto, pagina } = await paginaCon(navegador, url, {
     viewport: { width: 360, height: 640 },
@@ -51,7 +55,3 @@ await prueba('con tu historial NO sale «Para ti» (3.95.0): tus resultados no c
   eq(await pagina.locator('.estimacion-tuya').count(), 0, 'sale «Para ti», ajustado con tus resultados');
   await contexto.close();
 });
-
-await terminar('interfaz/primera-pantalla');
-await navegador.close();
-await cerrar();

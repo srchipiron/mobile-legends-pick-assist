@@ -6,13 +6,17 @@
  * línea, y nada se sale de la pantalla a 320 px. No exige frases concretas
  * más allá del focus: el resto depende del dato del día.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, anchoDePagina } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq, anchoDePagina } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 
 for (const ancho of [390, 320]) {
-  await prueba(`el plan de partida a ${ancho}px`, async () => {
+  test(`el plan de partida a ${ancho}px`, async () => {
     const { contexto, pagina, errores } = await paginaCon(navegador, url, {
       viewport: { width: ancho, height: 760 },
       almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: ['Layla', 'Fanny', 'Tigreal'], allies: ['Miya'], bans: [], enemyRoam: null, fase: 'picks' } },
@@ -63,7 +67,3 @@ for (const ancho of [390, 320]) {
     await contexto.close();
   });
 }
-
-await terminar('interfaz/plan');
-await navegador.close();
-await cerrar();

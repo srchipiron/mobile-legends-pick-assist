@@ -3,12 +3,16 @@
  * entrada es la versión que se publica, resumida, y «ver todo» la despliega.
  * Tocar la versión NO abre el detalle del pie.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, leerJson } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq, leerJson } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 
-await prueba('la versión del pie abre las novedades y la primera es la que se publica', async () => {
+test('la versión del pie abre las novedades y la primera es la que se publica', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { 'roam-picker:linea': 'roam' } });
   await pagina.locator('.pie-version').click(); await pagina.waitForTimeout(300);
   eq(await pagina.locator('.sheet .changelog').count(), 1, 'no se abre la hoja de novedades');
@@ -27,7 +31,7 @@ await prueba('la versión del pie abre las novedades y la primera es la que se p
   await contexto.close();
 });
 
-await prueba('tras actualizarse, la versión del pie lleva «nuevo» hasta abrir las novedades; abiertas, no vuelve (3.65.5)', async () => {
+test('tras actualizarse, la versión del pie lleva «nuevo» hasta abrir las novedades; abiertas, no vuelve (3.65.5)', async () => {
   const { version } = leerJson('package.json');
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { 'roam-picker:linea': 'roam', 'roam-picker:version-vista': '3.0.0' } });
   eq(await pagina.locator('.pie-nuevo').count(), 1, 'con una versión vista anterior no sale «nuevo»');
@@ -41,7 +45,3 @@ await prueba('tras actualizarse, la versión del pie lleva «nuevo» hasta abrir
   ok(!errores.length, `errores: ${errores}`);
   await contexto.close();
 });
-
-await terminar('interfaz/novedades');
-await navegador.close();
-await cerrar();

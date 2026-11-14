@@ -7,10 +7,14 @@
  * no cambian el nº1 en ninguno).
  */
 import { readFile } from 'node:fs/promises';
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 const leerJson = async (f) => JSON.parse(await readFile(new URL(`../../dist/data/${f}`, import.meta.url), 'utf8'));
 const motor = await import('../../src/motor/draft.js');
 const datos = motor.prepararDatos({ catalogo: await leerJson('heroes.json'), meta: await leerJson('roam-meta.json'), rango: 'glory' });
@@ -21,7 +25,7 @@ const buscarYTocar = async (pagina, nombre) => {
   await cara(pagina, nombre).click(); await pagina.waitForTimeout(150);
 };
 
-await prueba('los picks de los dos equipos se meten en UNA hoja que no se cierra, con pestañas y quitando con otro toque', async () => {
+test('los picks de los dos equipos se meten en UNA hoja que no se cierra, con pestañas y quitando con otro toque', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, {
     viewport: { width: 360, height: 740 },
     almacen: { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: [], allies: [], bans: ['Hirara'], enemyRoam: null, fase: 'picks' } },
@@ -62,7 +66,7 @@ await prueba('los picks de los dos equipos se meten en UNA hoja que no se cierra
   await contexto.close();
 });
 
-await prueba('el selector de baneos enseña tu línea primero, «Todos» los enseña todos y buscando sale cualquiera', async () => {
+test('el selector de baneos enseña tu línea primero, «Todos» los enseña todos y buscando sale cualquiera', async () => {
   const pool = motor.poolDe(datos, 'roam').map((h) => h.name);
   const { contexto, pagina } = await paginaCon(navegador, url, {
     viewport: { width: 360, height: 740 },
@@ -82,7 +86,7 @@ await prueba('el selector de baneos enseña tu línea primero, «Todos» los ens
   await contexto.close();
 });
 
-await prueba('las caras del selector de picks van en el orden del motor y NO se mueven al tocar', async () => {
+test('las caras del selector de picks van en el orden del motor y NO se mueven al tocar', async () => {
   // El orden (3.17.0) sale de probablesDelBando al abrir la hoja o cambiar
   // de pestaña; mientras se toca se queda quieto (lo que se toca a
   // contrarreloj no cambia de sitio).
@@ -110,7 +114,7 @@ await prueba('las caras del selector de picks van en el orden del motor y NO se 
   await contexto.close();
 });
 
-await prueba('las caras que no se pueden tocar (del otro equipo, baneadas) van al final de la rejilla', async () => {
+test('las caras que no se pueden tocar (del otro equipo, baneadas) van al final de la rejilla', async () => {
   // 3.38.0: ocupaban sitio entre las doce primeras, que es lo que se ve sin bajar.
   const { contexto, pagina } = await paginaCon(navegador, url, {
     viewport: { width: 360, height: 740 },
@@ -126,7 +130,7 @@ await prueba('las caras que no se pueden tocar (del otro equipo, baneadas) van a
   await contexto.close();
 });
 
-await prueba('Intro no quita a quien ya está marcado, y tu pick fijado ni se mete de compañero ni se queda si lo baneas', async () => {
+test('Intro no quita a quien ya está marcado, y tu pick fijado ni se mete de compañero ni se queda si lo baneas', async () => {
   // Cazado en la revisión de 3.21.0: con Alice metida, «al» + Intro buscando a
   // Alucard la QUITABA (tocar a un marcado lo quita), sin avisar.
   const { contexto, pagina } = await paginaCon(navegador, url, {
@@ -158,7 +162,7 @@ await prueba('Intro no quita a quien ya está marcado, y tu pick fijado ni se me
   await otra.contexto.close();
 });
 
-await prueba('si el meta llega con la hoja de picks abierta, la rejilla se ordena al llegar', async () => {
+test('si el meta llega con la hoja de picks abierta, la rejilla se ordena al llegar', async () => {
   // Cazado en la revisión de 3.21.0: tocar un hueco al arrancar dejaba la
   // rejilla alfabética (todos con nota 0) hasta cerrar y reabrir la hoja.
   let soltar;
@@ -179,7 +183,7 @@ await prueba('si el meta llega con la hoja de picks abierta, la rejilla se orden
   await contexto.close();
 });
 
-await prueba('en un móvil táctil el selector NO saca el teclado (tapaba media rejilla); con ratón, el buscador sí coge el foco', async () => {
+test('en un móvil táctil el selector NO saca el teclado (tapaba media rejilla); con ratón, el buscador sí coge el foco', async () => {
   const almacen = { 'roam-picker:linea': 'roam', 'roam-picker:draft': { enemies: [], allies: [], bans: [], enemyRoam: null, fase: 'picks' } };
   const enfocado = (pagina) => pagina.evaluate(() => ({ input: document.activeElement?.tagName === 'INPUT', enHoja: !!document.activeElement?.closest('.sheet') }));
   for (const tactil of [true, false]) {
@@ -196,7 +200,3 @@ await prueba('en un móvil táctil el selector NO saca el teclado (tapaba media 
     await contexto.close();
   }
 });
-
-await terminar('interfaz/rapido');
-await navegador.close();
-await cerrar();

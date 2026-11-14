@@ -4,14 +4,18 @@
  * draft que sobrevive a una recarga con su fase, y un draft guardado antes
  * de que existiera la fase.
  */
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, anchoDePagina, elegirEnSelector } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq, anchoDePagina, elegirEnSelector } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 const LINEA = { 'roam-picker:linea': 'roam' };
 
 for (const ancho of [390, 360]) {
-  await prueba(`fase de baneos y fase de picks a ${ancho}px`, async () => {
+  test(`fase de baneos y fase de picks a ${ancho}px`, async () => {
     const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: ancho, height: 844 } });
     await pagina.locator('.linea').first().click(); await pagina.waitForTimeout(400);
     eq(await pagina.locator('h1').textContent(), 'Fase de baneos', 'no arranca en la fase de baneos');
@@ -54,13 +58,13 @@ for (const ancho of [390, 360]) {
   });
 }
 
-await prueba('un draft guardado antes de que existiera la fase, con picks, arranca en picks', async () => {
+test('un draft guardado antes de que existiera la fase, con picks, arranca en picks', async () => {
   const { contexto, pagina } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': { enemies: ['Layla'], allies: [], bans: ['Fanny'], enemyRoam: null } } });
   ok(await pagina.locator('.side.enemy .slot:not(.empty)').count() === 1 && /1\/10/.test(await pagina.locator('.bans-resumen').textContent()), 'un draft viejo con picks no arranca en picks con su baneo');
   await contexto.close();
 });
 
-await prueba('apuntar una partida guarda los baneos y vuelve a la fase de baneos; el diagnóstico los cuenta', async () => {
+test('apuntar una partida guarda los baneos y vuelve a la fase de baneos; el diagnóstico los cuenta', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': { enemies: ['Layla'], allies: [], bans: ['Fanny', 'Ling'], enemyRoam: null, fase: 'picks' } } });
   await pagina.getByRole('button', { name: 'Apuntar partida' }).click(); await pagina.waitForTimeout(300);
   await pagina.locator('.sheet .hero-grid button').first().click(); await pagina.waitForTimeout(150);
@@ -78,7 +82,7 @@ await prueba('apuntar una partida guarda los baneos y vuelve a la fase de baneos
   await contexto.close();
 });
 
-await prueba('los diez baneos van cinco y cinco a cualquier ancho, y la × del baneado no sale tachada (3.59.2)', async () => {
+test('los diez baneos van cinco y cinco a cualquier ancho, y la × del baneado no sale tachada (3.59.2)', async () => {
   const B = ['Hirara', 'Belerick', 'Eudora', 'Ling', 'Fanny', 'Saber'];
   for (const ancho of [320, 390, 430]) {
     const { contexto, pagina } = await paginaCon(navegador, url, { viewport: { width: ancho, height: 844 }, almacen: { ...LINEA, 'roam-picker:draft': { enemies: [], allies: [], bans: B, enemyRoam: null, fase: 'baneos' } } });
@@ -90,7 +94,3 @@ await prueba('los diez baneos van cinco y cinco a cualquier ancho, y la × del b
     await contexto.close();
   }
 });
-
-await terminar('interfaz/fases');
-await navegador.close();
-await cerrar();

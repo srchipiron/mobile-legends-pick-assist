@@ -8,10 +8,14 @@
  * (teléfono estrecho, teléfono normal, tableta, apaisado), en las dos
  * fases del draft y con las hojas que más cosas meten en fila.
  */
-import { servirDist, abrirNavegador, paginaCon, abrirAjustes, prueba, ok, terminar } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, abrirAjustes, test, after, ok } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 
 const DRAFT = {
   enemies: ['Layla', 'Fanny', 'Pharsa', 'Tigreal', 'Ling'],
@@ -56,7 +60,7 @@ const cerrarHoja = async (pagina) => {
 };
 
 for (const [ancho, alto] of [[320, 568], [360, 640], [768, 1024], [640, 360]]) {
-  await prueba(`nada se sale ni queda pequeño en ${ancho}×${alto}`, async () => {
+  test(`nada se sale ni queda pequeño en ${ancho}×${alto}`, async () => {
     const almacen = { 'roam-picker:linea': 'roam', 'roam-picker:mastery': MASTERY, 'roam-picker:draft': DRAFT };
     const { contexto, pagina } = await paginaCon(navegador, url, { viewport: { width: ancho, height: alto }, almacen });
     await pagina.waitForTimeout(300);
@@ -95,7 +99,3 @@ for (const [ancho, alto] of [[320, 568], [360, 640], [768, 1024], [640, 360]]) {
     await contexto.close();
   });
 }
-
-await terminar('interfaz/responsive');
-await navegador.close();
-await cerrar();

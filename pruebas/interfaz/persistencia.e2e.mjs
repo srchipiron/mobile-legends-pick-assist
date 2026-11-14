@@ -10,10 +10,14 @@
  */
 import { VERSION_MODELO } from '../../src/motor/modelo.js';
 import { DUDOSAS_DESDE, DUDOSAS_HASTA } from '../../src/motor/registro.js';
-import { servirDist, abrirNavegador, paginaCon, prueba, ok, eq, terminar, abrirAjustes, anchoDePagina } from './navegador.mjs';
+import { servirDist, abrirNavegador, paginaCon, test, after, ok, eq, abrirAjustes, anchoDePagina } from './navegador.mjs';
 
 const { url, cerrar } = await servirDist();
 const navegador = await abrirNavegador();
+after(async () => {
+  await navegador.close();
+  await cerrar();
+});
 const LINEA = { 'roam-picker:linea': 'roam' };
 const PICKS = { enemies: ['Layla'], allies: [], bans: [], enemyRoam: null, fase: 'picks' };
 const leer = (pagina, clave) => pagina.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), clave);
@@ -22,7 +26,7 @@ const abrirHoja = async (pagina, i) => {
   await pagina.locator('.more .tools .reset').nth(i).click(); await pagina.waitForTimeout(400);
 };
 
-await prueba('el editor de maestría escribe roam-picker:mastery y el motor la usa', async () => {
+test('el editor de maestría escribe roam-picker:mastery y el motor la usa', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS } });
   eq(await leer(pagina, 'roam-picker:mastery'), null, 'ya había maestría guardada');
   await abrirHoja(pagina, 0);
@@ -51,7 +55,7 @@ await prueba('el editor de maestría escribe roam-picker:mastery y el motor la u
   await contexto.close();
 });
 
-await prueba('el perfil viaja a otro dispositivo y se funde sin borrar nada', async () => {
+test('el perfil viaja a otro dispositivo y se funde sin borrar nada', async () => {
   // Dispositivo A: maestría y una partida apuntada.
   const a = await paginaCon(navegador, url, {
     almacen: {
@@ -89,7 +93,7 @@ await prueba('el perfil viaja a otro dispositivo y se funde sin borrar nada', as
   await b.contexto.close();
 });
 
-await prueba('el rango y el idioma se recuerdan', async () => {
+test('el rango y el idioma se recuerdan', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS } });
   await abrirAjustes(pagina);
   const rangos = pagina.locator('.rank-picker button');
@@ -105,7 +109,7 @@ await prueba('el rango y el idioma se recuerdan', async () => {
   await contexto.close();
 });
 
-await prueba('la maestría guardada sin fecha se fecha sola al abrir la app, y la que tenía fecha la conserva', async () => {
+test('la maestría guardada sin fecha se fecha sola al abrir la app, y la que tenía fecha la conserva', async () => {
   const antes = Date.now();
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:mastery': { Rafaela: { games: 564, winRate: 0.53 }, Estes: { games: 694, winRate: 0.522, desde: 12345 } } } });
   const m = await leer(pagina, 'roam-picker:mastery');
@@ -116,7 +120,7 @@ await prueba('la maestría guardada sin fecha se fecha sola al abrir la app, y l
   await contexto.close();
 });
 
-await prueba('el héroe de una partida apuntada se cambia tocándolo, se guarda y pierde la estimación del otro héroe (3.47.0)', async () => {
+test('el héroe de una partida apuntada se cambia tocándolo, se guarda y pierde la estimación del otro héroe (3.47.0)', async () => {
   // Como la del 6 de octubre: el lector la apuntó con Hayabusa y se jugó con Diggie.
   const partida = { t: 3000, pick: 'Hayabusa', gane: false, origen: 'lector', recomendados: ['Diggie'], rango: 'glory', estimacion: 0.6, fases: [0.6, 0.6, 0.6, 0.6, 0.6, 0.6], draft: { linea: 'roam', enemigos: ['Layla'], aliados: [] } };
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:partidas': [partida] } });
@@ -134,7 +138,7 @@ await prueba('el héroe de una partida apuntada se cambia tocándolo, se guarda 
   } finally { await contexto.close(); }
 });
 
-await prueba('quién iba en cada equipo se arregla desde el historial del móvil: quitar, añadir, sin repetir, y con la hora del arreglo (3.78.0)', async () => {
+test('quién iba en cada equipo se arregla desde el historial del móvil: quitar, añadir, sin repetir, y con la hora del arreglo (3.78.0)', async () => {
   const partida = { t: 3000, pick: 'Diggie', gane: false, origen: 'lector', recomendados: ['Diggie'], rango: 'glory', draft: { linea: 'roam', enemigos: ['Layla', 'Clint'], aliados: ['Gord'] } };
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:partidas': [partida] } });
   try {
@@ -158,7 +162,7 @@ await prueba('quién iba en cada equipo se arregla desde el historial del móvil
   } finally { await contexto.close(); }
 });
 
-await prueba('la calibración dice aparte la del modelo de hoy, y el Diagnóstico también (3.60.3)', async () => {
+test('la calibración dice aparte la del modelo de hoy, y el Diagnóstico también (3.60.3)', async () => {
   // 20 del modelo de antes (sin `modelo`, de septiembre) y 6 del de hoy.
   const vieja = (i) => ({ t: Date.parse('2026-09-01T12:00:00Z') + i * 6e5, pick: 'Atlas', gane: i % 2 === 0, recomendados: ['Atlas'], rango: 'glory', estimacion: 0.6 });
   const nueva = (i) => ({ t: Date.now() - (i + 1) * 6e5, pick: 'Atlas', gane: i % 2 === 0, recomendados: ['Atlas'], rango: 'glory', estimacion: 0.55, modelo: VERSION_MODELO });
@@ -172,7 +176,7 @@ await prueba('la calibración dice aparte la del modelo de hoy, y el Diagnóstic
   } finally { await contexto.close(); }
 });
 
-await prueba('«Tus números» enseña la racha, la sesión y cada héroe con su margen, sin claves crudas ni desborde a 320 px (3.48.0)', async () => {
+test('«Tus números» enseña la racha, la sesión y cada héroe con su margen, sin claves crudas ni desborde a 320 px (3.48.0)', async () => {
   // 24 partidas seguidas (una sesión), la última hace media hora: 12 Rafaela
   // ganadas, 12 Diggie perdidas, la última de todas perdida.
   const ahora = Date.now();
@@ -200,7 +204,7 @@ await prueba('«Tus números» enseña la racha, la sesión y cada héroe con su
   } finally { await contexto.close(); }
 });
 
-await prueba('«Tu semana» dice los 7 días contra los anteriores, los héroes que funcionan y cuestan y el nº1, sin claves crudas ni desborde a 320 px (3.79.0)', async () => {
+test('«Tu semana» dice los 7 días contra los anteriores, los héroes que funcionan y cuestan y el nº1, sin claves crudas ni desborde a 320 px (3.79.0)', async () => {
   const ahora = Date.now(), h = 3600000;
   const v = (i, pick, gane, extra = {}) => ({ t: ahora - (i + 1) * h, pick, gane, recomendados: ['Rafaela', 'Diggie', 'Estes'], rango: 'glory', ...extra });
   const partidas = [
@@ -226,7 +230,7 @@ await prueba('«Tu semana» dice los 7 días contra los anteriores, los héroes 
   } finally { await contexto.close(); }
 });
 
-await prueba('la revisión del draft dice la última partida y, con el botón, todas, sin claves crudas ni desborde a 320 px (3.49.0)', async () => {
+test('la revisión del draft dice la última partida y, con el botón, todas, sin claves crudas ni desborde a 320 px (3.49.0)', async () => {
   const draft = { linea: 'roam', enemigos: ['Layla', 'Fanny', 'Chou', 'Kagura', 'Granger'], aliados: ['Lukas', 'Pharsa'] };
   const partidas = Array.from({ length: 3 }, (_, i) => ({ t: 1000 + i, pick: i === 2 ? 'Faramis' : 'Rafaela', gane: i !== 1, recomendados: [], rango: 'glory', draft }));
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { viewport: { width: 320, height: 640 }, almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:partidas': partidas } });
@@ -245,7 +249,7 @@ await prueba('la revisión del draft dice la última partida y, con el botón, t
   } finally { await contexto.close(); }
 });
 
-await prueba('las del resultado dudoso (3.100.0): se dicen, no cuentan, y ✓ las confirma tal cual', async () => {
+test('las del resultado dudoso (3.100.0): se dicen, no cuentan, y ✓ las confirma tal cual', async () => {
   const dudosa = { t: DUDOSAS_DESDE + 86400000, pick: 'Diggie', gane: true, origen: 'lector', recomendados: ['Diggie'], rango: 'glory', draft: { linea: 'roam', enemigos: ['Layla'], aliados: [] } };
   const buena = { ...dudosa, t: DUDOSAS_HASTA + 86400000, pick: 'Estes', gane: false };
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS, 'roam-picker:partidas': [buena, dudosa] } });
@@ -263,7 +267,3 @@ await prueba('las del resultado dudoso (3.100.0): se dicen, no cuentan, y ✓ la
     ok(!errores.length, `errores de página: ${errores}`);
   } finally { await contexto.close(); }
 });
-
-await terminar('interfaz/persistencia');
-await navegador.close();
-await cerrar();
