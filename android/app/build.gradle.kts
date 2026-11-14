@@ -5,9 +5,13 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-// La versión es la de la app (package.json): así se sabe qué lector lleva cada APK.
+// [C] La versión es la de la app (package.json): así se sabe qué lector lleva cada APK.
 val versionApp = (JsonSlurper().parse(rootProject.file("../package.json")) as Map<*, *>)["version"] as String
 val (mayor, menor, parche) = versionApp.split(".").map { it.toInt() }
+// [C] El versionCode solo puede crecer (Android no instala uno menor, y Nodo.kt re-copia el lector cuando
+// cambia): con mil por cifra un menor o un parche no se come a la de al lado. La última del esquema
+// viejo fue 40200 (3.102.0); 4.0.0 = 4.000.000.
+require(menor < 1000 && parche < 1000) { "versionCode: menor y parche tienen que ser menores que 1000" }
 
 android {
     namespace = "es.srchipiron.lector"
@@ -18,7 +22,7 @@ android {
         applicationId = "es.srchipiron.lector"
         minSdk = 26
         targetSdk = 35
-        versionCode = mayor * 10000 + menor * 100 + parche
+        versionCode = mayor * 1_000_000 + menor * 1_000 + parche
         versionName = versionApp
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
         // libnode.so (nodejs-mobile) pide libc++_shared.so: sin él la app se cerraba nada más abrirse (3.61.1).

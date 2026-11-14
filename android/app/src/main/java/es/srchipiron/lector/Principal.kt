@@ -582,19 +582,15 @@ class Principal : Activity() {
         startForegroundService(Intent(this, Lector::class.java).setAction(Lector.EMPEZAR)
             .putExtra(Lector.CODIGO_RESULTADO, resultado).putExtra(Lector.DATOS, datos))
         // Y al juego (3.70.0), si está instalado y no lo has quitado abajo.
-        if (getSharedPreferences("lector", MODE_PRIVATE).getBoolean("abrirJuego", true)) {
-            packageManager.getLaunchIntentForPackage(JUEGO)?.let { reloj.postDelayed({ startActivity(it) }, 800) }
-        }
+        if (getSharedPreferences("lector", MODE_PRIVATE).getBoolean("abrirJuego", true)) packageManager.getLaunchIntentForPackage(JUEGO)?.let { reloj.postDelayed({ startActivity(it) }, 800) }
     }
 
     private fun codigoNuevo() {
         Vinculo.nuevo(this)
         if (!Nodo.arrancado) { qrDe = null; refrescar(); return }
         startService(Intent(this, Lector::class.java).setAction(Lector.PARAR))
-        packageManager.getLaunchIntentForPackage(packageName)?.let {
-            startActivity(it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        }
-        Runtime.getRuntime().exit(0)
+        startActivity(Intent(this, Principal::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+        kotlin.system.exitProcess(0)
     }
 
     private fun ip(): String? {
