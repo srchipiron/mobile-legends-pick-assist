@@ -1,19 +1,11 @@
 #!/usr/bin/env node
 /**
- * ¿La corrida nueva es peor que la que ya está guardada?
- *
- * La ingesta se degrada EN SILENCIO y de forma legítima: si un endpoint falla,
- * conserva los datos anteriores y solo cambia `diagnostics`. Eso hace que una
- * corrida mala se parezca a una buena en el diff, y el bot de datos la
- * commitea igual. Ya pasó: el fichero guardado se quedó con 0 líneas, 0 roles
- * y counters de 34 héroes en vez de 133, y nada chilló.
- *
- * Este script compara las dos y sale con 1 si la nueva resuelve MENOS. Se usa
- * en `update-data.yml` antes del commit, y en el despliegue.
+ * ¿La corrida nueva resuelve MENOS que la guardada? La ingesta se degrada en
+ * silencio y por diseño (cada endpoint que falla conserva lo anterior), así
+ * que una corrida mala se parece a una buena en el diff [C]. Sale con 1 si la
+ * nueva es peor y con 2 si no puede leer una de las dos; sin guardada, acepta.
  *
  *   node scripts/comparar-ingesta.mjs <nueva.json> <guardada.json>
- *
- * Si no existe la guardada, la nueva pasa: no hay con qué comparar.
  */
 
 import { readFile } from 'node:fs/promises';
@@ -22,99 +14,63 @@ import { fileURLToPath } from 'node:url';
 import { RANGO_DE_RESPALDO } from '../src/motor/ventana.js';
 import { HISTORIA_DIAS } from '../src/motor/tendencia.js';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** ¿Se descargaron casi todas las filas de cruces y de parejas? Sin la marca (ficheros viejos), sí. */
+/** Un margen para el ruido normal de la API: un héroe sin cruces un día no es una regresión [D]. */
+export const MARGEN = 0.9;
+/**
+ * Recuentos de tamaño conocido: se comparan también con el MÁXIMO del
+ * historial de salud (contra la anterior era un trinquete hacia abajo). Objetos
+ * y builds no: varían por diseño [D].
+ */
+export const FIJAS = ['heroes', 'conLinea', 'conRol', 'conDano', 'conSpeciality', 'conHabilidades', 'cruces', 'sinergias', 'winrateLinea', 'curvaLinea'];
+
+const celdas = (m) => Object.values(m ?? {}).reduce((n, fila) => n + Object.keys(fila ?? {}).length, 0);
+const porLinea = (m, cuenta) => Object.values(m ?? {}).reduce((n, lineas) => n + Object.values(lineas ?? {}).reduce((k, l) => k + cuenta(l), 0), 0);
+const noVacia = (v) => Array.isArray(v) && v.length > 0;
+
+/** ¿Se descargaron casi todas las filas de cruces y de parejas? Un fichero sin la marca cuenta como fresco. */
 function matrizFresca(r) {
   if (!r) return 1;
   const casi = (n) => r.pedidas && n / r.pedidas >= 0.9;
   return casi(r.relaciones) && casi(r.parejas ?? r.relaciones) ? 1 : 0;
 }
 
-/** Lo que la app necesita, contado. Nada de porcentajes. */
+/** Lo que la app necesita, contado (pares y filas, no héroes con algo). */
 export function medir(datos) {
   const heroes = datos?.heroes ?? [];
+  const rango = datos?.rank;
+  const respaldo = RANGO_DE_RESPALDO[rango];
+  const frescos = datos?.diagnostics?.frescos;
+  const conRango = rango && datos?.statsByRank?.[rango] ? 1 : 0;
+  const equipo = Object.values(datos?.equipment ?? {});
   return {
     heroes: heroes.length,
-    conLinea: heroes.filter((h) => Array.isArray(h?.lanes) && h.lanes.length).length,
+    conLinea: heroes.filter((h) => noVacia(h?.lanes)).length,
     conRol: heroes.filter((h) => h?.role).length,
     conDano: heroes.filter((h) => h?.damage).length,
-    // La speciality de Moonton, desde 1.37.0 para los 133: sin contarla, una
-    // corrida con la ficha caída la perdía sin que el comparador lo viera.
-    conSpeciality: heroes.filter((h) => Array.isArray(h?.speciality) && h.speciality.length).length,
-    conHabilidades: heroes.filter((h) => Array.isArray(h?.habilidades) && h.habilidades.length).length,
+    conSpeciality: heroes.filter((h) => noVacia(h?.speciality)).length,
+    conHabilidades: heroes.filter((h) => noVacia(h?.habilidades)).length,
     stats: Object.keys(datos?.stats ?? {}).length,
-    // Los RANGOS resueltos, y si el pedido esta entre ellos: con el de glory
-    // caido, `stats` se rellenaba con epic bajo la etiqueta glory y este
-    // recuento seguia diciendo 133.
+    // Los RANGOS, y el pedido entre ellos: con el suyo caído se colaba otro bajo su etiqueta [C].
     rangos: Object.keys(datos?.statsByRank ?? {}).length,
-    rangoPedido: datos?.rank && datos?.statsByRank?.[datos.rank] ? 1 : 0,
-    // Y si el rango pedido se DESCARGO en esa corrida. Con la API caida la
-    // ingesta conserva todo lo anterior y sale identica a la guardada: no
-    // resuelve menos, pero tampoco trae nada, y commitearla solo cambiaria
-    // la fecha. Los ficheros de antes de esta medida no llevan `frescos`, y
-    // para ellos cuenta como fresco lo que tenga datos.
-    // Desde 3.43.1 también el de RESPALDO (Mítico para Gloria): es con el
-    // que la app compara y, tras un reinicio de temporada, con el que
-    // puntúa; conservado de hace días cambiaba la decisión sin dejar marca.
-    rangoFresco: datos?.diagnostics?.frescos
-      ? (datos.diagnostics.frescos.includes(datos.rank) && (!RANGO_DE_RESPALDO[datos.rank] || datos.diagnostics.frescos.includes(RANGO_DE_RESPALDO[datos.rank])) ? 1 : 0)
-      : (datos?.rank && datos?.statsByRank?.[datos.rank] ? 1 : 0),
-    // Y que la MATRIZ se haya descargado en esa corrida, no conservado: los
-    // ficheros de antes de esta marca cuentan como frescos. Cruces y, desde
-    // 3.43.1, parejas (los ficheros sin la cuenta de parejas, por los cruces).
+    rangoPedido: conRango,
+    // DESCARGADOS en esa corrida, el pedido y su respaldo; un fichero sin `frescos`, por lo que tenga [C].
+    rangoFresco: frescos ? (frescos.includes(rango) && (!respaldo || frescos.includes(respaldo)) ? 1 : 0) : conRango,
     relacionesFrescas: matrizFresca(datos?.diagnostics?.frescosRecursos),
     counters: Object.keys(datos?.counters ?? {}).length,
-    // Los PARES, no solo cuantos heroes tienen fila. Una corrida puede traer
-    // los 133 con fila y cinco cruces cada uno en vez de 132: son los mismos
-    // 133 en este recuento y una app mucho mas tonta.
-    cruces: Object.values(datos?.counters ?? {}).reduce((n, fila) => n + Object.keys(fila ?? {}).length, 0),
-    sinergias: Object.values(datos?.synergies ?? {}).reduce((n, fila) => n + Object.keys(fila ?? {}).length, 0),
-    objetos: Object.keys(datos?.equipment ?? {}).length,
-    // Lo que se lee de los objetos, no solo cuántos hay (3.40.0): con la ruta
-    // /expanded caída la corta trae los 184 sin `equiptips`, el recuento de
-    // objetos no se movía y la corrida se llevaba la defensa y los efectos
-    // de todos (los avisos de build dejaban de salir sin decir nada).
-    objetosConDefensa: Object.values(datos?.equipment ?? {}).filter((o) => o?.magica || o?.fisica).length,
-    objetosConEfecto: Object.values(datos?.equipment ?? {}).filter((o) => Array.isArray(o?.efectos) && o.efectos.length).length,
-    // Las BUILDS, no los heroes con builds: un heroe con una build en vez de
-    // tres pasa igual en el recuento de heroes y la app tiene menos que
-    // ensenar. Mismo fallo que ya costo la matriz de counters.
-    builds: Object.values(datos?.builds ?? {})
-      .reduce((n, porLinea) => n + Object.values(porLinea ?? {}).reduce((m, l) => m + (l?.length ?? 0), 0), 0),
-    // Los talentos del emblema (3.57.0): cuántos tienen nombre y cuántas
-    // builds traen los suyos. Una corrida con la ruta de emblemas caída los
-    // conserva; una con las builds sin `new_rune_skill` se ve aquí.
+    cruces: celdas(datos?.counters),
+    sinergias: celdas(datos?.synergies),
+    objetos: equipo.length,
+    objetosConDefensa: equipo.filter((o) => o?.magica || o?.fisica).length,
+    objetosConEfecto: equipo.filter((o) => noVacia(o?.efectos)).length,
+    builds: porLinea(datos?.builds, (l) => l?.length ?? 0),
     talentos: Object.keys(datos?.talentos ?? {}).length,
-    buildsConTalentos: Object.values(datos?.builds ?? {})
-      .reduce((n, porLinea) => n + Object.values(porLinea ?? {}).reduce((m, l) => m + (Array.isArray(l) ? l.filter((b) => b?.talentos?.length).length : 0), 0), 0),
-    // El winrate por linea (3.12.0): los PARES heroe-linea, no los heroes.
-    winrateLinea: Object.values(datos?.winrateLinea ?? {}).reduce((n, porLinea) => n + Object.keys(porLinea ?? {}).length, 0),
-    // La curva por duración (3.43.0): los pares héroe-línea con curva. Es lo
-    // que dice en qué fase es fuerte cada equipo en el plan de partida.
-    curvaLinea: Object.values(datos?.curvaLinea ?? {}).reduce((n, porLinea) => n + Object.keys(porLinea ?? {}).length, 0),
+    buildsConTalentos: porLinea(datos?.builds, (l) => (Array.isArray(l) ? l.filter((b) => b?.talentos?.length).length : 0)),
+    winrateLinea: celdas(datos?.winrateLinea),
+    curvaLinea: celdas(datos?.curvaLinea),
   };
 }
-
-/**
- * Un margen del 10% para el ruido normal de la API (un héroe que ese día no
- * devuelve counters no es una regresión). Por debajo de eso, sí lo es.
- */
-export const MARGEN = 0.9;
-
-/**
- * Recuentos con tamaño conocido (133 héroes, 133×132 cruces...). Para estos
- * la referencia no es solo la corrida guardada sino el MÁXIMO que se ha
- * visto en el historial de salud: comparar solo con la anterior aceptada era
- * un trinquete hacia abajo, diez corridas perdiendo un 9% cada una dejaban
- * los cruces en el 39% sin que saltara nada. Objetos y builds quedan fuera:
- * varían por diseño (Moonton retira objetos, las builds cambian con el meta).
- */
-// `winrateLinea` (pares héroe-línea) desde 3.14.0: sin él en la lista cada
-// corrida podía perder un 10% respecto a la anterior aceptada, sin fondo.
-// `curvaLinea` desde 3.43.0, por lo mismo; `conHabilidades` desde 3.43.1
-// (de ella sale el plan de partida, y la fila de salud no la llevaba).
-export const FIJAS = ['heroes', 'conLinea', 'conRol', 'conDano', 'conSpeciality', 'conHabilidades', 'cruces', 'sinergias', 'winrateLinea', 'curvaLinea'];
 
 /** Días de la historia guardada que deberían seguir en la nueva (dentro de su ventana) y faltan. */
 export function diasPerdidos(nueva, guardada) {
@@ -126,58 +82,40 @@ export function diasPerdidos(nueva, guardada) {
   return fechas(guardada).filter((f) => !nuevas.has(f) && f >= limite);
 }
 
-/** Máximo de cada recuento fijo en las filas de historial/salud.jsonl (líneas rotas, fuera). */
+/** El máximo de cada recuento fijo en las filas de historial/salud.jsonl (las líneas rotas, fuera). */
 export function maximosDelHistorial(texto) {
   const maximos = {};
   for (const linea of String(texto ?? '').split('\n')) {
     if (!linea.trim()) continue;
     let fila;
     try { fila = JSON.parse(linea); } catch { continue; }
-    for (const clave of FIJAS) {
-      if (typeof fila?.[clave] === 'number' && fila[clave] > (maximos[clave] ?? 0)) maximos[clave] = fila[clave];
-    }
+    for (const clave of FIJAS) if (typeof fila?.[clave] === 'number' && fila[clave] > (maximos[clave] ?? 0)) maximos[clave] = fila[clave];
   }
   return maximos;
 }
 
+/**
+ * `{ nueva, guardada, peores }`. Una matriz conservada NO tira la corrida
+ * (lleva su fecha; perder cruces o parejas sí); unas estadísticas conservadas
+ * con la matriz nueva entera, tampoco; sin NADA fresco, siempre [C].
+ */
 export function comparar(nueva, guardada, maximos = {}) {
   const a = medir(nueva);
   const b = medir(guardada);
   const peores = [];
-  // La historia de la fuerza (3.50.0) no se compara por recuento: se poda
-  // por fecha y una corrida tras días sin bot tiene menos días con razón.
-  // Lo que no puede pasar es que pierda un día que aún está en su ventana.
   const perdidos = diasPerdidos(nueva, guardada);
   if (perdidos.length) peores.push({ clave: 'historia', antes: perdidos.join(', '), ahora: 'perdidos' });
   for (const clave of Object.keys(b)) {
-    // Una matriz conservada no tira la corrida (3.59.6): se queda la guardada
-    // héroe a héroe, con su fecha (`relaciones.descargada`), y el diagnóstico
-    // avisa si pasa de una semana. Lo que sí la tira es PERDER cruces o
-    // parejas (`cruces`, `sinergias`, en FIJAS).
-    if (clave === 'relacionesFrescas') continue;
-    // Y al revés (3.60.2): estadísticas conservadas con la matriz recién
-    // bajada entera. Se quedan las de antes CON SU FECHA (`generatedAt` sigue
-    // a las estadísticas), así que nada sale como nuevo sin serlo. El 20 de
-    // octubre de 2026 la API dio los 133 cruces y 500 en los winrates de Gloria.
-    // Sin nada fresco (API caída) se sigue rechazando.
-    if (clave === 'rangoFresco' && a.relacionesFrescas) continue;
+    if (clave === 'relacionesFrescas' || (clave === 'rangoFresco' && a.relacionesFrescas)) continue;
     const referencia = FIJAS.includes(clave) ? Math.max(b[clave], maximos?.[clave] ?? 0) : b[clave];
-    if (referencia > 0 && a[clave] < referencia * MARGEN) {
-      peores.push({ clave, antes: referencia, ahora: a[clave] });
-    }
+    if (referencia > 0 && a[clave] < referencia * MARGEN) peores.push({ clave, antes: referencia, ahora: a[clave] });
   }
-  // Sin NADA fresco (ni las estadísticas de tu rango y su respaldo, ni la
-  // matriz) se rechaza siempre (3.60.2), aunque lo guardado tampoco lo esté:
-  // si no, tras guardar una corrida con los winrates conservados, el bot
-  // commitearía corridas que solo cambian el diagnóstico.
   if (!a.rangoFresco && !a.relacionesFrescas) peores.push({ clave: 'nadaFresco', antes: 'algo fresco', ahora: 'nada' });
   return { nueva: a, guardada: b, peores };
 }
 
-// Solo «no existe» se acepta (primera corrida). Un JSON ilegible o una
-// errata en la ruta del workflow desactivaban el guardarraíl entero en
-// silencio: «no hay corrida anterior: se acepta».
-const leer = async (ruta) => {
+/** Solo «no existe» se acepta (primera corrida): una errata o un JSON roto apagaban el guardarraíl [C]. */
+async function leer(ruta) {
   try {
     return JSON.parse(await readFile(ruta, 'utf8'));
   } catch (e) {
@@ -185,7 +123,7 @@ const leer = async (ruta) => {
     console.error(`No se ha podido leer ${ruta}: ${e.message}`);
     process.exit(2);
   }
-};
+}
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [rutaNueva, rutaGuardada] = process.argv.slice(2);
@@ -203,17 +141,13 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     console.log('No hay corrida anterior con la que comparar: se acepta.');
     process.exit(0);
   }
-
-  // El máximo visto en el historial de salud, si está a mano (los tres
-  // workflows corren con el repositorio entero).
   let maximos = {};
-  try { maximos = maximosDelHistorial(await readFile(resolve(ROOT, 'historial/salud.jsonl'), 'utf8')); } catch { /* sin historial */ }
+  try { maximos = maximosDelHistorial(await readFile(resolve(RAIZ, 'historial/salud.jsonl'), 'utf8')); } catch { /* sin historial */ }
   const { nueva: a, guardada: b, peores } = comparar(nueva, guardada, maximos);
   const linea = (m) => Object.entries(m).map(([k, v]) => `${k}=${v}`).join('  ');
   if (Object.keys(maximos).length) console.log(`máximos del historial: ${linea(maximos)}`);
   console.log(`guardada: ${linea(b)}`);
   console.log(`nueva:    ${linea(a)}`);
-
   if (peores.length) {
     console.error('\nLa corrida nueva resuelve MENOS que la guardada:');
     for (const p of peores) console.error(`  ${p.clave}: ${p.antes} → ${p.ahora}`);
