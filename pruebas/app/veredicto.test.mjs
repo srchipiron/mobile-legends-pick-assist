@@ -53,6 +53,7 @@ test('fuera del margen sí lo dice; y con menos de cinco siguiendo no pinta ning
   ok(/con un margen de ±/.test(texto(html)), 'al afirmar quita el margen');
   const pocas = pintar({ partidas: siguiendo(3, 3), maestria });
   ok(!/con un margen de/.test(texto(pocas)) && texto(pocas).includes('no es un experimento controlado'), 'con tres partidas pinta una diferencia');
+  ok(!pocas.includes('veredicto-cifra'), 'con tres partidas pinta tu winrate siguiendo a la app');
 });
 
 test('siguiendo contra por libre: solo con 30 y 30, con margen en la misma frase y sin afirmar mientras quepa', () => {

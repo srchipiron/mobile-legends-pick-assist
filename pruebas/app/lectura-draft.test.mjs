@@ -35,6 +35,9 @@ test('lo metido a mano se queda aunque la tablet no lo vea; lo que la tablet cam
   const r = copiar(d, tablet({ enemigos: ['Rafaela', 'Khufra'] }));
   eq(JSON.stringify(r.despues.enemigos), JSON.stringify(['Khufra', 'Layla', 'Rafaela']), `no se cambia al que miraba o se va lo de la mano: ${r.despues.enemigos}`);
   eq(r.quitados, 1);
+  // Quitado y vuelto a meter a mano: es tuyo aunque la tablet lo leyera y ya no lo vea.
+  const vuelto = { ...d, aMano: ['Layla', 'Clint'] };
+  ok(copiar(vuelto, tablet({ enemigos: ['Rafaela', 'Khufra'] })).despues.enemigos.includes('Clint'), 'lo leído y vuelto a meter a mano se va con la copia');
   // Un héroe metido a mano antes de que la tablet empezara se queda con su draft.
   const aMano = { ...vacio(), enemigos: ['Saber'], fase: 'picks' };
   eq(JSON.stringify(copiar(aMano, t1).despues.enemigos), JSON.stringify(['Saber', 'Clint', 'Khufra']), 'lo de antes de la tablet se pierde');
@@ -86,6 +89,7 @@ test('la corrección para la tablet: tú fuera de tus compañeros, y la huella d
   eq(JSON.stringify(c), JSON.stringify({ desde: D, enemigos: ['Khufra'], aliados: ['Miya', 'Gloo'], tuyo: 'Estes', baneos: [] }));
   ok(huellaDeNombres(c) !== huellaDeLaTablet(t), 'lo tocado no cuenta como distinto');
   eq(correccionDe(vacio()), null, 'sin draft de la tablet hay corrección');
+  eq(JSON.stringify(correccionDe({ ...tocado, aliados: [...tocado.aliados, 'Estes'] }).aliados), JSON.stringify(['Miya', 'Gloo']), 'tu pick va también entre tus compañeros');
 });
 
 test('lo guardado por 3.102.0 se carga entero y se vuelve a guardar igual (los campos de 4.0 solo se añaden)', () => {

@@ -26,7 +26,7 @@ const abrirHoja = async (pagina, i) => {
   await pagina.locator('.more .tools .reset').nth(i).click(); await pagina.waitForTimeout(400);
 };
 
-test('el editor de maestría escribe roam-picker:mastery y el motor la usa', async () => {
+test('el editor de maestría escribe roam-picker:mastery y el diagnóstico la lee, sin meterla en la nota', async () => {
   const { contexto, pagina, errores } = await paginaCon(navegador, url, { almacen: { ...LINEA, 'roam-picker:draft': PICKS } });
   eq(await leer(pagina, 'roam-picker:mastery'), null, 'ya había maestría guardada');
   await abrirHoja(pagina, 0);
@@ -45,12 +45,13 @@ test('el editor de maestría escribe roam-picker:mastery y el motor la usa', asy
   // Y sobrevive a la recarga, que es lo que de verdad importa.
   await pagina.reload({ waitUntil: 'networkidle' }); await pagina.waitForTimeout(600);
   eq((await leer(pagina, 'roam-picker:mastery'))[heroe].games, 380, 'la maestría no sobrevive a una recarga');
-  // Y el motor la aplica: el diagnóstico lo dice con el héroe y su puesto.
+  // El diagnóstico la lee (380 de siempre pasan del tope: un héroe acotado) y dice que no entra en la nota (3.93.0).
   await abrirAjustes(pagina);
   await pagina.getByRole('button', { name: 'Diagnóstico' }).click(); await pagina.waitForTimeout(2500);
   const texto = await pagina.locator('.sheet pre').first().innerText();
-  ok(/Tu maestría se está aplicando/.test(texto), `el diagnóstico no dice que la maestría se aplique:\n${texto.split('\n').filter((l) => /MAESTR|maestr/i.test(l)).join('\n')}`);
-  ok(new RegExp(`Ejemplo: ${heroe}`).test(texto), `el diagnóstico no usa ${heroe} de ejemplo`);
+  const lineas = texto.split('\n').filter((l) => /MAESTR|maestr/i.test(l)).join('\n');
+  ok(/\(1 héroes acotados\)/.test(texto), `el diagnóstico no ve la maestría guardada:\n${lineas}`);
+  ok(/no entran en la nota/.test(texto) && !/se está aplicando/.test(texto), `el diagnóstico dice que la maestría puntúa:\n${lineas}`);
   ok(!errores.length, `errores: ${errores}`);
   await contexto.close();
 });

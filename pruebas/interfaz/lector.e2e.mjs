@@ -184,6 +184,19 @@ test('la tablet apunta sola la partida del draft que tienes delante: se funde, e
   } finally { await contexto.close(); }
 });
 
+test('el draft de una partida que la tablet ya apuntó no entra: tu draft a mano sigue, sin aviso, y la partida se funde', async () => {
+  const T = Date.now() - 20000;
+  const tablet = tabletFalsa({ draft: LEIDO(), partida: { desde: DESDE, estado: 'apuntada', gane: true, registro: { t: T, pick: 'Estes', gane: true, recomendados: ['Estes'], rango: 'glory', origen: 'lector' } } });
+  const { contexto, pagina } = await conTablet(tablet, { almacen: { 'roam-picker:draft': { ...DRAFT, enemies: ['Ling'], fase: 'picks' } } });
+  try {
+    ok(await esperarA(async () => (await leerGuardado(pagina, 'roam-picker:partidas') ?? []).length === 1), 'la partida de la tablet no llega');
+    const copias = tablet.de('GET /draft').length;
+    ok(await esperarA(() => tablet.de('GET /draft').length >= copias + 2));
+    eq((await leerGuardado(pagina)).enemies.join(), 'Ling', 'el draft de una partida ya apuntada se mezcla con el tuyo');
+    eq(await pagina.locator('.aviso-deshacer').count(), 0, 'sale un aviso por una partida que no tenías delante');
+  } finally { await contexto.close(); }
+});
+
 test('«Nuevo draft» no vuelve a copiar el draft que vació; el siguiente de la tablet sí entra', async () => {
   const tablet = tabletFalsa({ draft: LEIDO() });
   const { contexto, pagina } = await conTablet(tablet, { almacen: { 'roam-picker:draft': { ...DRAFT, fase: 'picks' } } });
@@ -223,6 +236,17 @@ test('cambiar de línea o de idioma se le dice a la tablet; tu fila de otra lín
     ok(await esperarA(() => tablet.de('POST /ajustes').length > 0));
     await pagina.getByRole('button', { name: 'EN', exact: true }).first().click();
     ok(await esperarA(() => tablet.de('POST /ajustes').some((x) => x.cuerpo.idioma === 'en')), 'el idioma nuevo no llega a la tablet');
+  } finally { await contexto.close(); }
+});
+
+test('sin «Leer solo» tus ajustes también llegan a la tablet, y otra vez al cambiarlos', async () => {
+  const tablet = tabletFalsa({ draft: LEIDO() });
+  const { contexto, pagina } = await conTablet(tablet, { auto: false });
+  try {
+    ok(await esperarA(() => tablet.de('POST /ajustes').length > 0), 'sin copiar, los ajustes no llegan');
+    await pagina.getByRole('button', { name: 'EN', exact: true }).first().click();
+    ok(await esperarA(() => tablet.de('POST /ajustes').some((x) => x.cuerpo.idioma === 'en')), 'el idioma nuevo no llega sin copiar');
+    eq(tablet.de('GET /draft').length, 0, 'sin «Leer solo» copia');
   } finally { await contexto.close(); }
 });
 
