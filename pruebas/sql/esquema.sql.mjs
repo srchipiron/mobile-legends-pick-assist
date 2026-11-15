@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * El esquema de la base de datos de la comunidad (supabase/esquema.sql)
- * contra un Postgres DE VERDAD (3.69.0): `npm run test:sql`. No va en
+ * contra un Postgres DE VERDAD: `npm run test:sql` (node --test). No va en
  * `npm test` por lo mismo que las de navegador: publicar no puede depender
  * de tener un Postgres a mano.
  *
@@ -14,7 +14,8 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, chmodSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test, ok, eq, terminar, RAIZ } from '../arnes.mjs';
+import { after } from 'node:test';
+import { test, ok, eq, RAIZ } from '../ayuda.mjs';
 
 const BIN = ['/usr/lib/postgresql/17/bin', '/usr/lib/postgresql/16/bin', '/usr/lib/postgresql/15/bin', '/usr/lib/postgresql/14/bin'].find((d) => existsSync(join(d, 'initdb')))
   ?? (existsSync('/usr/lib/postgresql') ? readdirSync('/usr/lib/postgresql').map((v) => `/usr/lib/postgresql/${v}/bin`).find((d) => existsSync(join(d, 'initdb'))) : null);
@@ -36,6 +37,11 @@ const iniciar = lanzar('initdb', ['-D', datos, '-U', 'super', '-A', 'trust']);
 if (iniciar.status !== 0) { console.error(iniciar.stderr); process.exit(2); }
 const arrancar = lanzar('pg_ctl', ['-D', datos, '-o', `-k ${dir} -p ${PUERTO} -c listen_addresses=''`, '-l', join(dir, 'log'), '-w', 'start']);
 if (arrancar.status !== 0) { console.error(arrancar.stderr || arrancar.stdout); process.exit(2); }
+// Se para y se borra al acabar las pruebas, y también si el montaje falla antes (el proceso sale).
+let parado = false;
+const parar = () => { if (parado) return; parado = true; lanzar('pg_ctl', ['-D', datos, '-m', 'immediate', 'stop']); rmSync(dir, { recursive: true, force: true }); };
+after(parar);
+process.on('exit', parar);
 
 /** Una orden SQL. `{ salida, error }`; la salida, el valor de la última fila sin adornos. */
 function sql(orden, { usuario = 'dueno', base = 'comunidad' } = {}) {
@@ -46,7 +52,7 @@ const comoAnon = (orden) => sql(`set role anon; ${orden}`);
 const json = (r) => { if (r.error) throw new Error(r.error); return JSON.parse(r.salida.split('\n').pop()); };
 const lit = (v) => `'${JSON.stringify(v).replace(/'/g, "''")}'::jsonb`;
 
-try {
+{
   for (const o of [
     'create role anon nologin', 'create role authenticated nologin',
     'create role dueno login', 'grant anon to dueno', 'create database comunidad owner dueno',
@@ -253,8 +259,4 @@ try {
     eq(comoAnon(`select public.borrar_mis_partidas('${OTRA}')`).salida, 'f', 'borrar dos veces dice que había algo');
     eq(sql('select count(*) from public.partidas p left join public.jugadores j on j.id = p.jugador where j.id is null').salida, '0', 'quedan partidas sin jugador');
   });
-} finally {
-  await terminar();
-  lanzar('pg_ctl', ['-D', datos, '-m', 'immediate', 'stop']);
-  rmSync(dir, { recursive: true, force: true });
 }
