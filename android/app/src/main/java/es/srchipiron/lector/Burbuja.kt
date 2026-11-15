@@ -18,23 +18,19 @@ import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.TextView
 import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
 import kotlin.concurrent.thread
 
 /**
- * La burbuja sobre el juego (3.62.0): tu nº1 (o tu pick fijado) y los dos
- * siguientes, lo que la app del móvil manda al lector (`/consejo`). Y el
- * resumen de cada partida apuntada, como notificación.
- *
- * Mientras juegas no sale (3.69.3): el lector deja de dar el consejo en
- * cuanto ve el minimapa dos veces seguidas, y vuelve con el draft siguiente.
+ * La burbuja sobre el juego: el consejo que decide la tablet (`/consejo`:
+ * a quién banear, tu nº1 o tu build) y el resumen de cada partida apuntada,
+ * como notificación. Mientras juegas no sale: el lector deja de dar el
+ * consejo en cuanto ve el minimapa dos veces seguidas.
  *
  * SEGURIDAD: la burbuja NO se puede tocar (FLAG_NOT_TOUCHABLE) y va con
  * opacidad 0,8, el máximo con el que Android deja pasar los toques al juego
  * de debajo (Android 12+). Solo enseña texto: no toca nada del juego.
- * Lo que sí se toca (contestar sin salir del juego, 3.84.0) es `Pendiente`,
- * y solo sale fuera del draft y de la partida.
+ * Lo que sí se toca (contestar sin salir del juego) es `Pendiente`, y solo
+ * sale fuera del draft y de la partida.
  */
 class Burbuja(private val contexto: Context) {
     companion object {
@@ -45,7 +41,7 @@ class Burbuja(private val contexto: Context) {
             c.getSharedPreferences("lector", Context.MODE_PRIVATE).edit().putString("burbuja", ESQUINAS[i]).apply()
         }
         private const val CANAL = "partidas"
-        /** Qué está haciendo la burbuja (3.68.1): va en salud.json y en la pantalla, para que un fallo no sea invisible. */
+        /** Qué está haciendo la burbuja: va en salud.json y en la pantalla, para que un fallo no sea invisible. */
         @Volatile var estado: String = "parada"
     }
 
@@ -55,7 +51,7 @@ class Burbuja(private val contexto: Context) {
     private var titulo: TextView? = null
     private var detalle: TextView? = null
     @Volatile private var activa = false
-    /** Lo que hay que contestar (3.84.0), con un botoncito que sí se toca, solo fuera del draft y de la partida. */
+    /** Lo que hay que contestar, con un botoncito que sí se toca, solo fuera del draft y de la partida. */
     private val pendiente = Pendiente(contexto)
 
     fun empezar() {
@@ -65,7 +61,7 @@ class Burbuja(private val contexto: Context) {
             while (activa) {
                 try {
                     val r = leer()
-                    // Sin el lector no se sabe qué hay delante (3.86.1): lo que se toca no se queda encima del juego.
+                    // Sin el lector no se sabe qué hay delante: lo que se toca no se queda encima del juego.
                     if (r == null) { estado = "el lector no contesta"; principal.post { pendiente.quitarTodo() } } else principal.post { pintar(r) }
                 } catch (e: Throwable) { estado = "no llega al lector: ${e.javaClass.simpleName}"; principal.post { pendiente.quitarTodo() } }
                 Thread.sleep(2000)
@@ -79,19 +75,14 @@ class Burbuja(private val contexto: Context) {
         principal.post { quitar(); pendiente.quitarTodo() }
     }
 
-    private fun leer(): JSONObject? {
-        val c = URL("http://127.0.0.1:${Principal.PUERTO}/consejo").openConnection() as HttpURLConnection
-        c.connectTimeout = 2000; c.readTimeout = 3000
-        c.setRequestProperty("X-Lector-Codigo", Vinculo.codigo(contexto))
-        return try { if (c.responseCode == 200) JSONObject(c.inputStream.bufferedReader().readText()) else null } finally { c.disconnect() }
-    }
+    private fun leer(): JSONObject? = Cliente.consultar(contexto, "/consejo")
 
     private fun pintar(r: JSONObject) {
         val consejo = r.optJSONObject("consejo")
         val esq = esquina(contexto)
         if (consejo == null || esq == "no" || !Settings.canDrawOverlays(contexto)) {
             quitar()
-            // En partida (3.69.3) el lector no da consejo a propósito: se quita para no tapar el juego.
+            // En partida el lector no da consejo a propósito: se quita para no tapar el juego.
             estado = when { !Settings.canDrawOverlays(contexto) -> "sin permiso"; esq == "no" -> "quitada"; r.optBoolean("enPartida") -> "escondida mientras juegas"; else -> "esperando consejo" }
         } else {
             if (vista == null) poner(esq)
@@ -145,7 +136,7 @@ class Burbuja(private val contexto: Context) {
             .setContentText(r.optString("texto"))
             .setStyle(Notification.BigTextStyle().bigText(r.optString("texto")))
             .setAutoCancel(true)
-            // Tocarla abre la app (3.71.0): ahí está «Enseña al lector» si no reconoció a alguien.
+            // Tocarla abre la app: ahí está «Enseña al lector» si no reconoció a alguien.
             .setContentIntent(PendingIntent.getActivity(contexto, 0, Intent(contexto, Principal::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
             .build())
     }

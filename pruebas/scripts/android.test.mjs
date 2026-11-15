@@ -93,8 +93,10 @@ test('un fallo al empezar a grabar no cierra la app ni entra en bucle (3.72.1): 
   ok(/if \(pidiendo\) return\s+pidiendo = true/.test(alternar), 'se puede pedir grabar dos veces a la vez');
   ok(/if \(peticion == PEDIR_GRABAR\) pidiendo = false/.test(principal), 'tras contestar, no se puede volver a pedir');
   ok(/if \(grabando\) Unit/.test(empezar), 'un segundo permiso para la grabación que ya va');
-  for (const f of ['fallo-grabar.txt', 'fallo.txt', 'salida-nodo.txt', 'fallo-nodo.txt']) ok(principal.includes(`fichero("${f}")`), `el aviso no enseña ${f}`);
-  ok(/Salidas\.falloDesde\(this, visto\)/.test(principal) && /setPrimaryClip/.test(principal) && /fallosVistos/.test(principal), 'el aviso no lee el cierre de Android, no se puede copiar o no se puede quitar');
+  const fallos = readFileSync(join(KOTLIN, 'Fallos.kt'), 'utf8');
+  for (const f of ['fallo-grabar.txt', 'fallo.txt', 'salida-nodo.txt', 'fallo-nodo.txt']) ok(fallos.includes(`fichero("${f}")`), `el aviso no enseña ${f}`);
+  ok(/Salidas\.falloDesde\(contexto, visto\)/.test(fallos) && /Fallos\.sinVer\(this\)/.test(principal), 'el aviso no lee el cierre de Android');
+  ok(/setPrimaryClip/.test(principal) && /fallosVistos/.test(principal), 'el aviso no se puede copiar o no se puede quitar');
 });
 
 test('Node en la APK arranca vigilado (3.72.3): los vigilantes se ponen ANTES de cargar el lector, y un fallo al cargarlo no cierra la app', () => {
@@ -110,15 +112,19 @@ test('Node en la APK arranca vigilado (3.72.3): los vigilantes se ponen ANTES de
 
 test('«¿Cómo acabó?» en la APK (3.72.5): la pantalla pregunta al lector de la tablet y contesta Gané, Perdí o No la terminé', () => {
   const principal = readFileSync(join(KOTLIN, 'Principal.kt'), 'utf8');
-  ok(/pedir\("\/pregunta"\)/.test(principal) && /pintarPregunta\(p\)/.test(principal), 'la pantalla no pregunta al lector si hay una partida sin resultado');
-  ok(/"Gané" to true, "Perdí" to false, "No la terminé" to null/.test(principal), 'faltan las tres respuestas');
-  ok(/mandar\("\/pregunta", JSONObject\(\)\.put\("id", id\)\.put\("gane", gane \?: JSONObject\.NULL\)\)/.test(principal), 'la respuesta no va al lector con su id');
+  const contestar = readFileSync(join(KOTLIN, 'Contestar.kt'), 'utf8');
+  ok(/Cliente\.pedir\(this, "\/pregunta"\)/.test(principal) && /pintarPregunta\(p\)/.test(principal) && /Contestar\.pregunta\(this, preguntaCard, p\)/.test(principal), 'la pantalla no pregunta al lector si hay una partida sin resultado');
+  ok(/"Gané" to true, "Perdí" to false, "No la terminé" to null/.test(contestar), 'faltan las tres respuestas');
+  ok(/Cliente\.mandar\(ctx, "\/pregunta", JSONObject\(\)\.put\("id", id\)\.put\("gane", gane \?: JSONObject\.NULL\)\)/.test(contestar), 'la respuesta no va al lector con su id');
 });
 
 test('la APK dice de cuándo son los datos y si las partidas suben (3.73.1)', () => {
   const principal = readFileSync(join(KOTLIN, 'Principal.kt'), 'utf8');
-  ok(/val e = pedir\("\/estado"\)/.test(principal) && /textoDeCuenta\(it\)/.test(principal), 'la pantalla no lee de /estado los datos y las partidas');
-  ok(/optJSONObject\("datos"\)/.test(principal) && /optJSONObject\("partidas"\)/.test(principal) && /falta tu clave/.test(principal), 'no dice la edad de los datos o que faltan partidas por subir sin clave');
+  const fallos = readFileSync(join(KOTLIN, 'Fallos.kt'), 'utf8');
+  ok(/val e = Cliente\.pedir\(this, "\/estado"\)/.test(principal) && /Fallos\.textoDeCuenta\(it\)/.test(principal), 'la pantalla no lee de /estado los datos y las partidas');
+  ok(/optJSONObject\("datos"\)/.test(fallos) && /optJSONObject\("partidas"\)/.test(fallos) && /falta tu clave/.test(fallos), 'no dice la edad de los datos o que faltan partidas por subir sin clave');
+  // El paso «el móvil mira el draft» sale de GET /draft (protocolo 2), no de las lecturas: esas las hace siempre la tablet.
+  ok(/movilLee = \(e\?\.optJSONObject\("movil"\)\?\.optInt\("consultas"\)/.test(principal), 'la guía da por vinculado el móvil por las lecturas de la propia tablet');
 });
 
 test('cada pantalla de la APK está en el manifiesto, y solo la principal se abre desde fuera (3.75.0)', () => {
@@ -150,17 +156,21 @@ test('contestar sin salir del juego (3.84.0): la burbuja del consejo no se toca;
   ok(/pendiente\.pintar\(r, esq\)/.test(burbuja), 'la burbuja no le pasa /consejo a Pendiente: nunca sale');
   // 3.86.1: sin respuesta del lector (o con un fallo) se quita: no se sabe qué hay delante.
   ok(/if \(r == null\) \{.*pendiente\.quitarTodo\(\)/.test(burbuja) && /catch \(e: Throwable\) \{ estado = "no llega.*pendiente\.quitarTodo\(\)/.test(burbuja), 'con el lector sin contestar, el botón o el panel se quedan encima del juego');
-  const rutas = [...pendiente.matchAll(/(?:pedir|mandar)\("([^"]+)"/g)].map((m) => m[1]);
-  ok(rutas.length > 0 && rutas.every((r) => r === '/pregunta' || r === '/correccion'), `Pendiente.kt llama a otra ruta del lector: ${rutas}`);
-  ok(!/Runtime|ProcessBuilder|AccessibilityService|dispatchGesture|Instrumentation/.test(pendiente), 'Pendiente.kt hace algo más que enseñar y contestar al lector');
+  ok(/optJSONObject\("pendiente"\)\?\.optBoolean\("pregunta"\) == true/.test(pendiente), 'el botón no sale solo con la pregunta pendiente');
+  const contestar = codigo('Contestar.kt');
+  const rutas = [pendiente, contestar].flatMap((k) => [...k.matchAll(/Cliente\.(?:pedir|mandar)\(\w+, "([^"]+)"/g)].map((m) => m[1]));
+  ok(rutas.length > 0 && rutas.every((r) => r === '/pregunta' || r === '/correccion'), `lo que se toca encima del juego llama a otra ruta del lector: ${rutas}`);
+  for (const [f, k] of [['Pendiente.kt', pendiente], ['Contestar.kt', contestar]]) ok(!/Runtime|ProcessBuilder|AccessibilityService|dispatchGesture|Instrumentation/.test(k), `${f} hace algo más que enseñar y contestar al lector`);
 });
 
 test('tu héroe con un toque (3.85.0): la burbuja y la app de la tablet ponen tus habituales en «Tú»', () => {
-  for (const f of ['Pendiente.kt', 'Principal.kt']) {
-    const k = readFileSync(join(KOTLIN, f), 'utf8');
-    ok(/optJSONArray\("tuyos"\)/.test(k), `${f} no lee tus habituales`);
-    ok(/aliados\[filaTuya\]\.setText\(h\)/.test(k), `${f}: tocar un habitual no lo pone en tu hueco`);
-  }
+  const k = readFileSync(join(KOTLIN, 'Contestar.kt'), 'utf8');
+  ok(/optJSONArray\("tuyos"\)/.test(k), 'el editor no lee tus habituales');
+  ok(/aliados\[filaTuya\]\.setText\(h\)/.test(k), 'tocar un habitual no lo pone en tu hueco');
+  // Y es el MISMO editor en la tarjeta de la app y en el panel encima del juego: ninguno se queda atrás.
+  ok(/Contestar\.correccion\(this, corregir, c\)/.test(readFileSync(join(KOTLIN, 'Principal.kt'), 'utf8')), 'la tarjeta de la app no usa el editor común');
+  ok(/Contestar\.correccion\(contexto, caja, c\)/.test(readFileSync(join(KOTLIN, 'Pendiente.kt'), 'utf8')), 'el panel encima del juego no usa el editor común');
+  for (const f of readdirSync(KOTLIN).filter((x) => x.endsWith('.kt') && x !== 'Contestar.kt')) ok(!/\/correccion"/.test(readFileSync(join(KOTLIN, f), 'utf8').replace(/Cliente\.pedir\(this, "\/correccion"\)|Cliente\.pedir\(contexto, "\/correccion"\)/g, '')), `${f} contesta la corrección por su cuenta`);
 });
 
 test('el aspecto de la APK (3.91.0): las pantallas usan las píldoras de Estilo.kt, y el botón grande de empezar va en la tarjeta de estado', () => {
@@ -171,4 +181,24 @@ test('el aspecto de la APK (3.91.0): las pantallas usan las píldoras de Estilo.
   const principal = readFileSync(join(KOTLIN, 'Principal.kt'), 'utf8');
   ok(/boton = pildora\("Empezar a leer", Estilo\.Tipo\.PRINCIPAL\) \{ alternar\(\) \}/.test(principal) && /estadoCard\.addView\(boton/.test(principal), 'el botón de empezar a leer no va arriba, en la tarjeta de estado');
   ok(/estadoTitulo\.text = if \(Lector\.grabando\)/.test(principal), 'la tarjeta de estado no dice si está leyendo');
+});
+
+test('un solo Cliente habla con el lector: 127.0.0.1, el puerto del contrato, el código, y solo rutas de la APK en RUTAS', async () => {
+  const { RUTAS, PUERTO } = await import('../../src/comun/contrato.js');
+  // Sin comentarios (no el «//» de una dirección: el de un comentario va tras un espacio o a principio de línea).
+  const sin = (k) => k.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[ \t])\/\/.*$/gm, '$1');
+  const kts = readdirSync(KOTLIN).filter((f) => f.endsWith('.kt')).map((f) => ({ f, k: sin(readFileSync(join(KOTLIN, f), 'utf8')) }));
+  // (Lector.kt da a Node la dirección de SU captura, LECTOR_INTERNO; eso no es hablar con el lector.)
+  const abren = kts.filter(({ k }) => /URL\("http:\/\/127\.0\.0\.1/.test(k)).map(({ f }) => f);
+  eq(abren.join(), 'Cliente.kt', 'otro fichero habla con el lector por su cuenta');
+  const cliente = kts.find(({ f }) => f === 'Cliente.kt').k;
+  ok(/setRequestProperty\("X-Lector-Codigo", Vinculo\.codigo\(contexto\)\)/.test(cliente) && !/Origin/.test(cliente), 'el cliente no manda el código, o manda un Origin (el lector la tomaría por un navegador)');
+  eq(Number(/const val PUERTO = (\d+)/.exec(cliente)?.[1]), PUERTO, 'la APK habla con otro puerto que el del contrato');
+  const llamadas = kts.flatMap(({ f, k }) => [...k.matchAll(/Cliente\.(pedir|consultar|mandar)\(\s*[\w@]+,\s*([^,)]+)/g)].map((m) => ({ f, metodo: m[1] === 'mandar' ? 'POST' : 'GET', ruta: m[2].trim() })));
+  ok(llamadas.length >= 8, `no se ven las llamadas al lector: ${llamadas.map((l) => l.ruta)}`);
+  for (const { f, metodo, ruta } of llamadas) {
+    ok(/^"\/[a-z]+"$/.test(ruta), `${f} llama al lector con una ruta que no es fija: ${ruta}`);
+    const quien = RUTAS[`${metodo} ${ruta.slice(1, -1)}`];
+    ok(quien === 'apk' || quien === 'ambos', `${f}: ${metodo} ${ruta} no es una ruta de la APK en RUTAS (${quien})`);
+  }
 });

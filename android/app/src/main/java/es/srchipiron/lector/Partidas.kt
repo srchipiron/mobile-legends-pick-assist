@@ -16,15 +16,13 @@ import android.widget.ScrollView
 import android.widget.TextView
 import org.json.JSONArray
 import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.concurrent.thread
 
 /**
- * «Mis partidas» (3.75.0): las partidas tal como están en la base de datos
+ * «Mis partidas»: las partidas tal como están en la base de datos
  * (con lo que la tablet aún no subió por encima), con fecha, pick,
  * resultado y quién iba en cada equipo. Tocar una la abre para arreglarla
  * (resultado, tu pick, enemigos, compañeros, baneos): se vuelve a subir.
@@ -72,7 +70,8 @@ class Partidas : Activity() {
     private fun cargar() {
         cabecera.text = "Cargando…"
         thread(isDaemon = true) {
-            val r = pedir()
+            // Lee la base de datos de internet: puede tardar unos segundos.
+            val r = Cliente.pedir(this, "/partidas", 30000)
             runOnUiThread {
                 if (isFinishing) return@runOnUiThread
                 lista.removeAllViews()
@@ -90,7 +89,7 @@ class Partidas : Activity() {
     }
 
     /**
-     * «Tu semana» (3.79.0), el mismo cálculo que en Pick Assist del móvil:
+     * «Tu semana», el mismo cálculo que en Pick Assist del móvil:
      * los últimos 7 días frente a los 7 de antes («mejor» o «peor» solo si
      * no cabe en el azar), los héroes que te funcionaron y los que te
      * costaron, y si cogiste el nº1.
@@ -129,7 +128,7 @@ class Partidas : Activity() {
     }
 
     /**
-     * «Tus números» (3.77.0), el mismo cálculo que en Pick Assist del móvil:
+     * «Tus números», el mismo cálculo que en Pick Assist del móvil:
      * racha, hoy, cómo te va después de perder (solo afirmado si se
      * distingue de lo demás) y los héroes con los que ganas o pierdes más
      * de lo normal en ti.
@@ -165,9 +164,9 @@ class Partidas : Activity() {
 
     private fun tarjeta(p: JSONObject): LinearLayout {
         val gane = p.optBoolean("gane")
-        // Sin resultado (3.81.5): no se reconoció el final y no se contestó a tiempo; se dice aquí.
+        // Sin resultado: no se reconoció el final y no se contestó a tiempo; se dice aquí.
         val sinResultado = p.optBoolean("sinResultado")
-        // Teñida del color del resultado (3.91.0): verde, rojo o naranja si falta.
+        // Teñida del color del resultado: verde, rojo o naranja si falta.
         val tono = if (sinResultado) Color.rgb(255, 159, 10) else if (gane) Estilo.VERDE else Estilo.ROJO
         val caja = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -206,7 +205,7 @@ class Partidas : Activity() {
 
     private fun pintarEditor(editor: LinearLayout, p: JSONObject) {
         editor.removeAllViews()
-        // Sin resultado (3.81.5) no hay ninguno marcado: guardar sin elegir lo apuntaría como perdida.
+        // Sin resultado no hay ninguno marcado: guardar sin elegir lo apuntaría como perdida.
         var gane: Boolean? = if (p.optBoolean("sinResultado")) null else p.optBoolean("gane")
         val resultado = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false; setPadding(0, dp(8), 0, 0) }
         val bGane = pildora("Gané")
@@ -249,7 +248,9 @@ class Partidas : Activity() {
             de(pick)?.let { cuerpo.put("pick", it) }
             guardar.isEnabled = false; aviso.text = "Guardando…"
             thread(isDaemon = true) {
-                val (estado, r) = mandar(cuerpo)
+                val respuesta = Cliente.mandar(this@Partidas, "/partida", cuerpo, 60000)
+                val estado = respuesta.estado
+                val r = respuesta.json
                 runOnUiThread {
                     guardar.isEnabled = true
                     aviso.text = when (estado) {
@@ -265,25 +266,4 @@ class Partidas : Activity() {
         editor.addView(guardar)
         editor.addView(aviso)
     }
-
-    private fun pedir(): JSONObject? = try {
-        val c = URL("http://127.0.0.1:${Principal.PUERTO}/partidas").openConnection() as HttpURLConnection
-        // Lee la base de datos de internet: puede tardar unos segundos.
-        c.connectTimeout = 2000; c.readTimeout = 30000
-        c.setRequestProperty("X-Lector-Codigo", Vinculo.codigo(this))
-        try { if (c.responseCode == 200) JSONObject(c.inputStream.bufferedReader().readText()) else null } finally { c.disconnect() }
-    } catch (e: Throwable) { null }
-
-    private fun mandar(cuerpo: JSONObject): Pair<Int, JSONObject?> = try {
-        val c = URL("http://127.0.0.1:${Principal.PUERTO}/partida").openConnection() as HttpURLConnection
-        c.connectTimeout = 2000; c.readTimeout = 60000
-        c.requestMethod = "POST"; c.doOutput = true
-        c.setRequestProperty("Content-Type", "application/json")
-        c.setRequestProperty("X-Lector-Codigo", Vinculo.codigo(this))
-        c.outputStream.use { it.write(cuerpo.toString().toByteArray()) }
-        try {
-            val estado = c.responseCode
-            estado to try { JSONObject((if (estado < 400) c.inputStream else c.errorStream).bufferedReader().readText()) } catch (e: Exception) { null }
-        } finally { c.disconnect() }
-    } catch (e: Throwable) { 0 to null }
 }

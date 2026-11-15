@@ -11,7 +11,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Que la app se actualice sola (3.62.0; sin preguntar desde 3.64.0): mira
+ * Que la app se actualice sola: mira
  * la última versión publicada en GitHub y, si es más nueva y NO está
  * leyendo (actualizar cierra la app: en mitad de una partida se perdería
  * la lectura), la descarga y la instala. Desde Android 12, si la última

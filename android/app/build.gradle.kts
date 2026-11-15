@@ -25,7 +25,7 @@ android {
         versionCode = mayor * 1_000_000 + menor * 1_000 + parche
         versionName = versionApp
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
-        // libnode.so (nodejs-mobile) pide libc++_shared.so: sin él la app se cerraba nada más abrirse (3.61.1).
+        // libnode.so (nodejs-mobile) pide libc++_shared.so: sin él la app se cerraba nada más abrirse.
         externalNativeBuild { cmake { cppFlags += "-std=c++17"; arguments += "-DANDROID_STL=c++_shared" } }
     }
 
@@ -61,18 +61,18 @@ dependencies {
     implementation("com.google.zxing:core:3.5.3")
 }
 
-// El lector (scripts/lector) y lo que importa del motor (src/motor), copiados
-// a la APK en cada compilación: es el MISMO código que corre en Termux y que
+// El lector (scripts/lector) y lo que importa del motor (src/motor) y de
+// src/comun, copiados a la APK en cada compilación: es el MISMO código que
 // prueban las pruebas, no una copia que pueda quedarse atrás.
 val copiarLector by tasks.registering(Sync::class) {
     into("src/main/assets/nodejs-project")
     from(rootProject.file("../scripts/lector")) { into("scripts/lector"); exclude("**/*.sh") }
     from(rootProject.file("../src/motor")) { into("src/motor") }
-    // El cliente de la base de datos de partidas (3.70.0): la tablet sube lo que apunta sola. Solo ese fichero de la app.
+    // Lo que comparten móvil y tablet: el contrato del protocolo y el cliente de la base de datos de partidas.
     from(rootProject.file("../src/comun")) { into("src/comun") }
-    // Los datos de Pick Assist dentro de la APK (3.66.0): «Sin móvil» decide desde el primer arranque, sin red.
+    // Los datos de Pick Assist dentro de la APK: «Sin móvil» decide desde el primer arranque, sin red.
     from(rootProject.file("../public/data")) { include("heroes.json", "roam-meta.json"); into("datos") }
-    // La dirección y la clave pública de la base de datos de partidas (3.70.0), para subir desde el primer arranque.
+    // La dirección y la clave pública de la base de datos de partidas, para subir desde el primer arranque.
     from(rootProject.file("../public")) { include("comunidad.json"); into("datos") }
     from(rootProject.file("nodejs-project"))
 }

@@ -6,12 +6,10 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.media.projection.MediaProjectionManager
-import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -21,54 +19,40 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
-import android.widget.ArrayAdapter
-import android.widget.AutoCompleteTextView
 import android.widget.Button
 import android.widget.ImageView
-import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.qrcode.QRCodeWriter
-import org.json.JSONArray
 import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.Inet4Address
-import java.net.URL
 import kotlin.concurrent.thread
 
 /**
- * La pantalla de la app en la tablet (3.64.0): una GUÍA paso a paso para
- * quien la instala por primera vez, en la que cada paso se marca solo
- * cuando está hecho (permisos, grabar, el móvil vinculado), con el botón
- * que lo hace al lado. Debajo, los detalles: estado, por qué se cerró la
- * última vez y las últimas líneas del lector.
+ * La pantalla de la app en la tablet: arriba el estado (si lee) con el botón
+ * de empezar, lo que la tablet no supo (`Contestar`) y el aviso de un fallo;
+ * luego una GUÍA paso a paso que se marca sola, «Sin móvil», vincular el
+ * móvil y los detalles. Lo que habla con el lector va por `Cliente`.
  */
 class Principal : Activity() {
     companion object {
-        const val PUERTO = 47323
-        const val APP = "https://srchipiron.github.io/mobile-legends-pick-assist/"
         private const val PEDIR_GRABAR = 7
-        /** Mobile Legends (3.70.0): se abre solo al empezar a leer. Solo se abre: nada lo toca. */
+        /** Mobile Legends: se abre solo al empezar a leer. Solo se abre: nada lo toca. */
         const val JUEGO = "com.mobile.legends"
     }
 
-    /** Ya se pidió grabar al abrir esta pantalla (3.70.0): si dices que no, no se vuelve a pedir en bucle. */
+    /** Ya se pidió grabar al abrir esta pantalla: si dices que no, no se vuelve a pedir en bucle. */
     private var pedidoAlAbrir = false
 
     /**
-     * Hay una petición de grabar abierta (3.72.1). Sin esto, la petición sola
-     * al abrir (que espera a mirar si hay versión nueva) y tu toque en
-     * «Empezar a leer» sacaban DOS diálogos de Android, uno encima del otro;
-     * pedir el segundo anula el permiso del primero y, al aceptar ese, Android
-     * daba un error de seguridad que cerraba la app.
+     * Hay una petición de grabar abierta: la sola al abrir y tu toque en
+     * «Empezar a leer» sacaban DOS diálogos; pedir el segundo anula el permiso
+     * del primero y Android daba un error de seguridad que cerraba la app.
      */
     private var pidiendo = false
 
     /** Un paso de la guía: su marca, su texto y, si hace falta, su botón. */
     private inner class Paso(val texto: String, boton: String? = null, accion: (() -> Unit)? = null) {
-        // El número en un círculo que se vuelve verde con ✓ al hacerse (3.91.0).
+        // El número en un círculo que se vuelve verde con ✓ al hacerse.
         val fila = LinearLayout(this@Principal).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false; setPadding(0, dp(8), 0, dp(8)) }
         val marca = circulo()
         val columna = LinearLayout(this@Principal).apply { orientation = LinearLayout.VERTICAL }
@@ -91,7 +75,7 @@ class Principal : Activity() {
     private fun dp(x: Int) = (x * resources.displayMetrics.density).toInt()
 
     private lateinit var estado: TextView
-    /** La tarjeta de arriba (3.91.0): si lee o no, con el botón grande de empezar. */
+    /** La tarjeta de arriba: si lee o no, con el botón grande de empezar. */
     private lateinit var estadoCard: LinearLayout
     private lateinit var estadoTitulo: TextView
     private lateinit var estadoDetalle: TextView
@@ -104,19 +88,19 @@ class Principal : Activity() {
     private lateinit var pasos: List<Paso>
     private lateinit var botonesLinea: List<Button>
     private lateinit var apagarSolo: Button
-    /** «Enseña al lector» (3.71.0): lo que no reconoció en tu última partida. */
+    /** «Enseña al lector»: lo que no reconoció en tu última partida. */
     private lateinit var corregir: LinearLayout
-    /** «¿Cómo acabó?» (3.72.5): la tablet no reconoció el final de tu última partida. */
+    /** «¿Cómo acabó?»: la tablet no reconoció el final de tu última partida. */
     private lateinit var preguntaCard: LinearLayout
     private var preguntaId: String? = null
-    /** El aviso de un cierre (3.72.1), arriba del todo y con «Copiar». */
+    /** El aviso de un cierre, arriba del todo y con «Copiar». */
     private lateinit var aviso: LinearLayout
     private lateinit var avisoTexto: TextView
     private var avisoCompleto = ""
     private var correccionId: String? = null
     @Volatile private var nueva: Actualizar.Nueva? = null
     @Volatile private var movilLee = false
-    /** De cuándo son los datos y si suben las partidas (3.73.1), de /estado. */
+    /** De cuándo son los datos y si suben las partidas, de /estado. */
     private lateinit var cuentaTablet: TextView
     private val reloj = Handler(Looper.getMainLooper())
     private var qrDe: String? = null
@@ -132,11 +116,11 @@ class Principal : Activity() {
         }
         val pad = dp(16)
         // En una tablet (o un móvil tumbado) hay sitio para dos columnas: la
-        // guía a un lado y el QR y los ajustes al otro (3.65.5). En vertical, una.
+        // guía a un lado y el QR y los ajustes al otro. En vertical, una.
         val dosColumnas = resources.configuration.screenWidthDp >= 720
         fun texto(tam: Float, color: Int = Estilo.TEXTO) = TextView(this).apply { textSize = tam; setTextColor(color); setPadding(0, pad / 3, 0, pad / 3); setLineSpacing(0f, 1.15f) }
         fun titulo(t: String) = texto(19f, Estilo.TEXTO).apply { text = t; typeface = Typeface.create("sans-serif", Typeface.BOLD); setPadding(0, 0, 0, pad / 2); letterSpacing = -0.01f }
-        /** Una tarjeta como las de Pick Assist (3.91.0): gris sobre negro, con la arista de luz y un poco de degradado. */
+        /** Una tarjeta como las de Pick Assist: gris sobre negro, con la arista de luz y un poco de degradado. */
         fun tarjeta() = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(pad + dp(2), pad + dp(2), pad + dp(2), pad + dp(2))
@@ -146,8 +130,7 @@ class Principal : Activity() {
         val izquierda = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val derecha = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
 
-        // La cabecera (3.91.0): el sello dorado, el nombre y la versión instalada
-        // (3.65.5: para saber si está al día sin buscarla en Ajustes de Android).
+        // La cabecera: el sello dorado, el nombre y la versión instalada (para saber si está al día).
         val instalada = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { null }
         val cabecera = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false; gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(4), 0, pad) }
         cabecera.addView(TextView(this).apply {
@@ -159,7 +142,7 @@ class Principal : Activity() {
         nombreApp.addView(TextView(this).apply { text = listOfNotNull(instalada?.let { "Versión $it" }, "Pick Assist en la tablet").joinToString(" · "); textSize = 13f; setTextColor(Estilo.TENUE) })
         cabecera.addView(nombreApp)
         izquierda.addView(cabecera)
-        // El estado, lo primero (3.91.0): si está leyendo o no, y el botón grande para empezar o parar.
+        // El estado, lo primero: si está leyendo o no, y el botón grande para empezar o parar.
         estadoCard = tarjeta()
         estadoTitulo = TextView(this).apply { textSize = 22f; typeface = Typeface.create("sans-serif", Typeface.BOLD) }
         estadoDetalle = TextView(this).apply { textSize = 14f; setTextColor(Estilo.TENUE); setPadding(0, dp(4), 0, dp(12)); setLineSpacing(0f, 1.15f) }
@@ -172,15 +155,15 @@ class Principal : Activity() {
                 "Solo MIRA la pantalla: no toca el juego ni tu cuenta. Aun así, es una herramienta de terceros: úsala bajo tu responsabilidad."
             setPadding(0, 0, 0, pad)
         })
-        // La guía completa y tus partidas (3.75.0), a la vista: «me ha costado encontrar eso de apuntar mis partidas».
+        // La guía completa y tus partidas, a la vista.
         val atajos = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false; setPadding(0, 0, 0, pad / 2) }
         atajos.addView(pildora("Guía completa") { startActivity(Intent(this@Principal, Guia::class.java)) }, repartido())
         atajos.addView(pildora("Mis partidas") { startActivity(Intent(this@Principal, Partidas::class.java)) }, repartido())
         izquierda.addView(atajos)
-                actualizar = texto(14f, Color.rgb(100, 210, 255)).apply { visibility = View.GONE }
+        actualizar = texto(14f, Color.rgb(100, 210, 255)).apply { visibility = View.GONE }
         izquierda.addView(actualizar)
-        // Si la app se cerró por un fallo (3.72.1): lo primero que se ve, con el
-        // detalle para copiarlo y pegarlo en el chat (sin ordenador no hay logcat).
+        // Si la app se cerró por un fallo: lo primero que se ve, con el detalle
+        // para copiarlo y pegarlo en el chat (sin ordenador no hay logcat).
         aviso = tarjeta().apply {
             visibility = View.GONE
             background = fondo(Color.rgb(70, 20, 20), Color.rgb(44, 14, 14), radio = 20, arista = Estilo.ROJO, grosor = 2)
@@ -200,10 +183,10 @@ class Principal : Activity() {
         }, repartido())
         aviso.addView(filaAviso)
         izquierda.addView(aviso, separada())
-        // Cómo acabó la partida (3.72.5), lo primero tras un fallo: sin eso la partida no se apunta.
+        // Cómo acabó la partida, lo primero tras un fallo: sin eso la partida no se apunta.
         preguntaCard = tarjeta().apply { visibility = View.GONE }
         izquierda.addView(preguntaCard, separada())
-        // Arriba del todo, donde se ve al abrir desde la notificación de la partida (3.71.0).
+        // Arriba del todo, donde se ve al abrir desde la notificación de la partida.
         corregir = tarjeta().apply { visibility = View.GONE }
         izquierda.addView(corregir, separada())
         izquierda.addView(estadoCard, separada())
@@ -223,16 +206,16 @@ class Principal : Activity() {
             },
             Paso("Empieza a leer. Android pregunta qué grabar: elige «Pantalla completa».", "Empezar a leer") { alternar() },
             Paso("«Sin móvil»: la tablet lee el draft y decide ella sola con tu línea (la de la app del móvil, o la que elijas aquí), y tu nº1 sale en la burbuja."),
-            Paso("Tus partidas se guardan solas en la base de datos: míralas y arréglalas en «Mis partidas». (Opcional) Con Pick Assist en el MÓVIL: escanea el QR de «Vincular el móvil» y toca «Vincular» (misma wifi) para que la tablet use tu maestría."),
+            Paso("Tus partidas se guardan solas en la base de datos: míralas y arréglalas en «Mis partidas». (Opcional) Con Pick Assist en el MÓVIL: escanea el QR de «Vincular el móvil» y toca «Vincular» (misma wifi): el móvil copia el draft de la tablet y lo que corrijas allí manda."),
             Paso("Juega. En baneos la burbuja dice a quién banear; en picks, tu nº1 y los dos siguientes. Al acabar, la tablet apunta la partida."),
         )
         for (p in pasos) guia.addView(p.fila)
         izquierda.addView(guia, separada())
 
-        // Un solo aparato (3.66.0): con la línea elegida, la tablet decide sola.
+        // La tablet decide sola con la línea elegida (o la del móvil).
         val sinMovil = tarjeta()
         sinMovil.addView(titulo("Sin móvil"))
-        sinMovil.addView(texto(14f, Color.LTGRAY).apply { text = "Elige tu línea y la tablet decide sola, con los mismos datos que Pick Assist: en baneos, a quién banear; en picks, tu nº1. Si Pick Assist del móvil está leyendo, manda el móvil." })
+        sinMovil.addView(texto(14f, Color.LTGRAY).apply { text = "Elige tu línea y la tablet decide sola, con los mismos datos que Pick Assist: en baneos, a quién banear; en picks, tu nº1 o tu build. Sin elegir aquí, vale la línea de Pick Assist del móvil vinculado." })
         val filaLineas = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false }
         val filaLineas2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false }
         botonesLinea = Solo.LINEAS.mapIndexed { i, (clave, nombre) ->
@@ -260,7 +243,7 @@ class Principal : Activity() {
         ajustes.addView(titulo("Ajustes y detalles"))
         esquinaBurbuja = pildora("") { Burbuja.siguienteEsquina(this@Principal); refrescar() }
         ajustes.addView(esquinaBurbuja, ancho())
-        // Abrir el juego al empezar a leer (3.70.0), sí por defecto.
+        // Abrir el juego al empezar a leer, sí por defecto.
         val prefs = getSharedPreferences("lector", MODE_PRIVATE)
         fun textoJuego() = "Abrir Mobile Legends al empezar: ${if (prefs.getBoolean("abrirJuego", true)) "sí" else "no"} (toca para cambiar)"
         ajustes.addView(pildora(textoJuego()).apply {
@@ -281,9 +264,8 @@ class Principal : Activity() {
             cuerpo.addView(derecha)
         }
         val desplazar = ScrollView(this).apply { addView(cuerpo); setBackgroundColor(Color.BLACK); clipToPadding = false }
-        // Desde Android 15 la app se dibuja DEBAJO de la barra de estado y de la
-        // de navegación (edge-to-edge obligatorio con targetSdk 35): sin este
-        // margen, las primeras frases quedaban tapadas en la tablet (3.65.5).
+        // Desde Android 15 la app se dibuja DEBAJO de las barras del sistema
+        // (edge-to-edge con targetSdk 35): sin este margen se tapaban las primeras frases.
         desplazar.setOnApplyWindowInsetsListener { v, insets ->
             val (izq, arriba, der, abajo) = if (Build.VERSION.SDK_INT >= 30) {
                 val i = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
@@ -296,25 +278,24 @@ class Principal : Activity() {
             insets
         }
         setContentView(desplazar)
-        // La primera vez, la guía entera (3.75.0).
+        // La primera vez, la guía entera.
         if (guardado == null && !getSharedPreferences("lector", MODE_PRIVATE).getBoolean("guiaVista", false)) startActivity(Intent(this, Guia::class.java))
     }
 
     override fun onResume() {
         super.onResume()
         tic()
-        // Se actualiza sola (3.64.0): si hay una más nueva y no está leyendo, la instala.
+        // Se actualiza sola: si hay una más nueva y no está leyendo, la instala.
         thread(isDaemon = true) {
             val n = try { Actualizar.sola(this) } catch (e: Throwable) { null }
             nueva = n
-            val fallo = falloSinVer()
+            val fallo = Fallos.sinVer(this)
             runOnUiThread {
                 refrescar()
                 pintarAviso(fallo)
-                // Abrir y jugar (3.70.0): sin versión nueva que instalar, pide grabar
-                // nada más abrir (Android exige ese toque cada vez) y luego abre el juego.
-                // Con un fallo sin ver, NO (3.72.1): si el fallo es al empezar a grabar,
-                // pedirlo solo era un bucle de abrir y cerrarse.
+                // Abrir y jugar: sin versión nueva que instalar, pide grabar nada más
+                // abrir (Android exige ese toque cada vez) y luego abre el juego. Con un
+                // fallo sin ver, NO: si el fallo es al empezar a grabar, sería un bucle.
                 if (n == null && fallo == null && !Lector.grabando && !pedidoAlAbrir && !isFinishing) { pedidoAlAbrir = true; alternar() }
             }
         }
@@ -324,239 +305,41 @@ class Principal : Activity() {
 
     private fun tic() {
         refrescar()
-        // ¿El móvil ya lee? Lo dice el propio lector (sus lecturas), cada 3 s.
+        // ¿El móvil ya mira el draft? Lo dice el lector (`movil.consultas`, de GET /draft), cada 3 s.
         if (Nodo.arrancado && System.currentTimeMillis() / 1000 % 3 == 0L) thread(isDaemon = true) {
-            val e = pedir("/estado")
-            movilLee = (e?.optJSONObject("lector")?.optInt("lecturas") ?: 0) > 0
-            val cuenta = e?.let { textoDeCuenta(it) }
+            val e = Cliente.pedir(this, "/estado")
+            movilLee = (e?.optJSONObject("movil")?.optInt("consultas") ?: 0) > 0
+            val cuenta = e?.let { Fallos.textoDeCuenta(it) }
             runOnUiThread { if (!isFinishing && cuenta != null) cuentaTablet.text = cuenta }
-            val c = pedirCorreccion()
-            val p = pedir("/pregunta")?.optJSONObject("pregunta")
-            // Un fallo al empezar a grabar no cierra la app (3.72.1): el aviso sale sin tener que volver a abrirla.
-            val f = falloSinVer()
+            val c = Cliente.pedir(this, "/correccion")?.optJSONObject("correccion")
+            val p = Cliente.pedir(this, "/pregunta")?.optJSONObject("pregunta")
+            // Un fallo al empezar a grabar no cierra la app: el aviso sale sin tener que volver a abrirla.
+            val f = Fallos.sinVer(this)
             runOnUiThread { if (!isFinishing) { pintarCorreccion(c); pintarPregunta(p); pintarAviso(f) } }
         }
         reloj.postDelayed({ tic() }, 1000)
     }
 
-    /** Lo que no reconoció (3.71.0), o null. Solo lo da a la propia tablet: por 127.0.0.1 y con el código. */
-    private fun pedirCorreccion(): JSONObject? = try {
-        val c = URL("http://127.0.0.1:$PUERTO/correccion").openConnection() as HttpURLConnection
-        c.connectTimeout = 1000; c.readTimeout = 2000
-        c.setRequestProperty("X-Lector-Codigo", Vinculo.codigo(this))
-        try { if (c.responseCode == 200) JSONObject(c.inputStream.bufferedReader().readText()).optJSONObject("correccion") else null } finally { c.disconnect() }
-    } catch (e: Throwable) { null }
-
-    /**
-     * Lo que antes no se veía (3.73.1): de cuándo son los datos con los que
-     * decide y si tus partidas llegan a la base de datos (sin tu clave no
-     * suben, y ni la app del móvil ni el bot que mide el modelo las ven).
-     */
-    private fun textoDeCuenta(e: JSONObject): String {
-        val lineas = mutableListOf<String>()
-        e.optJSONObject("datos")?.let { d ->
-            val f = d.optString("fecha", "")
-            val t = try { java.time.Instant.parse(f).toEpochMilli() } catch (x: Exception) { null }
-            if (t != null) {
-                val horas = (System.currentTimeMillis() - t) / 3_600_000
-                lineas += "Datos del juego de hace ${if (horas < 48) "$horas h" else "${horas / 24} días"}${if (d.optString("de") == "apk") " (los que trae la app: no consigo bajar los nuevos)" else ""}." + if (horas >= 72) " Son viejos: conecta la tablet a internet." else ""
-            }
-        }
-        e.optJSONObject("partidas")?.let { p ->
-            val apuntadas = p.optInt("apuntadas"); val sinSubir = p.optInt("sinSubir")
-            lineas += when {
-                apuntadas == 0 -> "Aún no ha apuntado ninguna partida."
-                sinSubir == 0 && p.optString("deQuien") == "lector" -> "$apuntadas partidas apuntadas, todas guardadas en la base de datos con la clave de esta tablet (cuentan para medir; no salen en Pick Assist del móvil)."
-                sinSubir == 0 -> "$apuntadas partidas apuntadas, todas guardadas en tu base de datos."
-                !p.optBoolean("clave") -> "$apuntadas partidas apuntadas; $sinSubir solo están en esta tablet: falta tu clave. Abre Pick Assist en el móvil con «Guardar mis partidas» puesto y la tablet vinculada, una vez."
-                else -> "$apuntadas partidas apuntadas; $sinSubir por subir (se reintenta sola)."
-            }
-        }
-        return lineas.joinToString("\n")
-    }
-
-    /** GET al lector de la propia tablet (127.0.0.1, con el código); null si no contesta 200. */
-    private fun pedir(ruta: String): JSONObject? = try {
-        val c = URL("http://127.0.0.1:$PUERTO$ruta").openConnection() as HttpURLConnection
-        c.connectTimeout = 1000; c.readTimeout = 2000
-        c.setRequestProperty("X-Lector-Codigo", Vinculo.codigo(this))
-        try { if (c.responseCode == 200) JSONObject(c.inputStream.bufferedReader().readText()) else null } finally { c.disconnect() }
-    } catch (e: Throwable) { null }
-
-    /** POST al lector de la propia tablet; el código HTTP, o 0 si no contesta. */
-    private fun mandar(ruta: String, cuerpo: JSONObject): Int = try {
-        val c = URL("http://127.0.0.1:$PUERTO$ruta").openConnection() as HttpURLConnection
-        c.connectTimeout = 2000; c.readTimeout = 20000
-        c.requestMethod = "POST"; c.doOutput = true
-        c.setRequestProperty("Content-Type", "application/json")
-        c.setRequestProperty("X-Lector-Codigo", Vinculo.codigo(this))
-        c.outputStream.use { it.write(cuerpo.toString().toByteArray()) }
-        try { c.responseCode } finally { c.disconnect() }
-    } catch (e: Throwable) { 0 }
-
-    /**
-     * «¿Cómo acabó?» (3.72.5): la tablet no reconoció el final (la tabla salió
-     * tapada o no salió). Con tu respuesta apunta la partida. Desde 3.99.0 no
-     * aprende nada de ella: la tabla se lee con plantillas fijas.
-     */
+    /** «¿Cómo acabó?»: la tablet no vio el final. Solo se rehace si llega otra pregunta. */
     private fun pintarPregunta(p: JSONObject?) {
         if (p == null) { if (preguntaId != null) { preguntaId = null; preguntaCard.visibility = View.GONE }; return }
         val id = p.optString("id")
         if (id == preguntaId) return
         preguntaId = id
         preguntaCard.removeAllViews()
-        val pick = p.optString("pick", "").takeIf { it.isNotEmpty() && it != "null" }
-        preguntaCard.addView(TextView(this).apply { text = "¿Cómo acabó tu partida${pick?.let { " con $it" } ?: ""}?"; textSize = 18f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.rgb(255, 214, 10)) })
-        preguntaCard.addView(TextView(this).apply {
-            text = "No vi el resultado. Dímelo y la apunto."
-            textSize = 14f; setTextColor(Color.LTGRAY); setPadding(0, dp(4), 0, dp(8))
-        })
-        val aviso = TextView(this).apply { textSize = 14f; setTextColor(Color.WHITE); setPadding(0, dp(6), 0, 0) }
-        val fila = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false }
-        val botones = listOf("Gané" to true, "Perdí" to false, "No la terminé" to null).map { (texto, gane) ->
-            pildora(texto, if (gane == true) Estilo.Tipo.PRINCIPAL else if (gane == false) Estilo.Tipo.PELIGRO else Estilo.Tipo.NORMAL).also { fila.addView(it, repartido()) } to gane
-        }
-        for ((b, gane) in botones) b.setOnClickListener {
-            botones.forEach { it.first.isEnabled = false }
-            thread(isDaemon = true) {
-                val estado = mandar("/pregunta", JSONObject().put("id", id).put("gane", gane ?: JSONObject.NULL))
-                runOnUiThread {
-                    aviso.text = when (estado) {
-                        200 -> if (gane == null) "Vale: esa partida no se apunta." else "Apuntada como ${if (gane) "ganada" else "perdida"}."
-                        409 -> "Esa partida ya no se puede contestar."
-                        else -> { botones.forEach { it.first.isEnabled = true }; "El lector no contestó: ¿está leyendo? Prueba otra vez." }
-                    }
-                }
-            }
-        }
-        preguntaCard.addView(fila)
-        preguntaCard.addView(aviso)
+        Contestar.pregunta(this, preguntaCard, p)
         preguntaCard.visibility = View.VISIBLE
     }
 
-    private fun mandarCorreccion(cuerpo: JSONObject): JSONObject? = try {
-        val c = URL("http://127.0.0.1:$PUERTO/correccion").openConnection() as HttpURLConnection
-        // Aprender lleva unas decenas de segundos por captura.
-        c.connectTimeout = 2000; c.readTimeout = 180000
-        c.requestMethod = "POST"; c.doOutput = true
-        c.setRequestProperty("Content-Type", "application/json")
-        c.setRequestProperty("X-Lector-Codigo", Vinculo.codigo(this))
-        c.outputStream.use { it.write(cuerpo.toString().toByteArray()) }
-        try { JSONObject().put("estado", c.responseCode).put("r", if (c.responseCode == 200) JSONObject(c.inputStream.bufferedReader().readText()) else JSONObject()) } finally { c.disconnect() }
-    } catch (e: Throwable) { null }
-
-    /**
-     * La tarjeta «Enseña al lector» (3.71.0): los huecos de tu última partida,
-     * con lo que sí leyó ya puesto. Escribes quién era el que falta, tocas
-     * «Enseñar» y el lector aprende de las capturas del draft como de una
-     * corrección del móvil. Solo se rehace si llega otra corrección (lo que
-     * estás escribiendo no se borra).
-     */
+    /** «Enseña al lector»: solo se rehace si llega otra corrección (lo que estás escribiendo no se borra). */
     private fun pintarCorreccion(c: JSONObject?) {
         if (c == null) { if (correccionId != null) { correccionId = null; corregir.visibility = View.GONE }; return }
         val id = c.optString("id")
         if (id == correccionId) return
         correccionId = id
         corregir.removeAllViews()
-        val heroes = c.optJSONArray("heroes")?.let { a -> List(a.length()) { a.optString(it) } } ?: emptyList()
-        val leidos = c.optJSONObject("leidos") ?: JSONObject()
-        val tuyoFila = leidos.optInt("tuyoFila", -1)
-        fun nombre(a: JSONArray?, i: Int) = a?.optString(i, "")?.takeIf { it.isNotEmpty() && it != "null" } ?: ""
-        fun campo(valor: String, pista: String) = AutoCompleteTextView(this).apply {
-            setText(valor); hint = pista; threshold = 1; textSize = 16f; setSingleLine()
-            setAdapter(ArrayAdapter(this@Principal, android.R.layout.simple_dropdown_item_1line, heroes))
-        }
-        corregir.addView(TextView(this).apply { text = "Enseña al lector"; textSize = 18f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Color.rgb(255, 214, 10)) })
-        corregir.addView(TextView(this).apply {
-            text = "En tu última partida no reconoció a todos. Escribe quién era el que falta (lo que sí leyó ya está puesto) y toca «Enseñar»: aprende de las capturas de ese draft y la próxima vez lo reconoce."
-            textSize = 14f; setTextColor(Color.LTGRAY); setPadding(0, dp(4), 0, dp(8))
-        })
-        // Tu héroe con un toque (3.85.0): eliges el último y tu hueco pasa a la foto de la skin, que el lector no conoce.
-        val tuyos = c.optJSONArray("tuyos")?.let { a -> List(a.length()) { a.optString(it) } }.orEmpty().filter { h -> heroes.any { it.equals(h, ignoreCase = true) } }
-        val filaTuyos = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        corregir.addView(filaTuyos)
-        corregir.addView(TextView(this).apply { text = "Enemigos"; textSize = 15f; setTextColor(Color.rgb(255, 69, 58)) })
-        val enemigos = List(5) { i -> campo(nombre(leidos.optJSONArray("enemigos"), i), "Enemigo ${i + 1}").also { corregir.addView(it) } }
-        corregir.addView(TextView(this).apply { text = "Tu equipo"; textSize = 15f; setTextColor(Color.rgb(10, 132, 255)); setPadding(0, dp(8), 0, 0) })
-        // Sin tu fila leída no se sabe cuál de los cinco eras tú: cuatro compañeros con lo leído y «Tú» aparte, vacío.
-        val sinFila = tuyoFila !in 0..4
-        val leidosAliados = leidos.optJSONArray("aliados")
-        val iniciales = if (sinFila) List(5) { nombre(leidosAliados, it) }.filter { it.isNotEmpty() }.take(4).let { it + List(5 - it.size) { "" } }.take(4) + "" else List(5) { nombre(leidosAliados, it) }
-        val filaTuya = if (sinFila) 4 else tuyoFila
-        val aliados = List(5) { i -> campo(iniciales[i], if (i == filaTuya) "Tú" else "Compañero ${i + 1}").also { corregir.addView(it) } }
-        if (tuyos.isNotEmpty() && aliados[filaTuya].text.isBlank()) {
-            filaTuyos.addView(TextView(this).apply { text = "¿Con quién jugaste tú?"; textSize = 15f; setTextColor(Color.rgb(255, 214, 10)) })
-            val botonesTuyos = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false }
-            for (h in tuyos) botonesTuyos.addView(pildora(h) { aliados[filaTuya].setText(h); aliados[filaTuya].dismissDropDown() }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = dp(8) })
-            filaTuyos.addView(HorizontalScrollView(this).apply { addView(botonesTuyos) })
-        }
-        val aviso = TextView(this).apply { textSize = 14f; setTextColor(Color.WHITE); setPadding(0, dp(6), 0, 0) }
-        val ensenar = pildora("Enseñar", Estilo.Tipo.PRINCIPAL)
-        val ahoraNo = pildora("Ahora no")
-        val porNombre = heroes.associateBy { it.lowercase() }
-        ensenar.setOnClickListener {
-            val raros = (enemigos + aliados).map { it.text.toString().trim() }.filter { it.isNotEmpty() && porNombre[it.lowercase()] == null }
-            if (raros.isNotEmpty()) { aviso.text = "No conozco a: ${raros.joinToString(", ")}. Elige el nombre de la lista."; return@setOnClickListener }
-            val de = { v: AutoCompleteTextView -> porNombre[v.text.toString().trim().lowercase()] }
-            val cuerpo = JSONObject().put("id", id)
-                .put("enemigos", JSONArray(enemigos.mapNotNull(de)))
-                .put("aliados", JSONArray(aliados.filterIndexed { i, _ -> i != filaTuya }.mapNotNull(de)))
-            de(aliados[filaTuya])?.let { cuerpo.put("tuyo", it) }
-            ensenar.isEnabled = false; ahoraNo.isEnabled = false
-            aviso.text = "Aprendiendo de las capturas… (puede tardar un minuto)"
-            thread(isDaemon = true) {
-                val r = mandarCorreccion(cuerpo)
-                runOnUiThread {
-                    val estado = r?.optInt("estado") ?: 0
-                    val res = r?.optJSONObject("r")
-                    aviso.text = when (estado) {
-                        200 -> {
-                            val ap = res?.optJSONArray("aprendidos")?.let { a -> List(a.length()) { a.optString(it) } }.orEmpty()
-                            val no = res?.optJSONArray("sinEncontrar")?.let { a -> List(a.length()) { a.optString(it) } }.orEmpty()
-                            listOfNotNull(
-                                if (ap.isNotEmpty()) "Aprendido: ${ap.joinToString(", ")}." else "Gracias: la partida queda corregida.",
-                                if (no.isNotEmpty()) "No los encontré en las capturas: ${no.joinToString(", ")} (se intenta otra vez cuando vuelvan a salir)." else null,
-                            ).joinToString(" ")
-                        }
-                        400 -> { ensenar.isEnabled = true; ahoraNo.isEnabled = true; "Revisa los nombres: hay uno repetido o falta algún enemigo." }
-                        409 -> "Esa partida ya no se puede corregir (pasó mucho tiempo)."
-                        else -> { ensenar.isEnabled = true; ahoraNo.isEnabled = true; "El lector no contestó: ¿está leyendo? Prueba otra vez." }
-                    }
-                }
-            }
-        }
-        ahoraNo.setOnClickListener {
-            corregir.visibility = View.GONE
-            thread(isDaemon = true) { mandarCorreccion(JSONObject().put("id", id).put("descartar", true)) }
-        }
-        val botones = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false }
-        botones.addView(ensenar, repartido())
-        botones.addView(ahoraNo, repartido())
-        corregir.addView(botones)
-        corregir.addView(aviso)
+        Contestar.correccion(this, corregir, c) { corregir.visibility = View.GONE }
         corregir.visibility = View.VISIBLE
-    }
-
-    /**
-     * Lo que falló desde la última vez que tocaste «Ya está» (3.72.1): el
-     * cierre que apunta Android, la excepción de la app (fallo.txt), la de
-     * empezar a grabar (fallo-grabar.txt) y si Node se paró. null si nada.
-     */
-    private fun falloSinVer(): String? {
-        val visto = getSharedPreferences("lector", MODE_PRIVATE).getLong("fallosVistos", 0)
-        fun fichero(n: String) = java.io.File(filesDir, n).takeIf { it.exists() && it.lastModified() > visto }?.readText()?.trim()
-        val partes = listOfNotNull(
-            Salidas.falloDesde(this, visto)?.let { "Android: $it" },
-            fichero("salida-nodo.txt"),
-            fichero("fallo-nodo.txt")?.let { "En el lector:\n$it" },
-            fichero("fallo-grabar.txt")?.let { "Al empezar a grabar:\n$it" },
-            fichero("fallo.txt")?.let { "En la app:\n$it" },
-        )
-        if (partes.isEmpty()) return null
-        val version = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "?" }
-        // Y lo último del registro del lector (3.72.2): ahí está lo que pasó justo antes.
-        val log = Nodo.registro(this).takeIf { it.exists() }?.readLines()?.takeLast(40)?.joinToString("\n")
-        return (listOf("Lector MLBB $version · Android ${Build.VERSION.SDK_INT} · ${Build.MANUFACTURER} ${Build.MODEL}") + partes + listOfNotNull(log?.let { "Últimas líneas del lector:\n$it" })).joinToString("\n\n")
     }
 
     private fun pintarAviso(fallo: String?) {
@@ -581,7 +364,7 @@ class Principal : Activity() {
         if (peticion != PEDIR_GRABAR || resultado != RESULT_OK || datos == null) return
         startForegroundService(Intent(this, Lector::class.java).setAction(Lector.EMPEZAR)
             .putExtra(Lector.CODIGO_RESULTADO, resultado).putExtra(Lector.DATOS, datos))
-        // Y al juego (3.70.0), si está instalado y no lo has quitado abajo.
+        // Y al juego, si está instalado y no lo has quitado abajo.
         if (getSharedPreferences("lector", MODE_PRIVATE).getBoolean("abrirJuego", true)) packageManager.getLaunchIntentForPackage(JUEGO)?.let { reloj.postDelayed({ startActivity(it) }, 800) }
     }
 
@@ -593,12 +376,6 @@ class Principal : Activity() {
         kotlin.system.exitProcess(0)
     }
 
-    private fun ip(): String? {
-        val red = getSystemService(ConnectivityManager::class.java)
-        val enlace = red.getLinkProperties(red.activeNetwork) ?: return null
-        return enlace.linkAddresses.map { it.address }.firstOrNull { it is Inet4Address && !it.isLoopbackAddress }?.hostAddress
-    }
-
     private fun refrescar() {
         val avisos = Build.VERSION.SDK_INT < 33 || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         val bateria = getSystemService(android.os.PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
@@ -606,8 +383,7 @@ class Principal : Activity() {
         val linea = Solo.linea(this)
         val hechos = listOf(avisos, bateria, burbuja, Lector.grabando, linea != null, movilLee, false)
         pasos.forEachIndexed { i, p -> p.marcar(hechos[i], i + 1) }
-        // La línea elegida, marcada; sin ninguna, «Apagado».
-        // La elegida, en oro (3.91.0).
+        // La línea elegida, en oro; sin ninguna, «Apagado».
         for (b in botonesLinea) { val es = b.tag == linea; b.text = (if (es) "✓ " else "") + Solo.nombre(b.tag as String); pintarPildora(b, if (es) Estilo.Tipo.ELEGIDO else Estilo.Tipo.NORMAL) }
         apagarSolo.text = if (linea == null) "✓ Apagado" else "Apagado"
         pintarPildora(apagarSolo, if (linea == null) Estilo.Tipo.ELEGIDO else Estilo.Tipo.NORMAL)
@@ -620,7 +396,7 @@ class Principal : Activity() {
         estado.text = listOfNotNull(Nodo.fallo, Lector.estado, salida, caida?.let { "La última vez se cerró por:\n$it" }).joinToString("\n\n")
         boton.text = if (Lector.grabando) "Parar de leer" else "Empezar a leer"
         pintarPildora(boton, if (Lector.grabando) Estilo.Tipo.NORMAL else Estilo.Tipo.PRINCIPAL)
-        // La tarjeta de estado (3.91.0): verde mientras lee.
+        // La tarjeta de estado: verde mientras lee.
         estadoTitulo.text = if (Lector.grabando) "●  Leyendo la pantalla" else "●  Parado"
         estadoTitulo.setTextColor(if (Lector.grabando) Estilo.VERDE else Estilo.TENUE)
         estadoDetalle.text = if (Lector.grabando)
@@ -629,48 +405,15 @@ class Principal : Activity() {
         estadoCard.background = if (Lector.grabando) fondo(Color.rgb(16, 52, 28), Estilo.TARJETA, radio = 20, arista = Color.argb(120, 48, 209, 88)) else fondo(Estilo.TARJETA_ALTA, Estilo.TARJETA, radio = 20)
         esquinaBurbuja.text = "Burbuja con tu nº1: ${Burbuja.esquina(this)} (toca para cambiar) · ahora: ${Burbuja.estado}"
 
-        val codigo = Vinculo.codigo(this)
-        val dir = ip()
+        val dir = Vinculo.ip(this)
         vinculo.text = if (dir == null) "Sin wifi: conecta la tablet a la misma wifi que el móvil." else
-            "Escanea el QR con la cámara del móvil.\nO a mano, en Pick Assist → Ajustes → Lector en la tablet:\nDirección  $dir\nCódigo     ${codigo.chunked(5).joinToString("-")}"
-        val enlace = if (dir == null) null else "${APP}#lector=$dir:$PUERTO&codigo=$codigo"
+            "Escanea el QR con la cámara del móvil.\nO a mano, en Pick Assist → Ajustes → Lector en la tablet:\nDirección  $dir\nCódigo     ${Vinculo.codigo(this).chunked(5).joinToString("-")}"
+        val enlace = Vinculo.enlace(this)
         if (enlace != qrDe) {
             qrDe = enlace
-            qr.setImageBitmap(enlace?.let { dibujarQr(it) })
+            qr.setImageBitmap(enlace?.let { Vinculo.qr(it) })
         }
         val log = Nodo.registro(this)
         registro.text = if (log.exists()) log.readLines().takeLast(25).joinToString("\n") else "(el lector aún no ha arrancado: toca «Empezar a leer»)"
-    }
-
-    private fun dibujarQr(texto: String): Bitmap {
-        val m = QRCodeWriter().encode(texto, BarcodeFormat.QR_CODE, 512, 512)
-        val bmp = Bitmap.createBitmap(m.width, m.height, Bitmap.Config.RGB_565)
-        for (x in 0 until m.width) for (y in 0 until m.height) bmp.setPixel(x, y, if (m[x, y]) Color.BLACK else Color.WHITE)
-        return bmp
-    }
-}
-
-/**
- * El modo «Sin móvil» (3.66.0): la línea elegida se guarda en `solo.json`, en
- * la casa de la app, y el lector (scripts/lector/solo.mjs) la lee en cada
- * vuelta: sin reiniciar nada. Sin línea, el modo está apagado.
- */
-object Solo {
-    val LINEAS = listOf("roam" to "Roam", "jungle" to "Jungla", "mid" to "Mid", "gold" to "Oro", "exp" to "Exp")
-    fun nombre(clave: String) = LINEAS.firstOrNull { it.first == clave }?.second ?: clave
-    private fun fichero(c: android.content.Context) = java.io.File(c.filesDir, "solo.json")
-    fun linea(c: android.content.Context): String? = try {
-        val j = JSONObject(fichero(c).readText())
-        val l = j.optString("linea", "")
-        if (j.optBoolean("activo", true) && LINEAS.any { it.first == l }) l else null
-    } catch (e: Exception) { null }
-    private fun escribir(c: android.content.Context, j: JSONObject) {
-        val tmp = java.io.File(c.filesDir, "solo.json.tmp")
-        tmp.writeText(j.toString())
-        tmp.renameTo(fichero(c))
-    }
-    fun guardar(c: android.content.Context, linea: String?) {
-        val j = if (linea == null) JSONObject().put("activo", false) else JSONObject().put("linea", linea).put("idioma", "es")
-        escribir(c, j)
     }
 }

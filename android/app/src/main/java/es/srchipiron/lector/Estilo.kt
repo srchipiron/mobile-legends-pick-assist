@@ -12,7 +12,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 
 /**
- * El aspecto de Lector MLBB (3.91.0): el mismo lenguaje que Pick Assist en
+ * El aspecto de Lector MLBB: el mismo lenguaje que Pick Assist en
  * el móvil. Fondo negro, tarjetas grises con una arista de luz, el amarillo
  * del sistema como acento único, botones en píldora (el principal en oro con
  * texto oscuro, los demás en cristal) y el verde, el rojo y el azul de

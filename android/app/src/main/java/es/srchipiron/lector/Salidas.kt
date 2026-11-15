@@ -7,7 +7,7 @@ import android.os.Build
 import java.io.File
 
 /**
- * Por qué se cerró la app la última vez (3.61.5): sin ordenador no hay
+ * Por qué se cerró la app la última vez: sin ordenador no hay
  * logcat, y «se cierra sola» puede ser Android matándola por memoria con el
  * juego abierto, un fallo del lector o un cierre normal. Android lo apunta
  * (ApplicationExitInfo, Android 11+); aquí se traduce y se enseña en la
@@ -48,7 +48,7 @@ object Salidas {
     )
 
     /**
-     * El último cierre si fue un fallo y es posterior a `desde` (3.72.1): con
+     * El último cierre si fue un fallo y es posterior a `desde`: con
      * eso la app avisa ARRIBA y no vuelve a pedir grabar sola, que con un
      * fallo al empezar era un bucle (abrir → grabar → se cierra → abrir…).
      */

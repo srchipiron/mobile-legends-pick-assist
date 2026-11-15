@@ -5,12 +5,12 @@ import java.io.File
 
 /**
  * Node (nodejs-mobile) con el lector de siempre (scripts/lector/en-tablet.mjs),
- * arrancado por arranque-apk.mjs (3.72.3), que recoge cualquier fallo al cargarlo.
+ * arrancado por arranque-apk.mjs, que recoge cualquier fallo al cargarlo.
  * Se arranca UNA vez por proceso: Node no se puede volver a arrancar dentro
  * del mismo, así que si se para, la app se cierra y se abre de cero.
  */
 object Nodo {
-    /** Si las bibliotecas no cargan, la app lo dice en pantalla en vez de cerrarse (3.61.1). */
+    /** Si las bibliotecas no cargan, la app lo dice en pantalla en vez de cerrarse. */
     val fallo: String? = try {
         System.loadLibrary("node")
         System.loadLibrary("lector")

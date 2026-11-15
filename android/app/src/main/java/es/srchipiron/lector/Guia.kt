@@ -13,7 +13,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 
 /**
- * La guía completa (3.75.0), pedida por Javi: «me ha costado encontrar eso
+ * La guía completa, pedida por Javi: «me ha costado encontrar eso
  * de apuntar mis partidas. Haz una suite en el apk paso por paso para que
  * todo funcione y se configure como es debido… que explique qué hace cada
  * cosa». Texto fijo: cómo dejarlo todo listo, por orden, y qué hace cada
@@ -64,7 +64,7 @@ class Guia : Activity() {
             "El móvil, tu centro de mando" to listOf(
                 "Pick Assist es la app web del móvil: tus estadísticas, el historial, el meta, la ficha de cada héroe y el diagnóstico. Para unirlo a la tablet: abre Pick Assist, escanea el QR de «Vincular el móvil» con la cámara y toca «Vincular» (misma wifi). Una vez basta.",
                 "Vinculados, móvil y tablet usan la MISMA clave: en el móvil ves todas las partidas que apunta la tablet, con tus números, y lo que arregles en uno aparece en el otro (gana el arreglo más reciente). No tienes que activar nada a mano.",
-                "El móvil también manda a la tablet tu maestría (cómo te va con cada héroe) y tu línea, y puede leer el draft él. Si el móvil está leyendo, manda el móvil y la tablet se aparta.",
+                "El draft lo lleva SIEMPRE la tablet: el móvil lo copia, enseña el consejo y te deja corregirlo. Lo que corriges en el móvil manda en la burbuja y en la partida que se apunta, y el lector aprende de ello. El móvil también le dice tu línea y tus héroes habituales.",
             ),
             "Mantenimiento solo" to listOf(
                 "Se actualiza sola al abrirla si hay versión nueva (cuando no está grabando).",
@@ -89,7 +89,7 @@ class Guia : Activity() {
                 setPadding(pad + dp(2), pad + dp(2), pad + dp(2), pad + dp(2))
                 background = fondo(Estilo.TARJETA_ALTA, Estilo.TARJETA, radio = 20)
             }
-            // El número de la sección en su círculo de oro (3.91.0), como los pasos de la pantalla principal.
+            // El número de la sección en su círculo de oro, como los pasos de la pantalla principal.
             val cabeza = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = false; gravity = android.view.Gravity.CENTER_VERTICAL; setPadding(0, 0, 0, dp(6)) }
             cabeza.addView(circulo().also { marcarCirculo(it, false, i + 1) }, LinearLayout.LayoutParams(dp(30), dp(30)).apply { marginEnd = dp(12) })
             cabeza.addView(TextView(this).apply { text = titulo; textSize = 18f; typeface = Typeface.create("sans-serif", Typeface.BOLD); setTextColor(Estilo.TEXTO) })

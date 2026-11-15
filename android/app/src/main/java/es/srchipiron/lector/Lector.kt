@@ -68,7 +68,7 @@ class Lector : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        // La salud de la tablet (3.63.0): cada 15 s, para que el lector la cuente y la app del móvil la suba.
+        // La salud de la tablet: cada 15 s, para que el lector la cuente y la app del móvil la suba.
         thread(isDaemon = true, name = "salud") { while (true) { try { escribirSalud() } catch (e: Throwable) {}; Thread.sleep(15000) } }
         val puerto = Interno.arrancar()
         if (Nodo.fallo != null) { estado = Nodo.fallo!!; return }
@@ -94,12 +94,12 @@ class Lector : Service() {
                 else startForeground(1, notificacion)
                 val datos: Intent? = if (Build.VERSION.SDK_INT >= 33) intent.getParcelableExtra(DATOS, Intent::class.java) else @Suppress("DEPRECATION") intent.getParcelableExtra(DATOS)
                 val codigo = intent.getIntExtra(CODIGO_RESULTADO, Activity.RESULT_CANCELED)
-                // Ya grabando (3.72.1): un segundo permiso no se usa. Empezar otra vez
+                // Ya grabando: un segundo permiso no se usa. Empezar otra vez
                 // paraba la grabación buena para probar uno que Android ya pudo anular.
                 if (grabando) Unit
                 else if (datos != null && codigo == Activity.RESULT_OK) empezar(codigo, datos) else { estado = "Sin permiso para grabar la pantalla"; stopSelf() }
             } catch (e: Throwable) {
-                // Un fallo al empezar a grabar (3.72.1) ya no cierra la app: se dice
+                // Un fallo al empezar a grabar ya no cierra la app: se dice
                 // en la pantalla, con el detalle para copiarlo, y se deja de intentar.
                 estado = "No se pudo empezar a grabar: ${e.javaClass.simpleName}: ${e.message ?: ""}".take(300)
                 try { java.io.File(filesDir, "fallo-grabar.txt").writeText(android.util.Log.getStackTraceString(e).take(4000)) } catch (x: Throwable) {}
@@ -109,7 +109,7 @@ class Lector : Service() {
             }
             PARAR -> {
                 parar(); stopForeground(STOP_FOREGROUND_REMOVE); stopSelf()
-                // Al dejar de leer es cuando se puede actualizar sin cortar nada (3.64.0).
+                // Al dejar de leer es cuando se puede actualizar sin cortar nada.
                 thread(isDaemon = true) { try { Actualizar.sola(applicationContext) } catch (e: Throwable) {} }
             }
         }
@@ -261,7 +261,7 @@ object Interno {
                 if (i > 0) cabeceras[l.substring(0, i).trim().lowercase()] = l.substring(i + 1).trim()
             }
             val salida = c.getOutputStream()
-            // En tiempo constante (3.100.0, revisión de seguridad): con `!=` se puede medir cuánto acierta.
+            // En tiempo constante: con `!=` se puede medir cuánto acierta.
             if (!MessageDigest.isEqual((cabeceras["x-secreto"] ?: "").toByteArray(), secreto.toByteArray())) return responder(salida, 403, ByteArray(0))
             val partes = primera.split(" ")
             val metodo = partes.getOrNull(0); val ruta = partes.getOrNull(1)
@@ -292,18 +292,4 @@ object Interno {
         s.flush()
     }
 
-}
-
-/** El código de vinculación: se crea una vez y se guarda en la tablet. */
-object Vinculo {
-    private const val LETRAS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-    fun codigo(contexto: Context): String {
-        val prefs = contexto.getSharedPreferences("lector", Context.MODE_PRIVATE)
-        prefs.getString("codigo", null)?.let { return it }
-        val azar = SecureRandom()
-        val nuevo = (1..10).map { LETRAS[azar.nextInt(LETRAS.length)] }.joinToString("")
-        prefs.edit().putString("codigo", nuevo).apply()
-        return nuevo
-    }
-    fun nuevo(contexto: Context) { contexto.getSharedPreferences("lector", Context.MODE_PRIVATE).edit().remove("codigo").apply() }
 }
