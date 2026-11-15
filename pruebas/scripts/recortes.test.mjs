@@ -9,7 +9,7 @@ import { test, ok, eq } from '../ayuda.mjs';
 import { escribirPng, leerPng } from '../../scripts/lector/png.mjs';
 import { deflateSync, crc32 } from 'node:zlib';
 import { carasGuardadas, leerPicksEnemigos, leerAliados } from '../../scripts/lector/leer.mjs';
-import { recorteDePicks, recorteDeDraft, recortesDelDraft, mejoresRecortes, componerPicks, devolverPicks, CAJAS_ALIADOS, TOPE_RECORTE } from '../../scripts/lector/recortes.mjs';
+import { recorteDePicks, recorteDeDraft, mejoresRecortes, componerPicks, devolverPicks, CAJAS_ALIADOS, TOPE_RECORTE } from '../../scripts/lector/recortes.mjs';
 import { capturaCompleta, VERDAD } from '../fixtures/juego/captura.mjs';
 
 const caras = carasGuardadas();
@@ -63,18 +63,6 @@ test('lo leído va hueco a hueco, con candidato y parecido aunque no pase del um
   ok(r.aliados.every((h) => h.nombre === null && typeof h.candidato === 'string' && h.parecido < 0.8), 'sin tu equipo en pantalla lee a alguien');
   eq(r.tuyoFila, -1, 'sin tu equipo en pantalla dice qué fila eres');
   eq(recorteDeDraft(img, caras).tuyoFila, VERDAD.tuyoFila, 'no dice que la quinta fila eres tú');
-});
-
-test('de las capturas del aprendizaje se recortan las DOS ÚLTIMAS que eran la pantalla del draft, nunca una descartada', () => {
-  const leidas = [];
-  const informe = [{ id: 'lectura-1' }, { id: 'lectura-2' }, { id: 'lectura-3', descartada: 'sinBaneos' }, { id: 'lectura-4' }, { id: 'lectura-5', descartada: 'sinBaneos' }];
-  const r = recortesDelDraft(informe, (id) => { leidas.push(id); return img; }, caras);
-  eq(r.map((x) => x.id).join(), 'lectura-2,lectura-4');
-  eq(leidas.join(), 'lectura-2,lectura-4', 'decodifica capturas que no recorta');
-  eq(recortesDelDraft([], () => img, caras).length, 0);
-  // Las que más enemigos leían (3.54.0): la última suele ser ya la fase de skins.
-  const conAciertos = [{ id: 'lectura-1', aciertos: 5 }, { id: 'lectura-2', aciertos: 1 }, { id: 'lectura-3', aciertos: 4 }, { id: 'lectura-4', aciertos: 0 }];
-  eq(recortesDelDraft(conAciertos, () => img, caras).map((x) => x.id).join(), 'lectura-1,lectura-3', 'no recorta las que más enemigos leían, en su orden');
 });
 
 test('sin la verdad (3.81.0): de las capturas de un draft se recortan la que más héroes lee y la última (3.86.5), en su orden; una que no se lee no cuenta', () => {

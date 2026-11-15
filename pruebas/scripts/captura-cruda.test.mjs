@@ -1,17 +1,19 @@
 /**
- * La captura SIN comprimir de las lecturas del draft (3.45.0): `screencap`
- * sin `-p` se lee (`leerCrudo`), el lector prueba las dos y se queda con la
- * más rápida (`crearElectorDeCaptura`), lee lo mismo que con el PNG, guarda
- * un PNG para el aprendizaje, y si la crudo no vale vuelve a la comprimida
- * sin perder la lectura (y sin culpar a la crudo de una tablet apagada).
+ * La captura de la tablet llega SIEMPRE en crudo (la cabecera de `screencap`
+ * y los píxeles): la APK no comprime nada y el lector no descomprime nada.
+ * `leerCrudo` acepta las dos cabeceras de Android y RGBX; lo que se guarda
+ * para aprender se comprime aparte, fuera del hilo principal.
  */
-import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { mkdtempSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { after } from 'node:test';
 import { test, ok, eq } from '../ayuda.mjs';
 import { leerPng, leerCrudo, escribirPngRapido, escribirPng } from '../../scripts/lector/png.mjs';
-import { crearServidor, crearElectorDeCaptura, ELECCION_DE_CAPTURA } from '../../scripts/lector/servir.mjs';
-import { capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
+import { capturaDeLaApk } from '../../scripts/lector/en-tablet.mjs';
+import { capturaCompleta, capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
+import { arrancar } from '../fixtures/juego/lector.mjs';
 
 /** Lo que daría `screencap` sin `-p`: cabecera (12 o 16 bytes) y los píxeles tal cual. */
 const crudoDe = ({ ancho, alto, rgba }, { cabecera = 16, formato = 1 } = {}) => {
@@ -42,79 +44,40 @@ test('la captura en crudo se lee con las dos cabeceras de Android y RGBX; lo que
   ok(Buffer.from(leerPng(escribirPng(img)).rgba).equals(Buffer.from(img.rgba)), 'el PNG de siempre deja de leerse');
 });
 
-test('el elector alterna hasta tener muestras de las dos, se queda con la más rápida, vuelve a probar la otra de vez en cuando, y tras un fallo se queda en PNG', () => {
-  const e = crearElectorDeCaptura({ muestras: 3, ventana: 5, explorar: 10 });
-  const vistos = [];
-  const tiempo = { crudo: 1500, png: 4000 };
-  let cambio = null;
-  for (let i = 0; i < 30; i++) { const f = e.siguiente(); vistos.push(f); cambio = e.anotar(f, tiempo[f]) ?? cambio; }
-  eq(vistos.slice(0, 6).join(), 'crudo,png,crudo,png,crudo,png', `no alterna al principio: ${vistos.slice(0, 6)}`);
-  eq(cambio, 'crudo', 'no avisa de que la crudo es la más rápida');
-  const despues = vistos.slice(6);
-  ok(despues.filter((f) => f === 'crudo').length >= 20 && despues.includes('png'), `no se queda con la rápida o no vuelve a probar la otra: ${despues}`);
-  // Si la wifi cambia y la crudo pasa a ir lenta, cambia.
-  tiempo.crudo = 9000;
-  const luego = [];
-  for (let i = 0; i < 30; i++) { const f = e.siguiente(); luego.push(f); e.anotar(f, tiempo[f]); }
-  ok(luego.slice(-20).filter((f) => f === 'png').length >= 17, `no se pasa a la comprimida cuando la crudo va lenta: ${luego}`);
-  // Con la crudo rota, siempre PNG.
-  const r = crearElectorDeCaptura();
-  r.descartar('formato 4');
-  ok(Array.from({ length: 12 }, () => r.siguiente()).every((f) => f === 'png'), 'pide crudo después de descartarla');
-  ok(ELECCION_DE_CAPTURA.muestras >= 2 && ELECCION_DE_CAPTURA.explorar > ELECCION_DE_CAPTURA.muestras, 'la elección no tiene muestras o no vuelve a explorar');
+const cerrar = [];
+after(() => Promise.all(cerrar.map((f) => f())));
+
+test('la captura de la APK: en crudo, con su secreto, por 127.0.0.1; sin el secreto o sin grabar, un fallo con lo que hay que hacer', async () => {
+  const img = capturaCompleta();
+  const crudo = crudoDe(img);
+  let grabando = true;
+  const apk = createServer((req, res) => {
+    if (req.headers['x-secreto'] !== 'secreto-de-la-apk') { res.writeHead(403).end(); return; }
+    if (req.url === '/captura') { if (grabando) res.writeHead(200).end(crudo); else res.writeHead(409).end(); return; }
+    res.writeHead(404).end();
+  });
+  await new Promise((r) => apk.listen(0, '127.0.0.1', r));
+  cerrar.push(() => new Promise((r) => apk.close(r)));
+  const base = `http://127.0.0.1:${apk.address().port}`;
+  const leida = await capturaDeLaApk(base, 'secreto-de-la-apk')();
+  ok(leida.ancho === img.ancho && leida.alto === img.alto && Buffer.from(leida.rgba).equals(Buffer.from(img.rgba)), 'la captura de la APK no es la imagen que dio');
+  const fallo = async (f) => { try { await f(); return null; } catch (e) { return e.message; } };
+  ok(/captura 403/.test(await fallo(capturaDeLaApk(base, 'otro-secreto'))), 'sin el secreto la APK da la captura');
+  grabando = false;
+  ok(/no está grabando/.test(await fallo(capturaDeLaApk(base, 'secreto-de-la-apk'))), 'sin grabar no dice qué hacer');
 });
 
-test('/leer con el elector: la crudo lee lo mismo que la comprimida, deja un PNG para aprender y dice su formato; si la crudo no vale, vuelve a la comprimida sin perder la lectura', async () => {
-  const png = capturaCompletaPng();
-  const crudo = crudoDe(leerPng(png));
-  const carpeta = mkdtempSync(join(tmpdir(), 'crudo-'));
-  const pedidas = [];
-  let modo = 'bien';
-  const capturar = async (op = {}) => {
-    pedidas.push(op.crudo ? 'crudo' : 'png');
-    if (modo === 'apagada') throw Object.assign(new Error('device offline'), { tipo: 'tablet' });
-    if (op.crudo) return modo === 'roto' ? Buffer.from('basura') : crudo;
-    return png;
-  };
-  const elector = crearElectorDeCaptura();
-  const servidor = crearServidor({ capturar, elector, carpeta, enHilos: false, aprender: async () => ({ aprendido: null, informe: [] }) });
-  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
-  const base = `http://127.0.0.1:${servidor.address().port}`;
-  const leer = async () => { const r = await fetch(`${base}/leer`, { headers: { Origin: 'https://srchipiron.github.io' } }); return { estado: r.status, l: await r.json() }; };
-  try {
-    const a = (await leer()).l, b = (await leer()).l;
-    eq(`${a.formato},${b.formato}`, 'crudo,png', 'no prueba primero la crudo y luego la comprimida');
-    eq(a.enemigos.map((x) => x.nombre).filter(Boolean).join(), VERDAD.enemigos.join(), 'la captura en crudo no lee los picks enemigos');
-    eq(JSON.stringify([a.tuyos, a.suyos, a.enemigos, a.aliados, a.tuyo]), JSON.stringify([b.tuyos, b.suyos, b.enemigos, b.aliados, b.tuyo]), 'en crudo se lee otra cosa que en PNG');
-    // El PNG de la crudo llega a la carpeta (se escribe aparte) y es la misma imagen.
-    const t0 = Date.now();
-    while (!existsSync(join(carpeta, `${a.id}.png`)) && Date.now() - t0 < 5000) await new Promise((r) => setTimeout(r, 20));
-    ok(Buffer.from(leerPng(readFileSync(join(carpeta, `${a.id}.png`))).rgba).equals(Buffer.from(leerPng(png).rgba)), 'la captura en crudo no se guarda como el PNG de la misma imagen');
-    // La tablet apagada: falla la crudo y la comprimida, la app lo sabe, y la crudo NO se descarta por eso.
-    modo = 'apagada';
-    while (elector.siguiente() !== 'crudo');
-    const apagada = await leer();
-    eq(apagada.estado, 502, 'con la tablet apagada no dice que falla la captura');
-    eq(elector.estado().roto, null, 'una tablet apagada descarta la captura en crudo para siempre');
-    // La crudo que no se sabe leer: la lectura sale igual, comprimida, y desde ahí todo comprimido.
-    modo = 'roto';
-    pedidas.length = 0;
-    let rota = null;
-    for (let i = 0; i < 12 && !rota; i++) { const r = await leer(); if (pedidas.includes('crudo')) rota = r; pedidas.length = rota ? pedidas.length : 0; }
-    ok(rota && rota.estado === 200 && rota.l.formato === 'png' && rota.l.enemigos.some((x) => x.nombre), `una crudo rota pierde la lectura: ${JSON.stringify(rota?.l?.error ?? rota?.estado)}`);
-    ok(elector.estado().roto, 'una crudo que no se sabe leer no se descarta');
-    pedidas.length = 0;
-    for (let i = 0; i < 12; i++) await leer();
-    ok(!pedidas.includes('crudo'), 'después de descartarla sigue pidiendo la crudo');
-  } finally { servidor.close(); }
-});
-
-test('sin elector, /leer sigue con la comprimida y no pide nunca la crudo (las pruebas y leer.mjs de siempre)', async () => {
-  const pedidas = [];
-  const servidor = crearServidor({ capturar: async (op = {}) => { pedidas.push(op.crudo ? 'crudo' : 'png'); return capturaCompletaPng(); }, enHilos: false });
-  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
-  try {
-    const r = await (await fetch(`http://127.0.0.1:${servidor.address().port}/leer`, { headers: { Origin: 'https://srchipiron.github.io' } })).json();
-    eq(`${r.formato}|${pedidas.join()}`, 'png|png', 'sin elector cambia de formato');
-  } finally { servidor.close(); }
+test('cada lectura del draft se guarda en PNG para aprender, y la imagen guardada es la que se leyó', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'cruda-'));
+  const img = capturaCompleta();
+  const { interno, cerrar: c } = await arrancar({ carpeta, capturar: async () => img });
+  cerrar.push(c);
+  const r = await interno.leer();
+  ok(r.ok, JSON.stringify(r));
+  eq(r.lectura.tuyos.map((b) => b.nombre).join(), VERDAD.tuyos.join(), 'la lectura en crudo no lee los baneos');
+  await interno.guardando();
+  const png = join(carpeta, `${r.lectura.id}.png`);
+  ok(existsSync(png) && existsSync(join(carpeta, `${r.lectura.id}.json`)), 'la lectura no deja su captura para aprender');
+  const vuelta = leerPng((await import('node:fs')).readFileSync(png));
+  ok(Buffer.from(vuelta.rgba).equals(Buffer.from(img.rgba)), 'el PNG guardado no es la imagen leída');
 });

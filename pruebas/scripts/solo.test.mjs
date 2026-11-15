@@ -1,22 +1,28 @@
 /**
- * Un solo aparato (3.66.0, scripts/lector/solo.mjs): Lector MLBB junta las
- * lecturas en un draft, decide con el motor de la app y pone el consejo de la
- * burbuja; se aparta si el móvil lee o manda el suyo, y en partida solo mira
- * el minimapa.
+ * El modo solo (scripts/lector/solo.mjs y acumular.mjs): la tablet junta las
+ * lecturas en un draft, decide con el motor de la app, pone la burbuja,
+ * vigila el final, pregunta y apunta. Conduce SIEMPRE que haya línea
+ * (protocolo 2): el móvil la copia y le manda lo que tú tocas.
  */
-import { test, ok, eq, leerJson } from '../ayuda.mjs';
+import { test, ok, eq, leerJson, RAIZ } from '../ayuda.mjs';
 import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { acumularDraft, draftVacio, resumenPregunta, BANEOS_DE_OTRO_DRAFT, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, correccionDelDraft, tusHabituales, HABITUALES, faseDe, LECTURAS_PARA_FUERA, MINUTOS_ENTRE_PARTIDAS, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, CAMBIOS_A_LA_VEZ, MINUTOS_PARA_OTRO_DRAFT, MINUTOS_ENTRE_TABLAS, MOVIL_ACTIVO_MS, INTERVALOS_SOLO, PREGUNTA_CADUCA_MS, PICKS_SIN_BANEOS } from '../../scripts/lector/solo.mjs';
+import { after } from 'node:test';
+import { acumularDraft, draftVacio, BANEOS_DE_OTRO_DRAFT, faseDe, LECTURAS_PARA_FUERA, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, MINUTOS_PARA_OTRO_DRAFT, PICKS_SIN_BANEOS, conCorreccion, registrarCorreccion } from '../../scripts/lector/acumular.mjs';
+import { resumenPregunta, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, correccionDelDraft, tusHabituales, HABITUALES, MINUTOS_ENTRE_TABLAS, INTERVALOS_SOLO } from '../../scripts/lector/solo.mjs';
+import { CAMBIOS_A_LA_VEZ, PREGUNTA_CADUCA_MS, sanearCorreccion, sanearDraftTablet, sanearPartidaTablet } from '../../src/comun/contrato.js';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
 import { buildsDe, buildParaElDraft, objetosDe } from '../../src/motor/builds.js';
-import { crearServidor, RETENCION_CAPTURAS_MS } from '../../scripts/lector/servir.mjs';
-import { RAIZ } from '../ayuda.mjs';
+import { RETENCION_CAPTURAS_MS } from '../../scripts/lector/capturas.mjs';
+import { leerPng } from '../../scripts/lector/png.mjs';
+import { arrancar, pedirApk } from '../fixtures/juego/lector.mjs';
 
 const catalogo = leerJson('public/data/heroes.json');
 const meta = leerJson('public/data/roam-meta.json');
 const datos = prepararDatos({ catalogo, meta, rango: 'glory' });
+const abiertos = [];
+after(() => Promise.all(abiertos.map((s) => s.cerrar())));
 const N = (n) => ({ nombre: n });
 const V = { nombre: null };
 // Cada lectura de pega es de la pantalla del draft (3.83.0): lleva la fila de baneos (dos de ellos al final de la de ellos).
@@ -176,55 +182,41 @@ test('sin línea en la APK, la tablet lee con la que mandó la app; «Apagado» 
   eq(leerAjustesSolo(join(casa, 'no-existe.json')).apagado, false, 'sin fichero cuenta como apagado');
 });
 
-test('el bucle: decide y pone el consejo; se aparta si el móvil lee o manda el suyo; en partida solo el minimapa', async () => {
+test('el bucle: decide y pone el consejo cuando cambia; conduce SIEMPRE con línea; en partida solo el minimapa; sin línea, ni lee ni deja burbuja', async () => {
   let t = 1_000_000;
-  const puestos = [], pedidas = [];
+  const puestos = [], pedidas = [], fases = [];
   let respuesta = lectura({ tuyos: [N('Hirara')], enemigos: [N('Clint'), V, V, V, V] });
-  let movil = { leyo: null, consejo: null };
-  const interno = { leer: async (op) => { pedidas.push(op); return { ok: true, lectura: respuesta }; }, delMovil: () => movil, ponerConsejo: (c) => puestos.push(c), ponerFase: (f) => fases.push(f) };
-  const fases = [];
-  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t });
+  const interno = { leer: async (op) => { pedidas.push(op); return { ok: true, lectura: respuesta }; }, ponerConsejo: (c) => puestos.push(c), ponerFase: (f) => fases.push(f) };
+  let ajustes = { activo: true, linea: 'roam', rango: 'glory', idioma: 'es', origen: 'movil' };
+  const solo = crearSolo({ interno, ajustes: () => ajustes, datosPara: () => datos, ahora: () => t });
   eq(await solo.tic(), INTERVALOS_SOLO.draft);
-  // 3.80.0: el último pick se ve con su dibujo unos segundos; a 5 s entre lecturas se escapaba.
   ok(INTERVALOS_SOLO.draft <= 2000, `en el draft se lee cada ${INTERVALOS_SOLO.draft} ms: el último pick se escapa`);
   eq(puestos.length, 1, 'no pone el consejo');
-  eq(fases.at(-1), 'draft', 'la burbuja no sabe que hay un draft (3.84.0): ofrecería corregir encima de él');
+  eq(fases.at(-1), 'draft', 'la burbuja no sabe que hay un draft: ofrecería contestar encima de él');
   ok(pedidas[0]?.rapida === true, 'no pide la lectura rápida (en partida reconocería caras)');
   await solo.tic();
   eq(puestos.length, 1, 'repite el mismo consejo en cada vuelta');
-  // El móvil acaba de leer: la tablet no lee ni pisa nada.
-  movil = { leyo: t - 1000, consejo: null };
-  const antes = pedidas.length;
-  eq(await solo.tic(), INTERVALOS_SOLO.vacio);
-  eq(solo.resumen().apartado, true, 'el resumen no dice que se aparta por el móvil');
-  eq(fases.at(-1), null, 'apartada por el móvil, la tablet deja una fase vieja: el botón saldría sobre el draft que lee el móvil (3.86.1)');
-  eq(pedidas.length, antes, 'lee con el móvil leyendo (dos lecturas a la vez)');
-  movil = { leyo: null, consejo: t - 1000 };
+  // Con la línea del MÓVIL también conduce ella (protocolo 2): nada la aparta.
   respuesta = lectura({ tuyos: [N('Hirara')], enemigos: [N('Clint'), N('Khufra'), V, V, V] });
-  await solo.tic();
-  eq(puestos.length, 1, 'pisa el consejo del móvil');
-  // Pasado el minuto del móvil, vuelve.
-  t += MOVIL_ACTIVO_MS + 1;
-  await solo.tic();
-  eq(puestos.length, 2, 'sin el móvil no vuelve a decidir');
-  // En partida: cierra y espera más.
+  t += 1500;
+  eq(await solo.tic(), INTERVALOS_SOLO.draft, 'con la línea del móvil no sigue leyendo');
+  eq(puestos.length, 2, 'con otro draft no vuelve a decidir');
+  ok(!('apartado' in solo.resumen()), 'el resumen aún habla de apartarse por el móvil');
   respuesta = { partida: true, rapida: true };
   await solo.tic();
   eq(await solo.tic(), INTERVALOS_SOLO.partida, 'en partida no espera más');
   ok(solo.estado().cerrado, 'la partida no cierra el draft');
-  eq(fases.at(-1), 'partida', 'en partida la burbuja tocable no sabe que se juega (3.86.1)');
-  // Lo que cuenta en /estado (3.69.3).
+  eq(fases.at(-1), 'partida', 'en partida la burbuja tocable no sabe que se juega');
   const r = solo.resumen();
-  ok(r.activo && r.linea === 'roam' && r.lecturas >= 4 && r.ultima?.enPartida === true && r.apartado === false, `el resumen no cuenta lo que hace: ${JSON.stringify(r)}`);
-  eq(r.partidas, 1, 'el resumen no cuenta la partida que empezó (3.83.2)');
-  // Apagado, no lee.
-  const apagado = crearSolo({ interno, ajustes: () => ({ activo: false }), datosPara: () => datos });
+  ok(r.activo && r.linea === 'roam' && r.origen === 'movil' && r.lecturas >= 4 && r.ultima?.enPartida === true, `el resumen no cuenta lo que hace: ${JSON.stringify(r)}`);
+  eq(r.partidas, 1, 'el resumen no cuenta la partida que empezó');
+  // Sin línea (o «Apagado»): no lee, sin fase y sin burbuja.
+  ajustes = { activo: false };
   const n = pedidas.length;
-  await apagado.tic();
-  eq(pedidas.length, n, 'apagado lee');
-  // Un fallo de captura (no graba) espera y no rompe.
-  const roto = crearSolo({ interno: { ...interno, leer: async () => ({ ok: false, estado: 502, error: 'captura' }) }, ajustes: () => ({ activo: true, linea: 'roam' }), datosPara: () => datos });
-  eq(await roto.tic(), INTERVALOS_SOLO.error);
+  eq(await solo.tic(), INTERVALOS_SOLO.vacio);
+  ok(pedidas.length === n && fases.at(-1) === null && puestos.at(-1) === null, `sin línea lee o deja la burbuja: ${JSON.stringify({ leidas: pedidas.length - n, fase: fases.at(-1), consejo: puestos.at(-1) })}`);
+  const roto = crearSolo({ interno: { ...interno, leer: async () => ({ ok: false, error: 'captura' }) }, ajustes: () => ({ activo: true, linea: 'roam' }), datosPara: () => datos });
+  eq(await roto.tic(), INTERVALOS_SOLO.error, 'un fallo de captura no espera');
 });
 
 test('el mismo héroe en dos huecos de baneo no abre un draft (3.89.1): la victoria fantasma del 2 de noviembre', () => {
@@ -268,7 +260,7 @@ test('sin la fila de baneos, el draft se abre por los picks (3.101.1): la burbuj
   let respuesta = { ...l743, id: 'lectura-2026-11-11T21-40-00-000Z-743' };
   const consejos = [], registro = [];
   const interno = {
-    leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: (c) => consejos.push(c),
+    leer: async () => ({ ok: true, lectura: respuesta }), ponerConsejo: (c) => consejos.push(c),
     vigilar: () => {}, final: () => null, ponerResumen: () => {},
   };
   const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, registrar: (l) => registro.push(l) });
@@ -320,7 +312,7 @@ test('la misma tabla del final no se apunta dos veces (3.89.1): otra a menos de 
   let final = null;
   const apuntadas = [], registro = [];
   const interno = {
-    leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: () => {},
+    leer: async () => ({ ok: true, lectura: respuesta }), ponerConsejo: () => {},
     vigilar: (desde) => { final = { desde, resultado: null }; }, final: () => final, ponerResumen: () => {},
   };
   const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: (p) => apuntadas.push(p), registrar: (l) => registro.push(l) });
@@ -353,7 +345,7 @@ test('todo desde la tablet (3.70.0): al empezar la partida vigila el final y, co
   let final = null;
   const vigiladas = [], apuntadas = [], resumenes = [], maestrias = [];
   const interno = {
-    leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({ leyo: null, consejo: null }), ponerConsejo: () => {},
+    leer: async () => ({ ok: true, lectura: respuesta }), ponerConsejo: () => {},
     vigilar: (desde, cuerpo) => { vigiladas.push({ desde, cuerpo }); final = { desde, resultado: null }; },
     final: () => final, ponerResumen: (r) => resumenes.push(r),
   };
@@ -362,13 +354,14 @@ test('todo desde la tablet (3.70.0): al empezar la partida vigila el final y, co
   const comprobantes = [];
   const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: (p) => apuntadas.push(p), maestriaDe: () => { maestrias.push(1); return maestria; }, alSinLeer: () => { recortesPedidos += 1; }, alApuntarTabla: (c) => comprobantes.push(c) });
   await solo.tic();
-  ok(maestrias.length > 0, 'el consejo no usa tu maestría');
+  eq(maestrias.length, 0, 'el consejo usa tu maestría: el motor ya no la recibe (solo sirve para tus habituales)');
   eq(vigiladas.length, 0, 'vigila el final en pleno draft');
   respuesta = { partida: true, rapida: true };
   t += 5000; await solo.tic();
   t += 5000; await solo.tic();
   eq(vigiladas.length, 1, 'al empezar la partida no vigila el final');
   eq(vigiladas[0].desde, solo.estado().cerradoEn, 'vigila otro instante que el del cierre');
+  ok(maestrias.length > 0, 'al cerrar el draft no mira tus habituales');
   t += 20000; await solo.tic();
   eq(apuntadas.length, 0, 'apunta sin resultado');
   const tabla = { id: 'fotograma-tabla', tira: 'AAAA', resultadoParecido: 0.98 };
@@ -387,13 +380,7 @@ test('todo desde la tablet (3.70.0): al empezar la partida vigila el final y, co
   ok(/^Ganada con Rafaela/.test(resumenes[0].titulo) && /tablet/.test(resumenes[0].texto), JSON.stringify(resumenes[0]));
   eq(solo.resumen().apuntadas, 1);
   eq(solo.resumen().partidas, 1, 'una partida cuenta dos veces, o ninguna (3.83.2)');
-  // Con el móvil leyendo, la tablet no vigila ni apunta (lo hace la app).
-  const otraVigilancia = [];
-  eq(recortesPedidos, 0, 'pide recortes de un draft sin capturas (3.81.0)');
-  const conMovil = crearSolo({ interno: { ...interno, delMovil: () => ({ leyo: t, consejo: null }), vigilar: (d) => otraVigilancia.push(d) }, ajustes: () => ({ activo: true, linea: 'roam' }), datosPara: () => datos, ahora: () => t, apuntar: () => {} });
-  respuesta = { partida: true, rapida: true };
-  await conMovil.tic(); await conMovil.tic();
-  eq(otraVigilancia.length, 0, 'con el móvil leyendo, la tablet también vigila');
+  eq(recortesPedidos, 0, 'pide recortes de un draft sin capturas');
 });
 
 test('la partida de la tablet: sin tu fila leída, el nº1 marcado como supuesto; sin resultado, nada', () => {
@@ -415,22 +402,21 @@ test('los datos se preparan una vez por fichero y rango', () => {
 });
 
 test('la lectura rápida: en partida solo el minimapa, sin reconocer caras; fuera de partida, la lectura entera', async () => {
-  const juego = readFileSync(join(RAIZ, 'pruebas/fixtures/juego/pantallas/juego-17.png'));
-  const servidor = crearServidor({ capturar: async () => juego, enHilos: false, guardar: () => {} });
-  try {
-    const r = await servidor.interno.leer({ rapida: true });
-    ok(r.ok && r.lectura.partida === true && r.lectura.rapida === true, `en partida no sale la lectura rápida: ${JSON.stringify(r).slice(0, 200)}`);
-    ok(!('tuyos' in r.lectura) && !('enemigos' in r.lectura), 'en partida reconoce caras (puede meter lag al juego)');
-    const entera = await servidor.interno.leer({});
-    ok(entera.ok && Array.isArray(entera.lectura.tuyos), 'sin «rápida» no hace la lectura entera');
-  } finally { servidor.close(); }
+  const juego = leerPng(readFileSync(join(RAIZ, 'pruebas/fixtures/juego/pantallas/juego-17.png')));
+  const s = await arrancar({ capturar: async () => juego });
+  abiertos.push(s);
+  const r = await s.interno.leer({ rapida: true });
+  ok(r.ok && r.lectura.partida === true && r.lectura.rapida === true, `en partida no sale la lectura rápida: ${JSON.stringify(r).slice(0, 200)}`);
+  ok(!('tuyos' in r.lectura) && !('enemigos' in r.lectura), 'en partida reconoce caras (puede meter lag al juego)');
+  const entera = await s.interno.leer({});
+  ok(entera.ok && Array.isArray(entera.lectura.tuyos), 'sin «rápida» no hace la lectura entera');
 });
 
 test('sin voz (3.96.0): al empezar la partida, la tablet solo pide vigilar el final, sin guion ni «callar»', async () => {
   let t = 7_000_000;
   let respuesta = lectura({ tuyos: [N('Hirara')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 });
   const vigiladas = [];
-  const interno = { leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: () => {}, vigilar: (...args) => vigiladas.push(args), final: () => null, ponerResumen: () => {} };
+  const interno = { leer: async () => ({ ok: true, lectura: respuesta }), ponerConsejo: () => {}, vigilar: (...args) => vigiladas.push(args), final: () => null, ponerResumen: () => {} };
   const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: () => {} });
   await solo.tic();
   respuesta = { partida: true, rapida: true };
@@ -453,7 +439,7 @@ test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se guarda 
   let final = null;
   const correcciones = [], resumenes = [];
   const interno = {
-    leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: () => {},
+    leer: async () => ({ ok: true, lectura: respuesta }), ponerConsejo: () => {},
     vigilar: (desde) => { final = { desde, resultado: null }; }, final: () => final, ponerResumen: (r) => resumenes.push(r),
     ponerCorreccion: (c) => correcciones.push(c),
     protegerLecturas: (ids) => protegidas.push(ids),
@@ -509,31 +495,17 @@ test('enseñar al lector sin el móvil (3.71.0): lo que no reconoció se guarda 
   eq(JSON.stringify(conCaptura([], 'lectura-x')), '["lectura-x"]');
 });
 
-test('una partida que ya se vigila no se pisa (3.86.2): el móvil llevaba el draft y la tablet cierra el suyo con la pantalla de carga', async () => {
+test('la tablet vigila SU partida al cerrar el draft, aunque hubiera otra vigilancia en marcha (ya no hay otro que conduzca)', async () => {
   let t = 30_000_000, respuesta = lectura({ enemigos: [N('Yi Sun-shin'), V, V, V, N('Fredrinn')], aliados: [N('Wanwan'), V, V, V, V], tuyoFila: -1 });
-  // El móvil mandó vigilar su draft hace 60 s y la partida sigue: la tablet no lo sabía.
   let final = { desde: t - 60000, activa: true, acabada: false, resultado: null };
-  const vigiladas = [], correcciones = [], registro = [];
-  const interno = { leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: () => {}, vigilar: (desde) => { vigiladas.push(desde); final = { desde, activa: true }; }, final: () => final, ponerCorreccion: (c) => correcciones.push(c) };
-  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: () => {}, registrar: (m) => registro.push(m) });
+  const vigiladas = [];
+  const interno = { leer: async () => ({ ok: true, lectura: respuesta }), ponerConsejo: () => {}, vigilar: (desde) => { vigiladas.push(desde); final = { desde, activa: true }; }, final: () => final };
+  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: () => {} });
   await solo.tic();
   respuesta = { partida: true, rapida: true };
   t += 5000; await solo.tic(); t += 5000; await solo.tic();
   ok(solo.estado().cerrado, 'la prueba necesita un draft cerrado');
-  eq(vigiladas.length, 0, 'la tablet pisa la vigilancia del móvil con su draft de la pantalla de carga');
-  eq(correcciones.length, 0, 'pregunta por los héroes de un draft que no es');
-  ok(registro.some((l) => /ya se vigila/.test(l)), 'no deja rastro de por qué no la apunta');
-  // Pasados MINUTOS_ENTRE_PARTIDAS, o con la de antes acabada, es otra partida y se vigila.
-  for (const [nombre, antes] of [['más tarde', { desde: 0, activa: true }], ['la de antes acabada', { desde: Infinity, activa: false, acabada: true }]]) {
-    let t2 = 40_000_000, r2 = lectura({ enemigos: [N('Clint'), V, V, V, V] });
-    let f2 = { ...antes, desde: antes.desde === 0 ? t2 - MINUTOS_ENTRE_PARTIDAS * 60000 - 1 : t2 - 30000 };
-    const v2 = [];
-    const solo2 = crearSolo({ interno: { ...interno, leer: async () => ({ ok: true, lectura: r2 }), vigilar: (d) => { v2.push(d); f2 = { desde: d, activa: true }; }, final: () => f2 }, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t2, apuntar: () => {} });
-    await solo2.tic();
-    r2 = { partida: true, rapida: true };
-    t2 += 5000; await solo2.tic(); t2 += 5000; await solo2.tic();
-    eq(v2.length, 1, `${nombre}: no vigila la partida nueva`);
-  }
+  eq(JSON.stringify(vigiladas), JSON.stringify([solo.estado().cerradoEn]), 'al cerrar su draft no vigila su partida');
 });
 
 test('la fase de la burbuja tocable (3.86.1): «fuera» solo tras lecturas seguidas sin nadie; al empezar el draft, con un baneo leído, ya no', async () => {
@@ -547,7 +519,7 @@ test('la fase de la burbuja tocable (3.86.1): «fuera» solo tras lecturas segui
   // El bucle: tras la partida, dos lecturas sin nadie dan «fuera»; el primer baneo del draft siguiente (aún sin abrirlo) la quita.
   let t = 7_000_000, respuesta = lectura({ enemigos: [N('Clint'), V, V, V, V] });
   const fases = [];
-  const interno = { leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: () => {}, vigilar: () => {}, final: () => null, ponerFase: (f) => fases.push(f) };
+  const interno = { leer: async () => ({ ok: true, lectura: respuesta }), ponerConsejo: () => {}, vigilar: () => {}, final: () => null, ponerFase: (f) => fases.push(f) };
   const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t });
   await solo.tic();
   respuesta = { partida: true, rapida: true };
@@ -582,7 +554,7 @@ test('tu héroe con un toque (3.85.0): si no se leyó tu fila, la corrección tr
   const conId = (l) => ({ ...l, id: `lectura-20261029-${String(n += 1).padStart(3, '0')}` });
   let respuesta = conId(lectura({ tuyos: [N('Hirara'), N('Belerick')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, V], tuyoFila: 4 }));
   const correcciones = [];
-  const interno = { leer: async () => ({ ok: true, lectura: respuesta }), delMovil: () => ({}), ponerConsejo: () => {}, vigilar: () => {}, final: () => null, ponerCorreccion: (c) => correcciones.push(c) };
+  const interno = { leer: async () => ({ ok: true, lectura: respuesta }), ponerConsejo: () => {}, vigilar: () => {}, final: () => null, ponerCorreccion: (c) => correcciones.push(c) };
   const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, maestriaDe: () => maestria });
   await solo.tic();
   respuesta = { partida: true, rapida: true };
@@ -590,13 +562,14 @@ test('tu héroe con un toque (3.85.0): si no se leyó tu fila, la corrección tr
   eq(correcciones[0]?.tuyos?.[0], 'Minotaur', `la corrección del modo solo no trae tus habituales: ${JSON.stringify(correcciones[0]?.tuyos)}`);
 });
 
-test('la burbuja de la tablet sola ya no dice «de los tuyos» (3.94.0): el mejor de TODOS, juegues o no', () => {
+test('la burbuja no dice «de los tuyos» y el motor no recibe tu maestría: el mejor de TODOS, juegues o no', () => {
   const draft = acumularDraft(null, lectura({ tuyos: [N('Hirara')], enemigos: [N('Clint'), N('Khufra'), V, V, V] }), 1);
   const sin = decidirSolo({ datos, draft, linea: 'roam' });
   const ultimo = sin.rec.ranking.at(-1).heroe.name;
   const c = consejoSolo({ datos, draft, linea: 'roam', maestria: { [ultimo]: { games: 300, winRate: 0.5 } } });
-  ok(c?.titulo && !c.detalle?.includes('De los tuyos'), `la burbuja sigue proponiendo uno de los que juegas: ${c?.detalle}`);
+  ok(c?.titulo && !/De los tuyos|Yours/.test(c.detalle ?? ''), `la burbuja sigue proponiendo uno de los que juegas: ${c?.detalle}`);
   eq(c.titulo, consejoSolo({ datos, draft, linea: 'roam' }).titulo, 'lo que juegas cambia el nº1 de la burbuja');
+  ok(!('deLosTuyos' in sin.rec) || sin.rec.deLosTuyos == null, 'el motor sigue dando «de los tuyos»');
 });
 
 test('el draft siguiente se ve por sus baneos, no solo por el reloj (3.72.5): tras la partida, en cuanto hay baneos nuevos; y si alguien abandona el draft, en cuanto cambian los huecos de baneo', () => {
@@ -626,7 +599,7 @@ test('¿Cómo acabó? (3.72.5): sin reconocer el final, la tablet lo pregunta UN
     let respuestaLista = lectura({ tuyos: [N('Hirara'), N('Belerick')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 });
     const preguntas = [], apuntadas = [], resumenes = [];
     const interno = {
-      leer: async () => ({ ok: true, lectura: respuestaLista }), delMovil: () => ({}), ponerConsejo: () => {},
+      leer: async () => ({ ok: true, lectura: respuestaLista }), ponerConsejo: () => {},
       vigilar: (desde) => { final = { desde, activa: true, acabada: false, resultado: null, inicio: desde + 1000, duracion: null }; },
       final: () => final, ponerResumen: (r) => resumenes.push(r),
       ponerPregunta: (p) => preguntas.push(p), respuesta: () => { const r = respuesta; respuesta = null; return r; },
@@ -684,7 +657,7 @@ test('lo que se perdía sin el móvil (3.74.3): la pregunta pisada o caducada se
     let lista = { ...lectura({ tuyos: [N('Hirara'), N('Belerick')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 }), id: 'lectura-1' };
     const preguntas = [], apuntadas = [], registro = [], corregidas = [], correcciones = [], sinLeer = [], sinResultado = [], finales = [];
     const interno = {
-      leer: async () => ({ ok: true, lectura: lista }), delMovil: () => ({}), ponerConsejo: () => {},
+      leer: async () => ({ ok: true, lectura: lista }), ponerConsejo: () => {},
       vigilar: (desde) => { final = { desde, activa: true, acabada: false, resultado: null, inicio: desde + 1000, duracion: null }; },
       final: () => final, ponerResumen: () => {}, ponerCorreccion: (c) => correcciones.push(c),
       ponerPregunta: (p) => preguntas.push(p), respuesta: () => { const r = respuesta; respuesta = null; return r; },
@@ -796,21 +769,19 @@ test('lo que se perdía sin el móvil (3.74.3): la pregunta pisada o caducada se
   eq(otra.corregidas.length, 0, 'aplica la corrección de otra partida');
 });
 
-test('el lector separa las lecturas del modo solo (3.74.3): la APK sabe que el MÓVIL lee solo con las suyas, y la corrección contestada antes de apuntar se guarda una vez', async () => {
-  let t = 1_000_000;
-  const servidor = crearServidor({ capturar: async () => { throw new Error('sin captura'); }, enHilos: false, ahora: () => t, registrar: () => {} });
-  await servidor.interno.leer({ rapida: true });
-  const e = servidor.interno.estado().lector;
-  ok(e.lecturas === 0 && e.lecturasSolo === 1, `las lecturas del modo solo cuentan como del móvil: ${JSON.stringify(e)}`);
-  servidor.interno.ponerCorreccion({ id: 'correccion-5', cuando: t, ids: ['lectura-1'], heroes: ['Clint', 'Khufra', 'Layla', 'Gord'], leidos: { enemigos: ['Clint'] } });
-  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
-  try {
-    const r = await fetch(`http://127.0.0.1:${servidor.address().port}/correccion`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: 'correccion-5', enemigos: ['Clint', 'Khufra', 'Layla'], aliados: ['Gord'] }) });
-    ok(r.status !== 409 && r.status !== 400 && r.status !== 403, `POST /correccion: ${r.status}`);
-    const c = servidor.interno.correccionContestada();
-    ok(c && c.cuando === t && c.enemigos.length === 3 && c.aliados[0] === 'Gord', `no se guarda la contestada: ${JSON.stringify(c)}`);
-    eq(servidor.interno.correccionContestada(), null, 'se recoge dos veces');
-  } finally { servidor.close(); }
+test('/estado cuenta las lecturas (todas del modo solo) y las consultas del móvil; la corrección contestada en la APK antes de apuntar se guarda una vez', async () => {
+  const t = 1_000_000;
+  const s = await arrancar({ capturar: async () => { throw new Error('sin captura'); }, ahora: () => t });
+  abiertos.push(s);
+  await s.interno.leer({ rapida: true });
+  const e = s.interno.estado();
+  ok(e.lector.lecturas === 1 && !('lecturasSolo' in e.lector) && e.movil.consultas === 0, `no cuenta bien las lecturas o el móvil: ${JSON.stringify({ lector: e.lector, movil: e.movil })}`);
+  s.interno.ponerCorreccion({ id: 'correccion-5', cuando: t, ids: ['lectura-1'], heroes: ['Clint', 'Khufra', 'Layla', 'Gord'], leidos: { enemigos: ['Clint'] } });
+  const r = await pedirApk(s.puerto, '/correccion', { metodo: 'POST', cuerpo: { id: 'correccion-5', enemigos: ['Clint', 'Khufra', 'Layla'], aliados: ['Gord'] } });
+  eq(r.estado, 200, `POST /correccion: ${r.estado} ${r.cuerpo}`);
+  const c = s.interno.correccionContestada();
+  ok(c && c.cuando === t && c.enemigos.length === 3 && c.aliados[0] === 'Gord', `no se guarda la contestada: ${JSON.stringify(c)}`);
+  eq(s.interno.correccionContestada(), null, 'se recoge dos veces');
 });
 
 test('el resumen de la partida dice cómo va la sesión y, en racha mala, cómo te va tras perder, con tus partidas (3.77.0)', async () => {
@@ -831,11 +802,174 @@ test('el resumen de la partida dice cómo va la sesión y, en racha mala, cómo 
   const resumenes = [];
   const lista = lectura({ tuyos: [N('Hirara'), N('Belerick')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 });
   let leida = lista;
-  const interno = { leer: async () => ({ ok: true, lectura: leida }), delMovil: () => ({}), ponerConsejo: () => {}, vigilar: (desde) => { final = { desde, activa: true }; }, final: () => final, ponerResumen: (r) => resumenes.push(r) };
+  const interno = { leer: async () => ({ ok: true, lectura: leida }), ponerConsejo: () => {}, vigilar: (desde) => { final = { desde, activa: true }; }, final: () => final, ponerResumen: (r) => resumenes.push(r) };
   const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, apuntar: () => {}, numerosDe: () => peor });
   const paso = async () => { t += 5000; await solo.tic(); };
   await paso(); leida = { partida: true, rapida: true }; await paso(); await paso();
   final = { ...final, resultado: 'perdi', resultadoEn: t, activa: false };
   await paso();
   ok(resumenes.some((r) => /Quizá toca un descanso/.test(r.texto ?? '')), `el modo solo no pasa tus números al resumen: ${JSON.stringify(resumenes.map((r) => r.texto))}`);
+});
+
+// ── Protocolo 2: la tablet lleva el draft; el móvil lo copia y le manda lo que tú tocas ──
+
+/** Un modo solo con un servidor de pega, para seguir un draft de punta a punta. */
+function conductor({ conIds = true } = {}) {
+  let t = 50_000_000, n = 0, final = null, respuesta = null;
+  const reg = { consejos: [], apuntadas: [], aprendidas: [], arregladas: [], cambiadas: [], terminadas: [], preguntas: [], correcciones: [], sinResultado: [] };
+  const conId = (l) => (conIds ? { ...l, id: `lectura-2026-11-14T20-00-${String(n += 1).padStart(2, '0')}-000Z-${n}` } : l);
+  let leida = conId(lectura({ tuyos: [N('Hirara'), N('Belerick')], suyos: [N('Eudora')], enemigos: [N('Clint'), N('Joy'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, N('Rafaela')], tuyoFila: 4 }));
+  const guardadas = new Map();
+  const interno = {
+    leer: async () => ({ ok: true, lectura: leida }), ponerConsejo: (c) => reg.consejos.push(c), ponerFase: () => {}, ponerResumen: () => {},
+    vigilar: (desde) => { final = { desde, activa: true, acabada: false, resultado: null, inicio: desde + 1000, duracion: null, fotogramas: [] }; },
+    final: () => final, terminarVigilancia: (d) => reg.terminadas.push(d), ponerCorreccion: (c) => reg.correcciones.push(c),
+    ponerPregunta: (p) => reg.preguntas.push(p), respuesta: () => { const r = respuesta; respuesta = null; return r; },
+    aprenderDe: async (v) => { reg.aprendidas.push(v); return { aprendido: true }; },
+  };
+  const solo = crearSolo({
+    interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t,
+    apuntar: (p) => { reg.apuntadas.push(p); guardadas.set(p.t, p); },
+    partidaGuardada: (tt) => guardadas.get(tt) ?? null,
+    alCorregir: (c) => { reg.arregladas.push(c); const p = guardadas.get(c.partida); if (p) guardadas.set(c.partida, { ...p, pick: c.tuyo ?? p.pick, draft: { ...p.draft, enemigos: c.enemigos, aliados: c.aliados } }); },
+    alCambiarResultado: (tt, gane) => { reg.cambiadas.push([tt, gane]); const p = guardadas.get(tt) ?? reg.sinResultado.find((x) => x.t === tt); if (!p) return null; const nueva = { ...p, gane }; guardadas.set(tt, nueva); return nueva; },
+    guardarSinResultado: (p) => { reg.sinResultado.push(p); return true; },
+  });
+  return {
+    solo, reg, paso: async (ms = 1500) => { t += ms; await solo.tic(); }, ahora: () => t,
+    leer: (l) => { leida = conId(l); }, fin: (f) => { final = { ...final, ...f }; }, contestar: (r) => { respuesta = r; },
+    cerrar: async () => { leida = { partida: true, rapida: true }; t += 5000; await solo.tic(); t += 5000; await solo.tic(); },
+  };
+}
+
+test('la corrección del móvil manda sobre lo leído: lo que quitas no vuelve, lo que añades ocupa un hueco, tu héroe va en tu fila, y lo leído después sigue entrando', () => {
+  let d = acumularDraft(null, lectura({ tuyos: [N('Hirara'), N('Belerick')], enemigos: [N('Clint'), N('Joy'), V, V, V], aliados: [N('Gord'), V, V, V, N('Rafaela')], tuyoFila: 4 }), 1000);
+  const c = registrarCorreccion(d, sanearCorreccion({ desde: d.desde, enemigos: ['Clint', 'Khufra'], aliados: ['Gord'], tuyo: 'Rafaela', baneos: ['Hirara'] }));
+  ok(c.rechazados.enemigos.join() === 'Joy' && c.rechazados.baneos.join() === 'Belerick,Valir,Cici' && !c.rechazados.aliados.length, `no apunta lo que quitaste: ${JSON.stringify(c.rechazados)}`);
+  let v = conCorreccion(d, c);
+  ok(v.enemigos.join() === 'Clint,Khufra,,,' && v.baneos.join() === 'Hirara' && v.aliados[4] === 'Rafaela' && v.corregido, `la corrección no manda: ${JSON.stringify(v)}`);
+  // Lo leído después: Joy (quitado) no vuelve; Layla (nuevo) entra; la corrección sigue con el draft.
+  d = acumularDraft({ ...d, correccion: c }, lectura({ tuyos: [N('Hirara'), N('Belerick')], enemigos: [N('Clint'), N('Joy'), N('Layla'), V, V] }), 2000);
+  ok(d.correccion === c, 'acumular más lecturas pierde la corrección');
+  v = conCorreccion(d);
+  eq(v.enemigos.join(), 'Clint,Khufra,Layla,,', 'lo quitado vuelve o lo leído después no entra');
+  // Sin tu fila leída, tu héroe ocupa un hueco libre y esa es tu fila.
+  const sinFila = acumularDraft(null, lectura({ tuyos: [N('Hirara'), N('Belerick')], aliados: [N('Gord'), N('Selena'), V, V, V] }), 1);
+  const v2 = conCorreccion(sinFila, registrarCorreccion(sinFila, sanearCorreccion({ desde: sinFila.desde, enemigos: [], aliados: ['Gord', 'Selena'], tuyo: 'Rafaela' })));
+  ok(v2.tuyoFila >= 0 && v2.aliados[v2.tuyoFila] === 'Rafaela' && v2.aliados.filter(Boolean).length === 3, `tu héroe no va en tu fila: ${JSON.stringify(v2)}`);
+  // Leído en tu equipo y corregido como rival: cambia de lado.
+  const mal = acumularDraft(null, lectura({ tuyos: [N('Hirara'), N('Belerick')], aliados: [N('Clint'), V, V, V, V] }), 1);
+  const v3 = conCorreccion(mal, registrarCorreccion(mal, sanearCorreccion({ desde: mal.desde, enemigos: ['Clint'], aliados: [] })));
+  ok(!v3.aliados.includes('Clint') && v3.enemigos.includes('Clint'), `un héroe corregido de lado sigue en los dos: ${JSON.stringify(v3)}`);
+  // Sin tu héroe en la corrección, tu fila leída se queda.
+  const tuya = conCorreccion(d, registrarCorreccion(d, sanearCorreccion({ desde: d.desde, enemigos: ['Clint'], aliados: ['Gord'] })));
+  eq(tuya.aliados[4], 'Rafaela', 'una corrección sin tu héroe te quita de tu fila');
+  // Y el motor decide con lo corregido.
+  const dec = decidirSolo({ datos, draft: v, linea: 'roam' });
+  ok(dec.enemigos.some((h) => h.name === 'Khufra') && !dec.enemigos.some((h) => h.name === 'Joy') && dec.tuyo?.name === 'Rafaela', `el motor no decide con lo corregido: ${dec.enemigos.map((h) => h.name)}`);
+  eq(conCorreccion(d, null), d, 'sin corrección no devuelve el mismo draft');
+});
+
+test('GET /draft: el draft abierto (o el último cerrado) con su identidad y los nombres del catálogo, y la partida del último cerrado con su registro al apuntarse', async () => {
+  const { solo, paso, cerrar, fin, leer, ahora } = conductor();
+  const vacio = solo.paraElMovil();
+  ok(vacio.draft === null && vacio.partida === null, `sin draft dice algo: ${JSON.stringify(vacio)}`);
+  await paso();
+  const desde = ahora();
+  let v = solo.paraElMovil();
+  ok(v.draft.desde === desde && v.draft.cambiado === desde && !v.draft.cerrado && v.draft.cerradoEn === null && v.draft.linea === 'roam', `el draft no lleva su identidad: ${JSON.stringify(v.draft)}`);
+  ok(v.draft.enemigos.join() === 'Clint,Joy,,,' && v.draft.tuyoFila === 4 && v.draft.tuyo === 'Rafaela' && v.draft.baneos.join() === 'Hirara,Belerick,Eudora' && v.draft.porPicks && !v.draft.corregido && v.partida === null, JSON.stringify(v));
+  // La forma es EXACTAMENTE la del contrato: sanearla no cambia nada.
+  eq(JSON.stringify(sanearDraftTablet(v.draft)), JSON.stringify(v.draft), 'el draft de la tablet no tiene la forma del contrato');
+  await paso();
+  eq(solo.paraElMovil().draft.desde, desde, 'otra lectura del mismo draft le cambia la identidad');
+  await cerrar();
+  v = solo.paraElMovil();
+  ok(v.draft.cerrado && Number.isFinite(v.draft.cerradoEn) && v.draft.desde === desde, 'cerrado, no lo dice');
+  eq(JSON.stringify(v.partida), JSON.stringify({ desde, estado: 'vigilando', gane: null, registro: null }), 'la partida del draft cerrado no se vigila');
+  fin({ resultado: 'gane', resultadoEn: ahora() + 600000, acabada: true, activa: false, duracion: 12, inicioEstimado: false });
+  await paso(20000);
+  v = solo.paraElMovil();
+  ok(v.partida.estado === 'apuntada' && v.partida.gane === true && Number.isFinite(v.partida.registro?.t) && v.partida.registro.pick === 'Rafaela', `apuntada, no lo dice: ${JSON.stringify(v.partida)}`);
+  ok(!('desde' in v.partida.registro) && !('resultadoDe' in v.partida.registro), 'el registro lleva lo que solo sabe la tablet');
+  eq(JSON.stringify(sanearPartidaTablet(v.partida)), JSON.stringify(v.partida), 'la partida de la tablet no tiene la forma del contrato');
+  // Empieza otro draft: el draft es el nuevo y la partida sigue siendo la del último cerrado.
+  leer(lectura({ tuyos: [N('Lolita'), N('Franco')], enemigos: [N('Layla'), V, V, V, V] }));
+  await paso(4 * 60000);
+  v = solo.paraElMovil();
+  ok(v.draft.desde > desde && !v.draft.cerrado && v.partida?.desde === desde && v.partida.estado === 'apuntada', `con otro draft se pierde la partida del anterior: ${JSON.stringify({ d: v.draft.desde, p: v.partida })}`);
+});
+
+test('POST /draft: tu corrección manda en la burbuja y en la partida que se apunta; la tablet aprende de ella una vez y solo con el draft cerrado; de otro draft, no', async () => {
+  const { solo, reg, paso, cerrar, fin, ahora } = conductor();
+  await paso();
+  const desde = solo.paraElMovil().draft.desde;
+  eq(solo.corregir(sanearCorreccion({ desde: desde + 1, enemigos: ['Clint'] })), false, 'acepta la corrección de otro draft');
+  ok(solo.corregir(sanearCorreccion({ desde, enemigos: ['Clint', 'Khufra'], aliados: ['Gord', 'Selena'], tuyo: 'Rafaela', baneos: ['Hirara', 'Belerick', 'Eudora'] })), 'no acepta la corrección del draft abierto');
+  eq(solo.paraElMovil().draft.corregido, true, 'el draft no dice que está corregido');
+  await paso();
+  const H = (nombre) => datos.heroes.find((h) => h.name === nombre);
+  const rec = recomendar(datos, { linea: 'roam', enemigos: [H('Clint'), H('Khufra')], aliados: [H('Gord'), H('Selena')], baneos: [H('Hirara'), H('Belerick'), H('Eudora')], miPick: H('Rafaela'), conSimulacion: false });
+  ok(reg.consejos.length >= 2, 'con la corrección no vuelve a decidir la burbuja');
+  const ultimo = reg.consejos.at(-1);
+  ok(!JSON.stringify(ultimo).includes('Joy'), `la burbuja sigue con lo quitado: ${JSON.stringify(ultimo)}`);
+  ok(rec && ultimo, 'la prueba necesita la decisión del motor');
+  eq(reg.aprendidas.length, 0, 'aprende de un draft que aún está abierto');
+  await cerrar();
+  eq(reg.aprendidas.length, 1, 'al cerrarse el draft corregido no aprende');
+  const verdad = reg.aprendidas[0];
+  ok(verdad.enemigos.join() === 'Clint,Khufra' && verdad.tuyo === 'Rafaela' && verdad.ids.length >= 2 && verdad.ids.every((id) => /^lectura-/.test(id)), `aprende con otra verdad o sin las capturas del draft: ${JSON.stringify(verdad)}`);
+  ok(solo.corregir(sanearCorreccion({ desde, enemigos: ['Clint', 'Khufra'], aliados: ['Gord', 'Selena'], tuyo: 'Rafaela', baneos: ['Hirara', 'Belerick', 'Eudora'] })), 'la misma corrección tras cerrar se rechaza');
+  eq(reg.aprendidas.length, 1, 'la misma corrección se aprende dos veces');
+  // Se apunta con lo corregido: Khufra, y tu pick sin «supuesto».
+  fin({ resultado: 'perdi', resultadoEn: ahora() + 700000, acabada: true, activa: false, duracion: 13, inicioEstimado: false });
+  await paso(20000);
+  const p = reg.apuntadas[0];
+  ok(p && p.draft.enemigos.includes('Khufra') && !p.draft.enemigos.includes('Joy') && p.pick === 'Rafaela' && !p.supuesto, `la partida no se apunta con lo corregido: ${JSON.stringify(p?.draft)}`);
+  // Corregida DESPUÉS de apuntar: se arregla la apuntada (y su registro) y se aprende de lo nuevo.
+  ok(solo.corregir(sanearCorreccion({ desde, enemigos: ['Clint', 'Khufra', 'Layla'], aliados: ['Gord', 'Selena'], tuyo: 'Rafaela' })));
+  ok(reg.arregladas.length === 1 && reg.arregladas[0].partida === p.t && reg.arregladas[0].enemigos.includes('Layla'), `la partida apuntada no se arregla: ${JSON.stringify(reg.arregladas)}`);
+  ok(solo.paraElMovil().partida.registro.draft.enemigos.includes('Layla'), 'el registro que ve el móvil no lleva el arreglo');
+  eq(reg.aprendidas.length, 2, 'una corrección distinta no se aprende');
+});
+
+test('POST /draft quita la tarjeta «Enseña al lector» de ese draft: ya está corregido', async () => {
+  const { solo, reg, paso, cerrar, leer } = conductor();
+  leer(lectura({ tuyos: [N('Hirara'), N('Belerick')], enemigos: [N('Clint'), V, V, V, V], aliados: [N('Gord'), V, V, V, N('Rafaela')], tuyoFila: 4 }));
+  await paso();
+  await cerrar();
+  ok(reg.correcciones.length === 1 && reg.correcciones[0]?.faltan > 0, 'la prueba necesita la tarjeta puesta');
+  ok(solo.corregir(sanearCorreccion({ desde: solo.paraElMovil().draft.desde, enemigos: ['Clint', 'Khufra'], aliados: ['Gord'], tuyo: 'Rafaela' })));
+  eq(reg.correcciones.at(-1), null, 'la tarjeta de un draft corregido en el móvil sigue en la APK');
+});
+
+test('POST /resultado: apunta ESA partida con ese resultado y deja de vigilarla y de preguntar; «no la terminé» no apunta; una apuntada se arregla; otra partida, no', async () => {
+  const a = conductor();
+  await a.paso(); await a.cerrar();
+  const desde = a.solo.paraElMovil().draft.desde;
+  eq(a.solo.resultado({ desde: desde + 1, gane: true }), false, 'acepta el resultado de otra partida');
+  ok(a.solo.resultado({ desde, gane: true }), 'no acepta el resultado de la partida vigilada');
+  ok(a.reg.apuntadas.length === 1 && a.reg.apuntadas[0].gane === true && a.reg.apuntadas[0].resultadoDe === 'pregunta', `no apunta con lo que dijiste: ${JSON.stringify(a.reg.apuntadas)}`);
+  eq(a.reg.terminadas.join(), String(a.solo.estado().cerradoEn), 'no deja de vigilar esa partida');
+  ok(a.solo.resultado({ desde, gane: true }) && a.reg.apuntadas.length === 1, 'el mismo resultado otra vez apunta otra partida');
+  ok(a.solo.resultado({ desde, gane: false }), 'no deja cambiar el resultado de una apuntada');
+  ok(a.reg.cambiadas.length === 1 && a.reg.cambiadas[0][1] === false && a.solo.paraElMovil().partida.gane === false && a.solo.paraElMovil().partida.registro.gane === false, `el cambio no llega a la partida: ${JSON.stringify(a.solo.paraElMovil().partida)}`);
+  eq(a.solo.resultado({ desde, gane: null }), false, '«no la terminé» borra una partida apuntada');
+  // Preguntada en la APK y contestada en el móvil: «no la terminé».
+  const b = conductor();
+  await b.paso(); await b.cerrar();
+  b.fin({ acabada: true, activa: false });
+  await b.paso(20000);
+  ok(b.reg.preguntas.length === 1, 'la prueba necesita la pregunta puesta');
+  ok(b.solo.resultado({ desde: b.solo.paraElMovil().draft.desde, gane: null }));
+  ok(b.reg.apuntadas.length === 0 && b.reg.preguntas.at(-1) === null && b.solo.paraElMovil().partida.estado === 'sinResultado', `«no la terminé» apunta o deja la pregunta: ${JSON.stringify(b.solo.paraElMovil().partida)}`);
+  // Guardada sin resultado (nadie contestó a tiempo): el móvil la contesta y se apunta.
+  const c = conductor();
+  await c.paso(); await c.cerrar();
+  c.fin({ acabada: true, activa: false });
+  await c.paso(20000);
+  await c.paso(PREGUNTA_CADUCA_MS + 1000);
+  ok(c.reg.sinResultado.length === 1 && c.solo.paraElMovil().partida.estado === 'sinResultado', 'la prueba necesita la partida guardada sin resultado');
+  ok(c.solo.resultado({ desde: c.solo.paraElMovil().partida.desde, gane: true }));
+  ok(c.reg.cambiadas.length === 1 && c.solo.paraElMovil().partida.estado === 'apuntada' && c.solo.paraElMovil().partida.gane === true, `la guardada sin resultado no se apunta con lo del móvil: ${JSON.stringify(c.solo.paraElMovil().partida)}`);
 });

@@ -1,60 +1,77 @@
 /**
- * El lector dentro de la tablet (3.61.0, scripts/lector/en-tablet.mjs): la
- * captura la da la APK por 127.0.0.1 con un secreto, y el lector escucha en
- * la wifi pero solo contesta con el código de vinculación, a la app, y con
- * una IP privada como `Host`.
+ * El lector dentro de la tablet (scripts/lector/en-tablet.mjs): la captura la
+ * da la APK por 127.0.0.1 con un secreto, el modo solo lleva el draft y el
+ * móvil lo copia (protocolo 2). Aquí, de punta a punta con `principal` y una
+ * APK de pega, y las piezas que monta: partidas, subidas, datos y aprendizaje.
+ * Lo de seguridad del servidor (portero, Host, rutas, reto) va en
+ * lector-seguridad.test.mjs.
  */
 import { createServer, request } from 'node:http';
-import { mkdtempSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync as leerFichero } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { test, ok, eq, RAIZ } from '../ayuda.mjs';
-import { TABLA_SEGUIDAS, ultimasDeTabla, principal, vigilarErrores, lectorDeDatos, capturaDeLaApk, esInterno, codigoValido, leerSaludDeLaApk, ajustesDeLaTablet, partidasDeLaTablet, subirLoDeLaTablet, leerComunidad, TOPE_PARTIDAS_TABLET, lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, sanearEdicion, semanaParaLaApk, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, TOPE_SIN_RESULTADO, finalParaSubir, partidaSinResultado, draftsArreglados, franjaSinNombres, FRACCION_CABECERA, comprobanteParaSubir } from '../../scripts/lector/en-tablet.mjs';
+import { TABLA_SEGUIDAS, PROTOCOLO } from '../../src/comun/contrato.js';
+import { principal, capturaDeLaApk, esInterno, codigoValido } from '../../scripts/lector/en-tablet.mjs';
+import { crearServidor, sanearCorreccionDeLaTablet, plantillasDeSerie, FASE_VALE_MS } from '../../scripts/lector/servir.mjs';
+import { deLaApk } from '../../scripts/lector/acceso.mjs';
+import { RETENCION_CAPTURAS_MS, CAPTURAS_A_MIRAR } from '../../scripts/lector/capturas.mjs';
+import { ARREGLOS_POR_TANDA } from '../../scripts/lector/aprendizaje.mjs';
+import { lectorDeDatos, leerSaludDeLaApk, ajustesDeLaTablet, leerComunidad } from '../../scripts/lector/datos.mjs';
+import { ultimasDeTabla, partidasDeLaTablet, subirLoDeLaTablet, TOPE_PARTIDAS_TABLET, TOPE_SIN_RESULTADO, sanearEdicion, semanaParaLaApk } from '../../scripts/lector/partidas.mjs';
+import { lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, finalParaSubir, partidaSinResultado, draftsArreglados, franjaSinNombres, FRACCION_CABECERA, comprobanteParaSubir } from '../../scripts/lector/subidas.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
-import { claveDeJugadorValida, bajarMisRecortes } from '../../src/comun/basedatos.js';
+import { claveDeJugadorValida, bajarMisRecortes, subirParte } from '../../src/comun/basedatos.js';
 import { comprobantes } from '../../src/app/revisar.js';
-import { pruebaDelReto } from '../../src/app/lector.js';
-import { writeFileSync } from 'node:fs';
-import { RETOS_EN_TOTAL, RETOS_POR_MINUTO, permitirReto, plantillasDeSerie, crearPortero, hostPermitido, crearServidor, sanearCorreccion, deLaApk, FALLOS_CODIGO, VENTANA_CODIGO_MS, RETENCION_CAPTURAS_MS, CAPTURAS_A_MIRAR } from '../../scripts/lector/servir.mjs';
-import { existsSync } from 'node:fs';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
-import { readFileSync as leerFichero } from 'node:fs';
 import { capturaCompletaPng, capturaCompleta, VERDAD } from '../fixtures/juego/captura.mjs';
 import { recorteDePicks } from '../../scripts/lector/recortes.mjs';
-import { ARREGLOS_POR_TANDA, FASE_VALE_MS } from '../../scripts/lector/servir.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
 import { reconocerResultado } from '../../scripts/lector/resultado.mjs';
 
 const png = capturaCompletaPng();
 /** Lo que da la APK: la cabecera de 16 bytes de `screencap` (ancho, alto, RGBA_8888, espacio de color) y los píxeles. */
-const crudo = (() => {
-  const { ancho, alto, rgba } = leerPng(png);
+const crudoDe = (buffer) => {
+  const { ancho, alto, rgba } = leerPng(buffer);
   const cab = Buffer.alloc(16); cab.writeUInt32LE(ancho, 0); cab.writeUInt32LE(alto, 4); cab.writeUInt32LE(1, 8); cab.writeUInt32LE(0, 12);
   return Buffer.concat([cab, Buffer.from(rgba)]);
-})();
+};
+const crudo = crudoDe(png);
 const SECRETO = 'secreto-de-la-apk';
 const CODIGO = 'AB12CD34EF';
+const APP = 'https://srchipiron.github.io';
+/** Los datos que trae la APK (en el repositorio, los de la web). */
+const DATOS = join(RAIZ, 'public', 'data');
+const principalDePrueba = (env, opciones = {}) => principal(env, { datosDeLaApk: DATOS, ...opciones });
 
-/** La APK de pega: da la captura en 127.0.0.1, solo con el secreto (y ya no tiene /voz: 3.96.0). */
+/** La APK de pega: da la captura en 127.0.0.1, solo con el secreto; `poner` cambia lo que se ve. */
 async function apkDePega() {
-  const dichas = [];
+  let pantalla = crudo;
   const s = createServer((req, res) => {
     if (req.headers['x-secreto'] !== SECRETO) { res.writeHead(403).end(); return; }
-    if (req.url === '/captura') { res.writeHead(200, { 'Content-Type': 'application/octet-stream' }).end(crudo); return; }
-    if (req.url === '/voz') dichas.push(req.url);
+    if (req.url === '/captura') { res.writeHead(200, { 'Content-Type': 'application/octet-stream' }).end(pantalla); return; }
     res.writeHead(404).end();
   });
   await new Promise((r) => s.listen(0, '127.0.0.1', r));
-  return { base: `http://127.0.0.1:${s.address().port}`, dichas, cerrar: () => s.close() };
+  return { base: `http://127.0.0.1:${s.address().port}`, poner: (b) => { pantalla = b; }, cerrar: () => s.close() };
 }
 
-const pedir = (puerto, camino, { host = `192.168.68.116:${puerto}`, codigo = CODIGO, origen = 'https://srchipiron.github.io' } = {}) => new Promise((r, x) => {
+const pedir = (puerto, camino, { host = `192.168.68.116:${puerto}`, codigo = CODIGO, origen = APP } = {}) => new Promise((r, x) => {
   const headers = { Host: host, ...(origen ? { Origin: origen } : {}), ...(codigo ? { 'X-Lector-Codigo': codigo } : {}) };
   const q = request({ host: '127.0.0.1', port: puerto, path: camino, headers }, (res) => {
     let b = ''; res.on('data', (t) => { b += t; }); res.on('end', () => r({ estado: res.statusCode, cuerpo: b, cabeceras: res.headers }));
   });
   q.on('error', x); q.end();
+});
+/** Un POST como lo hace la APK (o, con `origen`, la app). */
+const mandarPost = (puerto, camino, cuerpo, { codigo = CODIGO, origen = null } = {}) => new Promise((r, x) => {
+  const datos = JSON.stringify(cuerpo);
+  const headers = { Host: `127.0.0.1:${puerto}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(datos), ...(origen ? { Origin: origen } : {}), ...(codigo ? { 'X-Lector-Codigo': codigo } : {}) };
+  const q = request({ host: '127.0.0.1', port: puerto, path: camino, method: 'POST', headers }, (res) => {
+    let b = ''; res.on('data', (t) => { b += t; }); res.on('end', () => r({ estado: res.statusCode, cuerpo: b }));
+  });
+  q.on('error', x); q.end(datos);
 });
 
 test('la captura solo viene de 127.0.0.1, y el código tiene que ser decente', () => {
@@ -66,52 +83,22 @@ test('la captura solo viene de 127.0.0.1, y el código tiene que ser decente', (
   ok(codigoValido('AB12CD34') && !codigoValido('1234') && !codigoValido('AB12 CD34') && !codigoValido(undefined), 'el código acepta lo que no debe');
 });
 
-test('el portero: el bueno entra, uno malo no, y tras demasiados fallos nadie hasta que pasa la ventana', () => {
-  let t = 0;
-  const portero = crearPortero(CODIGO, { ahora: () => t });
-  eq(portero(CODIGO), 'si');
-  eq(portero('AB12CD34EX'), 'no');
-  eq(portero(undefined), 'no');
-  eq(portero(CODIGO.slice(0, 5)), 'no', 'un trozo del código entra');
-  for (let i = 0; i < FALLOS_CODIGO; i++) portero('MALO' + i, '192.168.1.66');
-  eq(portero(CODIGO, '192.168.1.66'), 'bloqueado', 'tras los fallos el bueno entra igual desde ese aparato (adivinarlo compensa)');
-  // Otro aparato (el móvil de Javi) sigue entrando: diez códigos malos de otro no lo dejan fuera.
-  eq(portero(CODIGO, '192.168.1.20'), 'si', 'los fallos de otro aparato dejan fuera al bueno');
-  t += VENTANA_CODIGO_MS + 1;
-  eq(portero(CODIGO, '192.168.1.66'), 'si', 'pasada la ventana el bueno sigue sin entrar');
-  eq(crearPortero('')(''), 'no', 'sin código entra cualquiera');
-  // Preguntar SIN código no es adivinar (3.65.4): la app busca la tablet en la wifi tras un cambio de IP.
-  const sinCodigo = crearPortero(CODIGO, { ahora: () => t });
-  for (let i = 0; i < FALLOS_CODIGO * 3; i++) { eq(sinCodigo(undefined, '192.168.1.20'), 'no'); eq(sinCodigo('', '192.168.1.20'), 'no'); }
-  eq(sinCodigo(CODIGO, '192.168.1.20'), 'si', 'buscar la tablet sin código deja fuera al móvil');
-});
-
-test('el Host en la tablet: IP privada tal cual, nunca un nombre', () => {
-  for (const h of ['192.168.68.116:47323', '10.0.0.5', '172.16.0.9:47323', '127.0.0.1:47323']) ok(hostPermitido(h, { red: true }), `${h} no vale`);
-  for (const h of ['8.8.8.8:47323', 'tablet.local', '192.168.68.116.atacante.example', 'atacante.example', '172.32.0.1']) ok(!hostPermitido(h, { red: true }), `${h} vale`);
-  ok(!hostPermitido('192.168.68.116:47323'), 'sin `red` (Termux) vale una IP de la wifi');
-});
-
-test('el lector en la tablet: lee con la captura de la APK y solo con el código, desde la app y con su IP', async () => {
+test('el lector en la tablet: lee con la captura de la APK (sin comprimir), y /estado dice por qué se cerró la última vez', async () => {
   const apk = await apkDePega();
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-'));
-  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_ULTIMA_SALIDA: 'Último cierre (hace 2 min): Android la cerró por falta de memoria' });
+  const servidor = await principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1', LECTOR_ULTIMA_SALIDA: 'Último cierre (hace 2 min): Android la cerró por falta de memoria' });
   const puerto = servidor.address().port;
   try {
-    const leida = await pedir(puerto, '/leer');
-    eq(leida.estado, 200, `con todo en regla no lee: ${leida.cuerpo}`);
-    const l = JSON.parse(leida.cuerpo);
-    eq(l.tuyos?.map((b) => b.nombre).join(), VERDAD.tuyos.join(), `no lee los baneos con la captura de la APK: ${leida.cuerpo.slice(0, 200)}`);
-    // Y en PNG (las pantallas del final): comprimida aquí, se lee igual.
-    const comprimida = await capturaDeLaApk(apk.base, SECRETO)();
-    eq(JSON.stringify(leerPng(comprimida).ancho), '2400', 'la captura en PNG no sale de la crudo');
+    const r = await servidor.interno.leer();
+    ok(r.ok, JSON.stringify(r).slice(0, 200));
+    eq(r.lectura.tuyos.map((b) => b.nombre).join(), VERDAD.tuyos.join(), 'no lee los baneos con la captura de la APK');
+    const img = await capturaDeLaApk(apk.base, SECRETO)();
+    ok(img.ancho === 2400 && img.alto === 1504 && img.rgba.length === 2400 * 1504 * 4, 'la captura de la APK no llega decodificada');
     eq(JSON.parse((await pedir(puerto, '/estado')).cuerpo).salida, 'Último cierre (hace 2 min): Android la cerró por falta de memoria', '/estado no dice por qué se cerró la app la última vez');
     eq((await pedir(puerto, '/estado', { codigo: null })).estado, 401, 'sin código contesta');
-    eq((await pedir(puerto, '/estado', { codigo: 'OTRO12345' })).estado, 401, 'con otro código contesta');
     eq((await pedir(puerto, '/estado', { host: 'atacante.example' })).estado, 403, 'contesta con un nombre como Host');
-    eq((await pedir(puerto, '/estado', { origen: 'https://atacante.example' })).estado, 403, 'contesta a otra web');
-    // La comprobación previa deja pasar la cabecera del código.
-    const previa = await new Promise((r) => { const q = request({ host: '127.0.0.1', port: puerto, path: '/leer', method: 'OPTIONS', headers: { Host: `192.168.68.116:${puerto}`, Origin: 'https://srchipiron.github.io' } }, (res) => { res.resume(); r(res); }); q.end(); });
+    // La comprobación previa de la app deja pasar la cabecera del código.
+    const previa = await new Promise((r) => { const q = request({ host: '127.0.0.1', port: puerto, path: '/draft', method: 'OPTIONS', headers: { Host: `192.168.68.116:${puerto}`, Origin: APP } }, (res) => { res.resume(); r(res); }); q.end(); });
     ok(/X-Lector-Codigo/i.test(previa.headers['access-control-allow-headers'] ?? ''), 'la comprobación previa no deja pasar el código');
   } finally { servidor.close(); apk.cerrar(); }
 });
@@ -122,35 +109,31 @@ test('sin el secreto la APK no da la captura', async () => {
     const captura = capturaDeLaApk(apk.base, 'otro-secreto');
     let fallo = null;
     try { await captura(); } catch (e) { fallo = e; }
-    eq(fallo?.tipo, 'captura', 'sin el secreto la APK da la captura');
+    ok(/captura 403/.test(fallo?.message ?? ''), `sin el secreto la APK da la captura: ${fallo?.message}`);
   } finally { apk.cerrar(); }
 });
 
-test('el consejo y el resumen que manda la app (3.62.0): solo la app los escribe, la APK los lee, y llegan como texto plano', async () => {
+test('la burbuja la pone la tablet (el móvil ya no la escribe): la APK la lee con su código, y llega como texto plano', async () => {
   const apk = await apkDePega();
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-consejo-'));
-  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1' });
+  const servidor = await principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' });
   const puerto = servidor.address().port;
-  const mandar = (cuerpo, { origen = 'https://srchipiron.github.io' } = {}) => new Promise((r, x) => {
-    const q = request({ host: '127.0.0.1', port: puerto, path: '/consejo', method: 'POST', headers: { Host: `192.168.68.116:${puerto}`, 'X-Lector-Codigo': CODIGO, 'Content-Type': 'application/json', ...(origen ? { Origin: origen } : {}) } }, (res) => { res.resume(); res.on('end', () => r(res.statusCode)); });
-    q.on('error', x); q.end(JSON.stringify(cuerpo));
-  });
   // Lo que lee la APK: desde 127.0.0.1, sin Origin y con el código.
   const leerApk = async () => JSON.parse((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
   try {
-    eq(JSON.stringify(await leerApk()), JSON.stringify({ consejo: null, resumen: null, enPartida: false, fase: null, pendiente: { pregunta: false, correccion: false } }));
-    eq(await mandar({ consejo: { titulo: 'Khufra 54%\u0007', detalle: 'nº2 Atlas · nº3 Franco' } }), 200);
+    eq(JSON.stringify(await leerApk()), JSON.stringify({ consejo: null, resumen: null, enPartida: false, fase: null, pendiente: { pregunta: false } }));
+    servidor.interno.ponerConsejo({ titulo: 'Khufra 54%\u0007', detalle: 'nº2 Atlas · nº3 Franco' });
     eq(JSON.stringify((await leerApk()).consejo), JSON.stringify({ titulo: 'Khufra 54%', detalle: 'nº2 Atlas · nº3 Franco' }), 'el consejo no llega limpio');
-    eq(await mandar({ consejo: { titulo: 'x' } }, { origen: null }), 403, 'sin la app se escribe el consejo');
-    eq(await mandar({ resumen: { id: 'p-1', titulo: 'Ganada con Khufra', texto: 'Era tu nº1 (54%).' } }), 200);
+    eq((await mandarPost(puerto, '/consejo', { consejo: { titulo: 'x' } }, { origen: APP })).estado, 404, 'el móvil escribe la burbuja (protocolo 1)');
+    servidor.interno.ponerResumen({ id: 'p-1', titulo: 'Ganada con Khufra', texto: 'Era tu nº1 (54%).' });
     eq((await leerApk()).resumen?.id, 'p-1', 'el resumen no llega');
-    await mandar({ resumen: { id: '../x', titulo: 'a', texto: 'b' } });
+    servidor.interno.ponerResumen({ id: '../x', titulo: 'a', texto: 'b' });
     eq((await leerApk()).resumen?.id, 'p-1', 'un resumen con un id raro pisa al bueno');
-    eq((await leerApk()).consejo?.titulo, 'Khufra 54%', 'mandar solo el resumen borra el consejo');
-    await mandar({ consejo: null });
+    eq((await leerApk()).consejo?.titulo, 'Khufra 54%', 'poner el resumen borra el consejo');
+    servidor.interno.ponerConsejo(null);
     eq((await leerApk()).consejo, null, 'el consejo no se borra');
     eq((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: null, codigo: null })).estado, 401, 'el consejo se lee sin el código');
-    eq((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: 'https://srchipiron.github.io' })).estado, 403, 'un navegador lee el consejo y lo pendiente (3.86.1)');
+    eq((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: APP })).estado, 403, 'un navegador lee el consejo y lo pendiente');
   } finally { servidor.close(); apk.cerrar(); }
 });
 
@@ -231,34 +214,6 @@ test('las partidas de la tablet (3.70.0): se guardan sin repetir y con tope, y s
   eq(leerComunidad([casa]), null, 'acepta una configuración con la clave secreta');
 });
 
-test('el reto de la búsqueda (3.70.0): la tablet demuestra que conoce el código sin que viaje, con la misma cuenta que la app, y con tope', async () => {
-  const servidor = crearServidor({ capturar: async () => { throw new Error('no'); }, codigo: CODIGO, enHilos: false });
-  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
-  const puerto = servidor.address().port;
-  try {
-    const n = '0123456789abcdef0123456789abcdef';
-    const r = await pedir(puerto, `/reto?n=${n}`, { codigo: null, origen: null });
-    eq(r.estado, 200, r.cuerpo);
-    const { prueba } = JSON.parse(r.cuerpo);
-    eq(prueba, await pruebaDelReto(CODIGO, n), 'la prueba del lector no es la que calcula la app');
-    ok(prueba !== await pruebaDelReto('OTROCODIGO9', n) && !r.cuerpo.includes(CODIGO), 'la prueba no depende del código, o lo lleva dentro');
-    eq((await pedir(puerto, '/reto?n=xyz', { codigo: null, origen: null })).estado, 400, 'acepta un reto sin forma');
-    let ultimo;
-    for (let i = 0; i < 6; i += 1) ultimo = await pedir(puerto, `/reto?n=${n}`, { codigo: null, origen: null });
-    eq(ultimo.estado, 429, 'sin tope de retos por aparato (se podría ahogar a la tablet)');
-    eq((await pedir(puerto, '/estado', { codigo: null, origen: null })).estado, 401, 'el reto abre la puerta sin código');
-  } finally { servidor.close(); }
-  // Con direcciones que rotan (IPv6, 3.100.0): tope total por minuto y el mapa se poda.
-  const retos = new Map();
-  let atendidos = 0;
-  for (let i = 0; i < 200; i += 1) if (permitirReto(retos, `fe80::${i}`, 1000)) atendidos += 1;
-  eq(atendidos, RETOS_EN_TOTAL, 'con una dirección nueva en cada reto no hay tope (cada uno son 100.000 vueltas de PBKDF2 en la tablet)');
-  ok(retos.size <= RETOS_EN_TOTAL, `se guardan los aparatos que no pasaron: ${retos.size}`);
-  ok(permitirReto(retos, 'fe80::nuevo', 1000 + 60000) && retos.size === 1, `pasado un minuto, el mapa no se poda: ${retos.size}`);
-  for (let i = 0; i < RETOS_POR_MINUTO - 1; i += 1) permitirReto(retos, 'fe80::nuevo', 61000 + i);
-  ok(!permitirReto(retos, 'fe80::nuevo', 61100), 'se quita el tope por aparato');
-});
-
 test('la salud de la tablet (3.63.0): /estado cuenta lecturas y fallos, y lo que la APK escribe, solo con campos conocidos', async () => {
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-salud-'));
   writeFileSync(join(casa, 'salud.json'), JSON.stringify({ apk: '3.63.0', grabando: true, memoriaLibreMB: 1500.7, memoriaBaja: false, raro: '<script>', burbuja: 'sí' }));
@@ -267,10 +222,10 @@ test('la salud de la tablet (3.63.0): /estado cuenta lecturas y fallos, y lo que
   writeFileSync(join(casa, 'burbuja.json'), JSON.stringify({ burbujaEstado: 'no llega al lector: IOException' }));
   eq(leerSaludDeLaApk(join(casa, 'burbuja.json'))?.burbujaEstado, 'no llega al lector: IOException', 'el estado de la burbuja (3.68.1) no llega al parte');
   const apk = await apkDePega();
-  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1' });
+  const servidor = await principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' });
   const puerto = servidor.address().port;
   try {
-    await pedir(puerto, '/leer');
+    await servidor.interno.leer();
     const e = JSON.parse((await pedir(puerto, '/estado')).cuerpo);
     eq(e.lector?.lecturas, 1, `/estado no cuenta las lecturas: ${JSON.stringify(e.lector)}`);
     ok(Number.isFinite(e.lector?.memoriaMB) && e.lector.memoriaMB > 0, 'no dice la memoria del lector');
@@ -278,34 +233,57 @@ test('la salud de la tablet (3.63.0): /estado cuenta lecturas y fallos, y lo que
   } finally { servidor.close(); apk.cerrar(); }
 });
 
-test('un solo aparato (3.66.0): con la línea elegida en la APK, la tablet lee, decide y pone ella sola el consejo de la burbuja', async () => {
+test('un solo aparato (protocolo 2): la tablet lee, decide, pone la burbuja y lleva el draft; el móvil lo copia, lo corrige y dice el resultado', async () => {
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-solo-'));
   writeFileSync(join(casa, 'solo.json'), JSON.stringify({ linea: 'roam' }));
   const apk = await apkDePega();
-  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1' });
+  // Sin el bucle en marcha (LECTOR_SIN_SOLO): las vueltas las da la prueba.
+  const servidor = await principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' });
   const puerto = servidor.address().port;
+  const consejo = async () => JSON.parse((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo).consejo;
+  const delDraft = async () => JSON.parse((await pedir(puerto, '/draft')).cuerpo);
+  const lecturas = async () => JSON.parse((await pedir(puerto, '/estado')).cuerpo).lector.lecturas;
   try {
     await servidor.solo.tic();
-    const { consejo } = JSON.parse((await pedir(puerto, '/consejo', { origen: null })).cuerpo);
-    // La captura de la prueba es la fase de picks con Clint y Khufra de enemigos y tu fila (Estes) ya leída:
-    // desde 3.90.1 el consejo es la build de tu héroe para ese draft.
-    ok(/^Estes: .+ → .+/.test(consejo?.titulo ?? '') && /^Fase de picks · Tu build/.test(consejo.detalle ?? ''), `la tablet no pone su consejo: ${JSON.stringify(consejo)}`);
+    // La captura de la prueba es la fase de picks con Clint y Khufra de enemigos y tu fila (Estes) ya leída: el consejo es tu build.
+    const c = await consejo();
+    ok(/^Estes: .+ → .+/.test(c?.titulo ?? '') && /^Fase de picks · Tu build/.test(c.detalle ?? ''), `la tablet no pone su consejo: ${JSON.stringify(c)}`);
     const d = servidor.solo.estado();
     ok(d.enemigos.includes('Clint') && d.enemigos.includes('Khufra') && d.baneos.length >= 8, `el draft acumulado no es el de la captura: ${JSON.stringify(d)}`);
-    // El móvil lee: la tablet se aparta.
-    await pedir(puerto, '/leer');
-    const lecturasAntes = JSON.parse((await pedir(puerto, '/estado')).cuerpo).lector.lecturas;
+    // El móvil copia el draft, y la tablet sigue leyendo: ya no se aparta.
+    const vista = await delDraft();
+    ok(vista.protocolo === PROTOCOLO && vista.fase === 'draft' && vista.draft?.enemigos.includes('Clint') && vista.draft.enemigos.includes('Khufra') && vista.draft.tuyo === 'Estes' && vista.draft.linea === 'roam',
+      `GET /draft no es el draft de la tablet: ${JSON.stringify(vista)}`);
+    const antes = await lecturas();
     await servidor.solo.tic();
-    eq(JSON.parse((await pedir(puerto, '/estado')).cuerpo).lector.lecturas, lecturasAntes, 'con el móvil leyendo, la tablet lee también');
+    ok(await lecturas() > antes, 'con el móvil mirando, la tablet deja de leer');
+    // Lo que tocas en el móvil manda en ESE draft: la burbuja pasa a tu héroe.
+    const { desde } = vista.draft;
+    eq((await mandarPost(puerto, '/draft', { desde: desde + 1, enemigos: ['Clint'] }, { origen: APP })).estado, 409, 'corrige un draft que no es el de la tablet');
+    eq((await mandarPost(puerto, '/draft', { desde, enemigos: ['Clint', 'Khufra', 'Layla'], aliados: [], tuyo: 'Diggie' }, { origen: APP })).estado, 200);
+    await servidor.solo.tic();
+    const corregido = await delDraft();
+    ok(corregido.draft?.corregido && corregido.draft.tuyo === 'Diggie' && corregido.draft.enemigos.includes('Layla'), `GET /draft no lleva tu corrección: ${JSON.stringify(corregido.draft)}`);
+    ok(/^Diggie\b/.test((await consejo())?.titulo ?? ''), `la burbuja no hace caso de tu corrección: ${JSON.stringify(await consejo())}`);
+    // Dos lecturas en partida cierran el draft y la tablet vigila su final.
+    apk.poner(crudoDe(leerFichero(join(RAIZ, 'pruebas/fixtures/juego/pantallas/juego-17.png'))));
+    await servidor.solo.tic();
+    await servidor.solo.tic();
+    const cerrado = await delDraft();
+    ok(cerrado.draft?.cerrado && cerrado.partida?.estado === 'vigilando' && cerrado.partida.desde === desde, `dos lecturas en partida no cierran el draft: ${JSON.stringify(cerrado)}`);
+    // El resultado desde el móvil: apunta ESA partida, con lo que corregiste.
+    eq((await mandarPost(puerto, '/resultado', { desde: desde + 1, gane: true }, { origen: APP })).estado, 409, 'apunta una partida que no es la de la tablet');
+    eq((await mandarPost(puerto, '/resultado', { desde, gane: 'sí' }, { origen: APP })).estado, 400, 'acepta un resultado sin forma');
+    eq((await mandarPost(puerto, '/resultado', { desde, gane: true }, { origen: APP })).estado, 200);
+    const apuntada = servidor.partidas.todas()[0];
+    ok(apuntada?.gane === true && apuntada.pick === 'Diggie' && apuntada.draft?.enemigos.includes('Layla') && apuntada.resultadoDe === 'pregunta', `la partida no se apunta con lo que dijiste: ${JSON.stringify(apuntada)}`);
+    const tras = await delDraft();
+    ok(tras.partida?.estado === 'apuntada' && tras.partida.gane === true && tras.partida.registro?.t === apuntada.t, `GET /draft no dice la partida apuntada: ${JSON.stringify(tras.partida)}`);
+    // Cambiar de idea: la misma partida, con el otro resultado.
+    eq((await mandarPost(puerto, '/resultado', { desde, gane: false }, { origen: APP })).estado, 200);
+    eq(servidor.partidas.una(apuntada.t)?.gane, false, 'cambiar el resultado desde el móvil no arregla la partida');
+    eq(servidor.partidas.todas().length, 1, 'cambiar el resultado apunta otra partida');
   } finally { servidor.close(); apk.cerrar(); }
-});
-
-/** Un POST como lo hace la APK (o, con `origen`, un navegador). */
-const mandarA = (puerto, camino, cuerpo, { origen = null, codigo = CODIGO } = {}) => new Promise((r, x) => {
-  const q = request({ host: '127.0.0.1', port: puerto, path: camino, method: 'POST', headers: { Host: `127.0.0.1:${puerto}`, 'Content-Type': 'application/json', ...(codigo ? { 'X-Lector-Codigo': codigo } : {}), ...(origen ? { Origin: origen } : {}) } }, (res) => {
-    let b = ''; res.on('data', (t) => { b += t; }); res.on('end', () => r({ estado: res.statusCode, cuerpo: b }));
-  });
-  q.on('error', x); q.end(JSON.stringify(cuerpo));
 });
 
 test('enseñar al lector desde la tablet (3.71.0): solo la APK lo lee y lo contesta, con héroes del catálogo, y el lector aprende de las capturas de ese draft', async () => {
@@ -332,7 +310,7 @@ test('enseñar al lector desde la tablet (3.71.0): solo la APK lo lee y lo conte
     const burbuja = async () => JSON.parse((await pedir(puerto, '/consejo', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo);
     const b0 = await burbuja();
     // 3.89.0: la burbuja ya no ofrece «quién era» entre partidas (no da tiempo); la tarjeta de la APK sí lo tiene.
-    ok(b0.pendiente?.correccion === false && b0.pendiente?.pregunta === false && b0.fase === null, `la burbuja ofrece la corrección: ${JSON.stringify(b0)}`);
+    ok(!('correccion' in (b0.pendiente ?? {})) && b0.pendiente?.pregunta === false && b0.fase === null, `la burbuja ofrece la corrección: ${JSON.stringify(b0)}`);
     servidor.interno.ponerFase('draft');
     eq((await burbuja()).fase, 'draft', 'la fase del modo solo no llega a la burbuja');
     servidor.interno.ponerFase('fuera');
@@ -349,13 +327,13 @@ test('enseñar al lector desde la tablet (3.71.0): solo la APK lo lee y lo conte
     eq((await leerApk({ origen: 'https://srchipiron.github.io' })).estado, 403, 'un navegador (con Origin) lee la corrección');
     eq((await leerApk({ codigo: null })).estado, 401, 'se lee sin el código');
     const bueno = { id: pendiente.id, enemigos: ['Clint', 'Khufra', 'atlas', 'Franco', 'Tigreal'], aliados: ['Gord', 'Selena'], tuyo: 'Rafaela' };
-    eq((await mandarA(puerto, '/correccion', bueno, { origen: 'https://srchipiron.github.io' })).estado, 403, 'un navegador contesta la corrección');
-    eq((await mandarA(puerto, '/correccion', { ...bueno, enemigos: ['Clint', 'Nadie'] })).estado, 400, 'acepta un héroe que no existe');
-    eq((await mandarA(puerto, '/correccion', { ...bueno, aliados: ['Clint'] })).estado, 400, 'acepta el mismo héroe en los dos equipos');
-    eq((await mandarA(puerto, '/correccion', { ...bueno, enemigos: [] })).estado, 400, 'acepta una corrección sin enemigos');
-    eq((await mandarA(puerto, '/correccion', { ...bueno, id: 'correccion-1' })).estado, 409, 'contesta otra corrección');
+    eq((await mandarPost(puerto, '/correccion', bueno, { origen: 'https://srchipiron.github.io' })).estado, 403, 'un navegador contesta la corrección');
+    eq((await mandarPost(puerto, '/correccion', { ...bueno, enemigos: ['Clint', 'Nadie'] })).estado, 400, 'acepta un héroe que no existe');
+    eq((await mandarPost(puerto, '/correccion', { ...bueno, aliados: ['Clint'] })).estado, 400, 'acepta el mismo héroe en los dos equipos');
+    eq((await mandarPost(puerto, '/correccion', { ...bueno, enemigos: [] })).estado, 400, 'acepta una corrección sin enemigos');
+    eq((await mandarPost(puerto, '/correccion', { ...bueno, id: 'correccion-1' })).estado, 409, 'contesta otra corrección');
     eq(aprendidas.length, 0, 'aprende de una respuesta rechazada');
-    const r = await mandarA(puerto, '/correccion', bueno);
+    const r = await mandarPost(puerto, '/correccion', bueno);
     eq(r.estado, 200, r.cuerpo);
     ok(JSON.parse(r.cuerpo).aprendido === true, 'no dice qué aprendió');
     eq(aprendidas.length, 1);
@@ -368,7 +346,7 @@ test('enseñar al lector desde la tablet (3.71.0): solo la APK lo lee y lo conte
     eq(JSON.parse((await leerApk()).cuerpo).correccion, null, 'la corrección contestada se pregunta otra vez');
     // «Ahora no» la quita; y pasadas las horas de las capturas, ya no se pregunta.
     servidor.interno.ponerCorreccion(pendiente);
-    eq((await mandarA(puerto, '/correccion', { id: pendiente.id, descartar: true })).estado, 200);
+    eq((await mandarPost(puerto, '/correccion', { id: pendiente.id, descartar: true })).estado, 200);
     eq(JSON.parse((await leerApk()).cuerpo).correccion, null, '«Ahora no» no la quita');
     eq(aprendidas.length, 1, '«Ahora no» aprende');
     // Llega otra corrección mientras se lee la respuesta a la vieja: la nueva no se pierde.
@@ -392,20 +370,20 @@ test('enseñar al lector desde la tablet (3.71.0): solo la APK lo lee y lo conte
   ok(!deLaApk(req('192.168.68.110')), 'entra un aparato de la wifi');
   ok(!deLaApk(req('127.0.0.1', 'http://127.0.0.1:8080')), 'entra una página del navegador de la tablet');
   // Con forma o nada.
-  eq(sanearCorreccion({ ...pendiente, id: '../x' }), null);
-  eq(sanearCorreccion({ ...pendiente, ids: ['../../etc'] }), null, 'sin capturas válidas, se pregunta igual');
-  ok(sanearCorreccion({ ...pendiente, ids: Array.from({ length: 30 }, (_, i) => `lectura-${i}`) }).ids.length === CAPTURAS_A_MIRAR, 'sin tope de capturas');
+  eq(sanearCorreccionDeLaTablet({ ...pendiente, id: '../x' }), null);
+  eq(sanearCorreccionDeLaTablet({ ...pendiente, ids: ['../../etc'] }), null, 'sin capturas válidas, se pregunta igual');
+  ok(sanearCorreccionDeLaTablet({ ...pendiente, ids: Array.from({ length: 30 }, (_, i) => `lectura-${i}`) }).ids.length === CAPTURAS_A_MIRAR, 'sin tope de capturas');
   // Repartidas por el draft (3.90.4), no las últimas: la primera también.
   const veinte = Array.from({ length: 20 }, (_, i) => `lectura-2026-11-04T19-46-${String(i * 3).padStart(2, '0')}-000Z-${i}`);
-  const repartidas = sanearCorreccion({ ...pendiente, ids: veinte }).ids;
+  const repartidas = sanearCorreccionDeLaTablet({ ...pendiente, ids: veinte }).ids;
   ok(repartidas[0] === veinte[0] && repartidas.at(-1) === veinte.at(-1), `la corrección mira solo los últimos segundos del draft: ${repartidas}`);
-  eq(sanearCorreccion({ ...pendiente, heroes: ['<script>'] }), null, 'entra un nombre de héroe con cualquier cosa');
+  eq(sanearCorreccionDeLaTablet({ ...pendiente, heroes: ['<script>'] }), null, 'entra un nombre de héroe con cualquier cosa');
 });
 
 test('la corrección protege sus capturas de la limpieza mientras se puede contestar (3.71.0)', async () => {
   const carpeta = mkdtempSync(join(tmpdir(), 'en-tablet-poda-'));
   for (const id of ['lectura-2026-10-24T20-00-00-000Z-1', 'lectura-2026-10-24T20-00-05-000Z-2', 'lectura-2026-10-24T20-00-10-000Z-3']) writeFileSync(join(carpeta, `${id}.png`), 'x');
-  const servidor = crearServidor({ capturar: async () => png, enHilos: false, carpeta, maximos: { lectura: 1, fotograma: 1, resultado: 1 }, guardar: () => {} });
+  const servidor = crearServidor({ capturar: async () => capturaCompleta(), codigo: CODIGO, enHilos: false, carpeta, maximos: { lectura: 1, fotograma: 1, resultado: 1 }, guardar: () => {} });
   try {
     servidor.interno.ponerCorreccion({ id: `correccion-${Date.now()}`, cuando: Date.now(), ids: ['lectura-2026-10-24T20-00-00-000Z-1', 'lectura-2026-10-24T20-00-05-000Z-2'], heroes: ['Atlas'], leidos: {} });
     const r = await servidor.interno.leer({});
@@ -420,11 +398,10 @@ test('la corrección protege sus capturas de la limpieza mientras se puede conte
 test('las partidas sin resultado (3.81.5): se guardan con su draft, salen en «Mis partidas», no se suben ni cuentan, y al decir el resultado se apuntan y se suben', async () => {
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-sin-resultado-'));
   const s = supabaseFalso();
-  const { mkdirSync } = await import('node:fs');
   mkdirSync(join(casa, 'datos'), { recursive: true });
   writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
   const apk = await apkDePega();
-  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  const servidor = await principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
   const puerto = servidor.address().port;
   try {
     const T = 1793100000000;
@@ -467,13 +444,13 @@ test('las partidas sin resultado (3.81.5): se guardan con su draft, salen en «M
 
 test('las pantallas del final sin reconocer (3.81.5): las dos primeras fuera de la partida, a la tabla de recortes con la clave del lector', async () => {
   const foto = (id, extra = {}) => ({ id: `fotograma-2026-10-27T22-${id}-000Z`, minuto: 10, miniatura: 'iVBORw0KGgo=', tira: 'iVBORw0KGgo=', ...extra });
-  const fotos = [foto('30-00', { marcador: 'iVBORw0KGgo=' }), foto('31-00'), foto('31-10', { marcador: 'iVBORw0KGgo=' }), foto('32-00'), foto('32-10'), foto('32-20'), foto('33-00')];
+  const fotos = [foto('30-00', { enPartida: true }), foto('31-00'), foto('31-10', { enPartida: true }), foto('32-00'), foto('32-10'), foto('32-20'), foto('33-00')];
   const r = finalParaSubir({ desde: 5, motivo: 'ya hay otro draft', fotogramas: fotos, version: '3.81.5' });
   eq(r.capturas.map((c) => c.id.slice(-10)).join(), '32-00-000Z,32-10-000Z', 'no son las primeras pantallas de después de la partida');
-  ok(r.tipo === 'final' && r.desde === 5 && r.motivo === 'ya hay otro draft' && !JSON.stringify(r).includes('marcador'), JSON.stringify(r).slice(0, 200));
-  eq(finalParaSubir({ desde: 5, fotogramas: [foto('31-00'), foto('31-10'), foto('31-20')] }).capturas.length, 2, 'sin marcador no sube las últimas');
+  ok(r.tipo === 'final' && r.desde === 5 && r.motivo === 'ya hay otro draft' && !JSON.stringify(r).includes('enPartida'), JSON.stringify(r).slice(0, 200));
+  eq(finalParaSubir({ desde: 5, fotogramas: [foto('31-00'), foto('31-10'), foto('31-20')] }).capturas.length, 2, 'sin ninguna en partida no sube las últimas');
   // Con ráfaga (3.90.3): la primera y la última de ella, aunque detrás venga el vestíbulo.
-  const conRafaga = [foto('30-00', { marcador: 'iVBORw0KGgo=' }), foto('30-02', { rafaga: true }), foto('30-04', { rafaga: true }), foto('30-06', { rafaga: true }), foto('50-00'), foto('50-10')];
+  const conRafaga = [foto('30-00', { enPartida: true }), foto('30-02', { rafaga: true }), foto('30-04', { rafaga: true }), foto('30-06', { rafaga: true }), foto('50-00'), foto('50-10')];
   const r2 = finalParaSubir({ desde: 5, fotogramas: conRafaga });
   eq(r2.capturas.map((c) => `${c.id.slice(-10)}${c.rafaga ? '*' : ''}`).join(), '30-02-000Z*,30-06-000Z*', 'con ráfaga no sube la primera y la última de ella');
   eq(finalParaSubir({ desde: 5, fotogramas: [foto('30-02', { rafaga: true }), foto('50-00')] }).capturas.length, 1, 'con una sola de la ráfaga la sube dos veces o sube el vestíbulo');
@@ -501,12 +478,11 @@ test('las pantallas del final sin reconocer (3.81.5): las dos primeras fuera de 
   // De punta a punta: con la clave del lector, por subir_recorte.
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-final-'));
   const s = supabaseFalso();
-  const { mkdirSync } = await import('node:fs');
   mkdirSync(join(casa, 'datos'), { recursive: true });
   writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
   writeFileSync(join(casa, 'salud.json'), JSON.stringify({ apk: '3.84.1' }));
   const apk = await apkDePega();
-  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  const servidor = await principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
   try {
     const dicho = await servidor.subirFinalDe({ desde: 5, motivo: 'ya hay otro draft', fotogramas: fotos });
     ok(s.recortes.length === 1 && s.recortes[0].clave === claveDelLector(casa) && s.recortes[0].d.tipo === 'final', `no sube las pantallas del final: ${dicho}`);
@@ -521,7 +497,7 @@ test('las pantallas del final sin reconocer (3.81.5): las dos primeras fuera de 
   writeFileSync(join(casa2, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
   writeFileSync(join(casa2, 'solo-movil.json'), JSON.stringify({ linea: 'roam', clave: tuya }));
   const apk2 = await apkDePega();
-  const servidor2 = await principal({ LECTOR_INTERNO: apk2.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa2, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  const servidor2 = await principalDePrueba({ LECTOR_INTERNO: apk2.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa2, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
   try {
     await servidor2.subirFinalDe({ desde: 6, motivo: 'ya hay otro draft', fotogramas: fotos });
     eq(s.recortes.at(-1)?.clave, tuya, 'con tu clave, las pantallas del final suben con la del lector');
@@ -545,12 +521,11 @@ test('el comprobante de cada partida apuntada por la tabla (3.101.0): su franja 
   const s = supabaseFalso();
   const tuya = 'Q'.repeat(43);
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-comprobante-'));
-  const { mkdirSync } = await import('node:fs');
   mkdirSync(join(casa, 'datos'), { recursive: true });
   writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
   writeFileSync(join(casa, 'solo-movil.json'), JSON.stringify({ linea: 'roam', clave: tuya }));
   const apk = await apkDePega();
-  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  const servidor = await principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
   try {
     const dicho = await servidor.subirComprobanteDe({ t: T, gane: false, fotograma: foto });
     ok(/Comprobante de la partida subido/.test(dicho ?? ''), dicho);
@@ -562,14 +537,14 @@ test('el comprobante de cada partida apuntada por la tabla (3.101.0): su franja 
   } finally { servidor.close(); apk.cerrar(); }
   // Y el cableado: crearSolo lo pide al apuntar por la tabla.
   const fuente = leerFichero(join(RAIZ, 'scripts/lector/en-tablet.mjs'), 'utf8');
-  ok(/alApuntarTabla: \(c\) => \{ subirComprobanteDe\(c\)/.test(fuente), 'crearSolo no recibe alApuntarTabla: los comprobantes no se suben');
+  ok(/alApuntarTabla: intentar\(servidor\.subirComprobanteDe\)/.test(fuente), 'crearSolo no recibe alApuntarTabla: los comprobantes no se suben');
 });
 
 test('las capturas del draft que lee el modo solo no se podan mientras está abierto (3.81.4)', async () => {
   const carpeta = mkdtempSync(join(tmpdir(), 'en-tablet-poda-draft-'));
   const ids = ['lectura-2026-10-27T22-20-00-000Z-1', 'lectura-2026-10-27T22-20-04-000Z-2', 'lectura-2026-10-27T22-20-08-000Z-3'];
   for (const id of ids) writeFileSync(join(carpeta, `${id}.png`), 'x');
-  const servidor = crearServidor({ capturar: async () => png, enHilos: false, carpeta, maximos: { lectura: 1, fotograma: 1, resultado: 1 }, guardar: () => {} });
+  const servidor = crearServidor({ capturar: async () => capturaCompleta(), codigo: CODIGO, enHilos: false, carpeta, maximos: { lectura: 1, fotograma: 1, resultado: 1 }, guardar: () => {} });
   try {
     servidor.interno.protegerLecturas([ids[0], ids[1], '../fuera']);
     const r = await servidor.interno.leer({});
@@ -600,34 +575,30 @@ test('las partidas de la tablet se arreglan con tu corrección y se vuelven a su
   eq(partidas.corregir(99, { enemigos: ['Clint'] }), false);
 });
 
-test('un error que nadie recoge no tira el lector (3.72.2): se apunta en fallo-nodo.txt con su detalle y el proceso sigue', () => {
-  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-errores-'));
-  const oyentes = {}; const dichas = [];
-  const proceso = { on: (ev, f) => { oyentes[ev] = f; } };
-  vigilarErrores({ casa, registrar: (m) => dichas.push(m), proceso });
-  ok(oyentes.uncaughtException && oyentes.unhandledRejection, 'no escucha las excepciones o las promesas sin recoger');
-  oyentes.unhandledRejection(new TypeError('Cannot read properties of null (reading \'picks\')'));
-  const f = leerFichero(join(casa, 'fallo-nodo.txt'), 'utf8');
-  ok(/promesa: TypeError: Cannot read properties of null/.test(f) && /at /.test(f), `no apunta el error con su pila: ${f.slice(0, 200)}`);
-  ok(dichas.some((m) => /ERROR sin recoger/.test(m)), 'no lo dice en el registro');
-  oyentes.uncaughtException(new Error('otra'));
-  ok(/excepción: Error: otra/.test(leerFichero(join(casa, 'fallo-nodo.txt'), 'utf8')), 'no apunta la excepción');
+test('el arranque de la APK: un fallo al arrancar se apunta en fallo-nodo.txt y Node sigue vivo (si sale, se cierra la app)', async () => {
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-arranque-'));
+  // Sin LECTOR_INTERNO ni código, `principal` lanza: es el fallo al arrancar.
+  const hijo = spawn(process.execPath, [join(RAIZ, 'scripts/lector/arranque-apk.mjs')], { env: { PATH: process.env.PATH, LECTOR_CASA: casa }, stdio: 'ignore' });
+  try {
+    const fichero = join(casa, 'fallo-nodo.txt');
+    for (let i = 0; i < 200 && !existsSync(fichero); i += 1) await new Promise((r) => setTimeout(r, 50));
+    const fallo = existsSync(fichero) ? leerFichero(fichero, 'utf8') : '';
+    ok(/al arrancar: Error: faltan LECTOR_INTERNO/.test(fallo) && /at /.test(fallo), `no apunta el fallo al arrancar con su pila: ${fallo.slice(0, 200)}`);
+    await new Promise((r) => setTimeout(r, 300));
+    eq(hijo.exitCode, null, 'Node sale tras el fallo al arrancar (y con él la app)');
+  } finally { hijo.kill(); }
 });
 
-test('el lector de la APK arranca con Node 18 vigilando sus errores, y un fallo al arrancar no lo cierra (3.72.2)', () => {
-  const fuente = leerFichero(join(dirname(fileURLToPath(import.meta.url)), '../../scripts/lector/en-tablet.mjs'), 'utf8');
-  const arranque = fuente.slice(fuente.lastIndexOf("if (process.env.LECTOR_INTERNO"));
-  ok(/vigilarErrores\(/.test(arranque) && /try \{ await principal\(\); \} catch/.test(arranque) && /setInterval\(/.test(arranque), 'el arranque de la APK no vigila sus errores, o un fallo al arrancar deja salir a Node (y cierra la app)');
-});
-
-test('el modo solo de la tablet lleva cómo arreglar la partida con tu corrección (3.74.3): sin eso, la contestada antes de apuntar se perdía', () => {
-  const fuente = leerFichero(join(dirname(fileURLToPath(import.meta.url)), '../../scripts/lector/en-tablet.mjs'), 'utf8');
-  const llamada = fuente.slice(fuente.indexOf('const solo = crearSolo({'), fuente.indexOf('});', fuente.indexOf('const solo = crearSolo({')));
-  ok(/alCorregir: \(c\) => alCorregirRef\?\.\(c\)/.test(llamada), 'crearSolo no recibe alCorregir en en-tablet.mjs');
-
-  // Y desde 3.81.5, dónde guardar las partidas sin resultado y a quién mandar las pantallas del final.
+test('el modo solo de la tablet lleva a dónde va cada cosa: la corrección, las sin resultado, las pantallas, los recortes y el comprobante', () => {
+  const fuente = leerFichero(join(RAIZ, 'scripts/lector/en-tablet.mjs'), 'utf8');
+  const inicio = fuente.indexOf('solo = crearSolo({');
+  const llamada = fuente.slice(inicio, fuente.indexOf('\n  });', inicio));
+  ok(/\balCorregir,/.test(llamada), 'crearSolo no recibe alCorregir: la corrección contestada antes de apuntar se pierde');
   ok(/guardarSinResultado: \(p\) => partidas\.guardarSinResultado\(p\)/.test(llamada), 'crearSolo no recibe guardarSinResultado: las partidas sin resultado se pierden');
-  ok(/alFinalSinLeer: \(f\) => \{ subirFinalDe\(f\)/.test(llamada), 'crearSolo no recibe alFinalSinLeer: las pantallas del final no se suben');
+  ok(/alFinalSinLeer: intentar\(servidor\.subirFinalDe\)/.test(llamada), 'crearSolo no recibe alFinalSinLeer: las pantallas del final no se suben');
+  ok(/alSinLeer: intentar\(servidor\.subirRecortesDe\)/.test(llamada), 'crearSolo no recibe alSinLeer: los recortes del draft no se suben');
+  ok(/alApuntarTabla: intentar\(servidor\.subirComprobanteDe\)/.test(llamada), 'crearSolo no recibe alApuntarTabla: los comprobantes no se suben');
+  ok(/alCambiarResultado: /.test(llamada) && /partidaGuardada: /.test(llamada), 'crearSolo no sabe arreglar la partida apuntada (POST /resultado)');
 });
 
 test('los datos con los que decide la tablet: los MÁS NUEVOS que tenga, no los primeros que encuentre (3.73.1)', () => {
@@ -654,7 +625,7 @@ test('los datos con los que decide la tablet: los MÁS NUEVOS que tenga, no los 
 test('/estado dice de cuándo son los datos y si tus partidas suben (3.73.1): sin tu clave, cuántas se quedan en la tablet', async () => {
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-cuenta-'));
   const apk = await apkDePega();
-  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' });
+  const servidor = await principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' });
   const puerto = servidor.address().port;
   try {
     servidor.partidas.apuntar({ t: 1788000000000, pick: 'Rafaela', gane: true });
@@ -688,7 +659,6 @@ test('el parte de salud (3.74.0): sin IPs, sin el código ni tu clave, sin carac
 test('el parte cabe siempre en lo que acepta el servidor, también con un fallo de Node largo, y los errores no se pierden (3.74.2)', async () => {
   const s = supabaseFalso();
   const config = { url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica };
-  const { subirParte } = await import('../../src/comun/basedatos.js');
   const largo = (i) => `Lectura ${i} (1300 ms, captura sin comprimir 283): ${'baneos Hirara, Marcel, Masha, Belerick, Eudora · '.repeat(8)}`;
   const log = Array.from({ length: 200 }, (_, i) => (i === 50 ? 'ERROR sin recoger: TypeError: x' : largo(i))).join('\n');
   const falloNodo = Array.from({ length: 40 }, (_, i) => `    at algo${i} (${'x'.repeat(280)})`).join('\n');
@@ -710,12 +680,11 @@ test('la tablet sube su parte con SU clave, aunque el móvil no haya mandado la 
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-parte-'));
   const tuya = 'P'.repeat(43);
   const s = supabaseFalso();
-  const { mkdirSync } = await import('node:fs');
   mkdirSync(join(casa, 'datos'), { recursive: true });
   writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
   writeFileSync(join(casa, 'lector.log'), `Lector en 192.168.1.9 con ${CODIGO} y ${tuya}\nTodo bien\n`);
   const apk = await apkDePega();
-  const arrancar = () => principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  const arrancar = () => principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
   const servidor = await arrancar();
   try {
     await servidor.subirParte();
@@ -753,11 +722,10 @@ test('la clave del lector: al azar, con la forma del servidor, y la misma tras r
 test('sin tu clave, la tablet sube sus partidas con la del lector; con la tuya, con la tuya (3.74.6)', async () => {
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-sinclave-'));
   const s = supabaseFalso();
-  const { mkdirSync } = await import('node:fs');
   mkdirSync(join(casa, 'datos'), { recursive: true });
   writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
   const apk = await apkDePega();
-  const arrancar = () => principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  const arrancar = () => principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
   const servidor = await arrancar();
   try {
     servidor.partidas.apuntar({ t: 1788000000000, pick: 'Rafaela', gane: true });
@@ -777,15 +745,6 @@ test('sin tu clave, la tablet sube sus partidas con la del lector; con la tuya, 
   } finally { servidor.close(); apk.cerrar(); }
 });
 
-const mandarPost = (puerto, camino, cuerpo, { codigo = CODIGO, origen = null } = {}) => new Promise((r, x) => {
-  const datos = JSON.stringify(cuerpo);
-  const headers = { Host: `127.0.0.1:${puerto}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(datos), ...(origen ? { Origin: origen } : {}), ...(codigo ? { 'X-Lector-Codigo': codigo } : {}) };
-  const q = request({ host: '127.0.0.1', port: puerto, path: camino, method: 'POST', headers }, (res) => {
-    let b = ''; res.on('data', (t) => { b += t; }); res.on('end', () => r({ estado: res.statusCode, cuerpo: b }));
-  });
-  q.on('error', x); q.end(datos);
-});
-
 test('lo que se puede arreglar de una partida (3.75.0): solo héroes del catálogo, sin repetir y con topes', () => {
   const nombres = ['Rafaela', 'Clint', 'Khufra', 'Gord', 'Selena', 'Estes', "Chang'e"];
   const e = sanearEdicion({ t: 5, gane: false, pick: 'rafaela', enemigos: ['Clint', 'khufra', ''], aliados: ["chang'e"], bans: ['Gord'] }, nombres);
@@ -802,14 +761,13 @@ test('lo que se puede arreglar de una partida (3.75.0): solo héroes del catálo
 test('«Mis partidas» de la APK (3.75.0): lo que dice la base de datos con lo que falta por subir encima, solo para la APK, y arreglar una la vuelve a subir (sin enseñar la tabla desde 3.99.0)', async () => {
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-historial-'));
   const s = supabaseFalso();
-  const { mkdirSync } = await import('node:fs');
   mkdirSync(join(casa, 'datos'), { recursive: true });
   writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
   const apk = await apkDePega();
   // Subir puede fallar (sin red un rato) mientras leer la base de datos va: así se ve lo arreglado por encima.
   let sinSubir = false;
   const pedirBaseDeDatos = (url, o) => (sinSubir && String(url).endsWith('/subir_partidas') ? Promise.reject(new TypeError('sin red')) : s.fetch(url, o));
-  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos });
+  const servidor = await principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos });
   const puerto = servidor.address().port;
   try {
     // Una partida ya en la base de datos (de otra vez, o de otro aparato con la misma clave) y una de la tablet.
@@ -840,7 +798,7 @@ test('«Mis partidas» de la APK (3.75.0): lo que dice la base de datos con lo q
     eq((await mandarPost(puerto, '/partida', { t: 1788000060000, gane: true }, { origen: 'https://srchipiron.github.io' })).estado, 403, 'el navegador arregla partidas');
     const r = await mandarPost(puerto, '/partida', { t: 1788000060000, gane: true, enemigos: ['Khufra', 'Clint'] });
     eq(r.estado, 200, r.cuerpo);
-    eq(JSON.parse(r.cuerpo).aprendidos, 0, 'cambiar el resultado enseña la tabla');
+    ok(!('aprendidos' in JSON.parse(r.cuerpo)), 'cambiar el resultado enseña la tabla');
     eq(servidor.interno.aprenderResultadoDe, undefined, 'vuelve a haber una forma de enseñar la tabla al arreglar');
     const arreglada = JSON.parse((await pedir(puerto, '/partidas', { host: `127.0.0.1:${puerto}`, origen: null })).cuerpo).partidas.find((p) => p.t === 1788000060000);
     ok(arreglada?.gane === true && arreglada.sinSubir && arreglada.editada, `la lista enseña lo de la base de datos en vez de lo arreglado: ${JSON.stringify(arreglada)}`);
@@ -862,11 +820,10 @@ test('«Mis partidas» de la APK (3.75.0): lo que dice la base de datos con lo q
 test('móvil y tablet con UNA clave (3.76.0): la app vinculada pide la clave con su código, la APK y un navegador sin código no; lo arreglado en el móvil llega a la tablet', async () => {
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-clave-'));
   const s = supabaseFalso();
-  const { mkdirSync } = await import('node:fs');
   mkdirSync(join(casa, 'datos'), { recursive: true });
   writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
   const apk = await apkDePega();
-  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  const servidor = await principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
   const puerto = servidor.address().port;
   try {
     const clave = claveDelLector(casa);
@@ -915,7 +872,6 @@ await test('tu semana para la APK (3.79.0): lo mismo que en el móvil, en el JSO
 test('los recortes de un draft sin leer entero (3.81.0): la tablet los sube SOLA con la clave del lector, las dos mejores capturas y sin secretos', async () => {
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-recortes-'));
   const s = supabaseFalso();
-  const { mkdirSync } = await import('node:fs');
   mkdirSync(join(casa, 'datos'), { recursive: true });
   mkdirSync(join(casa, 'capturas'), { recursive: true });
   writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
@@ -929,7 +885,7 @@ test('los recortes de un draft sin leer entero (3.81.0): la tablet los sube SOLA
   // La versión que escribe la APK (3.84.1): hasta entonces los recortes llegaban con `version: null`.
   writeFileSync(join(casa, 'salud.json'), JSON.stringify({ apk: '3.84.1' }));
   const apk = await apkDePega();
-  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  const servidor = await principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
   try {
     const T = 1793000000000;
     const correccion = { ids: ['lectura-20261026-001', 'lectura-20261026-002', 'lectura-20261026-003', '../fuera', 'lectura-no-existe'], partida: T, cuando: T - 900000, faltan: 2, leidos: { enemigos: ['Clint', null, 'Khufra', null, null], aliados: ['Gord'], tuyoFila: 4, baneos: ['Hirara'] } };
@@ -998,7 +954,7 @@ test('lo que arreglas en el historial (3.83.0): solo drafts que completó una pe
 test('aprender de lo arreglado, en el servidor (3.83.0): un draft cada vez, solo con forma, como mucho una tanda, y se guarda', async () => {
   const vistos = [];
   const guardados = [];
-  const servidor = crearServidor({ capturar: async () => { throw new Error('sin tablet'); }, registrar: () => {}, aprender: async ({ pares }) => { vistos.push(pares); return { aprendido: { version: VERSION_APRENDIDO, aliados: {}, caras: {}, capturas: vistos.length }, informe: [{ aprendidos: [{ nombre: 'Layla' }], aliados: { aprendidos: [] }, sinEncontrar: [] }] }; }, guardar: (a) => guardados.push(a) });
+  const servidor = crearServidor({ capturar: async () => { throw new Error('sin tablet'); }, codigo: CODIGO, registrar: () => {}, aprender: async ({ pares }) => { vistos.push(pares); return { aprendido: { version: VERSION_APRENDIDO, aliados: {}, caras: {}, capturas: vistos.length }, informe: [{ aprendidos: [{ nombre: 'Layla' }], aliados: { aprendidos: [] }, sinEncontrar: [] }] }; }, guardar: (a) => guardados.push(a) });
   const bueno = { verdad: { enemigos: ['Layla'], aliados: [], tuyo: null }, capturas: [{ id: 'lectura-1', picks: 'iVBORw0KGgo=' }] };
   const r = await servidor.interno.aprenderDeArreglos([bueno, { ...bueno, capturas: [{ id: '../fuera', picks: 'iVBORw0KGgo=' }] }, { ...bueno, capturas: [{ id: 'lectura-2', picks: 'no <base64>' }] }, { ...bueno, verdad: { enemigos: [] } }, ...Array(ARREGLOS_POR_TANDA + 3).fill(bueno)]);
   eq(vistos.length, ARREGLOS_POR_TANDA - 3, 'aprende de un id o una imagen sin forma, sin enemigos, o pasa de la tanda');
@@ -1011,7 +967,6 @@ test('aprender de lo arreglado, en el servidor (3.83.0): un draft cada vez, solo
 test('aprender de lo arreglado, de punta a punta (3.83.0): el recorte de la base de datos y la partida que arreglaste, por el hilo de verdad, una vez', async () => {
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-arreglos-'));
   const s = supabaseFalso();
-  const { mkdirSync } = await import('node:fs');
   mkdirSync(join(casa, 'datos'), { recursive: true });
   writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
   const tuya = 'R'.repeat(43);
@@ -1029,7 +984,7 @@ test('aprender de lo arreglado, de punta a punta (3.83.0): el recorte de la base
   s.recortes.push({ clave: claveDelLector(casa), recibido: Date.now(), d: { v: 1, partida: T2, faltan: 1, capturas: [{ id: id2, picks: 'iVBORw0KGgo=' }] } });
   s.atender('subir_partidas', { clave: tuya, lote: [{ t: T2, pick: VERDAD.tuyo, gane: false, editada: T2 + 1, draft: { linea: 'roam', enemigos: [...VERDAD.enemigos2.slice(0, 4), 'Layla'], aliados: VERDAD.aliados.slice(0, 4) } }] }, { apikey: s.clavePublica });
   const apk = await apkDePega();
-  const servidor = await principal({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  const servidor = await principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
   try {
     const dicho = await servidor.aprenderDeLoArreglado();
     ok(/^Aprendido de 1 drafts que arreglaste/.test(dicho ?? '') && /1 no se pudo/.test(dicho ?? ''), `no aprende del draft arreglado, o calla el que falló: ${dicho}`);
@@ -1055,7 +1010,7 @@ test('recorteParaSubir (3.81.0): solo ids con forma, imágenes en base64, con su
 
 test('aprender de lo arreglado (3.83.1): lo que falla no se da por hecho y se reintenta; lo que no tiene forma, sí', async () => {
   let falla = true;
-  const servidor = crearServidor({ capturar: async () => { throw new Error('sin tablet'); }, registrar: () => {}, guardar: () => {}, aprender: async () => { if (falla) throw new Error('hilo sin memoria'); return { aprendido: { version: VERSION_APRENDIDO, aliados: {}, caras: {}, capturas: 1 }, informe: [] }; } });
+  const servidor = crearServidor({ capturar: async () => { throw new Error('sin tablet'); }, codigo: CODIGO, registrar: () => {}, guardar: () => {}, aprender: async () => { if (falla) throw new Error('hilo sin memoria'); return { aprendido: { version: VERSION_APRENDIDO, aliados: {}, caras: {}, capturas: 1 }, informe: [] }; } });
   const bueno = (clave) => ({ clave, verdad: { enemigos: ['Layla'], aliados: [], tuyo: null }, capturas: [{ id: 'lectura-1', picks: 'iVBORw0KGgo=' }] });
   const sinForma = { clave: 'malo', verdad: { enemigos: ['Layla'] }, capturas: [{ id: '../fuera', picks: 'x' }] };
   const r = await servidor.interno.aprenderDeArreglos([bueno('a'), sinForma, bueno('b')]);
@@ -1065,15 +1020,12 @@ test('aprender de lo arreglado (3.83.1): lo que falla no se da por hecho y se re
   ok(r2.mirados === 2 && r2.hechos.join() === 'a,b' && !r2.fallidos, JSON.stringify(r2));
 });
 
-test('las partidas con el héroe sin leer subidas antes de 3.81.2 se suben otra vez, una sola vez (3.83.1)', () => {
+test('las «supuesto» ya subidas no se vuelven a subir: la resubida de una vez (3.83.1) ya pasó, y la marca queda escrita', () => {
   const casa = mkdtempSync(join(tmpdir(), 'en-tablet-supuestas-'));
   const p = (t, extra = {}) => ({ t, pick: 'Marcel', gane: true, recomendados: ['Marcel'], origen: 'lector', fuente: 'tablet', ...extra });
   writeFileSync(join(casa, 'partidas.json'), JSON.stringify({ partidas: [p(3, { supuesto: true }), p(2), p(1, { supuesto: true })], subidas: [1, 2, 3] }));
   const partidas = partidasDeLaTablet(casa);
-  eq(partidas.pendientes().map((x) => x.t).sort().join(), '1,3', 'las supuestas ya subidas no se vuelven a subir');
-  partidas.marcarSubidas([1, 3]);
-  eq(partidasDeLaTablet(casa).pendientes().length, 0, 'se suben otra vez en cada arranque');
-  // Un fichero nuevo (ya con la marca) no vuelve a subir nada.
-  writeFileSync(join(casa, 'partidas.json'), JSON.stringify({ partidas: [p(3, { supuesto: true })], subidas: [3], supuestoResubido: true }));
-  eq(partidasDeLaTablet(casa).pendientes().length, 0, 'con la marca puesta vuelve a subirlas');
+  eq(partidas.pendientes().length, 0, 'las supuestas ya subidas se vuelven a subir');
+  partidas.apuntar(p(4));
+  eq(JSON.parse(leerFichero(join(casa, 'partidas.json'), 'utf8')).supuestoResubido, true, 'la marca no queda escrita: una APK de antes las volvería a subir');
 });

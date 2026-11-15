@@ -6,10 +6,12 @@
  */
 import { readFileSync } from 'node:fs';
 import { test, ok, eq, RAIZ } from '../ayuda.mjs';
-import { PARTIDAS_SIN_APUNTAR, PARTIDAS_PARA_MEDIR, revisarParte, revisarPartes, informe, PARTE_CALLADO_MIN, DATOS_VIEJOS_H, CIERRE_POR_FALLO, SALUD_CALLADA_MIN, FALLO_ANTERIOR_H, SIN_BANEOS_AVISO } from '../../scripts/revisar-tablet.mjs';
+import { PARTIDAS_SIN_APUNTAR, PARTIDAS_PARA_MEDIR, revisarParte, revisarPartes, informe, PARTE_CALLADO_MIN, DATOS_VIEJOS_H, CIERRE_POR_FALLO, SALUD_CALLADA_MIN, FALLO_ANTERIOR_H } from '../../scripts/revisar-tablet.mjs';
+import { SIN_BANEOS_AVISO, TABLA_SEGUIDAS } from '../../src/comun/contrato.js';
 import { subirParte, bajarPartes } from '../../src/comun/basedatos.js';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
-import { parteDeSalud, TABLA_SEGUIDAS, ultimasDeTabla } from '../../scripts/lector/en-tablet.mjs';
+import { parteDeSalud } from '../../scripts/lector/subidas.mjs';
+import { ultimasDeTabla } from '../../scripts/lector/partidas.mjs';
 
 const AHORA = Date.parse('2026-10-25T12:00:00Z');
 const hace = (min) => new Date(AHORA - min * 60000).toISOString();

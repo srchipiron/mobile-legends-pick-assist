@@ -1,15 +1,13 @@
 /**
- * El lector de la pantalla del draft (scripts/lector): leer los baneos de
- * una captura de la tablet. Con un recorte fijo de una captura real de Javi
- * (pruebas/fixtures/juego/baneos.png: la fila de baneos de su draft del 26
- * de septiembre de 2026, fase de picks) y con la regla de seguridad que
- * pidió él: el lector solo hace capturas, nunca toca la tablet.
+ * Leer la pantalla del draft (scripts/lector/leer.mjs, caras.mjs, png.mjs):
+ * baneos, picks enemigos y tu equipo, con recortes reales de las capturas de
+ * Javi (pruebas/fixtures/juego/; los nombres de los otros jugadores, tapados).
+ * La seguridad del lector va en lector-seguridad.test.mjs.
  */
-import { readFileSync, readdirSync, mkdtempSync, writeFileSync, symlinkSync } from 'node:fs';
+import { readFileSync, mkdtempSync, writeFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { transformSync } from 'esbuild';
 import { test, ok, eq, RAIZ, leerJson, generador } from '../ayuda.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
 import { LADO, muestra, normalizar, reconocer, CRIBA_PICKS, PARECIDO_MINIMO } from '../../scripts/lector/caras.mjs';
@@ -247,98 +245,6 @@ test('las caras de referencia tienen su tamaño y su fuente, y el lector avisa d
   const cdn = (carpeta, f) => `https://akmweb.youngjoygame.com/web/svnres/img/test/homepage_2_2_16_${carpeta}_1/100_${f}.png`;
   const tras = [{ name: 'Miya', cara: cdn(1235, 'aaa') }, { name: 'Popol and Kupa', cara: cdn(1235, 'nuevo') }];
   eq(carasDesfasadas({ Miya: cdn(1232, 'aaa'), 'Popol and Kupa': cdn(1232, 'viejo') }, tras).join(','), 'Popol and Kupa', 'confunde otra carpeta con otra cara');
-});
-
-test('SEGURIDAD: todo lo que el lector ejecuta (su carpeta y lo que importa de fuera) solo importa lo permitido y no puede cargar código por otra vía (3.40.0)', () => {
-  // La prueba de abajo mira PALABRAS; la revisión de seguridad de 3.40.0 la
-  // esquivó con `await import('node:child' + '_process')` y partiendo
-  // 'sh'+'ell', y metiéndolo en src/motor/nombres.js, que el lector importa
-  // desde fuera de su carpeta. Aquí se recorre el grafo de importaciones
-  // entero y se mira la FORMA: qué módulos de Node importa cada fichero y que
-  // no haya otra manera de cargar código.
-  const leerFichero = (f) => readFileSync(f, 'utf8');
-  // Sin comentarios con un ANALIZADOR (esbuild, el de Vite), no con una
-  // expresión: `const u = 'a//'; return import(…)` escondía el import detrás
-  // de un «//» dentro de una cadena (lo cazó la revisión por mutación).
-  const sinComentarios = (t) => transformSync(t, { loader: 'js', format: 'esm' }).code;
-  const carpeta = join(RAIZ, 'scripts/lector');
-  const cola = readdirSync(carpeta, { recursive: true }).map(String).filter((f) => /\.(c|m)?js$/.test(f)).map((f) => join(carpeta, f));
-  const vistos = new Map();
-  while (cola.length) {
-    const f = cola.pop();
-    if (vistos.has(f)) continue;
-    const texto = sinComentarios(leerFichero(f));
-    vistos.set(f, texto);
-    for (const m of texto.matchAll(/(?:^|\n)\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g)) {
-      const dep = m[1] ?? m[2];
-      if (dep.startsWith('.')) cola.push(join(f, '..', dep));
-    }
-  }
-  const relativo = (f) => f.slice(RAIZ.length + 1);
-  ok([...vistos.keys()].some((f) => /src\/motor\/nombres\.js$/.test(f)), 'el recorrido no llega a lo que el lector importa de fuera de su carpeta');
-  // Los módulos de Node que puede importar cada fichero (lo de hoy): ninguno lanza programas (3.97.0).
-  const DE_NODE = {
-    'scripts/lector/leer.mjs': ['node:fs', 'node:path', 'node:url'],
-    // node:crypto: comparar el código de vinculación en tiempo constante (3.61.0).
-    'scripts/lector/servir.mjs': ['node:http', 'node:fs', 'node:os', 'node:path', 'node:url', 'node:worker_threads', 'node:crypto'],
-    // El lector dentro de la tablet (3.61.0): ni lanza programas ni abre conexiones propias (la captura, por fetch a 127.0.0.1).
-    // node:url (3.66.0): encontrar los datos que trae la APK junto a sus scripts.
-    // node:crypto (3.74.1): la clave al azar del lector para sus partes (Node 18 no trae crypto global).
-    'scripts/lector/en-tablet.mjs': ['node:fs', 'node:path', 'node:url', 'node:crypto'],
-    // node:fs (3.66.0): leer solo.json, la línea que eligió la APK para el modo «Sin móvil».
-    'scripts/lector/solo.mjs': ['node:fs'],
-    'scripts/lector/png.mjs': ['node:zlib'],
-    'scripts/lector/sacar-caras.mjs': ['node:fs', 'node:path'],
-    'scripts/lector/lectura-tarea.mjs': ['node:worker_threads'],
-    'scripts/lector/aprender-tarea.mjs': ['node:worker_threads', 'node:fs'],
-    'scripts/lector/recortes-tarea.mjs': ['node:worker_threads', 'node:fs'],
-    'scripts/lector/partida.mjs': ['node:fs'],
-    // El arranque vigilado de la APK (3.72.3): escribir fallo-nodo.txt en la casa de la app.
-    'scripts/lector/arranque-apk.mjs': ['node:fs', 'node:path'],
-  };
-  // La ÚNICA carga dinámica permitida (3.72.3): el arranque de la APK carga el
-  // lector DESPUÉS de poner los vigilantes de errores, con este literal exacto
-  // y una sola vez. Cualquier otro import() sigue prohibido.
-  const CARGA_PERMITIDA = { 'scripts/lector/arranque-apk.mjs': 'import("./en-tablet.mjs")' }; // como lo deja esbuild al quitar los comentarios
-  for (const [f, texto] of vistos) {
-    const r = relativo(f);
-    const deps = [...texto.matchAll(/(?:^|\n)\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g)].map((m) => m[1] ?? m[2]).filter((d) => !d.startsWith('.'));
-    for (const d of deps) ok((DE_NODE[r] ?? []).includes(d), `${r} importa ${d}, que no tiene permitido`);
-    // Ninguna otra forma de cargar o ejecutar código.
-    // También `process.getBuiltinModule` (carga child_process sin import),
-    // el constructor de funciones por `.constructor(`, `Reflect` y CUALQUIER
-    // llamada a un miembro calculado (`x['constr' + 'uctor'](…)`): en el
-    // código del lector no hay ninguna, así que la regla puede ser estricta.
-    const permitida = CARGA_PERMITIDA[r];
-    if (permitida) eq(texto.split(permitida).length - 1, 1, `${r} no carga el lector con su única carga permitida`);
-    const otraVia = (permitida ? texto.split(permitida).join('') : texto).match(/\bimport\s*\(|\brequire\s*\(|\bcreateRequire\b|\beval\s*\(|\bFunction\s*\(|\bprocess\s*\[|\bprocess\.(binding|dlopen|_linkedBinding)\b|\bgetBuiltinModule\b|\.constructor\b|\bconstructor\s*\(|\bReflect\b|\]\s*\(|\bglobalThis\s*\[|\beval\s*:\s*true|\bmodule\.constructor\b/);
-    ok(!otraVia, `${r} puede cargar o ejecutar código por otra vía: ${otraVia?.[0]}`);
-    // Un hilo solo arranca ficheros del propio lector, nunca código en texto.
-    for (const m of texto.matchAll(/new\s+Worker\s*\((.{0,80})/g)) ok(/^\s*(new URL\(\s*["'][\w-]+\.mjs["'],\s*import\.meta\.url\s*\)|tarea)\s*,/.test(m[1]), `${r} arranca un hilo con ${m[1].trim()}`);
-    // Y `tarea` solo puede ser un fichero del lector (su valor por defecto).
-    if (/new\s+Worker\s*\(\s*tarea\b/.test(texto)) ok(/\btarea\s*=\s*new URL\(\s*["'][\w-]+\.mjs["'],\s*import\.meta\.url\s*\)/.test(texto) && (texto.match(/\btarea\s*=/g) ?? []).length === 1, `${r} arranca un hilo con una \`tarea\` que puede venir de otro sitio`);
-  }
-});
-
-test('SEGURIDAD: el lector no lanza ningún programa ni lleva un mandato de adb (desde 3.97.0 no hay adb: la captura la da la tablet)', () => {
-  // Javi: «no quiero perder la cuenta». Tocar la pantalla por adb sería
-  // automatizar el juego (bot) y pone la cuenta en riesgo; leer una captura no.
-  // Hasta 3.96.0 leer.mjs capturaba la tablet por adb desde Termux (tres
-  // llamadas permitidas, fijadas por forma). Desde 3.97.0 nadie en la carpeta
-  // puede lanzar programas: por FORMA, toda la carpeta, subcarpetas incluidas.
-  const carpeta = join(RAIZ, 'scripts/lector');
-  const todos = readdirSync(carpeta, { recursive: true }).map(String);
-  const ficheros = todos.filter((f) => /\.(c|m)?js$/.test(f));
-  const sinComentarios = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-  const PROHIBIDOS = /['"`](input|shell|tap|swipe|keyevent|text|install|uninstall|push|am|pm|monkey|sendevent|root|reboot|exec-out|screencap|connect)['"`]/;
-  for (const f of ficheros) {
-    const texto = sinComentarios(readFileSync(join(carpeta, f), 'utf8'));
-    ok(!PROHIBIDOS.test(texto), `${f} lleva un mandato de adb: ${texto.match(PROHIBIDOS)?.[0]}`);
-    ok(!/child_process|\bexecFile|\bspawn|\bexecSync|\bprocess\.binding|\badb\b/.test(texto), `${f} puede lanzar programas o habla de adb: nadie en el lector lo tiene permitido`);
-  }
-  // Ni guiones de shell (lector.sh, el arranque de Termux, se quitó en 3.97.0), ni voz.mjs (3.96.0), ni tablet.mjs (buscar la tablet por adb).
-  for (const fuera of ['voz.mjs', 'tablet.mjs']) ok(!ficheros.includes(fuera), `vuelve a haber ${fuera}`);
-  eq(todos.filter((g) => /\.sh$/.test(g)).length, 0, 'vuelve a haber un guion de shell en el lector');
 });
 
 test('el mismo héroe leído en dos huecos de una fila: se queda el que más se parece, el otro pasa a «?»', () => {

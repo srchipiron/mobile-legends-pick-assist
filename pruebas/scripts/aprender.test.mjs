@@ -13,9 +13,10 @@ import { leerPicksEnemigos, leerAliados, carasGuardadas, PICKS_ENEMIGOS, ALIADO_
 import { leerCaptura } from '../../scripts/lector/lectura.mjs';
 import { muestra as muestraDe } from '../../scripts/lector/caras.mjs';
 import { ALIADOS as ALIADOS_REF } from '../../scripts/lector/leer.mjs';
-import { aprenderDe, ajustarPosiciones, carasAprendidas, aliadasAprendidas, sinHuecosVacios, etiquetarAliados, momentoDe, esHuecoVacio, VACIO_ALIADO, resumirAprendizaje, esPantallaDeDraft, huecoDe, APRENDER_MINIMO, VERSION_APRENDIDO, MINUTOS_ENTRE_DRAFTS } from '../../scripts/lector/aprender.mjs';
+import { aprenderDe, ajustarPosiciones, carasAprendidas, aliadasAprendidas, sinHuecosVacios, etiquetarAliados, esHuecoVacio, VACIO_ALIADO, resumirAprendizaje, esPantallaDeDraft, huecoDe, APRENDER_MINIMO, VERSION_APRENDIDO, MINUTOS_ENTRE_DRAFTS } from '../../scripts/lector/aprender.mjs';
+import { instanteDeCaptura } from '../../scripts/lector/capturas.mjs';
 import { capturaCompleta, capturaCompletaPng, VERDAD } from '../fixtures/juego/captura.mjs';
-import { aprenderEnHilo } from '../../scripts/lector/servir.mjs';
+import { aprenderEnHilo } from '../../scripts/lector/aprendizaje.mjs';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 
@@ -165,7 +166,7 @@ test('tu equipo: aprende la cara de un compañero que la API no lee, y solo la u
   const sinGuinevere = sinCara('Guinevere');
   const img = capturaCompleta({ columna: 2 });
   eq(filas(leerAliados(img, sinGuinevere)), 'Clint,?,Novaria,Leomord,Estes', 'sin su cara la API sigue leyendo a Guinevere: la prueba no mide nada');
-  eq(momentoDe(idA(0)), Date.UTC(2026, 9, 14, 17, 0), `el instante de ${idA(0)} sale mal`);
+  eq(instanteDeCaptura(idA(0)), Date.UTC(2026, 9, 14, 17, 0), `el instante de ${idA(0)} sale mal`);
   // Primer draft: tres compañeros leídos, el que queda es Guinevere. Queda pendiente, no se usa.
   const r1 = aprenderDe([{ id: idA(0), img, verdad: VERDAD_EQUIPO }], { caras: sinGuinevere });
   eq(r1.informe[0].aliados?.pendientes.join(), 'Guinevere', `del primer draft no queda pendiente Guinevere: ${JSON.stringify(r1.informe[0].aliados)}`);
