@@ -69,7 +69,7 @@ export function revisarParte(parte, { ahora = Date.now() } = {}) {
   // Los errores van aparte (`errores`, de todo el registro) y en las últimas líneas: sin repetir.
   const errores = [...new Set([...(Array.isArray(d.errores) ? d.errores : []), ...(Array.isArray(d.log) ? d.log : [])].filter((l) => typeof l === 'string' && LINEA_DE_ERROR.test(l) && !NO_ES_FALLO.test(l)))];
   if (errores.length) fallos.push(`errores en el registro (${errores.length}): ${errores.slice(-3).map((l) => l.slice(0, 160)).join(' | ')}`);
-  // Las del móvil y las del modo solo (3.74.3: van aparte en /estado).
+  // Las del móvil y las del modo solo.
   const lecturas = (lector.lecturas ?? 0) + (lector.lecturasSolo ?? 0);
   if (lecturas > 10 && lector.fallosCaptura / lecturas > FALLOS_DE_CAPTURA_MAX) avisos.push(`fallan ${lector.fallosCaptura} de ${lecturas} capturas${lector.ultimoFallo?.que ? ` (${String(lector.ultimoFallo.que).slice(0, 120)})` : ''}`);
   if (t.memoriaBaja) avisos.push(`la tablet va justa de memoria (${t.memoriaLibreMB ?? '?'} MB libres; la app usa ${t.memoriaAppMB ?? '?'} MB)`);
@@ -82,15 +82,15 @@ export function revisarParte(parte, { ahora = Date.now() } = {}) {
   if (Number.isFinite(fecha) && (ahora - fecha) / 3600000 > DATOS_VIEJOS_H) avisos.push(`datos del juego de hace ${Math.round((ahora - fecha) / 3600000)} h${e.datos.de === 'apk' ? ' (los de la APK: no consigue bajar los nuevos)' : ''}`);
   if (e.partidas?.sinSubir > 0 && !e.partidas.clave) avisos.push(`${e.partidas.sinSubir} partidas solo en la tablet: falta la clave de jugador`);
   else if (e.partidas?.sinSubir > 0 && e.partidas.error) avisos.push(`${e.partidas.sinSubir} partidas sin subir (${e.partidas.error})`);
-  // Las que no supo cómo acabaron (3.82.1): no suben hasta contestarlas.
+  // Las que no supo cómo acabaron: no suben hasta contestarlas.
   if (e.partidas?.sinResultado > 0) avisos.push(`${e.partidas.sinResultado} partidas sin resultado en la tablet: sin contestarlas no cuentan`);
-  // Cuánto reconoce sola el resultado (3.75.0): el resto lo contestaste tú.
+  // Cuánto reconoce sola el resultado: el resto lo contestaste tú.
   const conResultado = (e.partidas?.porTabla ?? 0) + (e.partidas?.porPregunta ?? 0);
   if (conResultado >= RESULTADOS_PARA_MEDIR && e.partidas.porPregunta / conResultado > PREGUNTADAS_MAX) avisos.push(`la tablet solo reconoce sola el resultado de ${e.partidas.porTabla} de ${conResultado} partidas: el resto lo preguntó`);
-  // Todas iguales (3.99.0): diez seguidas leídas en la tabla con el mismo resultado es que puede estar leyendo mal.
+  // Todas iguales: diez seguidas leídas en la tabla con el mismo resultado es que puede estar leyendo mal.
   const ut = e.partidas?.ultimasTabla;
   if (ut?.n >= TABLA_SEGUIDAS && (ut.gane === 0 || ut.gane === ut.n)) avisos.push(`las últimas ${ut.n} partidas que la tablet leyó en la tabla salieron todas ${ut.gane ? 'victoria' : 'derrota'}: mira en el historial del juego si es verdad`);
-  // ¿Ve la tablet el final de lo que juegas? (3.83.2): partidas desde que arrancó y cuántas apuntó sola.
+  // ¿Ve la tablet el final de lo que juegas? partidas desde que arrancó y cuántas apuntó sola.
   const jugadas = Number(e.solo?.partidas) || 0, apuntadas = Number(e.solo?.apuntadas) || 0;
   if (jugadas >= PARTIDAS_SIN_APUNTAR && apuntadas === 0) fallos.push(`desde que arrancó jugaste ${jugadas} partidas y la tablet no apuntó ninguna: no ve el final`);
   else if (jugadas >= PARTIDAS_PARA_MEDIR && apuntadas / jugadas < APUNTADAS_MIN) avisos.push(`la tablet solo apuntó ${apuntadas} de las ${jugadas} partidas que jugaste desde que arrancó`);

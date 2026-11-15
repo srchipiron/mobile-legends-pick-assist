@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Mide el lector con lo que llega de la tablet (3.82.0): los recortes de los
+ * Mide el lector con lo que llega de la tablet: los recortes de los
  * drafts que no leyó enteros (`recortes_recientes`) contra la partida de
  * verdad (`partidas_comunidad`, con lo que Javi arregla después en el
  * historial: enemigos, compañeros y su héroe). Para cada draft, qué se lee
@@ -9,7 +9,7 @@
  * caras de compañero que quedan confirmadas (la misma skin en dos drafts y
  * ninguna de otro héroe parecida) y que pueden ir de serie en
  * `scripts/lector/caras-panel.json`. NO escribe nada en el repositorio: lo
- * que entra de serie se mira antes (3.59.5, 3.80.0).
+ * que entra de serie se mira antes.
  *
  *   node scripts/medir-lector.mjs [--horas 168] [--json salida.json]
  *
@@ -40,7 +40,7 @@ export function medirRecortes({ recortes = [], partidas = [], caras = carasGuard
     const d = fila?.d ?? fila;
     if (!d || typeof d !== 'object') continue;
     if (d.tipo === 'final') { salida.finales += 1; continue; }
-    // Los comprobantes de las partidas apuntadas por la tabla (3.101.0): no son del draft.
+    // Los comprobantes de las partidas apuntadas por la tabla: no son del draft.
     if (d.tipo === 'resultado') { salida.comprobantes += 1; continue; }
     salida.recortes += 1;
     const p = porT.get(d.partida);

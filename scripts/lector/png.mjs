@@ -1,11 +1,10 @@
 /**
- * Lector de PNG mínimo, sin dependencias. Lo que da `adb exec-out screencap
- * -p` (RGBA de 8 bits) y lo que sirve la API: RGB, gris, gris con alfa y
- * paleta (con transparencia `tRNS`), de 8 o 16 bits (de 16 se queda el byte
- * alto), con o sin entrelazado Adam7 (una de las 133 caras de la API viene
- * entrelazada). Devuelve { ancho, alto, rgba }. Nada más: en Termux no hay
- * navegador ni librerías de imagen, y una dependencia nativa es justo lo que
- * no compila en un móvil.
+ * Lector de PNG mínimo, sin dependencias: RGBA de 8 bits (las capturas
+ * guardadas) y lo que sirve la API: RGB, gris, gris con alfa y paleta (con
+ * transparencia `tRNS`), de 8 o 16 bits (de 16 se queda el byte alto), con o
+ * sin entrelazado Adam7 (una de las 133 caras de la API viene entrelazada).
+ * Devuelve { ancho, alto, rgba }. Nada más: en el Node de la APK no hay
+ * librerías de imagen, y una dependencia nativa no compila en un móvil.
  */
 import { deflate, deflateSync, inflateSync } from 'node:zlib';
 
@@ -17,7 +16,7 @@ const ADAM7 = [[0, 0, 8, 8], [4, 0, 8, 8], [0, 4, 4, 8], [2, 0, 4, 4], [0, 2, 2,
 
 /**
  * Deshace los filtros de `alto` filas de `fila` bytes desde `desde`; devuelve las filas y dónde acaba.
- * Un bucle por tipo de filtro (3.39.0): con el tipo y los vecinos decididos
+ * Un bucle por tipo de filtro: con el tipo y los vecinos decididos
  * dentro del bucle de cada byte, una captura de 2400×1504 (14 MB) costaba
  * más que inflarla.
  */
@@ -83,13 +82,13 @@ export function leerPng(buf) {
     throw new Error(`PNG no admitido (bits ${bits}, tipo ${tipo})`);
   }
   const bytes = bits / 8, bpp = canales * bytes;
-  // Lo que cabe según la cabecera (3.83.1): filas con su byte de filtro, y en
+  // Lo que cabe según la cabecera: filas con su byte de filtro, y en
   // Adam7 como mucho dos veces más filas. Sin tope, un PNG de 117 KB se
   // inflaba a 90 MB (y un recorte bajado de la base de datos pasa por aquí).
   if (!(ancho > 0 && alto > 0 && ancho * alto <= MAX_PIXELES)) throw new Error(`PNG de tamaño imposible (${ancho}×${alto})`);
   const crudo = inflateSync(Buffer.concat(datos), { maxOutputLength: alto * (ancho * bpp + 1) + 2 * alto + 64 });
   if (!entrelazado && tipo === 6 && bits === 8) {
-    // Lo que da `screencap -p`: las filas ya son el RGBA que se devuelve.
+    // RGBA de 8 bits: las filas ya son el RGBA que se devuelve.
     return { ancho, alto, rgba: desfiltrar(crudo, 0, ancho * 4, alto, 4).filas };
   }
   const rgba = new Uint8Array(ancho * alto * 4);
@@ -194,7 +193,7 @@ export function escribirPng({ ancho, alto, rgba }, filtros = () => 0, { paleta =
     trozo('IDAT', deflateSync(Buffer.concat(filas))), trozo('IEND', Buffer.alloc(0))]);
 }
 
-// Por tabla (3.45.0): el mismo CRC de siempre, ocho veces más rápido. Con
+// Por tabla: el mismo CRC de siempre, ocho veces más rápido. Con
 // la captura en crudo se escribe un PNG de varios MB en el móvil, y bit a
 // bit eran cientos de milisegundos con el lector parado.
 const TABLA_CRC = Uint32Array.from({ length: 256 }, (_, n) => {
@@ -209,12 +208,11 @@ function crc32(buf) {
 }
 
 /**
- * `adb exec-out screencap` SIN `-p` (3.45.0): la imagen tal cual, sin que la
- * tablet la comprima. Cabecera de 12 bytes (ancho, alto y formato de píxel,
- * en little-endian; Android 8 y anteriores) o de 16 (más el espacio de
- * color), y los píxeles: RGBA_8888 (1) o RGBX_8888 (2), cuatro bytes por
- * píxel, fila tras fila. Cualquier otra cosa (otro formato, un tamaño que no
- * cuadra) se rechaza: el lector vuelve entonces a la captura en PNG.
+ * La captura que da la APK, sin comprimir (la forma de `screencap`): cabecera
+ * de 12 bytes (ancho, alto y formato de píxel, en little-endian) o de 16 (más
+ * el espacio de color), y los píxeles: RGBA_8888 (1) o RGBX_8888 (2), cuatro
+ * bytes por píxel, fila tras fila. Cualquier otra cosa (otro formato, un
+ * tamaño que no cuadra) se rechaza.
  */
 export function leerCrudo(buf) {
   if (!buf || buf.length < 16) throw new Error('captura en crudo vacía');
@@ -231,7 +229,7 @@ export function leerCrudo(buf) {
 
 /**
  * Un PNG RGBA sin filtros y con la compresión más rápida, comprimiendo fuera
- * del hilo principal (3.45.0): para guardar en el móvil la captura en crudo
+ * del hilo principal: para guardar en el móvil la captura en crudo
  * (el aprendizaje lee PNG) sin parar al lector mientras tanto.
  */
 export async function escribirPngRapido({ ancho, alto, rgba }) {

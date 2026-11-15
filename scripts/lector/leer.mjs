@@ -54,7 +54,7 @@ export const PICKS_ENEMIGOS = [0, 1, 2, 3, 4].map((i) => {
 });
 
 /**
- * La cara de la API comparada tal cual Y en espejo (3.31.0): en el panel
+ * La cara de la API comparada tal cual Y en espejo: en el panel
  * de picks el juego dibuja a unos héroes reflejados (Clint, Khufra,
  * Lesley, Aamon) y a otros no (Rafaela, Eudora, Gloo), medido en dos
  * capturas reales de Javi. Hasta 3.30.1 solo se comparaba en espejo y los
@@ -73,7 +73,7 @@ export const ambasOrientaciones = (caras) => {
  * `posiciones` y `extra` vienen de lo aprendido de las correcciones
  * (aprender.mjs, 3.27.0): los huecos medidos en ESA tablet y las caras tal
  * como las pinta su panel (ya en la orientación de la pantalla, sin espejo).
- * La geometría MEDIDA manda (3.30.1): se lee primero con `PICKS_ENEMIGOS`
+ * La geometría MEDIDA manda: se lee primero con `PICKS_ENEMIGOS`
  * y el hueco aprendido solo entra donde esa no lee a nadie. Un aprendizaje
  * equivocado (el 1 de octubre de 2026 una tanda movió el panel entero y
  * los picks dejaron de leerse) ya no puede tapar lo que la medida sí ve.
@@ -116,7 +116,7 @@ export function leerPicksEnemigos(img, caras, { posiciones = null, extra = [], p
 }
 
 /**
- * TU equipo (3.31.0): el panel de la izquierda, cinco filas de 216 px desde
+ * TU equipo: el panel de la izquierda, cinco filas de 216 px desde
  * y = 228 con el retrato a la izquierda; la cara cae alrededor de (165, 321
  * + 216·i) con radio ≈ 72, pero cada skin la encuadra en otro sitio (de 124
  * a 173 en x, radio 67–98 en la captura de Javi), así que la búsqueda es
@@ -135,7 +135,7 @@ export const AMARILLO_MINIMO = 0.05;
 /** La búsqueda en tu equipo, con las caras de la API y con las aprendidas. */
 export const OPCIONES_ALIADOS = { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12, 1.25], finura: 8, criba: CRIBA_PICKS };
 /**
- * Una cara de compañero APRENDIDA (3.58.0) lee su hueco si se parece al
+ * Una cara de compañero APRENDIDA lee su hueco si se parece al
  * menos esto. Medido en los 30 drafts de recortes del 10 al 14 de octubre
  * de 2026 (#56–#114): la misma skin en el mismo panel sale entre 0,93 y
  * 1,00 (mediana 0,98), y el héroe equivocado más parecido, 0,81.
@@ -152,7 +152,7 @@ export const MARGEN_ALIADO = 0.03;
  * otro hueco.
  */
 export function leerAliados(img, caras, { extra: aprendidas = [], panel = carasDelPanel('aliados') } = {}) {
-  // Las de serie (3.59.5: las skins de quienes juegan contigo, de tus drafts) y las aprendidas en ESTE móvil, por el mismo camino.
+  // Las de serie y las aprendidas en ESTE móvil, por el mismo camino.
   const extra = [...panel, ...aprendidas];
   const referencias = ambasOrientaciones(caras);
   // Rejilla a r/8 (el doble de gruesa que en los picks) con ±5 pasos: mismo
@@ -212,7 +212,7 @@ export function sinRepetidos(lecturas) {
 /** Los iconos del hueco de tu equipo sin elegir (aprender.mjs, 3.58.1 y 3.59.5), en base64. */
 export const vaciosAliadoGuardados = () => JSON.parse(readFileSync(new URL('vacio-aliado.json', import.meta.url))).iconos.map((i) => i.v);
 /**
- * Las caras del PANEL (3.59.3): héroes que el panel de picks del juego pinta
+ * Las caras del PANEL: héroes que el panel de picks del juego pinta
  * con un dibujo que la API aún no tiene. Minotaur salía a 0,71–0,73 contra
  * su cara de la API en los cuatro drafts que lo tenían de rival (#58, #70,
  * #80, #108) a cualquier tamaño y encuadre, y ninguna de las 16 imágenes

@@ -88,7 +88,7 @@ export const LADO_GRUESO = 8;
  */
 export const FINALISTAS = 32;
 /**
- * Cuántos de los mejores se AFINAN (3.39.0): cada uno, desde su mejor
+ * Cuántos de los mejores se AFINAN: cada uno, desde su mejor
  * sitio, se mueve un paso o un tamaño (`PASO_DE_ESCALA`, entre
  * `ESCALA_MINIMA` y `ESCALA_MAXIMA`) mientras se parezca más. Medido en las
  * 22 caras reales de las pruebas, en su sitio y desplazadas (81 casos), y
@@ -101,7 +101,7 @@ export const AFINADOS = 3;
 /** El paso de tamaño al afinar y hasta dónde: un 6%, del 76% al 136% del radio medido (decisión al medir: cubre las escalas que ya se buscaban y un poco más). */
 export const PASO_DE_ESCALA = 0.06, ESCALA_MINIMA = 0.76, ESCALA_MAXIMA = 1.36;
 /**
- * Otro tamaño en la primera pasada (3.55.0). La criba solo miraba la cara a
+ * Otro tamaño en la primera pasada. La criba solo miraba la cara a
  * tamaño tal cual, y un héroe que el panel pinta un 20% más grande no
  * llegaba ni a finalista: en los recortes del 10 al 12 de octubre de 2026,
  * Hanabi daba 0,92 a 1,2 y salía «Wanwan» (0,81), Johnson 0,86 a 1,3 y
@@ -155,7 +155,7 @@ function producto(v, tabla, n, largo) {
  * pinta el círculo un poco distinto). Devuelve el mejor y el segundo, con
  * `nombre: null` si el mejor no llega a PARECIDO_MINIMO.
  *
- * En dos pasadas (3.39.0): en cada posición de la búsqueda se compara
+ * En dos pasadas: en cada posición de la búsqueda se compara
  * primero con todas las caras REDUCIDAS a 8×8 (nueve veces menos números)
  * y solo los `FINALISTAS` héroes que más se parecen en alguna posición se
  * comparan a 24×24, que es el parecido que se devuelve y se mide contra

@@ -250,8 +250,11 @@ test('un solo aparato (protocolo 2): la tablet lee, decide, pone la burbuja y ll
     ok(/^Estes: .+ → .+/.test(c?.titulo ?? '') && /^Fase de picks · Tu build/.test(c.detalle ?? ''), `la tablet no pone su consejo: ${JSON.stringify(c)}`);
     const d = servidor.solo.estado();
     ok(d.enemigos.includes('Clint') && d.enemigos.includes('Khufra') && d.baneos.length >= 8, `el draft acumulado no es el de la captura: ${JSON.stringify(d)}`);
-    // El móvil copia el draft, y la tablet sigue leyendo: ya no se aparta.
+    // El móvil copia el draft, y la tablet sigue leyendo: ya no se aparta. Que mira lo cuenta /estado (el paso de la guía de la APK).
+    const movil = async () => JSON.parse((await pedir(puerto, '/estado')).cuerpo).movil;
+    eq((await movil()).consultas, 0, 'cuenta al móvil sin que haya mirado');
     const vista = await delDraft();
+    ok((await movil()).consultas === 1 && (await movil()).haceS <= 5, `GET /draft no cuenta al móvil: ${JSON.stringify(await movil())}`);
     ok(vista.protocolo === PROTOCOLO && vista.fase === 'draft' && vista.draft?.enemigos.includes('Clint') && vista.draft.enemigos.includes('Khufra') && vista.draft.tuyo === 'Estes' && vista.draft.linea === 'roam',
       `GET /draft no es el draft de la tablet: ${JSON.stringify(vista)}`);
     const antes = await lecturas();

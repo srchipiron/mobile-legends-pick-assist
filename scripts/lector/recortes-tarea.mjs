@@ -1,5 +1,5 @@
 /**
- * Los recortes de un draft para medir el lector (3.81.0), en un hilo aparte
+ * Los recortes de un draft para medir el lector, en un hilo aparte
  * (worker_threads) como el aprendizaje: decodificar y leer ocho capturas
  * lleva segundos en la tablet y el lector sigue contestando. Recibe rutas;
  * devuelve los recortes (nunca la verdad: la tablet sola no la sabe).

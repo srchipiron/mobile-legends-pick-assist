@@ -1,5 +1,5 @@
 /**
- * Un hilo del lector (3.39.0): recibe la captura YA decodificada en memoria
+ * Un hilo del lector: recibe la captura YA decodificada en memoria
  * compartida (no se copia: son 14 MB) y lee el trozo que le toca
  * (`leerParte`). Vive mientras vive el servidor; las caras le llegan una
  * vez, al arrancar. Sin adb, sin programas.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * La vigilancia, tras «Datos sin actualizar» (3.102.0): sale con 1 y lo dice
+ * La vigilancia, tras «Datos sin actualizar»: sale con 1 y lo dice
  * si la API sirve la cara de un héroe que el lector de la tablet no tiene
  * (otra imagen, o un héroe nuevo). Así se abre la incidencia de siempre con
  * el porqué arriba, y se cierra sola cuando se rehacen las caras.

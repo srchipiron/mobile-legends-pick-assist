@@ -118,8 +118,8 @@ export function recorteDeDraft(img, caras, { posiciones = null, extra = [], alia
 export const RECORTES_POR_DRAFT = 2;
 
 /**
- * Sin la verdad (3.81.0, la tablet sola): de las capturas de un draft, la
- * última (3.86.5) y las que más héroes leían (enemigos y tu equipo; a
+ * Sin la verdad: de las capturas de un draft, la
+ * última y las que más héroes leían (enemigos y tu equipo; a
  * igualdad, las más nuevas) hasta `maximo`, en su orden. Las del final del draft suelen ser ya la fase de
  * skins, y las primeras, picks a medias: las que más leen son las del draft
  * casi entero. Cada captura se decodifica al mirarla.
@@ -134,11 +134,11 @@ export function mejoresRecortes(ids, leer, caras, opciones = {}, maximo = RECORT
       vistos.push({ id, i, n });
     } catch { /* una captura que no se lee no cuenta */ }
   });
-  // La última del draft va siempre (3.86.5): Javi elige el último y su hueco solo lleva su héroe (con la
+  // La última del draft va siempre: Javi elige el último y su hueco solo lleva su héroe (con la
   // foto de la skin) al final; las que más leen son de antes, con su hueco vacío. Con ella se ve quién era,
-  // desde el PC y al aprender de lo arreglado. La última que LEE a alguien (3.87.1): una negra, la carga o
+  // desde el PC y al aprender de lo arreglado. La última que LEE a alguien: una negra, la carga o
   // una ventana encima no enseñan nada y quitaban el sitio a la segunda mejor.
-  // Y que lea al menos la mitad que la mejor (3.90.4): el 4 de noviembre de 2026 la última «que leía» era el
+  // Y que lea al menos la mitad que la mejor: el 4 de noviembre de 2026 la última «que leía» era el
   // menú de equipamiento encima del draft, con un Zetian falso a 0,81, y la carga con un Gord falso.
   const mejor = vistos.reduce((m, v) => Math.max(m, v.n), 0);
   const ultima = vistos.filter((v) => v.n > 0 && v.n * 2 >= mejor).reduce((u, v) => (!u || v.i > u.i ? v : u), null);
@@ -148,7 +148,7 @@ export function mejoresRecortes(ids, leer, caras, opciones = {}, maximo = RECORT
 }
 
 /**
- * El recorte de vuelta a su sitio (3.82.0): una pantalla negra de la
+ * El recorte de vuelta a su sitio: una pantalla negra de la
  * referencia con las diez caras donde estaban, para leerla o aprender de ella
  * como de una captura. Devuelto así, el lector lee las diez caras igual
  * (±0,05, `recortes.test`). Lo usan `scripts/medir-lector.mjs` y las pruebas.
@@ -156,7 +156,7 @@ export function mejoresRecortes(ids, leer, caras, opciones = {}, maximo = RECORT
 export function devolverPicks(b64) {
   const ancho = CAJAS_ALIADOS[0][2] + CAJAS_ENEMIGOS[0][2], alto = ALTO_FILA * 5;
   const bytes = Buffer.from(b64, 'base64');
-  // Un recorte es un tercio de esto (3.83.0): uno que dice ser más grande no se descomprime (de la base de datos puede llegar cualquier cosa).
+  // Un recorte es un tercio de esto: uno que dice ser más grande no se descomprime (de la base de datos puede llegar cualquier cosa).
   if (bytes.length < 24 || bytes.readUInt32BE(16) * bytes.readUInt32BE(20) > ancho * alto) throw new Error('recorte demasiado grande');
   const r = leerPng(bytes);
   const cap = { ancho: REFERENCIA.ancho, alto: REFERENCIA.alto, rgba: new Uint8Array(REFERENCIA.ancho * REFERENCIA.alto * 4) };

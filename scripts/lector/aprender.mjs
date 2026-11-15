@@ -30,7 +30,7 @@ const PANEL = [0.80, 0.06, 1.0, 0.96];
 export const CAPTURAS_POR_CORRECCION = 3;
 /** Una captura es la pantalla del draft si lee al menos estos baneos de los que dice la verdad (si la verdad trae alguno). */
 export const BANEOS_PARA_APRENDER = 2;
-/** Versión de lo aprendido: la 1 (3.27.0–3.30.0) se aprendió sin estas guardas y se descarta. */
+/** Versión de lo aprendido: la 1 se aprendió sin estas guardas y se descarta. */
 export const VERSION_APRENDIDO = 2;
 /** Una captura enseña caras de tu equipo si lee al menos estos enemigos de la verdad, y ninguno que no esté. */
 export const ENEMIGOS_PARA_ALIADOS = 3;
@@ -95,7 +95,7 @@ export function carasAprendidas(aprendido) {
 const deBase64 = (v) => normalizar(Float32Array.from(Buffer.from(v, 'base64')));
 
 /**
- * El hueco de un compañero que AÚN NO HA ELEGIDO (3.58.1): el juego pinta
+ * El hueco de un compañero que AÚN NO HA ELEGIDO: el juego pinta
  * siempre el mismo icono (una mano blanca sobre azul), en cualquier
  * partida. Con 3.58.0, si un amigo elegía último en dos partidas, ese
  * icono se habría aprendido como su cara (el «que falta» por eliminación)
@@ -106,7 +106,7 @@ const deBase64 = (v) => normalizar(Float32Array.from(Buffer.from(v, 'base64')));
  */
 export const VACIOS_ALIADO = vaciosAliadoGuardados().map(deBase64);
 /**
- * Y TU hueco antes de elegir (3.59.5) pinta OTRO icono, un cuadro azul con
+ * Y TU hueco antes de elegir pinta OTRO icono, un cuadro azul con
  * un emblema blanco: no se parece a la mano (0,60–0,69), así que la guarda
  * de 3.58.1 no lo paraba, y como Javi elige el último y su pick es casi
  * siempre el mismo, en #58 y #80 se aprendió como «Estes» y se confirmó. Desde
@@ -135,7 +135,7 @@ export function aliadasAprendidas(aprendido) {
 }
 
 /**
- * Lo aprendido sin los recortes que son el icono de un hueco vacío (3.60.1),
+ * Lo aprendido sin los recortes que son el icono de un hueco vacío,
  * en `aliados` y en `aliadosPendientes`. `aliadasAprendidas` ya no los usa,
  * pero seguían en el fichero: contaban en «N compañeros aprendidos» de
  * `/estado` y ocupaban uno de los `RECORTES_POR_ALIADO` del héroe.
@@ -187,7 +187,7 @@ function aprenderAliadosDe(img, id, verdad, nuevo, caras) {
   const leidos = leerAliados(img, caras, { extra: aliadasAprendidas(nuevo) });
   for (const { i, nombre } of etiquetarAliados(leidos, fila, verdad)) {
     const pos = escalar(img, ALIADOS[i]);
-    // El hueco aún vacío no es nadie (3.58.1).
+    // El hueco aún vacío no es nadie.
     if (reconocer(img, pos, VACIOS_ALIADO.map((v, k) => ({ nombre: `vacio${k}`, v })), OPCIONES_ALIADOS).parecido >= MINIMO_VACIO) { informe.vacios.push(nombre); continue; }
     // Y si se parece a la cara aprendida de OTRO héroe, uno de los dos está mal apuntado: no se aprende.
     const deOtroHeroe = [...Object.entries(nuevo.aliados), ...Object.entries(nuevo.aliadosPendientes)].filter(([n]) => nombreClave(n) !== nombreClave(nombre)).flatMap(([n, l]) => l.map((p) => ({ nombre: n, v: deBase64(p.v) })));
@@ -293,7 +293,7 @@ export function aprenderDe(pares, { caras, aprendido = null, posicionesBase = PI
   const informe = [];
   const hallazgos = [];
   // De las que son la pantalla del draft, las que MÁS enemigos de la verdad
-  // leen (3.54.0); a igualdad, las más nuevas. Hasta 3.53.0 se cogían las
+  // leen; a igualdad, las más nuevas. Hasta 3.53.0 se cogían las
   // últimas, y el draft se completa muchas veces ya en la fase de skins:
   // del 10 al 12 de octubre de 2026 el aprendizaje miró casi siempre
   // pantallas de skins (los cinco «sin encontrar» con el draft bien leído un
@@ -335,7 +335,7 @@ export function aprenderDe(pares, { caras, aprendido = null, posicionesBase = PI
       nuevo.caras[h.nombre] = [recorte, ...(nuevo.caras[h.nombre] ?? [])].slice(0, RECORTES_POR_HEROE);
       linea.aprendidos.push({ nombre: h.nombre, hueco, parecido: donde.parecido, pos: pos.map(Math.round) });
     }
-    // Tu equipo (3.58.0), solo de una captura que es de verdad ESTE draft.
+    // Tu equipo, solo de una captura que es de verdad ESTE draft.
     const aliados = (Array.isArray(verdad?.aliados) ? verdad.aliados : []).map((n) => porClave.get(nombreClave(n))?.nombre).filter(Boolean);
     const tuyo = porClave.get(nombreClave(verdad?.tuyo ?? ''))?.nombre ?? null;
     if ((aliados.length || tuyo) && aciertos >= ENEMIGOS_PARA_ALIADOS && !fuera) linea.aliados = aprenderAliadosDe(img, id, { aliados, tuyo }, nuevo, caras);
