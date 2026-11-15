@@ -213,10 +213,7 @@ test('S20: un cuerpo enorme o roto se contesta 400 sin tirar el servidor, y el r
   const n = '0123456789abcdef0123456789abcdef';
   const r = await pedir(puerto, `/reto?n=${n}`, { codigo: null, origen: null });
   eq(r.estado, 200, r.cuerpo);
-  // La de la app, cargada aquí: si la app no carga, cae esta prueba y no todas las de seguridad.
-  const { pruebaDelReto } = await import('../../src/app/lector.js');
-  eq(r.json.prueba, await pruebaDelReto(CODIGO, n), 'la prueba del lector no es la que calcula la app');
-  ok(r.json.prueba !== await pruebaDelReto('OTROCODIGO9', n) && !r.cuerpo.includes(CODIGO), 'la prueba no depende del código, o lo lleva dentro');
+  ok(/^[0-9a-f]{64}$/.test(r.json.prueba) && !r.cuerpo.includes(CODIGO), `la prueba no tiene forma, o lleva el código dentro: ${r.cuerpo}`);
   eq((await pedir(puerto, '/reto?n=xyz', { codigo: null, origen: null })).estado, 400, 'acepta un reto sin forma');
   let ultimo;
   for (let i = 0; i < RETOS_POR_MINUTO; i += 1) ultimo = await pedir(puerto, `/reto?n=${n}`, { codigo: null, origen: null });
@@ -228,4 +225,14 @@ test('S20: un cuerpo enorme o roto se contesta 400 sin tirar el servidor, y el r
   ok(permitirReto(retos, 'fe80::nuevo', 1000 + 60000) && retos.size === 1, `pasado un minuto, el mapa no se poda: ${retos.size}`);
   for (let i = 0; i < RETOS_POR_MINUTO - 1; i += 1) permitirReto(retos, 'fe80::nuevo', 61000 + i);
   ok(!permitirReto(retos, 'fe80::nuevo', 61100), 'permitirReto no tiene tope por aparato');
+});
+
+test('la prueba del reto es la que calcula la app con el mismo código, y otra con otro', async () => {
+  const { puerto } = await servidor();
+  const n = 'fedcba9876543210fedcba9876543210';
+  const r = await pedir(puerto, `/reto?n=${n}`, { codigo: null, origen: null });
+  // La app, cargada aquí: si no carga, cae esta prueba y no las de seguridad del servidor.
+  const { pruebaDelReto } = await import('../../src/app/lector.js');
+  eq(r.json?.prueba, await pruebaDelReto(CODIGO, n), 'la prueba del lector no es la que calcula la app');
+  ok(r.json.prueba !== await pruebaDelReto('OTROCODIGO9', n), 'la prueba no depende del código');
 });
