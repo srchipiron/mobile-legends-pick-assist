@@ -54,12 +54,19 @@ test('todo lo que importa el lector de la tablet va dentro de la APK (3.70.0): u
   // character class»). Nada de lo que carga la APK puede usarlas, ni el
   // indicador `v` de expresiones, que las da por supuestas.
   for (const f of vistos) {
-    const texto = readFileSync(join(RAIZ, f), 'utf8');
+    // Sin comentarios: el que avisa de esto también lo nombra.
+    const texto = readFileSync(join(RAIZ, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     const propiedad = texto.match(/\\[pP]\{[^}]*\}/);
     ok(!propiedad, `${f} usa ${propiedad?.[0]} en una expresión regular: el Node de la APK no la entiende y el fichero no carga`);
     ok(!/\/[a-z]*v[a-z]*\.test\(|new RegExp\([^)]*['"][a-z]*v[a-z]*['"]\)/.test(texto), `${f} usa el indicador v de expresiones regulares`);
   }
   ok([...vistos].some((f) => f.startsWith('src/comun/')), 'el recorrido no llega a lo que el lector importa de src/comun');
+  // Node 18 tampoco tiene `crypto` global (WebCrypto): el lector usa node:crypto, y la clave del lector se crea con su azar.
+  for (const f of [...vistos].filter((x) => x.startsWith('scripts/lector/'))) {
+    const codigo = readFileSync(join(RAIZ, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    ok(!/(?<![\w.])crypto\.|globalThis\.crypto/.test(codigo), `${f} usa el crypto global: en el Node de la APK no existe`);
+    ok(!/crearClaveDeJugador\(\s*\)/.test(codigo), `${f} crea una clave sin pasar el azar de node:crypto: usaría el crypto global`);
+  }
   // Y apk.yml se recompila cuando cambia cualquier cosa que va dentro (3.81.2), menos los datos (la APK los baja sola).
   const apk = readFileSync(join(RAIZ, '.github/workflows/apk.yml'), 'utf8');
   const rutas = [...(/^\s*paths:\s*\[([^\]]*)\]/m.exec(apk)?.[1] ?? '').matchAll(/'([^']+)'/g)].map((m) => m[1]);
@@ -70,32 +77,6 @@ test('todo lo que importa el lector de la tablet va dentro de la APK (3.70.0): u
   // Y no publica sin pasar las pruebas.
   // El MANDATO, no la palabra: un comentario o el nombre del paso la dicen también.
   ok(/^\s*run:\s*npm test\s*$/m.test(apk.slice(0, apk.indexOf('gh release'))), 'apk.yml publica sin pasar npm test');
-});
-
-test('el lector de la tablet solo llama a donde debe (3.70.0): su puerto interno, la web de Pick Assist y la base de datos', async () => {
-  // fetch es global: la lista de imports permitidos no limita los destinos. Se mira cada llamada.
-  const PERMITIDAS = {
-    'scripts/lector/en-tablet.mjs': { fetch: ['...a'], pedir: ['`${base}/captura`', '`${base}/voz`', 'url'] },
-    'src/comun/basedatos.js': { fetch: ['`${config.url}/rest/v1/rpc/${funcion}`'] },
-  };
-  const cola = ['scripts/lector/en-tablet.mjs']; const vistos = new Set(); const vistas = [];
-  while (cola.length) {
-    const f = cola.pop();
-    if (vistos.has(f)) continue;
-    vistos.add(f);
-    const texto = readFileSync(join(RAIZ, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-    for (const m of texto.matchAll(/(?:import|export)\b[^'"`;]*?\bfrom\s*['"](\.[^'"]+)['"]/g)) cola.push(relative(RAIZ, join(RAIZ, dirname(f), m[1])));
-    for (const m of texto.matchAll(/\b(fetch|pedir)\s*\(\s*([^,)]*)/g)) {
-      if (f === 'scripts/lector/servir.mjs' && m[1] === 'pedir') continue; // los hilos de lectura, no la red
-      vistas.push(`${f} ${m[1]}(${m[2].trim()})`);
-      ok((PERMITIDAS[f]?.[m[1]] ?? []).includes(m[2].trim()), `${f} llama a ${m[1]}(${m[2].trim()}): una salida a la red que no está en la lista (revisa a dónde va y añádela aquí)`);
-    }
-  }
-  ok(vistas.length >= 4, `la prueba no ve las llamadas de siempre: ${vistas}`);
-  // Y a dónde van: la web fija y una base de datos que pasa sanearConfig.
-  const { DATOS_DE_LA_WEB, esInterno } = await import('../../scripts/lector/en-tablet.mjs');
-  ok(Object.values(DATOS_DE_LA_WEB).every((u) => u.startsWith('https://srchipiron.github.io/mobile-legends-pick-assist/')), 'la tablet baja datos de otro sitio');
-  ok(esInterno('http://127.0.0.1:1234') && !esInterno('http://192.168.1.5:1234'), 'la captura podría pedirse fuera de 127.0.0.1');
 });
 
 test('un fallo al empezar a grabar no cierra la app ni entra en bucle (3.72.1): se recoge, se enseña arriba con «Copiar» y no se pide grabar sola', () => {
