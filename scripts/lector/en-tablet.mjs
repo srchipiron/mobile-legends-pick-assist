@@ -60,7 +60,7 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
   const leerDatos = lectorDeDatos([bajados, datosDeLaApk]);
   const comunidad = () => leerComunidad([bajados, datosDeLaApk]);
   const nombresDelCatalogo = () => (leerDatos().catalogo?.heroes ?? []).map((h) => h.name).filter(Boolean);
-  const partidas = partidasDeLaTablet(casa);
+  const partidas = partidasDeLaTablet(casa, { registrar });
   const fichero = ficheroAprendido(casa);
   const aprendido = cargarLoAprendido(fichero, registrar);
   registrar('Resultado de la partida: se lee de la tabla del final con las plantillas de serie (victoria y derrota).');
@@ -206,7 +206,7 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
   ];
   if (env.LECTOR_SIN_SOLO !== '1') {
     solo.arrancar();
-    const refrescar = async () => { const n = await bajarDatos(bajados); if (n) registrar(`Datos de Pick Assist al día (${n} ficheros).`); };
+    const refrescar = async () => { const n = await bajarDatos(bajados, { registrar }); if (n) registrar(`Datos de Pick Assist al día (${n} ficheros).`); };
     relojes.push(setTimeout(refrescar, existsSync(join(bajados, FICHEROS.meta)) ? REFRESCAR_DATOS_MS : 30000), setInterval(refrescar, REFRESCAR_DATOS_MS));
   }
   servidor.on('close', () => { solo.parar(); for (const r of relojes) { clearInterval(r); clearTimeout(r); } });

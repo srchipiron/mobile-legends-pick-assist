@@ -5,6 +5,7 @@
  * congelaba sus etiquetas.
  */
 import { sanearLectura } from '../../motor/registro.js';
+import { PREGUNTA_CADUCA_MS } from '../../comun/contrato.js';
 
 /** [D] Lo que cabe en cada bando: lo dice el juego. */
 export const TOPES = { enemigos: 5, aliados: 4, baneos: 10 };
@@ -102,13 +103,15 @@ const union = (...listas) => [...new Set(listas.flat())];
  * quitaste (`rechazados` = leído y fuera del draft) no vuelve. Los baneos
  * solo se suman. Un draft de la tablet con `desde` ≤ `ignorarTabletHasta`
  * (vaciaste o apuntaste ese) no entra; uno más nuevo que el que se seguía
- * empieza un draft nuevo.
+ * empieza un draft nuevo. Uno cerrado hace más de `PREGUNTA_CADUCA_MS` no entra.
  *
  * @returns {{ despues, nuevos: { baneos, enemigos, aliados, tuyo }, quitados: number, ignorado: boolean }}
  */
 export function fundirTablet(antes, tablet, { ahora = Date.now(), pool = null } = {}) {
   const nada = { despues: antes, nuevos: { baneos: 0, enemigos: 0, aliados: 0, tuyo: null }, quitados: 0, ignorado: true };
   if (!tablet?.desde) return nada;
+  // Un draft cerrado hace más de lo que vive su pregunta es de otra partida: no se copia como el de ahora.
+  if (tablet.cerrado && ahora - (tablet.cerradoEn ?? tablet.cambiado ?? tablet.desde) > PREGUNTA_CADUCA_MS) return nada;
   if (antes.ignorarTabletHasta && tablet.desde <= antes.ignorarTabletHasta) return nada;
   if (antes.desdeTablet && tablet.desde < antes.desdeTablet) return nada;
   // Otro draft: el que se seguía es más viejo, o el del móvil se completó antes de que empezara este.

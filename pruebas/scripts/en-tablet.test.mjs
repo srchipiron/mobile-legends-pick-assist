@@ -1032,3 +1032,40 @@ test('las «supuesto» ya subidas no se vuelven a subir: la resubida de una vez 
   partidas.apuntar(p(4));
   eq(JSON.parse(leerFichero(join(casa, 'partidas.json'), 'utf8')).supuestoResubido, true, 'la marca no queda escrita: una APK de antes las volvería a subir');
 });
+
+test('partidas.json ilegible se aparta y deja su línea: la primera partida nueva no borra el historial (revisión 4.0)', () => {
+  const casa = mkdtempSync(join(tmpdir(), 'partidas-mala-'));
+  const roto = '{"partidas":[{"t":1,"pick":"Gloo","gane":true}';
+  writeFileSync(join(casa, 'partidas.json'), roto);
+  const lineas = [];
+  const partidas = partidasDeLaTablet(casa, { registrar: (m) => lineas.push(m) });
+  eq(partidas.todas().length, 0);
+  ok(existsSync(join(casa, 'partidas.json.mala')) && leerFichero(join(casa, 'partidas.json.mala'), 'utf8') === roto, 'el fichero ilegible no se aparta tal cual');
+  ok(lineas.some((l) => /partidas\.json ilegible/.test(l)), 'cargar vacío no deja rastro en el registro');
+  const limpia = mkdtempSync(join(tmpdir(), 'partidas-nueva-'));
+  const nada = [];
+  partidasDeLaTablet(limpia, { registrar: (m) => nada.push(m) });
+  eq(nada.length, 0, 'una tablet sin partidas.json todavía avisa de un fichero ilegible');
+});
+
+test('los datos de la web que no valen dejan su línea con «no se pudo» o «rechazados» (revisión 4.0)', async () => {
+  const { bajarDatos } = await import('../../scripts/lector/datos.mjs');
+  const carpeta = mkdtempSync(join(tmpdir(), 'bajados-'));
+  const lineas = [];
+  const html = async () => ({ ok: true, status: 200, text: async () => '<html>mantenimiento</html>' });
+  eq(await bajarDatos(carpeta, { pedir: html, registrar: (m) => lineas.push(m) }), 0);
+  ok(lineas.length >= 1 && lineas.every((l) => LINEA_DE_ERROR.test(l)), `una respuesta que no es JSON no deja línea de error: ${lineas}`);
+  const raro = [];
+  await bajarDatos(carpeta, { pedir: async () => ({ ok: true, status: 200, text: async () => '{"otra":"cosa"}' }), registrar: (m) => raro.push(m) });
+  ok(raro.some((l) => /rechazados/.test(l) && LINEA_DE_ERROR.test(l)), `un JSON sin la forma de Pick Assist se descarta sin decirlo: ${raro}`);
+  const caida = [];
+  await bajarDatos(carpeta, { pedir: async () => ({ ok: false, status: 503 }), registrar: (m) => caida.push(m) });
+  ok(caida.some((l) => /HTTP 503/.test(l)), 'la web caída no deja línea');
+});
+
+test('el parte tapa también las IPv6, y no las horas (revisión 4.0)', () => {
+  const [a, b, c] = lineasLimpias('fallo de socket fe80::1c2b:3aff:fe4d:12 y ::ffff:192.168.1.5\nentera 2001:0db8:0000:0000:0000:ff00:0042:8329\na las 12:52:10 no se pudo');
+  ok(!/fe80|ffff|192\.168/.test(a), `queda una IPv6: ${a}`);
+  ok(!/2001:0db8/.test(b), `queda una IPv6 entera: ${b}`);
+  ok(/12:52:10/.test(c), `una hora se tapa como si fuera una IP: ${c}`);
+});

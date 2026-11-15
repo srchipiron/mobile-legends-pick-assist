@@ -105,3 +105,14 @@ test('lo guardado por 3.102.0 se carga entero y se vuelve a guardar igual (los c
   eq(JSON.stringify(cargarDraft(nuevo).aMano), '["Miya"]');
   eq(cargarDraft(nuevo).desdeTablet, D);
 });
+
+test('un draft de la tablet cerrado hace horas no se copia como el de ahora (revisión 4.0); uno recién cerrado sí', async () => {
+  const { PREGUNTA_CADUCA_MS } = await import('../../src/comun/contrato.js');
+  const viejo = tablet({ enemigos: ['Clint', 'Khufra', 'Aldous', 'Zilong', 'Lancelot'], cerrado: true, cerradoEn: D, cambiado: D });
+  const r = fundirTablet(vacio(), viejo, { ahora: D + PREGUNTA_CADUCA_MS + 60000 });
+  ok(r.ignorado && r.despues.enemigos.length === 0, 'un draft de hace días entra como el actual y arranca la pregunta de cómo fue');
+  const conLoTuyo = fundirTablet({ ...vacio(), enemies: undefined, enemigos: ['Gusion'] }, viejo, { ahora: D + 3 * 86400000 });
+  ok(conLoTuyo.ignorado, 'un draft viejo de la tablet se mezcla con el que metes a mano hoy');
+  const reciente = fundirTablet(vacio(), viejo, { ahora: D + 10 * 60000 });
+  ok(!reciente.ignorado && reciente.despues.enemigos.length === 5, 'el draft que se acaba de cerrar ya no se copia');
+});

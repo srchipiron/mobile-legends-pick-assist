@@ -56,21 +56,21 @@ export function lectorDeDatos(carpetas) {
   };
 }
 
-/** Baja los datos de la web a `carpeta` (a un temporal y luego encima). Nunca lanza; dice cuántos ficheros guardó. */
-export async function bajarDatos(carpeta, { pedir = (...a) => fetch(...a), plazoMs = 60000 } = {}) {
+/** Baja los datos de la web a `carpeta` (a un temporal y luego encima). Nunca lanza; dice cuántos ficheros guardó y deja una línea por cada uno que no. */
+export async function bajarDatos(carpeta, { pedir = (...a) => fetch(...a), plazoMs = 60000, registrar = () => {} } = {}) {
   mkdirSync(carpeta, { recursive: true });
   let guardados = 0;
   for (const [que, url] of Object.entries(DATOS_DE_LA_WEB)) {
     try {
       const r = await pedir(url, { signal: AbortSignal.timeout(plazoMs) });
-      if (!r.ok) continue;
+      if (!r.ok) { registrar(`Datos de la web (${que}): no se pudo (HTTP ${r.status}).`); continue; }
       const texto = await r.text();
-      if (!datosValidos(que, JSON.parse(texto))) continue;
+      if (!datosValidos(que, JSON.parse(texto))) { registrar(`Datos de la web (${que}): rechazados, no se pudo usar (no tienen la forma de Pick Assist).`); continue; }
       const f = join(carpeta, FICHEROS[que]);
       writeFileSync(`${f}.tmp`, texto);
       renameSync(`${f}.tmp`, f);
       guardados += 1;
-    } catch { /* sin red: se queda lo que había */ }
+    } catch (e) { registrar(`Datos de la web (${que}): no se pudo (${e.message}); sigo con los que había.`); }
   }
   return guardados;
 }

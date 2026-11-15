@@ -6,7 +6,7 @@
  * (motor/registro.js), más lo que solo sabe la tablet: `desde`,
  * `resultadoDe` y `leida`, que no salen de ella.
  */
-import { readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { TABLA_SEGUIDAS } from '../../src/comun/contrato.js';
 import { sanearConfig, claveDeJugadorValida, subirPartidas } from '../../src/comun/basedatos.js';
@@ -27,7 +27,7 @@ export function ultimasDeTabla(todas) {
 }
 
 /** El almacén de la tablet: `{ partidas, subidas, sinResultado }`, escrito a un temporal y luego encima. */
-export function partidasDeLaTablet(casa) {
+export function partidasDeLaTablet(casa, { registrar = () => {} } = {}) {
   const fichero = join(casa, 'partidas.json');
   let datos;
   try {
@@ -37,7 +37,14 @@ export function partidasDeLaTablet(casa) {
       subidas: Array.isArray(j?.subidas) ? j.subidas.filter(Number.isFinite) : [],
       sinResultado: Array.isArray(j?.sinResultado) ? j.sinResultado.filter((p) => p && Number.isFinite(p.t) && typeof p.pick === 'string' && p.gane === undefined) : [],
     };
-  } catch { datos = { partidas: [], subidas: [], sinResultado: [] }; }
+  } catch (e) {
+    datos = { partidas: [], subidas: [], sinResultado: [] };
+    // Ilegible: se aparta antes de escribir encima, o la primera partida nueva borraba el historial.
+    if (existsSync(fichero)) {
+      try { renameSync(fichero, `${fichero}.mala`); } catch { /* sin disco */ }
+      registrar(`partidas.json ilegible (${e.message}): apartado a partidas.json.mala, empiezo vacío.`);
+    }
+  }
   // [C] `supuestoResubido` queda escrito a true: la resubida de una vez ya se hizo en la tablet de Javi.
   const escribir = () => {
     try { writeFileSync(`${fichero}.tmp`, JSON.stringify({ ...datos, supuestoResubido: true })); renameSync(`${fichero}.tmp`, fichero); } catch { /* sin disco: quedan en memoria */ }

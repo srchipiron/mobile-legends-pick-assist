@@ -34,11 +34,13 @@ export const FRACCION_CABECERA = 34 / 56;
 const b64 = (x) => typeof x === 'string' && x.length > 0 && /^[A-Za-z0-9+/=]+$/.test(x);
 const cabe = (x) => Buffer.byteLength(JSON.stringify(x)) <= TOPE_RECORTE_BYTES;
 
-/** Las líneas del registro limpias para salir: sin control, sin IP (`[ip]`), sin el código ni las claves (`[oculto]`), ≤300. */
+/** Las líneas del registro limpias para salir: sin control, sin IP v4 ni v6 (`[ip]`), sin el código ni las claves (`[oculto]`), ≤300. */
 export function lineasLimpias(texto, { secretos = [], max = LINEAS_DEL_PARTE, solo = null } = {}) {
   const tapar = secretos.filter((x) => typeof x === 'string' && x.length >= 8);
   return String(texto ?? '').split('\n').filter((l) => l.trim() && (!solo || solo.test(l))).slice(-max).map((l) => {
     let x = limpiarTexto(l).replace(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g, '[ip]');
+    // IPv6: comprimida (`::`) o entera (ocho grupos); una hora «12:52:10» no es ninguna de las dos.
+    x = x.replace(/(?:[0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}/gi, (m) => (m.includes('::') || m.split(':').length === 8 ? '[ip]' : m));
     for (const sec of tapar) x = x.split(sec).join('[oculto]');
     return x.slice(0, 300);
   });
