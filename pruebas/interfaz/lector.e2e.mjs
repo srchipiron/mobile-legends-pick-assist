@@ -312,3 +312,78 @@ test('si la tablet cambió de IP la encuentra en la wifi con el reto, y un impos
     ok(nueva.de('GET /reto').length > 0, 'da el código sin reto');
   } finally { await contexto.close(); }
 });
+
+/** La tablet aplica la corrección que le llega: su draft pasa a ser el corregido (como `conCorreccion`). */
+function aplicaCorrecciones(tablet) {
+  let n = 0;
+  const reloj = setInterval(() => {
+    const l = tablet.de('POST /draft');
+    for (; n < l.length; n++) {
+      const c = l[n].cuerpo;
+      if (c.desde !== tablet.draft.desde) continue;
+      const cinco = (a) => Array.from({ length: 5 }, (_, i) => a[i] ?? null);
+      tablet.draft = { ...tablet.draft, enemigos: cinco(c.enemigos), aliados: cinco([...(c.tuyo ? [c.tuyo] : []), ...c.aliados]), tuyoFila: c.tuyo ? 0 : -1, tuyo: c.tuyo, baneos: c.baneos };
+    }
+  }, 50);
+  return () => clearInterval(reloj);
+}
+
+test('«Deshacer» tras quitar un héroe leído se le manda a la tablet: la siguiente copia no lo vuelve a quitar (revisión 4.0)', async () => {
+  const tablet = tabletFalsa({ draft: LEIDO() });
+  const parar = aplicaCorrecciones(tablet);
+  const { contexto, pagina, errores } = await conTablet(tablet, { auto: false });
+  try {
+    await boton(pagina).click();
+    await esperarA(async () => (await leerGuardado(pagina)).enemies.length === 2);
+    await pagina.getByRole('button', { name: 'Quitar Khufra' }).click();
+    await esperarA(() => tablet.draft.enemigos.filter(Boolean).join() === 'Clint');
+    await pagina.locator('.aviso-deshacer').getByRole('button', { name: 'Deshacer' }).click();
+    await esperarA(() => tablet.draft.enemigos.filter(Boolean).length === 2, { plazoMs: 5000 });
+    eq(tablet.draft.enemigos.filter(Boolean).sort().join(), 'Clint,Khufra', 'el «Deshacer» no llega a la tablet');
+    await boton(pagina).click();
+    await pagina.waitForTimeout(800);
+    eq((await leerGuardado(pagina)).enemies.sort().join(), 'Clint,Khufra', 'la siguiente copia vuelve a quitar lo que deshiciste');
+    ok(!errores.length, errores.join());
+  } finally { parar(); await contexto.close(); }
+});
+
+test('una copia con la partida del draft viejo y un draft nuevo de la tablet deja el nuevo a la vista (revisión 4.0)', async () => {
+  const tablet = tabletFalsa({ draft: LEIDO() });
+  const { contexto, pagina, errores } = await conTablet(tablet, { auto: false });
+  try {
+    await boton(pagina).click();
+    await esperarA(async () => (await leerGuardado(pagina)).desdeTablet === DESDE);
+    const nuevo = draftTablet({ desde: DESDE + 600000, baneos: ['Lancelot'], enemigos: ['Chou', 'Saber', null, null, null], aliados: [null, 'Estes', null, null, null], tuyoFila: 1 });
+    tablet.draft = nuevo;
+    tablet.partida = { desde: DESDE, estado: 'apuntada', gane: true, registro: { t: Date.now() - 1000, pick: 'Estes', gane: true, recomendados: [], rango: 'glory', origen: 'lector' } };
+    await boton(pagina).click();
+    ok(await esperarA(async () => (await leerGuardado(pagina, 'roam-picker:partidas'))?.length === 1), 'la partida apuntada por la tablet no entra');
+    await pagina.waitForTimeout(500);
+    eq((await leerGuardado(pagina)).ignorarTabletHasta, DESDE, 'el draft viejo podría volver a copiarse');
+    const d = await leerGuardado(pagina);
+    eq(d.enemies.join(), 'Chou,Saber', 'la partida del draft viejo se lleva por delante el draft nuevo');
+    eq(d.desdeTablet, nuevo.desde);
+    ok(!errores.length, errores.join());
+  } finally { await contexto.close(); }
+});
+
+test('una copia que vuelve con una hoja ya abierta no cambia el draft bajo el dedo (revisión 4.0)', async () => {
+  const vacioT = draftTablet({ desde: DESDE, baneos: [], enemigos: [null, null, null, null, null], aliados: [null, null, null, null, null], tuyoFila: -1 });
+  const tablet = tabletFalsa({ draft: vacioT });
+  const { contexto, pagina, errores } = await conTablet(tablet, { auto: true, almacen: { 'roam-picker:draft': { enemies: ['Chou'], allies: [], bans: [], enemyRoam: null, fase: 'picks' } } });
+  try {
+    await esperarA(() => tablet.de('GET /draft').length >= 1);
+    tablet.draft = { ...vacioT, enemigos: ['Clint', null, null, null, null] };
+    let soltar;
+    tablet.retener = new Promise((r) => { soltar = r; });
+    const antes = tablet.de('GET /draft').length;
+    await esperarA(() => tablet.de('GET /draft').length > antes, { plazoMs: 5000 });
+    await pagina.getByRole('button', { name: 'Añadir' }).first().click();
+    await pagina.locator('.sheet').waitFor();
+    soltar(); tablet.retener = null;
+    await pagina.waitForTimeout(800);
+    ok(await pagina.locator('.sheet').count() > 0, 'la hoja se cerró');
+    eq((await leerGuardado(pagina)).enemies.join(), 'Chou', 'la copia en vuelo cambió el draft con la hoja abierta');
+    ok(!errores.length, errores.join());
+  } finally { await contexto.close(); }
+});

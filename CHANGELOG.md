@@ -8,6 +8,27 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 4.0.0
+
+- La app y la tablet están rehechas por dentro, y el consejo es el mismo:
+  comparado con 3.102.0 en 2.000 drafts, ni un nombre ni un porcentaje
+  cambia. Tus partidas, tu maestría y tus ajustes siguen donde estaban.
+- La tablet lleva el draft y el móvil lo copia: lo que corriges en el móvil
+  se le manda, y también el resultado si lo contestas aquí. Ya no hay dos
+  aparatos leyendo y pisándose. **Actualiza la APK de la tablet** (se ofrece
+  sola): hasta entonces el móvil dice «tablet antigua» y no copia el draft.
+- Arreglado: «Deshacer» tras quitar un héroe leído ya no lo pierde en la
+  siguiente copia; volver a la app con un draft nuevo en la tablet y la
+  partida anterior recién apuntada ya no te deja el draft vacío; una copia
+  que llega con una hoja abierta espera a que la cierres; y un draft de la
+  tablet cerrado hace horas no entra como el de ahora.
+- En la tablet: si su fichero de partidas se estropea, se aparta en vez de
+  perder el historial, y los datos que no se pudieron bajar dejan su aviso
+  en el parte. La APK no puede lanzar programas ni tocar el juego, y eso lo
+  vigilan ahora pruebas que miran el código entero de la tablet.
+- El corregir de la tarjeta de la tablet («Enseña al lector») usa las mismas
+  sugerencias para tocar que el panel encima del juego.
+
 ## 3.102.0
 
 - Los héroes que ha tocado un parche llevan «Parche: hace N d» en su tarjeta

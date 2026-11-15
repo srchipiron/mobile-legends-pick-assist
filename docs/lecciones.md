@@ -47,6 +47,9 @@ con fechas e incidencias, está en `docs/archivo/errores-3.102.md`.
 - «Una vez por draft» se marca en lo que sobrevive a una recarga, no en un ref.
 - Un informe que dice «bien» tiene que haber visto con qué: falta de dato es aviso.
 - No se commitea con las pruebas de navegador en marcha (una compilaba con la versión cambiada).
+- Dos cambios del draft en el mismo tic (la partida apuntada y el draft nuevo de la tablet) leían el draft del render anterior → la partida primero y `actual` al momento (`lector.e2e`, 4.0).
+- Lo que se le manda a otro aparato se compara con lo que ESE aparato tiene ahora, no con la última copia: un «Deshacer» volvía a lo copiado y no salía (`conocida`, `lector.e2e`, 4.0).
+- Una respuesta en vuelo vuelve a mirar las guardas al llegar (la hoja abierta), no solo al salir.
 
 ## Lector (tablet)
 
@@ -63,6 +66,7 @@ con fechas e incidencias, está en `docs/archivo/errores-3.102.md`.
 - «Contesta como el mío» no es «es el mío» → el reto PBKDF2 antes de dar el código.
 - Lo que manda a borrar se lee con la clave del dueño, nunca de una tabla pública.
 - Arreglar el lector no arregla lo ya apuntado → `esDudosa`/`conResultado` en toda medida.
+- Un fichero de datos ilegible no se carga vacío en silencio: se aparta y deja su línea, o lo siguiente que se escribe borra el historial (`en-tablet.test`, 4.0).
 - El esquema de `versionCode` desbordó en 3.100.0 (4.0.0 habría sido menor que 3.102.0) → `mayor·1e6 + menor·1e3 + parche`, con prueba de que no baja (4.0).
 
 ## Datos (ingesta)

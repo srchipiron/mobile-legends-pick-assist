@@ -30,13 +30,14 @@ export function useLector({ lectorTablet, setLectorTablet, lectorAuto, hoja, dra
   const codigoMalo = useRef(false);
   const viejo = useRef(false);
   const ultimaTablet = useRef(null);
-  const corregida = useRef('');
+  // Lo que la tablet tiene ahora de ESE draft (lo copiado o lo corregido con éxito): se manda solo lo que difiere.
+  const conocida = useRef('');
   const ajustesMandados = useRef('');
   const ultimo = useRef({});
-  ultimo.current = { draft, pool, ajustes, onPartida };
+  ultimo.current = { draft, pool, ajustes, onPartida, hoja };
 
   useEffect(() => {
-    codigoMalo.current = false; viejo.current = false; ultimaTablet.current = null; corregida.current = ''; ajustesMandados.current = '';
+    codigoMalo.current = false; viejo.current = false; ultimaTablet.current = null; conocida.current = ''; ajustesMandados.current = '';
     setLector({ estado: 'libre', aviso: null, ultimo: null });
     setPartida(null);
   }, [lectorTablet]);
@@ -63,16 +64,20 @@ export function useLector({ lectorTablet, setLectorTablet, lectorAuto, hoja, dra
       const r = await pedirDraft();
       viejo.current = false;
       setPartida(r.partida);
-      const { draft: d, pool: p, onPartida: alApuntar } = ultimo.current;
+      const { draft: d, pool: p, onPartida: alApuntar, hoja: abierta } = ultimo.current;
+      // Una copia que vuelve con una hoja ya abierta no toca el draft: lo estás tocando tú (la siguiente, al cerrarla).
+      if (abierta) { setLector((l) => ({ ...l, estado: 'libre' })); return; }
+      // La partida apuntada primero: cierra el draft que se seguía, y un draft nuevo que llega con ella entra después.
+      if (r.partida?.registro) alApuntar?.(r.partida);
       // El draft cuya partida ya está apuntada no se vuelve a copiar: se cierra con ella.
       const yaApuntado = r.partida?.registro && r.draft && r.partida.desde >= r.draft.desde;
       let nuevos = 0;
       if (r.draft && !yaApuntado) {
         ultimaTablet.current = r.draft;
+        conocida.current = huellaDeLaTablet(r.draft);
         const f = d.fundir(r.draft, { pool: p });
         nuevos = f.nuevos.baneos + f.nuevos.enemigos + f.nuevos.aliados + (f.nuevos.tuyo ? 1 : 0);
       }
-      if (r.partida?.registro) alApuntar?.(r.partida);
       const algo = !!r.draft && (r.draft.baneos.length + r.draft.enemigos.filter(Boolean).length + r.draft.aliados.filter(Boolean).length) > 0;
       setLector({ estado: 'libre', aviso: silencioso || nuevos ? null : (algo ? 'yaEstaba' : 'nada'), ultimo: { cuando: Date.now(), ok: true, nuevos } });
       mandarAjustesSiFaltan();
@@ -104,8 +109,9 @@ export function useLector({ lectorTablet, setLectorTablet, lectorAuto, hoja, dra
     const t = ultimaTablet.current;
     if (!c || !t || t.desde !== c.desde) return undefined;
     const huella = huellaDeNombres(c);
-    if (huella === huellaDeLaTablet(t) || huella === corregida.current) return undefined;
-    const reloj = setTimeout(() => { corregirDraft(c).then((ok) => { if (ok) corregida.current = huella; }); }, CORREGIR_TRAS_MS);
+    // Contra lo que la tablet tiene AHORA: un «Deshacer» que vuelve a lo copiado también se le manda.
+    if (huella === conocida.current) return undefined;
+    const reloj = setTimeout(() => { corregirDraft(c).then((ok) => { if (ok) conocida.current = huella; }); }, CORREGIR_TRAS_MS);
     return () => clearTimeout(reloj);
   }, [lectorTablet, draft.desdeTablet, draft.enemigos, draft.aliados, draft.baneos, draft.miPick]);
 

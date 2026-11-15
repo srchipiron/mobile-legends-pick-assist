@@ -64,7 +64,9 @@ export function useDraft() {
   /** Draft nuevo tras apuntar: el de la tablet que se seguía ya no vuelve a entrar. */
   const reiniciar = useCallback(() => {
     const d = actual.current;
-    setDraft(vacio({ ignorarTabletHasta: d.desdeTablet ?? d.ignorarTabletHasta }));
+    // `actual` al momento: una copia que llega en el mismo tic (el draft nuevo de la tablet) funde sobre este, no sobre el viejo.
+    actual.current = vacio({ ignorarTabletHasta: d.desdeTablet ?? d.ignorarTabletHasta });
+    setDraft(actual.current);
   }, []);
 
   /** «Nuevo draft», con «Deshacer». Vaciar uno ya vacío no ofrece nada. */
@@ -95,6 +97,7 @@ export function useDraft() {
     const ahora = Date.now();
     const r = fundirTablet(antes, tablet, { ahora, pool });
     if (r.ignorado || r.despues === antes) return r;
+    actual.current = r.despues;
     setDraft(r.despues);
     const { baneos, enemigos, aliados, tuyo } = r.nuevos;
     if (baneos || enemigos || aliados || tuyo || r.quitados) {
