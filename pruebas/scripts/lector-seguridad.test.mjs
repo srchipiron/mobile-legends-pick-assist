@@ -14,7 +14,6 @@ import { RUTAS, PROTOCOLO } from '../../src/comun/contrato.js';
 import { hostPermitido, origenPermitido, deLaApk, crearPortero, permitirReto, VARIABLE_ORIGEN_LOCAL, FALLOS_CODIGO, VENTANA_CODIGO_MS, RETOS_EN_TOTAL, RETOS_POR_MINUTO, CUERPO_MAXIMO } from '../../scripts/lector/acceso.mjs';
 import { esInterno, codigoValido, capturaDeLaApk } from '../../scripts/lector/en-tablet.mjs';
 import { DATOS_DE_LA_WEB } from '../../scripts/lector/datos.mjs';
-import { pruebaDelReto } from '../../src/app/lector.js';
 import { arrancar, pedir, pedirApk, CODIGO, APP } from '../fixtures/juego/lector.mjs';
 
 const LECTOR = join(RAIZ, 'scripts/lector');
@@ -214,6 +213,8 @@ test('S20: un cuerpo enorme o roto se contesta 400 sin tirar el servidor, y el r
   const n = '0123456789abcdef0123456789abcdef';
   const r = await pedir(puerto, `/reto?n=${n}`, { codigo: null, origen: null });
   eq(r.estado, 200, r.cuerpo);
+  // La de la app, cargada aquí: si la app no carga, cae esta prueba y no todas las de seguridad.
+  const { pruebaDelReto } = await import('../../src/app/lector.js');
   eq(r.json.prueba, await pruebaDelReto(CODIGO, n), 'la prueba del lector no es la que calcula la app');
   ok(r.json.prueba !== await pruebaDelReto('OTROCODIGO9', n) && !r.cuerpo.includes(CODIGO), 'la prueba no depende del código, o lo lleva dentro');
   eq((await pedir(puerto, '/reto?n=xyz', { codigo: null, origen: null })).estado, 400, 'acepta un reto sin forma');
