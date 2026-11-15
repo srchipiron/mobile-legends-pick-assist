@@ -16,8 +16,6 @@ import { buildEnUnaLinea } from '../../src/motor/builds.js';
 import { BANEOS_EN_EL_DRAFT, PREGUNTA_CADUCA_MS } from '../../src/comun/contrato.js';
 import { acumularDraft, draftVacio, conCorreccion, registrarCorreccion, faseDe, leeAlguien } from './acumular.mjs';
 
-// [compat] Lo importa pruebas/app/lector.test hasta que lo tome de contrato.js.
-export { BANEOS_EN_EL_DRAFT };
 
 /** [C] Las líneas que se pueden elegir (las de `LINEAS` del motor). */
 export const LINEAS_SOLO = ['roam', 'jungle', 'mid', 'gold', 'exp'];

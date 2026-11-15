@@ -18,8 +18,6 @@ import { sanearConfig, bajarPartes } from '../src/comun/basedatos.js';
 import { TABLA_SEGUIDAS, SIN_BANEOS_AVISO } from '../src/comun/contrato.js';
 import { LINEA_DE_ERROR } from './lector/subidas.mjs';
 
-// [compat] Lo importa pruebas/app/lector.test hasta que lo tome de contrato.js.
-export { SIN_BANEOS_AVISO };
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 

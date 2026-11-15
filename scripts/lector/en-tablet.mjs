@@ -24,8 +24,6 @@ import { lectorDeDatos, bajarDatos, leerComunidad, leerSaludDeLaApk, ajustesDeLa
 import { partidasDeLaTablet, sanearEdicion, ultimasDeTabla, listaParaLaApk, subirLoDeLaTablet } from './partidas.mjs';
 import { parteDeSalud, recorteParaSubir, finalParaSubir, comprobanteParaSubir, draftsArreglados, claveDelLector, PARTE_CADA_MS, ARREGLOS_CADA_MS, DIAS_DE_RECORTES, FINAL_DEL_REGISTRO_BYTES } from './subidas.mjs';
 
-// [compat] Lo importa pruebas/app/lector.test hasta que lo tome de contrato.js.
-export { TABLA_SEGUIDAS } from '../../src/comun/contrato.js';
 
 /** [C] La captura solo puede venir de la APK, en 127.0.0.1. */
 export const esInterno = (u) => typeof u === 'string' && /^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(u);

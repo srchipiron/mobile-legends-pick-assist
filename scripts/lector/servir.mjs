@@ -25,9 +25,6 @@ import { leerPng, escribirPngRapido } from './png.mjs';
 import { carasGuardadas } from './leer.mjs';
 import { plantillasIniciales } from './resultado.mjs';
 
-// [compat] Lo importan pruebas de la app (identidad-draft, lector.e2e) hasta que lo tomen de contrato.js y vigilancia.mjs.
-export { LECTURAS_EN_PARTIDA, PUERTO } from '../../src/comun/contrato.js';
-export { VIGILANCIA } from './vigilancia.mjs';
 
 /** [D] La fase que dice el modo solo vale unas vueltas de draft (1,5 s) o de fuera (12 s). */
 export const FASE_VALE_MS = 30000;
