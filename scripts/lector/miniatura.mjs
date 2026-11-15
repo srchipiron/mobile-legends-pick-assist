@@ -1,25 +1,19 @@
 /**
- * Una captura reducida para mandarla al proyecto (3.29.0, temporal): la
- * pantalla de resultado de la tablet, para medir dónde está el cartel de
- * VICTORIA/DERROTA y poder apuntar la partida sola. Viaja como texto en una
- * incidencia (base64 dentro del cuerpo, que admite 65.536 caracteres), así
- * que tiene que ser PEQUEÑA: ancho fijo, paleta de 252 colores (6×7×6) y
- * dos imágenes, la pantalla entera a 320 px y la franja de arriba a 640 px
- * (donde suele ir el cartel), cada una en su mensaje.
- *
- * Puro: píxeles dentro, PNG fuera. Sin adb, sin red.
+ * Las imágenes pequeñas del final de una partida: una miniatura para ver si
+ * la pantalla CAMBIÓ y la franja de arriba (donde va VICTORIA/DERROTA), con
+ * una paleta de 252 colores (6×7×6). Puro: píxeles dentro, PNG fuera.
  */
 import { escribirPng } from './png.mjs';
 
-export const ANCHO_MINIATURA = 320;
-export const ANCHO_TIRA = 640;
-/** Los fotogramas del final de partida (3.30.0): más pequeños, van varios en un mensaje. */
+/** [D] La miniatura de cada fotograma y su franja de arriba. */
 export const ANCHO_FOTOGRAMA = 160;
 export const ANCHO_TIRA_FOTOGRAMA = 320;
-/** Dos fotogramas son «la misma pantalla» si su miniatura difiere menos que esto por canal (de 255). */
+/** [D] Dos fotogramas son «la misma pantalla» si su miniatura difiere menos que esto por canal (de 255). */
 export const CAMBIO_MINIMO = 12;
-/** La franja de arriba donde va el cartel: el 28% del alto. */
+/** [M] La franja de arriba donde va el cartel: el 28 % del alto. */
 export const ALTO_TIRA = 0.28;
+/** [D] Lo más que ocupa la franja de un fotograma en base64. */
+export const TOPE_TIRA = 20000;
 const NIVELES = [6, 7, 6];
 
 /** Reduce una región de la imagen a `ancho` píxeles de ancho promediando cajas. */
@@ -57,11 +51,9 @@ export function cuantizar({ ancho, alto, rgba }) {
 }
 
 const aPng = (img) => escribirPng(cuantizar(img), () => 4, { paleta: true });
-/** Lo que cabe en un mensaje de GitHub son 65.536 caracteres; esto deja sitio para el texto de alrededor. */
-export const TOPE_BASE64 = 60000;
 
-/** Un PNG en base64 que quepa en el tope: si no cabe, a la mitad de ancho, hasta que quepa. */
-export function pngQueQuepa(img, { ancho, region = [0, 0, 1, 1], tope = TOPE_BASE64 } = {}) {
+/** Un PNG en base64 que quepa en `tope`: si no cabe, a la mitad de ancho, hasta que quepa. */
+export function pngQueQuepa(img, { ancho, region = [0, 0, 1, 1], tope }) {
   for (let a = ancho; a >= 40; a = Math.floor(a / 2)) {
     const b64 = aPng(reducir(img, { ancho: a, region })).toString('base64');
     if (b64.length <= tope) return b64;
@@ -78,9 +70,9 @@ export function diferencia(a, b) {
 }
 
 /**
- * Un fotograma del final de partida: la miniatura pequeña, y si cambia
- * respecto al anterior (otra pantalla), también la franja de arriba. Devuelve
- * { pequena, cambio, miniatura?, tira? } con `pequena` para comparar la siguiente.
+ * Un fotograma del final: la miniatura pequeña y, si cambia respecto al
+ * anterior (otra pantalla), también su PNG y la franja de arriba.
+ * Devuelve { pequena, cambio, miniatura?, tira? }.
  */
 export function fotogramaDe(img, anterior = null) {
   const pequena = reducir(img, { ancho: ANCHO_FOTOGRAMA });
@@ -89,14 +81,6 @@ export function fotogramaDe(img, anterior = null) {
   return {
     pequena, cambio,
     miniatura: aPng(pequena).toString('base64'),
-    tira: pngQueQuepa(img, { ancho: ANCHO_TIRA_FOTOGRAMA, region: [0, 0, 1, ALTO_TIRA], tope: 20000 }),
-  };
-}
-
-/** Las dos imágenes pequeñas de una captura, como PNG en base64. */
-export function miniaturasDe(img) {
-  return {
-    miniatura: pngQueQuepa(img, { ancho: ANCHO_MINIATURA }),
-    tira: pngQueQuepa(img, { ancho: ANCHO_TIRA, region: [0, 0, 1, ALTO_TIRA] }),
+    tira: pngQueQuepa(img, { ancho: ANCHO_TIRA_FOTOGRAMA, region: [0, 0, 1, ALTO_TIRA], tope: TOPE_TIRA }),
   };
 }

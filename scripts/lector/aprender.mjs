@@ -1,55 +1,22 @@
 /**
- * Aprender de las correcciones (3.27.0). La app manda al lector, cuando el
- * draft está completo y al apuntar la partida, lo que de verdad había
- * (`POST /corregir`: baneos y enemigos finales, corregidos a mano). Con la
- * captura guardada y esa verdad, aquí se busca a cada enemigo que el lector
- * NO reconoció por todo el panel de picks, y de lo que encuentra sale:
+ * Aprender de lo que dice una persona (la verdad de un draft) con las
+ * capturas de ese draft:
+ * - a cada enemigo que la geometría NO lee se le busca por el panel de picks;
+ *   de lo encontrado salen los huecos de ESTA tablet (`picks`) y la cara tal
+ *   como la pinta su panel (`caras`);
+ * - las caras de TU EQUIPO (`aliados`): tu fila es tu pick y, si de cuatro
+ *   compañeros se leen tres, el hueco que queda es el que falta; una cara solo
+ *   se usa cuando dos drafts distintos la confirman.
+ * [M] Guardas: solo pantallas del draft (su fila de baneos lee la verdad),
+ * hallazgos a menos de medio hueco de SU hueco medido, sin otro héroe igual de
+ * parecido, nunca iconos de hueco vacío. Lo aprendido nunca manda sobre lo medido.
  *
- * - dónde están los huecos en ESTA tablet (`picks`: las cinco posiciones,
- *   ajustadas con lo encontrado; la geometría de leer.mjs se midió en una
- *   captura y otra pantalla o otra versión del juego las mueve);
- * - la cara tal como la pinta el juego en ese panel (`caras`: un recorte por
- *   héroe, en la orientación de la pantalla), que se suma a las de la API.
- *
- * Solo se aprende lo que se encuentra con seguridad (`APRENDER_MINIMO` y sin
- * otro héroe que se le parezca igual en ese sitio): un recorte equivocado
- * enseñaría al lector a confundir a dos héroes, que es peor que no aprender.
- * Lo que no se encuentra se dice, para mandar esa captura.
- *
- * Dos guardas más desde 3.30.1, porque la primera tanda real (1 de octubre
- * de 2026) aprendió a Rafaela y a Selena de tres capturas que NO eran la
- * pantalla del draft (con «Leer solo» se captura cada 5 s hasta completar
- * el draft, y el draft se completa a mano ya en la carga o en la partida),
- * movió el panel entero y los picks dejaron de leerse hasta el final de la
- * tarde: (1) una captura solo vale si en su fila de baneos se leen al menos
- * `BANEOS_PARA_APRENDER` de los baneos que dice la verdad (la fila no se
- * mueve en picks ni en skins, y en la carga y en la partida no está); (2)
- * un hallazgo solo vale si cae a menos de medio hueco de SU hueco medido
- * (`PICKS_ENEMIGOS`): más lejos, el hueco al que se asigna es una
- * adivinanza, y lo aprendido no puede alejarse de la medida más que eso.
- *
- * Y desde 3.58.0 las caras de TU EQUIPO (`aliados`), que la API no lee
- * con las skins de cada uno (la mitad de los compañeros se quedaban en
- * «?»; los que más, los que juegan contigo siempre con la misma skin:
- * Selena, Gord, Kadita). Ahí no se busca por el panel: cada fila tiene su
- * sitio, y lo que falta es saber QUIÉN es. Se sabe en dos casos: tu fila
- * (la del nombre amarillo) es tu pick, y si de los cuatro compañeros se
- * leen tres, el que queda es el cuarto. Solo con capturas que leen al
- * menos `ENEMIGOS_PARA_ALIADOS` enemigos de la verdad y ninguno de fuera
- * (el 13 de octubre de 2026 una corrección traía una captura de OTRA
- * partida, #93), y una cara solo se usa cuando dos drafts distintos
- * (`MINUTOS_ENTRE_DRAFTS`) la confirman a `ALIADO_MINIMO`: un compañero
- * que cambia de héroe con otro o una verdad corregida tarde (#98/#99, el
- * mismo draft con dos verdades) no se repiten igual en otra partida.
- * Medido en los 30 drafts de recortes del 10 al 14 de octubre: 15 huecos
- * más leídos y 0 falsos; sin confirmar, 43 y 1 falso.
- *
- * Puro: recibe píxeles y verdades, devuelve lo aprendido. Sin adb, sin
- * programas, sin red.
+ * Puro: recibe píxeles y verdades, devuelve lo aprendido.
  */
 import { LADO, muestra, normalizar, espejo, guardarCara, cargarCaras, reconocer, PARECIDO_MINIMO } from './caras.mjs';
 import { PICKS_ENEMIGOS, REFERENCIA, ALIADOS, OPCIONES_ALIADOS, ALIADO_MINIMO, leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, escalar, vaciosAliadoGuardados } from './leer.mjs';
 import { nombreClave } from '../../src/motor/nombres.js';
+import { instanteDeCaptura } from './capturas.mjs';
 
 /** Un hallazgo entra si se parece al menos esto (un acierto normal va de 0,75 a 0,99; el peor equivocado medido, 0,72). */
 export const APRENDER_MINIMO = 0.78;
@@ -186,12 +153,6 @@ export function sinHuecosVacios(aprendido) {
   return { ...aprendido, aliados: limpiar(aprendido.aliados), aliadosPendientes: limpiar(aprendido.aliadosPendientes) };
 }
 
-/** El instante de una captura por su nombre (`lectura-2026-10-14T17-52-57-139Z-42`), o NaN. */
-export function momentoDe(id) {
-  const m = /^lectura-(\d{4}-\d\d-\d\d)T(\d\d)-(\d\d)-(\d\d)-(\d{3})Z/.exec(id ?? '');
-  return m ? Date.parse(`${m[1]}T${m[2]}:${m[3]}:${m[4]}.${m[5]}Z`) : NaN;
-}
-
 /**
  * Quién es quién en tu equipo según la verdad: tu fila es tu pick (si la
  * lectura no lo dice ya) y, si de los cuatro compañeros se leen tres, el
@@ -220,7 +181,7 @@ export function etiquetarAliados(leidos, fila, { aliados = [], tuyo = null } = {
  */
 function aprenderAliadosDe(img, id, verdad, nuevo, caras) {
   const informe = { aprendidos: [], pendientes: [], vacios: [], confundibles: [] };
-  const t = momentoDe(id);
+  const t = instanteDeCaptura(id);
   if (!Number.isFinite(t)) return informe;
   const fila = filaPropia(img);
   const leidos = leerAliados(img, caras, { extra: aliadasAprendidas(nuevo) });
@@ -385,7 +346,7 @@ export function aprenderDe(pares, { caras, aprendido = null, posicionesBase = PI
   return { aprendido: nuevo, informe };
 }
 
-/** Lo que se dice en Termux de un informe. */
+/** Lo que se dice en el registro de un informe. */
 export function resumirAprendizaje({ aprendido, informe }) {
   const lineas = [];
   for (const l of informe) {

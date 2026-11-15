@@ -1,25 +1,12 @@
 /**
- * Los recortes de los picks para medir el lector (3.52.0). Con «Leer solo»
- * los baneos se leen al 100%, pero de los picks solo 7 de cada 10 enemigos
- * y la mitad de tu equipo (medido en las 28 partidas del 5 al 9 de octubre
- * de 2026), y bajar el umbral no lo arregla: con el héroe correcto como
- * candidato hay tantas dudas por encima de 0,75 como con uno equivocado.
- * Para saber POR QUÉ falla hay que ver cómo pinta la tablet a los que no
- * reconoce (Barats, Rafaela, Kadita, Badang…), y solo había una captura del
- * draft, la del 1 de octubre.
+ * Los recortes de los picks, para medir el lector y revisar lo que no leyó:
+ * una imagen con las DIEZ caras de los picks (tu equipo a la izquierda, el
+ * suyo a la derecha) sin las franjas de los nombres de los jugadores, a un
+ * tercio y con una paleta de 256 colores sacada de la imagen, y lo leído en
+ * cada hueco. [M] Devuelta a su sitio (`devolverPicks`), el lector lee las
+ * diez caras igual que en la captura (±0,05).
  *
- * Así que al completar el draft el lector compone, de sus últimas capturas
- * que son la pantalla del draft, una imagen con las DIEZ caras de los picks
- * (tu equipo a la izquierda, el suyo a la derecha) y lo que leyó en cada
- * hueco, y la app la sube a la incidencia de pantallas. Solo las caras: la
- * franja del nombre de cada jugador se queda fuera (en tu equipo va debajo
- * de la cara, en el suyo en la parte de abajo del hueco). A un tercio del
- * tamaño, con una paleta de 256 colores sacada de la propia imagen: unos
- * 35.000 caracteres en base64 (cabe en un mensaje de GitHub) y, devuelta a
- * su sitio, el lector reconoce las diez caras de la captura de referencia
- * igual que en la original (±0,05; medido al escribirlo).
- *
- * Puro: píxeles dentro, PNG y nombres fuera. Sin adb, sin red.
+ * Puro: píxeles dentro, PNG y nombres fuera.
  */
 import { escribirPng, leerPng } from './png.mjs';
 import { reducir } from './miniatura.mjs';
@@ -127,19 +114,8 @@ export function recorteDeDraft(img, caras, { posiciones = null, extra = [], alia
   };
 }
 
-/** Cuántas capturas del draft se recortan por partida: las dos últimas (cada una va en su mensaje). */
+/** [D] Cuántas capturas del draft se recortan por partida. */
 export const RECORTES_POR_DRAFT = 2;
-
-/**
- * Los recortes de las capturas que el aprendizaje miró (las que no descartó
- * por no ser la pantalla del draft), las que más enemigos leían primero
- * (3.54.0: las últimas solían ser ya la fase de skins) y en su orden.
- */
-export function recortesDelDraft(informe, leer, caras, opciones = {}, maximo = RECORTES_POR_DRAFT) {
-  const validas = (informe ?? []).map((l, i) => ({ ...l, i })).filter((l) => !l.descartada && l.id);
-  const ids = validas.sort((a, b) => (b.aciertos ?? 0) - (a.aciertos ?? 0) || b.i - a.i).slice(0, maximo).sort((a, b) => a.i - b.i).map((l) => l.id);
-  return ids.map((id) => { const r = recorteDeDraft(leer(id), caras, opciones); return r ? { id, ...r } : null; }).filter(Boolean);
-}
 
 /**
  * Sin la verdad (3.81.0, la tablet sola): de las capturas de un draft, la

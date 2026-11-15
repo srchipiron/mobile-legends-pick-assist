@@ -1,15 +1,11 @@
 #!/usr/bin/env node
 /**
- * ¿Va bien Lector MLBB en la tablet? (3.74.0, pedido por Javi: «que puedas
- * ver en tiempo real o mediante un log que todo está funcionando bien… para
- * no estar todo el rato con "mejora, revisa…"»).
- *
- * Cada tablet sube un PARTE cada 15 minutos a la base de datos de partidas
- * (`subir_parte`, con su clave de jugador): lo de /estado, el fallo de Node de
- * la última vez y las últimas líneas de su registro, limpias. Esto los baja
- * (`partes_recientes`, sin huellas) y dice, para cada lector, lo que falla
- * (FALLO) y lo que conviene mirar (AVISO). Lo corre la revisión programada de
- * Claude y se puede correr a mano:
+ * ¿Va bien Lector MLBB en la tablet? Cada tablet sube un PARTE cada 15
+ * minutos a la base de datos (`subir_parte`, con la clave del lector): lo de
+ * /estado, el fallo de Node y el final de su registro, limpios. Esto los baja
+ * (`partes_recientes`, sin huellas) y dice, del más reciente de cada lector,
+ * lo que falla (FALLO) y lo que conviene mirar (AVISO). Lo corre la revisión
+ * programada y se puede correr a mano:
  *
  *   node scripts/revisar-tablet.mjs [--horas 48] [--json f.json]
  *
@@ -19,7 +15,11 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sanearConfig, bajarPartes } from '../src/comun/basedatos.js';
-import { LINEA_DE_ERROR, TABLA_SEGUIDAS } from './lector/en-tablet.mjs';
+import { TABLA_SEGUIDAS, SIN_BANEOS_AVISO } from '../src/comun/contrato.js';
+import { LINEA_DE_ERROR } from './lector/subidas.mjs';
+
+// [compat] Lo importa pruebas/app/lector.test hasta que lo tome de contrato.js.
+export { SIN_BANEOS_AVISO };
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -35,23 +35,8 @@ export const SALUD_CALLADA_MIN = 5;
 
 /** Con menos partidas con resultado no se dice nada de cuánto reconoce sola; y más de esta parte preguntadas es aviso. Decisión de producto. */
 export const RESULTADOS_PARA_MEDIR = 5, PREGUNTADAS_MAX = 0.5;
-/**
- * Partidas jugadas sin apuntar ninguna (3.83.2): el 27 de octubre de 2026 la
- * tablet leyó 5 h (2.811 lecturas, «Sin móvil» activo) y no apuntó ni una, y
- * la revisión no lo decía: todo lo que miraba estaba bien. Con
- * `PARTIDAS_SIN_APUNTAR` partidas y ninguna apuntada, FALLO; con
- * `PARTIDAS_PARA_MEDIR` y menos de `APUNTADAS_MIN` apuntadas, AVISO.
- * Decisiones de producto (tres partidas seguidas sin ver el final no es mala suerte).
- */
+/** [D] Partidas jugadas sin apuntar ninguna: con `PARTIDAS_SIN_APUNTAR`, FALLO; con `PARTIDAS_PARA_MEDIR` y menos de `APUNTADAS_MIN` apuntadas, AVISO. */
 export const PARTIDAS_SIN_APUNTAR = 3, PARTIDAS_PARA_MEDIR = 5, APUNTADAS_MIN = 0.5;
-/**
- * Partidas cuyo draft se cerró sin leer los baneos (3.101.1). Hasta 3.101.1
- * un draft solo se abría con dos baneos leídos; desde entonces también por
- * los picks, y uno que se cierra sin baneos es que la fila no se lee (el 11
- * de noviembre de 2026, en todos los drafts desde las 16:00 UTC). Dos ya no
- * son un baneo tapado por casualidad. Decisión de producto.
- */
-export const SIN_BANEOS_AVISO = 2;
 
 /** Lo que se registra como «No se pudo» pero es el uso, no un fallo: la tablet sin grabar (el modo solo lo intenta igual). */
 export const NO_ES_FALLO = /no está grabando la pantalla/;

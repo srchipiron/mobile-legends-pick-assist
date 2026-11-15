@@ -1,242 +1,41 @@
 /**
- * Un solo aparato (3.66.0): Lector MLBB lee la pantalla, decide con el MISMO
- * motor que Pick Assist y pinta tu pick en la burbuja, sin móvil al lado.
- * La mayoría juega en el móvil, sin una tablet aparte; y aun con dos, el
- * consejo ya no depende de la wifi entre ellos.
- *
- * Tres piezas, las dos primeras puras:
- * - `acumularDraft`: junta las lecturas en un draft (baneos, los cinco huecos
- *   de cada equipo y tu fila), cierra el draft cuando empieza la partida y
- *   empieza otro cuando vuelve un draft nuevo.
- * - `consejoSolo`: el draft, al motor (`recomendar` de draft.js, el único
- *   cerebro) y de ahí la burbuja: en baneos a quién banear, en picks tu nº1
- *   con los dos siguientes. El mismo texto que manda la app del móvil.
- * - `crearSolo`: el bucle. Se aparta si el móvil está leyendo o mandando su
- *   consejo (lo que manda la app, manda), y en partida solo mira el minimapa.
+ * El modo solo: la tablet lleva el draft (protocolo 2). Lee la pantalla,
+ * junta las lecturas (acumular.mjs), decide con el MISMO motor que Pick
+ * Assist (`recomendar` de draft.js, el único cerebro), pinta la burbuja,
+ * vigila el final, pregunta lo que no supo y apunta la partida. El móvil la
+ * copia (`paraElMovil`) y le manda lo que tú tocas (`corregir`, `resultado`).
+ * Siempre que haya línea (la de la APK o la del móvil), conduce ella.
  *
  * Solo MIRA la pantalla, como todo el lector: no toca el juego ni la cuenta.
  */
 import { readFileSync } from 'node:fs';
-import { momentoDe } from './aprender.mjs';
 import { nombreClave } from '../../src/motor/nombres.js';
 import { prepararDatos, recomendar, poolDe } from '../../src/motor/draft.js';
 import { VERSION_MODELO } from '../../src/motor/modelo.js';
 import { buildEnUnaLinea } from '../../src/motor/builds.js';
+import { BANEOS_EN_EL_DRAFT, PREGUNTA_CADUCA_MS } from '../../src/comun/contrato.js';
+import { acumularDraft, draftVacio, conCorreccion, registrarCorreccion, faseDe, leeAlguien } from './acumular.mjs';
 
-/** Las líneas que se pueden elegir en la APK (las de `LINEAS` del motor). */
+// [compat] Lo importa pruebas/app/lector.test hasta que lo tome de contrato.js.
+export { BANEOS_EN_EL_DRAFT };
+
+/** [C] Las líneas que se pueden elegir (las de `LINEAS` del motor). */
 export const LINEAS_SOLO = ['roam', 'jungle', 'mid', 'gold', 'exp'];
-/**
- * Cada cuánto se lee: en un draft, sin draft a la vista y en partida (solo
- * el minimapa). Decisiones de producto. En el draft, 1,5 s desde 3.80.0
- * (antes 5 s, el ritmo de «Leer solo» en el móvil, donde una lectura tardaba
- * 4–6 s): en la tablet una lectura tarda 0,6–1,6 s (sus partes del 26 de
- * octubre de 2026), y el último rival y tu pick se ven con su dibujo solo
- * unos segundos antes de la fase de skins. En los 51 drafts de recortes,
- * de las capturas del final del draft solo 17 de 96 leían a los cinco rivales:
- * el hueco rojo de quien aún no ha elegido o la skin que ya lo tapa.
- */
+/** [M] Cada cuánto se lee: en el draft 1,5 s (una lectura tarda 0,6–1,6 s y el último pick se ve unos segundos antes de las skins); vacío, en partida (solo minimapa) y tras un fallo. */
 export const INTERVALOS_SOLO = { draft: 1500, vacio: 12000, partida: 20000, error: 30000 };
-/** El móvil manda si leyó o mandó su consejo hace menos de esto. */
-export const MOVIL_ACTIVO_MS = 60000;
-/** Lecturas seguidas en partida para dar el draft por cerrado (las mismas que la app, `LECTURAS_EN_PARTIDA`). */
-export const EN_PARTIDA_PARA_CERRAR = 2;
-/** Tras cerrar, un draft nuevo solo se acepta pasado esto (las pantallas del final no son un draft). */
-export const MINUTOS_PARA_OTRO_DRAFT = 3;
-/**
- * Una partida no dura menos que esto (3.86.2, decisión de dominio: un draft
- * más la carga y una partida rehecha pasan de 5 minutos). Si ya se vigila
- * una partida que empezó hace menos, el draft que la tablet acaba de cerrar
- * es ESA partida vista tarde, no otra: el 28 de octubre de 2026 el móvil
- * llevaba el draft (9 consejos), la tablet apartada leyó la pantalla de
- * carga como un draft nuevo, lo cerró 97 s después y pisó la vigilancia del
- * móvil con siete héroes sin leer y el nº1 «supuesto».
- */
-export const MINUTOS_ENTRE_PARTIDAS = 5;
-/**
- * Lo menos que separa dos tablas del final de verdad (3.89.1): draft, carga y
- * una partida. Medido en la base de datos el 3 de noviembre de 2026: ninguna
- * de 126 partidas con duración bajó de 8 minutos (p01 9,9) y entre dos
- * partidas seguidas de Javi nunca hubo menos de 12. La victoria fantasma del
- * 2 de noviembre llegó 6,6 minutos después de la anterior: era su misma tabla.
- */
+/** [M] Lo menos que separa dos tablas del final: ninguna partida de 126 duró menos de 8 minutos y entre dos de Javi nunca hubo menos de 12. */
 export const MINUTOS_ENTRE_TABLAS = 10;
-/** Un draft sin cambios en este tiempo se da por abandonado. */
-export const MINUTOS_DRAFT_ABANDONADO = 15;
-/** Como `CAMBIOS_A_LA_VEZ` de la app: más huecos ya leídos cambiando a la vez es la fase de skins (imanes). */
-export const CAMBIOS_A_LA_VEZ = 2;
-
-export const draftVacio = () => ({ baneos: [], banHuecos: [null, null, null, null, null, null, null, null, null, null], enemigos: [null, null, null, null, null], aliados: [null, null, null, null, null], tuyoFila: -1, votosFila: [0, 0, 0, 0, 0], cerrado: false, cerradoEn: null, enPartida: 0, actividad: null, ids: [] });
-/**
- * Cuántos baneos que NO cuadran con el draft de antes dicen que es otro
- * draft (3.72.5): un hueco de baneo con otro héroe (los baneos no cambian
- * dentro de un draft) o, tras la partida, baneos que no estaban. Dos y no
- * uno: un baneo mal leído (1 de 338 medidos) no tira el draft.
- */
-export const BANEOS_DE_OTRO_DRAFT = 2;
-/** Las capturas del draft que se recuerdan para aprender de una corrección (3.71.0): las mismas que mira `/corregir`. */
-export const IDS_POR_DRAFT = 20;
-/**
- * Qué capturas recuerda el draft (3.81.4). Desde 3.80.0 la tablet lee cada
- * 1,5 s y no cada 5: las 20 últimas eran los últimos 30 s, y las 8 que miran
- * la corrección y los recortes, la pantalla de CARGA (se lee hasta ver el
- * minimapa: el 27 de octubre de 2026, diez lecturas seguidas con «Gord 0,77»
- * en los diez baneos) y la fase de skins, de las que no se aprende a ningún
- * rival. Solo entra la pantalla del draft (`BANEOS_EN_EL_DRAFT` baneos
- * leídos, la fila de arriba que no existe en la carga; como
- * `BANEOS_PARA_APRENDER` de aprender.mjs) y espaciadas `SEPARACION_IDS_MS`
- * (el ritmo de antes de 3.80.0), con la última siempre: 20 llegan a 80 s
- * del draft y las 8 últimas, a la fase de picks.
- */
-export const BANEOS_EN_EL_DRAFT = 2;
-/**
- * El draft por los picks cuando no se leen los baneos (3.101.1). Desde las
- * 16:00 UTC del 11 de noviembre de 2026 la fila de baneos sale «?» en las
- * diez casillas en todos los drafts (Gord 0,74–0,78: una zona oscura), con
- * los picks leídos en su sitio: sin dos baneos no se abría ningún draft, la
- * burbuja se quedó en «esperando consejo» y no se apuntó ninguna partida
- * (770 lecturas, 0 partidas). Medido en las 1.789 lecturas del 8 al 10 de
- * noviembre (con los baneos leyéndose): fuera de un draft, 0 de 854 leen 4
- * héroes distintos en los paneles de picks (8 leen 3); dentro, 560 de 935.
- * Un draft abierto así sigue sumando aunque no vea baneos (`porPicks`), y no
- * guarda capturas para aprender: sin baneos no se sabe si es la pantalla.
- */
-export const PICKS_SIN_BANEOS = 4;
-export const SEPARACION_IDS_MS = 4000;
-/** Añade la captura a las del draft: la última siempre, y entre las de antes al menos `SEPARACION_IDS_MS`. */
-export function conCaptura(ids = [], id) {
-  const previa = ids.at(-1), antes = ids.at(-2);
-  // La última solo estaba de paso si quedaba a menos de la separación de la anterior: se cambia por la nueva.
-  const depaso = previa && antes && momentoDe(previa) - momentoDe(antes) < SEPARACION_IDS_MS;
-  return [...(depaso ? ids.slice(0, -1) : ids), id].slice(-IDS_POR_DRAFT);
-}
-
-const nombres = (lista) => (Array.isArray(lista) ? lista : []).map((x) => (typeof x?.nombre === 'string' && x.nombre ? x.nombre : null));
-
-/** Mete en los huecos lo leído; si cambian más de `CAMBIOS_A_LA_VEZ` huecos ya leídos, esa lectura no toca ese equipo. */
-function fundirHuecos(antes, leidos, saltar = -1) {
-  const cambios = antes.filter((n, i) => i !== saltar && n && leidos[i] !== undefined && leidos[i] !== n).length;
-  if (cambios > CAMBIOS_A_LA_VEZ) return { huecos: antes, cambio: false, descartada: true };
-  let cambio = false;
-  const huecos = antes.map((n, i) => {
-    const nuevo = leidos[i];
-    if (!nuevo || nuevo === n) return n;
-    // La misma lectura lo ve en dos huecos: uno de los dos es un imán, y no se sabe cuál.
-    if (leidos.some((x, j) => j !== i && x === nuevo)) return n;
-    cambio = true;
-    return nuevo;
-  });
-  // Un héroe está en UN hueco de su equipo (3.88.1): el recién leído gana y
-  // sale del hueco donde se leyó antes. El 29 de octubre de 2026 la tablet
-  // apuntó a Gord en dos huecos de tus compañeros (lo vio en uno y, más
-  // tarde, en el de al lado).
-  huecos.forEach((n, i) => {
-    if (!n || n === antes[i]) return;
-    huecos.forEach((m, j) => { if (j !== i && m === n) huecos[j] = null; });
-  });
-  return { huecos, cambio, descartada: false };
-}
+/** [P] Tus habituales que salen como botones «¿Con quién jugaste tú?» (los que caben en una fila). */
+export const HABITUALES = 6;
+/** [P] Derrotas seguidas desde las que el resumen dice cómo te va tras perder. */
+export const RACHA_PARA_AVISAR = 2;
 
 /**
- * Tu fila, por votos (3.100.0). Cada lectura del draft que no se descarta
- * (fase de skins: cambian más de `CAMBIOS_A_LA_VEZ` huecos a la vez) vota la
- * fila del nombre amarillo, y manda la más votada; a igualdad, la que ya
- * estaba. Antes mandaba la ÚLTIMA lectura, aunque fuera de la fase de skins:
- * el 10 de noviembre de 2026 doce lecturas del draft decían «tú Diggie» (fila
- * 2) y la fase de skins movió tu fila a la 3, así que se apuntó «Ling». De las
- * 222 partidas de la tablet, ~25 llevan un pick que no es de roam (Gord,
- * Kadita, Claude…, los de tus compañeros) frente a 0 de las 187 a mano.
+ * El draft leído, pasado al catálogo y al motor. null sin datos o sin nada
+ * leído. Lo usan la burbuja y la partida que se apunta: la misma decisión.
+ * [D] Un héroe elegido no puede estar baneado: si sale en los dos, el baneo es el leído mal.
  */
-export function filaVotada(votos, actual) {
-  const max = Math.max(...votos);
-  if (!(max > 0)) return actual;
-  return actual >= 0 && votos[actual] === max ? actual : votos.indexOf(max);
-}
-
-/**
- * Una lectura más sobre el draft. Nunca lanza. `ahora` es el instante de la
- * lectura. Los nombres son los del lector (la grafía de sus caras): se
- * pasan al catálogo al decidir.
- */
-export function acumularDraft(estado, lectura, ahora) {
-  let e = estado ?? draftVacio();
-  if (!lectura) return e;
-  if (lectura.partida) {
-    const enPartida = e.enPartida + 1;
-    const cierra = !e.cerrado && enPartida >= EN_PARTIDA_PARA_CERRAR && (e.baneos.length || e.enemigos.some(Boolean));
-    return { ...e, enPartida, ...(cierra ? { cerrado: true, cerradoEn: ahora } : {}) };
-  }
-  // Los baneos por hueco: cinco de cada lado, en su sitio.
-  const huecosBan = [0, 1, 2, 3, 4].map((i) => nombres(lectura.tuyos)[i] ?? null).concat([0, 1, 2, 3, 4].map((i) => nombres(lectura.suyos)[i] ?? null));
-  const baneos = huecosBan.filter(Boolean);
-  const enemigos = nombres(lectura.enemigos);
-  const filas = nombres(lectura.aliados);
-  // Solo cuenta lo que se lee en la PANTALLA DEL DRAFT (3.83.0): con la fila de
-  // baneos a la vista, o sumando a un draft abierto que ya la tuvo. El 27 de
-  // octubre de 2026 la tablet leía un «Gord» o un «Sun» suelto en pantallas
-  // que no eran el draft (el final, la carga, el vestíbulo, con los diez baneos
-  // en «?»), abría otro draft con eso, lo cerraba con la partida y tiraba la
-  // vigilancia de la partida de verdad: 7 de 23 «Draft completo» en una tarde
-  // eran eso («0 consejos en directo») y la tabla del final no se vio ni una vez.
-  // Héroes DISTINTOS (3.89.1): el 2 de noviembre de 2026 un «Gord» leído en dos huecos de baneo de una
-  // pantalla que no era el draft abrió uno, la partida lo cerró y se apuntó una victoria fantasma.
-  const banDistintos = new Set(baneos).size;
-  // O por los picks, si la fila de baneos no se lee (3.101.1, ver `PICKS_SIN_BANEOS`).
-  const porPicks = new Set([...enemigos, ...filas].filter(Boolean)).size >= PICKS_SIN_BANEOS;
-  const deDraft = banDistintos >= BANEOS_EN_EL_DRAFT || porPicks || (!e.cerrado && (e.baneos.length >= BANEOS_EN_EL_DRAFT || e.porPicks));
-  const algo = deDraft && (baneos.length || enemigos.some(Boolean) || filas.some(Boolean));
-  if (!deDraft) return e.enPartida ? { ...e, enPartida: 0 } : e;
-  // ¿Otro draft? (3.72.5) Por lo que se ve, no solo por el reloj: un hueco
-  // de baneo con OTRO héroe (alguien abandonó el draft y empezó otro) o,
-  // tras la partida, baneos que el de antes no tenía. Antes solo valían los
-  // minutos, y el draft siguiente no entraba o se mezclaba con el anterior.
-  // Los baneos de una lectura solo cuentan si lee la FILA (3.101.3): dos
-  // distintos, como para reconocer la pantalla del draft. Con la fila rota
-  // (desde el 11 de noviembre de 2026), de 949 lecturas 28 «leían» un baneo
-  // suelto que no estaba (Atlas, Chang'e, Gord… y tu propio Minotaur) y el
-  // draft abierto los sumaba todos: el motor quitaba a esos héroes del
-  // consejo. Con la fila bien (8–10 de noviembre), el 99% de los baneos
-  // vistos (3.874 de 3.914) iban en lecturas con dos o más, y uno de verdad
-  // sigue en pantalla todo el draft junto a los demás: no se pierde ninguno.
-  const deFila = banDistintos >= BANEOS_EN_EL_DRAFT;
-  const huecosFila = deFila ? huecosBan : Array(10).fill(null);
-  const baneosFila = deFila ? baneos : [];
-  const banHuecos = e.banHuecos ?? Array(10).fill(null);
-  const huecosDistintos = huecosFila.filter((n, i) => n && banHuecos[i] && banHuecos[i] !== n).length;
-  const nuevos = baneosFila.filter((n) => !e.baneos.includes(n)).length;
-  const otro = algo && ((e.cerrado && (ahora - e.cerradoEn >= MINUTOS_PARA_OTRO_DRAFT * 60000 || nuevos >= BANEOS_DE_OTRO_DRAFT || huecosDistintos >= BANEOS_DE_OTRO_DRAFT))
-    || (!e.cerrado && (huecosDistintos >= BANEOS_DE_OTRO_DRAFT || (e.actividad != null && ahora - e.actividad >= MINUTOS_DRAFT_ABANDONADO * 60000))));
-  if (otro) e = draftVacio();
-  if (e.cerrado) return { ...e, enPartida: 0 };
-  const leida = Number.isInteger(lectura.tuyoFila) && lectura.tuyoFila >= 0 && lectura.tuyoFila < 5 ? lectura.tuyoFila : -1;
-  const nuevosBaneos = [...new Set([...e.baneos, ...baneosFila])].slice(0, 10);
-  const enem = fundirHuecos(e.enemigos, enemigos);
-  const ali = fundirHuecos(e.aliados, filas, e.tuyoFila >= 0 ? e.tuyoFila : leida);
-  // Tu fila la votan las lecturas que no se descartan (3.100.0).
-  const votosFila = [...(e.votosFila ?? [0, 0, 0, 0, 0])];
-  if (leida >= 0 && !ali.descartada) votosFila[leida] += 1;
-  const tuyoFila = filaVotada(votosFila, e.tuyoFila);
-  const cambio = nuevosBaneos.length !== e.baneos.length || enem.cambio || ali.cambio || tuyoFila !== e.tuyoFila;
-  // La captura de esta lectura (3.71.0): si luego dices quién era el «?», el lector aprende de ella.
-  const ids = typeof lectura.id === 'string' && /^lectura-[\w-]+$/.test(lectura.id) && banDistintos >= BANEOS_EN_EL_DRAFT ? conCaptura(e.ids ?? [], lectura.id) : e.ids ?? [];
-  const nuevosHuecos = (e.banHuecos ?? Array(10).fill(null)).map((n, i) => n ?? huecosFila[i]);
-  return { ...e, baneos: nuevosBaneos, banHuecos: nuevosHuecos, enemigos: enem.huecos, aliados: ali.huecos, tuyoFila, votosFila, enPartida: 0, actividad: cambio ? ahora : e.actividad ?? (algo ? ahora : null), ids, porPicks: !!(e.porPicks || porPicks) };
-}
-
-const TEXTOS = {
-  es: { build: (h, l) => `${h}: ${l}`, buildDetalle: 'Tu build', banea: (l) => `Banea: ${l}`, tuNumeroUno: (h) => `Tu nº1 ahora: ${h}`, luego: (l) => `Luego: ${l}`, tuyos: (h) => `De los tuyos: ${h}`, baneos: 'Fase de baneos', picks: 'Fase de picks' },
-  en: { build: (h, l) => `${h}: ${l}`, buildDetalle: 'Your build', banea: (l) => `Ban: ${l}`, tuNumeroUno: (h) => `Your no. 1 now: ${h}`, luego: (l) => `Then: ${l}`, tuyos: (h) => `Yours: ${h}`, baneos: 'Ban phase', picks: 'Pick phase' },
-};
-
-/**
- * Del draft al consejo de la burbuja, con el motor de la app. null si no hay
- * nada que decir (sin datos o sin draft a la vista). Nunca lanza.
- */
-/**
- * El draft leído, pasado al catálogo y al motor (`recomendar`, con tu
- * maestría si la hay). null sin datos o sin nada leído. Lo usan el consejo y
- * la partida que se apunta (3.70.0): la misma decisión en los dos.
- */
-export function decidirSolo({ datos, draft, linea, maestria = null }) {
+export function decidirSolo({ datos, draft, linea }) {
   if (!datos?.heroes?.length || !draft || !LINEAS_SOLO.includes(linea)) return null;
   const porClave = new Map(datos.heroes.map((h) => [nombreClave(h.name), h]));
   const heroe = (n) => (n ? porClave.get(nombreClave(n)) ?? null : null);
@@ -245,20 +44,27 @@ export function decidirSolo({ datos, draft, linea, maestria = null }) {
   const tuyo = draft.tuyoFila >= 0 ? heroe(draft.aliados[draft.tuyoFila]) : null;
   const nombresEnemigos = new Set(enemigos.map((h) => h.name));
   const aliados = unicos(draft.aliados.filter((_, i) => i !== draft.tuyoFila).map(heroe)).filter((h) => !nombresEnemigos.has(h.name) && h.name !== tuyo?.name);
-  // Un héroe elegido no puede estar baneado (en clasificatoria nadie coge un
-  // baneado): si sale en los dos sitios, el baneo es el leído mal (3.101.3; el
-  // 14 de noviembre de 2026 tu Minotaur salía «baneado» y el consejo lo quitaba).
   const elegidos = new Set([...enemigos, ...aliados, tuyo].filter(Boolean).map((h) => h.name));
   const baneos = unicos(draft.baneos.map(heroe)).filter((h) => !elegidos.has(h.name));
   if (!baneos.length && !enemigos.length && !aliados.length && !tuyo) return null;
-  const rec = recomendar(datos, { linea, enemigos, aliados, baneos, maestria, miPick: tuyo, conSimulacion: false });
+  const rec = recomendar(datos, { linea, enemigos, aliados, baneos, miPick: tuyo, conSimulacion: false });
   return { rec, tuyo, baneos, enemigos, aliados };
 }
 
-export function consejoSolo({ datos, draft, linea, idioma = 'es', maestria = null }) {
+const TEXTOS = {
+  es: { build: (h, l) => `${h}: ${l}`, buildDetalle: 'Tu build', banea: (l) => `Banea: ${l}`, tuNumeroUno: (h) => `Tu nº1 ahora: ${h}`, luego: (l) => `Luego: ${l}`, baneos: 'Fase de baneos', picks: 'Fase de picks' },
+  en: { build: (h, l) => `${h}: ${l}`, buildDetalle: 'Your build', banea: (l) => `Ban: ${l}`, tuNumeroUno: (h) => `Your no. 1 now: ${h}`, luego: (l) => `Then: ${l}`, baneos: 'Ban phase', picks: 'Pick phase' },
+};
+
+/**
+ * La burbuja: en baneos a quién banear; con tu héroe ya elegido, su build
+ * para este draft; si no, tu nº1 con los dos siguientes. La fase va delante
+ * de la segunda línea. null si no hay nada que decir. Nunca lanza.
+ */
+export function consejoSolo({ datos, draft, linea, idioma = 'es' }) {
   try {
     if (!draft || draft.cerrado) return null;
-    const d = decidirSolo({ datos, draft, linea, maestria });
+    const d = decidirSolo({ datos, draft, linea });
     if (!d) return null;
     const { rec, baneos, enemigos, aliados } = d;
     const t = TEXTOS[idioma] ?? TEXTOS.es;
@@ -266,33 +72,24 @@ export function consejoSolo({ datos, draft, linea, idioma = 'es', maestria = nul
     if (!enemigos.length && !aliados.length) {
       const yaBaneados = new Set(baneos.map((h) => h.name));
       const lista = (rec.baneosSugeridos ?? []).map((b) => b.heroe?.name).filter((n) => n && !yaBaneados.has(n)).slice(0, 3);
-      // La fase delante en la segunda línea (3.69.2), igual que lo que manda el móvil.
       if (lista.length && baneos.length < 10) return { titulo: t.banea(lista.join(' · ')), detalle: [t.baneos, rec.eleccion?.heroe ? t.tuNumeroUno(rec.eleccion.heroe.name) : null].filter(Boolean).join(' · ') };
     }
-    // Con tu héroe ya elegido (tu fila leída), lo útil es su build para este draft (3.90.1): la burbuja
-    // se ve hasta que empieza la partida (también en la pantalla de carga), así entras sabiendo qué comprar.
     if (d.tuyo) {
       const b = buildEnUnaLinea({ builds: datos.crudo?.builds, equipment: datos.crudo?.equipment, heroe: d.tuyo, linea, enemigos });
       if (b) return { titulo: t.build(d.tuyo.name, b.objetos.slice(0, 3).join(' → ')), detalle: [t.picks, t.buildDetalle, b.objetos.length > 3 ? `+ ${b.objetos.slice(3).join(' → ')}` : null, [b.emblema, b.hechizo].filter(Boolean).join(' · ') || null].filter(Boolean).join(' · ') };
     }
     const e = rec.eleccion;
     if (!e?.heroe) return null;
-    const siguientes = rec.ranking.filter((r) => r.heroe.name !== e.heroe.name).slice(0, 2);
-    const otros = siguientes.map((r) => `${r.heroe.name} ${pct(r.p)}`);
-    // El mejor de los tuyos (3.72.0), como en la app: si no es ya uno de los nombrados.
-    const mio = rec.deLosTuyos;
-    const tuyo = mio?.heroe && mio.heroe.name !== e.heroe.name && !siguientes.some((r) => r.heroe.name === mio.heroe.name) ? t.tuyos(`${mio.heroe.name} ${pct(mio.p)}`) : null;
-    return { titulo: `${e.heroe.name} ${pct(e.p)}`, detalle: [t.picks, otros.length ? t.luego(otros.join(' · ')) : null, tuyo].filter(Boolean).join(' · ') };
+    const otros = rec.ranking.filter((r) => r.heroe.name !== e.heroe.name).slice(0, 2).map((r) => `${r.heroe.name} ${pct(r.p)}`);
+    return { titulo: `${e.heroe.name} ${pct(e.p)}`, detalle: [t.picks, otros.length ? t.luego(otros.join(' · ')) : null].filter(Boolean).join(' · ') };
   } catch { return null; }
 }
 
 /**
- * La partida que apunta la tablet sola (3.70.0), con la MISMA forma que las
- * de la app (registro.js `apuntar`): el draft de cuando se cerró, tu pick
- * (tu fila leída o, si no se leyó, el nº1, marcado `supuesto`), los tres
- * recomendados, la estimación del pick jugado, el resultado de la tabla y la
- * duración si el inicio se vio. `origen: 'lector'` y `fuente: 'tablet'`.
- * null si no hay pick.
+ * La partida que apunta la tablet, con la forma de `apuntar` (registro.js):
+ * tu pick (tu fila o, sin ella, el nº1 marcado `supuesto`), los tres
+ * recomendados, la estimación, los baneos, el draft y la duración (3–90 min,
+ * solo con el inicio visto). null sin pick o sin resultado.
  */
 export function partidaSolo({ decision, linea, rango = 'glory', gane, t, duracion = null, versionModelo = null }) {
   const rec = decision?.rec;
@@ -310,20 +107,7 @@ export function partidaSolo({ decision, linea, rango = 'glory', gane, t, duracio
   };
 }
 
-/**
- * Lo que quedó sin leer al cerrarse el draft (3.71.0): enemigos, compañeros
- * y tu propio pick. Con eso y las capturas del draft, la APK te pregunta
- * quién era y el lector aprende de tu respuesta como de una corrección del
- * móvil. null si no falta nadie, si no hay capturas o si no hay datos.
- */
-/**
- * Tus héroes de siempre en la línea (3.85.0), para contestar «Tú» con un
- * toque. Javi: «mi héroe no se lee porque es el último pick casi siempre y
- * al elegirlo se cambia a la foto de la skin». Por número de partidas de la
- * maestría (las de siempre y las apuntadas), sin los que ya salen en el
- * draft. `HABITUALES`: los que caben en una fila (decisión de producto).
- */
-export const HABITUALES = 6;
+/** Tus héroes de la línea con más partidas (las de siempre o las apuntadas), sin los que ya salen en el draft. */
 export function tusHabituales(datos, linea, maestria, yaSalen = []) {
   const no = new Set(yaSalen.filter(Boolean).map(nombreClave));
   const partidas = (h) => { const m = maestria?.[nombreClave(h.name)]; return Number(m?.deSiempre ?? m?.games) || 0; };
@@ -333,6 +117,11 @@ export function tusHabituales(datos, linea, maestria, yaSalen = []) {
     .slice(0, HABITUALES).map((x) => x.nombre);
 }
 
+/**
+ * Lo que quedó sin leer al cerrarse el draft, para la tarjeta «Enseña al
+ * lector» de la APK: con las capturas del draft, tu respuesta enseña al
+ * lector. Tus habituales solo si falta el tuyo. null si no falta nadie.
+ */
 export function correccionDelDraft(draft, datos, { tuyos = [] } = {}) {
   if (!draft?.cerrado || !draft.ids?.length || !datos?.heroes?.length) return null;
   const porClave = new Map(datos.heroes.map((h) => [nombreClave(h.name), h.name]));
@@ -342,18 +131,15 @@ export function correccionDelDraft(draft, datos, { tuyos = [] } = {}) {
   const faltan = enemigos.filter((n) => !n).length + aliados.filter((n) => !n).length;
   if (!faltan) return null;
   return {
-    id: `correccion-${draft.cerradoEn}`,
-    ids: draft.ids.slice(),
-    cuando: draft.cerradoEn,
+    id: `correccion-${draft.cerradoEn}`, ids: draft.ids.slice(), cuando: draft.cerradoEn,
     leidos: { enemigos, aliados, tuyoFila: draft.tuyoFila, baneos: draft.baneos.slice(0, 10) },
     faltan,
     heroes: [...porClave.values()].sort((a, b) => a.localeCompare(b)),
-    // Solo si falta el tuyo: sin tu fila leída, o con ella vacía.
     ...(!(draft.tuyoFila >= 0 && aliados[draft.tuyoFila]) && tuyos.length ? { tuyos: tuyos.map(nombre).filter(Boolean) } : {}),
   };
 }
 
-/** La notificación de la pregunta (3.72.5): tocarla abre la APK, donde se contesta. */
+/** La notificación de la pregunta: tocarla abre la APK, donde se contesta. */
 export function resumenPregunta(desde, pick, idioma = 'es') {
   const en = idioma === 'en';
   return {
@@ -365,20 +151,10 @@ export function resumenPregunta(desde, pick, idioma = 'es') {
   };
 }
 
-/** El resumen de la notificación al apuntar sola, en tu idioma. */
-/** Desde cuántas derrotas seguidas el resumen dice cómo te va tras perder. Decisión de producto. */
-export const RACHA_PARA_AVISAR = 2;
-
-/**
- * Desde 3.89.0 no pide que le digas quién era el que no reconoció: juegas
- * una partida detrás de otra y no hay tiempo. Eso se revisa después, de
- * golpe, en «Capturas» del móvil o del ordenador.
- */
+/** La notificación al apuntar: el nº1, el %, cómo va la sesión y, en racha mala, cómo te va tras perder (con tus partidas). */
 export function resumenSolo(partida, idioma = 'es', numeros = null) {
   const en = idioma === 'en';
   const primero = partida.recomendados?.[0];
-  // Cómo va la sesión y, tras perder, cómo te suele ir en la siguiente (3.77.0): con TUS partidas
-  // (`tusNumeros`, el mismo cálculo que «Tus números» del móvil), y solo afirmado si se distingue.
   const s = numeros?.sesion;
   const tras = numeros?.trasPerder;
   const enRachaMala = numeros?.racha && !numeros.racha.gane && numeros.racha.n >= RACHA_PARA_AVISAR;
@@ -401,11 +177,7 @@ export function resumenSolo(partida, idioma = 'es', numeros = null) {
   };
 }
 
-/**
- * Lo que la APK escribe en `solo.json`: la línea (sin ella, apagado), el rango
- * y el idioma. `apagado` es que Javi tocó «Apagado» (`activo: false`): eso
- * manda sobre la línea que diga la app (3.69.3).
- */
+/** `solo.json` de la APK: la línea (sin ella, apagado), el rango y el idioma. `apagado` es «Apagado» tocado: manda sobre la línea del móvil. */
 export function leerAjustesSolo(fichero) {
   try {
     const j = JSON.parse(readFileSync(fichero, 'utf8'));
@@ -414,12 +186,7 @@ export function leerAjustesSolo(fichero) {
   } catch { return { activo: false, apagado: false, linea: null, rango: 'glory', idioma: 'es' }; }
 }
 
-/**
- * Con qué ajustes lee la tablet sola (3.69.3). Hasta ahora solo con la línea
- * elegida en la APK, y sin ella, en cuanto se callaba el móvil nadie leía: la
- * burbuja se quedaba con el consejo viejo. Hoy: la de la APK si hay; si no, y
- * sin «Apagado», la última que mandó la app del móvil.
- */
+/** Con qué lee la tablet: la línea de la APK; si no hay y no está «Apagado», la última del móvil. */
 export function ajustesEfectivos(apk, movil) {
   if (apk?.activo) return { ...apk, origen: 'apk' };
   if (apk?.apagado) return { ...apk, activo: false, origen: 'apagado' };
@@ -429,261 +196,7 @@ export function ajustesEfectivos(apk, movil) {
   return { ...(apk ?? { linea: null, rango: 'glory', idioma: 'es' }), activo: false, origen: 'sinLinea' };
 }
 
-/**
- * El bucle del modo solo. `interno` es el de `crearServidor` (leer,
- * delMovil, ponerConsejo); `datosPara(rango)` da los datos preparados (o
- * null). Devuelve `{ tic, parar, estado }`: `tic` hace una vuelta y dice
- * cuánto esperar a la siguiente (las pruebas lo llaman a mano).
- */
-/** Lo que dura la pregunta de cómo acabó: lo mismo que `RETENCION_CAPTURAS_MS` de servir.mjs (una prueba lo compara). */
-export const PREGUNTA_CADUCA_MS = 3 * 3600000;
-
-/**
- * La fase para la burbuja tocable (3.84.0, afinada en 3.86.1): «fuera» solo
- * tras `LECTURAS_PARA_FUERA` lecturas seguidas sin leer a nadie y fuera de
- * partida. Al empezar un draft no se ve que lo es hasta leer dos baneos
- * (`acumularDraft`): con «fuera» por no leer nada, el botón salía encima de
- * los primeros baneos. Un nombre suelto (un «Gord» en el vestíbulo) la deja
- * en «draft» una vuelta: se equivoca hacia no enseñar el botón.
- */
-export const LECTURAS_PARA_FUERA = 2;
-const leeAlguien = (l) => !!l && !l.partida && [l.tuyos, l.suyos, l.enemigos, l.aliados].some((x) => Array.isArray(x) && x.some((h) => h?.nombre));
-export function faseDe(draft, lectura, vacias) {
-  if (lectura?.partida) return 'partida';
-  const abierto = !draft?.cerrado && (draft?.baneos?.length || draft?.enemigos?.some(Boolean) || draft?.aliados?.some(Boolean));
-  return abierto || vacias < LECTURAS_PARA_FUERA ? 'draft' : 'fuera';
-}
-
-export function crearSolo({ interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout, apuntar = null, maestriaDe = () => null, alCorregir = null, numerosDe = () => null, alSinLeer = null, guardarSinResultado = null, alFinalSinLeer = null, alApuntarTabla = null }) {
-  // La partida que se vigila para apuntarla sola (3.70.0): el draft de cuando
-  // se cerró y su decisión, hasta que la tabla del final dé el resultado.
-  let vigilada = null;
-  // Cuándo se vio la última tabla del final apuntada (3.89.1), para no apuntar dos veces la misma.
-  let ultimaTabla = null;
-  // Lo que no reconoció del último draft (3.71.0), para preguntártelo en la APK.
-  let pendiente = null;
-  // Lecturas seguidas fuera de partida sin leer a nadie (3.86.1): la fase «fuera» las pide (ver `LECTURAS_PARA_FUERA`).
-  let vacias = 0;
-  // La partida de la que se te preguntó cómo acabó (3.72.5), hasta que contestes.
-  let preguntada = null;
-  let draft = draftVacio();
-  let ultimoConsejo = null;
-  let reloj = null, parado = false;
-  // Lo que se cuenta en /estado (3.69.3): sin esto no se sabía si la tablet leía sola.
-  // `partidas` (3.83.2): los drafts que acabaron en partida desde que arrancó. Con `apuntadas`
-  // dice si la tablet ve el final: el 27 de octubre de 2026 leyó 5 h (2.811 lecturas) sin apuntar ninguna.
-  // `sinBaneos` (3.101.1): de esas, las que se cerraron sin leer dos baneos (el draft se abrió por los picks).
-  const resumen = { activo: false, linea: null, origen: null, apartado: false, lecturas: 0, partidas: 0, apuntadas: 0, sinBaneos: 0, ultima: null };
-  /** Apunta UNA vez la partida vigilada, con el resultado leído o el que contestaste. */
-  const apuntarVigilada = (v, { gane, t, duracion = null, contestada = false }) => {
-    if (!v || v.apuntada) return null;
-    v.apuntada = true;
-    const sola = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane, t, duracion, versionModelo: VERSION_MODELO });
-    if (!sola) return null;
-    // De qué draft es y cómo se supo el resultado (3.75.0), solo en la tablet (la base de datos no los guarda):
-    // para medir cuánto reconoce sola y para el aviso de «todas iguales» (3.99.0).
-    const partida = { ...sola, desde: v.desde, resultadoDe: contestada ? 'pregunta' : 'tabla' };
-    // Si en este draft quedó alguien sin leer (3.81.0), sus recortes, para medir el lector.
-    const sinLeer = pendiente?.cuando === v.desde ? pendiente : null;
-    apuntar(partida);
-    // La corrección contestada ANTES de apuntar la partida (3.74.3): se aplica
-    // ahora y la tarjeta no vuelve a salir. Antes se perdía y la partida subía
-    // con el draft a medias.
-    const yaContestada = interno.correccionContestada?.();
-    if (yaContestada && yaContestada.cuando === v.desde) {
-      try { alCorregir?.({ partida: partida.t, enemigos: yaContestada.enemigos, aliados: yaContestada.aliados, tuyo: yaContestada.tuyo }); } catch (e) { registrar(`No se pudo arreglar la partida apuntada: ${e.message}`); }
-      if (pendiente?.cuando === v.desde) pendiente = null;
-    }
-    // La corrección sabe de qué partida es: al contestarla, se arregla también su draft.
-    const deEsta = pendiente?.cuando === v.desde ? pendiente : null;
-    if (deEsta) { pendiente = { ...deEsta, partida: partida.t }; interno.ponerCorreccion?.(pendiente); }
-    interno.ponerResumen?.(resumenSolo(partida, v.idioma, numerosDe()));
-    resumen.apuntadas = (resumen.apuntadas ?? 0) + 1;
-    if (sinLeer) { try { alSinLeer?.({ ids: sinLeer.ids, leidos: sinLeer.leidos, faltan: sinLeer.faltan, cuando: sinLeer.cuando, partida: partida.t }); } catch (e) { registrar(`No se pudieron preparar los recortes del draft: ${e.message}`); } }
-    registrar(`Sin móvil: partida apuntada${contestada ? ' con lo que contestaste' : ''}, ${partida.gane ? 'ganada' : 'perdida'} con ${partida.pick}.`);
-    return partida;
-  };
-  /**
-   * La tablet no sabe cómo acabó (3.72.5): la victoria no viene de serie (se
-   * aprende), la tabla no salió o empezó otro draft sin verla. Antes se
-   * quedaba esperando un resultado que no llegaba y la partida no se
-   * apuntaba; hoy te lo pregunta la APK (y con tu respuesta aprende la tabla).
-   */
-  const pickDe = (v) => v.decision.tuyo?.name ?? v.decision.rec.eleccion?.heroe?.name ?? null;
-  /**
-   * La partida de la que no se supo el resultado (3.81.5) se guarda sin él,
-   * con su draft, para que lo digas después en «Mis partidas». Una vez.
-   */
-  const sinResultado = (v, motivo) => {
-    if (!v || v.apuntada) return;
-    v.apuntada = true;
-    // El instante fijado al preguntar (3.90.2): calculado aquí, con el final ya de otro draft, salía la hora del draft.
-    const p = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane: false, t: v.tSinResultado ?? instanteDe(v), versionModelo: VERSION_MODELO });
-    const guardada = p && guardarSinResultado ? guardarSinResultado({ ...p, desde: v.desde, gane: undefined }) : false;
-    registrar(guardada
-      ? `Sin móvil: la partida con ${pickDe(v) ?? '?'} queda en «Mis partidas» sin resultado (${motivo}): dilo ahí cuando quieras.`
-      : `Sin móvil: la partida con ${pickDe(v) ?? '?'} se queda sin apuntar: ${motivo}.`);
-  };
-  /** El instante de una partida vigilada: el del final si se vio; si no, el inicio más lo que duró; si no, el del draft (3.74.3). */
-  const instanteDe = (v) => {
-    const f = interno.final?.();
-    const deEsta = f?.desde === v.desde;
-    const duracion = deEsta && !f.inicioEstimado ? f.duracion : null;
-    return deEsta && Number.isFinite(f.resultadoEn) ? f.resultadoEn
-      : deEsta && Number.isFinite(f.inicio) && duracion != null ? Math.round(f.inicio + duracion * 60000)
-        : v.desde;
-  };
-  const preguntar = (v, motivo) => {
-    if (!v || v.apuntada || v.preguntada || !interno.ponerPregunta) return;
-    // La APK guarda UNA pregunta: la de antes, sin contestar, se guarda sin resultado (3.81.5; antes se perdía).
-    if (preguntada && preguntada !== v && !preguntada.apuntada) sinResultado(preguntada, 'no contestaste cómo acabó');
-    v.preguntada = true;
-    v.preguntadaEn = ahora();
-    // Su instante, UNA vez (3.90.2): el mismo en la tablet, en las pantallas del final y en lo que contestes,
-    // aquí o en «Capturas» del móvil. Calculado después, con el final de otro draft, era otro.
-    v.tSinResultado = instanteDe(v);
-    preguntada = v;
-    const pick = pickDe(v);
-    interno.ponerPregunta({ id: `pregunta-${v.desde}`, desde: v.desde, cuando: ahora(), pick });
-    // Las pantallas del final de ESTA partida (3.81.5), para ver por qué no se reconoció: del 27 de
-    // octubre de 2026 en adelante, todas las preguntas eran «ya hay otro draft», sin ver ninguna tabla.
-    const f = interno.final?.();
-    if (f?.desde === v.desde && Array.isArray(f.fotogramas) && f.fotogramas.length) {
-      // Con la partida sin resultado (3.89.4): con ella, «Capturas» del móvil pregunta Gané/Perdí al acabar la sesión.
-      const sin = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane: false, t: v.tSinResultado, versionModelo: VERSION_MODELO });
-      const partida = sin ? (({ gane, ...resto }) => resto)(sin) : null;
-      try { alFinalSinLeer?.({ desde: v.desde, motivo, fotogramas: f.fotogramas, ...(partida ? { partida } : {}) }); } catch (e) { registrar(`No se pudieron preparar las pantallas del final: ${e.message}`); }
-    }
-    interno.ponerResumen?.(resumenPregunta(v.desde, pick, v.idioma));
-    registrar(`Sin móvil: no sé cómo acabó la partida (${motivo}); te lo pregunto en la app de la tablet.`);
-  };
-  async function tic() {
-    // Lo que contestaste en la APK (3.72.5), antes de nada: vale aunque ahora no toque leer.
-    const contestada = interno.respuesta?.();
-    if (contestada && preguntada && contestada.desde === preguntada.desde) {
-      if (typeof contestada.gane === 'boolean') {
-        const f = interno.final?.();
-        const duracion = f?.desde === preguntada.desde && !f.inicioEstimado ? f.duracion : null;
-        // La hora de contestar puede ser horas después, y `t` es la identidad de la partida (3.74.3).
-        apuntarVigilada(preguntada, { gane: contestada.gane, t: preguntada.tSinResultado ?? instanteDe(preguntada), duracion, contestada: true });
-      } else {
-        preguntada.apuntada = true;
-        registrar('Sin móvil: dijiste que esa partida no contó; no se apunta.');
-      }
-      preguntada = null;
-    }
-    // La pregunta caduca con sus capturas (la APK deja de enseñarla): que se sepa (3.74.3).
-    if (preguntada && !preguntada.apuntada && ahora() - preguntada.preguntadaEn > PREGUNTA_CADUCA_MS) {
-      sinResultado(preguntada, 'no contestaste cómo acabó a tiempo');
-      preguntada = null;
-    }
-    const a = ajustes();
-    Object.assign(resumen, { activo: !!a.activo, linea: a.linea ?? null, origen: a.origen ?? null, apartado: false });
-    // Sin leer, la fase de antes no vale (3.86.1): la burbuja tocable no sale sin saber qué hay delante.
-    if (!a.activo) { interno.ponerFase?.(null); return intervalos.vacio; }
-    const movil = interno.delMovil();
-    const t = ahora();
-    if ((movil.leyo && t - movil.leyo < MOVIL_ACTIVO_MS) || (movil.consejo && t - movil.consejo < MOVIL_ACTIVO_MS)) { resumen.apartado = true; interno.ponerFase?.(null); return intervalos.vacio; }
-    const r = await interno.leer({ rapida: true });
-    if (!r?.ok) { interno.ponerFase?.(null); return intervalos.error; }
-    const antes = draft;
-    draft = acumularDraft(draft, r.lectura, ahora());
-    // Las capturas del draft abierto no se podan (3.81.4): a 1,5 s por lectura, las 40 que se guardan son un minuto.
-    interno.protegerLecturas?.(draft.cerrado ? [] : draft.ids);
-    resumen.lecturas += 1;
-    // Empezó otro draft sin saber cómo acabó la partida de antes: se pregunta.
-    if (!draft.cerrado && vigilada && !vigilada.apuntada) {
-      const f = interno.final?.();
-      if (f?.desde === vigilada.desde && f.inicio) preguntar(vigilada, 'ya hay otro draft');
-    }
-    if (!draft.cerrado) vigilada = null;
-    // Se acaba de cerrar (empezó la partida): a vigilar el final, como si la app lo pidiera.
-    const yaVigilada = interno.final?.();
-    // Solo con esa vigilancia aún en marcha: si ya vio el final, el draft nuevo es otra partida.
-    const dePasada = draft.cerrado && !antes.cerrado && Number.isFinite(yaVigilada?.desde) && yaVigilada.desde !== draft.cerradoEn && yaVigilada.activa !== false && !yaVigilada.acabada && !yaVigilada.resultado
-      && draft.cerradoEn - yaVigilada.desde >= 0 && draft.cerradoEn - yaVigilada.desde < MINUTOS_ENTRE_PARTIDAS * 60000;
-    if (dePasada) registrar(`Sin móvil: esta partida ya se vigila desde hace ${Math.round((draft.cerradoEn - yaVigilada.desde) / 1000)} s (el móvil llevaba el draft); no la apunto yo.`);
-    if (draft.cerrado && !antes.cerrado && !dePasada) {
-      resumen.partidas += 1;
-      if (new Set(draft.baneos).size < BANEOS_EN_EL_DRAFT) {
-        resumen.sinBaneos += 1;
-        registrar('Sin móvil: este draft se cerró sin leer los baneos (se abrió por los picks); si pasa en todas, el juego ha cambiado su pantalla.');
-      }
-      const datos = datosPara(a.rango);
-      pendiente = correccionDelDraft(draft, datos, { tuyos: tusHabituales(datos, a.linea, maestriaDe(), [...draft.enemigos, ...draft.aliados, ...draft.baneos]) });
-      if (pendiente) {
-        interno.ponerCorreccion?.(pendiente);
-        registrar(`Sin móvil: ${pendiente.faltan} sin reconocer en este draft; al acabar te pregunto quién era${pendiente.faltan === 1 ? '' : 'n'}.`);
-      }
-      const decision = apuntar ? decidirSolo({ datos, draft, linea: a.linea, maestria: maestriaDe() }) : null;
-      if (decision) {
-        vigilada = { desde: draft.cerradoEn, decision, linea: a.linea, rango: a.rango, idioma: a.idioma, apuntada: false };
-        interno.vigilar?.(vigilada.desde);
-        registrar(`Sin móvil: empieza la partida; vigilo el final para apuntarla (${decision.tuyo?.name ?? `nº1 ${decision.rec.eleccion?.heroe?.name ?? '?'}`}).`);
-      }
-    }
-    // Con el resultado de la tabla, la partida se apunta sola (una vez).
-    if (vigilada && !vigilada.apuntada) {
-      const f = interno.final?.();
-      const repetida = f?.desde === vigilada.desde && Number.isFinite(f.resultadoEn) && Number.isFinite(ultimaTabla) && f.resultadoEn - ultimaTabla < MINUTOS_ENTRE_TABLAS * 60000;
-      if (repetida && (f.resultado === 'gane' || f.resultado === 'perdi')) {
-        // La misma pantalla del final que ya se apuntó: no hay partida entre medias (3.89.1).
-        vigilada.apuntada = true;
-        registrar(`Sin móvil: la tabla del final llega ${Math.round((f.resultadoEn - ultimaTabla) / 60000 * 10) / 10} min después de la anterior; es la misma partida y no la apunto otra vez.`);
-      } else if (f?.desde === vigilada.desde && (f.resultado === 'gane' || f.resultado === 'perdi')) {
-        if (Number.isFinite(f.resultadoEn)) ultimaTabla = f.resultadoEn;
-        const apuntada = apuntarVigilada(vigilada, { gane: f.resultado === 'gane', t: Number.isFinite(f.resultadoEn) ? f.resultadoEn : ahora(), duracion: f.inicioEstimado ? null : f.duracion });
-        // El comprobante (3.101.0): la pantalla de la tabla que se leyó, para comprobarla en el móvil de un vistazo.
-        if (apuntada) { try { alApuntarTabla?.({ t: apuntada.t, gane: apuntada.gane, fotograma: (f.fotogramas ?? []).find((x) => x.id === f.resultadoId) ?? null }); } catch (e) { registrar(`No se pudo preparar el comprobante: ${e.message}`); } }
-      } else if (f?.desde === vigilada.desde && f.acabada) {
-        // Se vio la tabla del final, pero sin palabra conocida (la victoria se aprende).
-        preguntar(vigilada, 'vi la tabla del final pero no la reconozco');
-      } else if (f?.desde === vigilada.desde && !f.activa && f.inicio) {
-        preguntar(vigilada, 'la vigilancia acabó sin ver la tabla');
-      }
-    }
-    resumen.ultima = {
-      cuando: ahora(),
-      enPartida: !!r.lectura?.partida,
-      baneos: draft.baneos.length, enemigos: draft.enemigos.filter(Boolean).length, aliados: draft.aliados.filter(Boolean).length,
-    };
-    // La fase, para la burbuja (3.84.0): tras cerrar el draft ya no es draft (la partida la ve el lector).
-    interno.ponerFase?.(faseDe(draft, r.lectura, (vacias = leeAlguien(r.lectura) || r.lectura?.partida ? 0 : vacias + 1)));
-    if (draft.cerrado) return intervalos.partida;
-    const datos = datosPara(a.rango);
-    const consejo = consejoSolo({ datos, draft, linea: a.linea, idioma: a.idioma, maestria: maestriaDe() });
-    const huella = consejo ? `${consejo.titulo}|${consejo.detalle}` : null;
-    if (consejo && huella !== ultimoConsejo) {
-      // Si el móvil mandó algo entretanto, manda el móvil.
-      const m = interno.delMovil();
-      if (!(m.consejo && ahora() - m.consejo < MOVIL_ACTIVO_MS)) {
-        interno.ponerConsejo(consejo);
-        ultimoConsejo = huella;
-        registrar(`Sin móvil: ${consejo.titulo}${consejo.detalle ? ` · ${consejo.detalle}` : ''}`);
-      }
-    }
-    const hayDraft = draft.baneos.length || draft.enemigos.some(Boolean) || draft.aliados.some(Boolean);
-    return hayDraft ? intervalos.draft : intervalos.vacio;
-  }
-  const vuelta = async () => {
-    let espera = intervalos.error;
-    try { espera = await tic(); } catch (e) { registrar(`Sin móvil: ${e.message}`); }
-    if (!parado) reloj = programar(vuelta, espera);
-  };
-  return {
-    tic,
-    arrancar: () => { parado = false; reloj = programar(vuelta, intervalos.vacio); },
-    parar: () => { parado = true; if (reloj) cancelar(reloj); },
-    estado: () => draft,
-    resumen: () => ({ ...resumen, ultima: resumen.ultima ? { ...resumen.ultima } : null }),
-  };
-}
-
-/**
- * Los datos para decidir, preparados UNA vez por fichero y rango. `leer()`
- * da `{ catalogo, meta }` (los de la casa de la app, o los que vienen dentro
- * de la APK); null si no hay catálogo.
- */
+/** Los datos para decidir, preparados UNA vez por fichero y rango. `leer()` da `{ catalogo, meta }`. */
 export function datosDelSolo(leer) {
   let huella = null, preparados = null;
   return (rango) => {
@@ -692,5 +205,282 @@ export function datosDelSolo(leer) {
     const h = `${f.meta?.generatedAt ?? ''}|${rango}|${f.catalogo?.heroes?.length ?? 0}`;
     if (h !== huella) { preparados = prepararDatos({ catalogo: f.catalogo, meta: f.meta, rango }); huella = h; }
     return preparados;
+  };
+}
+
+/** Lo que solo sabe la tablet de una partida apuntada (no va al móvil ni a la base de datos). */
+const sinLoDeLaTablet = ({ desde, resultadoDe, leida, ...resto }) => resto;
+
+/**
+ * El bucle. `interno` es el de `crearServidor`; `datosPara(rango)` da los
+ * datos preparados; `apuntar(partida)` la guarda. Devuelve `{ tic, arrancar,
+ * parar, estado, resumen, paraElMovil, corregir, resultado }`: `tic` hace
+ * una vuelta y dice cuánto esperar (las pruebas lo llaman a mano).
+ */
+export function crearSolo({
+  interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout,
+  apuntar = null, maestriaDe = () => null, alCorregir = null, numerosDe = () => null, alSinLeer = null, guardarSinResultado = null, alFinalSinLeer = null, alApuntarTabla = null,
+  partidaGuardada = () => null, alCambiarResultado = null,
+}) {
+  let draft = draftVacio();
+  /** La partida del draft que se cerró, mientras se vigila su final (la del último draft cerrado sigue en `ultima`). */
+  let vigilada = null, ultima = null, preguntada = null, pendiente = null;
+  let ultimaTabla = null, ultimoConsejo = null, vacias = 0;
+  let reloj = null, parado = false;
+  const aprendidas = new Set();
+  const resumen = { activo: false, linea: null, origen: null, lecturas: 0, partidas: 0, apuntadas: 0, sinBaneos: 0, ultima: null };
+  const pickDe = (v) => v.decision.tuyo?.name ?? v.decision.rec.eleccion?.heroe?.name ?? null;
+
+  /** El instante de una partida: el del resultado si se vio; si no, el inicio más lo que duró; si no, el cierre del draft. */
+  const instanteDe = (v) => {
+    const f = interno.final?.();
+    const deEsta = f?.desde === v.desde;
+    const duracion = deEsta && !f.inicioEstimado ? f.duracion : null;
+    return deEsta && Number.isFinite(f.resultadoEn) ? f.resultadoEn
+      : deEsta && Number.isFinite(f.inicio) && duracion != null ? Math.round(f.inicio + duracion * 60000)
+        : v.desde;
+  };
+
+  /** Apunta UNA vez la partida, con el resultado leído o el que contestaste. Devuelve la partida o null. */
+  const apuntarVigilada = (v, { gane, t, duracion = null, contestada = false }) => {
+    if (!v || v.apuntada) return null;
+    v.apuntada = true;
+    const sola = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane, t, duracion, versionModelo: VERSION_MODELO });
+    if (!sola) { v.estado = 'sinResultado'; return null; }
+    const partida = { ...sola, desde: v.desde, resultadoDe: contestada ? 'pregunta' : 'tabla' };
+    const sinLeer = pendiente?.cuando === v.desde ? pendiente : null;
+    apuntar?.(partida);
+    Object.assign(v, { estado: 'apuntada', gane: partida.gane, registro: partida });
+    // La corrección contestada en la APK antes de apuntar se aplica ahora.
+    const yaContestada = interno.correccionContestada?.();
+    if (yaContestada && yaContestada.cuando === v.desde) {
+      try { alCorregir?.({ partida: partida.t, enemigos: yaContestada.enemigos, aliados: yaContestada.aliados, tuyo: yaContestada.tuyo }); } catch (e) { registrar(`No se pudo arreglar la partida apuntada: ${e.message}`); }
+      v.registro = partidaGuardada(partida.t) ?? v.registro;
+      if (pendiente?.cuando === v.desde) pendiente = null;
+    }
+    if (pendiente?.cuando === v.desde) { pendiente = { ...pendiente, partida: partida.t }; interno.ponerCorreccion?.(pendiente); }
+    interno.ponerResumen?.(resumenSolo(partida, v.idioma, numerosDe()));
+    resumen.apuntadas += 1;
+    if (sinLeer) { try { alSinLeer?.({ ids: sinLeer.ids, leidos: sinLeer.leidos, faltan: sinLeer.faltan, cuando: sinLeer.cuando, partida: partida.t }); } catch (e) { registrar(`No se pudieron preparar los recortes del draft: ${e.message}`); } }
+    registrar(`Partida apuntada${contestada ? ' con lo que contestaste' : ''}, ${partida.gane ? 'ganada' : 'perdida'} con ${partida.pick}.`);
+    return partida;
+  };
+
+  /** La partida de la que no se supo el resultado: se guarda sin él (lo dices después en «Mis partidas»). */
+  const sinResultado = (v, motivo) => {
+    if (!v || v.apuntada) return;
+    v.apuntada = true;
+    v.estado = 'sinResultado';
+    const p = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane: false, t: v.tSinResultado ?? instanteDe(v), versionModelo: VERSION_MODELO });
+    const guardada = p && guardarSinResultado ? guardarSinResultado({ ...p, desde: v.desde, gane: undefined }) : false;
+    if (guardada) v.tGuardada = p.t;
+    registrar(guardada
+      ? `La partida con ${pickDe(v) ?? '?'} queda en «Mis partidas» sin resultado (${motivo}): dilo ahí cuando quieras.`
+      : `La partida con ${pickDe(v) ?? '?'} se queda sin apuntar: ${motivo}.`);
+  };
+
+  /** No sé cómo acabó: se pregunta UNA vez (la APK guarda una pregunta: la de antes sin contestar queda sin resultado). */
+  const preguntar = (v, motivo) => {
+    if (!v || v.apuntada || v.preguntada || !interno.ponerPregunta) return;
+    if (preguntada && preguntada !== v && !preguntada.apuntada) sinResultado(preguntada, 'no contestaste cómo acabó');
+    Object.assign(v, { preguntada: true, preguntadaEn: ahora(), estado: 'preguntando' });
+    // [D] Su instante, UNA vez: el mismo en la tablet, en las pantallas del final y en lo que contestes.
+    v.tSinResultado = instanteDe(v);
+    preguntada = v;
+    const pick = pickDe(v);
+    interno.ponerPregunta({ id: `pregunta-${v.desde}`, desde: v.desde, cuando: ahora(), pick });
+    const f = interno.final?.();
+    if (f?.desde === v.desde && Array.isArray(f.fotogramas) && f.fotogramas.length) {
+      const sin = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane: false, t: v.tSinResultado, versionModelo: VERSION_MODELO });
+      const partida = sin ? (({ gane, ...resto }) => resto)(sin) : null;
+      try { alFinalSinLeer?.({ desde: v.desde, motivo, fotogramas: f.fotogramas, ...(partida ? { partida } : {}) }); } catch (e) { registrar(`No se pudieron preparar las pantallas del final: ${e.message}`); }
+    }
+    interno.ponerResumen?.(resumenPregunta(v.desde, pick, v.idioma));
+    registrar(`No sé cómo acabó la partida (${motivo}); te lo pregunto en la app de la tablet.`);
+  };
+
+  /** Aprender de la corrección de un draft CERRADO, una vez por contenido. */
+  const aprenderDe = (d, c) => {
+    if (!d?.cerrado || !d.ids?.length || !c?.enemigos?.length || !interno.aprenderDe) return;
+    const huella = JSON.stringify([d.desde, c.enemigos, c.aliados, c.tuyo, c.baneos]);
+    if (aprendidas.has(huella)) return;
+    aprendidas.add(huella);
+    Promise.resolve(interno.aprenderDe({ ids: d.ids, enemigos: c.enemigos, aliados: c.aliados, tuyo: c.tuyo, baneos: c.baneos }))
+      .catch((e) => registrar(`No se pudo aprender de tu corrección: ${e.message}`));
+  };
+
+  /** La decisión de la partida con la corrección, y la partida ya apuntada arreglada. */
+  const corregirPartida = (v, c) => {
+    const decision = decidirSolo({ datos: datosPara(v.rango), draft: conCorreccion(v.draft, c), linea: v.linea });
+    if (decision) v.decision = decision;
+    if (v.estado === 'apuntada' && v.registro) {
+      try { alCorregir?.({ partida: v.registro.t, enemigos: c.enemigos, aliados: c.aliados, tuyo: c.tuyo }); } catch (e) { registrar(`No se pudo arreglar la partida apuntada: ${e.message}`); }
+      v.registro = partidaGuardada(v.registro.t) ?? v.registro;
+    }
+  };
+
+  async function tic() {
+    // Lo contestado en la APK, antes de nada: vale aunque ahora no toque leer.
+    const contestada = interno.respuesta?.();
+    if (contestada && preguntada && contestada.desde === preguntada.desde) {
+      if (typeof contestada.gane === 'boolean') {
+        const f = interno.final?.();
+        const duracion = f?.desde === preguntada.desde && !f.inicioEstimado ? f.duracion : null;
+        apuntarVigilada(preguntada, { gane: contestada.gane, t: preguntada.tSinResultado ?? instanteDe(preguntada), duracion, contestada: true });
+      } else {
+        Object.assign(preguntada, { apuntada: true, estado: 'sinResultado', gane: null });
+        registrar('Dijiste que esa partida no contó; no se apunta.');
+      }
+      preguntada = null;
+    }
+    if (preguntada && !preguntada.apuntada && ahora() - preguntada.preguntadaEn > PREGUNTA_CADUCA_MS) {
+      sinResultado(preguntada, 'no contestaste cómo acabó a tiempo');
+      preguntada = null;
+    }
+    const a = ajustes();
+    Object.assign(resumen, { activo: !!a.activo, linea: a.linea ?? null, origen: a.origen ?? null });
+    // Sin línea no se lee: sin fase (no se sabe qué hay delante) y sin burbuja.
+    if (!a.activo) { interno.ponerFase?.(null); if (ultimoConsejo) { interno.ponerConsejo?.(null); ultimoConsejo = null; } return intervalos.vacio; }
+    const r = await interno.leer({ rapida: true });
+    if (!r?.ok) { interno.ponerFase?.(null); return intervalos.error; }
+    const antes = draft;
+    draft = acumularDraft(draft, r.lectura, ahora());
+    interno.protegerLecturas?.(draft.cerrado ? [] : draft.ids);
+    resumen.lecturas += 1;
+    // Empezó otro draft sin saber cómo acabó la partida de antes: se pregunta.
+    if (!draft.cerrado && vigilada && !vigilada.apuntada) {
+      const f = interno.final?.();
+      if (f?.desde === vigilada.desde && f.inicio) preguntar(vigilada, 'ya hay otro draft');
+    }
+    if (!draft.cerrado) vigilada = null;
+    if (draft.cerrado && !antes.cerrado) {
+      resumen.partidas += 1;
+      if (new Set(draft.baneos).size < BANEOS_EN_EL_DRAFT) {
+        resumen.sinBaneos += 1;
+        registrar('Este draft se cerró sin leer los baneos (se abrió por los picks); si pasa en todas, el juego ha cambiado su pantalla.');
+      }
+      const datos = datosPara(a.rango);
+      const vista = conCorreccion(draft);
+      pendiente = correccionDelDraft(vista, datos, { tuyos: tusHabituales(datos, a.linea, maestriaDe(), [...vista.enemigos, ...vista.aliados, ...vista.baneos]) });
+      if (pendiente) {
+        interno.ponerCorreccion?.(pendiente);
+        registrar(`${pendiente.faltan} sin reconocer en este draft; al acabar te pregunto quién era${pendiente.faltan === 1 ? '' : 'n'}.`);
+      }
+      aprenderDe(draft, draft.correccion);
+      const decision = decidirSolo({ datos, draft: vista, linea: a.linea });
+      if (decision) {
+        vigilada = { desde: draft.cerradoEn, draftDesde: draft.desde, draft, decision, linea: a.linea, rango: a.rango, idioma: a.idioma, apuntada: false, estado: 'vigilando', gane: null, registro: null };
+        ultima = vigilada;
+        interno.vigilar?.(vigilada.desde);
+        registrar(`Empieza la partida; vigilo el final para apuntarla (${decision.tuyo?.name ?? `nº1 ${decision.rec.eleccion?.heroe?.name ?? '?'}`}).`);
+      }
+    }
+    if (vigilada && !vigilada.apuntada) {
+      const f = interno.final?.();
+      const deEsta = f?.desde === vigilada.desde;
+      const conResultado = deEsta && (f.resultado === 'gane' || f.resultado === 'perdi');
+      if (conResultado && Number.isFinite(f.resultadoEn) && Number.isFinite(ultimaTabla) && f.resultadoEn - ultimaTabla < MINUTOS_ENTRE_TABLAS * 60000) {
+        Object.assign(vigilada, { apuntada: true, estado: 'sinResultado' });
+        registrar(`La tabla del final llega ${Math.round((f.resultadoEn - ultimaTabla) / 60000 * 10) / 10} min después de la anterior; es la misma partida y no la apunto otra vez.`);
+      } else if (conResultado) {
+        if (Number.isFinite(f.resultadoEn)) ultimaTabla = f.resultadoEn;
+        const apuntada = apuntarVigilada(vigilada, { gane: f.resultado === 'gane', t: Number.isFinite(f.resultadoEn) ? f.resultadoEn : ahora(), duracion: f.inicioEstimado ? null : f.duracion });
+        if (apuntada) { try { alApuntarTabla?.({ t: apuntada.t, gane: apuntada.gane, fotograma: (f.fotogramas ?? []).find((x) => x.id === f.resultadoId) ?? null }); } catch (e) { registrar(`No se pudo preparar el comprobante: ${e.message}`); } }
+      } else if (deEsta && f.acabada) {
+        preguntar(vigilada, 'vi la tabla del final pero no la reconozco');
+      } else if (deEsta && !f.activa && f.inicio) {
+        preguntar(vigilada, 'la vigilancia acabó sin ver la tabla');
+      }
+    }
+    resumen.ultima = { cuando: ahora(), enPartida: !!r.lectura?.partida, baneos: draft.baneos.length, enemigos: draft.enemigos.filter(Boolean).length, aliados: draft.aliados.filter(Boolean).length };
+    vacias = leeAlguien(r.lectura) || r.lectura?.partida ? 0 : vacias + 1;
+    interno.ponerFase?.(faseDe(draft, r.lectura, vacias));
+    if (draft.cerrado) return intervalos.partida;
+    const consejo = consejoSolo({ datos: datosPara(a.rango), draft: conCorreccion(draft), linea: a.linea, idioma: a.idioma });
+    const huella = consejo ? `${consejo.titulo}|${consejo.detalle}` : null;
+    if (consejo && huella !== ultimoConsejo) {
+      interno.ponerConsejo(consejo);
+      ultimoConsejo = huella;
+      registrar(`Burbuja: ${consejo.titulo}${consejo.detalle ? ` · ${consejo.detalle}` : ''}`);
+    }
+    const hayDraft = draft.baneos.length || draft.enemigos.some(Boolean) || draft.aliados.some(Boolean);
+    return hayDraft ? intervalos.draft : intervalos.vacio;
+  }
+
+  const vuelta = async () => {
+    let espera = intervalos.error;
+    try { espera = await tic(); } catch (e) { registrar(`Modo solo: ${e.message}`); }
+    if (!parado) reloj = programar(vuelta, espera);
+  };
+
+  /** Los nombres en la grafía del catálogo (el móvil los busca ahí). */
+  const delCatalogo = (rango) => {
+    const datos = datosPara(rango);
+    const porClave = new Map((datos?.heroes ?? []).map((h) => [nombreClave(h.name), h.name]));
+    return (n) => (n ? porClave.get(nombreClave(n)) ?? n : null);
+  };
+
+  return {
+    tic,
+    arrancar: () => { parado = false; reloj = programar(vuelta, intervalos.vacio); },
+    parar: () => { parado = true; if (reloj) cancelar(reloj); },
+    estado: () => draft,
+    resumen: () => ({ ...resumen, ultima: resumen.ultima ? { ...resumen.ultima } : null }),
+    /** `GET /draft`: el draft abierto o el último cerrado (con tu corrección encima) y la partida del último cerrado. */
+    paraElMovil() {
+      const a = ajustes();
+      const nombre = delCatalogo(a.rango);
+      const d = draft.desde != null ? conCorreccion(draft) : null;
+      return {
+        draft: d && {
+          desde: d.desde, cambiado: d.actividad ?? d.desde, cerrado: d.cerrado, cerradoEn: d.cerradoEn, linea: a.linea ?? null,
+          enemigos: d.enemigos.map(nombre), aliados: d.aliados.map(nombre), tuyoFila: d.tuyoFila,
+          tuyo: d.tuyoFila >= 0 ? nombre(d.aliados[d.tuyoFila]) : null, baneos: d.baneos.map(nombre), porPicks: !!d.porPicks, corregido: !!d.correccion,
+        },
+        partida: ultima && { desde: ultima.draftDesde, estado: ultima.estado, gane: ultima.gane, registro: ultima.estado === 'apuntada' && ultima.registro ? sinLoDeLaTablet(ultima.registro) : null },
+      };
+    },
+    /** `POST /draft`: tu corrección manda sobre lo leído de ESE draft (burbuja, partida que se apunte) y la tablet aprende de ella. false si no es el draft actual ni el último cerrado. */
+    corregir(c) {
+      const enCurso = draft.desde != null && c.desde === draft.desde;
+      const delUltimo = ultima != null && c.desde === ultima.draftDesde;
+      if (!enCurso && !delUltimo) return false;
+      const base = enCurso ? draft : ultima.draft;
+      const registrada = registrarCorreccion(conCorreccion(base, null), c);
+      if (enCurso) draft = { ...draft, correccion: registrada };
+      if (delUltimo) { ultima.draft = { ...ultima.draft, correccion: registrada }; corregirPartida(ultima, registrada); }
+      if (pendiente && pendiente.cuando === base.cerradoEn) { pendiente = null; interno.ponerCorreccion?.(null); }
+      aprenderDe(base, registrada);
+      ultimoConsejo = null;
+      registrar(`Corrección del móvil: ${registrada.enemigos.length} enemigos, ${registrada.aliados.length} compañeros${registrada.tuyo ? `, tú ${registrada.tuyo}` : ''}.`);
+      return true;
+    },
+    /** `POST /resultado`: apunta ESA partida con ese resultado (o la arregla), y deja de vigilarla y de preguntar. false si no es la del último draft cerrado. */
+    resultado({ desde, gane }) {
+      const v = ultima && ultima.draftDesde === desde ? ultima : null;
+      if (!v) return false;
+      interno.terminarVigilancia?.(v.desde);
+      if (preguntada === v) { preguntada = null; interno.ponerPregunta?.(null); }
+      if (v.estado === 'apuntada' || (v.estado === 'sinResultado' && Number.isFinite(v.tGuardada))) {
+        if (gane === null) return v.estado === 'sinResultado';
+        if (gane === v.gane) return true;
+        const t = v.registro?.t ?? v.tGuardada;
+        const nueva = alCambiarResultado?.(t, gane);
+        if (!nueva) return false;
+        Object.assign(v, { estado: 'apuntada', gane, registro: partidaGuardada(t) ?? nueva });
+        registrar(`Resultado cambiado desde el móvil: ${gane ? 'ganada' : 'perdida'}.`);
+        return true;
+      }
+      if (v.apuntada) return gane === null;
+      if (gane === null) {
+        Object.assign(v, { apuntada: true, estado: 'sinResultado', gane: null });
+        registrar('El móvil dice que esa partida no contó; no se apunta.');
+        return true;
+      }
+      const f = interno.final?.();
+      const duracion = f?.desde === v.desde && !f.inicioEstimado ? f.duracion : null;
+      apuntarVigilada(v, { gane, t: v.tSinResultado ?? instanteDe(v), duracion, contestada: true });
+      return true;
+    },
   };
 }
