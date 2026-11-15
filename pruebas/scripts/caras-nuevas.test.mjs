@@ -29,12 +29,18 @@ test('sale con 1 y dice cuáles, solo con otra imagen o un héroe nuevo; otra ca
   eq(spawnSync(process.execPath, [join(RAIZ, 'scripts/caras-nuevas.mjs'), join(dir, 'no-hay.json'), join(dir, 'caras.json')], { encoding: 'utf8' }).status, 0);
 });
 
-test('la vigilancia lo corre tras los datos rancios, con pipefail, y lo pone arriba en la incidencia', () => {
+test('la vigilancia lo corre tras los datos rancios, con pipefail, y su resultado llega a la incidencia como CARAS', () => {
   const v = readFileSync(join(RAIZ, '.github/workflows/vigilancia.yml'), 'utf8');
-  const paso = v.indexOf('run: node scripts/caras-nuevas.mjs');
-  ok(paso > v.indexOf('scripts/datos-rancios.mjs') && paso < v.indexOf('name: Abrir incidencia'), 'la vigilancia no mira las caras antes de abrir la incidencia');
-  ok(/id: caras\n\s*if: \$\{\{ !cancelled\(\) \}\}\n\s*shell: bash\n\s*run: node scripts\/caras-nuevas\.mjs 2>&1 \| tee \/tmp\/caras\.txt/.test(v), 'el paso de las caras sin bash (pipefail) o se salta tras un fallo');
-  ok(v.includes("steps.caras.outcome }}' === 'failure'") && v.includes("leer('/tmp/caras.txt')"), 'la incidencia no dice qué caras faltan');
+  const pasos = v.split(/\n(?=\s*- name: )/);
+  const i = pasos.findIndex((p) => /- name: Caras nuevas en el juego\n/.test(p));
+  ok(i >= 0, 'la vigilancia no tiene el paso «Caras nuevas en el juego»');
+  const paso = pasos[i];
+  ok(/^\s*id: caras$/m.test(paso) && /^\s*if: \$\{\{ !cancelled\(\) \}\}$/m.test(paso) && /^\s*shell: bash$/m.test(paso), 'el paso de las caras sin id, sin bash (pipefail) o se salta tras un fallo');
+  ok(/^\s*run: node scripts\/caras-nuevas\.mjs 2>&1 \| tee \/tmp\/caras\.txt$/m.test(paso), 'el paso no corre scripts/caras-nuevas.mjs, o no deja lo que dice donde lo lee la incidencia');
+  ok(pasos.findIndex((p) => p.includes('run: node scripts/datos-rancios.mjs')) < i, 'las caras se miran antes que los datos rancios');
+  const abrir = pasos.findIndex((p) => /- name: Abrir incidencia/.test(p));
+  ok(abrir > i, 'la vigilancia no mira las caras antes de abrir la incidencia');
+  ok(/^\s*CARAS: \$\{\{ steps\.caras\.outcome == 'failure' \}\}$/m.test(pasos[abrir]) && /\bcaras: si\('CARAS'\)/.test(pasos[abrir]), 'el resultado de las caras no llega a la incidencia');
   // Y NO va en npm test: una cara nueva llega con los datos del bot y tiraría el despliegue.
   const pkg = JSON.parse(readFileSync(join(RAIZ, 'package.json'), 'utf8'));
   ok(!JSON.stringify(pkg.scripts).includes('caras-nuevas'), 'el aviso de caras va en npm test');
