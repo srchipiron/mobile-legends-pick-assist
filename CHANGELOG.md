@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 4.0.1
+
+- La tablet manda ella sola la imagen que hace falta para volver a leer los
+  baneos: desde el parche del 11 de noviembre no los lee, y por eso el draft
+  y la burbuja solo aparecen cuando ya hay cuatro picks. Cuando un draft se
+  abra sin baneos, sube una vez al día la franja de arriba de la pantalla
+  (donde están los baneos, sin los paneles de los jugadores ni sus nombres).
+  Con ella se mide su sitio nuevo y llega el arreglo; tú solo juega.
+
 ## 4.0.0
 
 - La app y la tablet están rehechas por dentro, y el consejo es el mismo:
