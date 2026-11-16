@@ -4214,7 +4214,7 @@
       "mythic": "133 héroes",
       "glory": "133 héroes"
     },
-    "tiers": "fallo: HTTP 403 en https://back.mlbb.gg/api/v1/heroes; conservo la anterior",
+    "tiers": "133 héroes (bajada fuera del bot: mlbb.gg contesta 403 a GitHub)",
     "failed": [],
     "imagenes": {
       "objetos": {
@@ -11440,7 +11440,7 @@
   },
   "tiers": {
     "fuente": "mlbb.gg",
-    "fecha": "2026-11-15T18:21:42.920Z",
+    "fecha": "2026-11-16T07:54:38.010Z",
     "tiers": {
       "Miya": "S",
       "Balmond": "C",
