@@ -307,6 +307,7 @@ export function crearServidor({
     respuesta: () => { const r = respuesta; respuesta = null; return r; },
     aprenderDe: (verdad) => aprendizaje.corregir(verdad),
     recortesDe: (ids) => aprendizaje.recortesDe(ids),
+    cabeceraDe: (ids) => aprendizaje.cabeceraDe(ids),
     aprenderDeArreglos: (drafts) => aprendizaje.aprenderDeArreglos(drafts),
     estado,
     /** Un vistazo al minimapa si la burbuja tiene algo que enseñar y nadie ha capturado en `VISTAZO_MS`. null si no tocaba. */

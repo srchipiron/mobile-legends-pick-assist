@@ -96,6 +96,26 @@ export function recorteDePicks(img, { tope = TOPE_RECORTE } = {}) {
   return null;
 }
 
+/** [M] La cabecera del draft (4.0.1): la franja de arriba, el 15 % del alto (226 de 1504 px), donde va la fila de baneos; los paneles con los nombres empiezan en y = 228 (`CAJAS_ALIADOS`). */
+export const REGION_CABECERA = [0, 0, 1, 0.15];
+/** [D] A 1200 px de ancho (la mitad de la referencia), en base64 por debajo de `TOPE_RECORTE_BYTES` con sitio para el resto del mensaje. */
+export const ANCHO_CABECERA = 1200;
+export const TOPE_CABECERA = 115000;
+
+/**
+ * La cabecera de una captura del draft para volver a medir la fila de baneos
+ * (`BANEOS` de leer.mjs) cuando el juego la cambia: SOLO la franja de arriba
+ * (nada de los paneles ni de los nombres), con la paleta de la imagen. Si no
+ * cabe, a la mitad de ancho. null si ni a 150 px cabe.
+ */
+export function cabeceraDeDraft(img, { tope = TOPE_CABECERA } = {}) {
+  for (let ancho = ANCHO_CABECERA; ancho >= 150; ancho = Math.floor(ancho / 2)) {
+    const b64 = escribirPng(paletaAdaptativa(reducir(img, { ancho, region: REGION_CABECERA })), () => 4, { paleta: true }).toString('base64');
+    if (b64.length <= tope) return b64;
+  }
+  return null;
+}
+
 /** Lo que leyó el lector en cada hueco: el nombre (si pasa del umbral), el candidato y su parecido. */
 const plano = (l) => ({ nombre: l.nombre ?? null, candidato: l.candidato ?? l.nombre ?? null, parecido: Math.round((l.parecido ?? 0) * 100) / 100 });
 

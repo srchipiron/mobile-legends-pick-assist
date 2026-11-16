@@ -22,7 +22,7 @@ import { ficheroAprendido, cargarLoAprendido, guardarAprendido, ARREGLOS_POR_TAN
 import { crearSolo, datosDelSolo } from './solo.mjs';
 import { lectorDeDatos, bajarDatos, leerComunidad, leerSaludDeLaApk, ajustesDeLaTablet, REFRESCAR_DATOS_MS, FICHEROS } from './datos.mjs';
 import { partidasDeLaTablet, sanearEdicion, ultimasDeTabla, listaParaLaApk, subirLoDeLaTablet } from './partidas.mjs';
-import { parteDeSalud, recorteParaSubir, finalParaSubir, comprobanteParaSubir, draftsArreglados, claveDelLector, PARTE_CADA_MS, ARREGLOS_CADA_MS, DIAS_DE_RECORTES, FINAL_DEL_REGISTRO_BYTES } from './subidas.mjs';
+import { parteDeSalud, recorteParaSubir, finalParaSubir, comprobanteParaSubir, cabeceraParaSubir, cabeceraSubidaHoy, apuntarCabecera, draftsArreglados, claveDelLector, PARTE_CADA_MS, ARREGLOS_CADA_MS, DIAS_DE_RECORTES, FINAL_DEL_REGISTRO_BYTES } from './subidas.mjs';
 
 
 /** [C] La captura solo puede venir de la APK, en 127.0.0.1. */
@@ -148,6 +148,14 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     (r) => `Pantallas del final subidas para ver por qué no se reconoció (${r.capturas.length}).`);
   servidor.subirComprobanteDe = (c) => subirA('Subir el comprobante', claveConLaQueSube(), async () => comprobanteParaSubir({ ...c, version: versionDeLaApk() }) ?? 'la tabla no tiene franja',
     (r) => `Comprobante de la partida subido (${r.gane ? 'ganada' : 'perdida'}).`);
+  // La cabecera de un draft sin la fila de baneos (4.0.1), con la clave del lector: una al día, para volver a medir `BANEOS`.
+  servidor.subirCabeceraDe = async (d) => {
+    if (cabeceraSubidaHoy(casa)) return null;
+    return subirA('Subir la cabecera del draft', claveDelLector(casa), async () => {
+      const captura = await servidor.interno.cabeceraDe(d?.ids);
+      return (captura && cabeceraParaSubir({ desde: d?.desde, captura, version: versionDeLaApk() })) ?? (captura ? 'no cabe o sin el draft' : 'ninguna captura de los picks se pudo recortar');
+    }, (r) => { apuntarCabecera(casa); return `Cabecera del draft subida para volver a medir la fila de baneos (${r.capturas[0].id}).`; });
+  };
   const intentar = (fn) => (x) => { fn(x).catch((e) => registrar(`Subir a la base de datos: no se pudo (${e.message}).`)); };
 
   solo = crearSolo({
@@ -161,6 +169,7 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     alFinalSinLeer: intentar(servidor.subirFinalDe),
     alApuntarTabla: intentar(servidor.subirComprobanteDe),
     alSinLeer: intentar(servidor.subirRecortesDe),
+    alSinBaneos: intentar(servidor.subirCabeceraDe),
     // Tus habituales: la maestría del móvil más lo que la tablet apuntó DESPUÉS (lo de antes ya va dentro).
     maestriaDe: () => { const m = ajustes.delMovil(); return maestriaEfectiva(m?.maestria ?? {}, partidas.todas().filter((p) => p.t > (m?.cuando ?? 0))); },
   });

@@ -218,7 +218,7 @@ const sinLoDeLaTablet = ({ desde, resultadoDe, leida, ...resto }) => resto;
 export function crearSolo({
   interno, ajustes, datosPara, ahora = () => Date.now(), registrar = () => {}, intervalos = INTERVALOS_SOLO, programar = setTimeout, cancelar = clearTimeout,
   apuntar = null, maestriaDe = () => null, alCorregir = null, numerosDe = () => null, alSinLeer = null, guardarSinResultado = null, alFinalSinLeer = null, alApuntarTabla = null,
-  partidaGuardada = () => null, alCambiarResultado = null,
+  alSinBaneos = null, partidaGuardada = () => null, alCambiarResultado = null,
 }) {
   let draft = draftVacio();
   /** La partida del draft que se cerró, mientras se vigila su final (la del último draft cerrado sigue en `ultima`). */
@@ -343,7 +343,7 @@ export function crearSolo({
     if (!r?.ok) { interno.ponerFase?.(null); return intervalos.error; }
     const antes = draft;
     draft = acumularDraft(draft, r.lectura, ahora());
-    interno.protegerLecturas?.(draft.cerrado ? [] : draft.ids);
+    interno.protegerLecturas?.(draft.cerrado ? [] : [...draft.ids, ...(draft.idsSinFila ?? [])]);
     resumen.lecturas += 1;
     // Empezó otro draft sin saber cómo acabó la partida de antes: se pregunta.
     if (!draft.cerrado && vigilada && !vigilada.apuntada) {
@@ -356,6 +356,9 @@ export function crearSolo({
       if (new Set(draft.baneos).size < BANEOS_EN_EL_DRAFT) {
         resumen.sinBaneos += 1;
         registrar('Este draft se cerró sin leer los baneos (se abrió por los picks); si pasa en todas, el juego ha cambiado su pantalla.');
+        // La cabecera de una captura de sus picks, para volver a medir la fila (4.0.1): la sube y la limita en-tablet.mjs.
+        const ids = draft.idsSinFila?.length ? draft.idsSinFila : draft.ids;
+        if (ids.length) { try { alSinBaneos?.({ desde: draft.desde, ids: ids.slice() }); } catch (e) { registrar(`No se pudo preparar la cabecera del draft: ${e.message}`); } }
       }
       const datos = datosPara(a.rango);
       const vista = conCorreccion(draft);

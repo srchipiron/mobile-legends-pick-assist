@@ -2,8 +2,10 @@
  * Lo que sale de la tablet a la base de datos de Javi (supabase/esquema.sql),
  * y siempre limpio: el parte de salud sin IPs ni secretos, los recortes de un
  * draft sin los nombres de los jugadores, las pantallas del final y el
- * comprobante con todo lo de debajo de la cabecera en negro. Y lo que vuelve:
- * los drafts que arreglaste, para aprender. Puro salvo la clave del lector.
+ * comprobante con todo lo de debajo de la cabecera en negro, la cabecera del
+ * draft (solo la franja de la fila de baneos). Y lo que vuelve:
+ * los drafts que arreglaste, para aprender. Puro salvo la clave del lector
+ * y el día de la última cabecera.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -119,6 +121,28 @@ export function comprobanteParaSubir({ t, gane, fotograma, version = null }) {
   if (!tira) return null;
   const recorte = { v: 1, tipo: 'resultado', version: typeof version === 'string' ? version : null, t, gane, parecido: Number.isFinite(fotograma.resultadoParecido) ? fotograma.resultadoParecido : null, capturas: [{ id: fotograma.id, tira }] };
   return cabe(recorte) ? recorte : null;
+}
+
+/**
+ * La cabecera de un draft que se cerró sin leer la fila de baneos (4.0.1):
+ * la franja de arriba de UNA captura de sus picks (`cabeceraDeDraft`, sin
+ * paneles ni nombres), para volver a medir `BANEOS`. Sin `partida` (no es un
+ * recorte del draft). null si no tiene forma o no cabe.
+ */
+export function cabeceraParaSubir({ desde, captura, version = null }) {
+  if (!Number.isFinite(desde) || typeof captura?.id !== 'string' || !ID_DE_LECTURA.test(captura.id) || !b64(captura.cabecera)) return null;
+  const recorte = { v: 1, tipo: 'cabecera', version: typeof version === 'string' ? version : null, desde, capturas: [{ id: captura.id, cabecera: captura.cabecera }] };
+  return cabe(recorte) ? recorte : null;
+}
+
+/** [D] Como mucho una cabecera al día: el día (UTC) de la última subida, en `cabecera.json`. */
+export const ficheroCabecera = (casa) => join(casa, 'cabecera.json');
+export const diaDe = (t) => new Date(t).toISOString().slice(0, 10);
+export function cabeceraSubidaHoy(casa, ahora = Date.now()) {
+  try { return JSON.parse(readFileSync(ficheroCabecera(casa), 'utf8'))?.dia === diaDe(ahora); } catch { return false; }
+}
+export function apuntarCabecera(casa, ahora = Date.now()) {
+  try { writeFileSync(ficheroCabecera(casa), JSON.stringify({ dia: diaDe(ahora) })); } catch { /* sin disco: otra mañana */ }
 }
 
 /**

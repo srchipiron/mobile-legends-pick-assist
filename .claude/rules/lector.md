@@ -142,7 +142,7 @@ tiene que estar en `copiarLector` (build.gradle.kts) y en `paths:` de `apk.yml`.
 - Cierra con `LECTURAS_EN_PARTIDA` (2) lecturas con minimapa; la burbuja se
   esconde con las mismas. `faseDe`: «fuera» solo tras `LECTURAS_PARA_FUERA`.
 - Guarda hasta `IDS_POR_DRAFT` capturas espaciadas `SEPARACION_IDS_MS`;
-  `protegerLecturas` las saca de la poda mientras el draft está abierto.
+  `protegerLecturas` las saca de la poda (abierto). Sin fila, las `IDS_SIN_FILA` primeras, para la cabecera.
 
 ## La partida y el final
 
@@ -177,7 +177,10 @@ clave (si el móvil la mandó) o la del lector (`clave-lector.txt`); el parte de
 salud cada `PARTE_CADA_MS` con la del lector, sin IPs, código ni claves y con
 tope `TOPE_PARTE_BYTES`; recortes del draft sin leer entero (clave del lector);
 pantallas del final y el comprobante de cada partida de la tabla (tu clave:
-el móvil los lee con `mis_recortes`). Cada salida deja su línea; las de fallo
+el móvil los lee con `mis_recortes`). Un draft cerrado sin la fila (4.0.1,
+`alSinBaneos`) sube su cabecera (`tipo: 'cabecera'`, clave del lector): SOLO
+`REGION_CABECERA` (15 % de arriba) a 1200 px, en el hilo de los recortes, una
+al día (`cabecera.json`, al subir). Cada salida deja su línea; las de fallo
 dicen «no se pudo» (`LINEA_DE_ERROR`, la misma en `revisar-tablet.mjs`).
 
 ## La APK (`android/`)

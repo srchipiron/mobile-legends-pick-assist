@@ -42,6 +42,8 @@ export function medirRecortes({ recortes = [], partidas = [], caras = carasGuard
     if (d.tipo === 'final') { salida.finales += 1; continue; }
     // Los comprobantes de las partidas apuntadas por la tabla: no son del draft.
     if (d.tipo === 'resultado') { salida.comprobantes += 1; continue; }
+    // La cabecera de un draft sin la fila de baneos (4.0.1): para medir la fila a mano, no las caras.
+    if (d.tipo === 'cabecera') continue;
     salida.recortes += 1;
     const p = porT.get(d.partida);
     if (!p) { salida.sinPartida += 1; continue; }

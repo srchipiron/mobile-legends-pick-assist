@@ -20,13 +20,13 @@ import { RETENCION_CAPTURAS_MS, CAPTURAS_A_MIRAR } from '../../scripts/lector/ca
 import { ARREGLOS_POR_TANDA } from '../../scripts/lector/aprendizaje.mjs';
 import { lectorDeDatos, leerSaludDeLaApk, ajustesDeLaTablet, leerComunidad } from '../../scripts/lector/datos.mjs';
 import { ultimasDeTabla, partidasDeLaTablet, subirLoDeLaTablet, TOPE_PARTIDAS_TABLET, TOPE_SIN_RESULTADO, sanearEdicion, semanaParaLaApk } from '../../scripts/lector/partidas.mjs';
-import { lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, finalParaSubir, partidaSinResultado, draftsArreglados, franjaSinNombres, FRACCION_CABECERA, comprobanteParaSubir } from '../../scripts/lector/subidas.mjs';
+import { lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, finalParaSubir, partidaSinResultado, draftsArreglados, franjaSinNombres, FRACCION_CABECERA, comprobanteParaSubir, cabeceraParaSubir, ficheroCabecera, diaDe } from '../../scripts/lector/subidas.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { claveDeJugadorValida, bajarMisRecortes, subirParte } from '../../src/comun/basedatos.js';
 import { comprobantes } from '../../src/app/revisar.js';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { capturaCompletaPng, capturaCompleta, VERDAD } from '../fixtures/juego/captura.mjs';
-import { recorteDePicks } from '../../scripts/lector/recortes.mjs';
+import { recorteDePicks, cabeceraDeDraft, REGION_CABECERA, ANCHO_CABECERA } from '../../scripts/lector/recortes.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
 import { reconocerResultado } from '../../scripts/lector/resultado.mjs';
 
@@ -543,6 +543,76 @@ test('el comprobante de cada partida apuntada por la tabla (3.101.0): su franja 
   ok(/alApuntarTabla: intentar\(servidor\.subirComprobanteDe\)/.test(fuente), 'crearSolo no recibe alApuntarTabla: los comprobantes no se suben');
 });
 
+test('la cabecera de un draft sin la fila de baneos (4.0.1): la tablet sube SOLA la franja de arriba de sus picks, una al día y con la clave del lector', async () => {
+  // Lo que sube es SOLO la franja de arriba: su alto, devuelto a la pantalla, no pasa del 15 % (los paneles con nombres empiezan en y = 228 de 1504).
+  const pantalla = { ancho: 2400, alto: 1504 };
+  const deLaPantalla = (b64) => { const v = leerPng(Buffer.from(b64, 'base64')); return { ...v, fraccion: (v.alto * (pantalla.ancho / v.ancho)) / pantalla.alto, unPixel: pantalla.ancho / v.ancho / pantalla.alto }; };
+  eq(REGION_CABECERA[3], 0.15);
+  const medida = deLaPantalla(cabeceraDeDraft(capturaCompleta()));
+  ok(medida.ancho === ANCHO_CABECERA && medida.fraccion <= 0.15 + medida.unPixel && medida.alto * 2 < 228, `la cabecera no es la franja de arriba a ${ANCHO_CABECERA}: ${medida.ancho}×${medida.alto}`);
+  eq(cabeceraParaSubir({ desde: 5, captura: { id: '../x', cabecera: 'iVBORw0KGgo=' } }), null, 'sube una captura con un id sin forma');
+  eq(cabeceraParaSubir({ desde: 5, captura: { id: 'lectura-20261116-001', cabecera: 'no <es> png' } }), null, 'sube algo que no es un PNG');
+  eq(cabeceraParaSubir({ desde: null, captura: { id: 'lectura-20261116-001', cabecera: 'iVBORw0KGgo=' } }), null, 'sube sin el draft');
+  eq(cabeceraParaSubir({ desde: 5, captura: { id: 'lectura-20261116-001', cabecera: 'A'.repeat(TOPE_RECORTE_BYTES) } }), null, 'sube una que no cabe');
+  // De punta a punta: un draft que se abre por los picks (sin la fila) y se cierra con la partida.
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-cabecera-'));
+  const s = supabaseFalso();
+  mkdirSync(join(casa, 'datos'), { recursive: true });
+  writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
+  writeFileSync(join(casa, 'salud.json'), JSON.stringify({ apk: '4.0.1' }));
+  const tuya = 'S'.repeat(43);
+  writeFileSync(join(casa, 'solo-movil.json'), JSON.stringify({ linea: 'roam', clave: tuya }));
+  const apk = await apkDePega();
+  apk.poner(crudoDe(capturaCompletaPng({ conBaneos: false })));
+  const servidor = await principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  const subidasDeRecortes = () => s.llamadas.filter((l) => l.funcion === 'subir_recorte').length;
+  // El registro de la tablet es su consola (la APK lo guarda en lector.log).
+  const registro = [], consola = console.log;
+  console.log = (m) => { registro.push(String(m)); };
+  try {
+    await servidor.solo.tic();
+    await servidor.interno.guardando();
+    const abierto = servidor.solo.estado();
+    ok(abierto.enemigos.includes('Clint') && abierto.baneos.length === 0, `la captura sin fila no abre el draft por los picks: ${JSON.stringify(abierto)}`);
+    apk.poner(crudoDe(leerFichero(join(RAIZ, 'pruebas/fixtures/juego/pantallas/juego-17.png'))));
+    await servidor.solo.tic();
+    await servidor.solo.tic();
+    for (let i = 0; i < 300 && !s.recortes.length; i += 1) await new Promise((r) => setTimeout(r, 50));
+    eq(s.recortes.length, 1, 'el draft sin la fila de baneos no sube su cabecera');
+    const r = s.recortes[0];
+    ok(r.clave === claveDelLector(casa) && r.clave !== tuya, 'la cabecera no va con la clave del lector');
+    eq(JSON.stringify(Object.keys(r.d)), JSON.stringify(['v', 'tipo', 'version', 'desde', 'capturas']), 'la cabecera no tiene su forma');
+    ok(r.d.v === 1 && r.d.tipo === 'cabecera' && r.d.version === '4.0.1' && r.d.desde === abierto.desde && !('partida' in r.d), JSON.stringify({ ...r.d, capturas: undefined }));
+    ok(r.d.capturas.length === 1 && /^lectura-/.test(r.d.capturas[0].id) && JSON.stringify(Object.keys(r.d.capturas[0])) === '["id","cabecera"]', 'no es UNA captura con solo su cabecera');
+    ok(Buffer.byteLength(JSON.stringify(r.d)) <= TOPE_RECORTE_BYTES, `la cabecera no cabe en subir_recorte: ${Buffer.byteLength(JSON.stringify(r.d))}`);
+    const subida = deLaPantalla(r.d.capturas[0].cabecera);
+    ok(subida.ancho === ANCHO_CABECERA && subida.fraccion <= 0.15 + subida.unPixel, `sube más que la franja de arriba: ${subida.ancho}×${subida.alto} (${subida.fraccion.toFixed(3)} de la pantalla)`);
+    const texto = JSON.stringify(r.d);
+    for (const secreto of [CODIGO, SECRETO, r.clave, tuya, casa]) ok(!texto.includes(secreto), `la cabecera lleva un secreto: ${secreto.slice(0, 6)}…`);
+    eq(JSON.parse(leerFichero(ficheroCabecera(casa), 'utf8')).dia, diaDe(Date.now()), 'no apunta el día de la cabecera');
+    ok(registro.some((l) => /^Cabecera del draft subida para volver a medir la fila de baneos \(lectura-/.test(l)), `subir la cabecera no deja su línea: ${registro.slice(-3).join(' | ')}`);
+    // Otra el mismo día no sale (ni llega a llamar a la base de datos).
+    const antes = subidasDeRecortes();
+    eq(await servidor.subirCabeceraDe({ desde: abierto.desde + 1, ids: [r.d.capturas[0].id] }), null, 'sube otra cabecera el mismo día');
+    eq(subidasDeRecortes(), antes, 'la segunda cabecera del día llama a la base de datos');
+  } finally { console.log = consola; servidor.close(); apk.cerrar(); }
+  // Si la subida falla, lo dice con «no se pudo» y no apunta el día: se reintenta con el siguiente draft.
+  const casa2 = mkdtempSync(join(tmpdir(), 'en-tablet-cabecera-mal-'));
+  mkdirSync(join(casa2, 'datos'), { recursive: true });
+  mkdirSync(join(casa2, 'capturas'), { recursive: true });
+  writeFileSync(join(casa2, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: 'sb_publishable_otra_clave_que_no_vale' }));
+  writeFileSync(join(casa2, 'capturas', 'lectura-20261116-001.png'), capturaCompletaPng({ conBaneos: false }));
+  const apk2 = await apkDePega();
+  const servidor2 = await principalDePrueba({ LECTOR_INTERNO: apk2.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa2, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  try {
+    const mal = await servidor2.subirCabeceraDe({ desde: 5, ids: ['lectura-20261116-001'] });
+    ok(/^Subir la cabecera del draft: no se pudo/.test(mal ?? '') && LINEA_DE_ERROR.test(mal), `el fallo al subir la cabecera no dice «no se pudo»: ${mal}`);
+    ok(!existsSync(ficheroCabecera(casa2)), 'una cabecera que no subió cuenta como la del día');
+    const sinCaptura = await servidor2.subirCabeceraDe({ desde: 5, ids: ['lectura-no-existe'] });
+    ok(/no se pudo \(ninguna captura/.test(sinCaptura ?? ''), `sin captura no lo dice: ${sinCaptura}`);
+  } finally { servidor2.close(); apk2.cerrar(); }
+});
+
 test('las capturas del draft que lee el modo solo no se podan mientras está abierto (3.81.4)', async () => {
   const carpeta = mkdtempSync(join(tmpdir(), 'en-tablet-poda-draft-'));
   const ids = ['lectura-2026-10-27T22-20-00-000Z-1', 'lectura-2026-10-27T22-20-04-000Z-2', 'lectura-2026-10-27T22-20-08-000Z-3'];
@@ -601,6 +671,7 @@ test('el modo solo de la tablet lleva a dónde va cada cosa: la corrección, las
   ok(/alFinalSinLeer: intentar\(servidor\.subirFinalDe\)/.test(llamada), 'crearSolo no recibe alFinalSinLeer: las pantallas del final no se suben');
   ok(/alSinLeer: intentar\(servidor\.subirRecortesDe\)/.test(llamada), 'crearSolo no recibe alSinLeer: los recortes del draft no se suben');
   ok(/alApuntarTabla: intentar\(servidor\.subirComprobanteDe\)/.test(llamada), 'crearSolo no recibe alApuntarTabla: los comprobantes no se suben');
+  ok(/alSinBaneos: intentar\(servidor\.subirCabeceraDe\)/.test(llamada), 'crearSolo no recibe alSinBaneos: la cabecera del draft sin fila no se sube');
   ok(/alCambiarResultado: /.test(llamada) && /partidaGuardada: /.test(llamada), 'crearSolo no sabe arreglar la partida apuntada (POST /resultado)');
 });
 

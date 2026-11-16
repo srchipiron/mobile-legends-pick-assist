@@ -27,10 +27,11 @@ export const VERDAD = {
   tuyoFila: 4,
 };
 
-export function capturaCompleta({ conPicks = true, columna = 1, conAliados = true, filaAmarilla = VERDAD.tuyoFila, filasAmarillas = null } = {}) {
+export function capturaCompleta({ conBaneos = true, conPicks = true, columna = 1, conAliados = true, filaAmarilla = VERDAD.tuyoFila, filasAmarillas = null } = {}) {
   const ancho = 2400, alto = 1504, rgba = new Uint8Array(ancho * alto * 4);
   const tira = leerPng(readFileSync(aqui('baneos.png')));
-  for (let y = 0; y < tira.alto; y++) for (let x = 0; x < tira.ancho; x++) {
+  // Sin la fila (`conBaneos: false`), como desde el parche del 11-11-2026: el draft se abre por los picks.
+  if (conBaneos) for (let y = 0; y < tira.alto; y++) for (let x = 0; x < tira.ancho; x++) {
     const dx = x < 720 ? x : x + 960, dy = y + 60;
     rgba.set(tira.rgba.subarray((y * tira.ancho + x) * 4, (y * tira.ancho + x) * 4 + 4), (dy * ancho + dx) * 4);
   }

@@ -20,10 +20,12 @@ export const PICKS_SIN_BANEOS = 4;
 /** [D] Las capturas que recuerda un draft para aprender, y lo que las separa (≈80 s de draft con la última siempre). */
 export const IDS_POR_DRAFT = 20;
 export const SEPARACION_IDS_MS = 4000;
+/** [D] Las primeras capturas de un draft abierto SIN la fila de baneos (fase de picks): solo para la cabecera que mide la fila (4.0.1), nunca para aprender. */
+export const IDS_SIN_FILA = 2;
 /** [D] Lecturas seguidas sin leer a nadie para decir «fuera» (el botón tocable de la APK solo sale fuera). */
 export const LECTURAS_PARA_FUERA = 2;
 
-export const draftVacio = () => ({ desde: null, baneos: [], banHuecos: Array(10).fill(null), enemigos: Array(5).fill(null), aliados: Array(5).fill(null), tuyoFila: -1, votosFila: [0, 0, 0, 0, 0], cerrado: false, cerradoEn: null, enPartida: 0, actividad: null, ids: [], porPicks: false });
+export const draftVacio = () => ({ desde: null, baneos: [], banHuecos: Array(10).fill(null), enemigos: Array(5).fill(null), aliados: Array(5).fill(null), tuyoFila: -1, votosFila: [0, 0, 0, 0, 0], cerrado: false, cerradoEn: null, enPartida: 0, actividad: null, ids: [], idsSinFila: [], porPicks: false });
 
 /** Añade la captura a las del draft: la última siempre, y entre las de antes al menos `SEPARACION_IDS_MS`. */
 export function conCaptura(ids = [], id) {
@@ -107,10 +109,12 @@ export function acumularDraft(estado, lectura, ahora) {
   const tuyoFila = filaVotada(votosFila, e.tuyoFila);
   const cambio = nuevosBaneos.length !== e.baneos.length || enem.cambio || ali.cambio || tuyoFila !== e.tuyoFila;
   // [M] Solo se aprende de la pantalla del draft: capturas con la fila de baneos leída.
-  const ids = typeof lectura.id === 'string' && ID_DE_LECTURA.test(lectura.id) && deFila ? conCaptura(e.ids ?? [], lectura.id) : e.ids ?? [];
+  const conId = typeof lectura.id === 'string' && ID_DE_LECTURA.test(lectura.id);
+  const ids = conId && deFila ? conCaptura(e.ids ?? [], lectura.id) : e.ids ?? [];
+  const idsSinFila = conId && !deFila && (e.idsSinFila ?? []).length < IDS_SIN_FILA ? [...(e.idsSinFila ?? []), lectura.id] : e.idsSinFila ?? [];
   return {
     ...e, desde: e.desde ?? (algo ? ahora : null), baneos: nuevosBaneos, banHuecos: (e.banHuecos ?? Array(10).fill(null)).map((x, i) => x ?? huecosFila[i]),
-    enemigos: enem.huecos, aliados: ali.huecos, tuyoFila, votosFila, enPartida: 0, actividad: cambio ? ahora : e.actividad ?? (algo ? ahora : null), ids, porPicks: !!(e.porPicks || porPicks),
+    enemigos: enem.huecos, aliados: ali.huecos, tuyoFila, votosFila, enPartida: 0, actividad: cambio ? ahora : e.actividad ?? (algo ? ahora : null), ids, idsSinFila, porPicks: !!(e.porPicks || porPicks),
   };
 }
 

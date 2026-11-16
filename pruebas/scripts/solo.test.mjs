@@ -263,14 +263,39 @@ test('sin la fila de baneos, el draft se abre por los picks (3.101.1): la burbuj
     leer: async () => ({ ok: true, lectura: respuesta }), ponerConsejo: (c) => consejos.push(c),
     vigilar: () => {}, final: () => null, ponerResumen: () => {},
   };
-  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, registrar: (l) => registro.push(l) });
+  const cabeceras = [], protegidas = [];
+  interno.protegerLecturas = (ids) => protegidas.push(ids);
+  const solo = crearSolo({ interno, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, registrar: (l) => registro.push(l), alSinBaneos: (x) => cabeceras.push(x) });
   await solo.tic();
   ok(consejos.length === 1 && /Fase de picks/.test(consejos[0].detalle ?? ''), `sin baneos no hay consejo en la burbuja: ${JSON.stringify(consejos)}`);
+  // La captura de los picks (4.0.1) no es para aprender, pero se guarda para la cabecera y no se poda mientras el draft está abierto.
+  eq(JSON.stringify(protegidas.at(-1)), JSON.stringify([respuesta.id]), 'la captura de los picks de un draft sin fila se poda antes de cerrarse');
+  const desde = solo.estado().desde;
+  ok(Number.isFinite(desde), `el draft abierto por los picks no dice desde cuándo: ${desde}`);
+  respuesta = { ...l743, id: 'lectura-2026-11-11T21-40-02-000Z-744' };
+  t += 1500; await solo.tic();
+  respuesta = { ...l743, id: 'lectura-2026-11-11T21-40-04-000Z-745' };
+  t += 1500; await solo.tic();
   respuesta = { partida: true, rapida: true };
-  t += 5000; await solo.tic(); t += 5000; await solo.tic();
+  t += 5000; await solo.tic();
+  eq(cabeceras.length, 0, 'pide la cabecera antes de cerrarse el draft');
+  t += 5000; await solo.tic();
   const r = solo.resumen();
   ok(r.partidas === 1 && r.sinBaneos === 1, `la partida sin baneos no se cuenta: ${JSON.stringify(r)}`);
   ok(registro.some((l) => /sin leer los baneos/.test(l)), 'no lo dice en el registro');
+  // Al cerrarse sin la fila, la cabecera de sus primeras capturas de los picks: una vez, con su draft.
+  eq(JSON.stringify(cabeceras), JSON.stringify([{ desde, ids: ['lectura-2026-11-11T21-40-00-000Z-743', 'lectura-2026-11-11T21-40-02-000Z-744'] }]), 'el draft sin baneos no pide su cabecera, o no la de sus picks');
+  t += 20000; await solo.tic();
+  eq(cabeceras.length, 1, 'pide la cabecera otra vez del mismo draft');
+  // Con la fila leída no se pide ninguna: la fila se lee y no hay nada que medir.
+  const conFila = [];
+  let otra = { ...lectura({ tuyos: [N('Hirara'), N('Belerick')], enemigos: [N('Clint'), N('Khufra'), V, V, V], aliados: [N('Gord'), N('Selena'), V, V, V] }), id: 'lectura-2026-11-16T20-00-00-000Z-1' };
+  const solo2 = crearSolo({ interno: { ...interno, leer: async () => ({ ok: true, lectura: otra }) }, ajustes: () => ({ activo: true, linea: 'roam', rango: 'glory', idioma: 'es' }), datosPara: () => datos, ahora: () => t, alSinBaneos: (x) => conFila.push(x) });
+  await solo2.tic();
+  otra = { partida: true, rapida: true };
+  t += 5000; await solo2.tic(); t += 5000; await solo2.tic();
+  ok(solo2.resumen().partidas === 1 && solo2.resumen().sinBaneos === 0, `el draft con la fila no se cierra o se cuenta sin baneos: ${JSON.stringify(solo2.resumen())}`);
+  eq(conFila.length, 0, 'un draft con la fila de baneos leída pide la cabecera');
 });
 
 test('los baneos fantasma de la fila rota (3.101.3): un baneo suelto no entra, y un héroe elegido no puede estar baneado', () => {
