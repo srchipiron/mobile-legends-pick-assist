@@ -1,23 +1,23 @@
 {
-  "generatedAt": "2026-11-16T13:47:48.457Z",
+  "generatedAt": "2026-11-17T14:33:56.410Z",
   "rank": "glory",
   "relaciones": {
     "rango": "mythic",
     "pedido": "glory",
     "coherencia": {
-      "counters": 0.8565276270933059,
-      "synergies": 0.7609885943357052
+      "counters": 0.85313494279677,
+      "synergies": 0.7538011763885836
     },
     "ultima": {
       "rango": "mythic",
       "coherencia": {
-        "counters": 0.8565276270933059,
-        "synergies": 0.7609885943357052
+        "counters": 0.85313494279677,
+        "synergies": 0.7538011763885836
       },
-      "fecha": "2026-11-17T00:57:31.452Z"
+      "fecha": "2026-11-17T14:33:56.382Z"
     },
-    "motivo": "los cruces y parejas de glory no se parecen a los de mythic (r=0.76): pocas partidas en glory, normal unos días después de un reinicio de temporada",
-    "descargada": "2026-11-17T00:57:31.484Z"
+    "motivo": "los cruces y parejas de glory no se parecen a los de mythic (r=0.75): pocas partidas en glory, normal unos días después de un reinicio de temporada",
+    "descargada": "2026-11-17T14:33:56.410Z"
   },
   "ranks": [
     "epic",
@@ -29,7 +29,7 @@
   "avgByRank": {
     "epic": 0.5033024060150375,
     "legend": 0.5010614135338347,
-    "mythic": 0.5004821428571429,
+    "mythic": 0.5004332481203008,
     "glory": 0.4962235563909773
   },
   "heroCount": 133,
@@ -1520,7 +1520,8 @@
         "Burst"
       ],
       "kitTexto": "dc71929b",
-      "kitCifras": "818e65b6"
+      "kitCifras": "818e65b6",
+      "habilidades": []
     },
     {
       "name": "Ling",
@@ -4128,43 +4129,39 @@
       "talentos": "GET https://arena.rone.dev/api/academy/emblems (size, index, lang)"
     },
     "frescos": [
-      "epic",
       "legend",
+      "mythic",
       "glory"
     ],
     "frescosRecursos": {
-      "relaciones": 131,
-      "parejas": 131,
+      "relaciones": 132,
+      "parejas": 132,
       "pedidas": 133
     },
-    "conservado": true,
+    "conservado": false,
     "relations": {
       "rutaCounter": "GET https://arena.rone.dev/api/academy/heroes/{hero_identifier}/counters",
       "conId": 133,
       "porNombre": 0,
-      "ok": 131,
+      "ok": 132,
       "errores": [
-        "Lolita: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and ",
-        "Diggie: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and ",
-        "Granger: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and ",
-        "Nana: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and "
+        "Barats: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and ",
+        "Barats: HTTP 403 · <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta name=\"robots\" content=\"noindex,nofollow\"><meta name=\"viewport\" content=\"width=device-width,initial-scal"
       ],
       "ejemplos": [
         "Akai vs Helcurt 49.0%, Kadita 51.0%, Carmilla 49.2%",
         "Atlas vs Julian 50.7%, Fanny 47.4%, Sun 51.0%"
       ],
       "rutaCambiada": [],
-      "reintentados": 5,
-      "recuperados": 3
+      "reintentados": 1,
+      "recuperados": 0
     },
     "speciality": {
       "pedidos": 133,
-      "ok": 128,
+      "ok": 131,
       "errores": [
-        "Sora: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and ",
-        "Popol and Kupa: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and ",
-        "Dyrroth: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and ",
-        "Hanabi: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and "
+        "Silvanna: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and ",
+        "Moskov: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and "
       ]
     },
     "rutasMedidas": {
@@ -4172,7 +4169,7 @@
       "compatibility": "137 pares · https://arena.rone.dev/api/academy/heroes/{hero_identifier}/teammates"
     },
     "dano": {
-      "ok": 128,
+      "ok": 131,
       "conservados": 133,
       "sin": 0
     },
@@ -4198,16 +4195,16 @@
       "curvasConservadas": 0
     },
     "rangos": {
-      "epic": "133 héroes",
+      "epic": "fallo: HTTP 403 · <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" conten",
       "legend": "133 héroes",
-      "mythic": "fallo: HTTP 403 · <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" conten",
+      "mythic": "133 héroes",
       "glory": "133 héroes"
     },
     "reintentoEstadisticas": {
       "vueltas": 1,
       "recuperados": [],
       "sinRecuperar": [
-        "mythic"
+        "epic"
       ]
     },
     "respaldoReintentado": null,
@@ -6637,801 +6634,801 @@
     },
     "mythic": {
       "Masha": {
-        "winRate": 0.588041,
-        "pickRate": 0.00341,
-        "banRate": 0.174145,
+        "winRate": 0.583721,
+        "pickRate": 0.003279,
+        "banRate": 0.168745,
         "heroId": 88
       },
       "Argus": {
-        "winRate": 0.575199,
-        "pickRate": 0.005032,
-        "banRate": 0.011403,
+        "winRate": 0.575661,
+        "pickRate": 0.004968,
+        "banRate": 0.011463,
         "heroId": 45
       },
       "Marcel": {
-        "winRate": 0.573646,
-        "pickRate": 0.001945,
-        "banRate": 0.191505,
+        "winRate": 0.573474,
+        "pickRate": 0.00193,
+        "banRate": 0.189716,
         "heroId": 132
       },
-      "Rafaela": {
-        "winRate": 0.55033,
-        "pickRate": 0.007308,
-        "banRate": 0.145756,
-        "heroId": 14
-      },
-      "Gloo": {
-        "winRate": 0.549941,
-        "pickRate": 0.006177,
-        "banRate": 0.534716,
-        "heroId": 104
-      },
-      "Lolita": {
-        "winRate": 0.549661,
-        "pickRate": 0.000716,
-        "banRate": 0.002241,
-        "heroId": 20
-      },
       "Minotaur": {
-        "winRate": 0.549345,
-        "pickRate": 0.007288,
-        "banRate": 0.083397,
+        "winRate": 0.550065,
+        "pickRate": 0.007348,
+        "banRate": 0.084165,
         "heroId": 19
       },
-      "Khufra": {
-        "winRate": 0.54905,
-        "pickRate": 0.001973,
-        "banRate": 0.006286,
-        "heroId": 78
+      "Lolita": {
+        "winRate": 0.550032,
+        "pickRate": 0.000718,
+        "banRate": 0.00226,
+        "heroId": 20
+      },
+      "Rafaela": {
+        "winRate": 0.549959,
+        "pickRate": 0.007234,
+        "banRate": 0.142388,
+        "heroId": 14
       },
       "Sun": {
-        "winRate": 0.548637,
-        "pickRate": 0.019408,
-        "banRate": 0.396532,
+        "winRate": 0.549261,
+        "pickRate": 0.01927,
+        "banRate": 0.400726,
         "heroId": 27
       },
+      "Khufra": {
+        "winRate": 0.548258,
+        "pickRate": 0.001965,
+        "banRate": 0.006251,
+        "heroId": 78
+      },
+      "Gloo": {
+        "winRate": 0.546041,
+        "pickRate": 0.006065,
+        "banRate": 0.530759,
+        "heroId": 104
+      },
       "Valir": {
-        "winRate": 0.545663,
-        "pickRate": 0.012019,
-        "banRate": 0.055705,
+        "winRate": 0.544414,
+        "pickRate": 0.012004,
+        "banRate": 0.056367,
         "heroId": 57
       },
       "Carmilla": {
-        "winRate": 0.543447,
-        "pickRate": 0.009743,
-        "banRate": 0.104182,
+        "winRate": 0.54367,
+        "pickRate": 0.009731,
+        "banRate": 0.104834,
         "heroId": 92
       },
-      "Floryn": {
-        "winRate": 0.539441,
-        "pickRate": 0.007533,
-        "banRate": 0.1842,
-        "heroId": 112
-      },
       "Edith": {
-        "winRate": 0.537323,
-        "pickRate": 0.002947,
-        "banRate": 0.001766,
+        "winRate": 0.540169,
+        "pickRate": 0.002906,
+        "banRate": 0.001698,
         "heroId": 111
       },
+      "Floryn": {
+        "winRate": 0.539946,
+        "pickRate": 0.007534,
+        "banRate": 0.182972,
+        "heroId": 112
+      },
       "Obsidia": {
-        "winRate": 0.536767,
-        "pickRate": 0.017944,
-        "banRate": 0.476498,
+        "winRate": 0.536384,
+        "pickRate": 0.017854,
+        "banRate": 0.47983,
         "heroId": 130
       },
+      "Aldous": {
+        "winRate": 0.535642,
+        "pickRate": 0.006853,
+        "banRate": 0.009586,
+        "heroId": 64
+      },
       "Zhask": {
-        "winRate": 0.535397,
-        "pickRate": 0.003832,
-        "banRate": 0.005386,
+        "winRate": 0.535433,
+        "pickRate": 0.003826,
+        "banRate": 0.00547,
         "heroId": 50
       },
       "Hanabi": {
-        "winRate": 0.533129,
-        "pickRate": 0.029213,
-        "banRate": 0.063555,
+        "winRate": 0.533941,
+        "pickRate": 0.029326,
+        "banRate": 0.063568,
         "heroId": 60
       },
       "Irithel": {
-        "winRate": 0.532605,
-        "pickRate": 0.003726,
-        "banRate": 0.003669,
+        "winRate": 0.533868,
+        "pickRate": 0.003738,
+        "banRate": 0.003709,
         "heroId": 43
       },
-      "Aldous": {
-        "winRate": 0.532466,
-        "pickRate": 0.006642,
-        "banRate": 0.009085,
-        "heroId": 64
-      },
       "Estes": {
-        "winRate": 0.531948,
-        "pickRate": 0.005646,
-        "banRate": 0.653312,
+        "winRate": 0.5321,
+        "pickRate": 0.005623,
+        "banRate": 0.655414,
         "heroId": 34
       },
-      "Belerick": {
-        "winRate": 0.530612,
-        "pickRate": 0.014359,
-        "banRate": 0.635609,
-        "heroId": 70
-      },
-      "Aulus": {
-        "winRate": 0.53025,
-        "pickRate": 0.00503,
-        "banRate": 0.154977,
-        "heroId": 108
-      },
-      "Ling": {
-        "winRate": 0.530073,
-        "pickRate": 0.004903,
-        "banRate": 0.006355,
-        "heroId": 84
-      },
-      "Gord": {
-        "winRate": 0.529902,
-        "pickRate": 0.006514,
-        "banRate": 0.006684,
-        "heroId": 23
-      },
       "Minsitthar": {
-        "winRate": 0.529585,
-        "pickRate": 0.006212,
-        "banRate": 0.05503,
+        "winRate": 0.531432,
+        "pickRate": 0.006109,
+        "banRate": 0.052252,
         "heroId": 74
       },
+      "Belerick": {
+        "winRate": 0.530588,
+        "pickRate": 0.014379,
+        "banRate": 0.633673,
+        "heroId": 70
+      },
+      "Ling": {
+        "winRate": 0.530351,
+        "pickRate": 0.004857,
+        "banRate": 0.006299,
+        "heroId": 84
+      },
       "Bruno": {
-        "winRate": 0.529512,
-        "pickRate": 0.004125,
-        "banRate": 0.002585,
+        "winRate": 0.53015,
+        "pickRate": 0.004087,
+        "banRate": 0.002603,
         "heroId": 12
       },
+      "Gord": {
+        "winRate": 0.529272,
+        "pickRate": 0.006545,
+        "banRate": 0.006889,
+        "heroId": 23
+      },
+      "Aulus": {
+        "winRate": 0.528569,
+        "pickRate": 0.004835,
+        "banRate": 0.146009,
+        "heroId": 108
+      },
       "Hilda": {
-        "winRate": 0.527549,
-        "pickRate": 0.007388,
-        "banRate": 0.247656,
+        "winRate": 0.528006,
+        "pickRate": 0.007415,
+        "banRate": 0.253955,
         "heroId": 35
       },
-      "Diggie": {
-        "winRate": 0.526857,
-        "pickRate": 0.001523,
-        "banRate": 0.033105,
-        "heroId": 48
-      },
       "Cyclops": {
-        "winRate": 0.526422,
-        "pickRate": 0.009873,
-        "banRate": 0.018672,
+        "winRate": 0.526712,
+        "pickRate": 0.010187,
+        "banRate": 0.020689,
         "heroId": 33
       },
-      "Atlas": {
-        "winRate": 0.524116,
-        "pickRate": 0.008297,
-        "banRate": 0.108004,
-        "heroId": 93
+      "Diggie": {
+        "winRate": 0.526314,
+        "pickRate": 0.00152,
+        "banRate": 0.03249,
+        "heroId": 48
       },
       "Silvanna": {
-        "winRate": 0.521781,
-        "pickRate": 0.0132,
-        "banRate": 0.036065,
+        "winRate": 0.522449,
+        "pickRate": 0.013255,
+        "banRate": 0.036611,
         "heroId": 90
       },
+      "Atlas": {
+        "winRate": 0.520374,
+        "pickRate": 0.008085,
+        "banRate": 0.106343,
+        "heroId": 93
+      },
       "Zetian": {
-        "winRate": 0.52085,
-        "pickRate": 0.014163,
-        "banRate": 0.07437,
+        "winRate": 0.520287,
+        "pickRate": 0.014017,
+        "banRate": 0.074212,
         "heroId": 129
       },
       "Benedetta": {
-        "winRate": 0.519665,
-        "pickRate": 0.003963,
-        "banRate": 0.005581,
+        "winRate": 0.519478,
+        "pickRate": 0.00399,
+        "banRate": 0.00567,
         "heroId": 97
       },
       "Barats": {
-        "winRate": 0.519156,
-        "pickRate": 0.005749,
-        "banRate": 0.030326,
+        "winRate": 0.51902,
+        "pickRate": 0.005698,
+        "banRate": 0.028844,
         "heroId": 99
       },
-      "Khaleed": {
-        "winRate": 0.518788,
-        "pickRate": 0.00116,
-        "banRate": 0.001282,
-        "heroId": 98
-      },
       "Natalia": {
-        "winRate": 0.516581,
-        "pickRate": 0.004191,
-        "banRate": 0.038434,
+        "winRate": 0.517136,
+        "pickRate": 0.004281,
+        "banRate": 0.039095,
         "heroId": 24
       },
-      "Terizla": {
-        "winRate": 0.515872,
-        "pickRate": 0.003791,
-        "banRate": 0.002698,
-        "heroId": 82
-      },
-      "Popol and Kupa": {
-        "winRate": 0.514932,
-        "pickRate": 0.006723,
-        "banRate": 0.025222,
-        "heroId": 94
-      },
       "Xavier": {
-        "winRate": 0.514202,
-        "pickRate": 0.006703,
-        "banRate": 0.004755,
+        "winRate": 0.51682,
+        "pickRate": 0.00727,
+        "banRate": 0.005603,
         "heroId": 115
       },
-      "Bane": {
-        "winRate": 0.513919,
-        "pickRate": 0.003207,
-        "banRate": 0.001927,
-        "heroId": 11
+      "Khaleed": {
+        "winRate": 0.516495,
+        "pickRate": 0.001165,
+        "banRate": 0.001295,
+        "heroId": 98
+      },
+      "Terizla": {
+        "winRate": 0.516018,
+        "pickRate": 0.003829,
+        "banRate": 0.002736,
+        "heroId": 82
       },
       "Akai": {
-        "winRate": 0.513698,
-        "pickRate": 0.00351,
-        "banRate": 0.017154,
+        "winRate": 0.513853,
+        "pickRate": 0.003517,
+        "banRate": 0.017024,
         "heroId": 9
       },
+      "Bane": {
+        "winRate": 0.513707,
+        "pickRate": 0.003179,
+        "banRate": 0.001924,
+        "heroId": 11
+      },
       "Natan": {
-        "winRate": 0.51335,
-        "pickRate": 0.002302,
-        "banRate": 0.001485,
+        "winRate": 0.513228,
+        "pickRate": 0.002293,
+        "banRate": 0.001462,
         "heroId": 107
       },
       "Yve": {
-        "winRate": 0.512771,
-        "pickRate": 0.000306,
-        "banRate": 0.000543,
+        "winRate": 0.511614,
+        "pickRate": 0.000295,
+        "banRate": 0.000544,
         "heroId": 101
       },
-      "Lukas": {
-        "winRate": 0.51131,
-        "pickRate": 0.005788,
-        "banRate": 0.198958,
-        "heroId": 127
-      },
-      "Saber": {
-        "winRate": 0.510065,
-        "pickRate": 0.010824,
-        "banRate": 0.412114,
-        "heroId": 3
-      },
       "Lunox": {
-        "winRate": 0.509031,
-        "pickRate": 0.003093,
-        "banRate": 0.009358,
+        "winRate": 0.511543,
+        "pickRate": 0.003335,
+        "banRate": 0.010845,
         "heroId": 68
       },
-      "Badang": {
-        "winRate": 0.508525,
-        "pickRate": 0.013015,
-        "banRate": 0.030912,
-        "heroId": 77
+      "Saber": {
+        "winRate": 0.510126,
+        "pickRate": 0.010879,
+        "banRate": 0.415495,
+        "heroId": 3
+      },
+      "Popol and Kupa": {
+        "winRate": 0.509655,
+        "pickRate": 0.006767,
+        "banRate": 0.027696,
+        "heroId": 94
+      },
+      "Lukas": {
+        "winRate": 0.509424,
+        "pickRate": 0.005679,
+        "banRate": 0.1941,
+        "heroId": 127
       },
       "X.Borg": {
-        "winRate": 0.508509,
-        "pickRate": 0.006037,
-        "banRate": 0.030921,
+        "winRate": 0.50885,
+        "pickRate": 0.006023,
+        "banRate": 0.031458,
         "heroId": 83
       },
-      "Kagura": {
-        "winRate": 0.507368,
-        "pickRate": 0.006276,
-        "banRate": 0.014466,
-        "heroId": 25
+      "Badang": {
+        "winRate": 0.508752,
+        "pickRate": 0.013082,
+        "banRate": 0.030641,
+        "heroId": 77
       },
       "Hanzo": {
-        "winRate": 0.506701,
-        "pickRate": 0.003398,
-        "banRate": 0.07765,
+        "winRate": 0.507271,
+        "pickRate": 0.003373,
+        "banRate": 0.076468,
         "heroId": 69
       },
-      "Aamon": {
-        "winRate": 0.505405,
-        "pickRate": 0.007358,
-        "banRate": 0.037899,
-        "heroId": 109
-      },
-      "Alice": {
-        "winRate": 0.505053,
-        "pickRate": 0.00794,
-        "banRate": 0.205634,
-        "heroId": 4
-      },
-      "Eudora": {
-        "winRate": 0.50498,
-        "pickRate": 0.016404,
-        "banRate": 0.565385,
-        "heroId": 15
+      "Kagura": {
+        "winRate": 0.506186,
+        "pickRate": 0.006237,
+        "banRate": 0.014436,
+        "heroId": 25
       },
       "Vale": {
-        "winRate": 0.504533,
-        "pickRate": 0.006292,
-        "banRate": 0.00243,
+        "winRate": 0.505138,
+        "pickRate": 0.006293,
+        "banRate": 0.002477,
         "heroId": 66
       },
+      "Aamon": {
+        "winRate": 0.505106,
+        "pickRate": 0.007405,
+        "banRate": 0.038814,
+        "heroId": 109
+      },
       "Miya": {
-        "winRate": 0.504449,
-        "pickRate": 0.02441,
-        "banRate": 0.061304,
+        "winRate": 0.504649,
+        "pickRate": 0.024434,
+        "banRate": 0.060598,
         "heroId": 1
       },
+      "Eudora": {
+        "winRate": 0.504339,
+        "pickRate": 0.016366,
+        "banRate": 0.562381,
+        "heroId": 15
+      },
+      "Alice": {
+        "winRate": 0.50409,
+        "pickRate": 0.007877,
+        "banRate": 0.208806,
+        "heroId": 4
+      },
       "Guinevere": {
-        "winRate": 0.504072,
-        "pickRate": 0.006767,
-        "banRate": 0.023337,
+        "winRate": 0.50391,
+        "pickRate": 0.006665,
+        "banRate": 0.02333,
         "heroId": 80
       },
-      "Uranus": {
-        "winRate": 0.503201,
-        "pickRate": 0.003082,
-        "banRate": 0.004807,
-        "heroId": 59
-      },
-      "Kadita": {
-        "winRate": 0.50309,
-        "pickRate": 0.00716,
-        "banRate": 0.040522,
-        "heroId": 75
-      },
-      "Ixia": {
-        "winRate": 0.502633,
-        "pickRate": 0.007978,
-        "banRate": 0.012201,
-        "heroId": 121
-      },
       "Johnson": {
-        "winRate": 0.502321,
-        "pickRate": 0.00919,
-        "banRate": 0.026561,
+        "winRate": 0.503895,
+        "pickRate": 0.009262,
+        "banRate": 0.02682,
         "heroId": 32
       },
+      "Ixia": {
+        "winRate": 0.503187,
+        "pickRate": 0.008043,
+        "banRate": 0.01239,
+        "heroId": 121
+      },
+      "Uranus": {
+        "winRate": 0.502752,
+        "pickRate": 0.003069,
+        "banRate": 0.00481,
+        "heroId": 59
+      },
       "Layla": {
-        "winRate": 0.502269,
-        "pickRate": 0.024693,
-        "banRate": 0.026395,
+        "winRate": 0.50249,
+        "pickRate": 0.024461,
+        "banRate": 0.026477,
         "heroId": 18
       },
-      "Yin": {
-        "winRate": 0.501196,
-        "pickRate": 0.00621,
-        "banRate": 0.02014,
-        "heroId": 113
-      },
-      "Julian": {
-        "winRate": 0.500743,
-        "pickRate": 0.007685,
-        "banRate": 0.012009,
-        "heroId": 116
+      "Kadita": {
+        "winRate": 0.501953,
+        "pickRate": 0.007177,
+        "banRate": 0.040615,
+        "heroId": 75
       },
       "Fredrinn": {
-        "winRate": 0.500437,
-        "pickRate": 0.003108,
-        "banRate": 0.020506,
+        "winRate": 0.501162,
+        "pickRate": 0.003008,
+        "banRate": 0.020337,
         "heroId": 117
       },
+      "Julian": {
+        "winRate": 0.501026,
+        "pickRate": 0.007634,
+        "banRate": 0.011974,
+        "heroId": 116
+      },
+      "Yin": {
+        "winRate": 0.500783,
+        "pickRate": 0.006234,
+        "banRate": 0.020417,
+        "heroId": 113
+      },
       "Angela": {
-        "winRate": 0.500064,
-        "pickRate": 0.016515,
-        "banRate": 0.159846,
+        "winRate": 0.500441,
+        "pickRate": 0.016502,
+        "banRate": 0.161134,
         "heroId": 55
       },
       "Cici": {
-        "winRate": 0.499968,
-        "pickRate": 0.006216,
-        "banRate": 0.017143,
+        "winRate": 0.500416,
+        "pickRate": 0.006359,
+        "banRate": 0.017732,
         "heroId": 123
       },
-      "Cecilion": {
-        "winRate": 0.499645,
-        "pickRate": 0.005633,
-        "banRate": 0.001911,
-        "heroId": 91
-      },
       "Lylia": {
-        "winRate": 0.499087,
-        "pickRate": 0.004328,
-        "banRate": 0.005966,
+        "winRate": 0.499827,
+        "pickRate": 0.004274,
+        "banRate": 0.005942,
         "heroId": 86
       },
-      "Hirara": {
-        "winRate": 0.49907,
-        "pickRate": 0.005043,
-        "banRate": 0.623244,
-        "heroId": 133
-      },
       "Hylos": {
-        "winRate": 0.499043,
-        "pickRate": 0.003239,
-        "banRate": 0.003817,
+        "winRate": 0.499356,
+        "pickRate": 0.00321,
+        "banRate": 0.003783,
         "heroId": 49
       },
-      "Clint": {
-        "winRate": 0.497699,
-        "pickRate": 0.006361,
-        "banRate": 0.007996,
-        "heroId": 13
-      },
-      "Thamuz": {
-        "winRate": 0.497147,
-        "pickRate": 0.008717,
-        "banRate": 0.020488,
-        "heroId": 72
-      },
-      "Vexana": {
-        "winRate": 0.497145,
-        "pickRate": 0.018593,
-        "banRate": 0.015686,
-        "heroId": 38
-      },
-      "Novaria": {
-        "winRate": 0.497074,
-        "pickRate": 0.013629,
-        "banRate": 0.074904,
-        "heroId": 119
-      },
-      "Brody": {
-        "winRate": 0.497011,
-        "pickRate": 0.006723,
-        "banRate": 0.019638,
-        "heroId": 100
+      "Cecilion": {
+        "winRate": 0.499146,
+        "pickRate": 0.005602,
+        "banRate": 0.001914,
+        "heroId": 91
       },
       "Melissa": {
-        "winRate": 0.497009,
-        "pickRate": 0.004255,
-        "banRate": 0.012802,
+        "winRate": 0.499122,
+        "pickRate": 0.004428,
+        "banRate": 0.013514,
         "heroId": 114
       },
+      "Hirara": {
+        "winRate": 0.49861,
+        "pickRate": 0.004997,
+        "banRate": 0.618314,
+        "heroId": 133
+      },
+      "Vexana": {
+        "winRate": 0.497947,
+        "pickRate": 0.018909,
+        "banRate": 0.015946,
+        "heroId": 38
+      },
+      "Kaja": {
+        "winRate": 0.497032,
+        "pickRate": 0.004226,
+        "banRate": 0.097357,
+        "heroId": 62
+      },
+      "Brody": {
+        "winRate": 0.497021,
+        "pickRate": 0.006675,
+        "banRate": 0.019468,
+        "heroId": 100
+      },
+      "Thamuz": {
+        "winRate": 0.496914,
+        "pickRate": 0.00871,
+        "banRate": 0.020514,
+        "heroId": 72
+      },
+      "Odette": {
+        "winRate": 0.496657,
+        "pickRate": 0.005879,
+        "banRate": 0.003232,
+        "heroId": 46
+      },
+      "Leomord": {
+        "winRate": 0.49663,
+        "pickRate": 0.002913,
+        "banRate": 0.009786,
+        "heroId": 67
+      },
       "Roger": {
-        "winRate": 0.496196,
-        "pickRate": 0.003223,
+        "winRate": 0.496468,
+        "pickRate": 0.003217,
         "banRate": 0.001227,
         "heroId": 39
       },
-      "Leomord": {
-        "winRate": 0.496194,
-        "pickRate": 0.002857,
-        "banRate": 0.009575,
-        "heroId": 67
+      "Novaria": {
+        "winRate": 0.49644,
+        "pickRate": 0.013426,
+        "banRate": 0.074213,
+        "heroId": 119
       },
-      "Odette": {
-        "winRate": 0.496179,
-        "pickRate": 0.005881,
-        "banRate": 0.003196,
-        "heroId": 46
-      },
-      "Kaja": {
-        "winRate": 0.495901,
-        "pickRate": 0.004163,
-        "banRate": 0.096233,
-        "heroId": 62
+      "Clint": {
+        "winRate": 0.496418,
+        "pickRate": 0.00635,
+        "banRate": 0.008097,
+        "heroId": 13
       },
       "Suyou": {
-        "winRate": 0.494708,
-        "pickRate": 0.009016,
-        "banRate": 0.020199,
+        "winRate": 0.49476,
+        "pickRate": 0.009029,
+        "banRate": 0.020258,
         "heroId": 126
       },
-      "Kalea": {
-        "winRate": 0.494394,
-        "pickRate": 0.005468,
-        "banRate": 0.03427,
-        "heroId": 128
-      },
-      "Paquito": {
-        "winRate": 0.494314,
-        "pickRate": 0.010477,
-        "banRate": 0.189699,
-        "heroId": 103
-      },
-      "Alucard": {
-        "winRate": 0.493357,
-        "pickRate": 0.006458,
-        "banRate": 0.004542,
-        "heroId": 7
-      },
       "Faramis": {
-        "winRate": 0.493198,
-        "pickRate": 0.00062,
-        "banRate": 0.003948,
+        "winRate": 0.494672,
+        "pickRate": 0.000606,
+        "banRate": 0.003849,
         "heroId": 76
       },
+      "Alucard": {
+        "winRate": 0.49403,
+        "pickRate": 0.006297,
+        "banRate": 0.004442,
+        "heroId": 7
+      },
       "Karina": {
-        "winRate": 0.492836,
-        "pickRate": 0.011231,
-        "banRate": 0.074276,
+        "winRate": 0.493961,
+        "pickRate": 0.011094,
+        "banRate": 0.074665,
         "heroId": 8
       },
+      "Paquito": {
+        "winRate": 0.49381,
+        "pickRate": 0.010285,
+        "banRate": 0.184573,
+        "heroId": 103
+      },
+      "Kalea": {
+        "winRate": 0.49352,
+        "pickRate": 0.005372,
+        "banRate": 0.033287,
+        "heroId": 128
+      },
       "Sora": {
-        "winRate": 0.492495,
-        "pickRate": 0.005312,
-        "banRate": 0.068537,
+        "winRate": 0.492283,
+        "pickRate": 0.005292,
+        "banRate": 0.069842,
         "heroId": 131
       },
       "Beatrix": {
-        "winRate": 0.492357,
-        "pickRate": 0.005021,
-        "banRate": 0.004105,
+        "winRate": 0.491747,
+        "pickRate": 0.004987,
+        "banRate": 0.004115,
         "heroId": 105
       },
-      "Moskov": {
-        "winRate": 0.491196,
-        "pickRate": 0.007586,
-        "banRate": 0.003004,
-        "heroId": 31
-      },
       "Aurora": {
-        "winRate": 0.49042,
-        "pickRate": 0.006106,
-        "banRate": 0.004602,
+        "winRate": 0.491144,
+        "pickRate": 0.006105,
+        "banRate": 0.004636,
         "heroId": 36
       },
-      "Ruby": {
-        "winRate": 0.490065,
-        "pickRate": 0.002853,
-        "banRate": 0.005371,
-        "heroId": 29
+      "Moskov": {
+        "winRate": 0.49068,
+        "pickRate": 0.007552,
+        "banRate": 0.002997,
+        "heroId": 31
       },
       "Claude": {
-        "winRate": 0.489798,
-        "pickRate": 0.006351,
-        "banRate": 0.002963,
+        "winRate": 0.489568,
+        "pickRate": 0.006338,
+        "banRate": 0.002961,
         "heroId": 65
       },
+      "Ruby": {
+        "winRate": 0.489236,
+        "pickRate": 0.002841,
+        "banRate": 0.005423,
+        "heroId": 29
+      },
       "Karrie": {
-        "winRate": 0.489689,
-        "pickRate": 0.005284,
-        "banRate": 0.010218,
+        "winRate": 0.48923,
+        "pickRate": 0.005364,
+        "banRate": 0.010226,
         "heroId": 40
       },
-      "Yi Sun-shin": {
-        "winRate": 0.489066,
-        "pickRate": 0.007603,
-        "banRate": 0.029062,
-        "heroId": 30
-      },
-      "Yu Zhong": {
-        "winRate": 0.488082,
-        "pickRate": 0.00592,
-        "banRate": 0.011263,
-        "heroId": 95
-      },
-      "Lapu-Lapu": {
-        "winRate": 0.487847,
-        "pickRate": 0.003209,
-        "banRate": 0.004432,
-        "heroId": 37
-      },
       "Freya": {
-        "winRate": 0.487614,
-        "pickRate": 0.009026,
-        "banRate": 0.060359,
+        "winRate": 0.488835,
+        "pickRate": 0.00944,
+        "banRate": 0.06727,
         "heroId": 22
       },
+      "Yi Sun-shin": {
+        "winRate": 0.488376,
+        "pickRate": 0.007525,
+        "banRate": 0.028587,
+        "heroId": 30
+      },
       "Chang'e": {
-        "winRate": 0.487505,
-        "pickRate": 0.007802,
-        "banRate": 0.004419,
+        "winRate": 0.487838,
+        "pickRate": 0.007703,
+        "banRate": 0.004402,
         "heroId": 61
       },
       "Alpha": {
-        "winRate": 0.486719,
-        "pickRate": 0.01504,
-        "banRate": 0.007152,
+        "winRate": 0.487532,
+        "pickRate": 0.015289,
+        "banRate": 0.007324,
         "heroId": 28
       },
-      "Jawhead": {
-        "winRate": 0.48601,
-        "pickRate": 0.00437,
-        "banRate": 0.005407,
-        "heroId": 54
+      "Lapu-Lapu": {
+        "winRate": 0.487237,
+        "pickRate": 0.00316,
+        "banRate": 0.00443,
+        "heroId": 37
       },
-      "Nolan": {
-        "winRate": 0.485734,
-        "pickRate": 0.020584,
-        "banRate": 0.168804,
-        "heroId": 122
+      "Yu Zhong": {
+        "winRate": 0.487131,
+        "pickRate": 0.005816,
+        "banRate": 0.01121,
+        "heroId": 95
       },
       "Helcurt": {
-        "winRate": 0.485596,
-        "pickRate": 0.008004,
-        "banRate": 0.082149,
+        "winRate": 0.486431,
+        "pickRate": 0.007991,
+        "banRate": 0.082218,
         "heroId": 51
       },
+      "Nolan": {
+        "winRate": 0.48585,
+        "pickRate": 0.021394,
+        "banRate": 0.180884,
+        "heroId": 122
+      },
+      "Jawhead": {
+        "winRate": 0.485616,
+        "pickRate": 0.00441,
+        "banRate": 0.005498,
+        "heroId": 54
+      },
       "Selena": {
-        "winRate": 0.484448,
-        "pickRate": 0.013379,
-        "banRate": 0.076591,
+        "winRate": 0.484593,
+        "pickRate": 0.012881,
+        "banRate": 0.072912,
         "heroId": 63
       },
       "Harley": {
-        "winRate": 0.484021,
-        "pickRate": 0.010219,
-        "banRate": 0.043474,
+        "winRate": 0.48448,
+        "pickRate": 0.01013,
+        "banRate": 0.04376,
         "heroId": 42
       },
       "Gusion": {
-        "winRate": 0.483332,
-        "pickRate": 0.015575,
-        "banRate": 0.043912,
+        "winRate": 0.48356,
+        "pickRate": 0.015476,
+        "banRate": 0.04382,
         "heroId": 56
       },
       "Phoveus": {
-        "winRate": 0.482377,
-        "pickRate": 0.002653,
-        "banRate": 0.014837,
+        "winRate": 0.482006,
+        "pickRate": 0.002641,
+        "banRate": 0.015298,
         "heroId": 106
       },
       "Dyrroth": {
-        "winRate": 0.482083,
-        "pickRate": 0.015836,
-        "banRate": 0.018181,
+        "winRate": 0.481587,
+        "pickRate": 0.015821,
+        "banRate": 0.018334,
         "heroId": 85
       },
+      "Esmeralda": {
+        "winRate": 0.481053,
+        "pickRate": 0.008259,
+        "banRate": 0.033129,
+        "heroId": 81
+      },
       "Lesley": {
-        "winRate": 0.481009,
-        "pickRate": 0.020401,
-        "banRate": 0.136168,
+        "winRate": 0.480933,
+        "pickRate": 0.02053,
+        "banRate": 0.13782,
         "heroId": 53
       },
       "Hayabusa": {
-        "winRate": 0.480568,
-        "pickRate": 0.007633,
-        "banRate": 0.021212,
+        "winRate": 0.480456,
+        "pickRate": 0.007565,
+        "banRate": 0.02111,
         "heroId": 21
       },
-      "Esmeralda": {
-        "winRate": 0.480074,
-        "pickRate": 0.008303,
-        "banRate": 0.033259,
-        "heroId": 81
-      },
-      "Kimmy": {
-        "winRate": 0.477763,
-        "pickRate": 0.008126,
-        "banRate": 0.009425,
-        "heroId": 71
-      },
       "Martis": {
-        "winRate": 0.476938,
-        "pickRate": 0.006535,
-        "banRate": 0.005425,
+        "winRate": 0.477205,
+        "pickRate": 0.006626,
+        "banRate": 0.005503,
         "heroId": 58
       },
+      "Kimmy": {
+        "winRate": 0.476839,
+        "pickRate": 0.007986,
+        "banRate": 0.009418,
+        "heroId": 71
+      },
       "Wanwan": {
-        "winRate": 0.476717,
-        "pickRate": 0.001249,
-        "banRate": 0.001895,
+        "winRate": 0.475543,
+        "pickRate": 0.00125,
+        "banRate": 0.001909,
         "heroId": 89
       },
-      "Zhuxin": {
-        "winRate": 0.475605,
-        "pickRate": 0.001285,
-        "banRate": 0.003543,
-        "heroId": 125
-      },
       "Chip": {
-        "winRate": 0.474747,
-        "pickRate": 0.000312,
-        "banRate": 0.002252,
+        "winRate": 0.475444,
+        "pickRate": 0.00031,
+        "banRate": 0.002237,
         "heroId": 124
       },
+      "Zhuxin": {
+        "winRate": 0.474991,
+        "pickRate": 0.001298,
+        "banRate": 0.003533,
+        "heroId": 125
+      },
       "Nana": {
-        "winRate": 0.474142,
-        "pickRate": 0.020615,
-        "banRate": 0.050028,
+        "winRate": 0.473822,
+        "pickRate": 0.020502,
+        "banRate": 0.049743,
         "heroId": 5
       },
       "Balmond": {
-        "winRate": 0.472468,
-        "pickRate": 0.00729,
-        "banRate": 0.004211,
+        "winRate": 0.472275,
+        "pickRate": 0.00733,
+        "banRate": 0.004236,
         "heroId": 2
       },
-      "Luo Yi": {
-        "winRate": 0.470846,
-        "pickRate": 0.001997,
-        "banRate": 0.001079,
-        "heroId": 96
-      },
-      "Pharsa": {
-        "winRate": 0.47063,
-        "pickRate": 0.003334,
-        "banRate": 0.002037,
-        "heroId": 52
-      },
       "Zilong": {
-        "winRate": 0.47047,
-        "pickRate": 0.008707,
-        "banRate": 0.004881,
+        "winRate": 0.470962,
+        "pickRate": 0.00885,
+        "banRate": 0.004932,
         "heroId": 16
       },
+      "Luo Yi": {
+        "winRate": 0.470201,
+        "pickRate": 0.002039,
+        "banRate": 0.001107,
+        "heroId": 96
+      },
       "Grock": {
-        "winRate": 0.469872,
-        "pickRate": 0.00397,
-        "banRate": 0.011407,
+        "winRate": 0.47,
+        "pickRate": 0.003977,
+        "banRate": 0.011454,
         "heroId": 44
       },
+      "Pharsa": {
+        "winRate": 0.469772,
+        "pickRate": 0.00332,
+        "banRate": 0.002049,
+        "heroId": 52
+      },
       "Arlott": {
-        "winRate": 0.464721,
-        "pickRate": 0.004468,
-        "banRate": 0.007757,
+        "winRate": 0.464201,
+        "pickRate": 0.004483,
+        "banRate": 0.007905,
         "heroId": 120
       },
       "Joy": {
-        "winRate": 0.462971,
-        "pickRate": 0.000922,
-        "banRate": 0.002347,
+        "winRate": 0.461021,
+        "pickRate": 0.000903,
+        "banRate": 0.002289,
         "heroId": 118
       },
       "Baxia": {
-        "winRate": 0.455991,
-        "pickRate": 0.000476,
-        "banRate": 0.001291,
+        "winRate": 0.456722,
+        "pickRate": 0.000477,
+        "banRate": 0.00127,
         "heroId": 87
       },
       "Chou": {
-        "winRate": 0.451916,
-        "pickRate": 0.01164,
-        "banRate": 0.051136,
+        "winRate": 0.45196,
+        "pickRate": 0.011509,
+        "banRate": 0.049978,
         "heroId": 26
       },
       "Tigreal": {
-        "winRate": 0.450541,
-        "pickRate": 0.024637,
-        "banRate": 0.122169,
+        "winRate": 0.451001,
+        "pickRate": 0.024653,
+        "banRate": 0.12226,
         "heroId": 6
       },
       "Gatotkaca": {
-        "winRate": 0.450058,
-        "pickRate": 0.006917,
-        "banRate": 0.003907,
+        "winRate": 0.450656,
+        "pickRate": 0.007015,
+        "banRate": 0.003949,
         "heroId": 41
       },
       "Harith": {
-        "winRate": 0.449275,
-        "pickRate": 0.001048,
-        "banRate": 0.000681,
+        "winRate": 0.449959,
+        "pickRate": 0.001035,
+        "banRate": 0.00068,
         "heroId": 73
       },
       "Mathilda": {
-        "winRate": 0.447159,
-        "pickRate": 0.000987,
-        "banRate": 0.00199,
+        "winRate": 0.446099,
+        "pickRate": 0.000982,
+        "banRate": 0.001988,
         "heroId": 102
       },
       "Lancelot": {
-        "winRate": 0.43166,
-        "pickRate": 0.00506,
-        "banRate": 0.005545,
+        "winRate": 0.43221,
+        "pickRate": 0.005014,
+        "banRate": 0.005601,
         "heroId": 47
       },
       "Valentina": {
-        "winRate": 0.427138,
-        "pickRate": 0.00074,
-        "banRate": 0.001196,
+        "winRate": 0.42789,
+        "pickRate": 0.000704,
+        "banRate": 0.001132,
         "heroId": 110
       },
       "Franco": {
-        "winRate": 0.419404,
-        "pickRate": 0.01107,
-        "banRate": 0.041083,
+        "winRate": 0.419811,
+        "pickRate": 0.011178,
+        "banRate": 0.04077,
         "heroId": 10
       },
       "Fanny": {
-        "winRate": 0.418974,
-        "pickRate": 0.006042,
-        "banRate": 0.02074,
+        "winRate": 0.41914,
+        "pickRate": 0.006007,
+        "banRate": 0.020968,
         "heroId": 17
       },
       "Granger": {
-        "winRate": 0.410405,
-        "pickRate": 0.013466,
-        "banRate": 0.021405,
+        "winRate": 0.409099,
+        "pickRate": 0.013402,
+        "banRate": 0.021615,
         "heroId": 79
       }
     },
@@ -11599,7 +11596,7 @@
     "Johnson": {"Popol and Kupa":0.5127,"Luo Yi":0.498,"Lapu-Lapu":0.497,"Paquito":0.5119,"Zetian":0.5036,"Floryn":0.5106,"Minsitthar":0.5146,"Marcel":0.4781,"Irithel":0.4953,"Badang":0.5144,"Jawhead":0.5157,"Odette":0.5041,"Terizla":0.4891,"Argus":0.4946,"Martis":0.4924,"Aamon":0.4987,"Estes":0.5035,"Joy":0.4844,"Edith":0.4843,"Obsidia":0.505,"Zhask":0.4911,"Chip":0.4978,"X.Borg":0.4812,"Harley":0.504,"Lolita":0.4911,"Zilong":0.5175,"Natalia":0.5136,"Cecilion":0.4928,"Saber":0.5153,"Eudora":0.5139,"Pharsa":0.4956,"Xavier":0.5103,"Kaja":0.5012,"Yin":0.5126,"Rafaela":0.504,"Arlott":0.5143,"Lylia":0.4827,"Balmond":0.481,"Valentina":0.5186,"Fanny":0.4943,"Valir":0.5016,"Angela":0.4985,"Karrie":0.4921,"Gusion":0.5036,"Guinevere":0.5033,"Hilda":0.5051,"Phoveus":0.4962,"Hylos":0.4858,"Vale":0.4957,"Beatrix":0.5083,"Thamuz":0.4897,"Diggie":0.5094,"Leomord":0.5002,"Esmeralda":0.488,"Zhuxin":0.4844,"Chang'e":0.4964,"Alpha":0.4764,"Nana":0.4968,"Julian":0.495,"Layla":0.5202,"Yi Sun-shin":0.5162,"Cici":0.5074,"Sun":0.5032,"Harith":0.4752,"Chou":0.5004,"Silvanna":0.5004,"Mathilda":0.5052,"Minotaur":0.4839,"Ruby":0.5073,"Fredrinn":0.4948,"Lesley":0.4914,"Selena":0.5131,"Lukas":0.5022,"Claude":0.4901,"Hanzo":0.5068,"Kadita":0.4846,"Hirara":0.5017,"Ling":0.4941,"Uranus":0.4827,"Carmilla":0.4858,"Roger":0.4997,"Bruno":0.5137,"Gord":0.5023,"Moskov":0.5,"Miya":0.4976,"Bane":0.4972,"Tigreal":0.4936,"Hayabusa":0.5102,"Karina":0.4899,"Dyrroth":0.5111,"Clint":0.4993,"Wanwan":0.4936,"Faramis":0.4825,"Khaleed":0.4887,"Hanabi":0.4983,"Aurora":0.4967,"Kagura":0.5019,"Belerick":0.479,"Sora":0.4983,"Yu Zhong":0.4946,"Masha":0.4924,"Aldous":0.5024,"Granger":0.4926,"Yve":0.4859,"Nolan":0.5056,"Alucard":0.4982,"Natan":0.4752,"Novaria":0.5028,"Khufra":0.4904,"Lancelot":0.4898,"Akai":0.5047,"Aulus":0.4953,"Kalea":0.5013,"Franco":0.5179,"Lunox":0.4952,"Barats":0.5032,"Gatotkaca":0.4867,"Melissa":0.5097,"Grock":0.482,"Brody":0.5092,"Helcurt":0.5122,"Alice":0.4721,"Atlas":0.4818,"Ixia":0.5126,"Cyclops":0.5037,"Gloo":0.4768,"Baxia":0.4904,"Kimmy":0.4816,"Freya":0.5006,"Benedetta":0.4876,"Suyou":0.5106,"Vexana":0.4936},
     "Kalea": {"Cecilion":0.4932,"Pharsa":0.4945,"Yu Zhong":0.5024,"Saber":0.5061,"Valentina":0.5114,"Edith":0.5053,"Vale":0.5036,"Zetian":0.4974,"Phoveus":0.4863,"Khufra":0.5119,"Atlas":0.5047,"Alucard":0.5117,"Bruno":0.4959,"Argus":0.4936,"Faramis":0.5067,"Luo Yi":0.4914,"Zhuxin":0.5083,"Nana":0.4974,"Sora":0.5055,"Suyou":0.5007,"Franco":0.4871,"Lancelot":0.4989,"Miya":0.4934,"Harley":0.5059,"Harith":0.5192,"Yi Sun-shin":0.4942,"Popol and Kupa":0.4903,"Leomord":0.4996,"Kadita":0.504,"Tigreal":0.4846,"Gusion":0.5172,"Gatotkaca":0.5005,"Angela":0.5089,"Granger":0.5131,"Akai":0.509,"Moskov":0.5075,"Hanabi":0.4841,"Chang'e":0.5046,"Fredrinn":0.4978,"Irithel":0.5056,"Cyclops":0.4986,"Hilda":0.5094,"Claude":0.5117,"Arlott":0.5127,"Lylia":0.4921,"Martis":0.4874,"Benedetta":0.5119,"Hylos":0.5029,"Gord":0.4941,"Yin":0.4876,"Estes":0.4972,"Valir":0.4858,"Beatrix":0.5068,"Silvanna":0.5164,"Jawhead":0.5012,"Minsitthar":0.4824,"Yve":0.5126,"Guinevere":0.5017,"Masha":0.4954,"Chip":0.4872,"Floryn":0.502,"Marcel":0.4932,"Aldous":0.5066,"Badang":0.4937,"Sun":0.4858,"Khaleed":0.5021,"Balmond":0.4848,"Nolan":0.5066,"Lolita":0.5236,"Selena":0.5109,"Kaja":0.499,"Bane":0.4934,"Aurora":0.4993,"Baxia":0.5138,"Zilong":0.5074,"Gloo":0.502,"Karrie":0.503,"Minotaur":0.5001,"Clint":0.5026,"Lesley":0.4936,"Kagura":0.5064,"Obsidia":0.5035,"Hirara":0.5002,"Kimmy":0.4976,"Ling":0.5107,"Brody":0.5043,"Cici":0.4957,"Aulus":0.5015,"Xavier":0.4925,"X.Borg":0.482,"Alice":0.4911,"Thamuz":0.499,"Lapu-Lapu":0.5059,"Hayabusa":0.5077,"Julian":0.502,"Novaria":0.5077,"Alpha":0.4906,"Hanzo":0.4842,"Paquito":0.508,"Mathilda":0.5086,"Belerick":0.4972,"Diggie":0.5085,"Ixia":0.4984,"Helcurt":0.5243,"Melissa":0.5006,"Natan":0.5201,"Vexana":0.4941,"Freya":0.508,"Chou":0.5124,"Aamon":0.4937,"Zhask":0.4976,"Rafaela":0.5025,"Roger":0.5113,"Uranus":0.497,"Odette":0.4993,"Terizla":0.4963,"Karina":0.4987,"Lunox":0.5034,"Johnson":0.4987,"Dyrroth":0.5013,"Layla":0.5002,"Wanwan":0.4885,"Carmilla":0.4911,"Ruby":0.4936,"Grock":0.5071,"Lukas":0.5027,"Joy":0.5095,"Barats":0.4995,"Eudora":0.507,"Natalia":0.514,"Esmeralda":0.5074,"Fanny":0.5233},
     "Khufra": {"Yve":0.508,"Natalia":0.5293,"Gusion":0.5191,"Marcel":0.4638,"Dyrroth":0.5106,"Kadita":0.5052,"Harley":0.5019,"Brody":0.5067,"Natan":0.4859,"Aamon":0.4809,"Obsidia":0.5009,"Edith":0.5034,"Khaleed":0.5004,"Lylia":0.5012,"Nolan":0.4998,"Kimmy":0.4826,"Baxia":0.5038,"Hylos":0.4776,"Claude":0.4845,"Johnson":0.5096,"Aurora":0.4873,"Phoveus":0.4863,"Estes":0.4824,"Alice":0.4726,"Chou":0.5223,"Argus":0.4914,"Karina":0.5077,"Kagura":0.511,"Kaja":0.4917,"Badang":0.5144,"Minsitthar":0.4952,"Masha":0.509,"Nana":0.4969,"Rafaela":0.4917,"Hilda":0.5043,"X.Borg":0.4698,"Atlas":0.4772,"Zhask":0.5066,"Valir":0.482,"Kalea":0.4881,"Barats":0.481,"Valentina":0.5201,"Hayabusa":0.5097,"Lukas":0.4989,"Pharsa":0.4993,"Harith":0.5072,"Floryn":0.4942,"Lesley":0.4794,"Granger":0.5147,"Selena":0.5173,"Wanwan":0.525,"Bruno":0.5047,"Zilong":0.5131,"Silvanna":0.5271,"Miya":0.5033,"Chang'e":0.4946,"Vale":0.5041,"Suyou":0.4951,"Benedetta":0.494,"Balmond":0.4743,"Arlott":0.4908,"Gatotkaca":0.5014,"Ixia":0.5062,"Julian":0.5015,"Carmilla":0.4963,"Gloo":0.4973,"Helcurt":0.5034,"Uranus":0.4811,"Popol and Kupa":0.4922,"Hirara":0.4972,"Clint":0.5052,"Guinevere":0.5288,"Cici":0.4789,"Ruby":0.5031,"Alucard":0.5311,"Melissa":0.4946,"Minotaur":0.4709,"Xavier":0.4906,"Lunox":0.5023,"Tigreal":0.4984,"Mathilda":0.5228,"Irithel":0.5017,"Chip":0.4842,"Thamuz":0.4906,"Fredrinn":0.5068,"Lapu-Lapu":0.5005,"Yi Sun-shin":0.4742,"Grock":0.4846,"Martis":0.4761,"Fanny":0.5071,"Saber":0.5189,"Zhuxin":0.4804,"Terizla":0.4718,"Cyclops":0.4923,"Alpha":0.477,"Yin":0.5099,"Sun":0.4998,"Novaria":0.502,"Vexana":0.4986,"Moskov":0.5019,"Aldous":0.5049,"Beatrix":0.5202,"Roger":0.493,"Franco":0.4932,"Belerick":0.5114,"Paquito":0.5286,"Leomord":0.5012,"Bane":0.4825,"Angela":0.4851,"Karrie":0.4881,"Eudora":0.5119,"Gord":0.5013,"Akai":0.5196,"Luo Yi":0.4871,"Hanabi":0.4833,"Zetian":0.5013,"Layla":0.5152,"Freya":0.5106,"Esmeralda":0.4869,"Yu Zhong":0.4942,"Cecilion":0.4836,"Ling":0.5178,"Diggie":0.4971,"Lolita":0.5139,"Odette":0.5026,"Jawhead":0.4907,"Sora":0.5196,"Joy":0.5112,"Aulus":0.4834,"Hanzo":0.4825,"Faramis":0.4737,"Lancelot":0.4959},
-    "Lolita": {"Belerick":0.5081,"Paquito":0.4985,"Edith":0.5643,"Popol and Kupa":0.4785,"Badang":0.5215,"Yin":0.4888,"Akai":0.5118,"Aurora":0.4369,"Tigreal":0.4765,"Karrie":0.5227,"Carmilla":0.5067,"Johnson":0.5089,"Joy":0.4586,"Terizla":0.4654,"Silvanna":0.4858,"Selena":0.5142,"Harley":0.5466,"Masha":0.5045,"Franco":0.5041,"Zilong":0.5047,"Rafaela":0.5087,"Lapu-Lapu":0.496,"Moskov":0.5098,"Eudora":0.4962,"Xavier":0.5177,"Benedetta":0.4945,"Grock":0.4519,"Chang'e":0.5453,"Karina":0.4765,"Chou":0.4978,"Hilda":0.4824,"Gusion":0.5301,"Layla":0.5117,"Lancelot":0.5036,"Faramis":0.5372,"Hylos":0.5012,"Khufra":0.4861,"Baxia":0.5245,"Zetian":0.4632,"Sun":0.4754,"Claude":0.473,"Valir":0.521,"Natan":0.5228,"Alucard":0.4793,"Arlott":0.503,"Bruno":0.5399,"Wanwan":0.5034,"Freya":0.4781,"Kimmy":0.5458,"Diggie":0.5271,"X.Borg":0.4902,"Lylia":0.4982,"Natalia":0.472,"Zhask":0.4542,"Vale":0.4962,"Clint":0.4509,"Roger":0.5157,"Thamuz":0.4886,"Valentina":0.5059,"Hanabi":0.5288,"Minotaur":0.4664,"Hirara":0.4869,"Aldous":0.5023,"Saber":0.5057,"Beatrix":0.5159,"Balmond":0.4926,"Cyclops":0.5953,"Gloo":0.4858,"Aulus":0.4915,"Cici":0.4943,"Hanzo":0.5077,"Leomord":0.4687,"Bane":0.5696,"Luo Yi":0.5293,"Kaja":0.516,"Nolan":0.4812,"Kagura":0.4602,"Harith":0.4816,"Alice":0.5045,"Lukas":0.4976,"Floryn":0.5441,"Khaleed":0.4721,"Mathilda":0.5027,"Yu Zhong":0.4936,"Yi Sun-shin":0.513,"Argus":0.5023,"Nana":0.4721,"Pharsa":0.4654,"Kalea":0.4764,"Aamon":0.5204,"Phoveus":0.477,"Lunox":0.4901,"Marcel":0.5048,"Gatotkaca":0.4962,"Novaria":0.4941,"Minsitthar":0.474,"Obsidia":0.4954,"Sora":0.4824,"Vexana":0.4773,"Barats":0.5004,"Esmeralda":0.4459,"Dyrroth":0.4889,"Guinevere":0.507,"Yve":0.4418,"Melissa":0.4711,"Helcurt":0.4909,"Granger":0.5082,"Brody":0.4825,"Angela":0.5385,"Suyou":0.4952,"Ruby":0.5297,"Alpha":0.4831,"Zhuxin":0.4849,"Atlas":0.4681,"Julian":0.4981,"Jawhead":0.5187,"Odette":0.4943,"Lesley":0.4922,"Gord":0.4706,"Uranus":0.4727,"Fredrinn":0.4873,"Ling":0.5058,"Hayabusa":0.5165,"Chip":0.4941,"Cecilion":0.4616,"Martis":0.49,"Ixia":0.4771,"Miya":0.5101,"Kadita":0.4662,"Estes":0.5135,"Fanny":0.4721,"Irithel":0.5019},
+    "Lolita": {"Kaja":0.516,"Vexana":0.4773,"Fanny":0.4721,"Gord":0.4706,"Moskov":0.5098,"Rafaela":0.5087,"Sora":0.4824,"Bruno":0.5399,"Lapu-Lapu":0.496,"Irithel":0.5019,"Karrie":0.5227,"Selena":0.5142,"Karina":0.4765,"Guinevere":0.507,"Natan":0.5228,"Eudora":0.4962,"Kagura":0.4602,"Esmeralda":0.4459,"Nana":0.4721,"Marcel":0.5048,"Aamon":0.5204,"Suyou":0.4952,"Harley":0.5466,"Phoveus":0.477,"Julian":0.4981,"Harith":0.4816,"Aurora":0.4369,"Natalia":0.472,"Kadita":0.4662,"Aldous":0.5023,"Valentina":0.5059,"Lunox":0.4901,"Silvanna":0.4858,"Zetian":0.4632,"Granger":0.5082,"Tigreal":0.4765,"Dyrroth":0.4889,"Lesley":0.4922,"Gusion":0.5301,"Odette":0.4943,"Cecilion":0.4616,"Johnson":0.5089,"Hanabi":0.5288,"Valir":0.521,"Aulus":0.4915,"Cyclops":0.5953,"Uranus":0.4727,"Hanzo":0.5077,"Pharsa":0.4654,"Helcurt":0.4909,"Novaria":0.4941,"Balmond":0.4926,"Grock":0.4519,"Zhuxin":0.4849,"Brody":0.4825,"Jawhead":0.5187,"Nolan":0.4812,"Alice":0.5045,"X.Borg":0.4902,"Barats":0.5004,"Claude":0.473,"Bane":0.5696,"Vale":0.4962,"Cici":0.4943,"Faramis":0.5372,"Thamuz":0.4886,"Yin":0.4888,"Ling":0.5058,"Edith":0.5643,"Yu Zhong":0.4936,"Leomord":0.4687,"Hilda":0.4824,"Mathilda":0.5027,"Atlas":0.4681,"Carmilla":0.5067,"Sun":0.4754,"Miya":0.5101,"Lukas":0.4976,"Roger":0.5157,"Yi Sun-shin":0.513,"Wanwan":0.5034,"Obsidia":0.4954,"Franco":0.5041,"Ixia":0.4771,"Masha":0.5045,"Chip":0.4941,"Paquito":0.4985,"Khufra":0.4861,"Zhask":0.4542,"Freya":0.4781,"Gatotkaca":0.4962,"Ruby":0.5297,"Chou":0.4978,"Alucard":0.4793,"Angela":0.5385,"Alpha":0.4831,"Popol and Kupa":0.4785,"Chang'e":0.5453,"Hylos":0.5012,"Melissa":0.4711,"Terizla":0.4654,"Fredrinn":0.4873,"Kalea":0.4764,"Arlott":0.503,"Layla":0.5117,"Akai":0.5118,"Badang":0.5215,"Benedetta":0.4945,"Clint":0.4509,"Gloo":0.4858,"Luo Yi":0.5293,"Diggie":0.5323,"Zilong":0.5047,"Saber":0.5057,"Khaleed":0.4721,"Hayabusa":0.5165,"Joy":0.4586,"Minsitthar":0.474,"Martis":0.49,"Argus":0.5023,"Floryn":0.5441,"Hirara":0.4869,"Baxia":0.5245,"Beatrix":0.5159,"Lylia":0.4982,"Lancelot":0.5036,"Kimmy":0.5458,"Xavier":0.5177,"Minotaur":0.4664,"Estes":0.5135,"Yve":0.4418,"Belerick":0.5081},
     "Minotaur": {"Moskov":0.5064,"Yi Sun-shin":0.5058,"Marcel":0.4833,"Baxia":0.4852,"Natalia":0.4988,"Odette":0.5285,"Fanny":0.4881,"Hanabi":0.4867,"Rafaela":0.5052,"Ruby":0.4921,"Zhuxin":0.4923,"Aulus":0.5034,"Mathilda":0.5123,"Leomord":0.4984,"Franco":0.4962,"Alice":0.481,"Badang":0.5106,"Saber":0.5051,"Nolan":0.4975,"Brody":0.4972,"Hirara":0.4966,"Yu Zhong":0.4896,"Karina":0.5128,"Xavier":0.4801,"Hanzo":0.4925,"Novaria":0.5006,"Zilong":0.5034,"Helcurt":0.4971,"Floryn":0.5034,"Popol and Kupa":0.5127,"Barats":0.4912,"Pharsa":0.5035,"Chang'e":0.506,"Jawhead":0.5119,"Joy":0.4853,"Lancelot":0.4983,"Faramis":0.498,"Silvanna":0.5213,"Natan":0.489,"Lunox":0.5003,"Valir":0.4795,"Harley":0.5058,"Balmond":0.4919,"Miya":0.5121,"Lesley":0.5104,"Grock":0.509,"Uranus":0.4906,"Wanwan":0.4997,"Julian":0.4952,"Alpha":0.4959,"Kaja":0.5048,"Johnson":0.5161,"Terizla":0.4894,"Nana":0.4958,"Arlott":0.5091,"Khaleed":0.4984,"Beatrix":0.4792,"Aurora":0.4968,"Melissa":0.4991,"Fredrinn":0.4922,"Zhask":0.5067,"Valentina":0.4816,"Chou":0.506,"Lolita":0.5336,"Belerick":0.5056,"Freya":0.4956,"Gloo":0.4809,"Bane":0.5043,"Yin":0.4954,"Sun":0.5044,"Aamon":0.4993,"Esmeralda":0.4925,"Argus":0.511,"Benedetta":0.4964,"Gord":0.4908,"Thamuz":0.491,"Karrie":0.4952,"Irithel":0.5053,"Masha":0.5069,"Lapu-Lapu":0.486,"Kimmy":0.4806,"Estes":0.4935,"Zetian":0.5075,"Hylos":0.4978,"Cyclops":0.5166,"Lylia":0.4925,"Chip":0.5099,"Vexana":0.5014,"Khufra":0.5291,"Edith":0.5069,"Martis":0.4984,"Akai":0.5048,"Hayabusa":0.4984,"Phoveus":0.4913,"Kadita":0.4902,"Cici":0.5,"Vale":0.5106,"Obsidia":0.5047,"Cecilion":0.4897,"Angela":0.4871,"Guinevere":0.503,"Ling":0.508,"Bruno":0.507,"Ixia":0.4742,"Minsitthar":0.488,"Suyou":0.5017,"Yve":0.4711,"Aldous":0.5065,"Tigreal":0.498,"Carmilla":0.4847,"Hilda":0.5026,"X.Borg":0.4914,"Claude":0.518,"Gusion":0.5055,"Alucard":0.5036,"Clint":0.4981,"Paquito":0.5047,"Diggie":0.5095,"Dyrroth":0.4969,"Gatotkaca":0.4941,"Selena":0.5071,"Harith":0.5015,"Atlas":0.4928,"Layla":0.5048,"Kagura":0.5041,"Lukas":0.5024,"Eudora":0.5117,"Granger":0.5047,"Roger":0.5042,"Kalea":0.4999,"Sora":0.4983,"Luo Yi":0.4855},
     "Minsitthar": {"Gloo":0.4892,"Yu Zhong":0.4807,"Aamon":0.49,"Hirara":0.5169,"Hilda":0.5141,"Lancelot":0.5105,"Nana":0.4928,"Ling":0.4945,"Zhuxin":0.521,"Luo Yi":0.4956,"Pharsa":0.4984,"Paquito":0.5137,"Nolan":0.5077,"Cici":0.5021,"Marcel":0.4969,"Kimmy":0.4951,"Khaleed":0.5023,"Melissa":0.513,"Lapu-Lapu":0.5002,"Lylia":0.5063,"Ruby":0.5012,"Sun":0.4907,"Jawhead":0.4963,"Brody":0.5192,"Irithel":0.4891,"Fredrinn":0.4997,"Wanwan":0.5177,"Sora":0.5125,"Khufra":0.5048,"Dyrroth":0.5142,"Julian":0.5158,"Xavier":0.5119,"Martis":0.533,"Tigreal":0.4998,"Alucard":0.5245,"Balmond":0.4969,"Kaja":0.5065,"Saber":0.5,"Thamuz":0.5052,"Hanabi":0.4914,"Gord":0.4853,"Yve":0.5202,"Floryn":0.5064,"Carmilla":0.4909,"Suyou":0.5042,"Akai":0.4901,"Edith":0.5138,"Obsidia":0.4881,"Novaria":0.4908,"Chou":0.5017,"Aulus":0.4809,"Selena":0.4997,"Barats":0.4955,"Valentina":0.5204,"Granger":0.5031,"Clint":0.5098,"X.Borg":0.4775,"Harith":0.5326,"Arlott":0.5121,"Aldous":0.4971,"Grock":0.4981,"Silvanna":0.4995,"Natalia":0.4671,"Zhask":0.5016,"Hayabusa":0.5091,"Estes":0.5117,"Chang'e":0.4939,"Eudora":0.4998,"Chip":0.5056,"Hylos":0.4881,"Popol and Kupa":0.4986,"Benedetta":0.5265,"Gusion":0.5025,"Phoveus":0.5414,"Bruno":0.5019,"Minotaur":0.512,"Zilong":0.4729,"Roger":0.5117,"Miya":0.4939,"Angela":0.5156,"Baxia":0.4889,"Masha":0.5002,"Guinevere":0.5025,"Lunox":0.5131,"Diggie":0.4818,"Claude":0.5148,"Karina":0.4829,"Yin":0.4649,"Lukas":0.5223,"Natan":0.5134,"Leomord":0.5131,"Alpha":0.505,"Hanzo":0.49,"Franco":0.4982,"Moskov":0.5037,"Aurora":0.4987,"Karrie":0.5278,"Valir":0.5053,"Cyclops":0.5133,"Gatotkaca":0.4866,"Ixia":0.5,"Freya":0.5517,"Uranus":0.4987,"Faramis":0.5095,"Kagura":0.5113,"Kadita":0.4916,"Yi Sun-shin":0.4896,"Lesley":0.5016,"Harley":0.4955,"Vexana":0.4917,"Mathilda":0.5066,"Terizla":0.4876,"Joy":0.4851,"Badang":0.4988,"Zetian":0.4982,"Kalea":0.5176,"Helcurt":0.4924,"Lolita":0.526,"Johnson":0.4854,"Layla":0.4975,"Atlas":0.5112,"Cecilion":0.4993,"Rafaela":0.4805,"Bane":0.4918,"Beatrix":0.4989,"Vale":0.4899,"Esmeralda":0.4951,"Belerick":0.4876,"Argus":0.4869,"Fanny":0.5023,"Alice":0.4922,"Odette":0.4982},
     "Ruby": {"Balmond":0.4844,"Lolita":0.4703,"Kimmy":0.5194,"Alpha":0.4952,"Brody":0.5019,"Mathilda":0.5059,"Guinevere":0.5038,"Karrie":0.5118,"Aldous":0.5012,"Valentina":0.5111,"Lapu-Lapu":0.4919,"Fredrinn":0.499,"Aurora":0.4984,"Terizla":0.4814,"Zhuxin":0.5107,"Dyrroth":0.4991,"Xavier":0.4932,"Franco":0.4995,"Moskov":0.509,"Akai":0.4974,"Lylia":0.502,"Paquito":0.4981,"Lukas":0.4839,"Pharsa":0.4839,"Tigreal":0.5047,"Ixia":0.4807,"Nolan":0.4977,"Leomord":0.4856,"Khufra":0.4969,"Valir":0.4978,"Cici":0.5144,"Roger":0.5074,"Chip":0.5192,"Jawhead":0.5047,"Sun":0.5348,"Miya":0.506,"Atlas":0.5012,"Lesley":0.4897,"Zhask":0.5152,"Diggie":0.4828,"Estes":0.501,"Yi Sun-shin":0.4922,"Masha":0.5194,"Odette":0.4959,"Hanzo":0.489,"Gord":0.4798,"Yve":0.519,"Rafaela":0.5049,"Vexana":0.4967,"Cecilion":0.4918,"Grock":0.4945,"Belerick":0.49,"Vale":0.4976,"Arlott":0.4887,"Freya":0.5168,"Natalia":0.5124,"Chou":0.501,"Joy":0.5311,"Gusion":0.5048,"Carmilla":0.4932,"Edith":0.5014,"Yu Zhong":0.4834,"Sora":0.4955,"Esmeralda":0.5072,"Argus":0.5303,"Johnson":0.4927,"Kaja":0.5096,"Irithel":0.5039,"Kagura":0.5052,"Melissa":0.5081,"Harley":0.5042,"Angela":0.4988,"Thamuz":0.5137,"Ling":0.5112,"Eudora":0.4971,"Hayabusa":0.5095,"Natan":0.5229,"Hanabi":0.4958,"Marcel":0.5095,"Saber":0.492,"Claude":0.5153,"Helcurt":0.4982,"Suyou":0.5035,"Lancelot":0.4921,"Gatotkaca":0.4877,"Bane":0.4934,"Hilda":0.511,"Granger":0.4987,"Baxia":0.5073,"Benedetta":0.5036,"Nana":0.4904,"Wanwan":0.5073,"Kalea":0.5064,"Karina":0.5167,"Obsidia":0.5096,"Lunox":0.5243,"Gloo":0.5354,"Popol and Kupa":0.5035,"Bruno":0.507,"Layla":0.4861,"Novaria":0.4942,"Minsitthar":0.4988,"X.Borg":0.4694,"Cyclops":0.5034,"Luo Yi":0.492,"Aamon":0.5036,"Julian":0.5084,"Aulus":0.4887,"Silvanna":0.4968,"Alice":0.4834,"Barats":0.4875,"Beatrix":0.495,"Uranus":0.499,"Hirara":0.5021,"Clint":0.4851,"Badang":0.5024,"Yin":0.4932,"Faramis":0.5016,"Floryn":0.495,"Minotaur":0.5079,"Kadita":0.5066,"Phoveus":0.4684,"Selena":0.503,"Chang'e":0.4963,"Fanny":0.5162,"Harith":0.4974,"Khaleed":0.5011,"Zilong":0.5051,"Hylos":0.5021,"Alucard":0.5119,"Zetian":0.4972,"Martis":0.4837},
@@ -11607,7 +11604,7 @@
     "Tigreal": {"Ixia":0.4999,"Hirara":0.5048,"Terizla":0.4873,"Karina":0.508,"Esmeralda":0.4935,"Arlott":0.5024,"Zetian":0.4787,"Cici":0.4935,"Karrie":0.5042,"Argus":0.5094,"Diggie":0.4671,"Selena":0.5064,"Clint":0.5006,"Lesley":0.518,"Sora":0.488,"Aldous":0.5107,"Minsitthar":0.5002,"Yin":0.5026,"Layla":0.5135,"Popol and Kupa":0.5136,"Lancelot":0.4929,"Julian":0.5168,"Claude":0.4852,"Zhask":0.5114,"Zilong":0.5246,"Beatrix":0.5002,"Masha":0.5012,"Leomord":0.4986,"Khufra":0.5016,"Baxia":0.487,"Lukas":0.4918,"Faramis":0.4934,"Natalia":0.5049,"Zhuxin":0.4914,"Hilda":0.5092,"Akai":0.4935,"Belerick":0.4933,"Aurora":0.5027,"Rafaela":0.5215,"Ling":0.4957,"Harley":0.5027,"Bane":0.4971,"Benedetta":0.4947,"Hayabusa":0.5035,"Barats":0.4923,"Johnson":0.5064,"Jawhead":0.507,"Joy":0.4986,"Edith":0.5178,"Yu Zhong":0.4849,"Natan":0.5045,"Kadita":0.4974,"Eudora":0.5129,"Lylia":0.4973,"Kagura":0.4914,"Saber":0.5092,"Hylos":0.5031,"Miya":0.4958,"Fredrinn":0.4955,"Cyclops":0.514,"Kalea":0.5155,"Luo Yi":0.502,"Hanzo":0.4903,"Melissa":0.503,"Carmilla":0.4931,"Phoveus":0.4823,"Fanny":0.494,"Chang'e":0.5063,"Alpha":0.495,"Alucard":0.5189,"Ruby":0.4953,"Gord":0.4944,"Yve":0.5005,"Aamon":0.5053,"Paquito":0.5039,"Cecilion":0.4998,"Irithel":0.5064,"Badang":0.5034,"Dyrroth":0.5113,"Minotaur":0.502,"Harith":0.4964,"Nolan":0.5002,"Xavier":0.4946,"Kaja":0.5033,"Mathilda":0.4979,"Wanwan":0.4874,"Vexana":0.5031,"Uranus":0.4888,"Alice":0.462,"Guinevere":0.5037,"Pharsa":0.5014,"Granger":0.4905,"Balmond":0.4805,"Yi Sun-shin":0.4963,"X.Borg":0.4757,"Roger":0.5071,"Franco":0.5218,"Grock":0.5008,"Bruno":0.5111,"Thamuz":0.5085,"Novaria":0.485,"Gloo":0.497,"Nana":0.4991,"Khaleed":0.501,"Aulus":0.4824,"Silvanna":0.5153,"Angela":0.5113,"Moskov":0.5034,"Gatotkaca":0.4913,"Martis":0.4932,"Kimmy":0.4976,"Marcel":0.4945,"Estes":0.5333,"Vale":0.5048,"Chou":0.51,"Sun":0.5181,"Odette":0.5122,"Brody":0.5067,"Gusion":0.505,"Lapu-Lapu":0.4864,"Chip":0.5013,"Valentina":0.4926,"Atlas":0.5006,"Lolita":0.5235,"Suyou":0.4928,"Valir":0.475,"Obsidia":0.4979,"Helcurt":0.51,"Hanabi":0.4816,"Freya":0.5068,"Lunox":0.5101,"Floryn":0.5165},
     "Uranus": {"Nana":0.5094,"Pharsa":0.4901,"Claude":0.4953,"Odette":0.4929,"Layla":0.5121,"Minsitthar":0.5013,"Benedetta":0.5089,"Johnson":0.5173,"Bane":0.4907,"Zetian":0.5124,"Xavier":0.4817,"Suyou":0.5113,"Chang'e":0.5007,"Lolita":0.5273,"Clint":0.506,"Selena":0.5029,"Hylos":0.4998,"Marcel":0.5066,"Kadita":0.5028,"Masha":0.5127,"Vale":0.5065,"Cyclops":0.5112,"Baxia":0.482,"Leomord":0.4914,"Sora":0.5061,"Dyrroth":0.4706,"Atlas":0.4817,"Minotaur":0.5094,"Harith":0.4851,"Thamuz":0.4903,"Carmilla":0.4945,"Granger":0.5224,"Badang":0.5116,"Novaria":0.5017,"Lunox":0.4826,"Tigreal":0.5112,"Jawhead":0.501,"Akai":0.52,"Wanwan":0.5199,"Rafaela":0.4861,"Edith":0.4902,"Kagura":0.5043,"Irithel":0.5213,"Moskov":0.5055,"Lapu-Lapu":0.5147,"Aldous":0.4748,"Natan":0.4938,"Miya":0.5106,"Khufra":0.5189,"Guinevere":0.4903,"Franco":0.5073,"Silvanna":0.4885,"Ixia":0.4786,"Esmeralda":0.4938,"Valentina":0.5128,"X.Borg":0.4884,"Brody":0.4992,"Valir":0.4819,"Helcurt":0.4943,"Cecilion":0.4898,"Aamon":0.4905,"Obsidia":0.5111,"Eudora":0.5002,"Aurora":0.5004,"Balmond":0.5026,"Lukas":0.5132,"Julian":0.4812,"Alucard":0.4951,"Hilda":0.4905,"Lesley":0.4953,"Kaja":0.5051,"Zhuxin":0.4974,"Chou":0.5016,"Belerick":0.5108,"Roger":0.5177,"Gatotkaca":0.5247,"Popol and Kupa":0.5016,"Lancelot":0.5073,"Hanabi":0.4872,"Melissa":0.4961,"Nolan":0.5001,"Hirara":0.5054,"Natalia":0.4887,"Hanzo":0.4943,"Karina":0.4893,"Kalea":0.503,"Ling":0.5101,"Yu Zhong":0.5008,"Cici":0.5025,"Vexana":0.5083,"Mathilda":0.5225,"Gloo":0.4961,"Bruno":0.5098,"Floryn":0.4984,"Alice":0.4931,"Barats":0.5264,"Aulus":0.5107,"Luo Yi":0.4818,"Lylia":0.4952,"Chip":0.5273,"Arlott":0.5029,"Martis":0.5098,"Diggie":0.5219,"Beatrix":0.4849,"Yve":0.4825,"Zhask":0.5171,"Yin":0.5213,"Fanny":0.4946,"Joy":0.4907,"Zilong":0.4928,"Fredrinn":0.5075,"Karrie":0.4638,"Alpha":0.4792,"Sun":0.4999,"Grock":0.5155,"Hayabusa":0.5076,"Phoveus":0.5131,"Khaleed":0.5021,"Paquito":0.5035,"Yi Sun-shin":0.5251,"Kimmy":0.4773,"Angela":0.4682,"Ruby":0.501,"Argus":0.5389,"Harley":0.5036,"Gusion":0.5048,"Terizla":0.4975,"Gord":0.49,"Estes":0.4796,"Faramis":0.4804,"Saber":0.5099,"Freya":0.4914},
     "Angela": {"Masha":0.5018,"Roger":0.4992,"Aulus":0.5204,"Johnson":0.5015,"Aamon":0.5086,"Silvanna":0.4711,"Thamuz":0.4909,"Zhask":0.4934,"Chou":0.4917,"Floryn":0.497,"Alice":0.5538,"Hylos":0.5118,"Baxia":0.4944,"Kalea":0.4912,"Aurora":0.5007,"Lunox":0.4929,"Ixia":0.4875,"Granger":0.4964,"Yve":0.4992,"Aldous":0.5207,"Karrie":0.4879,"Saber":0.4899,"Popol and Kupa":0.4836,"Hanzo":0.5167,"Gatotkaca":0.5163,"Yin":0.4803,"Suyou":0.5083,"Akai":0.5081,"Kaja":0.5161,"Fredrinn":0.5139,"Brody":0.4945,"Khufra":0.5149,"Hirara":0.5141,"Kimmy":0.4988,"Estes":0.4822,"Lancelot":0.5266,"Paquito":0.4949,"Harith":0.4983,"Alpha":0.5214,"Alucard":0.4828,"Arlott":0.4937,"Beatrix":0.4943,"Valir":0.5065,"Balmond":0.5373,"Obsidia":0.4954,"Guinevere":0.4884,"Wanwan":0.4948,"Khaleed":0.4947,"Irithel":0.5045,"Diggie":0.531,"Cecilion":0.5023,"Sun":0.4896,"Argus":0.5008,"Lukas":0.5121,"Natalia":0.5253,"Freya":0.4984,"Lapu-Lapu":0.5064,"Barats":0.5041,"Carmilla":0.5244,"Gusion":0.487,"Layla":0.4853,"Phoveus":0.5299,"Lolita":0.4615,"Terizla":0.5259,"Gord":0.4983,"Martis":0.5155,"Jawhead":0.4879,"Lylia":0.5042,"Leomord":0.5223,"Franco":0.4735,"Nana":0.4962,"Sora":0.5129,"Yi Sun-shin":0.5052,"Faramis":0.534,"Fanny":0.5042,"Harley":0.482,"Zhuxin":0.5073,"Miya":0.4938,"Grock":0.5203,"Hilda":0.5155,"Ling":0.5106,"Belerick":0.5097,"Hanabi":0.5176,"Badang":0.5015,"Edith":0.4815,"Luo Yi":0.5068,"Minsitthar":0.4844,"Melissa":0.4907,"Zilong":0.4739,"Helcurt":0.4878,"Gloo":0.5131,"Eudora":0.4851,"Uranus":0.5318,"Joy":0.5043,"Selena":0.4925,"Benedetta":0.5018,"Claude":0.503,"Dyrroth":0.491,"Cyclops":0.5001,"Odette":0.4897,"Vale":0.4972,"Atlas":0.495,"Kagura":0.5025,"Tigreal":0.4887,"Hayabusa":0.4956,"Moskov":0.5057,"Zetian":0.5021,"Xavier":0.5272,"Cici":0.5129,"Bane":0.5019,"Kadita":0.5019,"Valentina":0.5217,"Marcel":0.5478,"Rafaela":0.4959,"Karina":0.502,"Yu Zhong":0.5128,"Ruby":0.5012,"Esmeralda":0.5208,"Pharsa":0.4923,"X.Borg":0.5305,"Vexana":0.4994,"Mathilda":0.4986,"Novaria":0.5147,"Nolan":0.4896,"Clint":0.501,"Chang'e":0.4981,"Natan":0.4933,"Julian":0.4857,"Chip":0.5178,"Lesley":0.5195,"Bruno":0.5031,"Minotaur":0.5129},
-    "Diggie": {"Hayabusa":0.4858,"Karrie":0.512,"Moskov":0.4981,"Jawhead":0.4921,"Johnson":0.4906,"Aamon":0.4961,"Esmeralda":0.4522,"Gloo":0.4998,"Melissa":0.5172,"Kalea":0.4915,"Yi Sun-shin":0.4913,"Kaja":0.4837,"Ixia":0.5089,"Aurora":0.5178,"Leomord":0.4837,"Natan":0.5029,"Hirara":0.4993,"Silvanna":0.5238,"Estes":0.4201,"Minotaur":0.4905,"Fanny":0.5077,"Novaria":0.4797,"Alpha":0.538,"Sora":0.5026,"Granger":0.4972,"Brody":0.5221,"Harley":0.491,"Kadita":0.5073,"Bane":0.4921,"Phoveus":0.4893,"Yin":0.4776,"Paquito":0.4869,"Sun":0.4577,"Lesley":0.5086,"Selena":0.5062,"Lancelot":0.5003,"Helcurt":0.467,"Masha":0.4865,"Angela":0.469,"Cici":0.522,"Uranus":0.4781,"Clint":0.4945,"Benedetta":0.5193,"Cecilion":0.4841,"Xavier":0.4908,"Dyrroth":0.4971,"Obsidia":0.5085,"Gusion":0.5043,"Floryn":0.4459,"Baxia":0.4993,"Hilda":0.459,"Marcel":0.4753,"Lukas":0.5026,"Vexana":0.4992,"Ling":0.5116,"Roger":0.4971,"Freya":0.4845,"Miya":0.4942,"Argus":0.5036,"Atlas":0.5348,"Vale":0.4959,"Joy":0.499,"Alice":0.5218,"Odette":0.5065,"Arlott":0.5056,"Julian":0.4845,"Suyou":0.4933,"Akai":0.5024,"Lylia":0.4979,"Barats":0.4966,"Gord":0.4917,"Lapu-Lapu":0.5052,"Hanabi":0.5007,"Nana":0.5023,"Lolita":0.4729,"Franco":0.4526,"Kagura":0.5018,"Chang'e":0.4812,"Yve":0.4638,"Khufra":0.5029,"Rafaela":0.479,"Bruno":0.5071,"Aldous":0.4977,"Belerick":0.5116,"Valentina":0.4848,"Yu Zhong":0.5097,"Khaleed":0.49,"Carmilla":0.5132,"Nolan":0.4921,"Irithel":0.4916,"Layla":0.4748,"Popol and Kupa":0.4746,"Ruby":0.5172,"Mathilda":0.4766,"Badang":0.5113,"Minsitthar":0.5182,"Claude":0.509,"Beatrix":0.5,"Chip":0.4954,"Pharsa":0.4919,"Cyclops":0.4844,"Wanwan":0.5132,"Kimmy":0.5022,"Eudora":0.5093,"Natalia":0.4866,"Hylos":0.467,"Fredrinn":0.5053,"Zhask":0.4624,"Tigreal":0.5329,"Martis":0.5066,"Harith":0.5294,"Edith":0.487,"Zhuxin":0.5182,"Saber":0.5175,"Karina":0.5199,"Gatotkaca":0.5102,"Valir":0.5209,"Lunox":0.4964,"Faramis":0.4702,"Zetian":0.5072,"Hanzo":0.4622,"Grock":0.4841,"Chou":0.4961,"X.Borg":0.5242,"Thamuz":0.484,"Aulus":0.4989,"Zilong":0.4836,"Terizla":0.5069,"Balmond":0.5127,"Luo Yi":0.4892,"Guinevere":0.5349,"Alucard":0.4943},
+    "Diggie": {"Kimmy":0.5022,"Miya":0.4942,"Luo Yi":0.4892,"Aurora":0.5178,"Kaja":0.4837,"Uranus":0.4781,"Sun":0.4577,"Xavier":0.4908,"Claude":0.509,"Argus":0.5036,"Valentina":0.4848,"Atlas":0.5348,"Natan":0.5029,"Brody":0.5221,"Layla":0.4748,"Khaleed":0.49,"Saber":0.5175,"Zhuxin":0.5182,"Paquito":0.4869,"Balmond":0.5127,"Hanabi":0.5007,"Nolan":0.4921,"Angela":0.469,"Beatrix":0.5,"Nana":0.5023,"Zhask":0.4624,"Suyou":0.4933,"Grock":0.4841,"Aldous":0.4977,"Masha":0.4865,"Tigreal":0.5329,"Rafaela":0.479,"Guinevere":0.5349,"Hilda":0.459,"Yi Sun-shin":0.4913,"Edith":0.487,"Kadita":0.5073,"Irithel":0.4916,"Ling":0.5116,"Cecilion":0.4841,"Karina":0.5199,"Obsidia":0.5085,"Faramis":0.4702,"Hylos":0.467,"Arlott":0.5056,"Natalia":0.4866,"Esmeralda":0.4522,"Selena":0.5062,"Hanzo":0.4622,"Freya":0.4845,"Helcurt":0.467,"Yu Zhong":0.5097,"Aamon":0.4961,"Ruby":0.5172,"Bruno":0.5071,"Granger":0.4972,"Lylia":0.4979,"Chang'e":0.4812,"Alice":0.5218,"X.Borg":0.5242,"Chip":0.4954,"Cyclops":0.4844,"Gatotkaca":0.5102,"Odette":0.5065,"Akai":0.5024,"Roger":0.4971,"Lesley":0.5086,"Silvanna":0.5238,"Mathilda":0.4766,"Fredrinn":0.5053,"Barats":0.4966,"Fanny":0.5077,"Lapu-Lapu":0.5052,"Kalea":0.4915,"Novaria":0.4797,"Belerick":0.5116,"Yin":0.4776,"Pharsa":0.4919,"Estes":0.4201,"Zetian":0.5072,"Popol and Kupa":0.4746,"Gord":0.4917,"Joy":0.499,"Marcel":0.4753,"Vale":0.4959,"Karrie":0.512,"Clint":0.4945,"Benedetta":0.5193,"Hayabusa":0.4858,"Zilong":0.4836,"Eudora":0.5093,"Yve":0.4638,"Julian":0.4845,"Melissa":0.5172,"Lunox":0.4964,"Minsitthar":0.5182,"Sora":0.5026,"Chou":0.4961,"Lolita":0.4677,"Floryn":0.4459,"Harith":0.5294,"Ixia":0.5089,"Leomord":0.4837,"Vexana":0.4992,"Thamuz":0.484,"Phoveus":0.4893,"Hirara":0.4993,"Johnson":0.4906,"Dyrroth":0.4971,"Bane":0.4921,"Wanwan":0.5132,"Baxia":0.4993,"Gusion":0.5043,"Aulus":0.4989,"Alpha":0.538,"Harley":0.491,"Cici":0.522,"Jawhead":0.4921,"Khufra":0.5029,"Lukas":0.5026,"Minotaur":0.4905,"Kagura":0.5018,"Valir":0.5209,"Martis":0.5066,"Alucard":0.4943,"Carmilla":0.5132,"Franco":0.4526,"Badang":0.5113,"Gloo":0.4998,"Moskov":0.4981,"Lancelot":0.5003,"Terizla":0.5069},
     "Estes": {"Kaja":0.4963,"Odette":0.4996,"Nolan":0.4662,"Hayabusa":0.5138,"Cyclops":0.5358,"Saber":0.5057,"Valentina":0.5,"Hilda":0.5204,"Hanzo":0.5071,"Suyou":0.4976,"Yu Zhong":0.5022,"X.Borg":0.5172,"Argus":0.5103,"Zhuxin":0.4883,"Aldous":0.5219,"Layla":0.4894,"Valir":0.5127,"Hylos":0.5146,"Vale":0.4784,"Hirara":0.497,"Brody":0.5053,"Minotaur":0.5065,"Yi Sun-shin":0.507,"Lukas":0.5134,"Karina":0.5016,"Faramis":0.5185,"Helcurt":0.4848,"Ling":0.5188,"Lolita":0.4865,"Popol and Kupa":0.5021,"Chip":0.4983,"Floryn":0.5099,"Alice":0.5373,"Kadita":0.486,"Baxia":0.4902,"Cici":0.5386,"Harith":0.5038,"Khaleed":0.5208,"Chang'e":0.503,"Paquito":0.4881,"Carmilla":0.489,"Freya":0.4892,"Wanwan":0.5076,"Rafaela":0.5124,"Thamuz":0.4899,"Aamon":0.5129,"Grock":0.5007,"Obsidia":0.522,"Barats":0.5034,"Aulus":0.5182,"Harley":0.516,"Ruby":0.499,"Alucard":0.4964,"Nana":0.4828,"Lapu-Lapu":0.49,"Cecilion":0.4977,"Arlott":0.4905,"Yve":0.4797,"Natan":0.4842,"Joy":0.4937,"Lylia":0.4976,"Leomord":0.5007,"Kimmy":0.5018,"Luo Yi":0.4596,"Zilong":0.4844,"Selena":0.5075,"Karrie":0.5033,"Vexana":0.4858,"Clint":0.4993,"Sora":0.4629,"Zhask":0.5216,"Dyrroth":0.4961,"Chou":0.4962,"Bane":0.4961,"Belerick":0.5174,"Tigreal":0.4667,"Bruno":0.5136,"Lancelot":0.5172,"Akai":0.4984,"Yin":0.4731,"Gatotkaca":0.5107,"Aurora":0.486,"Moskov":0.5045,"Miya":0.5061,"Kagura":0.4989,"Hanabi":0.5038,"Benedetta":0.4791,"Mathilda":0.5277,"Edith":0.4963,"Uranus":0.5204,"Angela":0.5178,"Irithel":0.5057,"Phoveus":0.5113,"Kalea":0.5028,"Esmeralda":0.5187,"Diggie":0.5799,"Fredrinn":0.502,"Johnson":0.4965,"Lesley":0.5307,"Zetian":0.517,"Novaria":0.5186,"Eudora":0.4974,"Khufra":0.5176,"Roger":0.515,"Terizla":0.5109,"Pharsa":0.4959,"Julian":0.4874,"Ixia":0.4448,"Gusion":0.4988,"Lunox":0.5155,"Balmond":0.5298,"Natalia":0.5251,"Xavier":0.5159,"Minsitthar":0.4883,"Alpha":0.5142,"Marcel":0.5345,"Gloo":0.5096,"Fanny":0.4944,"Gord":0.4845,"Sun":0.4942,"Atlas":0.4643,"Granger":0.4948,"Jawhead":0.5065,"Silvanna":0.4915,"Franco":0.4822,"Melissa":0.4991,"Guinevere":0.4782,"Beatrix":0.4552,"Martis":0.512,"Claude":0.5051,"Masha":0.5356,"Badang":0.4961},
     "Faramis": {"Freya":0.5002,"Chip":0.5353,"Harith":0.5111,"Estes":0.4815,"Popol and Kupa":0.495,"Irithel":0.4979,"Hanabi":0.4803,"Aamon":0.4802,"Nana":0.4967,"Zetian":0.5124,"Minotaur":0.502,"Aldous":0.4828,"Khufra":0.5263,"Clint":0.4881,"Sun":0.5224,"Cyclops":0.4789,"Masha":0.5211,"Lapu-Lapu":0.5024,"Aurora":0.5071,"Karina":0.5152,"Julian":0.4829,"Bruno":0.5117,"Lunox":0.5184,"Gatotkaca":0.4887,"Brody":0.5006,"Kagura":0.5231,"Ling":0.5228,"X.Borg":0.4911,"Gloo":0.5722,"Kimmy":0.5022,"Bane":0.4933,"Hylos":0.4991,"Kaja":0.5065,"Ruby":0.4984,"Vale":0.4996,"Beatrix":0.5167,"Luo Yi":0.4805,"Lolita":0.4628,"Claude":0.5006,"Benedetta":0.514,"Ixia":0.5022,"Dyrroth":0.4917,"Lukas":0.4802,"Zhuxin":0.5449,"Balmond":0.5048,"Novaria":0.4891,"Harley":0.506,"Badang":0.5055,"Suyou":0.4936,"Angela":0.466,"Karrie":0.5116,"Roger":0.5034,"Edith":0.4709,"Moskov":0.5121,"Jawhead":0.4972,"Joy":0.4945,"Cici":0.4973,"Natan":0.4814,"Mathilda":0.5189,"Cecilion":0.4922,"Lancelot":0.5042,"Melissa":0.5046,"Grock":0.5051,"Floryn":0.4712,"Obsidia":0.5068,"Belerick":0.5112,"Fanny":0.5205,"Chang'e":0.4972,"Wanwan":0.5048,"Akai":0.4847,"Esmeralda":0.508,"Yve":0.4632,"Nolan":0.4903,"Granger":0.515,"Baxia":0.496,"Hilda":0.4877,"Yin":0.4981,"Eudora":0.4916,"Zhask":0.5103,"Uranus":0.5196,"Diggie":0.5298,"Rafaela":0.4855,"Alpha":0.4987,"Martis":0.5169,"Kalea":0.4933,"Natalia":0.4981,"Yi Sun-shin":0.5002,"Pharsa":0.4999,"Valir":0.4987,"Guinevere":0.504,"Valentina":0.5003,"Vexana":0.4999,"Helcurt":0.5042,"Kadita":0.5158,"Silvanna":0.4986,"Lylia":0.4842,"Chou":0.5092,"Khaleed":0.5078,"Phoveus":0.493,"Thamuz":0.4955,"Aulus":0.4954,"Terizla":0.4957,"Sora":0.4814,"Paquito":0.5019,"Argus":0.4935,"Leomord":0.5017,"Gord":0.5076,"Carmilla":0.5094,"Marcel":0.483,"Hanzo":0.4762,"Arlott":0.4852,"Barats":0.4862,"Hirara":0.49,"Gusion":0.5116,"Fredrinn":0.492,"Franco":0.4995,"Xavier":0.4774,"Atlas":0.5059,"Lesley":0.5014,"Hayabusa":0.5138,"Selena":0.5069,"Johnson":0.5175,"Miya":0.4991,"Odette":0.4867,"Alice":0.4816,"Layla":0.4847,"Minsitthar":0.4905,"Alucard":0.5007,"Yu Zhong":0.5046,"Tigreal":0.5066,"Zilong":0.4985,"Saber":0.5063},
     "Floryn": {"Hylos":0.5051,"Ruby":0.505,"Estes":0.4901,"Bruno":0.5058,"Lolita":0.4559,"Yu Zhong":0.51,"Brody":0.4923,"Natan":0.5057,"Atlas":0.489,"Aldous":0.5148,"Paquito":0.4884,"Gloo":0.4953,"Lunox":0.5089,"Valentina":0.5118,"Zilong":0.4885,"Joy":0.5063,"Chou":0.4934,"Benedetta":0.5034,"Chip":0.494,"Helcurt":0.4862,"Grock":0.5106,"Lapu-Lapu":0.511,"Chang'e":0.4943,"Minsitthar":0.4936,"Arlott":0.4978,"Johnson":0.4894,"Zetian":0.5213,"Tigreal":0.4835,"Belerick":0.5149,"Irithel":0.4955,"Harley":0.4957,"Bane":0.5083,"Dyrroth":0.4931,"Mathilda":0.5157,"Nana":0.488,"Diggie":0.5541,"Vexana":0.4965,"Barats":0.4935,"Gusion":0.4968,"Wanwan":0.4982,"Cici":0.5182,"Roger":0.5083,"Julian":0.4903,"Ling":0.5197,"Aamon":0.4981,"Alucard":0.4958,"Badang":0.5051,"Lylia":0.5075,"Baxia":0.4947,"Kalea":0.498,"Cyclops":0.5069,"Guinevere":0.4878,"Jawhead":0.4943,"Aurora":0.4926,"Valir":0.5181,"Fanny":0.506,"Kagura":0.5045,"Kadita":0.4949,"Argus":0.5205,"Terizla":0.5066,"Hanabi":0.514,"Yin":0.472,"Fredrinn":0.5006,"X.Borg":0.5338,"Thamuz":0.4954,"Zhask":0.5116,"Kimmy":0.5043,"Melissa":0.5032,"Akai":0.5119,"Yve":0.5022,"Nolan":0.4861,"Carmilla":0.5089,"Vale":0.4801,"Rafaela":0.512,"Saber":0.4955,"Karina":0.513,"Clint":0.4976,"Martis":0.5156,"Hanzo":0.5078,"Popol and Kupa":0.4839,"Kaja":0.4926,"Sun":0.4993,"Luo Yi":0.5025,"Ixia":0.4751,"Odette":0.4963,"Edith":0.4879,"Franco":0.4724,"Gord":0.4988,"Zhuxin":0.5118,"Lesley":0.5171,"Cecilion":0.5042,"Lancelot":0.5176,"Obsidia":0.5033,"Esmeralda":0.4976,"Gatotkaca":0.5199,"Uranus":0.5016,"Novaria":0.5075,"Masha":0.5183,"Aulus":0.5196,"Xavier":0.5148,"Pharsa":0.4934,"Harith":0.4993,"Beatrix":0.4809,"Miya":0.5031,"Natalia":0.5241,"Faramis":0.5288,"Sora":0.4926,"Moskov":0.5101,"Eudora":0.4778,"Selena":0.4938,"Layla":0.4841,"Marcel":0.5371,"Hilda":0.4991,"Khufra":0.5058,"Phoveus":0.521,"Yi Sun-shin":0.5056,"Karrie":0.5122,"Minotaur":0.4966,"Balmond":0.5244,"Lukas":0.5049,"Alice":0.5383,"Hirara":0.5003,"Hayabusa":0.5015,"Angela":0.503,"Granger":0.4979,"Leomord":0.4998,"Khaleed":0.513,"Suyou":0.506,"Alpha":0.5177,"Freya":0.5002,"Silvanna":0.469,"Claude":0.505},
@@ -11734,7 +11731,7 @@
     "Johnson": {"Ixia":0.4927,"Aldous":0.5111,"Rafaela":0.461,"Valir":0.504,"Bruno":0.4984,"Edith":0.5196,"Gord":0.5009,"Roger":0.4978,"Gloo":0.4824,"Hanzo":0.5021,"Masha":0.4865,"Claude":0.5065,"Lancelot":0.501,"Novaria":0.5034,"Fanny":0.4995,"Grock":0.3615,"Helcurt":0.5012,"Faramis":0.4732,"Chang'e":0.5073,"Fredrinn":0.4839,"Harith":0.4954,"Karrie":0.5059,"Lesley":0.4965,"Akai":0.4844,"Ling":0.5058,"Khufra":0.3825,"Freya":0.5005,"Marcel":0.4121,"Odette":0.5022,"Angela":0.4719,"Bane":0.4878,"Beatrix":0.5005,"Baxia":0.4752,"Argus":0.5075,"Kagura":0.498,"Natalia":0.4958,"Jawhead":0.5091,"Julian":0.5144,"Sora":0.4907,"Atlas":0.4352,"Hylos":0.4599,"Martis":0.5013,"Benedetta":0.4996,"Aamon":0.5042,"Alucard":0.5052,"Aulus":0.4912,"Kaja":0.445,"Saber":0.5143,"Guinevere":0.4986,"Leomord":0.4905,"X.Borg":0.5061,"Dyrroth":0.4958,"Xavier":0.5046,"Pharsa":0.4987,"Zetian":0.4947,"Sun":0.5017,"Nolan":0.503,"Nana":0.5053,"Karina":0.4994,"Selena":0.4891,"Lylia":0.5039,"Zhuxin":0.4932,"Miya":0.5064,"Esmeralda":0.4979,"Chou":0.5076,"Obsidia":0.5002,"Uranus":0.4931,"Yu Zhong":0.4901,"Kalea":0.484,"Popol and Kupa":0.5016,"Zhask":0.5088,"Floryn":0.4177,"Tigreal":0.4256,"Cyclops":0.5061,"Phoveus":0.4947,"Ruby":0.4988,"Harley":0.5026,"Wanwan":0.5071,"Suyou":0.4977,"Gatotkaca":0.5045,"Balmond":0.506,"Alice":0.5007,"Luo Yi":0.4962,"Melissa":0.5039,"Lapu-Lapu":0.4908,"Natan":0.5019,"Alpha":0.5049,"Vexana":0.5077,"Kimmy":0.4906,"Cecilion":0.4916,"Brody":0.4929,"Cici":0.5053,"Paquito":0.4956,"Lukas":0.4907,"Minotaur":0.4145,"Khaleed":0.4599,"Zilong":0.5043,"Belerick":0.47,"Barats":0.4838,"Eudora":0.4962,"Kadita":0.5128,"Aurora":0.5032,"Chip":0.4139,"Granger":0.5016,"Estes":0.4194,"Yve":0.5084,"Hirara":0.4923,"Badang":0.4804,"Yin":0.5066,"Hanabi":0.5053,"Gusion":0.5091,"Irithel":0.4988,"Thamuz":0.498,"Terizla":0.4933,"Carmilla":0.4616,"Joy":0.4829,"Hilda":0.4737,"Silvanna":0.5146,"Valentina":0.4884,"Clint":0.4963,"Lolita":0.3844,"Hayabusa":0.5027,"Layla":0.4969,"Minsitthar":0.5183,"Vale":0.5034,"Moskov":0.504,"Lunox":0.5079,"Yi Sun-shin":0.4988,"Franco":0.4103,"Diggie":0.4149,"Mathilda":0.4612,"Arlott":0.5124},
     "Kalea": {"Tigreal":0.4842,"Cyclops":0.5075,"Lapu-Lapu":0.502,"Zhuxin":0.4934,"Obsidia":0.4974,"Barats":0.4948,"Belerick":0.4956,"Uranus":0.4771,"Harley":0.5047,"Yu Zhong":0.4989,"Masha":0.4833,"Hayabusa":0.5006,"Akai":0.4798,"Kagura":0.5002,"Lancelot":0.4936,"Terizla":0.4869,"Fanny":0.5048,"Karina":0.5118,"Arlott":0.5009,"Gloo":0.4824,"Atlas":0.4967,"Chip":0.4635,"Aamon":0.5069,"Franco":0.4933,"Minotaur":0.5084,"Lukas":0.4936,"Hanabi":0.5028,"Lolita":0.5006,"Bruno":0.5033,"Popol and Kupa":0.5007,"Alucard":0.5016,"Martis":0.4967,"Thamuz":0.4912,"Eudora":0.4964,"Gatotkaca":0.5076,"Nana":0.5008,"Claude":0.4959,"Ixia":0.5134,"Aldous":0.4941,"Chang'e":0.5059,"Nolan":0.5024,"Benedetta":0.5075,"Beatrix":0.4955,"Angela":0.5195,"Vexana":0.4986,"Sun":0.5032,"Valentina":0.4901,"Rafaela":0.5143,"Gord":0.5065,"Bane":0.5101,"Ling":0.4934,"Zilong":0.5064,"Selena":0.5007,"Kadita":0.5005,"Cici":0.4842,"Gusion":0.5079,"Phoveus":0.4878,"Floryn":0.5291,"X.Borg":0.5005,"Silvanna":0.5072,"Yin":0.504,"Minsitthar":0.51,"Hilda":0.4828,"Edith":0.5068,"Granger":0.5,"Brody":0.498,"Joy":0.497,"Marcel":0.5242,"Badang":0.501,"Khaleed":0.4753,"Yve":0.5171,"Faramis":0.5164,"Aurora":0.5008,"Aulus":0.4985,"Natalia":0.5222,"Saber":0.5215,"Johnson":0.484,"Hirara":0.4975,"Carmilla":0.5056,"Paquito":0.5011,"Lunox":0.4978,"Jawhead":0.4953,"Estes":0.5221,"Leomord":0.4962,"Novaria":0.5043,"Ruby":0.4983,"Chou":0.5053,"Dyrroth":0.4962,"Balmond":0.4829,"Esmeralda":0.4884,"Lylia":0.4952,"Vale":0.5009,"Fredrinn":0.4736,"Yi Sun-shin":0.5026,"Kimmy":0.5034,"Alice":0.4937,"Alpha":0.4919,"Kaja":0.5083,"Valir":0.5025,"Suyou":0.5009,"Khufra":0.5071,"Hylos":0.5084,"Clint":0.4974,"Pharsa":0.5025,"Xavier":0.5093,"Harith":0.482,"Baxia":0.5081,"Argus":0.4991,"Julian":0.5082,"Wanwan":0.4951,"Moskov":0.4967,"Grock":0.4797,"Layla":0.5079,"Natan":0.4927,"Guinevere":0.5035,"Helcurt":0.5031,"Irithel":0.497,"Odette":0.4991,"Miya":0.5014,"Cecilion":0.5015,"Freya":0.4894,"Sora":0.4937,"Luo Yi":0.4968,"Hanzo":0.5046,"Lesley":0.5029,"Melissa":0.5007,"Roger":0.4993,"Diggie":0.5147,"Karrie":0.4989,"Mathilda":0.5042,"Zhask":0.4964,"Zetian":0.4984},
     "Khufra": {"Freya":0.4974,"Nana":0.4999,"Cecilion":0.4973,"Uranus":0.476,"Popol and Kupa":0.4971,"Suyou":0.5117,"Johnson":0.3825,"Alucard":0.5072,"Valir":0.4895,"Yu Zhong":0.5092,"Guinevere":0.5027,"Karrie":0.4986,"Dyrroth":0.5014,"Aurora":0.494,"Jawhead":0.5015,"Chang'e":0.5024,"Ling":0.5079,"Alpha":0.4981,"Natan":0.4932,"Lylia":0.5044,"Lukas":0.4902,"Kalea":0.5071,"Floryn":0.461,"Joy":0.4994,"Gatotkaca":0.4855,"Xavier":0.5005,"Badang":0.4926,"Hilda":0.4566,"Ixia":0.5051,"Yve":0.5287,"Rafaela":0.4582,"Balmond":0.4934,"Faramis":0.5163,"Fredrinn":0.4741,"Saber":0.516,"Aulus":0.4939,"Lolita":0.4759,"Cyclops":0.5012,"Masha":0.4887,"Hayabusa":0.5172,"Belerick":0.455,"Silvanna":0.5092,"Estes":0.5136,"Carmilla":0.4708,"Pharsa":0.5078,"Hanabi":0.5024,"Yin":0.511,"Sora":0.4965,"Terizla":0.491,"Miya":0.4978,"Martis":0.4897,"Edith":0.4973,"Valentina":0.4924,"Khaleed":0.4746,"Zhuxin":0.4888,"Layla":0.4992,"Melissa":0.4982,"Bane":0.5028,"Sun":0.4952,"Paquito":0.5019,"Luo Yi":0.5198,"Helcurt":0.5265,"Marcel":0.3952,"Cici":0.4907,"Lunox":0.5027,"Gloo":0.4732,"Aldous":0.5019,"Obsidia":0.4959,"Julian":0.5063,"Beatrix":0.5017,"Akai":0.4813,"Natalia":0.5223,"Vale":0.5071,"Kimmy":0.4935,"Thamuz":0.5009,"Minsitthar":0.5177,"Benedetta":0.5025,"Hylos":0.4759,"Tigreal":0.4234,"Chip":0.3094,"Atlas":0.4654,"Eudora":0.494,"Minotaur":0.4685,"Granger":0.5071,"Esmeralda":0.4917,"Brody":0.5004,"Barats":0.4925,"Lancelot":0.4942,"Zhask":0.499,"Irithel":0.4922,"Roger":0.4948,"Odette":0.5033,"Angela":0.5121,"Phoveus":0.4804,"Grock":0.3913,"Ruby":0.4817,"X.Borg":0.4999,"Kagura":0.5013,"Diggie":0.5154,"Gord":0.511,"Lapu-Lapu":0.5066,"Harith":0.5236,"Franco":0.4059,"Hanzo":0.5076,"Chou":0.5179,"Bruno":0.4959,"Nolan":0.504,"Hirara":0.5071,"Novaria":0.5171,"Kaja":0.4292,"Vexana":0.5005,"Wanwan":0.4928,"Alice":0.4824,"Clint":0.5097,"Aamon":0.5068,"Moskov":0.5054,"Arlott":0.5077,"Kadita":0.4993,"Zetian":0.5001,"Yi Sun-shin":0.509,"Lesley":0.506,"Fanny":0.5168,"Baxia":0.4519,"Argus":0.5066,"Harley":0.4991,"Leomord":0.482,"Mathilda":0.4826,"Claude":0.5046,"Gusion":0.508,"Selena":0.4966,"Karina":0.4974,"Zilong":0.515},
-    "Lolita": {"Badang":0.494,"Aurora":0.4965,"Layla":0.497,"Alucard":0.4874,"Uranus":0.4643,"Lapu-Lapu":0.4923,"Novaria":0.5093,"Lancelot":0.4778,"Argus":0.4918,"Faramis":0.416,"Yu Zhong":0.4873,"Ixia":0.5152,"Yve":0.4798,"Odette":0.4894,"Atlas":0.4518,"Cici":0.5059,"Vale":0.4984,"Freya":0.5097,"Harith":0.5087,"Moskov":0.4984,"Clint":0.4894,"Thamuz":0.5113,"Miya":0.5026,"Gloo":0.4677,"Helcurt":0.5126,"Melissa":0.516,"Selena":0.5007,"Carmilla":0.4839,"Obsidia":0.5057,"Valir":0.4954,"Bruno":0.5023,"Vexana":0.4943,"Joy":0.521,"Akai":0.4795,"Kadita":0.4955,"Alice":0.4892,"Esmeralda":0.4827,"Angela":0.4599,"Bane":0.5019,"Hilda":0.4679,"Leomord":0.4896,"Zilong":0.5108,"Gord":0.5105,"Tigreal":0.5037,"X.Borg":0.5087,"Gusion":0.5088,"Cyclops":0.5033,"Benedetta":0.5011,"Terizla":0.4626,"Lylia":0.4828,"Fanny":0.5029,"Natalia":0.495,"Karrie":0.501,"Irithel":0.4939,"Aulus":0.4944,"Pharsa":0.4944,"Chip":0.2634,"Saber":0.5231,"Zhuxin":0.4904,"Chou":0.5116,"Estes":0.3878,"Barats":0.4945,"Wanwan":0.4671,"Hylos":0.4426,"Kalea":0.5006,"Suyou":0.4952,"Minsitthar":0.5172,"Kimmy":0.5032,"Lesley":0.495,"Eudora":0.5042,"Johnson":0.3844,"Franco":0.3916,"Diggie":0.4236,"Kaja":0.5311,"Xavier":0.5049,"Martis":0.4995,"Sun":0.4917,"Belerick":0.4701,"Gatotkaca":0.4827,"Arlott":0.5041,"Masha":0.4937,"Lukas":0.4862,"Paquito":0.5074,"Valentina":0.5186,"Mathilda":0.4203,"Nana":0.5045,"Silvanna":0.5221,"Dyrroth":0.5123,"Luo Yi":0.5235,"Natan":0.4917,"Guinevere":0.5004,"Zhask":0.4965,"Baxia":0.4582,"Aamon":0.5086,"Roger":0.5084,"Jawhead":0.5345,"Khaleed":0.4623,"Nolan":0.4957,"Ling":0.4938,"Yin":0.4992,"Ruby":0.4908,"Lunox":0.4904,"Hirara":0.5139,"Zetian":0.5019,"Khufra":0.4759,"Kagura":0.4965,"Aldous":0.5022,"Phoveus":0.5038,"Grock":0.3407,"Floryn":0.3436,"Rafaela":0.4426,"Beatrix":0.5166,"Alpha":0.5063,"Edith":0.5244,"Cecilion":0.5029,"Sora":0.4864,"Brody":0.5094,"Yi Sun-shin":0.507,"Claude":0.5081,"Chang'e":0.4963,"Hayabusa":0.5078,"Popol and Kupa":0.4936,"Karina":0.5108,"Hanabi":0.503,"Minotaur":0.4416,"Harley":0.5079,"Granger":0.4847,"Balmond":0.4682,"Hanzo":0.4757,"Fredrinn":0.4685,"Marcel":0.4596,"Julian":0.5137},
+    "Lolita": {"Alucard":0.4874,"Faramis":0.416,"Zhuxin":0.4904,"Layla":0.497,"Khaleed":0.4623,"Lylia":0.4828,"Gusion":0.5088,"Diggie":0.4235,"Yu Zhong":0.4873,"Masha":0.4937,"Franco":0.3916,"Martis":0.4995,"Hanzo":0.4757,"Valentina":0.5186,"Lapu-Lapu":0.4923,"Joy":0.521,"Bane":0.5019,"Harley":0.5079,"Kaja":0.5311,"Granger":0.4847,"Hanabi":0.503,"Yi Sun-shin":0.507,"Chou":0.5116,"Selena":0.5007,"Miya":0.5026,"Xavier":0.5049,"Guinevere":0.5004,"Johnson":0.3844,"Bruno":0.5023,"Gatotkaca":0.4827,"Leomord":0.4896,"Brody":0.5094,"Claude":0.5081,"Yin":0.4992,"Kalea":0.5006,"Atlas":0.4518,"Jawhead":0.5345,"Mathilda":0.4203,"Barats":0.4945,"Lesley":0.495,"Gloo":0.4677,"Fanny":0.5029,"Khufra":0.4759,"Tigreal":0.5037,"Cyclops":0.5033,"Carmilla":0.4839,"Nolan":0.4957,"Minotaur":0.4416,"Harith":0.5087,"Vexana":0.4943,"Cecilion":0.5029,"Natalia":0.495,"Karina":0.5108,"Wanwan":0.4671,"Hayabusa":0.5078,"Arlott":0.5041,"Gord":0.5105,"Pharsa":0.4944,"Hylos":0.4426,"Zhask":0.4965,"Angela":0.4599,"Argus":0.4918,"Hirara":0.5139,"Lunox":0.4904,"Aurora":0.4965,"Aldous":0.5022,"Odette":0.4894,"Melissa":0.516,"Vale":0.4984,"Cici":0.5059,"Sora":0.4864,"Freya":0.5097,"Phoveus":0.5038,"Alice":0.4892,"Natan":0.4917,"Terizla":0.4626,"Sun":0.4917,"Floryn":0.3436,"Valir":0.4954,"Benedetta":0.5011,"Hilda":0.4679,"Fredrinn":0.4685,"Suyou":0.4952,"Saber":0.5231,"Lukas":0.4862,"Minsitthar":0.5172,"Kagura":0.4965,"Clint":0.4894,"Edith":0.5244,"Paquito":0.5074,"Eudora":0.5042,"Belerick":0.4701,"Silvanna":0.5221,"Badang":0.494,"Alpha":0.5063,"Irithel":0.4939,"Lancelot":0.4778,"Estes":0.3878,"Yve":0.4798,"Chip":0.2634,"Nana":0.5045,"Karrie":0.501,"Aulus":0.4944,"Helcurt":0.5126,"Roger":0.5084,"Akai":0.4795,"Kadita":0.4955,"Ruby":0.4908,"Obsidia":0.5057,"Marcel":0.4596,"Dyrroth":0.5123,"Moskov":0.4984,"Esmeralda":0.4827,"Ixia":0.5152,"Zilong":0.5108,"Zetian":0.5019,"Beatrix":0.5166,"Chang'e":0.4963,"Thamuz":0.5113,"Luo Yi":0.5235,"Balmond":0.4682,"X.Borg":0.5087,"Julian":0.5137,"Kimmy":0.5032,"Rafaela":0.4426,"Popol and Kupa":0.4936,"Grock":0.3407,"Baxia":0.4582,"Novaria":0.5093,"Ling":0.4938,"Aamon":0.5086,"Uranus":0.4643},
     "Minotaur": {"Lylia":0.501,"Lesley":0.4993,"Fredrinn":0.4755,"Alpha":0.505,"Hylos":0.4771,"Ling":0.5009,"Natalia":0.4991,"Kalea":0.5084,"Aldous":0.5,"Zilong":0.5068,"Wanwan":0.4911,"Zetian":0.5039,"Vale":0.4987,"Moskov":0.5024,"Irithel":0.4954,"Karrie":0.5002,"Balmond":0.4929,"Arlott":0.5181,"Zhuxin":0.4946,"Sora":0.5041,"Suyou":0.5026,"Cecilion":0.4991,"Argus":0.4901,"Alucard":0.4977,"Rafaela":0.4627,"Nolan":0.5037,"Paquito":0.5075,"Freya":0.4957,"Phoveus":0.4937,"Barats":0.4913,"Claude":0.4938,"Yve":0.4863,"X.Borg":0.5075,"Bruno":0.5014,"Valir":0.4977,"Esmeralda":0.484,"Mathilda":0.474,"Pharsa":0.5083,"Karina":0.503,"Sun":0.4845,"Cyclops":0.5042,"Kimmy":0.5034,"Obsidia":0.4985,"Aurora":0.4995,"Gatotkaca":0.5086,"Masha":0.4726,"Beatrix":0.5041,"Carmilla":0.5026,"Thamuz":0.4913,"Hanzo":0.4979,"Brody":0.506,"Julian":0.5082,"Aamon":0.5022,"Popol and Kupa":0.4937,"Floryn":0.4851,"Odette":0.5,"Granger":0.4989,"Clint":0.4991,"Luo Yi":0.4999,"Joy":0.5034,"Yin":0.4961,"Layla":0.4995,"Alice":0.4907,"Novaria":0.4938,"Gusion":0.5067,"Jawhead":0.5051,"Guinevere":0.5103,"Roger":0.5041,"Helcurt":0.5061,"Hirara":0.4999,"Martis":0.5014,"Lancelot":0.4975,"Chang'e":0.4972,"Benedetta":0.5046,"Baxia":0.4785,"Tigreal":0.4557,"Bane":0.5032,"Fanny":0.5077,"Chip":0.3941,"Natan":0.5038,"Hilda":0.4538,"Melissa":0.5,"Chou":0.5181,"Saber":0.5272,"Vexana":0.4991,"Faramis":0.5012,"Khaleed":0.4643,"Aulus":0.4952,"Lolita":0.4416,"Belerick":0.4707,"Yu Zhong":0.4967,"Miya":0.5025,"Lapu-Lapu":0.5029,"Franco":0.4148,"Gord":0.5016,"Valentina":0.5118,"Hanabi":0.5022,"Kagura":0.5001,"Khufra":0.4685,"Selena":0.4994,"Lunox":0.4982,"Gloo":0.4678,"Leomord":0.4949,"Ixia":0.5012,"Eudora":0.4993,"Harley":0.508,"Xavier":0.5097,"Terizla":0.4984,"Nana":0.5014,"Edith":0.5082,"Cici":0.5004,"Angela":0.4609,"Uranus":0.471,"Zhask":0.4907,"Johnson":0.4145,"Minsitthar":0.5174,"Harith":0.5047,"Yi Sun-shin":0.4996,"Estes":0.4378,"Hayabusa":0.5008,"Lukas":0.4942,"Grock":0.4259,"Dyrroth":0.5105,"Kaja":0.4848,"Atlas":0.4788,"Diggie":0.4571,"Akai":0.4616,"Silvanna":0.5136,"Marcel":0.4373,"Badang":0.4981,"Ruby":0.4958,"Kadita":0.5083},
     "Minsitthar": {"Lapu-Lapu":0.4722,"Clint":0.4983,"Granger":0.5021,"Zilong":0.478,"Kadita":0.5042,"Faramis":0.5122,"Arlott":0.4634,"Aurora":0.5007,"Edith":0.4865,"Vexana":0.5019,"Popol and Kupa":0.5019,"Helcurt":0.5056,"Karina":0.5087,"Hilda":0.5213,"Baxia":0.5096,"Miya":0.506,"Nolan":0.497,"Silvanna":0.4948,"Natan":0.4951,"Xavier":0.4939,"Gord":0.4975,"Balmond":0.5087,"Suyou":0.5021,"Alice":0.5037,"Lesley":0.5015,"Cyclops":0.5009,"Martis":0.4989,"Jawhead":0.494,"Selena":0.5014,"Eudora":0.5051,"Cici":0.4682,"Lylia":0.4963,"Yu Zhong":0.4653,"Ixia":0.4937,"Pharsa":0.4952,"Lunox":0.5066,"Odette":0.5088,"Mathilda":0.5015,"Natalia":0.5134,"Minotaur":0.5174,"Phoveus":0.459,"Valir":0.4921,"Khaleed":0.515,"Esmeralda":0.4933,"Yi Sun-shin":0.4974,"Chip":0.5134,"Claude":0.5017,"Carmilla":0.5077,"Rafaela":0.5143,"Irithel":0.495,"Ruby":0.4637,"Ling":0.4986,"Atlas":0.5115,"Karrie":0.4994,"Leomord":0.5006,"Kalea":0.51,"Akai":0.5048,"Dyrroth":0.4797,"Marcel":0.5072,"Fanny":0.5046,"Obsidia":0.4986,"Aulus":0.5081,"Hylos":0.5137,"Yin":0.4973,"Belerick":0.5109,"Khufra":0.5177,"Lancelot":0.5049,"Thamuz":0.4988,"Hanzo":0.4961,"Chou":0.4839,"Vale":0.4985,"Paquito":0.4861,"Roger":0.5003,"Nana":0.4997,"X.Borg":0.4882,"Moskov":0.495,"Alucard":0.5035,"Masha":0.4979,"Yve":0.4598,"Kaja":0.5154,"Gloo":0.5194,"Valentina":0.5093,"Melissa":0.499,"Joy":0.499,"Floryn":0.5053,"Uranus":0.4818,"Diggie":0.4976,"Wanwan":0.4949,"Guinevere":0.4782,"Kagura":0.4978,"Barats":0.4744,"Lukas":0.4991,"Saber":0.5079,"Sun":0.5002,"Layla":0.5004,"Gatotkaca":0.5116,"Bane":0.4921,"Grock":0.5099,"Julian":0.4948,"Estes":0.5246,"Cecilion":0.4968,"Lolita":0.5172,"Terizla":0.4622,"Novaria":0.4983,"Alpha":0.5063,"Freya":0.4901,"Harith":0.5036,"Argus":0.4857,"Bruno":0.495,"Aldous":0.4674,"Tigreal":0.5125,"Luo Yi":0.4996,"Chang'e":0.499,"Zhask":0.5064,"Beatrix":0.498,"Badang":0.4969,"Harley":0.5017,"Kimmy":0.5026,"Angela":0.4997,"Fredrinn":0.507,"Gusion":0.5022,"Johnson":0.5183,"Sora":0.4651,"Brody":0.5069,"Aamon":0.5002,"Zhuxin":0.5011,"Zetian":0.4924,"Hanabi":0.4935,"Benedetta":0.476,"Hirara":0.4918,"Hayabusa":0.4954,"Franco":0.5118},
     "Ruby": {"Jawhead":0.5,"Diggie":0.5001,"Kadita":0.4974,"Miya":0.5008,"Minsitthar":0.4637,"Aldous":0.4344,"Carmilla":0.4931,"Baxia":0.4786,"Obsidia":0.5028,"Valentina":0.5035,"Balmond":0.517,"Irithel":0.4988,"Roger":0.5046,"Pharsa":0.4998,"Arlott":0.4644,"Sora":0.4365,"X.Borg":0.5003,"Popol and Kupa":0.5025,"Melissa":0.5093,"Yin":0.4999,"Ling":0.4992,"Chou":0.4821,"Helcurt":0.503,"Karina":0.5032,"Bane":0.5186,"Grock":0.4978,"Dyrroth":0.4848,"Yi Sun-shin":0.5034,"Zhask":0.4991,"Cyclops":0.5034,"Zhuxin":0.495,"Badang":0.5038,"Wanwan":0.4892,"Rafaela":0.5102,"Tigreal":0.4935,"Joy":0.5012,"Thamuz":0.5092,"Ixia":0.5013,"Alucard":0.5036,"Cici":0.4662,"Chip":0.4869,"Mathilda":0.4945,"Fredrinn":0.5024,"Harith":0.5038,"Freya":0.4801,"Lunox":0.5001,"Terizla":0.4521,"Hylos":0.5092,"Cecilion":0.5009,"Harley":0.5022,"Lukas":0.5038,"Clint":0.5069,"Aurora":0.5,"Saber":0.5022,"Hirara":0.5036,"Kagura":0.5027,"Franco":0.4949,"Yve":0.4908,"Esmeralda":0.4786,"Vexana":0.4948,"Belerick":0.4911,"Johnson":0.4988,"Fanny":0.5061,"Hanzo":0.4955,"Masha":0.505,"Marcel":0.4975,"Edith":0.4606,"Natan":0.5128,"Paquito":0.4941,"Khaleed":0.5017,"Gatotkaca":0.4925,"Lesley":0.5029,"Martis":0.5077,"Xavier":0.4992,"Atlas":0.4949,"Kalea":0.4983,"Zilong":0.4565,"Vale":0.5011,"Argus":0.479,"Julian":0.5152,"Natalia":0.4964,"Selena":0.5012,"Phoveus":0.4913,"Faramis":0.5175,"Hayabusa":0.4979,"Lylia":0.5009,"Yu Zhong":0.476,"Lapu-Lapu":0.4235,"Hanabi":0.4978,"Nana":0.4967,"Bruno":0.4969,"Alpha":0.5048,"Leomord":0.5001,"Barats":0.4809,"Claude":0.4973,"Hilda":0.5025,"Suyou":0.5083,"Luo Yi":0.4982,"Gord":0.5008,"Gloo":0.4944,"Chang'e":0.5033,"Silvanna":0.4929,"Angela":0.5051,"Akai":0.4963,"Karrie":0.492,"Valir":0.4926,"Gusion":0.5055,"Nolan":0.4994,"Odette":0.5038,"Minotaur":0.4958,"Alice":0.5052,"Benedetta":0.4846,"Aamon":0.4991,"Zetian":0.5006,"Kimmy":0.5005,"Floryn":0.5113,"Layla":0.504,"Lolita":0.4908,"Beatrix":0.4957,"Novaria":0.5036,"Uranus":0.4683,"Aulus":0.5074,"Guinevere":0.5009,"Granger":0.5031,"Khufra":0.4817,"Lancelot":0.4945,"Moskov":0.4996,"Sun":0.5105,"Estes":0.5243,"Brody":0.5054,"Kaja":0.498,"Eudora":0.4992},
@@ -11742,7 +11739,7 @@
     "Tigreal": {"Ruby":0.4935,"Guinevere":0.4974,"Claude":0.498,"Esmeralda":0.4942,"Irithel":0.5033,"Kadita":0.4985,"Yve":0.4925,"Ixia":0.4971,"Vale":0.5051,"Moskov":0.5,"Freya":0.5053,"Vexana":0.5069,"Aulus":0.4951,"Fredrinn":0.4787,"Paquito":0.5038,"Badang":0.4878,"Aamon":0.5094,"Terizla":0.4906,"Zhask":0.5008,"Fanny":0.5017,"Kalea":0.4842,"Khaleed":0.4534,"Floryn":0.5144,"Arlott":0.508,"Angela":0.5148,"Lylia":0.5018,"Leomord":0.4896,"Joy":0.5006,"Franco":0.4241,"Zetian":0.4954,"Karrie":0.5024,"Dyrroth":0.506,"Hilda":0.4776,"Yin":0.5018,"Kimmy":0.4986,"Lancelot":0.4944,"Lesley":0.4911,"Julian":0.5137,"Zilong":0.5153,"Lukas":0.4893,"Martis":0.498,"Carmilla":0.4752,"Edith":0.5064,"X.Borg":0.4961,"Grock":0.4176,"Balmond":0.5003,"Minotaur":0.4557,"Beatrix":0.5024,"Rafaela":0.5093,"Yi Sun-shin":0.498,"Hayabusa":0.5007,"Miya":0.5043,"Sun":0.506,"Thamuz":0.5022,"Lapu-Lapu":0.4917,"Chang'e":0.5092,"Belerick":0.4636,"Xavier":0.4953,"Aurora":0.5018,"Faramis":0.4954,"Helcurt":0.5173,"Gloo":0.4753,"Cecilion":0.5032,"Melissa":0.5032,"Hanabi":0.5079,"Baxia":0.4681,"Natan":0.5125,"Nolan":0.4983,"Diggie":0.4128,"Harley":0.5003,"Alice":0.4894,"Gord":0.5002,"Clint":0.5001,"Luo Yi":0.5047,"Khufra":0.4234,"Gusion":0.5082,"Layla":0.5011,"Cyclops":0.5072,"Valentina":0.4821,"Masha":0.4844,"Harith":0.4949,"Bane":0.5087,"Eudora":0.4977,"Suyou":0.4979,"Hylos":0.4754,"Natalia":0.5127,"Saber":0.5188,"Kaja":0.4744,"Hirara":0.4928,"Alpha":0.5055,"Popol and Kupa":0.4975,"Lunox":0.5012,"Johnson":0.4256,"Lolita":0.5037,"Marcel":0.4183,"Mathilda":0.4852,"Bruno":0.5049,"Pharsa":0.5057,"Obsidia":0.5,"Brody":0.4953,"Sora":0.4875,"Valir":0.4968,"Roger":0.5046,"Granger":0.4968,"Wanwan":0.4919,"Kagura":0.4962,"Gatotkaca":0.4934,"Ling":0.4995,"Akai":0.4566,"Odette":0.4996,"Selena":0.4912,"Atlas":0.4558,"Alucard":0.5185,"Zhuxin":0.4877,"Silvanna":0.5133,"Estes":0.4945,"Benedetta":0.4996,"Novaria":0.5022,"Chou":0.5144,"Phoveus":0.4965,"Aldous":0.5197,"Barats":0.4811,"Cici":0.5009,"Nana":0.5027,"Uranus":0.4904,"Yu Zhong":0.4916,"Jawhead":0.5064,"Argus":0.4996,"Karina":0.5069,"Chip":0.4101,"Minsitthar":0.5125,"Hanzo":0.4945},
     "Uranus": {"Lesley":0.4966,"Hanabi":0.508,"Thamuz":0.4797,"Harley":0.5039,"Alpha":0.5134,"Sora":0.471,"Minotaur":0.471,"Minsitthar":0.4818,"Ruby":0.4683,"Estes":0.5001,"Aulus":0.5073,"Badang":0.5056,"Vale":0.5081,"X.Borg":0.4953,"Barats":0.4798,"Benedetta":0.4737,"Leomord":0.4893,"Zhask":0.4929,"Vexana":0.4966,"Brody":0.4949,"Franco":0.503,"Luo Yi":0.5102,"Fredrinn":0.4874,"Bruno":0.5077,"Zilong":0.4752,"Ixia":0.5039,"Chou":0.4747,"Gatotkaca":0.4756,"Atlas":0.4855,"Roger":0.5061,"Cecilion":0.5027,"Cici":0.4876,"Terizla":0.4415,"Hayabusa":0.5087,"Phoveus":0.4557,"Carmilla":0.4816,"Tigreal":0.4904,"Kadita":0.5007,"Akai":0.4844,"Diggie":0.5151,"Yu Zhong":0.4371,"Aurora":0.5009,"Esmeralda":0.4652,"Natalia":0.5054,"Granger":0.4915,"Nana":0.4997,"Balmond":0.4946,"Harith":0.4912,"Khufra":0.476,"Xavier":0.5014,"Julian":0.5101,"Cyclops":0.4936,"Kaja":0.5024,"Layla":0.496,"Zetian":0.4942,"Hilda":0.483,"Sun":0.5166,"Rafaela":0.5048,"Guinevere":0.494,"Belerick":0.4799,"Grock":0.4843,"Baxia":0.4639,"Gord":0.5039,"Wanwan":0.5042,"Suyou":0.514,"Khaleed":0.4868,"Lunox":0.499,"Natan":0.5102,"Yin":0.4913,"Paquito":0.5009,"Irithel":0.5001,"Angela":0.5532,"Valentina":0.4909,"Aldous":0.4653,"Helcurt":0.509,"Nolan":0.5091,"Kalea":0.4771,"Obsidia":0.5021,"Martis":0.4816,"Chang'e":0.5019,"Moskov":0.5017,"Chip":0.4594,"Alucard":0.5023,"Lancelot":0.5025,"Joy":0.4867,"Eudora":0.4981,"Odette":0.5027,"Aamon":0.5102,"Marcel":0.495,"Kimmy":0.5012,"Floryn":0.5114,"Argus":0.4848,"Hylos":0.4844,"Gusion":0.4979,"Yve":0.5025,"Edith":0.4521,"Masha":0.4968,"Fanny":0.5016,"Hanzo":0.4967,"Ling":0.5063,"Beatrix":0.4963,"Miya":0.5009,"Novaria":0.4984,"Yi Sun-shin":0.5033,"Zhuxin":0.4989,"Saber":0.5038,"Valir":0.508,"Karina":0.4942,"Dyrroth":0.4799,"Bane":0.5174,"Karrie":0.5051,"Popol and Kupa":0.4903,"Selena":0.5078,"Melissa":0.5021,"Hirara":0.5004,"Lolita":0.4643,"Gloo":0.4993,"Lukas":0.5069,"Johnson":0.4931,"Faramis":0.4722,"Arlott":0.4732,"Alice":0.4916,"Clint":0.5019,"Pharsa":0.4963,"Claude":0.5001,"Freya":0.4755,"Lapu-Lapu":0.4693,"Silvanna":0.496,"Kagura":0.4986,"Mathilda":0.497,"Lylia":0.5093,"Jawhead":0.4859},
     "Angela": {"Diggie":0.4007,"Cecilion":0.4907,"Selena":0.5018,"Bane":0.4711,"Luo Yi":0.4932,"Esmeralda":0.515,"Obsidia":0.5081,"Ruby":0.5051,"Odette":0.5003,"Hanabi":0.4953,"Suyou":0.5059,"Novaria":0.4878,"Eudora":0.5065,"Kalea":0.5195,"Aamon":0.4822,"Lapu-Lapu":0.516,"Kagura":0.5066,"Wanwan":0.5283,"Lylia":0.4987,"Lancelot":0.531,"Atlas":0.525,"Terizla":0.5299,"Barats":0.529,"Aurora":0.5072,"Cici":0.5056,"Leomord":0.5259,"Hayabusa":0.4918,"Franco":0.4581,"Guinevere":0.4919,"Mathilda":0.4812,"Hirara":0.5383,"Harley":0.4815,"Roger":0.5114,"Hilda":0.5013,"Alucard":0.4795,"Valentina":0.5097,"Kaja":0.496,"Akai":0.5454,"Balmond":0.5248,"Natan":0.4966,"Granger":0.5061,"Dyrroth":0.488,"Freya":0.4995,"Miya":0.497,"Grock":0.4756,"Claude":0.5153,"Layla":0.4887,"Irithel":0.5188,"Popol and Kupa":0.4866,"Arlott":0.4893,"Nana":0.5056,"Baxia":0.5453,"Beatrix":0.5018,"Ixia":0.4977,"Kimmy":0.5045,"Bruno":0.4954,"Moskov":0.5051,"Melissa":0.4979,"Yi Sun-shin":0.5002,"Thamuz":0.5027,"Faramis":0.5259,"Saber":0.5062,"Alpha":0.4929,"Lukas":0.5173,"Paquito":0.4977,"Gatotkaca":0.5459,"Aldous":0.4886,"Khufra":0.5121,"Khaleed":0.4816,"Silvanna":0.4885,"Valir":0.4946,"Edith":0.5043,"Kadita":0.5255,"Brody":0.5126,"Zhuxin":0.5135,"Joy":0.5062,"Karrie":0.4977,"Zetian":0.498,"Johnson":0.4719,"Clint":0.4949,"Hanzo":0.5133,"Estes":0.3744,"Argus":0.4935,"Yu Zhong":0.5154,"Zilong":0.4774,"Gloo":0.5094,"Ling":0.5134,"Jawhead":0.497,"Chang'e":0.487,"Nolan":0.4931,"Sora":0.5184,"Gord":0.4937,"Lesley":0.4928,"Minotaur":0.4609,"Chou":0.4934,"Minsitthar":0.4997,"Masha":0.5003,"Badang":0.4868,"Yve":0.4889,"Sun":0.4885,"Belerick":0.5196,"Floryn":0.3665,"Xavier":0.4934,"Cyclops":0.4776,"Tigreal":0.5148,"Carmilla":0.5326,"X.Borg":0.4987,"Pharsa":0.4982,"Zhask":0.4959,"Fanny":0.4876,"Phoveus":0.5188,"Benedetta":0.5036,"Gusion":0.4843,"Vexana":0.5017,"Natalia":0.4938,"Lunox":0.5028,"Aulus":0.5158,"Karina":0.4955,"Alice":0.5326,"Fredrinn":0.5395,"Chip":0.4794,"Vale":0.4997,"Yin":0.4791,"Marcel":0.4767,"Helcurt":0.4819,"Julian":0.4811,"Rafaela":0.4233,"Harith":0.5098,"Uranus":0.5532,"Martis":0.5192,"Lolita":0.4599,"Hylos":0.5235},
-    "Diggie": {"Benedetta":0.4875,"Yi Sun-shin":0.5012,"Claude":0.4867,"Thamuz":0.5164,"Hirara":0.4939,"Tigreal":0.4128,"Chip":0.3061,"Chang'e":0.4995,"Lesley":0.4982,"Rafaela":0.4117,"Badang":0.4877,"Zetian":0.4973,"Gloo":0.4903,"Cici":0.4904,"Zhask":0.4972,"Sun":0.4934,"Angela":0.4007,"Hylos":0.5126,"Akai":0.5006,"Lapu-Lapu":0.5053,"Xavier":0.4979,"Vale":0.4964,"Eudora":0.5035,"Roger":0.4832,"Wanwan":0.4875,"Ling":0.482,"Aurora":0.498,"Lunox":0.5057,"Clint":0.4903,"Natan":0.5285,"Cecilion":0.5043,"Barats":0.5073,"Nana":0.503,"Gusion":0.4915,"Kalea":0.5147,"Cyclops":0.506,"Minsitthar":0.4976,"Hanabi":0.4975,"Ruby":0.5001,"Kadita":0.5039,"Karina":0.4979,"Argus":0.488,"Irithel":0.4799,"Freya":0.5111,"Martis":0.499,"Bruno":0.5058,"Vexana":0.4919,"Masha":0.474,"Khaleed":0.4651,"Harley":0.4899,"Joy":0.5263,"Popol and Kupa":0.4981,"Franco":0.3929,"Alpha":0.5053,"Obsidia":0.4886,"Estes":0.3734,"Terizla":0.512,"Aldous":0.4879,"Leomord":0.5102,"Alice":0.4991,"Julian":0.5038,"Valentina":0.5197,"Dyrroth":0.5109,"Yu Zhong":0.5146,"Lancelot":0.4899,"Brody":0.4988,"Phoveus":0.5036,"Gord":0.4988,"Sora":0.5186,"Guinevere":0.496,"Harith":0.5106,"Luo Yi":0.4997,"Yin":0.4843,"Helcurt":0.4917,"Yve":0.5436,"Zhuxin":0.4937,"Natalia":0.4797,"Baxia":0.536,"Carmilla":0.5177,"Edith":0.5115,"Chou":0.4989,"Ixia":0.5519,"Lylia":0.5063,"Gatotkaca":0.529,"Lolita":0.4236,"Marcel":0.39,"Kaja":0.454,"Melissa":0.4998,"Minotaur":0.4571,"Zilong":0.4931,"Karrie":0.5026,"Saber":0.5096,"Floryn":0.345,"Aamon":0.4995,"Valir":0.5038,"Alucard":0.5012,"Belerick":0.4998,"Atlas":0.4741,"Silvanna":0.5079,"Fanny":0.4942,"Granger":0.4952,"Uranus":0.5151,"Hayabusa":0.5042,"Bane":0.4986,"Paquito":0.5061,"Jawhead":0.508,"Hilda":0.46,"Fredrinn":0.5073,"Suyou":0.509,"Miya":0.4888,"Johnson":0.4149,"Pharsa":0.509,"Esmeralda":0.5053,"Nolan":0.504,"X.Borg":0.4971,"Faramis":0.5314,"Odette":0.5126,"Mathilda":0.4923,"Layla":0.5088,"Khufra":0.5154,"Kimmy":0.4983,"Novaria":0.5,"Arlott":0.5136,"Selena":0.4946,"Aulus":0.4984,"Lukas":0.5132,"Moskov":0.4776,"Grock":0.4211,"Hanzo":0.502,"Kagura":0.5085,"Beatrix":0.5159,"Balmond":0.5074},
+    "Diggie": {"Ixia":0.5519,"Natan":0.5285,"Helcurt":0.4917,"Minsitthar":0.4976,"Chip":0.3061,"Esmeralda":0.5053,"Angela":0.4007,"Karrie":0.5026,"Harley":0.4899,"Thamuz":0.5164,"Hanzo":0.502,"Miya":0.4888,"Zhask":0.4972,"Atlas":0.4741,"Marcel":0.39,"Khufra":0.5154,"Arlott":0.5136,"Nolan":0.504,"Freya":0.5111,"Bruno":0.5058,"Belerick":0.4998,"Sun":0.4934,"Baxia":0.536,"Layla":0.5088,"Yin":0.4843,"Hilda":0.46,"Rafaela":0.4117,"Valentina":0.5197,"Harith":0.5106,"Chang'e":0.4995,"Hayabusa":0.5042,"Edith":0.5115,"Mathilda":0.4923,"Alice":0.4991,"Sora":0.5186,"Kadita":0.5039,"Cici":0.4904,"Badang":0.4877,"Dyrroth":0.5109,"Aulus":0.4984,"Guinevere":0.496,"Tigreal":0.4128,"Fredrinn":0.5073,"Aamon":0.4995,"Gloo":0.4903,"Aurora":0.498,"Luo Yi":0.4997,"Gatotkaca":0.529,"Irithel":0.4799,"Yve":0.5436,"Chou":0.4989,"Carmilla":0.5177,"Minotaur":0.4571,"Silvanna":0.5079,"Ling":0.482,"Grock":0.4211,"Hanabi":0.4975,"Odette":0.5126,"Hylos":0.5126,"Uranus":0.5151,"Lolita":0.4235,"Karina":0.4979,"Fanny":0.4942,"X.Borg":0.4971,"Roger":0.4832,"Pharsa":0.509,"Valir":0.5038,"Phoveus":0.5036,"Melissa":0.4998,"Argus":0.488,"Xavier":0.4979,"Obsidia":0.4886,"Granger":0.4952,"Joy":0.5263,"Novaria":0.5,"Jawhead":0.508,"Popol and Kupa":0.4981,"Akai":0.5006,"Cyclops":0.506,"Benedetta":0.4875,"Suyou":0.509,"Lunox":0.5057,"Martis":0.499,"Zetian":0.4973,"Julian":0.5038,"Hirara":0.4939,"Masha":0.474,"Lapu-Lapu":0.5053,"Kaja":0.454,"Johnson":0.4149,"Bane":0.4986,"Ruby":0.5001,"Aldous":0.4879,"Gord":0.4988,"Lancelot":0.4899,"Alpha":0.5053,"Barats":0.5073,"Saber":0.5096,"Selena":0.4946,"Zhuxin":0.4937,"Zilong":0.4931,"Vexana":0.4919,"Balmond":0.5074,"Lesley":0.4982,"Kalea":0.5147,"Estes":0.3734,"Natalia":0.4797,"Nana":0.503,"Khaleed":0.4651,"Vale":0.4964,"Kagura":0.5085,"Lylia":0.5063,"Franco":0.3929,"Gusion":0.4915,"Wanwan":0.4875,"Beatrix":0.5159,"Cecilion":0.5043,"Leomord":0.5102,"Eudora":0.5035,"Kimmy":0.4983,"Terizla":0.512,"Yu Zhong":0.5146,"Claude":0.4867,"Moskov":0.4776,"Floryn":0.345,"Brody":0.4988,"Lukas":0.5132,"Paquito":0.5061,"Yi Sun-shin":0.5012,"Clint":0.4903,"Alucard":0.5012,"Faramis":0.5314},
     "Estes": {"Granger":0.4879,"Yu Zhong":0.502,"Zilong":0.4959,"Franco":0.4258,"Aamon":0.4925,"Natan":0.4994,"Bane":0.5025,"Karrie":0.4941,"Cecilion":0.5009,"Baxia":0.5273,"Aulus":0.4982,"Vexana":0.498,"Belerick":0.5077,"Pharsa":0.4994,"Brody":0.523,"Obsidia":0.4936,"Layla":0.5048,"Leomord":0.5071,"Yve":0.4955,"Alice":0.4929,"Vale":0.4937,"Chou":0.511,"Minsitthar":0.5246,"Guinevere":0.5041,"Lapu-Lapu":0.5094,"Masha":0.4686,"Ling":0.4803,"Ruby":0.5243,"Harley":0.4977,"Julian":0.4972,"Clint":0.5008,"Barats":0.5246,"Akai":0.5076,"Grock":0.4545,"Balmond":0.5025,"Diggie":0.3734,"Dyrroth":0.5067,"Martis":0.5106,"Saber":0.534,"Badang":0.5057,"Carmilla":0.5292,"Valir":0.5027,"Harith":0.4898,"Lunox":0.5033,"Edith":0.5201,"Thamuz":0.4973,"Johnson":0.4194,"Melissa":0.5003,"Freya":0.494,"Aldous":0.4868,"Fredrinn":0.511,"Joy":0.5016,"Suyou":0.4972,"Moskov":0.4784,"Odette":0.5129,"Jawhead":0.5196,"Xavier":0.4983,"Miya":0.4941,"Kadita":0.5089,"Roger":0.4977,"Lylia":0.4905,"Atlas":0.5167,"Khaleed":0.4819,"Selena":0.5068,"Argus":0.4834,"Lukas":0.5071,"Novaria":0.4868,"Marcel":0.392,"Arlott":0.5019,"Paquito":0.5045,"Gatotkaca":0.5336,"Valentina":0.4979,"Khufra":0.5136,"Uranus":0.5001,"Mathilda":0.4874,"Alucard":0.4917,"Fanny":0.4888,"Karina":0.4919,"Kimmy":0.5206,"Bruno":0.4982,"Yi Sun-shin":0.4964,"Minotaur":0.4378,"Zhuxin":0.4983,"Angela":0.3744,"Kalea":0.5221,"Sun":0.4714,"Luo Yi":0.512,"Nana":0.5081,"Gloo":0.479,"Chang'e":0.4773,"Lolita":0.3878,"Nolan":0.5037,"Beatrix":0.5095,"Lesley":0.4988,"Hilda":0.4734,"Hanabi":0.5023,"Ixia":0.5187,"Sora":0.5201,"Popol and Kupa":0.5044,"Wanwan":0.5005,"Silvanna":0.5178,"Esmeralda":0.4918,"Hylos":0.5059,"Faramis":0.5209,"Gusion":0.4966,"Hayabusa":0.5008,"Hirara":0.4994,"Claude":0.4721,"Hanzo":0.5013,"X.Borg":0.4891,"Lancelot":0.4931,"Irithel":0.4932,"Yin":0.4988,"Kagura":0.5062,"Cyclops":0.4995,"Aurora":0.5048,"Rafaela":0.3928,"Benedetta":0.4996,"Zetian":0.4935,"Zhask":0.4938,"Tigreal":0.4945,"Cici":0.4891,"Alpha":0.505,"Floryn":0.3447,"Terizla":0.5133,"Gord":0.4961,"Natalia":0.5005,"Chip":0.4349,"Kaja":0.4852,"Helcurt":0.4976,"Eudora":0.5133,"Phoveus":0.5037},
     "Faramis": {"Beatrix":0.5057,"Arlott":0.488,"Diggie":0.5314,"Paquito":0.506,"Fanny":0.5233,"Sun":0.4921,"Hayabusa":0.5025,"Alpha":0.5005,"Argus":0.485,"Yi Sun-shin":0.4955,"Ling":0.4933,"Lunox":0.481,"Chip":0.4577,"Helcurt":0.4862,"Atlas":0.5199,"Minotaur":0.5012,"Brody":0.4925,"Hanabi":0.4966,"Selena":0.5024,"Aurora":0.4778,"Estes":0.5209,"Harith":0.5026,"Kimmy":0.5126,"Wanwan":0.5078,"Fredrinn":0.4894,"Nolan":0.4998,"Akai":0.5012,"Alice":0.5018,"Bane":0.5194,"Miya":0.5012,"Baxia":0.5033,"Franco":0.496,"Novaria":0.4928,"Lolita":0.416,"Aamon":0.5099,"Aulus":0.5029,"Irithel":0.4955,"Edith":0.4898,"Odette":0.4897,"Hirara":0.4924,"Mathilda":0.4897,"Kalea":0.5164,"Masha":0.4914,"Popol and Kupa":0.4981,"Tigreal":0.4954,"Kagura":0.4682,"Granger":0.4901,"Vexana":0.5024,"Gusion":0.5092,"X.Borg":0.4983,"Belerick":0.4951,"Moskov":0.5016,"Balmond":0.481,"Lapu-Lapu":0.5022,"Vale":0.5025,"Ixia":0.5094,"Clint":0.5049,"Natalia":0.5104,"Lylia":0.4749,"Minsitthar":0.5122,"Martis":0.5055,"Aldous":0.4857,"Roger":0.5068,"Uranus":0.4722,"Zhask":0.5172,"Khaleed":0.5228,"Kadita":0.4704,"Xavier":0.4994,"Jawhead":0.4928,"Johnson":0.4732,"Thamuz":0.4986,"Alucard":0.5044,"Joy":0.5037,"Gatotkaca":0.5119,"Harley":0.4963,"Pharsa":0.4831,"Rafaela":0.5108,"Leomord":0.5067,"Floryn":0.5385,"Bruno":0.5041,"Hanzo":0.4924,"Grock":0.5037,"Sora":0.5096,"Ruby":0.5175,"Hylos":0.4809,"Valir":0.4797,"Zhuxin":0.473,"Gord":0.4944,"Hilda":0.4766,"Phoveus":0.5114,"Zilong":0.511,"Gloo":0.4832,"Esmeralda":0.4844,"Karina":0.496,"Barats":0.5017,"Melissa":0.4921,"Lesley":0.5006,"Cici":0.4923,"Benedetta":0.4877,"Saber":0.5148,"Eudora":0.4878,"Badang":0.5104,"Layla":0.5045,"Chou":0.5061,"Natan":0.5316,"Julian":0.5074,"Yin":0.4942,"Luo Yi":0.4776,"Silvanna":0.5104,"Nana":0.4831,"Zetian":0.4724,"Khufra":0.5163,"Obsidia":0.4952,"Cyclops":0.4933,"Valentina":0.5165,"Marcel":0.5099,"Karrie":0.5027,"Claude":0.4945,"Carmilla":0.5271,"Suyou":0.5013,"Angela":0.5259,"Yve":0.5061,"Kaja":0.5246,"Yu Zhong":0.5112,"Guinevere":0.5015,"Lukas":0.5034,"Cecilion":0.4623,"Chang'e":0.4726,"Terizla":0.4868,"Dyrroth":0.5136,"Freya":0.5032,"Lancelot":0.4972},
     "Floryn": {"Estes":0.3447,"Freya":0.5057,"Gord":0.4955,"Aamon":0.4844,"Chou":0.5039,"Alice":0.4884,"Vale":0.493,"Zetian":0.4935,"Popol and Kupa":0.5096,"Sora":0.5218,"Lapu-Lapu":0.5218,"Harley":0.4913,"Zilong":0.4871,"Angela":0.3665,"Yin":0.4999,"Brody":0.5254,"Diggie":0.345,"Helcurt":0.4932,"Natalia":0.5035,"Franco":0.4185,"Selena":0.5157,"Cyclops":0.4887,"Lukas":0.5236,"Uranus":0.5114,"Khaleed":0.4889,"Roger":0.5084,"Belerick":0.5043,"Alucard":0.5073,"Luo Yi":0.5018,"Moskov":0.4946,"Guinevere":0.5029,"Gloo":0.498,"Fredrinn":0.5137,"Joy":0.5008,"Obsidia":0.4988,"Clint":0.5085,"Esmeralda":0.5041,"Thamuz":0.5048,"Benedetta":0.5204,"Natan":0.4893,"Ling":0.5011,"Chang'e":0.4778,"Mathilda":0.4608,"Saber":0.5168,"Hylos":0.5078,"Yu Zhong":0.5158,"Ruby":0.5113,"Vexana":0.4921,"Lunox":0.5148,"Kimmy":0.5123,"Melissa":0.4987,"Kaja":0.4698,"Martis":0.5109,"Argus":0.4786,"Hanabi":0.4791,"Valir":0.4961,"Arlott":0.5156,"Sun":0.4742,"Leomord":0.5178,"Gatotkaca":0.526,"Lolita":0.3436,"Bane":0.4864,"Jawhead":0.5071,"Minsitthar":0.5053,"Granger":0.5249,"Minotaur":0.4851,"Yi Sun-shin":0.5239,"Fanny":0.4982,"Hayabusa":0.5005,"Chip":0.4108,"Hanzo":0.4927,"Dyrroth":0.5009,"Valentina":0.5296,"Beatrix":0.5159,"Masha":0.4713,"Suyou":0.5103,"Novaria":0.4885,"Grock":0.4454,"Khufra":0.461,"Aurora":0.5038,"Faramis":0.5385,"Lylia":0.4935,"Odette":0.5091,"Pharsa":0.4971,"Baxia":0.5098,"Terizla":0.5195,"Nolan":0.5164,"Edith":0.5111,"Zhuxin":0.5255,"Hilda":0.477,"Atlas":0.5696,"Aulus":0.5059,"Ixia":0.5083,"Paquito":0.5106,"Cici":0.4955,"X.Borg":0.487,"Julian":0.4804,"Bruno":0.4954,"Johnson":0.4177,"Layla":0.5027,"Silvanna":0.4998,"Harith":0.5125,"Cecilion":0.4984,"Nana":0.5012,"Eudora":0.5153,"Hirara":0.5183,"Wanwan":0.5219,"Yve":0.5075,"Xavier":0.4931,"Aldous":0.4798,"Irithel":0.5077,"Kagura":0.5168,"Kalea":0.5291,"Karrie":0.4927,"Lancelot":0.4981,"Alpha":0.4853,"Balmond":0.497,"Claude":0.494,"Akai":0.5134,"Carmilla":0.5286,"Marcel":0.4081,"Karina":0.4944,"Phoveus":0.5081,"Miya":0.4915,"Kadita":0.52,"Rafaela":0.3988,"Barats":0.5283,"Badang":0.4957,"Lesley":0.5114,"Zhask":0.4906,"Tigreal":0.5144,"Gusion":0.4916},
@@ -13451,7 +13448,8 @@
     },
     {
       "fecha": "2026-11-17",
-      "glory": {"Masha":[0.596,0.0071],"Marcel":[0.573,0.0039],"Argus":[0.571,0.0048],"Diggie":[0.556,0.0026],"Khufra":[0.547,0.0056],"Bruno":[0.545,0.0096],"Floryn":[0.537,0.0125],"Rafaela":[0.537,0.0088],"Xavier":[0.536,0.013],"Valir":[0.536,0.012],"Saber":[0.535,0.0073],"Aulus":[0.533,0.0099],"Minotaur":[0.532,0.0144],"Sun":[0.532,0.0158],"Irithel":[0.531,0.0043],"Obsidia":[0.529,0.0255],"Melissa":[0.527,0.0049],"Carmilla":[0.525,0.017],"Estes":[0.524,0.0064],"Edith":[0.524,0.0027],"Fredrinn":[0.522,0.005],"Yve":[0.522,0.001],"Gord":[0.521,0.0045],"Aldous":[0.521,0.0034],"Ling":[0.52,0.0086],"Minsitthar":[0.519,0.0055],"Lolita":[0.519,0.0008],"Lunox":[0.517,0.0074],"Barats":[0.516,0.0088],"Natan":[0.516,0.0037],"Bane":[0.515,0.0028],"Lukas":[0.515,0.0104],"Zhask":[0.515,0.0025],"Kadita":[0.515,0.009],"Guinevere":[0.515,0.0098],"Benedetta":[0.514,0.005],"Moskov":[0.513,0.0103],"Faramis":[0.513,0.0015],"Odette":[0.513,0.0042],"Dyrroth":[0.513,0.0102],"Kalea":[0.512,0.0102],"Freya":[0.511,0.0126],"Hanabi":[0.51,0.0148],"Cecilion":[0.51,0.007],"Cyclops":[0.508,0.0085],"Aamon":[0.508,0.0046],"Alice":[0.507,0.0108],"Ixia":[0.506,0.0067],"Beatrix":[0.505,0.0082],"Clint":[0.505,0.0094],"Gloo":[0.505,0.0088],"Miya":[0.505,0.0129],"Eudora":[0.504,0.0171],"Nolan":[0.501,0.0315],"Brody":[0.501,0.0102],"Kagura":[0.501,0.0109],"Paquito":[0.5,0.0144],"Belerick":[0.5,0.0184],"Zetian":[0.5,0.0187],"Natalia":[0.5,0.0022],"Badang":[0.499,0.0142],"Silvanna":[0.499,0.0053],"Angela":[0.499,0.0195],"Kaja":[0.499,0.0099],"Yin":[0.498,0.0028],"Sora":[0.496,0.0089],"Leomord":[0.496,0.0039],"Terizla":[0.496,0.0033],"Joy":[0.495,0.002],"Suyou":[0.495,0.0146],"Hirara":[0.495,0.0077],"Alucard":[0.493,0.0036],"Julian":[0.493,0.0051],"Akai":[0.492,0.003],"Hanzo":[0.491,0.0033],"Atlas":[0.49,0.0116],"Yu Zhong":[0.489,0.0087],"X.Borg":[0.489,0.0053],"Aurora":[0.489,0.0049],"Gusion":[0.489,0.0108],"Karrie":[0.489,0.0063],"Novaria":[0.489,0.0111],"Cici":[0.489,0.0089],"Zhuxin":[0.488,0.0049],"Harley":[0.488,0.0061],"Yi Sun-shin":[0.488,0.0106],"Vale":[0.487,0.0028],"Kimmy":[0.487,0.0102],"Thamuz":[0.486,0.0043],"Lesley":[0.485,0.018],"Karina":[0.485,0.0076],"Ruby":[0.485,0.0037],"Claude":[0.485,0.0098],"Vexana":[0.485,0.0117],"Khaleed":[0.484,0.0016],"Phoveus":[0.484,0.0031],"Uranus":[0.483,0.0029],"Hayabusa":[0.483,0.0069],"Harith":[0.483,0.002],"Alpha":[0.482,0.0084],"Selena":[0.482,0.0156],"Layla":[0.482,0.0098],"Hilda":[0.481,0.0036],"Arlott":[0.481,0.006],"Chip":[0.48,0.0005],"Lylia":[0.48,0.005],"Martis":[0.474,0.0048],"Jawhead":[0.473,0.0022],"Lapu-Lapu":[0.473,0.004],"Johnson":[0.472,0.0042],"Popol and Kupa":[0.472,0.0067],"Wanwan":[0.469,0.0016],"Pharsa":[0.468,0.0023],"Helcurt":[0.466,0.004],"Hylos":[0.465,0.0024],"Esmeralda":[0.465,0.0089],"Luo Yi":[0.461,0.0019],"Roger":[0.461,0.0024],"Chang'e":[0.458,0.0039],"Grock":[0.456,0.0029],"Baxia":[0.455,0.0005],"Nana":[0.451,0.0086],"Valentina":[0.45,0.0023],"Balmond":[0.45,0.003],"Zilong":[0.448,0.0032],"Chou":[0.448,0.0094],"Tigreal":[0.447,0.0149],"Gatotkaca":[0.442,0.0031],"Granger":[0.441,0.0132],"Mathilda":[0.437,0.0019],"Fanny":[0.429,0.0072],"Lancelot":[0.424,0.0046],"Franco":[0.403,0.0059]}
+      "glory": {"Masha":[0.596,0.0071],"Marcel":[0.573,0.0039],"Argus":[0.571,0.0048],"Diggie":[0.556,0.0026],"Khufra":[0.547,0.0056],"Bruno":[0.545,0.0096],"Floryn":[0.537,0.0125],"Rafaela":[0.537,0.0088],"Xavier":[0.536,0.013],"Valir":[0.536,0.012],"Saber":[0.535,0.0073],"Aulus":[0.533,0.0099],"Minotaur":[0.532,0.0144],"Sun":[0.532,0.0158],"Irithel":[0.531,0.0043],"Obsidia":[0.529,0.0255],"Melissa":[0.527,0.0049],"Carmilla":[0.525,0.017],"Estes":[0.524,0.0064],"Edith":[0.524,0.0027],"Fredrinn":[0.522,0.005],"Yve":[0.522,0.001],"Gord":[0.521,0.0045],"Aldous":[0.521,0.0034],"Ling":[0.52,0.0086],"Minsitthar":[0.519,0.0055],"Lolita":[0.519,0.0008],"Lunox":[0.517,0.0074],"Barats":[0.516,0.0088],"Natan":[0.516,0.0037],"Bane":[0.515,0.0028],"Lukas":[0.515,0.0104],"Zhask":[0.515,0.0025],"Kadita":[0.515,0.009],"Guinevere":[0.515,0.0098],"Benedetta":[0.514,0.005],"Moskov":[0.513,0.0103],"Faramis":[0.513,0.0015],"Odette":[0.513,0.0042],"Dyrroth":[0.513,0.0102],"Kalea":[0.512,0.0102],"Freya":[0.511,0.0126],"Hanabi":[0.51,0.0148],"Cecilion":[0.51,0.007],"Cyclops":[0.508,0.0085],"Aamon":[0.508,0.0046],"Alice":[0.507,0.0108],"Ixia":[0.506,0.0067],"Beatrix":[0.505,0.0082],"Clint":[0.505,0.0094],"Gloo":[0.505,0.0088],"Miya":[0.505,0.0129],"Eudora":[0.504,0.0171],"Nolan":[0.501,0.0315],"Brody":[0.501,0.0102],"Kagura":[0.501,0.0109],"Paquito":[0.5,0.0144],"Belerick":[0.5,0.0184],"Zetian":[0.5,0.0187],"Natalia":[0.5,0.0022],"Badang":[0.499,0.0142],"Silvanna":[0.499,0.0053],"Angela":[0.499,0.0195],"Kaja":[0.499,0.0099],"Yin":[0.498,0.0028],"Sora":[0.496,0.0089],"Leomord":[0.496,0.0039],"Terizla":[0.496,0.0033],"Joy":[0.495,0.002],"Suyou":[0.495,0.0146],"Hirara":[0.495,0.0077],"Alucard":[0.493,0.0036],"Julian":[0.493,0.0051],"Akai":[0.492,0.003],"Hanzo":[0.491,0.0033],"Atlas":[0.49,0.0116],"Yu Zhong":[0.489,0.0087],"X.Borg":[0.489,0.0053],"Aurora":[0.489,0.0049],"Gusion":[0.489,0.0108],"Karrie":[0.489,0.0063],"Novaria":[0.489,0.0111],"Cici":[0.489,0.0089],"Zhuxin":[0.488,0.0049],"Harley":[0.488,0.0061],"Yi Sun-shin":[0.488,0.0106],"Vale":[0.487,0.0028],"Kimmy":[0.487,0.0102],"Thamuz":[0.486,0.0043],"Lesley":[0.485,0.018],"Karina":[0.485,0.0076],"Ruby":[0.485,0.0037],"Claude":[0.485,0.0098],"Vexana":[0.485,0.0117],"Khaleed":[0.484,0.0016],"Phoveus":[0.484,0.0031],"Uranus":[0.483,0.0029],"Hayabusa":[0.483,0.0069],"Harith":[0.483,0.002],"Alpha":[0.482,0.0084],"Selena":[0.482,0.0156],"Layla":[0.482,0.0098],"Hilda":[0.481,0.0036],"Arlott":[0.481,0.006],"Chip":[0.48,0.0005],"Lylia":[0.48,0.005],"Martis":[0.474,0.0048],"Jawhead":[0.473,0.0022],"Lapu-Lapu":[0.473,0.004],"Johnson":[0.472,0.0042],"Popol and Kupa":[0.472,0.0067],"Wanwan":[0.469,0.0016],"Pharsa":[0.468,0.0023],"Helcurt":[0.466,0.004],"Hylos":[0.465,0.0024],"Esmeralda":[0.465,0.0089],"Luo Yi":[0.461,0.0019],"Roger":[0.461,0.0024],"Chang'e":[0.458,0.0039],"Grock":[0.456,0.0029],"Baxia":[0.455,0.0005],"Nana":[0.451,0.0086],"Valentina":[0.45,0.0023],"Balmond":[0.45,0.003],"Zilong":[0.448,0.0032],"Chou":[0.448,0.0094],"Tigreal":[0.447,0.0149],"Gatotkaca":[0.442,0.0031],"Granger":[0.441,0.0132],"Mathilda":[0.437,0.0019],"Fanny":[0.429,0.0072],"Lancelot":[0.424,0.0046],"Franco":[0.403,0.0059]},
+      "mythic": {"Masha":[0.584,0.0033],"Argus":[0.576,0.005],"Marcel":[0.573,0.0019],"Minotaur":[0.55,0.0073],"Lolita":[0.55,0.0007],"Rafaela":[0.55,0.0072],"Sun":[0.549,0.0193],"Khufra":[0.548,0.002],"Gloo":[0.546,0.0061],"Valir":[0.544,0.012],"Carmilla":[0.544,0.0097],"Edith":[0.54,0.0029],"Floryn":[0.54,0.0075],"Obsidia":[0.536,0.0179],"Aldous":[0.536,0.0069],"Zhask":[0.535,0.0038],"Hanabi":[0.534,0.0293],"Irithel":[0.534,0.0037],"Estes":[0.532,0.0056],"Minsitthar":[0.531,0.0061],"Belerick":[0.531,0.0144],"Ling":[0.53,0.0049],"Bruno":[0.53,0.0041],"Gord":[0.529,0.0065],"Aulus":[0.529,0.0048],"Hilda":[0.528,0.0074],"Cyclops":[0.527,0.0102],"Diggie":[0.526,0.0015],"Silvanna":[0.522,0.0133],"Atlas":[0.52,0.0081],"Zetian":[0.52,0.014],"Benedetta":[0.519,0.004],"Barats":[0.519,0.0057],"Natalia":[0.517,0.0043],"Xavier":[0.517,0.0073],"Khaleed":[0.516,0.0012],"Terizla":[0.516,0.0038],"Akai":[0.514,0.0035],"Bane":[0.514,0.0032],"Natan":[0.513,0.0023],"Yve":[0.512,0.0003],"Lunox":[0.512,0.0033],"Saber":[0.51,0.0109],"Popol and Kupa":[0.51,0.0068],"Lukas":[0.509,0.0057],"X.Borg":[0.509,0.006],"Badang":[0.509,0.0131],"Hanzo":[0.507,0.0034],"Kagura":[0.506,0.0062],"Vale":[0.505,0.0063],"Aamon":[0.505,0.0074],"Miya":[0.505,0.0244],"Eudora":[0.504,0.0164],"Alice":[0.504,0.0079],"Guinevere":[0.504,0.0067],"Johnson":[0.504,0.0093],"Ixia":[0.503,0.008],"Uranus":[0.503,0.0031],"Layla":[0.502,0.0245],"Kadita":[0.502,0.0072],"Fredrinn":[0.501,0.003],"Julian":[0.501,0.0076],"Yin":[0.501,0.0062],"Angela":[0.5,0.0165],"Cici":[0.5,0.0064],"Lylia":[0.5,0.0043],"Hylos":[0.499,0.0032],"Cecilion":[0.499,0.0056],"Melissa":[0.499,0.0044],"Hirara":[0.499,0.005],"Vexana":[0.498,0.0189],"Kaja":[0.497,0.0042],"Brody":[0.497,0.0067],"Thamuz":[0.497,0.0087],"Odette":[0.497,0.0059],"Leomord":[0.497,0.0029],"Roger":[0.496,0.0032],"Novaria":[0.496,0.0134],"Clint":[0.496,0.0064],"Suyou":[0.495,0.009],"Faramis":[0.495,0.0006],"Alucard":[0.494,0.0063],"Karina":[0.494,0.0111],"Paquito":[0.494,0.0103],"Kalea":[0.494,0.0054],"Sora":[0.492,0.0053],"Beatrix":[0.492,0.005],"Aurora":[0.491,0.0061],"Moskov":[0.491,0.0076],"Claude":[0.49,0.0063],"Ruby":[0.489,0.0028],"Karrie":[0.489,0.0054],"Freya":[0.489,0.0094],"Yi Sun-shin":[0.488,0.0075],"Chang'e":[0.488,0.0077],"Alpha":[0.488,0.0153],"Lapu-Lapu":[0.487,0.0032],"Yu Zhong":[0.487,0.0058],"Helcurt":[0.486,0.008],"Nolan":[0.486,0.0214],"Jawhead":[0.486,0.0044],"Selena":[0.485,0.0129],"Harley":[0.484,0.0101],"Gusion":[0.484,0.0155],"Phoveus":[0.482,0.0026],"Dyrroth":[0.482,0.0158],"Esmeralda":[0.481,0.0083],"Lesley":[0.481,0.0205],"Hayabusa":[0.48,0.0076],"Martis":[0.477,0.0066],"Kimmy":[0.477,0.008],"Wanwan":[0.476,0.0013],"Chip":[0.475,0.0003],"Zhuxin":[0.475,0.0013],"Nana":[0.474,0.0205],"Balmond":[0.472,0.0073],"Zilong":[0.471,0.0089],"Luo Yi":[0.47,0.002],"Grock":[0.47,0.004],"Pharsa":[0.47,0.0033],"Arlott":[0.464,0.0045],"Joy":[0.461,0.0009],"Baxia":[0.457,0.0005],"Chou":[0.452,0.0115],"Tigreal":[0.451,0.0247],"Gatotkaca":[0.451,0.007],"Harith":[0.45,0.001],"Mathilda":[0.446,0.001],"Lancelot":[0.432,0.005],"Valentina":[0.428,0.0007],"Franco":[0.42,0.0112],"Fanny":[0.419,0.006],"Granger":[0.409,0.0134]}
     }
   ]
 }
