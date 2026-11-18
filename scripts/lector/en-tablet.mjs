@@ -50,6 +50,7 @@ const aqui = dirname(fileURLToPath(import.meta.url));
  */
 export async function principal(env = process.env, { pedirBaseDeDatos = globalThis.fetch, datosDeLaApk = join(aqui, '..', '..', 'datos') } = {}) {
   const registrar = (m) => console.log(m);
+  const arrancado = Date.now();
   const base = env.LECTOR_INTERNO, secreto = env.LECTOR_SECRETO, codigo = env.LECTOR_CODIGO;
   if (!esInterno(base) || !secreto || !codigoValido(codigo)) throw new Error('faltan LECTOR_INTERNO, LECTOR_SECRETO o un LECTOR_CODIGO válido');
   const casa = env.LECTOR_CASA || '.';
@@ -196,7 +197,7 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     const clave = claveDelLector(casa), config = comunidad();
     if (!claveDeJugadorValida(clave) || !config) return;
     const leer = (f) => { try { return readFileSync(join(casa, f), 'utf8'); } catch { return null; } };
-    const parte = parteDeSalud({ estado: servidor.interno.estado(), log: (leer('lector.log') ?? '').slice(-FINAL_DEL_REGISTRO_BYTES), falloNodo: leer('fallo-nodo.txt'), secretos: [codigo, clave, ajustes.delMovil()?.clave] });
+    const parte = parteDeSalud({ estado: servidor.interno.estado(), log: (leer('lector.log') ?? '').slice(-FINAL_DEL_REGISTRO_BYTES), falloNodo: leer('fallo-nodo.txt'), arrancado, secretos: [codigo, clave, ajustes.delMovil()?.clave] });
     const r = await subirParte({ config, clave, parte }, { fetch: pedirBaseDeDatos });
     if (r.error && r.error !== 'pronto') registrar(`El parte de salud no se pudo subir (${r.error}).`);
   };

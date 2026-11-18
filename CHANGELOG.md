@@ -8,6 +8,13 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 4.0.3
+
+- Los partes de salud de la tablet ya no arrastran un fallo viejo: un error
+  del 25 de octubre, arreglado hace semanas, seguía saliendo en cada parte y
+  hacía creer que la tablet fallaba al arrancar. Ahora solo sale un fallo del
+  arranque en curso.
+
 ## 4.0.2
 
 - La tablet vuelve a leer los baneos, así que el draft y la burbuja salen

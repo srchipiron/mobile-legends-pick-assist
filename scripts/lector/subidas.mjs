@@ -48,8 +48,11 @@ export function lineasLimpias(texto, { secretos = [], max = LINEAS_DEL_PARTE, so
   });
 }
 
-/** El parte de salud: `/estado`, el fallo de Node, los errores y el final del registro, limpios; cabe en el tope (y `recortado` si se pierde algo que no sea registro viejo). */
-export function parteDeSalud({ estado, log = '', falloNodo = null, secretos = [], ahora = Date.now() }) {
+/** El parte de salud: `/estado`, el fallo de Node (solo si es de este arranque), los errores y el final del registro, limpios; cabe en el tope (y `recortado` si se pierde algo que no sea registro viejo). */
+export function parteDeSalud({ estado, log = '', falloNodo = null, secretos = [], ahora = Date.now(), arrancado = null }) {
+  // Un fallo apuntado ANTES de este arranque ya pasó (el lector arrancó después): no se manda en cada parte.
+  const fechaDelFallo = Date.parse(String(falloNodo ?? '').slice(0, 24));
+  if (Number.isFinite(arrancado) && Number.isFinite(fechaDelFallo) && fechaDelFallo < arrancado) falloNodo = null;
   const parte = {
     v: 1, cuando: ahora, estado,
     ...(falloNodo ? { falloNodo: lineasLimpias(falloNodo, { secretos, max: 30 }).join('\n') } : {}),

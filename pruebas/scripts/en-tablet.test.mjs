@@ -727,6 +727,10 @@ test('el parte de salud (3.74.0): sin IPs, sin el código ni tu clave, sin carac
   eq(p.v, 1); eq(p.cuando, 5); eq(p.estado.tablet.apk, '3.74.0');
   ok(!p.falloNodo.includes(CODIGO) && !p.falloNodo.includes('10.0.0.5'), `el fallo de Node sale sin limpiar: ${p.falloNodo}`);
   ok(!('falloNodo' in parteDeSalud({ estado: {}, log: '' })), 'sin fallo, falloNodo viaja igual');
+  // Un fallo de un arranque anterior (el lector arrancó después) no viaja en cada parte; uno de este arranque, sí (4.0.2).
+  const viejo = '2026-10-25T12:17:40.012Z al arrancar: SyntaxError';
+  ok(!('falloNodo' in parteDeSalud({ estado: {}, falloNodo: viejo, arrancado: Date.parse('2026-11-18T00:00:00Z') })), 'un fallo de octubre viaja en cada parte de noviembre');
+  ok('falloNodo' in parteDeSalud({ estado: {}, falloNodo: '2026-11-18T05:00:00.000Z excepción: TypeError', arrancado: Date.parse('2026-11-18T00:00:00Z') }), 'un fallo de este arranque no viaja');
   ok(JSON.stringify(p).length < 16000, 'el parte no cabe en lo que acepta el servidor');
 });
 
@@ -757,6 +761,8 @@ test('la tablet sube su parte con SU clave, aunque el móvil no haya mandado la 
   mkdirSync(join(casa, 'datos'), { recursive: true });
   writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
   writeFileSync(join(casa, 'lector.log'), `Lector en 192.168.1.9 con ${CODIGO} y ${tuya}\nTodo bien\n`);
+  // Un fallo de un arranque de octubre: ya pasó, el lector arrancó después (4.0.2).
+  writeFileSync(join(casa, 'fallo-nodo.txt'), '2026-10-25T12:17:40.012Z al arrancar: SyntaxError');
   const apk = await apkDePega();
   const arrancar = () => principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
   const servidor = await arrancar();
@@ -768,6 +774,7 @@ test('la tablet sube su parte con SU clave, aunque el móvil no haya mandado la 
     eq(claveDelLector(casa), delLector, 'la clave del lector no se guarda');
     const parte = s.partes[0];
     ok(parte.d.log.some((l) => l === 'Todo bien'), 'el parte no lleva el registro');
+    ok(!('falloNodo' in parte.d), 'el fallo de un arranque anterior viaja en el parte');
     ok(parte.d.estado && 'pendiente' in parte.d.estado && 'partidas' in parte.d.estado, `el parte no lleva el estado: ${Object.keys(parte.d.estado ?? {})}`);
     // Con tu clave puesta, el parte sigue con la del lector (el mismo lector en la revisión) y tu clave no sale.
     writeFileSync(join(casa, 'solo-movil.json'), JSON.stringify({ linea: 'roam', clave: tuya }));
