@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 4.0.2
+
+- La tablet vuelve a leer los baneos, así que el draft y la burbuja salen
+  desde el principio y no a mitad de los picks. El parche del 11 de noviembre
+  subió la fila de baneos en la pantalla; la tablet mandó sola la imagen de
+  arriba y con ella se midió el sitio nuevo: en las dos que subió se leen las
+  diez casillas. Actualiza la APK cuando te la ofrezca.
+
 ## 4.0.1
 
 - La tablet manda ella sola la imagen que hace falta para volver a leer los

@@ -11,7 +11,7 @@ import { spawnSync } from 'node:child_process';
 import { test, ok, eq, RAIZ, leerJson, generador } from '../ayuda.mjs';
 import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
 import { LADO, muestra, normalizar, reconocer, CRIBA_PICKS, PARECIDO_MINIMO } from '../../scripts/lector/caras.mjs';
-import { leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, carasGuardadas, carasDesfasadas, sinRepetidos, REFERENCIA, PICKS_ENEMIGOS, ALIADOS, BANEOS, ambasOrientaciones, aceptarCercanos, CERCA_ENEMIGO, MARGEN_CERCA_ENEMIGO, carasDelPanel } from '../../scripts/lector/leer.mjs';
+import { leerBaneos, leerPicksEnemigos, leerAliados, filaPropia, carasGuardadas, carasDesfasadas, sinRepetidos, REFERENCIA, PICKS_ENEMIGOS, ALIADOS, BANEOS, BANEOS_ANTES, ambasOrientaciones, aceptarCercanos, CERCA_ENEMIGO, MARGEN_CERCA_ENEMIGO, carasDelPanel } from '../../scripts/lector/leer.mjs';
 import { capturaCompleta, VERDAD as VERDAD_JUEGO } from '../fixtures/juego/captura.mjs';
 
 test('el lector de PNG devuelve los mismos píxeles con los cinco filtros de fila', () => {
@@ -80,6 +80,22 @@ function comprobar(leido, donde) {
 
 test('lee los diez baneos de una captura real', () => {
   comprobar(leerBaneos(capturaDeBaneos(), caras), 'captura real');
+});
+
+test('lee los diez baneos con la fila de DESPUÉS del parche del 11-11-2026 (cabecera que subió la tablet, 4.0.2)', () => {
+  // pruebas/fixtures/juego/cabecera-tras-parche.png: el 15 % de arriba de una captura de la tablet a media escala
+  // (1200 px de ancho), sin paneles ni nombres. Se dobla a la REFERENCIA (2400×1504, la resolución de la tablet) arriba de una pantalla negra.
+  const franja = leerPng(readFileSync(join(RAIZ, 'pruebas/fixtures/juego/cabecera-tras-parche.png')));
+  const { ancho, alto } = REFERENCIA, rgba = new Uint8Array(ancho * alto * 4);
+  for (let i = 3; i < rgba.length; i += 4) rgba[i] = 255;
+  for (let y = 0; y < franja.alto * 2; y++) for (let x = 0; x < ancho; x++) rgba.set(franja.rgba.subarray(((y >> 1) * franja.ancho + (x >> 1)) * 4, ((y >> 1) * franja.ancho + (x >> 1)) * 4 + 3), (y * ancho + x) * 4);
+  const r = leerBaneos({ ancho, alto, rgba }, caras);
+  const leidos = [...r.tuyos, ...r.suyos];
+  eq(leidos.map((c) => c.nombre ?? '?').join(','), 'Minsitthar,Aulus,Lukas,Eudora,Khufra,Khufra,Yi Sun-shin,Hirara,Angela,Minotaur', leidos.map((c) => `${c.candidato} ${c.parecido.toFixed(2)}`).join(' | '));
+  ok(leidos.every((c) => c.parecido >= PARECIDO_MINIMO), 'alguna casilla de la fila nueva no llega al parecido mínimo');
+  // Con la fila de antes esta pantalla no lee nada: es justo lo que pasaba desde el parche.
+  const conLaDeAntes = [...BANEOS_ANTES.tuyos, ...BANEOS_ANTES.suyos].map((p) => reconocer({ ancho, alto, rgba }, p, caras));
+  ok(conLaDeAntes.every((c) => !c.nombre), 'la fila de antes también lee esta pantalla: la prueba no distingue');
 });
 
 test('lee los picks del enemigo mientras se elige: Clint y Khufra, y nada en los huecos vacíos', () => {
@@ -163,8 +179,9 @@ test('afinar posición y tamaño encuentra al que está y no pone nombre al que 
   const img = capturaCompleta({ columna: 2 }), ambas = ambasOrientaciones(caras);
   const opPicks = { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12] }, opAliados = { pasos: 5, escalas: [0.88, 0.94, 1.06, 1.12, 1.25], finura: 8 };
   const casos = [
-    ...BANEOS.tuyos.map((p, i) => [p, VERDAD_JUEGO.tuyos[i], caras, {}]),
-    ...BANEOS.suyos.map((p, i) => [p, VERDAD_JUEGO.suyos[i], caras, {}]),
+    // La captura de prueba es de antes del parche del 11-11-2026: su fila es la de antes.
+    ...BANEOS_ANTES.tuyos.map((p, i) => [p, VERDAD_JUEGO.tuyos[i], caras, {}]),
+    ...BANEOS_ANTES.suyos.map((p, i) => [p, VERDAD_JUEGO.suyos[i], caras, {}]),
     ...PICKS_ENEMIGOS.map((p, i) => [p, VERDAD_JUEGO.enemigos2[i], ambas, opPicks]),
     ...ALIADOS.map((p, i) => [p, VERDAD_JUEGO.aliados[i], ambas, opAliados]),
   ];

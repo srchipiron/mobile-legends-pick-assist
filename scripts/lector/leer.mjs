@@ -22,9 +22,12 @@ import { nombreClave } from '../../src/motor/nombres.js';
  * resolución se escala con el ancho y el alto.
  */
 export const REFERENCIA = { ancho: 2400, alto: 1504 };
+// [M] Desde el parche del 11-11-2026 la fila sube: mismas x, y 138 → 44 y radio 46,
+// medido sobre las dos cabeceras que subió la tablet (16 y 17-11): las 20 casillas
+// se reconocen a 0,89–0,99. Antes (y 138, r 47) salían «?» con 0,7 contra Gord.
 export const BANEOS = {
-  tuyos: [85, 222, 358, 495, 633].map((x) => [x, 138, 47]),
-  suyos: [1760, 1898, 2036, 2174, 2312].map((x) => [x, 138, 47]),
+  tuyos: [85, 222, 358, 495, 633].map((x) => [x, 44, 46]),
+  suyos: [1760, 1898, 2036, 2174, 2312].map((x) => [x, 44, 46]),
 };
 
 export const escalar = (img, [x, y, r]) => {
@@ -32,9 +35,20 @@ export const escalar = (img, [x, y, r]) => {
   return [x * fx, y * fy, r * Math.min(fx, fy)];
 };
 
+/** [M] La fila de antes del parche del 11-11-2026: solo si la de ahora no lee ninguna (capturas viejas, o si el juego la devuelve). */
+export const BANEOS_ANTES = {
+  tuyos: [85, 222, 358, 495, 633].map((x) => [x, 138, 47]),
+  suyos: [1760, 1898, 2036, 2174, 2312].map((x) => [x, 138, 47]),
+};
+
+/** La fila de ahora; si no reconoce ni una cara, la de antes (y se queda la que más lea). */
 export function leerBaneos(img, caras) {
-  const leer = (lista) => lista.map((pos) => reconocer(img, escalar(img, pos), caras));
-  return { tuyos: leer(BANEOS.tuyos), suyos: leer(BANEOS.suyos) };
+  const leer = (fila) => ({ tuyos: fila.tuyos.map((pos) => reconocer(img, escalar(img, pos), caras)), suyos: fila.suyos.map((pos) => reconocer(img, escalar(img, pos), caras)) });
+  const leidos = (r) => [...r.tuyos, ...r.suyos].filter((c) => c?.nombre).length;
+  const ahora = leer(BANEOS);
+  if (leidos(ahora) > 0) return ahora;
+  const antes = leer(BANEOS_ANTES);
+  return leidos(antes) > leidos(ahora) ? antes : ahora;
 }
 
 /**

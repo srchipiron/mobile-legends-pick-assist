@@ -121,9 +121,8 @@ tiene que estar en `copiarLector` (build.gradle.kts) y en `paths:` de `apk.yml`.
   tal cual Y en espejo; `CRIBA_PICKS` 1,2. Rivales: `CERCA_ENEMIGO` 0,77 con
   `MARGEN_CERCA_ENEMIGO` 0,08. Tu equipo: `ALIADO_MINIMO` 0,92, `MARGEN_ALIADO`
   0,03; tu fila por el nombre amarillo (`AMARILLO_MINIMO`, el doble que el resto).
-- La geometría de la fila de baneos (`BANEOS`) y de los paneles NO se toca sin
-  una captura nueva medida: desde el parche del 11-11-2026 la fila sale «?»
-  (ver `docs/pendiente.md`).
+- `BANEOS` solo se mueve con una captura medida: tras el parche del 11-11 subió (y 138 → 44, r 46),
+  medida en las cabeceras de la tablet (4.0.2, `cabecera-tras-parche.png`); `BANEOS_ANTES`, de respaldo.
 - Caras de serie del panel (`caras-panel.json`): solo con tres drafts, el mismo
   recorte se parece entre ellos y nada sin él se acerca. Iconos de hueco vacío
   de serie (`VACIOS_ALIADO`, `MINIMO_VACIO` 0,85), purgados de lo aprendido.
