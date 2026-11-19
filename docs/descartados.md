@@ -7,6 +7,7 @@ nueva. La crónica completa, en `docs/archivo/descartados-3.102.md`.
 
 - Diez términos más (peor y mejor cruce, top-5, héroe más flojo/fuerte, pick y ban totales, peor pareja, tier de mlbb.gg…): ninguno mejora la verosimilitud fuera de muestra (3.4.0).
 - Un coeficiente por término, el lado azul, los huecos por etiqueta, el hueco de daño, el contrapick por orden: no mejoran la validación cruzada (2.0).
+- El equilibrio de daño a vigilar (19-11-2026): su coeficiente libre baja a 0,06 ± 0,06 (120 d) y 0,09 ± 0,05 (400 d) frente al 0,22 que supone el motor; quitarlo gana +3,3 por 1.000 a 120 d pero +0,8 a 400 d. No concluye: se sigue midiendo, no se toca.
 - Otras formas del equilibrio de daño (−|f−m|, «hay de los dos», mixtos a medias, nº de magos): ninguna gana a min(f, m).
 - Qué falta por salir: condicionar por sinergia o cruce no añade; la frecuencia pro es otra población (14.640 situaciones).
 - El winrate por LÍNEA en la nota: +0,0 a +1,5 de logL por 1.000, dentro del ruido (se enseña).
@@ -18,6 +19,8 @@ nueva. La crónica completa, en `docs/archivo/descartados-3.102.md`.
 - Más peso a las parejas: ×2 da −1,0 de logL por 1.000 en 2.770 partidas pro (se enseña `mejorPareja`).
 - Ordenar por la simulación: solo mejora con un enemigo visto.
 - Ajustar la escala por las partidas de Javi: AUC ± 0,12, no concluye.
+- Ponderar por recencia al ajustar la escala (19-11-2026, validación hacia delante en 4 bloques del pro de 400 días): τ = 180/90/45 días empeora −0,40 ± 0,28 / −0,77 ± 0,42 / −1,31 ± 0,57 de logL por 1.000; la pendiente es estable por época (0,39/0,44/0,40).
+- Seguir al nº1 en las partidas de Javi (19-11-2026, 180 drafts completos): con el nº1 gana el 57,4 % (n 54) y con otro el 60,0 % (n 125), −2,6 ± 15,7 puntos; AUC en sus drafts 0,50 ± 0,09. No concluye: no está aleatorizado y Estes/Rafaela (63 %/71 %) suelen ir a mitad del ranking.
 - Tus resultados o tus héroes en la nota: fuera por decisión de Javi (3.93.0, 3.94.0).
 - Traducir nombres de héroe: son la clave de los datos (la búsqueda sí acepta los dos idiomas).
 
