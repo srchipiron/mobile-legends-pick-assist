@@ -9,3 +9,4 @@ Solo lo abierto: lo hecho está en el CHANGELOG y en git.
 - **Sin medir en la tablet**: los FPS del juego con la grabación; la pantalla de carga contra el minimapa; si la burbuja molesta.
 - **Caras que esperan un segundo draft**: Barats y su Floryn rosa.
 - **Un héroe nuevo**: la deducción de etiquetas lo cubre; `derivar-tags.mjs` regenera las tablas y su `kit` se actualiza al revisar sus etiquetas.
+- **Partidas sin resultado (≈1 al día)**: en las de «ya hay otro draft» (15–18-11) la tablet solo vio la pantalla de estadísticas (pestañas Equipamiento/Atributos), no la de VICTORY/DEFEAT, que pasa entre dos capturas de la ráfaga (cada 2 s). Ver si esa pantalla dice el resultado pide una captura suya a resolución completa (las miniaturas de 160 px no lo dejan ver); hasta entonces se pregunta «¿Cómo acabó?».
