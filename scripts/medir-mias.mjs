@@ -6,7 +6,12 @@
  * `medir-pro.mjs` para tu cola, y sale en Markdown para pegarlo en la
  * incidencia que trajo las partidas (partidas.yml, hasta 3.97.0).
  *
- *   node scripts/medir-mias.mjs [--fichero historial/partidas.json] [--json salida.json]
+ *   node scripts/medir-mias.mjs [--fichero historial/partidas.json] [--json salida.json] [--base [--jugador N]]
+ *
+ * Con `--base` junta también las de la base de datos (4.0.4): desde 3.98.0 la
+ * app ya no sube nada al repositorio y el historial se quedó en octubre. Lee
+ * `partidas_comunidad` (pública, sin claves: cada jugador es un número); si
+ * hay más de un jugador, hay que decir cuál eres con `--jugador`.
  *
  * Nunca falla por falta de partidas: con pocas dice cuántas faltan. Un
  * fallo de verdad (fichero ilegible) sí sale con código 1.
@@ -16,12 +21,42 @@ import { resumen, calibracion, esPrevia, esSupuesta, esDudosa, conResultado, sig
 import { prepararDatos, estimarCon, resolverNombres } from '../src/motor/draft.js';
 import { logit } from '../src/motor/modelo.js';
 import { logistica } from './medir-rival.mjs';
+import { sanearConfig, bajarComunidad } from '../src/comun/basedatos.js';
 
 const args = process.argv.slice(2);
 const opcion = (nombre, porDefecto = null) => { const i = args.indexOf(nombre); return i >= 0 ? args[i + 1] : porDefecto; };
 
 const pct = (x) => (x == null ? '—' : `${(x * 100).toFixed(1)}%`);
 const pp = (x) => `${x >= 0 ? '+' : ''}${(x * 100).toFixed(1)}`;
+
+/**
+ * El jugador de la base de datos que eres tú: el que se pide con `jugador`;
+ * sin él, el único que hay. Con varios y sin decir cuál, null y el porqué
+ * (no se adivina: mezclar a otra persona en «tus» números sería mentir).
+ */
+export function elegirJugador(filas = [], jugador = null) {
+  const hay = [...new Set(filas.map((f) => f?.j).filter((j) => j != null))];
+  if (jugador != null) return hay.includes(jugador) ? { jugador } : { jugador: null, porque: `no hay partidas del jugador ${jugador} (hay: ${hay.join(', ') || 'ninguno'})` };
+  if (hay.length === 1) return { jugador: hay[0] };
+  return { jugador: null, porque: hay.length ? `hay ${hay.length} jugadores (${hay.join(', ')}): di cuál eres con --jugador` : 'la base de datos no tiene partidas' };
+}
+
+/**
+ * Junta las partidas de la base de datos (las de `jugador`) con las del
+ * historial, sin repetir: la misma partida es el mismo instante `t`, y gana la
+ * copia arreglada más tarde (`editada`), como en la app.
+ */
+export function juntarConLaBase(registro, filas = [], jugador) {
+  const porT = new Map();
+  for (const p of registro?.partidas ?? []) if (Number.isFinite(p?.t)) porT.set(p.t, p);
+  for (const f of filas) {
+    const p = f?.d;
+    if (f?.j !== jugador || !Number.isFinite(p?.t)) continue;
+    const antes = porT.get(p.t);
+    if (!antes || (p.editada ?? 0) > (antes.editada ?? 0)) porT.set(p.t, p);
+  }
+  return { ...registro, partidas: [...porT.values()].sort((a, b) => a.t - b.t) };
+}
 
 /** Área bajo la curva ROC por rangos (empates a medias). */
 export function auc(pares) {
@@ -200,6 +235,16 @@ if (process.argv[1] && process.argv[1].endsWith('medir-mias.mjs')) {
   const fichero = opcion('--fichero', 'historial/partidas.json');
   let registro;
   try { registro = existsSync(fichero) ? JSON.parse(readFileSync(fichero, 'utf8')) : { partidas: [], maestria: {} }; } catch (e) { console.error(`No puedo leer ${fichero}: ${e.message}`); process.exit(1); }
+  if (args.includes('--base')) {
+    const config = existsSync('public/comunidad.json') ? sanearConfig(JSON.parse(readFileSync('public/comunidad.json', 'utf8'))) : null;
+    const r = config ? await bajarComunidad(config) : { error: 'no hay public/comunidad.json válido' };
+    if (r.error) { console.error(`No se pudo leer la base de datos: ${r.error}`); process.exit(1); }
+    const quien = elegirJugador(r.filas, opcion('--jugador') != null ? Number(opcion('--jugador')) : null);
+    if (quien.jugador == null) { console.error(`No sé cuáles son tus partidas: ${quien.porque}.`); process.exit(1); }
+    const antes = registro.partidas?.length ?? 0;
+    registro = juntarConLaBase(registro, r.filas, quien.jugador);
+    console.error(`Con la base de datos (jugador ${quien.jugador}${r.incompleto ? ', hay más de las que se bajan' : ''}): ${antes} del historial → ${registro.partidas.length} partidas.`);
+  }
   let datos = null; let generado = null; let errorDatos = null;
   try {
     const catalogo = JSON.parse(readFileSync('public/data/heroes.json', 'utf8'));

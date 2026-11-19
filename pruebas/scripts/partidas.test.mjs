@@ -158,3 +158,22 @@ test('medir-mias separa las apuntadas por el lector y cuenta los meses en la hor
   ok(/apuntó el lector solo[^\n]*40, 50/.test(informe(m)), `el informe no dice las del lector: ${informe(m).split('\n').find((l) => /lector solo/.test(l))}`);
   eq(m.porMes.map((x) => x.mes).join(), '2026-10', `los meses van en UTC: ${JSON.stringify(m.porMes)}`);
 });
+
+test('medir-mias --base: junta la base de datos con el historial sin repetir y solo con TU jugador (4.0.4)', async () => {
+  const { juntarConLaBase, elegirJugador } = await import('../../scripts/medir-mias.mjs');
+  const registro = { partidas: [{ t: 1, pick: 'Estes', gane: true }, { t: 2, pick: 'Gloo', gane: false, editada: 50 }] };
+  const filas = [
+    { j: 5, d: { t: 2, pick: 'Gloo', gane: true, editada: 90 } }, // arreglada después en la base: gana
+    { j: 5, d: { t: 3, pick: 'Rafaela', gane: true } },
+    { j: 5, d: { t: 1, pick: 'Estes', gane: false } }, // sin `editada`: no pisa la del historial
+    { j: 7, d: { t: 4, pick: 'Tigreal', gane: false } }, // otra persona
+  ];
+  const r = juntarConLaBase(registro, filas, 5);
+  eq(r.partidas.map((p) => `${p.t}:${p.gane}`).join(), '1:true,2:true,3:true', `juntadas mal: ${JSON.stringify(r.partidas)}`);
+  ok(!r.partidas.some((p) => p.pick === 'Tigreal'), 'se mezclan las partidas de otro jugador');
+  eq(elegirJugador(filas.slice(0, 3)).jugador, 5, 'con un solo jugador no lo elige');
+  eq(elegirJugador(filas).jugador, null, 'con dos jugadores adivina cuál eres');
+  ok(/--jugador/.test(elegirJugador(filas).porque), 'no dice cómo elegir');
+  eq(elegirJugador(filas, 7).jugador, 7, 'no respeta --jugador');
+  eq(elegirJugador(filas, 9).jugador, null, 'acepta un jugador que no existe');
+});

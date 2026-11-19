@@ -166,7 +166,10 @@ se guarda: `docs/comunidad.md`.
 - Las partidas de Javi con su draft, resultado y estimación. Lo leen
   `medir-mias.mjs` (Veredicto, calibración por modelo, re-puntuación con el
   modelo de hoy) y `proponer-modelo` (que además baja la base de datos).
-  `importar-partidas.mjs` sigue, a mano. La app no lo lee y no está en el
+  `importar-partidas.mjs` sigue, a mano.
+  Desde 3.98.0 el historial se quedó en octubre: `medir-mias.mjs --base` junta
+  las de la base de datos (`partidas_comunidad`, tu número de jugador; con
+  varios jugadores, `--jugador N`), sin repetir por `t` y con la arreglada después. La app no lo lee y no está en el
   `workflow_run` de `deploy.yml`.
 - **Nada sube a incidencias de GitHub.** El token (`useToken`,
   `roam-picker:envio` = `{ token }`, `sanearToken` descarta lo de versiones
