@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 4.0.6
+
+- Para que dejen de quedarse partidas sin resultado: cuando la tablet se pierde
+  la pantalla de VICTORIA/DERROTA y solo ve la de estadísticas, sube una vez al
+  día la parte de arriba de esa pantalla en grande (con los nombres de los
+  jugadores tapados, igual que hasta ahora). Con ella se mide si las
+  estadísticas dicen quién ganó, y así apuntar esas partidas solas.
+
 ## 4.0.5
 
 - La tablet apunta qué caras te toca corregir: cada héroe que leyó y quitaste
