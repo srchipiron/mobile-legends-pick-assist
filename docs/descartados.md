@@ -21,7 +21,7 @@ nueva. La crónica completa, en `docs/archivo/descartados-3.102.md`.
 - Ajustar la escala por las partidas de Javi: AUC ± 0,12, no concluye.
 - Ponderar por recencia al ajustar la escala (19-11-2026, validación hacia delante en 4 bloques del pro de 400 días): τ = 180/90/45 días empeora −0,40 ± 0,28 / −0,77 ± 0,42 / −1,31 ± 0,57 de logL por 1.000; la pendiente es estable por época (0,39/0,44/0,40).
 - Seguir al nº1 en las partidas de Javi (19-11-2026, 180 drafts completos): con el nº1 gana el 57,4 % (n 54) y con otro el 60,0 % (n 125), −2,6 ± 15,7 puntos; AUC en sus drafts 0,50 ± 0,09. No concluye: no está aleatorizado y Estes/Rafaela (63 %/71 %) suelen ir a mitad del ranking.
-- Tus resultados o tus héroes en la nota: fuera por decisión de Javi (3.93.0, 3.94.0).
+- Tus resultados o tus héroes en la nota: fuera por decisión de Javi (3.93.0, 3.94.0) y, desde el 19-11-2026, también por medida: la maestría por héroe predice peor que tu media (−8,6 ± 7,9 por 1.000, K 10, 275 partidas en orden de tiempo).
 - Traducir nombres de héroe: son la clave de los datos (la búsqueda sí acepta los dos idiomas).
 
 ## Interfaz

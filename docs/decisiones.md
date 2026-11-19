@@ -4,6 +4,7 @@ Normativas: cambiarlas es cosa suya. Con la fecha y, si la hay, su frase.
 
 - **Rango por defecto `glory`**; las claves `roam-picker:*` no se renombran ni se reutilizan (`roam-picker:voz-callada` queda reservada).
 - **Tus resultados no deciden nada** (3.93.0, 7-11-2026): «quiero que olvides el ganado/perdido mío… que no afecte en nada». Ranking, probabilidad, simulación y plan son solo el dato público. NO se vuelve a meter sin que lo pida.
+- **Revisadas con datos el 19-11-2026** (Javi: «lo que decidí puede estar mal; toma tus propias decisiones»). Con 305 partidas con resultado, en orden de tiempo y usando solo las anteriores: tu winrate previo con ESE héroe (encogido hacia tu media, K 5/10/20) predice la siguiente PEOR que tu media sin más (−13,0 ± 9,7 / −8,6 ± 7,9 / −5,2 ± 6,2 de logL por 1.000; con el modelo, −15,5 / −11,7 / −8,2). Las diferencias por héroe (Rafaela 49/69, Estes 42/70, Diggie 22/42) no se sostienen de una partida a la siguiente: las dos decisiones de abajo se MANTIENEN por evidencia, no solo por decisión. Se vuelve a medir con más partidas.
 - **Ni qué héroes juegas** (3.94.0, 8-11-2026): «aconseja el mejor pick de TODOS los roam». «Domino» solo filtra la vista con los mismos porcentajes (3.95.0).
 - **Sin voz** (3.96.0), **sin Termux ni adb** (3.97.0: el lector solo vive en la tablet), **la app no sube nada a GitHub** (3.98.0: el token es solo de administración).
 - **El resultado se lee con plantillas fijas medidas**; nada se aprende en marcha (3.99.0).
