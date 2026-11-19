@@ -61,6 +61,7 @@ con fechas e incidencias, está en `docs/archivo/errores-3.102.md`.
 - Tu fila por la última lectura daba el héroe de un compañero → por mayoría.
 - Dos que pueden llevar lo mismo se pisan → una sola conductora del draft: la tablet (protocolo 2, 4.0).
 - Al cambiar el ritmo de un bucle, toda ventana contada en vueltas pasa a tiempo.
+- Un fallo que se repite en cada vuelta (sin grabar: 214 líneas en dos días) tapa el resto del parte → una línea por racha y otra al volver (`puente-lector.test`, 4.0.4).
 - Un `catch` mudo en un aparato sin logcat → cada bucle deja su estado en `salud.json`, el registro o el parte.
 - El Node de la APK no entiende `\p{}` ni el indicador `v` → prohibidos en todo lo que carga la APK.
 - Dos peticiones de grabar → `SecurityException` en bucle → una sola, con cerrojo.

@@ -98,6 +98,7 @@ export function crearServidor({
   let fase = null, faseEn = 0;
   let correccion = null, correccionContestada = null, pregunta = null, respuesta = null;
   let delDraft = [], n = 0;
+  let falloDeCaptura = null;
   const guardandose = new Set();
   /** Capturas seguidas con minimapa (de las lecturas, los vistazos y la vigilancia): con `LECTURAS_EN_PARTIDA` la burbuja se esconde. */
   let seguidasEnPartida = 0, ultimaMirada = null;
@@ -118,11 +119,14 @@ export function crearServidor({
     let img;
     try { img = await capturar(); } catch (e) {
       const que = String(e?.message).split('\n')[0];
-      registrar(`No se pudo hacer la captura: ${que}`);
+      // Una vez por racha (4.0.4): sin grabar, cada vuelta repetía la misma línea (214 en dos días) y tapaba lo demás.
+      if (que !== falloDeCaptura) registrar(`No se pudo hacer la captura: ${que}`);
+      falloDeCaptura = que;
       salud.fallosCaptura += 1;
       salud.ultimoFallo = { cuando: ahora(), que: que.slice(0, 160) };
       return { ok: false, error: 'captura' };
     }
+    if (falloDeCaptura) { registrar('La captura vuelve a funcionar.'); falloDeCaptura = null; }
     try {
       const partida = enPartida(img);
       anotarPartida(partida);

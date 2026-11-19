@@ -110,6 +110,24 @@ test('una lectura devuelve los nombres de la captura (nunca la imagen), y un fal
   ok(e.lector.fallosCaptura === 1 && /no contesta/.test(e.lector.ultimoFallo?.que), `/estado no cuenta el fallo: ${JSON.stringify(e.lector)}`);
 });
 
+test('sin grabar, el fallo de captura deja UNA línea por racha y otra al volver (4.0.4); /estado los cuenta todos', async () => {
+  const lineas = [];
+  let graba = false;
+  const { interno } = await servidor({ registrar: (m) => lineas.push(m), capturar: async () => { if (!graba) throw new Error('La tablet no está grabando la pantalla'); return capturaCompleta(); } });
+  for (let i = 0; i < 4; i++) await interno.leer({ soloPartida: true });
+  const fallos = () => lineas.filter((l) => /No se pudo hacer la captura/.test(l)).length;
+  eq(fallos(), 1, `cuatro fallos seguidos dejan ${fallos()} líneas`);
+  eq(interno.estado().lector.fallosCaptura, 4, '/estado deja de contar los fallos repetidos');
+  graba = true;
+  await interno.leer({ soloPartida: true });
+  ok(lineas.some((l) => /vuelve a funcionar/.test(l)), 'al volver a grabar no lo dice');
+  await interno.leer({ soloPartida: true });
+  eq(lineas.filter((l) => /vuelve a funcionar/.test(l)).length, 1, 'lo dice en cada captura buena');
+  graba = false;
+  await interno.leer({ soloPartida: true });
+  eq(fallos(), 2, 'una racha nueva no deja su línea');
+});
+
 test('un hueco sin reconocer dice en el registro a qué se quedó más cerca', async () => {
   const lineas = [];
   const { interno } = await servidor({ capturar: async () => capturaCompleta({ conPicks: false }), registrar: (m) => lineas.push(m) });

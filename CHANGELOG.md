@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 4.0.4
+
+- Comprobado en tu tablet: desde la 4.0.2 vuelve a leer los baneos (drafts con
+  los diez leídos), así que el draft y la burbuja salen desde el principio.
+- Los partes de la tablet son más limpios: cuando Android deja de grabar, el
+  aviso «la tablet no está grabando» sale una vez (y otra cuando vuelve) en
+  vez de cientos de veces, que tapaban los avisos que importan.
+
 ## 4.0.3
 
 - Los partes de salud de la tablet ya no arrastran un fallo viejo: un error
