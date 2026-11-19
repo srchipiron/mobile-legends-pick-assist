@@ -6,7 +6,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { test, ok, eq, RAIZ } from '../ayuda.mjs';
-import { PARTIDAS_SIN_APUNTAR, PARTIDAS_PARA_MEDIR, revisarParte, revisarPartes, informe, PARTE_CALLADO_MIN, DATOS_VIEJOS_H, CIERRE_POR_FALLO, SALUD_CALLADA_MIN, FALLO_ANTERIOR_H } from '../../scripts/revisar-tablet.mjs';
+import { PARTIDAS_SIN_APUNTAR, PARTIDAS_PARA_MEDIR, revisarParte, revisarPartes, informe, PARTE_CALLADO_MIN, DATOS_VIEJOS_H, CIERRE_POR_FALLO, SALUD_CALLADA_MIN, FALLO_ANTERIOR_H, QUITADA_AVISO } from '../../scripts/revisar-tablet.mjs';
 import { SIN_BANEOS_AVISO, TABLA_SEGUIDAS } from '../../src/comun/contrato.js';
 import { subirParte, bajarPartes } from '../../src/comun/basedatos.js';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
@@ -168,4 +168,13 @@ await test('partidas jugadas sin apuntar (3.83.2): como el 27 de octubre, 5 h le
   const bien = con({ partidas: 8, apuntadas: 7 });
   eq(bien.fallos.length + bien.avisos.length, 0, 'avisa con la tablet apuntando');
   eq(con({}).fallos.length, 0, 'una APK de antes (sin la cuenta) da fallo');
+});
+
+test('avisa de las caras que quitas en varios drafts, y no de un despiste suelto (4.0.5)', () => {
+  const con = (quitados) => revisarParte({ j: 1, recibido: hace(5), d: sano({ solo: { activo: true, quitados } }) }, { ahora: AHORA }).avisos;
+  const a = con({ Wanwan: QUITADA_AVISO, Joy: QUITADA_AVISO + 2, Gord: 1 });
+  const aviso = a.find((x) => /lee mal/.test(x));
+  ok(aviso && /Joy \(5\), Wanwan \(3\)/.test(aviso), `no avisa, o no en orden: ${a}`);
+  ok(!/Gord/.test(aviso), 'avisa de una cara quitada una sola vez');
+  eq(con({ Gord: QUITADA_AVISO - 1 }).filter((x) => /lee mal/.test(x)).length, 0, 'avisa por debajo del umbral');
 });

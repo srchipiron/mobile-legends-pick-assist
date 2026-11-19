@@ -932,6 +932,9 @@ test('POST /draft: tu corrección manda en la burbuja y en la partida que se apu
   eq(solo.corregir(sanearCorreccion({ desde: desde + 1, enemigos: ['Clint'] })), false, 'acepta la corrección de otro draft');
   ok(solo.corregir(sanearCorreccion({ desde, enemigos: ['Clint', 'Khufra'], aliados: ['Gord', 'Selena'], tuyo: 'Rafaela', baneos: ['Hirara', 'Belerick', 'Eudora'] })), 'no acepta la corrección del draft abierto');
   eq(solo.paraElMovil().draft.corregido, true, 'el draft no dice que está corregido');
+  // Lo leído que quitaste es una cara mal leída: cuenta una vez por draft (4.0.5).
+  eq(solo.resumen().quitados.Joy, 1, `no cuenta a Joy como quitado: ${JSON.stringify(solo.resumen().quitados)}`);
+  ok(!('Clint' in solo.resumen().quitados), 'cuenta como quitado a uno que dejaste');
   await paso();
   const H = (nombre) => datos.heroes.find((h) => h.name === nombre);
   const rec = recomendar(datos, { linea: 'roam', enemigos: [H('Clint'), H('Khufra')], aliados: [H('Gord'), H('Selena')], baneos: [H('Hirara'), H('Belerick'), H('Eudora')], miPick: H('Rafaela'), conSimulacion: false });
@@ -946,6 +949,7 @@ test('POST /draft: tu corrección manda en la burbuja y en la partida que se apu
   ok(verdad.enemigos.join() === 'Clint,Khufra' && verdad.tuyo === 'Rafaela' && verdad.ids.length >= 2 && verdad.ids.every((id) => /^lectura-/.test(id)), `aprende con otra verdad o sin las capturas del draft: ${JSON.stringify(verdad)}`);
   ok(solo.corregir(sanearCorreccion({ desde, enemigos: ['Clint', 'Khufra'], aliados: ['Gord', 'Selena'], tuyo: 'Rafaela', baneos: ['Hirara', 'Belerick', 'Eudora'] })), 'la misma corrección tras cerrar se rechaza');
   eq(reg.aprendidas.length, 1, 'la misma corrección se aprende dos veces');
+  eq(solo.resumen().quitados.Joy, 1, 'la misma cara quitada dos veces en el mismo draft cuenta dos');
   // Se apunta con lo corregido: Khufra, y tu pick sin «supuesto».
   fin({ resultado: 'perdi', resultadoEn: ahora() + 700000, acabada: true, activa: false, duracion: 13, inicioEstimado: false });
   await paso(20000);
@@ -997,4 +1001,15 @@ test('POST /resultado: apunta ESA partida con ese resultado y deja de vigilarla 
   ok(c.reg.sinResultado.length === 1 && c.solo.paraElMovil().partida.estado === 'sinResultado', 'la prueba necesita la partida guardada sin resultado');
   ok(c.solo.resultado({ desde: c.solo.paraElMovil().partida.desde, gane: true }));
   ok(c.reg.cambiadas.length === 1 && c.solo.paraElMovil().partida.estado === 'apuntada' && c.solo.paraElMovil().partida.gane === true, `la guardada sin resultado no se apunta con lo del móvil: ${JSON.stringify(c.solo.paraElMovil().partida)}`);
+});
+
+test('un baneo leído que quitas también cuenta como cara mal leída (4.0.5)', async () => {
+  const { solo, paso } = conductor();
+  await paso();
+  const d = solo.paraElMovil().draft;
+  ok(d.baneos.length >= 1, `la prueba necesita baneos leídos: ${JSON.stringify(d.baneos)}`);
+  const [quitado, ...resto] = d.baneos;
+  ok(solo.corregir(sanearCorreccion({ desde: d.desde, enemigos: d.enemigos.filter(Boolean), aliados: d.aliados.filter((n, i) => n && i !== d.tuyoFila), tuyo: d.tuyo, baneos: resto })), 'no acepta la corrección');
+  eq(solo.resumen().quitados[quitado], 1, `el baneo quitado no cuenta: ${JSON.stringify(solo.resumen().quitados)}`);
+  eq(Object.keys(solo.resumen().quitados).length, 1, `cuenta como quitado lo que dejaste: ${JSON.stringify(solo.resumen().quitados)}`);
 });

@@ -36,6 +36,8 @@ export const RESULTADOS_PARA_MEDIR = 5, PREGUNTADAS_MAX = 0.5;
 /** [D] Partidas jugadas sin apuntar ninguna: con `PARTIDAS_SIN_APUNTAR`, FALLO; con `PARTIDAS_PARA_MEDIR` y menos de `APUNTADAS_MIN` apuntadas, AVISO. */
 export const PARTIDAS_SIN_APUNTAR = 3, PARTIDAS_PARA_MEDIR = 5, APUNTADAS_MIN = 0.5;
 
+/** [P] Desde cuántos drafts quitando la misma cara se avisa: una vez puede ser un despiste; tres, la cara. */
+export const QUITADA_AVISO = 3;
 /** Lo que se registra como «No se pudo» pero es el uso, no un fallo: la tablet sin grabar (el modo solo lo intenta igual). */
 export const NO_ES_FALLO = /no está grabando la pantalla/;
 /** Un fallo de Node de un arranque anterior se avisa durante esto; después ya es historia. */
@@ -95,6 +97,10 @@ export function revisarParte(parte, { ahora = Date.now() } = {}) {
   const sinBaneos = Number(e.solo?.sinBaneos) || 0;
   if (sinBaneos >= SIN_BANEOS_AVISO) avisos.push(`${sinBaneos} de las ${jugadas} partidas desde que arrancó sin leer los baneos: el juego ha podido cambiar la pantalla del draft (hace falta una captura para medirla)`);
   if (e.pendiente?.pregunta) avisos.push('hay una partida esperando a que digas cómo acabó');
+  // Las caras que más corriges (4.0.5): leídas y quitadas por ti, en drafts distintos.
+  const quitados = Object.entries(e.solo?.quitados ?? {}).filter(([, n]) => Number.isFinite(n)).sort((a, b) => b[1] - a[1]);
+  const malLeidas = quitados.filter(([, n]) => n >= QUITADA_AVISO);
+  if (malLeidas.length) avisos.push(`caras que lee mal (las quitaste en ${QUITADA_AVISO} drafts o más desde que arrancó): ${malLeidas.slice(0, 6).map(([h, n]) => `${h} (${n})`).join(', ')}`);
   const salud = Number.isFinite(t.cuando) && Number.isFinite(d.cuando) ? (d.cuando - t.cuando) / 60000 : null; // los dos con el reloj de la tablet
   if (t.grabando && salud != null && salud > SALUD_CALLADA_MIN) avisos.push(`la APK no escribe su estado desde hace ${Math.round(salud)} min con la tablet grabando: lo de la tablet puede ser viejo o estar colgada`);
   if (d.recortado) avisos.push('el parte llegó recortado: el registro o el fallo eran demasiado largos');

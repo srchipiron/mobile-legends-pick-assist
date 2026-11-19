@@ -84,7 +84,8 @@ ruta → código → quién → cuerpo en un solo sitio (`atender`).
   burbuja (siguiente vuelta), en la partida que se apunte (o ya apuntada) y en
   lo que se aprende (una vez por draft cerrado).
 - El motor se llama SIN maestría (`decidirSolo`); la maestría solo da tus
-  habituales (`tusHabituales`) para la corrección.
+  habituales (`tusHabituales`) para la corrección. Lo leído que quitas va a
+  `solo.quitados` (una vez por draft, `QUITADOS_MAX`); `revisar-tablet` avisa desde `QUITADA_AVISO` (3).
 
 ## Los módulos
 

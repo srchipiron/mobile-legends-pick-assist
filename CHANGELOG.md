@@ -8,6 +8,14 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 4.0.5
+
+- La tablet apunta qué caras te toca corregir: cada héroe que leyó y quitaste
+  en el móvil cuenta como cara mal leída, y el parte de salud las lleva. Así
+  la revisión automática sabe qué caras falla HOY (las cifras que había eran de
+  agosto a octubre, antes del parche) y puede arreglar las que se repiten en
+  tres drafts o más.
+
 ## 4.0.4
 
 - Comprobado en tu tablet: desde la 4.0.2 vuelve a leer los baneos (drafts con

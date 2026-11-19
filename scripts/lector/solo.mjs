@@ -20,6 +20,8 @@ import { acumularDraft, draftVacio, conCorreccion, registrarCorreccion, faseDe, 
 /** [C] Las líneas que se pueden elegir (las de `LINEAS` del motor). */
 export const LINEAS_SOLO = ['roam', 'jungle', 'mid', 'gold', 'exp'];
 /** [M] Cada cuánto se lee: en el draft 1,5 s (una lectura tarda 0,6–1,6 s y el último pick se ve unos segundos antes de las skins); vacío, en partida (solo minimapa) y tras un fallo. */
+/** [P] Cuántos héroes distintos quitados se guardan en el resumen (los más quitados): el parte tiene tope. */
+export const QUITADOS_MAX = 30;
 export const INTERVALOS_SOLO = { draft: 1500, vacio: 12000, partida: 20000, error: 30000 };
 /** [M] Lo menos que separa dos tablas del final: ninguna partida de 126 duró menos de 8 minutos y entre dos de Javi nunca hubo menos de 12. */
 export const MINUTOS_ENTRE_TABLAS = 10;
@@ -226,7 +228,17 @@ export function crearSolo({
   let ultimaTabla = null, ultimoConsejo = null, vacias = 0;
   let reloj = null, parado = false;
   const aprendidas = new Set();
-  const resumen = { activo: false, linea: null, origen: null, lecturas: 0, partidas: 0, apuntadas: 0, sinBaneos: 0, ultima: null };
+  const resumen = { activo: false, linea: null, origen: null, lecturas: 0, partidas: 0, apuntadas: 0, sinBaneos: 0, ultima: null, quitados: {} };
+  // Lo que corregiste (4.0.5): cada héroe leído que quitaste es una cara mal leída. Una vez por draft y héroe.
+  const quitadosPorDraft = new Map();
+  const contarQuitados = (desde, nombres) => {
+    const ya = quitadosPorDraft.get(desde) ?? new Set();
+    for (const n of nombres) if (!ya.has(n)) { ya.add(n); resumen.quitados[n] = (resumen.quitados[n] ?? 0) + 1; }
+    quitadosPorDraft.set(desde, ya);
+    while (quitadosPorDraft.size > 20) quitadosPorDraft.delete(quitadosPorDraft.keys().next().value);
+    const orden = Object.entries(resumen.quitados).sort((a, b) => b[1] - a[1]);
+    if (orden.length > QUITADOS_MAX) resumen.quitados = Object.fromEntries(orden.slice(0, QUITADOS_MAX));
+  };
   const pickDe = (v) => v.decision.tuyo?.name ?? v.decision.rec.eleccion?.heroe?.name ?? null;
 
   /** El instante de una partida: el del resultado si se vio; si no, el inicio más lo que duró; si no, el cierre del draft. */
@@ -426,7 +438,7 @@ export function crearSolo({
     arrancar: () => { parado = false; reloj = programar(vuelta, intervalos.vacio); },
     parar: () => { parado = true; if (reloj) cancelar(reloj); },
     estado: () => draft,
-    resumen: () => ({ ...resumen, ultima: resumen.ultima ? { ...resumen.ultima } : null }),
+    resumen: () => ({ ...resumen, ultima: resumen.ultima ? { ...resumen.ultima } : null, quitados: { ...resumen.quitados } }),
     /** `GET /draft`: el draft abierto o el último cerrado (con tu corrección encima) y la partida del último cerrado. */
     paraElMovil() {
       const a = ajustes();
@@ -453,7 +465,10 @@ export function crearSolo({
       if (pendiente && pendiente.cuando === base.cerradoEn) { pendiente = null; interno.ponerCorreccion?.(null); }
       aprenderDe(base, registrada);
       ultimoConsejo = null;
-      registrar(`Corrección del móvil: ${registrada.enemigos.length} enemigos, ${registrada.aliados.length} compañeros${registrada.tuyo ? `, tú ${registrada.tuyo}` : ''}.`);
+      const r = registrada.rechazados ?? {};
+      const quitados = [...new Set([...(r.enemigos ?? []), ...(r.aliados ?? []), ...(r.baneos ?? [])])];
+      contarQuitados(base.desde, quitados);
+      registrar(`Corrección del móvil: ${quitados.length ? `quitas ${quitados.join(', ')} · ` : ''}${registrada.enemigos.length} enemigos, ${registrada.aliados.length} compañeros${registrada.tuyo ? `, tú ${registrada.tuyo}` : ''}.`);
       return true;
     },
     /** `POST /resultado`: apunta ESA partida con ese resultado (o la arregla), y deja de vigilarla y de preguntar. false si no es la del último draft cerrado. */
