@@ -20,6 +20,8 @@ const recortes = [
   { j: 1, d: { v: 1, partida: 1, capturas: [{ id: 'lectura-x', picks, tuyoFila: 4 }] } },
   // La cabecera de un draft sin la fila de baneos (4.0.1) no es un recorte de las caras.
   { j: 1, d: { v: 1, tipo: 'cabecera', desde: T, capturas: [{ id: 'lectura-y', cabecera: 'iVBORw0KGgo=' }] } },
+  // Ni la pantalla de después de una partida sin resultado, en grande (4.0.6).
+  { j: 1, d: { v: 1, tipo: 'pantalla-final', desde: T, capturas: [{ id: 'fotograma-z', tira: 'iVBORw0KGgo=' }] } },
 ];
 
 test('cada recorte contra su partida de verdad: lo que se lee, lo que falta y lo leído de más', () => {

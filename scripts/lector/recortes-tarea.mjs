@@ -4,8 +4,9 @@
  * lleva segundos en la tablet y el lector sigue contestando. Recibe rutas;
  * devuelve los recortes (nunca la verdad: la tablet sola no la sabe). Con
  * `cabecera`, solo la franja de arriba de la primera que se decodifique
- * (`{ id, cabecera }` o null), para volver a medir la fila de baneos.
- * Sin adb, sin programas.
+ * (`{ id, cabecera }` o null), para volver a medir la fila de baneos. Con
+ * `pantalla` (la ruta de un fotograma del final), su franja en grande y sin
+ * nombres (`pantallaFinalDe`: la base64 o null). Sin adb, sin programas.
  */
 import { parentPort, workerData } from 'node:worker_threads';
 import { readFileSync } from 'node:fs';
@@ -13,10 +14,15 @@ import { leerPng } from './png.mjs';
 import { carasGuardadas } from './leer.mjs';
 import { carasAprendidas, aliadasAprendidas } from './aprender.mjs';
 import { mejoresRecortes, cabeceraDeDraft } from './recortes.mjs';
+import { pantallaFinalDe } from './subidas.mjs';
 
-const { capturas, aprendido, cabecera = false } = workerData;
+const { capturas = [], aprendido = null, cabecera = false, pantalla = null } = workerData;
 const porId = new Map(capturas.map((c) => [c.id, c.png]));
-if (cabecera) {
+if (typeof pantalla === 'string') {
+  let tira = null;
+  try { tira = pantallaFinalDe(leerPng(readFileSync(pantalla))); } catch { /* sin pantalla */ }
+  parentPort.postMessage(tira);
+} else if (cabecera) {
   let hecha = null;
   for (const c of capturas) {
     try { const b64 = cabeceraDeDraft(leerPng(readFileSync(c.png))); if (b64) { hecha = { id: c.id, cabecera: b64 }; break; } } catch { /* la siguiente */ }

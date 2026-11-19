@@ -106,6 +106,25 @@ test('la ráfaga empieza al dejar de verse el minimapa, no en partida', async ()
   ok(p.registro.some((l) => /Sin minimapa/.test(l)), 'sin minimapa no empieza la ráfaga');
 });
 
+test('la pantalla de después de la partida (4.0.6): la primera sin minimapa se guarda ENTERA una vez, no cada fotograma de la ráfaga', async () => {
+  const guardadas = [];
+  const [f0, f1] = ['fuera-0.png', 'fuera-2.png'].map((f) => pantalla(f));
+  const p = vigilanciaDePrueba({ vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 15, intervaloInicioMs: 15, rapidoMs: 15, rafagaMs: 60000, hastaMin: 600, partidaHastaMin: 600 }, guardarPantalla: (img, id) => guardadas.push({ img, id }) });
+  const pasar = async (n = 3) => { const antes = p.capturas; await p.hasta(() => p.capturas >= antes + n); };
+  p.pantalla = JUEGO;
+  p.v.vigilar(Date.now());
+  await pasar();
+  eq(guardadas.length, 0, 'en partida guarda pantallas enteras');
+  eq(p.final().pantalla, null);
+  p.cola.push(f0);
+  p.pantalla = f1;
+  await pasar(4);
+  eq(guardadas.length, 1, `guarda ${guardadas.length} pantallas enteras al salir de la partida (una)`);
+  ok(guardadas[0].img === f0, 'la que guarda no es la primera sin minimapa (o no va entera)');
+  const primera = p.final().fotogramas.find((f) => f.rafaga);
+  ok(guardadas[0].id === primera?.id && p.final().pantalla === primera.id, `la guardada no es la primera de la ráfaga: ${guardadas[0].id} / ${primera?.id}`);
+});
+
 test('en partida, una captura por paso aunque el reloj lata más deprisa', async () => {
   const p = vigilanciaDePrueba({ vigilancia: { ...VIGILANCIA, desdeMin: 0, intervaloMs: 100000, intervaloInicioMs: 100000, rapidoMs: 15 } });
   p.pantalla = JUEGO;

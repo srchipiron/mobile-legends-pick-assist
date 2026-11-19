@@ -3,9 +3,10 @@
  * y siempre limpio: el parte de salud sin IPs ni secretos, los recortes de un
  * draft sin los nombres de los jugadores, las pantallas del final y el
  * comprobante con todo lo de debajo de la cabecera en negro, la cabecera del
- * draft (solo la franja de la fila de baneos). Y lo que vuelve:
- * los drafts que arreglaste, para aprender. Puro salvo la clave del lector
- * y el día de la última cabecera.
+ * draft (solo la franja de la fila de baneos), la pantalla de después de una
+ * partida sin resultado en grande (la misma franja sin nombres). Y lo que
+ * vuelve: los drafts que arreglaste, para aprender. Puro salvo la clave del
+ * lector y el día de la última cabecera y de la última pantalla del final.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -14,6 +15,7 @@ import { claveDeJugadorValida, crearClaveDeJugador } from '../../src/comun/based
 import { leerPng, escribirPng } from './png.mjs';
 import { limpiarTexto } from './acceso.mjs';
 import { instanteDeCaptura, ID_DE_LECTURA } from './capturas.mjs';
+import { reducir, cuantizar, ALTO_TIRA } from './miniatura.mjs';
 
 /** [D] El parte: cada 15 min (el servidor admite uno cada 4), con sus últimas 60 líneas y 10 errores, en 12.000 bytes (el servidor, 16.000). */
 export const PARTE_CADA_MS = 15 * 60 * 1000;
@@ -141,12 +143,45 @@ export function cabeceraParaSubir({ desde, captura, version = null }) {
 /** [D] Como mucho una cabecera al día: el día (UTC) de la última subida, en `cabecera.json`. */
 export const ficheroCabecera = (casa) => join(casa, 'cabecera.json');
 export const diaDe = (t) => new Date(t).toISOString().slice(0, 10);
-export function cabeceraSubidaHoy(casa, ahora = Date.now()) {
-  try { return JSON.parse(readFileSync(ficheroCabecera(casa), 'utf8'))?.dia === diaDe(ahora); } catch { return false; }
+const subidaHoy = (fichero, ahora) => { try { return JSON.parse(readFileSync(fichero, 'utf8'))?.dia === diaDe(ahora); } catch { return false; } };
+const apuntarDia = (fichero, ahora) => { try { writeFileSync(fichero, JSON.stringify({ dia: diaDe(ahora) })); } catch { /* sin disco: otra mañana */ } };
+export const cabeceraSubidaHoy = (casa, ahora = Date.now()) => subidaHoy(ficheroCabecera(casa), ahora);
+export const apuntarCabecera = (casa, ahora = Date.now()) => apuntarDia(ficheroCabecera(casa), ahora);
+
+/**
+ * [D] La pantalla del final en grande (4.0.6): la primera sin minimapa al
+ * acabar la partida (la de las estadísticas cuando el VICTORY/DEFEAT pasó
+ * entre dos capturas de la ráfaga), con la MISMA región y el mismo tapado que
+ * la franja de siempre (`ALTO_TIRA` y `franjaSinNombres`), a 1600 px en vez de
+ * 320, para ver si esa pantalla dice el resultado. Si no cabe, a la mitad.
+ */
+export const ANCHO_PANTALLA_FINAL = 1600;
+export const TOPE_PANTALLA_FINAL = 115000;
+/** [C] El servidor admite un recorte por minuto y clave: la pantalla sale un rato después de las pantallas del final. */
+export const PANTALLA_TRAS_FINAL_MS = 65000;
+/** [C] El id de un fotograma del final (`fotograma-2026-11-19T20-31-02-000Z`). */
+export const ID_DE_FOTOGRAMA = /^fotograma-[\w-]+$/;
+
+/** La franja de arriba de la pantalla entera, sin nombres, a `ancho` (o la mitad, hasta que quepa en `tope`). null si ni a 200 px. */
+export function pantallaFinalDe(img, { ancho = ANCHO_PANTALLA_FINAL, tope = TOPE_PANTALLA_FINAL } = {}) {
+  for (let a = ancho; a >= 200; a = Math.floor(a / 2)) {
+    const tira = franjaSinNombres(Buffer.from(escribirPng(cuantizar(reducir(img, { ancho: a, region: [0, 0, 1, ALTO_TIRA] })), () => 4, { paleta: true })).toString('base64'));
+    if (tira && tira.length <= tope) return tira;
+  }
+  return null;
 }
-export function apuntarCabecera(casa, ahora = Date.now()) {
-  try { writeFileSync(ficheroCabecera(casa), JSON.stringify({ dia: diaDe(ahora) })); } catch { /* sin disco: otra mañana */ }
+
+/** El recorte de la pantalla del final en grande: UNA captura con su franja, sin `partida` (no es un draft). null si no tiene forma o no cabe. */
+export function pantallaFinalParaSubir({ desde, captura, version = null }) {
+  if (!Number.isFinite(desde) || typeof captura?.id !== 'string' || !ID_DE_FOTOGRAMA.test(captura.id) || !b64(captura.tira)) return null;
+  const recorte = { v: 1, tipo: 'pantalla-final', version: typeof version === 'string' ? version : null, desde, capturas: [{ id: captura.id, tira: captura.tira }] };
+  return cabe(recorte) ? recorte : null;
 }
+
+/** [D] Como mucho una pantalla del final al día, en `pantalla-final.json` (al subir). */
+export const ficheroPantallaFinal = (casa) => join(casa, 'pantalla-final.json');
+export const pantallaFinalSubidaHoy = (casa, ahora = Date.now()) => subidaHoy(ficheroPantallaFinal(casa), ahora);
+export const apuntarPantallaFinal = (casa, ahora = Date.now()) => apuntarDia(ficheroPantallaFinal(casa), ahora);
 
 /**
  * Las pantallas del final de una partida que no se reconoció: la primera y la
@@ -155,7 +190,7 @@ export function apuntarCabecera(casa, ahora = Date.now()) {
  * nombres, con la partida sin resultado. null si no hay ninguna.
  */
 export function finalParaSubir({ desde, motivo = '', fotogramas = [], version = null, partida = null }) {
-  const validas = (Array.isArray(fotogramas) ? fotogramas : []).filter((f) => typeof f?.id === 'string' && /^fotograma-[\w-]+$/.test(f.id) && b64(f.miniatura));
+  const validas = (Array.isArray(fotogramas) ? fotogramas : []).filter((f) => typeof f?.id === 'string' && ID_DE_FOTOGRAMA.test(f.id) && b64(f.miniatura));
   const ultimaEnPartida = validas.map((f) => !!f.enPartida).lastIndexOf(true);
   const fuera = validas.filter((f, i) => !f.enPartida && i > ultimaEnPartida);
   const rafaga = validas.filter((f) => f.rafaga === true && !f.enPartida);

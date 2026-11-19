@@ -45,6 +45,8 @@ export const aprenderEnHilo = ({ pares, aprendido }) => respuestaDe(new Worker(n
 export const recortarEnHilo = ({ capturas, aprendido }) => respuestaDe(new Worker(new URL('recortes-tarea.mjs', import.meta.url), { workerData: { capturas, aprendido } }));
 /** La cabecera de una captura del draft (4.0.1), en el mismo hilo de los recortes. */
 export const cabeceraEnHilo = ({ capturas }) => respuestaDe(new Worker(new URL('recortes-tarea.mjs', import.meta.url), { workerData: { capturas, aprendido: null, cabecera: true } }));
+/** La pantalla del final en grande (4.0.6), en el mismo hilo de los recortes. */
+export const pantallaEnHilo = ({ png }) => respuestaDe(new Worker(new URL('recortes-tarea.mjs', import.meta.url), { workerData: { capturas: [], aprendido: null, pantalla: png } }));
 
 const nombresDe = (informe) => ({
   aprendidos: informe.flatMap((l) => [...l.aprendidos.map((a) => a.nombre), ...(l.aliados?.aprendidos ?? [])]),
@@ -56,7 +58,7 @@ const nombresDe = (informe) => ({
  * `guardar(aprendido)`: a disco. Las capturas que la cola está mirando
  * (también mientras espera) salen en `enUso()`: la poda no se las lleva.
  */
-export function crearAprendizaje({ carpeta = null, aprendido: inicial = null, aprender = aprenderEnHilo, recortar = recortarEnHilo, cabecear = cabeceraEnHilo, guardar = () => {}, registrar = () => {} } = {}) {
+export function crearAprendizaje({ carpeta = null, aprendido: inicial = null, aprender = aprenderEnHilo, recortar = recortarEnHilo, cabecear = cabeceraEnHilo, pantallear = pantallaEnHilo, guardar = () => {}, registrar = () => {} } = {}) {
   let aprendido = inicial;
   let cola = Promise.resolve();
   const enUso = new Map();
@@ -134,6 +136,14 @@ export function crearAprendizaje({ carpeta = null, aprendido: inicial = null, ap
         const r = await usando(validos, () => cabecear({ capturas: validos.map((id) => ({ id, png: join(carpeta, `${id}.png`) })) }));
         return typeof r?.id === 'string' && typeof r.cabecera === 'string' ? r : null;
       } catch (e) { registrar(`No se pudo recortar la cabecera del draft: ${e.message}`); return null; }
+    },
+    /** La pantalla del final guardada con `id`, en grande y sin nombres (`{ id, tira }`): null si ya no está o si el hilo falla. */
+    async pantallaFinalDe(id) {
+      if (typeof id !== 'string' || !/^fotograma-[\w-]+$/.test(id) || !carpeta || !existsSync(join(carpeta, `${id}.png`))) return null;
+      try {
+        const tira = await usando([id], () => pantallear({ png: join(carpeta, `${id}.png`) }));
+        return typeof tira === 'string' && tira ? { id, tira } : null;
+      } catch (e) { registrar(`No se pudo recortar la pantalla del final: ${e.message}`); return null; }
     },
     /** Los recortes de las capturas de un draft (para medir el lector): [] si no hay o si el hilo falla. */
     async recortesDe(ids) {

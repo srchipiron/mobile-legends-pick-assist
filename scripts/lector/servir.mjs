@@ -108,9 +108,15 @@ export function crearServidor({
   const vigente = (x) => (x && ahora() - x.cuando <= RETENCION_CAPTURAS_MS ? x : null);
 
   const aprendizaje = crearAprendizaje({ carpeta, aprendido, registrar, ...(aprender ? { aprender } : {}), ...(recortar ? { recortar } : {}), ...(guardar ? { guardar } : {}) });
-  const vigilancia = crearVigilancia({ capturar, resultados: plantillas, ahora, registrar, vigilancia: vigilanciaPedida, alMirar: anotarPartida });
-  const lector = enHilos ? lectorEnHilos({ caras, registrar }) : null;
   const podar = () => { if (carpeta) podarCapturas(carpeta, { ahora: ahora(), maximos, proteger: new Set([...(vigente(correccion)?.ids ?? []), ...delDraft, ...aprendizaje.enUso()]) }); };
+  /** La pantalla del final entera a disco (4.0.6), comprimida fuera del hilo principal como las lecturas: una por partida. */
+  const guardarPantalla = carpeta ? (img, id) => {
+    const guardado = escribirPngRapido(img).then((b) => { writeFileSync(join(carpeta, `${id}.png`), b); podar(); })
+      .catch((e) => registrar(`No se pudo guardar la pantalla del final ${id}: ${e.message}`)).finally(() => guardandose.delete(guardado));
+    guardandose.add(guardado);
+  } : null;
+  const vigilancia = crearVigilancia({ capturar, resultados: plantillas, ahora, registrar, vigilancia: vigilanciaPedida, alMirar: anotarPartida, guardarPantalla });
+  const lector = enHilos ? lectorEnHilos({ caras, registrar }) : null;
 
   /** Una lectura de la pantalla. Con `rapida`, en partida no reconoce caras; `soloPartida` es un vistazo al minimapa. */
   async function hacerLectura({ rapida = false, soloPartida = false } = {}) {
@@ -312,6 +318,7 @@ export function crearServidor({
     aprenderDe: (verdad) => aprendizaje.corregir(verdad),
     recortesDe: (ids) => aprendizaje.recortesDe(ids),
     cabeceraDe: (ids) => aprendizaje.cabeceraDe(ids),
+    pantallaFinalDe: (id) => aprendizaje.pantallaFinalDe(id),
     aprenderDeArreglos: (drafts) => aprendizaje.aprenderDeArreglos(drafts),
     estado,
     /** Un vistazo al minimapa si la burbuja tiene algo que enseñar y nadie ha capturado en `VISTAZO_MS`. null si no tocaba. */

@@ -303,7 +303,7 @@ export function crearSolo({
     if (f?.desde === v.desde && Array.isArray(f.fotogramas) && f.fotogramas.length) {
       const sin = partidaSolo({ decision: v.decision, linea: v.linea, rango: v.rango, gane: false, t: v.tSinResultado, versionModelo: VERSION_MODELO });
       const partida = sin ? (({ gane, ...resto }) => resto)(sin) : null;
-      try { alFinalSinLeer?.({ desde: v.desde, motivo, fotogramas: f.fotogramas, ...(partida ? { partida } : {}) }); } catch (e) { registrar(`No se pudieron preparar las pantallas del final: ${e.message}`); }
+      try { alFinalSinLeer?.({ desde: v.desde, motivo, fotogramas: f.fotogramas, ...(typeof f.pantalla === 'string' ? { pantalla: f.pantalla } : {}), ...(partida ? { partida } : {}) }); } catch (e) { registrar(`No se pudieron preparar las pantallas del final: ${e.message}`); }
     }
     interno.ponerResumen?.(resumenPregunta(v.desde, pick, v.idioma));
     registrar(`No sé cómo acabó la partida (${motivo}); te lo pregunto en la app de la tablet.`);

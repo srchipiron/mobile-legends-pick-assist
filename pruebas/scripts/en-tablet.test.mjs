@@ -20,14 +20,15 @@ import { RETENCION_CAPTURAS_MS, CAPTURAS_A_MIRAR } from '../../scripts/lector/ca
 import { ARREGLOS_POR_TANDA } from '../../scripts/lector/aprendizaje.mjs';
 import { lectorDeDatos, leerSaludDeLaApk, ajustesDeLaTablet, leerComunidad } from '../../scripts/lector/datos.mjs';
 import { ultimasDeTabla, partidasDeLaTablet, subirLoDeLaTablet, TOPE_PARTIDAS_TABLET, TOPE_SIN_RESULTADO, sanearEdicion, semanaParaLaApk } from '../../scripts/lector/partidas.mjs';
-import { lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, finalParaSubir, partidaSinResultado, draftsArreglados, franjaSinNombres, FRACCION_CABECERA, comprobanteParaSubir, cabeceraParaSubir, ficheroCabecera, diaDe } from '../../scripts/lector/subidas.mjs';
+import { lineasLimpias, parteDeSalud, LINEAS_DEL_PARTE, claveDelLector, TOPE_PARTE_BYTES, recorteParaSubir, TOPE_RECORTE_BYTES, LINEA_DE_ERROR, finalParaSubir, partidaSinResultado, draftsArreglados, franjaSinNombres, FRACCION_CABECERA, comprobanteParaSubir, cabeceraParaSubir, ficheroCabecera, diaDe, pantallaFinalDe, pantallaFinalParaSubir, ficheroPantallaFinal, ANCHO_PANTALLA_FINAL, PANTALLA_TRAS_FINAL_MS } from '../../scripts/lector/subidas.mjs';
+import { ALTO_TIRA } from '../../scripts/lector/miniatura.mjs';
 import { supabaseFalso } from '../fixtures/supabase-falso.mjs';
 import { claveDeJugadorValida, bajarMisRecortes, subirParte } from '../../src/comun/basedatos.js';
 import { comprobantes } from '../../src/app/revisar.js';
 import { VERSION_APRENDIDO } from '../../scripts/lector/aprender.mjs';
 import { capturaCompletaPng, capturaCompleta, VERDAD } from '../fixtures/juego/captura.mjs';
 import { recorteDePicks, cabeceraDeDraft, REGION_CABECERA, ANCHO_CABECERA } from '../../scripts/lector/recortes.mjs';
-import { leerPng, escribirPng } from '../../scripts/lector/png.mjs';
+import { leerPng, escribirPng, escribirPngRapido } from '../../scripts/lector/png.mjs';
 import { reconocerResultado } from '../../scripts/lector/resultado.mjs';
 
 const png = capturaCompletaPng();
@@ -611,6 +612,121 @@ test('la cabecera de un draft sin la fila de baneos (4.0.1): la tablet sube SOLA
     const sinCaptura = await servidor2.subirCabeceraDe({ desde: 5, ids: ['lectura-no-existe'] });
     ok(/no se pudo \(ninguna captura/.test(sinCaptura ?? ''), `sin captura no lo dice: ${sinCaptura}`);
   } finally { servidor2.close(); apk2.cerrar(); }
+});
+
+test('la pantalla del final en grande (4.0.6): una partida sin resultado sube la primera pantalla de después a 1600 px, con la misma región y el mismo tapado que la franja, una al día y con la clave de las pantallas del final', async () => {
+  // Una pantalla sin un píxel negro: lo negro de lo que sube solo puede ser el tapado.
+  const ancho = 2400, alto = 1504, rgba = new Uint8Array(ancho * alto * 4);
+  for (let y = 0; y < alto; y++) for (let x = 0; x < ancho; x++) { const k = (y * ancho + x) * 4; rgba[k] = 60 + ((x * 7 + y * 3) % 190); rgba[k + 1] = 60 + ((x * 3 + y * 5) % 190); rgba[k + 2] = 60 + ((x + y * 11) % 190); rgba[k + 3] = 255; }
+  const pantalla = { ancho, alto, rgba };
+  /** La privacidad, leída del PNG que sube: la franja de `ALTO_TIRA` a ese ancho, la cabecera con imagen y TODO lo de debajo en negro. */
+  const sinNombres = (b64, a) => {
+    const v = leerPng(Buffer.from(b64, 'base64'));
+    eq(v.ancho, a, 'no sube al ancho pedido');
+    eq(v.alto, Math.round(Math.ceil(ALTO_TIRA * alto) / (ancho / a)), 'no es la franja de arriba de siempre (`ALTO_TIRA`)');
+    const desde = Math.ceil(v.alto * FRACCION_CABECERA);
+    let claros = 0;
+    for (let i = desde * v.ancho * 4; i < v.rgba.length; i += 4) if (v.rgba[i] || v.rgba[i + 1] || v.rgba[i + 2]) claros += 1;
+    eq(claros, 0, `sube ${claros} píxeles de debajo de la cabecera (los nombres de los otros jugadores)`);
+    const cabecera = v.rgba.subarray((desde - 1) * v.ancho * 4, desde * v.ancho * 4);
+    ok(cabecera.some((c, i) => i % 4 !== 3 && c > 0), 'la cabecera (donde iría el resultado) sube en negro');
+  };
+  const grande = pantallaFinalDe(pantalla);
+  sinNombres(grande, ANCHO_PANTALLA_FINAL);
+  eq(ANCHO_PANTALLA_FINAL, 1600);
+  // Si no cabe, a la mitad.
+  sinNombres(pantallaFinalDe(pantalla, { tope: grande.length - 1 }), ANCHO_PANTALLA_FINAL / 2);
+  const ID = 'fotograma-2026-11-19T20-31-02-000Z';
+  eq(pantallaFinalParaSubir({ desde: 5, captura: { id: '../x', tira: grande } }), null, 'sube una pantalla con un id sin forma');
+  eq(pantallaFinalParaSubir({ desde: 5, captura: { id: 'lectura-2026-11-19T20-31-02-000Z-1', tira: grande } }), null, 'sube una captura del draft como pantalla del final');
+  eq(pantallaFinalParaSubir({ desde: 5, captura: { id: ID, tira: 'no <es> png' } }), null, 'sube algo que no es un PNG');
+  eq(pantallaFinalParaSubir({ desde: null, captura: { id: ID, tira: grande } }), null, 'sube sin el draft');
+  eq(pantallaFinalParaSubir({ desde: 5, captura: { id: ID, tira: 'A'.repeat(TOPE_RECORTE_BYTES) } }), null, 'sube una que no cabe');
+  // `subir_recorte` admite uno por minuto y clave: la pantalla sale pasado ese minuto.
+  ok(PANTALLA_TRAS_FINAL_MS > 60000, `la pantalla sale ${PANTALLA_TRAS_FINAL_MS} ms tras las del final: el servidor la rechaza («pronto»)`);
+  // De punta a punta: la pantalla entera guardada por la vigilancia, y las pantallas del final de una partida sin resultado.
+  const foto = (id, extra = {}) => ({ id: `fotograma-2026-11-19T20-${id}-000Z`, minuto: 14, miniatura: 'iVBORw0KGgo=', tira: 'iVBORw0KGgo=', ...extra });
+  const fotos = [foto('30-50', { enPartida: true }), foto('31-02', { rafaga: true }), foto('31-04', { rafaga: true })];
+  let reloj = Date.now();
+  const s = supabaseFalso({ ahora: () => reloj });
+  const casa = mkdtempSync(join(tmpdir(), 'en-tablet-pantalla-'));
+  mkdirSync(join(casa, 'datos'), { recursive: true });
+  mkdirSync(join(casa, 'capturas'), { recursive: true });
+  writeFileSync(join(casa, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: s.clavePublica }));
+  writeFileSync(join(casa, 'salud.json'), JSON.stringify({ apk: '4.0.6' }));
+  const png = await escribirPngRapido(pantalla);
+  writeFileSync(join(casa, 'capturas', `${ID}.png`), png);
+  writeFileSync(join(casa, 'capturas', 'fotograma-2026-11-19T21-31-02-000Z.png'), png);
+  const apk = await apkDePega();
+  const servidor = await principalDePrueba({ LECTOR_INTERNO: apk.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch, esperaPantallaMs: 30 });
+  const pantallas = () => s.recortes.filter((r) => r.d.tipo === 'pantalla-final');
+  const subidas = () => s.llamadas.filter((l) => l.funcion === 'subir_recorte').length;
+  const hasta = async (cond, ms = 15000) => { const t0 = Date.now(); while (!cond() && Date.now() - t0 < ms) await new Promise((r) => setTimeout(r, 30)); return cond(); };
+  const registro = [], consola = console.log;
+  console.log = (m) => { registro.push(String(m)); };
+  try {
+    await servidor.subirFinalDe({ desde: 5, motivo: 'ya hay otro draft', fotogramas: fotos, pantalla: ID });
+    ok(s.recortes.length === 1 && s.recortes[0].d.tipo === 'final', `las pantallas del final no suben primero: ${s.recortes.map((r) => r.d.tipo)}`);
+    reloj += 61000;
+    ok(await hasta(() => pantallas().length === 1), `la partida sin resultado no sube su pantalla en grande: ${registro.slice(-2).join(' | ')}`);
+    eq(s.recortes.length, 2, 'sube más de una pantalla en grande por partida');
+    const r = pantallas()[0];
+    eq(r.clave, s.recortes[0].clave, 'la pantalla en grande no va con la clave de las pantallas del final');
+    eq(JSON.stringify(Object.keys(r.d)), JSON.stringify(['v', 'tipo', 'version', 'desde', 'capturas']), 'la pantalla en grande no tiene su forma');
+    ok(r.d.v === 1 && r.d.version === '4.0.6' && r.d.desde === 5, JSON.stringify({ ...r.d, capturas: undefined }));
+    ok(r.d.capturas.length === 1 && r.d.capturas[0].id === ID && JSON.stringify(Object.keys(r.d.capturas[0])) === '["id","tira"]', 'no es UNA captura con solo su franja');
+    ok(Buffer.byteLength(JSON.stringify(r.d)) <= TOPE_RECORTE_BYTES, `no cabe en subir_recorte: ${Buffer.byteLength(JSON.stringify(r.d))}`);
+    sinNombres(r.d.capturas[0].tira, ANCHO_PANTALLA_FINAL);
+    eq(JSON.parse(leerFichero(ficheroPantallaFinal(casa), 'utf8')).dia, diaDe(Date.now()), 'no apunta el día de la pantalla en grande');
+    ok(!existsSync(ficheroCabecera(casa)), 'la pantalla en grande gasta el día de la cabecera del draft');
+    ok(registro.some((l) => /^Pantalla del final subida en grande .*\(fotograma-2026-11-19T20-31-02-000Z, 1600 px\)/.test(l)), `subirla no deja su línea: ${registro.slice(-3).join(' | ')}`);
+    // Otra partida sin resultado el mismo día: sus pantallas del final sí, la grande no (ni llega a la base de datos).
+    reloj += 61000;
+    await servidor.subirFinalDe({ desde: 6, motivo: 'ya hay otro draft', fotogramas: fotos, pantalla: 'fotograma-2026-11-19T21-31-02-000Z' });
+    reloj += 61000;
+    const antes = subidas();
+    eq(await servidor.subirPantallaFinalDe({ desde: 6, id: 'fotograma-2026-11-19T21-31-02-000Z' }), null, 'sube otra pantalla en grande el mismo día');
+    await new Promise((r2) => setTimeout(r2, 300));
+    ok(pantallas().length === 1 && subidas() === antes, `la segunda pantalla en grande del día llama a la base de datos: ${s.recortes.map((x) => x.d.tipo)}`);
+  } finally { console.log = consola; servidor.close(); apk.cerrar(); }
+  // Si la subida falla, «no se pudo» y el día sin apuntar: sale con la siguiente partida sin resultado.
+  const casa2 = mkdtempSync(join(tmpdir(), 'en-tablet-pantalla-mal-'));
+  mkdirSync(join(casa2, 'datos'), { recursive: true });
+  mkdirSync(join(casa2, 'capturas'), { recursive: true });
+  writeFileSync(join(casa2, 'datos', 'comunidad.json'), JSON.stringify({ url: 'https://abcdefghijklmnopqrst.supabase.co', clave: 'sb_publishable_otra_clave_que_no_vale' }));
+  writeFileSync(join(casa2, 'capturas', `${ID}.png`), png);
+  const apk2 = await apkDePega();
+  const servidor2 = await principalDePrueba({ LECTOR_INTERNO: apk2.base, LECTOR_SECRETO: SECRETO, LECTOR_CODIGO: CODIGO, LECTOR_CASA: casa2, LECTOR_PUERTO: '0', LECTOR_ESCUCHA: '127.0.0.1', LECTOR_SIN_SOLO: '1' }, { pedirBaseDeDatos: s.fetch });
+  const registro2 = [];
+  console.log = (m) => { registro2.push(String(m)); };
+  try {
+    const mal = await servidor2.subirPantallaFinalDe({ desde: 5, id: ID });
+    ok(/^Subir la pantalla del final en grande: no se pudo/.test(mal ?? '') && LINEA_DE_ERROR.test(mal) && registro2.includes(mal), `el fallo no dice «no se pudo» en el registro: ${mal}`);
+    ok(!existsSync(ficheroPantallaFinal(casa2)), 'una pantalla que no subió cuenta como la del día');
+    const sinPantalla = await servidor2.subirPantallaFinalDe({ desde: 5, id: 'fotograma-2026-11-19T22-00-00-000Z' });
+    ok(/no se pudo \(la pantalla ya no está/.test(sinPantalla ?? ''), `sin la pantalla en disco no lo dice: ${sinPantalla}`);
+  } finally { console.log = consola; servidor2.close(); apk2.cerrar(); }
+});
+
+test('la vigilancia del servidor guarda ENTERA a disco la primera pantalla sin minimapa al salir de la partida (4.0.6), y dice cuál', async () => {
+  const carpeta = mkdtempSync(join(tmpdir(), 'en-tablet-pantalla-disco-'));
+  const juego = leerPng(leerFichero(join(RAIZ, 'pruebas/fixtures/juego/pantallas/juego-17.png')));
+  const fuera = leerPng(leerFichero(join(RAIZ, 'pruebas/fixtures/juego/pantallas/fuera-2.png')));
+  let vista = juego, capturas = 0;
+  const servidor = crearServidor({ capturar: async () => { capturas += 1; return vista; }, codigo: CODIGO, enHilos: false, carpeta, guardar: () => {}, vigilancia: { desdeMin: 0, intervaloMs: 15, intervaloInicioMs: 15, rapidoMs: 15, hastaMin: 600, partidaHastaMin: 600 } });
+  const hasta = async (n) => { const objetivo = capturas + n; const t0 = Date.now(); while (capturas < objetivo && Date.now() - t0 < 8000) await new Promise((r) => setTimeout(r, 15)); };
+  try {
+    servidor.interno.vigilar(Date.now());
+    await hasta(4);
+    vista = fuera;
+    await hasta(4);
+    await servidor.interno.guardando();
+    const id = servidor.interno.final().pantalla;
+    ok(typeof id === 'string' && /^fotograma-/.test(id), `la vigilancia no dice qué pantalla guardó: ${id}`);
+    ok(existsSync(join(carpeta, `${id}.png`)), 'la pantalla de después de la partida no se guarda a disco');
+    const guardada = leerPng(leerFichero(join(carpeta, `${id}.png`)));
+    ok(guardada.ancho === fuera.ancho && guardada.alto === fuera.alto && Buffer.compare(Buffer.from(guardada.rgba), Buffer.from(fuera.rgba)) === 0, 'la pantalla guardada no es la captura entera');
+  } finally { servidor.interno.terminarVigilancia(servidor.interno.final().desde); servidor.close(); }
 });
 
 test('las capturas del draft que lee el modo solo no se podan mientras está abierto (3.81.4)', async () => {

@@ -22,7 +22,7 @@ import { ficheroAprendido, cargarLoAprendido, guardarAprendido, ARREGLOS_POR_TAN
 import { crearSolo, datosDelSolo } from './solo.mjs';
 import { lectorDeDatos, bajarDatos, leerComunidad, leerSaludDeLaApk, ajustesDeLaTablet, REFRESCAR_DATOS_MS, FICHEROS } from './datos.mjs';
 import { partidasDeLaTablet, sanearEdicion, ultimasDeTabla, listaParaLaApk, subirLoDeLaTablet } from './partidas.mjs';
-import { parteDeSalud, recorteParaSubir, finalParaSubir, comprobanteParaSubir, cabeceraParaSubir, cabeceraSubidaHoy, apuntarCabecera, draftsArreglados, claveDelLector, PARTE_CADA_MS, ARREGLOS_CADA_MS, DIAS_DE_RECORTES, FINAL_DEL_REGISTRO_BYTES } from './subidas.mjs';
+import { parteDeSalud, recorteParaSubir, finalParaSubir, comprobanteParaSubir, cabeceraParaSubir, cabeceraSubidaHoy, apuntarCabecera, pantallaFinalParaSubir, pantallaFinalSubidaHoy, apuntarPantallaFinal, PANTALLA_TRAS_FINAL_MS, draftsArreglados, claveDelLector, PARTE_CADA_MS, ARREGLOS_CADA_MS, DIAS_DE_RECORTES, FINAL_DEL_REGISTRO_BYTES } from './subidas.mjs';
 
 
 /** [C] La captura solo puede venir de la APK, en 127.0.0.1. */
@@ -46,9 +46,11 @@ const aqui = dirname(fileURLToPath(import.meta.url));
 /**
  * Arranca el lector. `pedirBaseDeDatos` es el fetch de la base de datos
  * (las pruebas inyectan uno de pega); `datosDeLaApk` la carpeta con los datos
- * que trae la APK (heroes.json, roam-meta.json, comunidad.json).
+ * que trae la APK (heroes.json, roam-meta.json, comunidad.json);
+ * `esperaPantallaMs`, lo que espera la pantalla del final en grande tras las
+ * pantallas del final (un recorte por minuto y clave).
  */
-export async function principal(env = process.env, { pedirBaseDeDatos = globalThis.fetch, datosDeLaApk = join(aqui, '..', '..', 'datos') } = {}) {
+export async function principal(env = process.env, { pedirBaseDeDatos = globalThis.fetch, datosDeLaApk = join(aqui, '..', '..', 'datos'), esperaPantallaMs = PANTALLA_TRAS_FINAL_MS } = {}) {
   const registrar = (m) => console.log(m);
   const arrancado = Date.now();
   const base = env.LECTOR_INTERNO, secreto = env.LECTOR_SECRETO, codigo = env.LECTOR_CODIGO;
@@ -144,9 +146,28 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     const recortes = await servidor.interno.recortesDe(c?.ids);
     return recorteParaSubir({ correccion: c, recortes, version: versionDeLaApk() }) ?? (recortes.length ? 'no caben o sin la partida' : 'ninguna captura del draft se pudo recortar');
   }, (r) => `Recortes del draft subidos para medir el lector (${r.capturas.length} capturas, ${r.faltan} sin reconocer).`);
+  const intentar = (fn) => (x) => { fn(x).catch((e) => registrar(`Subir a la base de datos: no se pudo (${e.message}).`)); };
+  const esperas = new Set();
   // Con la clave con la que suben tus partidas: el móvil las lee con `mis_recortes` y TU clave.
-  servidor.subirFinalDe = (f) => subirA('Subir las pantallas del final', claveConLaQueSube(), async () => finalParaSubir({ ...f, version: versionDeLaApk() }) ?? 'ninguna pantalla fuera de la partida',
-    (r) => `Pantallas del final subidas para ver por qué no se reconoció (${r.capturas.length}).`);
+  // Detrás, la pantalla de después de la partida en grande (4.0.6), con la misma clave y pasado el minuto que pide `subir_recorte`.
+  servidor.subirFinalDe = async (f) => {
+    const dicho = await subirA('Subir las pantallas del final', claveConLaQueSube(), async () => finalParaSubir({ ...f, version: versionDeLaApk() }) ?? 'ninguna pantalla fuera de la partida',
+      (r) => `Pantallas del final subidas para ver por qué no se reconoció (${r.capturas.length}).`);
+    if (typeof f?.pantalla === 'string' && !pantallaFinalSubidaHoy(casa)) {
+      const espera = setTimeout(() => { esperas.delete(espera); intentar(servidor.subirPantallaFinalDe)({ desde: f.desde, id: f.pantalla }); }, esperaPantallaMs);
+      espera.unref?.();
+      esperas.add(espera);
+    }
+    return dicho;
+  };
+  // Como mucho una al día (`pantalla-final.json`, al subir): la franja de siempre (región y tapado) a 1600 px.
+  servidor.subirPantallaFinalDe = async (p) => {
+    if (pantallaFinalSubidaHoy(casa)) return null;
+    return subirA('Subir la pantalla del final en grande', claveConLaQueSube(), async () => {
+      const captura = await servidor.interno.pantallaFinalDe(p?.id);
+      return (captura && pantallaFinalParaSubir({ desde: p?.desde, captura, version: versionDeLaApk() })) ?? (captura ? 'no cabe o sin el draft' : 'la pantalla ya no está o no se pudo recortar');
+    }, (r) => { apuntarPantallaFinal(casa); return `Pantalla del final subida en grande para ver si dice el resultado (${r.capturas[0].id}, ${Buffer.from(r.capturas[0].tira, 'base64').readUInt32BE(16)} px).`; });
+  };
   servidor.subirComprobanteDe = (c) => subirA('Subir el comprobante', claveConLaQueSube(), async () => comprobanteParaSubir({ ...c, version: versionDeLaApk() }) ?? 'la tabla no tiene franja',
     (r) => `Comprobante de la partida subido (${r.gane ? 'ganada' : 'perdida'}).`);
   // La cabecera de un draft sin la fila de baneos (4.0.1), con la clave del lector: una al día, para volver a medir `BANEOS`.
@@ -157,7 +178,6 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
       return (captura && cabeceraParaSubir({ desde: d?.desde, captura, version: versionDeLaApk() })) ?? (captura ? 'no cabe o sin el draft' : 'ninguna captura de los picks se pudo recortar');
     }, (r) => { apuntarCabecera(casa); return `Cabecera del draft subida para volver a medir la fila de baneos (${r.capturas[0].id}).`; });
   };
-  const intentar = (fn) => (x) => { fn(x).catch((e) => registrar(`Subir a la base de datos: no se pudo (${e.message}).`)); };
 
   solo = crearSolo({
     interno: servidor.interno, ajustes, datosPara: datosDelSolo(leerDatos), registrar,
@@ -219,6 +239,6 @@ export async function principal(env = process.env, { pedirBaseDeDatos = globalTh
     const refrescar = async () => { const n = await bajarDatos(bajados, { registrar }); if (n) registrar(`Datos de Pick Assist al día (${n} ficheros).`); };
     relojes.push(setTimeout(refrescar, existsSync(join(bajados, FICHEROS.meta)) ? REFRESCAR_DATOS_MS : 30000), setInterval(refrescar, REFRESCAR_DATOS_MS));
   }
-  servidor.on('close', () => { solo.parar(); for (const r of relojes) { clearInterval(r); clearTimeout(r); } });
+  servidor.on('close', () => { solo.parar(); for (const r of [...relojes, ...esperas]) { clearInterval(r); clearTimeout(r); } });
   return servidor;
 }

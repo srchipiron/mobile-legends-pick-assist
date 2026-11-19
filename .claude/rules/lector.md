@@ -180,8 +180,8 @@ pantallas del final y el comprobante de cada partida de la tabla (tu clave:
 el móvil los lee con `mis_recortes`). Un draft cerrado sin la fila (4.0.1,
 `alSinBaneos`) sube su cabecera (`tipo: 'cabecera'`, clave del lector): SOLO
 `REGION_CABECERA` (15 % de arriba) a 1200 px, en el hilo de los recortes, una
-al día (`cabecera.json`, al subir). Cada salida deja su línea; las de fallo
-dicen «no se pudo» (`LINEA_DE_ERROR`, la misma en `revisar-tablet.mjs`).
+al día (`cabecera.json`, al subir). Tras las del final (4.0.6, `PANTALLA_TRAS_FINAL_MS`), `tipo: 'pantalla-final'`: la primera sin minimapa (guardada ENTERA,
+una por salida) con la región y el tapado de la franja a 1600 px (`pantallaFinalDe`, en el hilo), una al día (`pantalla-final.json`). Cada salida deja su línea; las de fallo dicen «no se pudo» (`LINEA_DE_ERROR`, la misma en `revisar-tablet.mjs`).
 
 ## La APK (`android/`)
 

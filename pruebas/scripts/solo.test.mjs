@@ -738,9 +738,17 @@ test('lo que se perdía sin el móvil (3.74.3): la pregunta pisada o caducada se
   const caso = montar();
   await jugar(caso);
   // Con el inicio y la duración vistos: su instante es el final, no el del draft.
-  caso.fin({ acabada: true, activa: false, inicio: caso.desde() + 60000, duracion: 14, fotogramas: [{ id: 'fotograma-2026-10-27T22-32-00-000Z', miniatura: 'iVBORw0KGgo=' }] });
+  caso.fin({ acabada: true, activa: false, inicio: caso.desde() + 60000, duracion: 14, fotogramas: [{ id: 'fotograma-2026-10-27T22-32-00-000Z', miniatura: 'iVBORw0KGgo=' }], pantalla: 'fotograma-2026-10-27T22-31-58-000Z' });
   await caso.paso(20000);
   ok(caso.finales.length === 1 && caso.finales[0].desde === caso.desde() && caso.finales[0].fotogramas.length === 1 && caso.finales[0].motivo, `al preguntar no manda las pantallas del final: ${JSON.stringify(caso.finales)}`);
+  // Y la pantalla entera de después de la partida (4.0.6), para subirla en grande.
+  eq(caso.finales[0].pantalla, 'fotograma-2026-10-27T22-31-58-000Z', 'al preguntar no manda la pantalla de después de la partida');
+  // Con el resultado leído de la tabla no sube nada del final: ni las pantallas ni la grande.
+  const leida = montar();
+  await jugar(leida);
+  leida.fin({ acabada: true, activa: false, resultado: 'gane', resultadoEn: leida.desde() + 900000, inicio: leida.desde() + 60000, duracion: 14, fotogramas: [{ id: 'fotograma-2026-10-27T22-32-00-000Z', miniatura: 'iVBORw0KGgo=' }], pantalla: 'fotograma-2026-10-27T22-31-58-000Z' });
+  await leida.paso(20000);
+  ok(leida.apuntadas.length === 1 && leida.finales.length === 0, `con el resultado leído sube las pantallas del final: ${JSON.stringify(leida.finales.map((f) => f.pantalla))}`);
   // Con la partida sin resultado (3.89.4), para contestarla en «Capturas» del móvil: su draft, sin resultado inventado.
   const conPartida = caso.finales[0].partida;
   eq(conPartida.t, caso.desde() + 60000 + 14 * 60000, 'la partida del recorte no va con el instante del final');

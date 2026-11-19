@@ -24,6 +24,9 @@ test('una revisión por partida tuya con recorte: lo leído en su hueco y tu fil
   ok(r[0].pendiente, 'una partida con el pick supuesto no está por revisar');
   eq(revisiones([recorte()], [{ ...partida(), t: T + 1 }], HEROES).length, 0, 'sale un recorte de una partida que no es tuya');
   eq(revisiones([{ d: { tipo: 'final', partida: T, capturas: [{ id: 'lectura-1', picks: PNG }] } }], [partida()], HEROES).length, 0, 'sale una pantalla del final');
+  // La pantalla de después de una partida sin resultado, en grande (4.0.6), no es una revisión, ni una partida sin resultado, ni un comprobante.
+  const enGrande = { d: { v: 1, tipo: 'pantalla-final', desde: T, capturas: [{ id: 'fotograma-2026-10-28T21-30-00-000Z', tira: PNG }] } };
+  ok(revisiones([enGrande], [partida()], HEROES).length === 0 && sinResultado([enGrande], [], HEROES).length === 0 && comprobantes([enGrande]).size === 0, 'la pantalla en grande sale en «Capturas» o en «Mis partidas»');
 });
 
 test('lo arreglado después cae en el hueco que quedó vacío; tu pick confirmado va en tu fila', () => {

@@ -27,14 +27,16 @@ export function tocaCapturarFinal({ ultimaFinal = 0, rafagaHasta = 0 } = {}, t, 
   return t - ultimaFinal >= paso - latido / 2;
 }
 
-const VACIO = { desde: null, activa: false, acabada: false, resultado: null, resultadoId: null, resultadoEn: null, fotogramas: [], inicio: null, inicioEstimado: false, duracion: null };
+const VACIO = { desde: null, activa: false, acabada: false, resultado: null, resultadoId: null, resultadoEn: null, fotogramas: [], pantalla: null, inicio: null, inicioEstimado: false, duracion: null };
 
 /**
  * `capturar()` da la imagen ya decodificada; `alMirar(enPartida)` se llama
- * con cada captura (la burbuja se esconde en partida). Devuelve
+ * con cada captura (la burbuja se esconde en partida); `guardarPantalla(img,
+ * id)` guarda entera la primera sin minimapa al salir de la partida (4.0.6:
+ * UNA por salida, no cada fotograma), que va en `estado().pantalla`. Devuelve
  * `{ vigilar, estado, terminar, anotarLectura, parar }`.
  */
-export function crearVigilancia({ capturar, resultados, ahora = () => Date.now(), registrar = () => {}, vigilancia: pedida = VIGILANCIA, alMirar = () => {} }) {
+export function crearVigilancia({ capturar, resultados, ahora = () => Date.now(), registrar = () => {}, vigilancia: pedida = VIGILANCIA, alMirar = () => {}, guardarPantalla = null }) {
   const vigilancia = { ...VIGILANCIA, ...pedida };
   const latido = Math.min(vigilancia.intervaloMs, vigilancia.intervaloInicioMs, vigilancia.rapidoMs);
   const hora = (t) => new Date(t).toISOString().slice(11, 19);
@@ -45,7 +47,7 @@ export function crearVigilancia({ capturar, resultados, ahora = () => Date.now()
 
   const parar = () => { if (reloj) clearInterval(reloj); reloj = null; if (final) final.activa = false; };
   const estado = () => (final
-    ? { desde: final.desde, activa: final.activa, acabada: !!final.acabada, resultado: final.resultado, resultadoId: final.resultadoId, resultadoEn: final.resultadoEn, fotogramas: final.fotogramas, inicio: final.inicio, inicioEstimado: final.inicioEstimado, duracion: final.duracion }
+    ? { desde: final.desde, activa: final.activa, acabada: !!final.acabada, resultado: final.resultado, resultadoId: final.resultadoId, resultadoEn: final.resultadoEn, fotogramas: final.fotogramas, pantalla: final.pantalla ?? null, inicio: final.inicio, inicioEstimado: final.inicioEstimado, duracion: final.duracion }
     : { ...VACIO, fotogramas: [] });
 
   /** [D] Dos capturas seguidas con minimapa: empezó (medio intervalo antes de la primera). MEDIDO solo si antes se vio fuera de partida. */
@@ -66,6 +68,12 @@ export function crearVigilancia({ capturar, resultados, ahora = () => Date.now()
   const mirarFinal = (img, t) => {
     const dentro = enPartida(img);
     alMirar(dentro);
+    const id = `fotograma-${new Date(t).toISOString().replace(/[:.]/g, '-')}`;
+    if (final.enJuego && !dentro && guardarPantalla) {
+      // La primera sin minimapa al salir de la partida, entera a disco: si la tabla no se ve, sube en grande (en-tablet.mjs).
+      final.pantalla = id;
+      try { guardarPantalla(img, id); } catch (e) { registrar(`No se pudo guardar la pantalla del final: ${e.message}`); }
+    }
     if (final.enJuego && !dentro && !(final.rafagaHasta > t)) {
       final.rafagaHasta = t + vigilancia.rafagaMs;
       registrar(`Sin minimapa a los ${Math.round((t - final.desde) / 60000)} minutos del draft: miro la pantalla cada ${vigilancia.rapidoMs / 1000} s para ver la tabla del final.`);
@@ -75,7 +83,6 @@ export function crearVigilancia({ capturar, resultados, ahora = () => Date.now()
     const f = fotogramaDe(img, final.anterior);
     final.anterior = f.pequena;
     if (!f.cambio) return;
-    const id = `fotograma-${new Date(t).toISOString().replace(/[:.]/g, '-')}`;
     const leido = reconocerResultado(tiraDe(img), resultados);
     const rafaga = final.rafagaHasta > t;
     const foto = { id, minuto: Math.round((t - final.desde) / 60000), miniatura: f.miniatura, tira: f.tira, ...(!leido.tabla && dentro ? { enPartida: true } : {}), ...(rafaga ? { rafaga: true } : {}), tabla: leido.tabla, resultado: leido.resultado, resultadoParecido: Math.round(leido.parecido * 1000) / 1000 };
@@ -139,7 +146,7 @@ export function crearVigilancia({ capturar, resultados, ahora = () => Date.now()
       return estado();
     }
     parar();
-    final = { desde, hasta: desde + vigilancia.hastaMin * 60000, activa: true, fotogramas: [], resultado: null, resultadoId: null, resultadoEn: null, anterior: null, fallos: 0, vistoFuera: false, acabada: false, inicio: null, inicioEstimado: false, seguidas: 0, primera: null, ultimaInicio: 0, fallosInicio: 0, duracion: null, ultimaFinal: 0, enJuego: false, rafagaHasta: 0 };
+    final = { desde, hasta: desde + vigilancia.hastaMin * 60000, activa: true, fotogramas: [], pantalla: null, resultado: null, resultadoId: null, resultadoEn: null, anterior: null, fallos: 0, vistoFuera: false, acabada: false, inicio: null, inicioEstimado: false, seguidas: 0, primera: null, ultimaInicio: 0, fallosInicio: 0, duracion: null, ultimaFinal: 0, enJuego: false, rafagaHasta: 0 };
     if (ahora() > final.hasta) { final.activa = false; return estado(); }
     reloj = setInterval(tic, latido);
     reloj.unref?.();
