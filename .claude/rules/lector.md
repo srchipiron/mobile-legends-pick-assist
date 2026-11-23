@@ -133,8 +133,8 @@ tiene que estar en `copiarLector` (build.gradle.kts) y en `paths:` de `apk.yml`.
 ## El draft en la tablet (`acumularDraft`)
 
 - Abre con `BANEOS_EN_EL_DRAFT` (2) baneos DISTINTOS o, sin fila, con
-  `PICKS_SIN_BANEOS` (4) héroes distintos (`porPicks`, sin capturas para
-  aprender). Otro draft: `BANEOS_DE_OTRO_DRAFT` huecos de baneo cambiados,
+  `PICKS_SIN_BANEOS` (4) héroes distintos y SEGUROS (`PICK_SEGURO` 0,85: picks
+  reales ≥ 0,869, caras falsas fuera del draft ≤ 0,834; `porPicks`, sin capturas para aprender). Otro draft: `BANEOS_DE_OTRO_DRAFT` huecos de baneo cambiados,
   `MINUTOS_PARA_OTRO_DRAFT` tras el cierre o `MINUTOS_DRAFT_ABANDONADO` quieto.
 - Huecos por jugador: lo leído pisa, un «?» no borra, un héroe en un solo hueco;
   más de `CAMBIOS_A_LA_VEZ` huecos cambiados a la vez es la fase de skins y no

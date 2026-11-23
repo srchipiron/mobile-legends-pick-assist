@@ -8,6 +8,15 @@ que esto no se olvida.
 Criterio: `0.X.0` cuando cambia cómo decide la app o qué hace; `0.0.X` para
 correcciones.
 
+## 4.0.7
+
+- La tablet ya no se inventa partidas: con el marcador abierto en mitad de una
+  partida (o en algún menú) a veces «veía» un draft y apuntaba una derrota que
+  no era (el 20 y el 22 de noviembre, con Diggie y con Julian). Ahora solo
+  abre un draft sin baneos si reconoce las caras con seguridad, como pasa en
+  el draft de verdad. Esas dos partidas falsas puedes quitarlas en «Tus
+  partidas».
+
 ## 4.0.6
 
 - Para que dejen de quedarse partidas sin resultado: cuando la tablet se pierde

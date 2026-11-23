@@ -17,6 +17,14 @@ export const MINUTOS_DRAFT_ABANDONADO = 15;
 export const BANEOS_DE_OTRO_DRAFT = 2;
 /** [M] Héroes DISTINTOS en los paneles de picks que abren el draft sin la fila de baneos: fuera de draft 0 de 854 lecturas, dentro 560 de 935. */
 export const PICKS_SIN_BANEOS = 4;
+/**
+ * [M] Para ABRIR un draft por los picks solo cuentan caras seguras (4.0.7):
+ * en las capturas reales del draft los picks salen a 0,869–0,980; fuera del
+ * draft (marcador de la partida, menús: pruebas/fixtures/juego/pantallas) las
+ * caras falsas llegan a 0,770–0,834 (Atlas, Gord, Fredrinn, Zetian, Bruno), y
+ * con cuatro abrían un draft y apuntaban una partida falsa (20 y 22-11-2026).
+ */
+export const PICK_SEGURO = 0.85;
 /** [D] Las capturas que recuerda un draft para aprender, y lo que las separa (≈80 s de draft con la última siempre). */
 export const IDS_POR_DRAFT = 20;
 export const SEPARACION_IDS_MS = 4000;
@@ -86,7 +94,8 @@ export function acumularDraft(estado, lectura, ahora) {
   const enemigos = nombres(lectura.enemigos);
   const filas = nombres(lectura.aliados);
   const banDistintos = new Set(baneos).size;
-  const porPicks = new Set([...enemigos, ...filas].filter(Boolean)).size >= PICKS_SIN_BANEOS;
+  const seguros = (lista) => (Array.isArray(lista) ? lista : []).filter((x) => x?.nombre && (x.parecido ?? 1) >= PICK_SEGURO).map((x) => x.nombre);
+  const porPicks = new Set([...seguros(lectura.enemigos), ...seguros(lectura.aliados)]).size >= PICKS_SIN_BANEOS;
   const deDraft = banDistintos >= BANEOS_EN_EL_DRAFT || porPicks || (!e.cerrado && (e.baneos.length >= BANEOS_EN_EL_DRAFT || e.porPicks));
   const algo = deDraft && (baneos.length || enemigos.some(Boolean) || filas.some(Boolean));
   if (!deDraft) return e.enPartida ? { ...e, enPartida: 0 } : e;

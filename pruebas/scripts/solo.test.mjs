@@ -9,7 +9,7 @@ import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after } from 'node:test';
-import { acumularDraft, draftVacio, BANEOS_DE_OTRO_DRAFT, faseDe, LECTURAS_PARA_FUERA, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, MINUTOS_PARA_OTRO_DRAFT, PICKS_SIN_BANEOS, conCorreccion, registrarCorreccion } from '../../scripts/lector/acumular.mjs';
+import { acumularDraft, draftVacio, BANEOS_DE_OTRO_DRAFT, faseDe, LECTURAS_PARA_FUERA, IDS_POR_DRAFT, SEPARACION_IDS_MS, conCaptura, MINUTOS_PARA_OTRO_DRAFT, PICKS_SIN_BANEOS, conCorreccion, registrarCorreccion, PICK_SEGURO } from '../../scripts/lector/acumular.mjs';
 import { resumenPregunta, consejoSolo, crearSolo, leerAjustesSolo, ajustesEfectivos, datosDelSolo, partidaSolo, resumenSolo, decidirSolo, correccionDelDraft, tusHabituales, HABITUALES, MINUTOS_ENTRE_TABLAS, INTERVALOS_SOLO } from '../../scripts/lector/solo.mjs';
 import { CAMBIOS_A_LA_VEZ, PREGUNTA_CADUCA_MS, sanearCorreccion, sanearDraftTablet, sanearPartidaTablet } from '../../src/comun/contrato.js';
 import { prepararDatos, recomendar } from '../../src/motor/draft.js';
@@ -1020,4 +1020,27 @@ test('un baneo leído que quitas también cuenta como cara mal leída (4.0.5)', 
   ok(solo.corregir(sanearCorreccion({ desde: d.desde, enemigos: d.enemigos.filter(Boolean), aliados: d.aliados.filter((n, i) => n && i !== d.tuyoFila), tuyo: d.tuyo, baneos: resto })), 'no acepta la corrección');
   eq(solo.resumen().quitados[quitado], 1, `el baneo quitado no cuenta: ${JSON.stringify(solo.resumen().quitados)}`);
   eq(Object.keys(solo.resumen().quitados).length, 1, `cuenta como quitado lo que dejaste: ${JSON.stringify(solo.resumen().quitados)}`);
+});
+
+test('fuera del draft (el marcador de la partida, menús) las caras dudosas no abren un draft por los picks (4.0.7)', async () => {
+  const { readdirSync, readFileSync } = await import('node:fs');
+  const { leerPng } = await import('../../scripts/lector/png.mjs');
+  const { leerPicksEnemigos, leerAliados, carasGuardadas } = await import('../../scripts/lector/leer.mjs');
+  const { capturaCompleta } = await import('../fixtures/juego/captura.mjs');
+  const caras = carasGuardadas();
+  const sinFila = (img) => ({ tuyos: [V, V, V, V, V], suyos: [V, V, V, V, V], enemigos: leerPicksEnemigos(img, caras), aliados: leerAliados(img, caras), tuyoFila: -1 });
+  // Las pantallas reales de fuera del draft: ninguna abre nada, aunque alguna lea caras sueltas.
+  const dir = `${RAIZ}/pruebas/fixtures/juego/pantallas`;
+  for (const f of readdirSync(dir).filter((x) => x.endsWith('.png'))) {
+    const d = acumularDraft(draftVacio(), sinFila(leerPng(readFileSync(`${dir}/${f}`))), 5);
+    ok(!d.porPicks && !d.enemigos.some(Boolean), `${f} abre un draft por los picks: ${JSON.stringify(d.enemigos)}`);
+  }
+  // El draft de verdad sin la fila de baneos sí se abre por sus picks (que salen a ≥ 0,869).
+  ok(acumularDraft(draftVacio(), sinFila(capturaCompleta()), 5).porPicks, 'un draft real sin fila ya no se abre por los picks');
+  // Cuatro caras justo por debajo del corte (las del 20-11: Atlas, Gord, Fredrinn, Zetian) no abren; las mismas seguras, sí.
+  const con = (p) => ({ tuyos: [V, V, V, V, V], suyos: [V, V, V, V, V], enemigos: ['Atlas', 'Gord', 'Fredrinn', 'Zetian', null].map((n) => (n ? { nombre: n, parecido: p } : V)), aliados: [V, V, V, V, V], tuyoFila: -1 });
+  // Con los extremos MEDIDOS (no con el corte): la cara falsa más alta fuera del draft, 0,834; el pick real más bajo, 0,869.
+  eq(acumularDraft(draftVacio(), con(0.834), 5).porPicks, false, 'cuatro caras como las de fuera del draft abren un draft');
+  eq(acumularDraft(draftVacio(), con(0.869), 5).porPicks, true, 'cuatro caras como las de un draft real no lo abren');
+  ok(PICK_SEGURO > 0.834 && PICK_SEGURO <= 0.869, `el corte ${PICK_SEGURO} no separa lo medido`);
 });

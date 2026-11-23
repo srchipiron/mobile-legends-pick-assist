@@ -56,6 +56,7 @@ con fechas e incidencias, está en `docs/archivo/errores-3.102.md`.
 - La seguridad se vigila por FORMA y la prueba se porta antes que el código (`lector.test`, `android.test`).
 - Lo aprendido nunca manda sobre lo medido; nada se aprende en marcha del resultado (142 de 145 victorias falsas, 3.99.0) → plantillas fijas medidas y aviso con 10 iguales seguidas.
 - Una pantalla que el juego cambia se mide con una captura que manda la propia tablet (cabecera, 4.0.1), no pidiéndosela a Javi; y la geometría vieja se queda de respaldo (`BANEOS_ANTES`, 4.0.2).
+- La puerta de reserva (abrir por los picks) abría drafts falsos con el marcador de la partida y apuntaba derrotas que no eran (20 y 22-11) → solo cuentan caras seguras (`PICK_SEGURO`, medido en pantallas reales de dentro y fuera del draft, 4.0.7).
 - Lo que identifica una pantalla (fila de baneos) va antes que lo que se lee en ella; una puerta de una sola zona necesita otra entrada (4 picks) y su aviso.
 - Una zona que deja de leerse da falsos sueltos → un baneo cuenta junto a otro, un elegido no es baneado, se cuentan héroes distintos, un héroe ocupa un hueco.
 - Tu fila por la última lectura daba el héroe de un compañero → por mayoría.
