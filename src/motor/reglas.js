@@ -79,6 +79,7 @@ export const SPECIALITY_TAGS = {
   'Crowd Control': ['engage', 'cc_chain', 'tanky'],
   'Initiator': ['engage', 'cc_chain', 'tanky'],
   'Regen': ['tanky', 'heal'],
+  'Control': ['cc_chain'],
   'Chase': ['mobile', 'dash', 'dive'],
   'Poke': ['immobile', 'poke'],
   'Charge': ['dive'],
