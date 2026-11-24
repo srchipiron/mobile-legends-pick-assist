@@ -1,23 +1,23 @@
 {
-  "generatedAt": "2026-11-24T03:28:45.861Z",
+  "generatedAt": "2026-11-24T16:01:24.224Z",
   "rank": "glory",
   "relaciones": {
     "rango": "mythic",
     "pedido": "glory",
     "coherencia": {
-      "counters": 0.8421406919667366,
-      "synergies": 0.7517438754122228
+      "counters": 0.8419690074260658,
+      "synergies": 0.7514957838907488
     },
     "ultima": {
       "rango": "mythic",
       "coherencia": {
-        "counters": 0.8421406919667366,
-        "synergies": 0.7517438754122228
+        "counters": 0.8419690074260658,
+        "synergies": 0.7514957838907488
       },
-      "fecha": "2026-11-24T03:28:45.829Z"
+      "fecha": "2026-11-24T16:01:24.195Z"
     },
     "motivo": "los cruces y parejas de glory no se parecen a los de mythic (r=0.75): pocas partidas en glory, normal unos días después de un reinicio de temporada",
-    "descargada": "2026-11-24T03:28:45.861Z"
+    "descargada": "2026-11-24T16:01:24.224Z"
   },
   "ranks": [
     "epic",
@@ -4097,13 +4097,12 @@
     },
     "frescos": [
       "epic",
-      "legend",
       "mythic",
       "glory"
     ],
     "frescosRecursos": {
-      "relaciones": 133,
-      "parejas": 133,
+      "relaciones": 132,
+      "parejas": 132,
       "pedidas": 133
     },
     "conservado": false,
@@ -4111,19 +4110,25 @@
       "rutaCounter": "GET https://arena.rone.dev/api/academy/heroes/{hero_identifier}/counters",
       "conId": 133,
       "porNombre": 0,
-      "ok": 133,
-      "errores": [],
+      "ok": 132,
+      "errores": [
+        "Badang: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and ",
+        "Yi Sun-shin: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and ",
+        "Badang: HTTP 403 · <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta name=\"robots\" content=\"noindex,nofollow\"><meta name=\"viewport\" content=\"width=device-width,initial-scal"
+      ],
       "ejemplos": [
         "Akai vs X.Borg 48.7%, Bruno 50.1%, Lapu-Lapu 50.3%",
         "Atlas vs Hanzo 47.2%, Lylia 48.3%, Valentina 45.7%"
       ],
-      "rutaCambiada": []
+      "rutaCambiada": [],
+      "reintentados": 2,
+      "recuperados": 1
     },
     "speciality": {
       "pedidos": 133,
       "ok": 132,
       "errores": [
-        "Badang: HTTP 403 · <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta name=\"robots\" content=\"noindex,nofollow\"><meta name=\"viewport\" content=\"width=device-width,initial-scal"
+        "Kimmy: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and "
       ]
     },
     "rutasMedidas": {
@@ -4138,9 +4143,11 @@
     "builds": {
       "pedidas": 163,
       "heroes": 133,
-      "builds": 489,
-      "errores": [],
-      "conservadas": 0
+      "builds": 486,
+      "errores": [
+        "Lukas/jungle: HTTP 503 · {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/\",\"title\":\"Error 1102: Worker exceeded resource limits\",\"status\":503,\"detail\":\"A Worker script configured by the website owner exceeded its resource limits (CPU time or memory) and "
+      ],
+      "conservadas": 1
     },
     "equipo": {
       "rutas": 2,
@@ -4158,11 +4165,17 @@
     },
     "rangos": {
       "epic": "133 héroes",
-      "legend": "133 héroes",
+      "legend": "fallo: HTTP 403 · <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" conten",
       "mythic": "133 héroes",
       "glory": "133 héroes"
     },
-    "reintentoEstadisticas": null,
+    "reintentoEstadisticas": {
+      "vueltas": 1,
+      "recuperados": [],
+      "sinRecuperar": [
+        "legend"
+      ]
+    },
     "respaldoReintentado": null,
     "recientes": {
       "epic": "133 héroes",
