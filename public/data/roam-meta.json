@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-28T00:40:44.130Z",
+  "generatedAt": "2026-11-28T14:19:51.471Z",
   "rank": "glory",
   "relaciones": {
     "rango": "mythic",
@@ -14,10 +14,10 @@
         "counters": 0.8409749984020873,
         "synergies": 0.7453703214405628
       },
-      "fecha": "2026-11-28T00:40:44.103Z"
+      "fecha": "2026-11-28T14:19:51.438Z"
     },
     "motivo": "los cruces y parejas de glory no se parecen a los de mythic (r=0.75): pocas partidas en glory, normal unos días después de un reinicio de temporada",
-    "descargada": "2026-11-28T00:40:44.130Z"
+    "descargada": "2026-11-28T14:19:51.472Z"
   },
   "ranks": [
     "epic",
@@ -4142,8 +4142,8 @@
     },
     "equipo": {
       "rutas": 2,
-      "caidas": 2,
-      "conservados": 184
+      "caidas": 0,
+      "conservados": 0
     },
     "lineas": {
       "pedidas": 163,
